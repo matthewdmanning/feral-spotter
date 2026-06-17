@@ -1,0 +1,25 @@
+import { StyleSheet } from 'react-native-unistyles'
+
+export const stylesheet = StyleSheet.create((theme) => ({
+  root:                { flex: 1, backgroundColor: theme.colors.background },
+  topBar:              { backgroundColor: theme.colors.surface, paddingHorizontal: theme.spacing.lg, paddingBottom: 10, borderBottomWidth: 0.5, borderBottomColor: theme.colors.surfaceAlt, zIndex: 2 },
+  topRow:              { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  topBtn:              { paddingVertical: 4, paddingHorizontal: 4 },
+  topBtnText:          { color: theme.colors.muted, fontSize: 14, fontWeight: '500' },
+  counter:             { color: theme.colors.text, fontSize: 15, fontWeight: '600' },
+  removeBtn:           { width: 36, height: 36, borderRadius: theme.radius.md, borderWidth: 1, borderColor: theme.colors.surfaceAlt, justifyContent: 'center', alignItems: 'center' },
+  dotsRow:             { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 4, marginTop: 8 },
+  dot:                 { height: 7, borderRadius: 4 },
+  carousel:            { flex: 1, backgroundColor: theme.colors.background },
+  bottomBar:           { flexDirection: 'row', gap: theme.spacing.md, paddingHorizontal: theme.spacing.lg, paddingTop: 12, backgroundColor: theme.colors.surface, borderTopWidth: 0.5, borderTopColor: theme.colors.surfaceAlt, zIndex: 2 },
+  navBtn:              { flex: 1, paddingVertical: 14, borderRadius: theme.radius.lg, alignItems: 'center', justifyContent: 'center' },
+  navBtnPrimary:       { backgroundColor: theme.colors.accent },
+  navBtnPrimaryText:   { color: theme.colors.accentText, fontSize: 15, fontWeight: '700' },
+  navBtnSecondary:     { backgroundColor: theme.colors.surfaceAlt, borderWidth: 1, borderColor: theme.colors.border },
+  navBtnSecondaryText: { color: theme.colors.text, fontSize: 15, fontWeight: '600' },
+  navBtnDisabled:      { opacity: 0.35 },
+  empty:               { flex: 1, backgroundColor: theme.colors.background, alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24 },
+  emptyText:           { color: theme.colors.muted, fontSize: 16 },
+  emptyBtn:            { backgroundColor: theme.colors.surfaceAlt, borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.radius.lg, paddingVertical: 12, paddingHorizontal: 24 },
+  emptyBtnText:        { color: theme.colors.text, fontSize: 14, fontWeight: '600' },
+}))

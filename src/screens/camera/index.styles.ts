@@ -1,0 +1,25 @@
+import { StyleSheet } from 'react-native-unistyles'
+
+export const stylesheet = StyleSheet.create((theme) => ({
+  root:             { flex: 1, backgroundColor: '#000' },
+  flashOverlay:     { backgroundColor: '#fff', zIndex: 10 },
+  topBar:           { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20 },
+  iconBtn:          { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.colors.cameraOverlay, alignItems: 'center', justifyContent: 'center' },
+  pill:             { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 22, backgroundColor: theme.colors.cameraOverlay },
+  pillText:         { color: theme.colors.text, fontSize: 15, fontWeight: '600' },
+  autoA:            { position: 'absolute', bottom: 8, right: 8, color: theme.colors.text, fontSize: 10, fontWeight: '800' },
+  bottomBar:        { position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 20 },
+  strip:            { height: 64 + 16, marginBottom: 20 },
+  shutterRow:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 44 },
+  sideBtn:          { width: 52, height: 52, alignItems: 'center', justifyContent: 'center' },
+  shutter:          { width: 78, height: 78, borderRadius: 39, borderWidth: 3, borderColor: theme.colors.text, alignItems: 'center', justifyContent: 'center' },
+  shutterBusy:      { opacity: 0.5 },
+  shutterInner:     { width: 64, height: 64, borderRadius: 32, backgroundColor: theme.colors.text },
+  gate:             { flex: 1, backgroundColor: theme.colors.background, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 16 },
+  gateTitle:        { color: theme.colors.text, fontSize: 20, fontWeight: '700', textAlign: 'center' },
+  gateBody:         { color: theme.colors.muted, fontSize: 15, textAlign: 'center', lineHeight: 22 },
+  gatePrimary:      { backgroundColor: theme.colors.accent, borderRadius: 10, paddingVertical: 14, paddingHorizontal: 32, width: '100%', alignItems: 'center', marginTop: 8 },
+  gatePrimaryText:  { color: theme.colors.accentText, fontSize: 15, fontWeight: '600' },
+  gateSecondary:    { backgroundColor: theme.colors.surfaceAlt, borderRadius: 10, borderWidth: 1, borderColor: theme.colors.border, paddingVertical: 14, paddingHorizontal: 32, width: '100%', alignItems: 'center' },
+  gateSecondaryText:{ color: theme.colors.text, fontSize: 15, fontWeight: '600' },
+}))
