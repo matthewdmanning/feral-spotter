@@ -40,12 +40,11 @@ export interface CachedCat {
 }
 
 export interface CacheMetadata {
-  location_type: LocationType;
-  time_type: TimeType;
+  location_method: LocationMethod;
+  time_method: TimeMethod;
+  location_type?: LocationType;
+  time_type?: TimeType;
   address?: string;
-  latitude?: number;
-  longitude?: number;
-  timestamp?: string; // ISO string
 }
 
 export interface SubmissionCacheFile {
