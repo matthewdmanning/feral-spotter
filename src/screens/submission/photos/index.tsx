@@ -4,7 +4,7 @@ import type { SubmissionPhoto } from '@/src/types'
 import { Camera, Check, ImagePlus } from 'lucide-react-native'
 import { useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
-import FastImage from 'react-native-fast-image'
+import { Image } from 'expo-image'
 import { styles } from './index.styles'
 
 const THUMB_SIZE = 110
@@ -39,9 +39,9 @@ export default function PhotosScreen() {
                 const isChecked = checked[photo.local_id] ?? false
                 return (
                   <Pressable key={photo.local_id} onPress={() => setPreviewPhoto(photo)} accessibilityRole="button">
-                    <FastImage source={{ uri: photo.uri, cache: FastImage.cacheControl.immutable }}
+                    <Image source={{ uri: photo.uri }} cachePolicy="memory-disk"
                       style={[styles.thumb, { opacity: isChecked ? 1 : 0.35 }]}
-                      resizeMode={FastImage.resizeMode.cover} />
+                      contentFit="cover" />
                     <View style={[styles.checkCircle, { backgroundColor: isChecked ? theme.colors.accent : theme.colors.surface, borderColor: isChecked ? theme.colors.accent : theme.colors.muted }]}>
                       {isChecked && <Check size={14} color={theme.colors.accentText} />}
                     </View>

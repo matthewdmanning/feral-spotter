@@ -4,7 +4,7 @@
  * Single slide in the annotation carousel.
  *
  * Layer order (z):
- *   1 (bottom) — FastImage, absoluteFill, resizeMode contain, full-screen centred
+ *   1 (bottom) — expo-image, absoluteFill, contentFit contain, full-screen centred
  *   2 (top)    — Skia Canvas, absoluteFill over image only (constrained by parent View)
  *
  * The Canvas never extends to the Done/Back buttons because those
@@ -17,7 +17,7 @@
  * Requires:
  *   @shopify/react-native-skia  v1.x  (Reanimated SharedValues as Skia props)
  *   react-native-gesture-handler
- *   react-native-fast-image
+ *   expo-image
  */
 
 import { useBoundingBoxDraw } from '@/src/hooks/useBoundingBoxDraw'
@@ -26,7 +26,7 @@ import type { SubmissionPhoto } from '@/src/types'
 import { Canvas, Group, Paint, Rect } from '@shopify/react-native-skia'
 import { useCallback } from 'react'
 import { View } from 'react-native'
-import FastImage from 'react-native-fast-image'
+import { Image } from 'expo-image'
 import { GestureDetector } from 'react-native-gesture-handler'
 import { StyleSheet, useUnistyles } from 'react-native-unistyles'
 
@@ -69,10 +69,11 @@ export function AnnotateCarouselItem({
     <View style={{ width, height }}>
 
       {/* Layer 1 (bottom): image */}
-      <FastImage
-        source={{ uri: photo.uri, cache: FastImage.cacheControl.immutable }}
+      <Image
+        source={{ uri: photo.uri }}
+        cachePolicy="memory-disk"
         style={StyleSheet.absoluteFill}
-        resizeMode={FastImage.resizeMode.contain}
+        contentFit="contain"
         accessibilityLabel="Cat observation photo"
       />
 

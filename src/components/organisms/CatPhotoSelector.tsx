@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { View, Text, ScrollView, Pressable } from 'react-native'
-import FastImage from 'react-native-fast-image'
+import { Image } from 'expo-image'
 import { useStyles } from 'react-native-unistyles'
 import { stylesheet } from './CatPhotoSelector.styles'
 import { router } from 'expo-router'
@@ -33,10 +33,11 @@ export function CatPhotoSelector({ catLocalId, selectedPhotoIds, onTogglePhoto, 
             <Pressable key={photo.local_id} onPress={() => onTogglePhoto(photo.local_id)}
               accessibilityRole="checkbox" accessibilityState={{ checked: isSelected }}>
               <View>
-                <FastImage
-                  source={{ uri: photo.uri, cache: FastImage.cacheControl.immutable }}
+                <Image
+                  source={{ uri: photo.uri }}
+                  cachePolicy="memory-disk"
                   style={[styles.thumb, isSelected ? styles.thumbSelected : styles.thumbUnselected]}
-                  resizeMode={FastImage.resizeMode.cover}
+                  contentFit="cover"
                 />
                 <View style={[styles.check, isSelected ? styles.checkSelected : styles.checkUnselected]}>
                   {isSelected && <Check size={10} color={theme.colors.accentText} />}

@@ -34,23 +34,21 @@
  *   useSettingsStore, useUIStore
  */
 
-import { MMKV } from 'react-native-mmkv'
-import type { StateStorage } from 'zustand/middleware'
-
 // Single shared instance for all stores.
 // Use separate instances (different `id`) if you need per-store encryption.
-export const mmkvInstance = new MMKV({ id: 'feralspotter' })
+import { createMMKV } from "react-native-mmkv";
 
-export const mmkvStorage: StateStorage = {
-  getItem:    (name)        => mmkvInstance.getString(name) ?? null,
-  setItem:    (name, value) => mmkvInstance.set(name, value),
-  removeItem: (name)        => mmkvInstance.delete(name),
-}
+export const mmkvInstance = createMMKV({ id: "feralspotter" });
 
+export const mmkvStorage = {
+  getItem: (key: string) => mmkvInstance.getString(key) ?? null,
+  setItem: (key: string, value: string) => mmkvInstance.set(key, value),
+  removeItem: (key: string) => mmkvInstance.remove(key),
+};
 /**
  * Clears all persisted store data.
  * Call from settings "Clear Cache" handler instead of (or alongside) clearCache().
  */
 export function clearAllStores(): void {
-  mmkvInstance.clearAll()
+  mmkvInstance.clearAll();
 }

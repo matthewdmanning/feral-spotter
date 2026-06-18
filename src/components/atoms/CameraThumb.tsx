@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { View, Text } from 'react-native'
-import FastImage from 'react-native-fast-image'
+import { Image } from 'expo-image'
 import { useStyles } from 'react-native-unistyles'
 import { stylesheet } from './CameraThumb.styles'
 
@@ -14,8 +14,8 @@ export const CameraThumb = memo(({ uri, badgeCount }: CameraThumbProps) => {
   const { styles } = useStyles(stylesheet)
   return (
     <View style={styles.wrap}>
-      <FastImage source={{ uri, cache: FastImage.cacheControl.immutable }}
-        style={styles.image} resizeMode={FastImage.resizeMode.cover} />
+      <Image source={{ uri }} cachePolicy="memory-disk"
+        style={styles.image} contentFit="cover" />
       {badgeCount > 1 && (
         <View style={styles.badge}><Text style={styles.badgeText}>{badgeCount}</Text></View>
       )}
