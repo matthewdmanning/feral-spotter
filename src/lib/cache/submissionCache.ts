@@ -134,10 +134,10 @@ export function updateSubmissionCache(
  * Only called from Reset confirm.
  */
 export function deleteSubmissionCache(id: string): void {
-  mmkvInstance.delete(CACHE_PREFIX + id);
+  mmkvInstance.remove(CACHE_PREFIX + id);
   writeIndex(readIndex().filter((i) => i !== id));
   if (mmkvInstance.getString(CURRENT_KEY) === id) {
-    mmkvInstance.delete(CURRENT_KEY);
+    mmkvInstance.remove(CURRENT_KEY);
   }
 }
 
@@ -163,5 +163,5 @@ export function getCurrentCacheId(): string | null {
 }
 
 export function clearCurrentCacheId(): void {
-  mmkvInstance.delete(CURRENT_KEY);
+  mmkvInstance.remove(CURRENT_KEY);
 }
