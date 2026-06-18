@@ -1,24 +1,23 @@
-import { useState, useEffect, useRef, useCallback, startTransition } from 'react'
-import { View, Text, TextInput, Pressable } from 'react-native'
+import { SegmentedControl } from '@/components/atoms/SegmentedControl'
+import { AUTOSAVE_CLEAR_MS, AUTOSAVE_INSTANT_MS, AUTOSAVE_TEXT_MS } from '@/config/constants'
+import { createSubmissionCache, getCurrentCacheId, updateSubmissionCache } from '@/lib/cache/submissionCache'
+import type { LocationType, TimeType } from '@/types'
+import { validateSubmission } from '@/utils/validation'
+import { useSubmissionStore } from '@src/hooks'
 import { router } from 'expo-router'
-import { useSubmissionStore } from '@/src/hooks'
-import { useSettingsStore } from '@/src/hooks/useSettingsStore'
-import { validateSubmission } from '@/src/utils/validation'
 import { nanoid } from 'nanoid'
-import { createSubmissionCache, getCurrentCacheId, updateSubmissionCache } from '@/src_old_claude/lib/cache/submissionCache'
-import { AUTOSAVE_TEXT_MS, AUTOSAVE_INSTANT_MS, AUTOSAVE_CLEAR_MS } from '@/src_old_claude/config/constants'
-import { SegmentedControl } from '@/src_old_claude/components/atoms/SegmentedControl'
-import type { LocationType, TimeType } from '@/src/types'
+import { startTransition, useCallback, useEffect, useRef, useState } from 'react'
+import { Pressable, Text, TextInput, View } from 'react-native'
 import { styles } from './index.styles'
 
 const LOCATION_OPTIONS: { value: LocationType; label: string }[] = [
-  { value: 'device',  label: 'Device'   },
-  { value: 'pin',     label: 'Pin Drop' },
-  { value: 'address', label: 'Address'  },
+  { value: 'device', label: 'Device' },
+  { value: 'pin', label: 'Pin Drop' },
+  { value: 'address', label: 'Address' },
 ]
 const TIME_OPTIONS: { value: TimeType; label: string }[] = [
-  { value: 'device',   label: 'Device'     },
-  { value: 'manual',   label: 'Manual'     },
+  { value: 'device', label: 'Device' },
+  { value: 'manual', label: 'Manual' },
   { value: 'metadata', label: 'From Photo' },
 ]
 
@@ -26,24 +25,24 @@ type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
 export default function CreateSubmissionScreen() {
 
-  const submission      = useSubmissionStore((s) => s.submission)
-  const setSubmission   = useSubmissionStore((s) => s.setSubmission)
+  const submission = useSubmissionStore((s) => s.submission)
+  const setSubmission = useSubmissionStore((s) => s.setSubmission)
   const setLocationType = useSubmissionStore((s) => s.setLocationType)
-  const setTimeType     = useSubmissionStore((s) => s.setTimeType)
-  const setAddress      = useSubmissionStore((s) => s.setAddress)
-  const saveDraft       = useSubmissionStore((s) => s.saveDraft)
-  const setCurrentStep  = useSubmissionStore((s) => s.setCurrentStep)
-  const cats            = useSubmissionStore((s) => s.cats)
+  const setTimeType = useSubmissionStore((s) => s.setTimeType)
+  const setAddress = useSubmissionStore((s) => s.setAddress)
+  const saveDraft = useSubmissionStore((s) => s.saveDraft)
+  const setCurrentStep = useSubmissionStore((s) => s.setCurrentStep)
+  const cats = useSubmissionStore((s) => s.cats)
 
   const [locationType, setLocationTypeLocal] = useState<LocationType>(submission.location_type)
-  const [timeType,     setTimeTypeLocal]     = useState<TimeType>(submission.time_type)
-  const [address,      setAddressLocal]      = useState(submission.address ?? '')
-  const [saveStatus,   setSaveStatus]        = useState<SaveStatus>('idle')
+  const [timeType, setTimeTypeLocal] = useState<TimeType>(submission.time_type)
+  const [address, setAddressLocal] = useState(submission.address ?? '')
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isMountedRef = useRef(true)
-  const isDirtyRef   = useRef(false)
-  const formRef      = useRef({ locationType, timeType, address })
+  const isDirtyRef = useRef(false)
+  const formRef = useRef({ locationType, timeType, address })
   useEffect(() => { formRef.current = { locationType, timeType, address } })
 
   useEffect(() => {
@@ -51,8 +50,8 @@ export default function CreateSubmissionScreen() {
     if (!getCurrentCacheId()) {
       createSubmissionCache(nanoid(), {
         location_type: submission.location_type,
-        time_type:     submission.time_type,
-        address:       submission.address,
+        time_type: submission.time_type,
+        address: submission.address,
       })
     }
     return () => {
@@ -85,9 +84,9 @@ export default function CreateSubmissionScreen() {
   }, [performSave])
 
   const handleLocationTypeChange = useCallback((v: LocationType) => { setLocationTypeLocal(v); setLocationType(v); scheduleAutosave(AUTOSAVE_INSTANT_MS) }, [setLocationType, scheduleAutosave])
-  const handleTimeTypeChange     = useCallback((v: TimeType)     => { setTimeTypeLocal(v);     setTimeType(v);     scheduleAutosave(AUTOSAVE_INSTANT_MS) }, [setTimeType,     scheduleAutosave])
-  const handleAddressChange      = useCallback((v: string)        => { setAddressLocal(v);      setAddress(v);      scheduleAutosave(AUTOSAVE_TEXT_MS)    }, [setAddress,      scheduleAutosave])
-  const handleAddressBlur        = useCallback(() => { if (!isDirtyRef.current) return; if (saveTimerRef.current) clearTimeout(saveTimerRef.current); performSave() }, [performSave])
+  const handleTimeTypeChange = useCallback((v: TimeType) => { setTimeTypeLocal(v); setTimeType(v); scheduleAutosave(AUTOSAVE_INSTANT_MS) }, [setTimeType, scheduleAutosave])
+  const handleAddressChange = useCallback((v: string) => { setAddressLocal(v); setAddress(v); scheduleAutosave(AUTOSAVE_TEXT_MS) }, [setAddress, scheduleAutosave])
+  const handleAddressBlur = useCallback(() => { if (!isDirtyRef.current) return; if (saveTimerRef.current) clearTimeout(saveTimerRef.current); performSave() }, [performSave])
 
   const handleContinue = useCallback(async () => {
     const errors = validateSubmission({ location_type: locationType, time_type: timeType, address })
@@ -104,7 +103,7 @@ export default function CreateSubmissionScreen() {
       <Text style={styles.title}>Submission</Text>
       <View style={styles.card}>
         <SegmentedControl label="Location Type" options={LOCATION_OPTIONS} value={locationType} onChange={handleLocationTypeChange} />
-        <SegmentedControl label="Time Type"     options={TIME_OPTIONS}     value={timeType}     onChange={handleTimeTypeChange}     />
+        <SegmentedControl label="Time Type" options={TIME_OPTIONS} value={timeType} onChange={handleTimeTypeChange} />
         <View style={styles.fieldGroup}>
           <Text style={styles.fieldLabel}>Address (Optional)</Text>
           <TextInput placeholder="Enter address" placeholderTextColor={theme.colors.muted}

@@ -7,8 +7,9 @@ import type { CatSubmitResult } from '@/src/hooks/useCatSubmit'
 import type { ObservedCat } from '@/src/hooks/useSubmissionStore'
 import {
   AGE_OPTIONS, EAR_TIPPED_OPTIONS, OWNED_OPTIONS, PATTERN_OPTIONS,
+  HAIR_LENGTH_OPTIONS, COLOR_OPTIONS, SEX_OPTIONS, HEALTH_OPTIONS, healthLabel,
+} from '@/src/screens/submission/cats/constants'
 import { stylesheet } from './CatForm.styles'
-HAIR_LENGTH_OPTIONS, COLOR_OPTIONS, SEX_OPTIONS, HEALTH_OPTIONS, healthLabel } from '@/src/screens/submission/cats/constants'
 
 interface CatFormProps {
   form: CatFormValues; submit: CatSubmitResult

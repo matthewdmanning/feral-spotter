@@ -9,12 +9,12 @@
  * react-navigation does not re-render screens on screenOptions changes.
  */
 
-import { useEffect } from 'react'
-import { Stack } from 'expo-router'
-import { useUnistyles } from 'react-native-unistyles'
-import { AppProviders } from '@/src_old_claude/providers/AppProviders'
-import NetInfo from '@react-native-community/netinfo'
 import { useUIStore } from '@/src/hooks'
+import { AppProviders } from '@/src/providers/AppProviders'
+import NetInfo from '@react-native-community/netinfo'
+import { Stack } from 'expo-router'
+import { useEffect } from 'react'
+import { useUnistyles } from 'react-native-unistyles'
 
 export default function RootLayout() {
   const { theme } = useUnistyles()
@@ -29,13 +29,13 @@ export default function RootLayout() {
     <AppProviders>
       <Stack
         screenOptions={{
-          headerStyle:      { backgroundColor: theme.colors.background },
-          headerTintColor:  theme.colors.text,
+          headerStyle: { backgroundColor: theme.colors.background },
+          headerTintColor: theme.colors.text,
           headerTitleStyle: { fontWeight: '700', color: theme.colors.text },
           headerShadowVisible: false,
-          contentStyle:     { backgroundColor: theme.colors.background },
-          animation:        'slide_from_right',
-          gestureEnabled:   true,
+          contentStyle: { backgroundColor: theme.colors.background },
+          animation: 'slide_from_right',
+          gestureEnabled: true,
         }}
       >
         {/* Tab group — headerShown false; each tab manages its own header */}
@@ -48,9 +48,9 @@ export default function RootLayout() {
         <Stack.Screen
           name="camera"
           options={{
-            presentation:   'fullScreenModal',
-            animation:      'slide_from_bottom',
-            headerShown:    false,
+            presentation: 'fullScreenModal',
+            animation: 'slide_from_bottom',
+            headerShown: false,
             gestureEnabled: false,
           }}
         />
