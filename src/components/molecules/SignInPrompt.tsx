@@ -9,8 +9,8 @@
  */
 
 import { Modal, View, Text, Pressable, ActivityIndicator } from 'react-native'
-import { useStyles } from 'react-native-unistyles'
-import { stylesheet } from './SignInPrompt.styles'
+import { useUnistyles } from 'react-native-unistyles'
+import { styles } from './SignInPrompt.styles'
 
 interface SignInPromptProps {
   visible:     boolean
@@ -20,7 +20,7 @@ interface SignInPromptProps {
 }
 
 export function SignInPrompt({ visible, loading, onSignIn, onDismiss }: SignInPromptProps) {
-  const { styles, theme } = useStyles(stylesheet)
+  const { theme } = useUnistyles()
 
   return (
     <Modal

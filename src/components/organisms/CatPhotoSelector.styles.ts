@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native-unistyles'
 
-export const stylesheet = StyleSheet.create((theme) => ({
+export const styles = StyleSheet.create((theme) => ({
   container: { gap: theme.spacing.sm },
   empty:     { color: theme.colors.muted, fontSize: theme.typography.sm },
   strip:     { gap: 10, paddingVertical: 4 },

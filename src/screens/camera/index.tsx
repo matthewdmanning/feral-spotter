@@ -7,9 +7,11 @@ import { useCallback } from 'react'
 import { Linking, Pressable, StyleSheet as RNStyleSheet, Text, View } from 'react-native'
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { Camera, useCameraPermission } from 'react-native-vision-camera'
+import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
 
 export default function CameraScreen() {
+  const { theme } = useUnistyles()
   const { hasPermission, requestPermission } = useCameraPermission()
   const { device, cameraRef, capturedPhotos, flashMode, isTakingPhoto, flashOverlayStyle,
     listRef, renderItem, keyExtractor, handleTakePhoto, cycleFlash, flipCamera,

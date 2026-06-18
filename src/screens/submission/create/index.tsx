@@ -1,13 +1,14 @@
-import { AUTOSAVE_CLEAR_MS, AUTOSAVE_INSTANT_MS, AUTOSAVE_TEXT_MS } from '@/src/config/constants'
-import { createSubmissionCache, getCurrentCacheId, updateSubmissionCache } from '@/src/lib/cache/submissionCache'
 import { SegmentedControl } from '@/src/components/atoms/SegmentedControl'
-import type { LocationMethod, TimeMethod } from '@/src/lib/cache/submissionCache'
+import { AUTOSAVE_CLEAR_MS, AUTOSAVE_INSTANT_MS, AUTOSAVE_TEXT_MS } from '@/src/config/constants'
 import { useSubmissionStore } from '@/src/hooks'
+import type { LocationMethod, TimeMethod } from '@/src/lib/cache/submissionCache'
+import { createSubmissionCache, getCurrentCacheId, updateSubmissionCache } from '@/src/lib/cache/submissionCache'
 import { validateSubmission } from '@/src/utils/validation'
 import { router } from 'expo-router'
 import { nanoid } from 'nanoid'
 import { startTransition, useCallback, useEffect, useRef, useState } from 'react'
-import { Pressable, Text, TextInput, View } from 'react-native'
+import { Alert, Pressable, Text, TextInput, View } from 'react-native'
+import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
 
 const LOCATION_OPTIONS: { value: LocationMethod; label: string }[] = [
@@ -24,6 +25,7 @@ const TIME_OPTIONS: { value: TimeMethod; label: string }[] = [
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
 export default function CreateSubmissionScreen() {
+  const { theme } = useUnistyles()
 
   const submission = useSubmissionStore((s) => s.submission)
   const setSubmission = useSubmissionStore((s) => s.setSubmission)
@@ -90,7 +92,7 @@ export default function CreateSubmissionScreen() {
 
   const handleContinue = useCallback(async () => {
     const errors = validateSubmission({ location_type: locationType, time_type: timeType, address })
-    if (errors.length > 0) { alert(errors[0].message); return }
+    if (errors.length > 0) { Alert.alert(errors[0].message); return }
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     await performSave()
     router.push('/submission/cats')

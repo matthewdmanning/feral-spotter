@@ -1,7 +1,7 @@
 import { useSettingsDraft } from '@/src/hooks/useSettingsDraft'
 import { Check, Key, Trash2 } from 'lucide-react-native'
 import { Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native'
-import { withUnistyles } from 'react-native-unistyles'
+import { useUnistyles, withUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
 
 // trackColor/thumbColor are component props, not style props —
@@ -18,6 +18,7 @@ const PHOTO_TOGGLES = [
 ] as const
 
 export default function SettingsScreen() {
+  const { theme } = useUnistyles()
   const { draft, patch, passwordConfigured, newPassword, confirmPassword, isVerifying,
     setNewPassword, setConfirmPassword, handleSave, handleDiscard,
     handleClearCache, handleRemovePassword } = useSettingsDraft()

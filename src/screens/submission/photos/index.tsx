@@ -5,11 +5,13 @@ import { Camera, Check, ImagePlus } from 'lucide-react-native'
 import { useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { Image } from 'expo-image'
+import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
 
 const THUMB_SIZE = 110
 
 export default function PhotosScreen() {
+  const { theme } = useUnistyles()
   const { sessionPhotos, checked, checkedCount, capturePhoto, pickFromLibrary, handleDone, toggleChecked } = usePhotoSession()
   const [previewPhoto, setPreviewPhoto] = useState<SubmissionPhoto | null>(null)
 

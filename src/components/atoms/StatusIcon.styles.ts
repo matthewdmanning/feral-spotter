@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native-unistyles'
 
-export const stylesheet = StyleSheet.create((theme) => ({
+export const styles = StyleSheet.create((theme) => ({
   // No layout styles — StatusIcon renders only an icon component.
   // Theme colour values are read directly via `theme` in the component.
   // This file exists to satisfy the co-location rule and provide

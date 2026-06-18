@@ -5,9 +5,11 @@ import { useCatSubmit } from '@/src/hooks/useCatSubmit'
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'
 import { useLocalSearchParams } from 'expo-router'
 import { Pressable, ScrollView, Text, View } from 'react-native'
+import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
 
 export default function CatObservationScreen() {
+  const { theme } = useUnistyles()
   const { edit: editId } = useLocalSearchParams<{ edit?: string }>()
 
   const cats = useSubmissionStore((s) => s.cats)

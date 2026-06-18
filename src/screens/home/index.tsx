@@ -7,9 +7,11 @@ import { Stack, router } from 'expo-router'
 import { Camera, Settings } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { BackHandler, Platform, Pressable, Text, View } from 'react-native'
+import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
 
 export default function HomeScreen() {
+  const { theme } = useUnistyles()
   const { isAuthenticated, signIn } = useAuth()
 
   const [promptVisible, setPromptVisible] = useState(false)

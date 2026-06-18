@@ -1,11 +1,9 @@
 import { Modal, View, Text, Pressable } from 'react-native'
-import { useStyles } from 'react-native-unistyles'
-import { stylesheet } from './AddAnotherCatDialog.styles'
+import { styles } from './AddAnotherCatDialog.styles'
 
 interface AddAnotherCatDialogProps { open: boolean; onAddAnother: () => void; onContinue: () => void }
 
 export function AddAnotherCatDialog({ open, onAddAnother, onContinue }: AddAnotherCatDialogProps) {
-  const { styles } = useStyles(stylesheet)
   return (
     <Modal visible={open} transparent animationType="fade" onRequestClose={onContinue} statusBarTranslucent>
       <View style={styles.backdrop}>

@@ -5,11 +5,13 @@ import type { CacheStatus } from '@/src/lib/cache/submissionCache'
 import { Stack } from 'expo-router'
 import { Clock, RefreshCw } from 'lucide-react-native'
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
+import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
 
 const STATUSES: CacheStatus[] = ['In Progress', 'Sending', 'Submitted', 'Failed']
 
 export default function FeralReportsScreen() {
+  const { theme } = useUnistyles()
   const { caches, refreshing, load, onRefresh } = useFeralReports()
 
   return (

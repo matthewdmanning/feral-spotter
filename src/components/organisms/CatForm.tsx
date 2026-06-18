@@ -1,5 +1,4 @@
 import { View, Text, Pressable } from 'react-native'
-import { useStyles } from 'react-native-unistyles'
 import { SegmentedControl } from '@/src/components/atoms/SegmentedControl'
 import { CatPhotoSelector } from '@/src/components/organisms/CatPhotoSelector'
 import type { CatForm as CatFormValues } from '@/src/hooks/useCatForm'
@@ -9,7 +8,7 @@ import {
   AGE_OPTIONS, EAR_TIPPED_OPTIONS, OWNED_OPTIONS, PATTERN_OPTIONS,
   HAIR_LENGTH_OPTIONS, COLOR_OPTIONS, SEX_OPTIONS, HEALTH_OPTIONS, healthLabel,
 } from '@/src/screens/submission/cats/constants'
-import { stylesheet } from './CatForm.styles'
+import { styles } from './CatForm.styles'
 
 interface CatFormProps {
   form: CatFormValues; submit: CatSubmitResult
@@ -17,7 +16,6 @@ interface CatFormProps {
 }
 
 export function CatForm({ form, submit, existingCat, annotationEnabled }: CatFormProps) {
-  const { styles, theme } = useStyles(stylesheet)
   return (
     <View style={styles.card}>
       <View style={styles.inner}>

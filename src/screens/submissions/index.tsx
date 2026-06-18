@@ -2,9 +2,11 @@ import { View, Text, ScrollView, Pressable } from 'react-native'
 import { router } from 'expo-router'
 import { CheckCircle } from 'lucide-react-native'
 import { useSubmissionStore } from '@/src/hooks'
+import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
 
 export default function SubmissionsScreen() {
+  const { theme } = useUnistyles()
   const history = useSubmissionStore((s) => s.history)
 
   return (

@@ -1,8 +1,8 @@
 import { useCallback } from 'react'
 import { View, Text, ScrollView, Pressable } from 'react-native'
 import { Image } from 'expo-image'
-import { useStyles } from 'react-native-unistyles'
-import { stylesheet } from './CatPhotoSelector.styles'
+import { useUnistyles } from 'react-native-unistyles'
+import { styles } from './CatPhotoSelector.styles'
 import { router } from 'expo-router'
 import { Check, ScanLine } from 'lucide-react-native'
 import { usePhotoStore } from '@/src/hooks'
@@ -14,7 +14,7 @@ interface CatPhotoSelectorProps {
 }
 
 export function CatPhotoSelector({ catLocalId, selectedPhotoIds, onTogglePhoto, annotationEnabled, photosReviewed }: CatPhotoSelectorProps) {
-  const { styles, theme } = useStyles(stylesheet)
+  const { theme } = useUnistyles()
   const photos      = usePhotoStore((s) => s.photos)
   const handleReview = useCallback(() => {
     router.push({ pathname: '/submission/annotate', params: { cat_id: catLocalId } })

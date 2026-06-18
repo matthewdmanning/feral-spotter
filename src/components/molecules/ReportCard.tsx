@@ -2,11 +2,11 @@ import { STATUS_COLOR_KEY, StatusIcon } from '@/src/components/atoms/StatusIcon'
 import type { SubmissionCacheFile } from '@/src/lib/cache/submissionCache'
 import { formatDateTime } from '@/src/utils/formatDateTime'
 import { Text, View } from 'react-native'
-import { useStyles } from 'react-native-unistyles'
-import { stylesheet } from './ReportCard.styles'
+import { useUnistyles } from 'react-native-unistyles'
+import { styles } from './ReportCard.styles'
 
 export function ReportCard({ cache }: { cache: SubmissionCacheFile }) {
-  const { styles, theme } = useStyles(stylesheet)
+  const { theme } = useUnistyles()
   const catCount = cache.cats.length
   const photoCount = cache.photo_links?.length ?? 0
   const colorKey = STATUS_COLOR_KEY[cache.status]

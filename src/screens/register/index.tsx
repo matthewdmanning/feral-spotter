@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { View, Text, TextInput, Pressable, ScrollView, ActivityIndicator } from 'react-native'
 import { router } from 'expo-router'
+import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
 
 interface FormState {
@@ -33,6 +34,7 @@ async function registerUser(form: FormState): Promise<void> {
 }
 
 export default function RegisterScreen() {
+  const { theme } = useUnistyles()
 
   const [form, setForm] = useState<FormState>({ email: '', city: '', state: '', firstName: '', lastName: '' })
   const [errors, setErrors] = useState<FormErrors>({})

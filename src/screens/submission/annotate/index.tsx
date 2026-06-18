@@ -5,11 +5,13 @@ import { Trash2 } from 'lucide-react-native'
 import { useState } from 'react'
 import { Alert, Dimensions, Pressable, Text, View } from 'react-native'
 import Carousel from 'react-native-reanimated-carousel'
+import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
 
 const SCREEN_W = Dimensions.get('window').width
 
 export default function AnnotateScreen() {
+  const { theme } = useUnistyles()
   const { cat_id } = useLocalSearchParams<{ cat_id: string }>()
   const { photos, statuses, currentIndex, setCurrentIndex, carouselRef,
     handleDone, handleBack, handleLongPressRemove } = useAnnotateStateMachine(cat_id)
