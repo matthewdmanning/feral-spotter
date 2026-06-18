@@ -1,21 +1,21 @@
-import { SegmentedControl } from '@/components/atoms/SegmentedControl'
-import { AUTOSAVE_CLEAR_MS, AUTOSAVE_INSTANT_MS, AUTOSAVE_TEXT_MS } from '@/config/constants'
-import { createSubmissionCache, getCurrentCacheId, updateSubmissionCache } from '@/lib/cache/submissionCache'
-import type { LocationType, TimeType } from '@/types'
-import { validateSubmission } from '@/utils/validation'
-import { useSubmissionStore } from '@src/hooks'
+import { AUTOSAVE_CLEAR_MS, AUTOSAVE_INSTANT_MS, AUTOSAVE_TEXT_MS } from '@/src/config/constants'
+import { createSubmissionCache, getCurrentCacheId, updateSubmissionCache } from '@/src/lib/cache/submissionCache'
+import { SegmentedControl } from '@/src/components/atoms/SegmentedControl'
+import type { LocationMethod, TimeMethod } from '@/src/lib/cache/submissionCache'
+import { useSubmissionStore } from '@/src/hooks'
+import { validateSubmission } from '@/src/utils/validation'
 import { router } from 'expo-router'
 import { nanoid } from 'nanoid'
 import { startTransition, useCallback, useEffect, useRef, useState } from 'react'
 import { Pressable, Text, TextInput, View } from 'react-native'
 import { styles } from './index.styles'
 
-const LOCATION_OPTIONS: { value: LocationType; label: string }[] = [
+const LOCATION_OPTIONS: { value: LocationMethod; label: string }[] = [
   { value: 'device', label: 'Device' },
   { value: 'pin', label: 'Pin Drop' },
   { value: 'address', label: 'Address' },
 ]
-const TIME_OPTIONS: { value: TimeType; label: string }[] = [
+const TIME_OPTIONS: { value: TimeMethod; label: string }[] = [
   { value: 'device', label: 'Device' },
   { value: 'manual', label: 'Manual' },
   { value: 'metadata', label: 'From Photo' },
@@ -34,8 +34,8 @@ export default function CreateSubmissionScreen() {
   const setCurrentStep = useSubmissionStore((s) => s.setCurrentStep)
   const cats = useSubmissionStore((s) => s.cats)
 
-  const [locationType, setLocationTypeLocal] = useState<LocationType>(submission.location_type)
-  const [timeType, setTimeTypeLocal] = useState<TimeType>(submission.time_type)
+  const [locationType, setLocationTypeLocal] = useState<LocationMethod>(submission.location_type)
+  const [timeType, setTimeTypeLocal] = useState<TimeMethod>(submission.time_type)
   const [address, setAddressLocal] = useState(submission.address ?? '')
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
 
@@ -49,8 +49,8 @@ export default function CreateSubmissionScreen() {
     setCurrentStep('create')
     if (!getCurrentCacheId()) {
       createSubmissionCache(nanoid(), {
-        location_type: submission.location_type,
-        time_type: submission.time_type,
+        location_method: submission.location_type,
+        time_method: submission.time_type,
         address: submission.address,
       })
     }
@@ -68,7 +68,7 @@ export default function CreateSubmissionScreen() {
       setSubmission({ location_type: lt, time_type: tt, address: addr || undefined })
       await Promise.resolve(saveDraft())
       const cId = getCurrentCacheId()
-      if (cId) updateSubmissionCache(cId, { metadata: { location_type: lt, time_type: tt, address: addr || undefined } })
+      if (cId) updateSubmissionCache(cId, { metadata: { location_method: lt, time_method: tt, address: addr || undefined } })
       if (!isMountedRef.current) return
       startTransition(() => setSaveStatus('saved'))
       setTimeout(() => { if (isMountedRef.current) startTransition(() => setSaveStatus('idle')) }, AUTOSAVE_CLEAR_MS)
@@ -83,8 +83,8 @@ export default function CreateSubmissionScreen() {
     saveTimerRef.current = setTimeout(performSave, ms)
   }, [performSave])
 
-  const handleLocationTypeChange = useCallback((v: LocationType) => { setLocationTypeLocal(v); setLocationType(v); scheduleAutosave(AUTOSAVE_INSTANT_MS) }, [setLocationType, scheduleAutosave])
-  const handleTimeTypeChange = useCallback((v: TimeType) => { setTimeTypeLocal(v); setTimeType(v); scheduleAutosave(AUTOSAVE_INSTANT_MS) }, [setTimeType, scheduleAutosave])
+  const handleLocationTypeChange = useCallback((v: LocationMethod) => { setLocationTypeLocal(v); setLocationType(v); scheduleAutosave(AUTOSAVE_INSTANT_MS) }, [setLocationType, scheduleAutosave])
+  const handleTimeTypeChange = useCallback((v: TimeMethod) => { setTimeTypeLocal(v); setTimeType(v); scheduleAutosave(AUTOSAVE_INSTANT_MS) }, [setTimeType, scheduleAutosave])
   const handleAddressChange = useCallback((v: string) => { setAddressLocal(v); setAddress(v); scheduleAutosave(AUTOSAVE_TEXT_MS) }, [setAddress, scheduleAutosave])
   const handleAddressBlur = useCallback(() => { if (!isDirtyRef.current) return; if (saveTimerRef.current) clearTimeout(saveTimerRef.current); performSave() }, [performSave])
 

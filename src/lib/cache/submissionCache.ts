@@ -21,6 +21,10 @@ import type { LocationType, TimeType } from "@/src/types";
 
 export type CacheStatus = "In Progress" | "Submitted" | "Sending" | "Failed";
 
+/** How the location/time fields were captured, as chosen on the Create screen. */
+export type LocationMethod = "device" | "pin" | "address";
+export type TimeMethod = "device" | "manual" | "metadata";
+
 export interface CachedCat {
   local_id: string;
   age: string;

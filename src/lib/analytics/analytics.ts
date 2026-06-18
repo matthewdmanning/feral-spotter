@@ -70,8 +70,8 @@ export function fireAnalyticsEvent(
     cache_id: cache.id,
     cache_status: cache.status,
     created_at: cache.created_at,
-    location_type: cache.metadata.location_type,
-    time_type: cache.metadata.time_type,
+    location_method: cache.metadata.location_method,
+    time_method: cache.metadata.time_method,
     cat_count: cache.cats.length,
     photo_count: cache.photo_links?.length ?? 0,
     // Full cache payload for pre-release debugging
