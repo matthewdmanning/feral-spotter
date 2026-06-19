@@ -3,6 +3,7 @@ const THUMB_SIZE = 110;
 
 export const styles = StyleSheet.create((theme) => ({
   scroll: { backgroundColor: theme.colors.background },
+  scrollContent: { paddingTop: theme.spacing.lg, paddingBottom: theme.spacing.xxxl * 2 },
   inner: { paddingHorizontal: theme.spacing.lg, gap: theme.spacing.lg },
   title: {
     color: theme.colors.text,
