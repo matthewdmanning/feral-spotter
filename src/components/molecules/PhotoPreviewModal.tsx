@@ -8,9 +8,9 @@ import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import type { SubmissionPhoto } from '@/src/types'
 import { Canvas, Group, Paint, Rect } from '@shopify/react-native-skia'
 import { X } from 'lucide-react-native'
-import { Modal, Pressable, Text, View } from 'react-native'
+import { Modal, Pressable, Text, useWindowDimensions, View } from 'react-native'
 import { Image } from 'expo-image'
-import { StyleSheet, useUnistyles, useWindowDimensions } from 'react-native-unistyles'
+import { StyleSheet, useUnistyles } from 'react-native-unistyles'
 import { styles } from './PhotoPreviewModal.styles'
 
 interface PhotoPreviewModalProps {
