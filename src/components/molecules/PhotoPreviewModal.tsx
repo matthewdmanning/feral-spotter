@@ -48,7 +48,10 @@ export function PhotoPreviewModal({ photo, isChecked, onClose, onToggle }: Photo
             style={StyleSheet.absoluteFill} contentFit="contain" />
           {boxes.length > 0 && (
             <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
-              {boxes.map((box) => <BoundingBoxRect key={box.id} nx={box.x} ny={box.y} nw={box.width} nh={box.height} />)}
+              {boxes.map((box) => (
+                <BoundingBoxRect key={box.id} nx={box.lowerLeftX} ny={box.upperRightY}
+                  nw={box.upperRightX - box.lowerLeftX} nh={box.lowerLeftY - box.upperRightY} />
+              ))}
             </Canvas>
           )}
         </View>
