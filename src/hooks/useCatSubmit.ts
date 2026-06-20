@@ -141,14 +141,14 @@ export function useCatSubmit({
             setIsSubmitting(true);
             setSubmitting(true);
 
-            const cId = getCurrentCacheId();
+            const cId = await getCurrentCacheId();
             if (cId) {
-              updateSubmissionCache(cId, {
+              await updateSubmissionCache(cId, {
                 status: "Sending",
                 cats: allCats,
                 photo_links: photos.map((p) => p.uri),
               });
-              const snap = getSubmissionCache(cId);
+              const snap = await getSubmissionCache(cId);
               if (snap) fireAnalyticsEvent(EVENTS.SUBMISSION_SENDING, snap);
             }
 
@@ -163,8 +163,8 @@ export function useCatSubmit({
 
               if (response.status === "success") {
                 if (cId) {
-                  updateSubmissionCache(cId, { status: "Submitted" });
-                  const snap = getSubmissionCache(cId);
+                  await updateSubmissionCache(cId, { status: "Submitted" });
+                  const snap = await getSubmissionCache(cId);
                   if (snap)
                     fireAnalyticsEvent(EVENTS.SUBMISSION_SUBMITTED, snap);
                 }
@@ -185,8 +185,8 @@ export function useCatSubmit({
               }
             } catch (err) {
               if (cId) {
-                updateSubmissionCache(cId, { status: "Failed" });
-                const snap = getSubmissionCache(cId);
+                await updateSubmissionCache(cId, { status: "Failed" });
+                const snap = await getSubmissionCache(cId);
                 if (snap) fireAnalyticsEvent(EVENTS.SUBMISSION_FAILED, snap);
               }
               showError(
@@ -227,9 +227,9 @@ export function useCatSubmit({
         {
           text: "Reset",
           style: "destructive",
-          onPress: () => {
-            const cId = getCurrentCacheId();
-            if (cId) deleteSubmissionCache(cId);
+          onPress: async () => {
+            const cId = await getCurrentCacheId();
+            if (cId) await deleteSubmissionCache(cId);
             clearDraft();
             clearPhotos();
             router.replace("/");

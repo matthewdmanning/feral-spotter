@@ -9,7 +9,7 @@
  * the unmigrated store file.
  */
 
-import { mmkvStorage } from "@/src/lib/cache/storage";
+import { asyncStorage } from "@/src/lib/cache/storage";
 import type { BoundingBox } from "@/src/types/BoundingBox";
 import { nanoid } from "nanoid";
 import { create } from "zustand";
@@ -96,7 +96,7 @@ export const useBoundingBoxStore = create<BoundingBoxState>()(
     }),
     {
       name: "bounding-box-store",
-      storage: createJSONStorage(() => mmkvStorage),
+      storage: createJSONStorage(() => asyncStorage),
       // v1 -> v2: BoundingBox shape changed from x/y/width/height (canvas-relative)
       // to lowerLeft/upperRight corners (image-pixel-relative) — old data is incompatible, drop it.
       version: 2,

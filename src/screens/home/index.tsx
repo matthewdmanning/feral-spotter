@@ -19,12 +19,14 @@ export default function HomeScreen() {
 
   // First launch → register; otherwise show sign-in prompt if unauthenticated
   useEffect(() => {
-    if (isFirstLaunch()) {
-      markLaunched()
-      router.replace('/register')
-      return
-    }
-    if (!isAuthenticated) setPromptVisible(true)
+    ;(async () => {
+      if (await isFirstLaunch()) {
+        await markLaunched()
+        router.replace('/register')
+        return
+      }
+      if (!isAuthenticated) setPromptVisible(true)
+    })()
   }, [])  // intentionally empty — runs once on mount
 
   // Android back — minimise (let Modal handle its own back)
@@ -54,9 +56,11 @@ export default function HomeScreen() {
     setPromptVisible(false)
   }, [signingIn])
 
-  const columnVisible = useMemo(() => {
-    const caches = getAllSubmissionCaches()
-    return caches.length > 0 && caches[0].status === 'In Progress'
+  const [columnVisible, setColumnVisible] = useState(false)
+  useEffect(() => {
+    getAllSubmissionCaches().then((caches) => {
+      setColumnVisible(caches.length > 0 && caches[0].status === 'In Progress')
+    })
   }, [])
 
   const handleCamera = useCallback(() => router.navigate('/camera'), [])

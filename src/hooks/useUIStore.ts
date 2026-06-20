@@ -5,7 +5,7 @@
  * immediately via Alert rather than buffered in state.
  */
 
-import { mmkvStorage } from "@/src/lib/cache/storage";
+import { asyncStorage } from "@/src/lib/cache/storage";
 import type { SubmissionPhoto } from "@/src/types";
 import { Alert } from "react-native";
 import { create } from "zustand";
@@ -46,7 +46,7 @@ export const useUIStore = create<UIState>()(
     }),
     {
       name: "ui-store",
-      storage: createJSONStorage(() => mmkvStorage),
+      storage: createJSONStorage(() => asyncStorage),
     },
   ),
 );

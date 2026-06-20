@@ -5,7 +5,7 @@
  * that's annotated for more than one cat.
  */
 
-import { mmkvStorage } from "@/src/lib/cache/storage";
+import { asyncStorage } from "@/src/lib/cache/storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
@@ -42,7 +42,7 @@ export const useAnnotationStore = create<AnnotationState>()(
     }),
     {
       name: "annotation-store",
-      storage: createJSONStorage(() => mmkvStorage),
+      storage: createJSONStorage(() => asyncStorage),
     },
   ),
 );

@@ -9,6 +9,7 @@ import type {
   SubmissionApiResponse,
 } from "@/src/types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
 
 // Cloud Run endpoint (replace with your actual endpoint)
 const API_BASE_URL =
@@ -16,7 +17,8 @@ const API_BASE_URL =
   "https://YOUR-SERVICE-PROJECT-ID.REGION.run.app";
 
 // Storage keys
-const PASSWORD_STORAGE_KEY = "@feralspotter_password";
+// SecureStore keys may only contain alphanumerics, ".", "-", and "_" — no "@".
+const PASSWORD_STORAGE_KEY = "feralspotter_password";
 const DEVICE_ID_STORAGE_KEY = "@feralspotter_device_id";
 
 /**
@@ -41,7 +43,7 @@ async function getDeviceId(): Promise<string> {
  */
 export async function storePassword(password: string): Promise<void> {
   try {
-    await AsyncStorage.setItem(PASSWORD_STORAGE_KEY, password);
+    await SecureStore.setItemAsync(PASSWORD_STORAGE_KEY, password);
   } catch (error) {
     console.error("Store password error:", error);
     throw new Error("Failed to store password");
@@ -53,7 +55,7 @@ export async function storePassword(password: string): Promise<void> {
  */
 export async function getPassword(): Promise<string | null> {
   try {
-    return await AsyncStorage.getItem(PASSWORD_STORAGE_KEY);
+    return await SecureStore.getItemAsync(PASSWORD_STORAGE_KEY);
   } catch (error) {
     console.error("Get password error:", error);
     return null;
@@ -65,7 +67,7 @@ export async function getPassword(): Promise<string | null> {
  */
 export async function removePassword(): Promise<void> {
   try {
-    await AsyncStorage.removeItem(PASSWORD_STORAGE_KEY);
+    await SecureStore.deleteItemAsync(PASSWORD_STORAGE_KEY);
   } catch (error) {
     console.error("Remove password error:", error);
   }

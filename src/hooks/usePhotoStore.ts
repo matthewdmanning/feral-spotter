@@ -3,7 +3,7 @@
  * Persisted Zustand store for photos attached to the in-progress submission.
  */
 
-import { mmkvStorage } from "@/src/lib/cache/storage";
+import { asyncStorage } from "@/src/lib/cache/storage";
 import type { SubmissionPhoto } from "@/src/types";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
@@ -42,7 +42,7 @@ export const usePhotoStore = create<PhotoState>()(
     }),
     {
       name: "photo-store",
-      storage: createJSONStorage(() => mmkvStorage),
+      storage: createJSONStorage(() => asyncStorage),
     },
   ),
 );

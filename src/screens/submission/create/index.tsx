@@ -49,13 +49,15 @@ export default function CreateSubmissionScreen() {
 
   useEffect(() => {
     setCurrentStep('create')
-    if (!getCurrentCacheId()) {
-      createSubmissionCache(nanoid(), {
-        location_method: submission.location_type,
-        time_method: submission.time_type,
-        address: submission.address,
-      })
-    }
+    ;(async () => {
+      if (!(await getCurrentCacheId())) {
+        await createSubmissionCache(nanoid(), {
+          location_method: submission.location_type,
+          time_method: submission.time_type,
+          address: submission.address,
+        })
+      }
+    })()
     return () => {
       isMountedRef.current = false
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
@@ -69,8 +71,8 @@ export default function CreateSubmissionScreen() {
     try {
       setSubmission({ location_type: lt, time_type: tt, address: addr || undefined })
       await Promise.resolve(saveDraft())
-      const cId = getCurrentCacheId()
-      if (cId) updateSubmissionCache(cId, { metadata: { location_method: lt, time_method: tt, address: addr || undefined } })
+      const cId = await getCurrentCacheId()
+      if (cId) await updateSubmissionCache(cId, { metadata: { location_method: lt, time_method: tt, address: addr || undefined } })
       if (!isMountedRef.current) return
       startTransition(() => setSaveStatus('saved'))
       setTimeout(() => { if (isMountedRef.current) startTransition(() => setSaveStatus('idle')) }, AUTOSAVE_CLEAR_MS)

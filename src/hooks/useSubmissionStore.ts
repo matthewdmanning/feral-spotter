@@ -4,7 +4,7 @@
  * observed cats, and the history of previously submitted submissions.
  */
 
-import { mmkvStorage } from "@/src/lib/cache/storage";
+import { asyncStorage } from "@/src/lib/cache/storage";
 import type { LocationMethod, TimeMethod } from "@/src/lib/cache/submissionCache";
 import type {
   CatAge,
@@ -121,7 +121,7 @@ export const useSubmissionStore = create<SubmissionState>()(
     }),
     {
       name: "submission-store",
-      storage: createJSONStorage(() => mmkvStorage),
+      storage: createJSONStorage(() => asyncStorage),
     },
   ),
 );
