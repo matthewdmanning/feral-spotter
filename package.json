@@ -14,7 +14,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
-    "test": "jest"
+    "test": "jest",
+    "build:android": "bash scripts/android-build.sh"
   },
   "dependencies": {
     "@gorhom/bottom-sheet": "~5.2.14",
