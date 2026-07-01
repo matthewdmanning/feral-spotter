@@ -29,7 +29,7 @@ export interface AnnotateStateMachine {
   photos:       SubmissionPhoto[]
   statuses:     Record<string, PhotoStatus>
   currentIndex: number
-  carouselRef:  React.RefObject<ICarouselInstance>
+  carouselRef:  React.RefObject<ICarouselInstance | null>
   // Handlers
   saveAndExit:           () => void
   handleDone:            () => void

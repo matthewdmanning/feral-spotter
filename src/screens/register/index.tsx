@@ -51,7 +51,7 @@ export default function RegisterScreen() {
     setBusy(true)
     try {
       await registerUser(form)
-      router.replace('/(home-tabs)/')
+      router.replace('/(home-tabs)')
     } catch (err) {
       console.error('[register] failed:', err)
     } finally {

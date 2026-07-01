@@ -13,5 +13,6 @@ export const styles = StyleSheet.create((theme) => ({
   legendItem:  { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot:   { width: 8, height: 8, borderRadius: 4 },
   legendLabel: { color: theme.colors.muted, fontSize: theme.typography.xs },
+  scrollContent: { paddingBottom: 32 },
   headerIcon: { marginRight: 4 },
 }))

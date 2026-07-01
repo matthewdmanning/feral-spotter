@@ -15,6 +15,7 @@
 
 import type { SubmissionCacheFile } from "@/src/lib/cache/submissionCache";
 import Constants from "expo-constants";
+import type { PostHogEventProperties } from "@posthog/core";
 
 // ─── Flag ─────────────────────────────────────────────────────────────────────
 
@@ -37,12 +38,12 @@ export type AnalyticsEvent = (typeof EVENTS)[keyof typeof EVENTS];
 // For non-hook contexts (utils), use the client directly if needed.
 
 let _capture:
-  | ((event: string, props?: Record<string, unknown>) => void)
+  | ((event: string, props?: PostHogEventProperties) => void)
   | null = null;
 
 /** Call once in a component that has PostHog context to register the capturer. */
 export function registerCapture(
-  fn: (event: string, props?: Record<string, unknown>) => void,
+  fn: (event: string, props?: PostHogEventProperties) => void,
 ): void {
   _capture = fn;
 }

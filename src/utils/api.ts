@@ -3,6 +3,13 @@
  * Handles photo uploads and submission with password authentication
  */
 
+// React Native's FormData.append accepts { uri, name, type } file objects
+declare global {
+  interface FormData {
+    append(name: string, value: { uri: string; name: string; type: string }): void
+  }
+}
+
 import type {
   PhotoUploadResponse,
   SubmissionApiPayload,

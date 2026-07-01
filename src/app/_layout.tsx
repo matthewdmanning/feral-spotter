@@ -9,6 +9,7 @@
  * react-navigation does not re-render screens on screenOptions changes.
  */
 
+import '@/src/config/unistyles'
 import { useUIStore } from '@/src/hooks'
 import { AppProviders } from '@/src/providers/AppProviders'
 import NetInfo from '@react-native-community/netinfo'

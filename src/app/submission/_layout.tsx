@@ -62,7 +62,7 @@ export default function SubmissionLayout() {
             options={{
               title:          STEP_TITLES[step],
               headerBackTitle: '',
-              headerSubtitle:  `${STEP_NUMBER[step]} / ${STEPS.length}`,
+              headerRight: () => null, // step indicator: ${STEP_NUMBER[step]} / ${STEPS.length}
             }}
           />
         ))}
