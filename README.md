@@ -1,56 +1,100 @@
-# Welcome to your Expo app 👋
+# FeralSpotter
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+![Status](https://img.shields.io/badge/status-alpha-orange?style=flat-square)
+![Platform](https://img.shields.io/badge/platform-Android%20%7C%20iOS-brightgreen?style=flat-square&logo=android)
+![Expo](https://img.shields.io/badge/Expo-SDK%2056-000020?style=flat-square&logo=expo&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![License](https://img.shields.io/github/license/matthewdmanning/feral-spotter?style=flat-square)
 
-## Get started
+A React Native mobile app for reporting and tracking feral animal sightings. Users capture photos, annotate them, and submit georeferenced observations that feed into downstream computer vision and ecological modeling pipelines.
 
-1. Install dependencies
+> **Status:** Active development — Android build in progress. Core features implemented; dependency stabilization underway.
 
-   ```bash
-   npm install
-   ```
+---
 
-2. Start the app
+## Features
 
-   ```bash
-   npx expo start
-   ```
+- **Observation capture** — photo submission with gesture-based annotation tools
+- **Geolocation** — automatic GPS tagging of each sighting
+- **Authentication** — Firebase-backed user auth
+- **Offline-first** — local state and caching layer before cloud sync
+- **Structured submissions** — validated observation forms with time/location metadata
 
-In the output, you'll find options to open the app in a
+## Tech Stack
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+| Layer | Technology |
+|---|---|
+| Framework | Expo SDK 56 (New Architecture) |
+| Language | TypeScript |
+| Navigation | Expo Router (file-based) |
+| State | Zustand |
+| Styling | react-native-unistyles v3 |
+| Auth | Firebase |
+| Image | expo-image |
+| Animation | react-native-reanimated v4 |
+| Analytics | PostHog |
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Project Suite
 
-## Get a fresh project
+FeralSpotter is part of a three-component system:
 
-When you're ready, run:
+- **FeralSpotter** (this repo) — mobile observation app
+- **FeralSegmentor** — computer vision model for species segmentation
+- **FeralTracker** — ecological modeling and population tracking
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- Android Studio (for Android emulator) or a physical Android device
+- Expo CLI (via npx — no global install needed)
+
+### Setup
 
 ```bash
-npm run reset-project
+npm install
+expo prebuild --clean   # required — this project uses native modules
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### Run
 
-### Other setup steps
+```bash
+npm run android    # Android emulator or device
+npm run ios        # iOS simulator (Mac only)
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+### Other Commands
 
-## Learn more
+```bash
+npm run lint       # ESLint via expo lint
+npm run typecheck  # tsc --noEmit
+npm test           # Jest
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+## Architecture
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```
+src/
+├── app/          # Expo Router routes (thin re-exports only)
+├── screens/      # Screen-level components and state
+├── components/   # Atomic Design: atoms → molecules → organisms
+├── hooks/        # Zustand stores and feature hooks
+├── lib/          # Auth, cache, analytics
+├── utils/        # Pure functions
+└── config/       # Constants and feature flags
+```
 
-## Join the community
+Dependency direction is strictly one-way: `app/` → `screens/` → `hooks/components/lib/` → `utils/config/`. No upward imports.
 
-Join our community of developers creating universal apps.
+## Roadmap
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+See [CHANGELOG.md](CHANGELOG.md) for completed work.
+
+**Upcoming:**
+- Cloud upload API (frontend + backend)
+- UI styling pass
+- Tutorial flow
+- Data usage agreement
+- UX testing pass
+- Beta launch
