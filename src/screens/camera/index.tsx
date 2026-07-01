@@ -13,7 +13,7 @@ import { styles } from './index.styles'
 export default function CameraScreen() {
   const { theme } = useUnistyles()
   const { hasPermission, requestPermission } = useCameraPermission()
-  const { device, cameraRef, capturedPhotos, flashMode, isTakingPhoto, flashOverlayStyle,
+  const { device, cameraRef, photoOutput, capturedPhotos, flashMode, isTakingPhoto, flashOverlayStyle,
     listRef, renderItem, keyExtractor, handleTakePhoto, cycleFlash, flipCamera,
     handleDone, handleClose } = useCameraCapture()
 
@@ -52,7 +52,7 @@ export default function CameraScreen() {
   return (
     <View style={styles.root}>
       <Stack.Screen options={{ headerShown: false }} />
-      <Camera ref={cameraRef} style={RNStyleSheet.absoluteFill} device={device} isActive photo enableZoomGesture />
+      <Camera ref={cameraRef} style={RNStyleSheet.absoluteFill} device={device} isActive outputs={[photoOutput]} enableNativeZoomGesture />
       <Animated.View style={[RNStyleSheet.absoluteFill, styles.flashOverlay, flashOverlayStyle]} pointerEvents="none" />
 
       <View style={styles.topBar}>
@@ -73,7 +73,7 @@ export default function CameraScreen() {
       <View style={styles.bottomBar}>
         {hasPhotos && (
           <FlashList ref={listRef} data={capturedPhotos} keyExtractor={keyExtractor}
-            renderItem={renderItem} estimatedItemSize={THUMB_TOTAL} horizontal
+            renderItem={renderItem} horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ paddingHorizontal: 20, gap: 6 }}
             style={styles.strip} />

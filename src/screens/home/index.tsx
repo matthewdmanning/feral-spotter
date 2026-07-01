@@ -1,4 +1,5 @@
-import { BottomButtonColumn, type ColumnButton } from '@/src/components/molecules/BottomButtonColumn'
+import { BottomButtonColumn } from '@/src/components/molecules/BottomButtonColumn'
+import type { ColumnButton } from '@/src/components/atoms/AppButton'
 import { SignInPrompt } from '@/src/components/molecules/SignInPrompt'
 import { useAuth } from '@/src/lib/auth/useAuth'
 import { getAllSubmissionCaches } from '@/src/lib/cache/submissionCache'

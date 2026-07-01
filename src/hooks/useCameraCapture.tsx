@@ -12,9 +12,10 @@
  */
 
 import { useRef, useState, useCallback, useEffect } from 'react'
+import type { ViewStyle } from 'react-native'
 import { router } from 'expo-router'
-import { Camera, useCameraDevice } from 'react-native-vision-camera'
-import { FlashList } from '@shopify/flash-list'
+import { useCameraDevice, usePhotoOutput, type CameraRef, type CameraPhotoOutput } from 'react-native-vision-camera'
+import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import * as MediaLibrary from 'expo-media-library'
 import {
   useSharedValue,
@@ -37,15 +38,16 @@ export type { FlashMode }
 export interface CameraCaptureResult {
   // Device
   device:           ReturnType<typeof useCameraDevice>
-  cameraRef:        React.RefObject<Camera>
+  cameraRef:        React.RefObject<CameraRef | null>
+  photoOutput:      CameraPhotoOutput
   // State
   capturedPhotos:   SubmissionPhoto[]
   flashMode:        FlashMode
   isTakingPhoto:    boolean
   // Flash overlay (Reanimated — UI thread)
-  flashOverlayStyle: ReturnType<typeof useAnimatedStyle>
+  flashOverlayStyle: ReturnType<typeof useAnimatedStyle<ViewStyle>>
   // FlashList
-  listRef:          React.RefObject<FlashList<SubmissionPhoto>>
+  listRef:          React.RefObject<FlashListRef<SubmissionPhoto> | null>
   renderItem:       (info: { item: SubmissionPhoto; index: number }) => React.ReactElement
   keyExtractor:     (item: SubmissionPhoto) => string
   // Handlers
@@ -68,19 +70,20 @@ export function useCameraCapture(): CameraCaptureResult {
   const [flashMode,      setFlashMode]      = useState<FlashMode>('auto')
   const [isTakingPhoto,  setIsTakingPhoto]  = useState(false)
 
-  const device    = useCameraDevice(cameraPosition)
-  const cameraRef = useRef<Camera>(null)
-  const listRef   = useRef<FlashList<SubmissionPhoto>>(null)
+  const device      = useCameraDevice(cameraPosition)
+  const cameraRef   = useRef<CameraRef>(null)
+  const listRef     = useRef<FlashListRef<SubmissionPhoto>>(null)
+  const photoOutput = usePhotoOutput()
 
   // ── Flash overlay — Reanimated SharedValue on UI thread ───────────────────
   const flashOpacity     = useSharedValue(0)
-  const flashOverlayStyle = useAnimatedStyle(() => ({
+  const flashOverlayStyle = useAnimatedStyle<ViewStyle>(() => ({
     opacity: flashOpacity.value,
   }))
 
   // ── Capture ───────────────────────────────────────────────────────────────
   const handleTakePhoto = useCallback(async () => {
-    if (!cameraRef.current || isTakingPhoto) return
+    if (isTakingPhoto) return
     setIsTakingPhoto(true)
 
     flashOpacity.value = withTiming(1, { duration: 25, easing: Easing.out(Easing.quad) }, () => {
@@ -88,11 +91,12 @@ export function useCameraCapture(): CameraCaptureResult {
     })
 
     try {
-      const photo = await cameraRef.current.takePhoto({
-        flash:              flashMode,
-        enableShutterSound: true,
-      })
-      const uri = `file://${photo.path}`
+      const photo = await photoOutput.capturePhoto(
+        { flashMode, enableShutterSound: true },
+        {},
+      )
+      const filePath = await photo.saveToTemporaryFileAsync()
+      const uri = `file://${filePath}`
 
       const submission: SubmissionPhoto = {
         local_id:        nanoid(),
@@ -101,12 +105,8 @@ export function useCameraCapture(): CameraCaptureResult {
         upload_progress: 0,
         width:           photo.width,
         height:          photo.height,
-        exif: photo.metadata ? {
-          latitude:  photo.metadata['GPS']?.Latitude,
-          longitude: photo.metadata['GPS']?.Longitude,
-          timestamp: photo.metadata['Exif']?.DateTimeOriginal,
-        } : undefined,
       }
+      photo.dispose()
 
       addSessionPhoto(submission)
       addPhoto(submission)
@@ -122,7 +122,7 @@ export function useCameraCapture(): CameraCaptureResult {
     } finally {
       setIsTakingPhoto(false)
     }
-  }, [isTakingPhoto, flashMode, flashOpacity, addPhoto, addSessionPhoto, keepOnDevice])
+  }, [isTakingPhoto, flashMode, flashOpacity, photoOutput, addPhoto, addSessionPhoto, keepOnDevice])
 
   // ── Controls ──────────────────────────────────────────────────────────────
   const cycleFlash  = useCallback(() => {
@@ -156,7 +156,7 @@ export function useCameraCapture(): CameraCaptureResult {
   }, [capturedPhotos.length])
 
   return {
-    device, cameraRef,
+    device, cameraRef, photoOutput,
     capturedPhotos, flashMode, isTakingPhoto,
     flashOverlayStyle,
     listRef, renderItem, keyExtractor,
