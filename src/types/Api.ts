@@ -11,7 +11,7 @@ export interface SubmissionApiPayload {
     time_type: string;
     address?: string;
   };
-  cats: Array<{
+  cats: {
     local_id: string;
     age: string;
     ear_tipped: string;
@@ -23,7 +23,7 @@ export interface SubmissionApiPayload {
     health: number;
     photo_local_ids: string[];
     photos_reviewed: boolean;
-  }>;
+  }[];
   photo_paths: string[];
 }
 

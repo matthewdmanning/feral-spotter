@@ -15,7 +15,8 @@ export const FirebaseAuthProvider: IAuthProvider = {
 
   async signIn() {
     await GoogleSignin.hasPlayServices()
-    const { idToken } = await GoogleSignin.signIn()
+    const response    = await GoogleSignin.signIn()
+    const idToken     = response.data?.idToken ?? null
     const credential  = auth.GoogleAuthProvider.credential(idToken)
     const result      = await auth().signInWithCredential(credential)
     return { uid: result.user.uid, email: result.user.email }

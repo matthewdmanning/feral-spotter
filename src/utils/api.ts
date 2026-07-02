@@ -4,12 +4,6 @@
  */
 
 // React Native's FormData.append accepts { uri, name, type } file objects
-declare global {
-  interface FormData {
-    append(name: string, value: { uri: string; name: string; type: string }): void
-  }
-}
-
 import type {
   PhotoUploadResponse,
   SubmissionApiPayload,
@@ -17,6 +11,12 @@ import type {
 } from "@/src/types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
+
+declare global {
+  interface FormData {
+    append(name: string, value: { uri: string; name: string; type: string }): void
+  }
+}
 
 // Cloud Run endpoint (replace with your actual endpoint)
 const API_BASE_URL =
