@@ -35,31 +35,24 @@ export function usePhotoSession(): PhotoSessionResult {
 
   const submissionIds = new Set(submissionPhotos.map((p) => p.local_id))
 
-  const [checked, setChecked] = useState<Record<string, boolean>>(
-    () => Object.fromEntries(
-      sessionPhotos.map((p) => [p.local_id, submissionIds.has(p.local_id)]),
-    ),
+  // Track only explicitly-unchecked IDs; new photos are checked by default.
+  const [unchecked, setUnchecked] = useState<Set<string>>(
+    () => new Set(sessionPhotos.filter((p) => !submissionIds.has(p.local_id)).map((p) => p.local_id)),
   )
 
-  // Auto-check newly added session photos
-  useEffect(() => {
-    setChecked((prev) => {
-      const next = { ...prev }
-      let changed = false
-      for (const p of sessionPhotos) {
-        if (!(p.local_id in next)) {
-          next[p.local_id] = true
-          changed = true
-        }
-      }
-      return changed ? next : prev
-    })
-  }, [sessionPhotos])
+  const checked: Record<string, boolean> = Object.fromEntries(
+    sessionPhotos.map((p) => [p.local_id, !unchecked.has(p.local_id)]),
+  )
 
   useEffect(() => { setCurrentStep('photos') }, [])
 
   const toggleChecked = useCallback((id: string) => {
-    setChecked((prev) => ({ ...prev, [id]: !prev[id] }))
+    setUnchecked((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
   }, [])
 
   const handleDone = useCallback(() => {
@@ -70,7 +63,7 @@ export function usePhotoSession(): PhotoSessionResult {
       else if (!isChecked && inSubmission) removePhoto(photo.local_id)
     })
     router.back()
-  }, [sessionPhotos, checked, submissionIds, addPhotos, removePhoto])
+  }, [sessionPhotos, unchecked, submissionIds, addPhotos, removePhoto])
 
   useBackHandler(useCallback(() => { handleDone(); return true }, [handleDone]))
 
@@ -112,7 +105,7 @@ export function usePhotoSession(): PhotoSessionResult {
     }
   }, [addSessionPhoto])
 
-  const checkedCount = Object.values(checked).filter(Boolean).length
+  const checkedCount = sessionPhotos.filter((p) => !unchecked.has(p.local_id)).length
 
   return {
     sessionPhotos, checked, checkedCount,

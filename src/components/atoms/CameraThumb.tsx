@@ -9,7 +9,7 @@ export const THUMB_TOTAL = THUMB_SIZE + THUMB_GAP
 
 interface CameraThumbProps { uri: string; badgeCount: number }
 
-export const CameraThumb = memo(({ uri, badgeCount }: CameraThumbProps) => {
+export const CameraThumb = memo(function CameraThumb({ uri, badgeCount }: CameraThumbProps) {
   return (
     <View style={styles.wrap}>
       <Image source={{ uri }} cachePolicy="memory-disk"

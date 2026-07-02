@@ -40,7 +40,6 @@ export function useSettingsDraft(): SettingsDraftResult {
   const [isVerifying,         setIsVerifying]         = useState(false)
 
   useEffect(() => { hasPassword().then(setPasswordConfigured) }, [])
-  useEffect(() => { setDraft({ ...savedSettings }) }, [savedSettings])
 
   const patch = (key: keyof AppSettings, value: unknown) =>
     setDraft((d) => ({ ...d, [key]: value }))

@@ -41,8 +41,13 @@ export function useFeralReports(): FeralReportsResult {
   }, []);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    getAllSubmissionCaches().then((all) => {
+      setCaches(all);
+      if (IS_PRERELEASE && all.length > 0) {
+        all.forEach((cache) => fireAnalyticsEvent(EVENTS.REPORTS_VIEWED, cache));
+      }
+    });
+  }, []);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);

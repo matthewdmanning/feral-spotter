@@ -12,7 +12,7 @@
  * handleLongPressRemove is retained for removing a photo from the submission.
  */
 
-import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
+import { useState, useCallback, useRef, useMemo } from 'react'
 import { Alert } from 'react-native'
 import { router } from 'expo-router'
 import type { ICarouselInstance } from 'react-native-reanimated-carousel'
@@ -69,6 +69,15 @@ export function useAnnotateStateMachine(cat_id: string): AnnotateStateMachine {
 
   const carouselRef = useRef<ICarouselInstance>(null)
 
+  // ── Clamp index during render when photo array shrinks ────────────────────
+  const [prevPhotosLength, setPrevPhotosLength] = useState(photos.length)
+  if (prevPhotosLength !== photos.length) {
+    setPrevPhotosLength(photos.length)
+    if (photos.length > 0 && currentIndex >= photos.length) {
+      setCurrentIndex(photos.length - 1)
+    }
+  }
+
   // ── Save & exit ───────────────────────────────────────────────────────────
   const saveAndExit = useCallback(() => {
     if (!cat_id) { router.back(); return }
@@ -77,16 +86,6 @@ export function useAnnotateStateMachine(cat_id: string): AnnotateStateMachine {
     updateCat(cat_id, { photo_local_ids: remaining, photos_reviewed: true })
     router.back()
   }, [cat_id, photoIds, statuses, updateCat])
-
-  // ── Clamp index when photo array shrinks (after remove) ───────────────────
-  useEffect(() => {
-    if (photos.length === 0) return
-    if (currentIndex >= photos.length) {
-      const clamped = photos.length - 1
-      setCurrentIndex(clamped)
-      carouselRef.current?.scrollTo({ index: clamped, animated: false })
-    }
-  }, [photos.length, currentIndex])
 
   // ── Done — mark located, advance or exit ──────────────────────────────────
   const handleDone = useCallback(() => {

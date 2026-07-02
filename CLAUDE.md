@@ -43,6 +43,14 @@ When your changes create orphans:
 - Remove imports/variables/functions that YOUR changes made unused.
 - Don't remove pre-existing dead code unless asked.
 
+## 5. ESLint Resolver Errors
+
+If `expo lint` reports `Resolve error: typescript with invalid interface loaded as resolver` across all TypeScript files, run `~/.claude/agents/scripts/eslint-resolver-diagnose.sh <any-ts-file>` before investigating further. This project has had stale-cache false positives after resolver package version changes.
+
+## 6. Session Notes
+
+2026-07-02 — audited all `useEffect` calls against React "You Might Not Need an Effect" docs. Removed unnecessary effects in `usePhotoSession`, `useAnnotateStateMachine`, `useSettingsDraft`, `useFeralReports`, and `submission/create`. See `.claude/useeffect-audit.md` (local only) for full findings.
+
 ## 4. Goal-Driven Execution
 
 **Define success criteria. Loop until verified.**
