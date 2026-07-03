@@ -12,7 +12,7 @@ import type { SubmissionPhoto } from "@/src/types";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { nanoid } from "nanoid";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 export interface PhotoSessionResult {
   sessionPhotos: SubmissionPhoto[];
@@ -33,7 +33,10 @@ export function usePhotoSession(): PhotoSessionResult {
   const addPhotos = usePhotoStore((s) => s.addPhotos);
   const removePhoto = usePhotoStore((s) => s.removePhoto);
 
-  const submissionIds = new Set(submissionPhotos.map((p) => p.local_id));
+  const submissionIds = useMemo(
+    () => new Set(submissionPhotos.map((p) => p.local_id)),
+    [submissionPhotos],
+  );
 
   // Track only explicitly-unchecked IDs; new photos are checked by default.
   const [unchecked, setUnchecked] = useState<Set<string>>(

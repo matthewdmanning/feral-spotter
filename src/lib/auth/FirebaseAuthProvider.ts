@@ -1,10 +1,5 @@
 import auth from '@react-native-firebase/auth'
-import { GoogleSignin } from '@react-native-google-signin/google-signin'
 import type { IAuthProvider, AuthUser } from './IAuthProvider'
-
-GoogleSignin.configure({
-  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-})
 
 export const FirebaseAuthProvider: IAuthProvider = {
   async getToken() {
@@ -14,16 +9,10 @@ export const FirebaseAuthProvider: IAuthProvider = {
   },
 
   async signIn() {
-    await GoogleSignin.hasPlayServices()
-    const response    = await GoogleSignin.signIn()
-    const idToken     = response.data?.idToken ?? null
-    const credential  = auth.GoogleAuthProvider.credential(idToken)
-    const result      = await auth().signInWithCredential(credential)
-    return { uid: result.user.uid, email: result.user.email }
+    throw new Error('NOT_IMPLEMENTED')
   },
 
   async signOut() {
-    await GoogleSignin.signOut()
     await auth().signOut()
   },
 
