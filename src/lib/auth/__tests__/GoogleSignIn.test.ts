@@ -1,6 +1,5 @@
-import '@react-native-google-signin/google-signin/jest/build/jest/setup'
-import { GoogleSignin } from '@react-native-google-signin/google-signin'
 import { mockGoogleSignInResponse } from '@react-native-google-signin/google-signin/jest/build/jest/setup'
+import { GoogleSignin } from '@react-native-google-signin/google-signin'
 import { getGoogleIdToken, googleSignOut } from '../GoogleSignIn'
 
 describe('GoogleSignIn', () => {

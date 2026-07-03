@@ -1,5 +1,5 @@
 import auth from '@react-native-firebase/auth'
-import type { IAuthProvider, AuthUser } from './IAuthProvider'
+import type { IAuthProvider } from './IAuthProvider'
 
 export const FirebaseAuthProvider: IAuthProvider = {
   async getToken() {
