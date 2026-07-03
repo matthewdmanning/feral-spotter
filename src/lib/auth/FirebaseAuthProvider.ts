@@ -1,4 +1,4 @@
-import auth from '@react-native-firebase/auth'
+import auth, { type FirebaseAuthTypes } from '@react-native-firebase/auth'
 import type { IAuthProvider } from './IAuthProvider'
 
 export const FirebaseAuthProvider: IAuthProvider = {
@@ -18,7 +18,7 @@ export const FirebaseAuthProvider: IAuthProvider = {
 
   onAuthStateChanged(cb) {
     return auth().onAuthStateChanged(
-      (user) => cb(user ? { uid: user.uid, email: user.email } : null),
+      (user: FirebaseAuthTypes.User | null) => cb(user ? { uid: user.uid, email: user.email } : null),
     )
   },
 }
