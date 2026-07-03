@@ -54,7 +54,7 @@ export function usePhotoSession(): PhotoSessionResult {
 
   useEffect(() => {
     setCurrentStep("photos");
-  }, []);
+  }, [setCurrentStep]);
 
   const toggleChecked = useCallback((id: string) => {
     setUnchecked((prev) => {
