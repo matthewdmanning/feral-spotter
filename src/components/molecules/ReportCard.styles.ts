@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native-unistyles'
 
-export const stylesheet = StyleSheet.create((theme) => ({
+export const styles = StyleSheet.create((theme) => ({
   card:       { borderRadius: theme.radius.xl, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surface },
   row:        { paddingHorizontal: theme.spacing.lg, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: theme.spacing.lg },
   left:       { alignItems: 'center', gap: theme.spacing.xs, minWidth: 52 },

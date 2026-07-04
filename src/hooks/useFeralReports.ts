@@ -32,8 +32,8 @@ export function useFeralReports(): FeralReportsResult {
     if (posthog?.capture) registerCapture(posthog.capture.bind(posthog));
   }, [posthog]);
 
-  const load = useCallback(() => {
-    const all = getAllSubmissionCaches();
+  const load = useCallback(async () => {
+    const all = await getAllSubmissionCaches();
     setCaches(all);
     if (IS_PRERELEASE && all.length > 0) {
       all.forEach((cache) => fireAnalyticsEvent(EVENTS.REPORTS_VIEWED, cache));
@@ -41,12 +41,17 @@ export function useFeralReports(): FeralReportsResult {
   }, []);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    getAllSubmissionCaches().then((all) => {
+      setCaches(all);
+      if (IS_PRERELEASE && all.length > 0) {
+        all.forEach((cache) => fireAnalyticsEvent(EVENTS.REPORTS_VIEWED, cache));
+      }
+    });
+  }, []);
 
-  const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    load();
+    await load();
     setRefreshing(false);
   }, [load]);
 

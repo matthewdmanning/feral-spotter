@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native-unistyles'
 
-export const stylesheet = StyleSheet.create((theme) => ({
+export const styles = StyleSheet.create((theme) => ({
   root:                 { flex: 1, backgroundColor: theme.colors.background, paddingHorizontal: theme.spacing.lg },
   scroll:               { flex: 1 },
   inner:                { gap: theme.spacing.lg, paddingBottom: theme.spacing.xxl },

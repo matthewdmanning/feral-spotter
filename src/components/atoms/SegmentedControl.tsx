@@ -1,6 +1,5 @@
 import { View, Text, Pressable } from 'react-native'
-import { useStyles } from 'react-native-unistyles'
-import { stylesheet } from './SegmentedControl.styles'
+import { styles } from './SegmentedControl.styles'
 
 interface Option<T extends string | number> {
   value: T; label: string
@@ -14,8 +13,6 @@ interface SegmentedControlProps<T extends string | number> {
 export function SegmentedControl<T extends string | number>({
   label, options, value, onChange, accessibilityLabel,
 }: SegmentedControlProps<T>) {
-  const { styles } = useStyles(stylesheet)
-
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>

@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native-unistyles'
 
-export const stylesheet = StyleSheet.create((theme) => ({
+export const styles = StyleSheet.create((theme) => ({
   sheet:       { zIndex: 999 },
   content:     { padding: theme.spacing.xl, gap: theme.spacing.lg, paddingBottom: 36 },
   headerRow:   { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },

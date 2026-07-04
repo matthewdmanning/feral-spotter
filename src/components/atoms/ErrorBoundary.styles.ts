@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native-unistyles'
 
-export const stylesheet = StyleSheet.create((theme) => ({
+export const styles = StyleSheet.create((theme) => ({
   container: { flex: 1, backgroundColor: theme.colors.background, padding: theme.spacing.lg, alignItems: 'center', justifyContent: 'center', gap: theme.spacing.lg },
   textGroup: { alignItems: 'center', gap: theme.spacing.sm },
   title:     { color: theme.colors.text, fontSize: theme.typography.xxl, fontWeight: '700' },

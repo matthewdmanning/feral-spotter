@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native-unistyles'
 
-export const stylesheet = StyleSheet.create((theme) => ({
+export const styles = StyleSheet.create((theme) => ({
   root:                { flex: 1, backgroundColor: theme.colors.background },
   topBar:              { backgroundColor: theme.colors.surface, paddingHorizontal: theme.spacing.lg, paddingBottom: 10, borderBottomWidth: 0.5, borderBottomColor: theme.colors.surfaceAlt, zIndex: 2 },
   topRow:              { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

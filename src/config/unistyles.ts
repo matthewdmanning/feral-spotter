@@ -95,7 +95,7 @@ export type AppTheme = typeof darkTheme;
 
 type AppThemes = typeof appThemes;
 declare module "react-native-unistyles" {
-  export interface UnistylesThemes extends AppThemes {}
+  export interface UnistylesThemes extends AppThemes {} // eslint-disable-line @typescript-eslint/no-empty-object-type
 }
 
 // ─── Configure ───────────────────────────────────────────────────────────────

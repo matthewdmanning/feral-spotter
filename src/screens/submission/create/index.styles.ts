@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native-unistyles'
 
-export const stylesheet = StyleSheet.create((theme) => ({
+export const styles = StyleSheet.create((theme) => ({
   root:          { flex: 1, backgroundColor: theme.colors.background, paddingHorizontal: theme.spacing.lg, gap: theme.spacing.lg },
   title:         { color: theme.colors.text, fontSize: theme.typography.xxxl, fontWeight: '700' },
   card:          { borderRadius: theme.radius.xl, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surface, padding: theme.spacing.lg, gap: theme.spacing.lg },

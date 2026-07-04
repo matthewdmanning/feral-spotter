@@ -1,8 +1,8 @@
 import { useCallback } from 'react'
 import { View, Text, ScrollView, Pressable } from 'react-native'
-import FastImage from 'react-native-fast-image'
-import { useStyles } from 'react-native-unistyles'
-import { stylesheet } from './CatPhotoSelector.styles'
+import { Image } from 'expo-image'
+import { useUnistyles } from 'react-native-unistyles'
+import { styles } from './CatPhotoSelector.styles'
 import { router } from 'expo-router'
 import { Check, ScanLine } from 'lucide-react-native'
 import { usePhotoStore } from '@/src/hooks'
@@ -14,7 +14,7 @@ interface CatPhotoSelectorProps {
 }
 
 export function CatPhotoSelector({ catLocalId, selectedPhotoIds, onTogglePhoto, annotationEnabled, photosReviewed }: CatPhotoSelectorProps) {
-  const { styles, theme } = useStyles(stylesheet)
+  const { theme } = useUnistyles()
   const photos      = usePhotoStore((s) => s.photos)
   const handleReview = useCallback(() => {
     router.push({ pathname: '/submission/annotate', params: { cat_id: catLocalId } })
@@ -33,10 +33,11 @@ export function CatPhotoSelector({ catLocalId, selectedPhotoIds, onTogglePhoto, 
             <Pressable key={photo.local_id} onPress={() => onTogglePhoto(photo.local_id)}
               accessibilityRole="checkbox" accessibilityState={{ checked: isSelected }}>
               <View>
-                <FastImage
-                  source={{ uri: photo.uri, cache: FastImage.cacheControl.immutable }}
+                <Image
+                  source={{ uri: photo.uri }}
+                  cachePolicy="memory-disk"
                   style={[styles.thumb, isSelected ? styles.thumbSelected : styles.thumbUnselected]}
-                  resizeMode={FastImage.resizeMode.cover}
+                  contentFit="cover"
                 />
                 <View style={[styles.check, isSelected ? styles.checkSelected : styles.checkUnselected]}>
                   {isSelected && <Check size={10} color={theme.colors.accentText} />}

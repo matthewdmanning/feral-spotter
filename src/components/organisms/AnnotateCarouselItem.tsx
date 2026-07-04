@@ -3,32 +3,22 @@
  *
  * Single slide in the annotation carousel.
  *
- * Layer order (z):
- *   1 (bottom) — FastImage, absoluteFill, resizeMode contain, full-screen centred
- *   2 (top)    — Skia Canvas, absoluteFill over image only (constrained by parent View)
- *
- * The Canvas never extends to the Done/Back buttons because those
- * live outside this component in the screen's normal document flow.
- *
- * Theme colors are read via useUnistyles() because Skia's <Rect color>
- * is a component prop (not a style prop) — Unistyles cannot auto-update
- * it through the ShadowTree, so it must come from the theme object directly.
- *
- * Requires:
- *   @shopify/react-native-skia  v1.x  (Reanimated SharedValues as Skia props)
- *   react-native-gesture-handler
- *   react-native-fast-image
+ * The crop target is a fixed, centered square crosshair (side = shortest
+ * screen dimension). The user pinches/pans/double-taps the photo underneath
+ * it to frame the cat, then long-presses the center dot (or taps Confirm) to
+ * save the framing and advance — see useBoundingBoxFrame for the gesture +
+ * coordinate-transform logic.
  */
 
-import { useBoundingBoxDraw } from '@/src/hooks/useBoundingBoxDraw'
+import { DOT_HITBOX_SIZE, useBoundingBoxFrame } from '@/src/hooks/useBoundingBoxFrame'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import type { SubmissionPhoto } from '@/src/types'
-import { Canvas, Group, Paint, Rect } from '@shopify/react-native-skia'
-import { useCallback } from 'react'
-import { View } from 'react-native'
-import FastImage from 'react-native-fast-image'
+import { useCallback, useState } from 'react'
+import { Pressable, Text, View } from 'react-native'
+import { Image } from 'expo-image'
 import { GestureDetector } from 'react-native-gesture-handler'
-import { StyleSheet, useUnistyles } from 'react-native-unistyles'
+import Animated, { interpolate, useAnimatedStyle } from 'react-native-reanimated'
+import { styles } from './AnnotateCarouselItem.styles'
 
 interface AnnotateCarouselItemProps {
   photo: SubmissionPhoto
@@ -37,78 +27,99 @@ interface AnnotateCarouselItemProps {
   width: number
   /** Height of the carousel slide (= available height between top bar and buttons) */
   height: number
+  /** Called after a confirmed frame is saved — typically advances to the next photo */
+  onConfirm: () => void
+  /** Called when the photo crosses the zoomed-in threshold — disable carousel swipe while true */
+  onZoomChange?: (zoomedIn: boolean) => void
 }
 
 export function AnnotateCarouselItem({
-  photo, catId, width, height,
+  photo, catId, width, height, onConfirm, onZoomChange,
 }: AnnotateCarouselItemProps) {
-  const { theme } = useUnistyles()
   const addBox = useBoundingBoxStore((s) => s.addBox)
   const getBoxes = useBoundingBoxStore((s) => s.getBoxes)
 
-  // Saved boxes for this cat + photo (re-renders only when boxes change)
-  const savedBoxes = getBoxes(catId, photo.local_id)
+  const savedBox = getBoxes(catId, photo.local_id)[0]
+  const [natural, setNatural] = useState({ w: 0, h: 0 })
 
-  const handleSave = useCallback(
-    (box: { x: number; y: number; width: number; height: number }) => {
+  const handleFrameConfirm = useCallback(
+    (box: Parameters<typeof addBox>[2]) => {
       addBox(catId, photo.local_id, box)
+      onConfirm()
     },
-    [addBox, catId, photo.local_id],
+    [addBox, catId, photo.local_id, onConfirm],
   )
 
-  const { panGesture, liveX, liveY, liveW, liveH } = useBoundingBoxDraw({
-    canvasWidth: width,
-    canvasHeight: height,
-    catId,
-    photoId: photo.local_id,
-    onSave: handleSave,
-  })
+  const { photoGesture, dotGesture, userScale, userTranslateX, userTranslateY, holdProgress, confirmNow } =
+    useBoundingBoxFrame({
+      canvasWidth: width,
+      canvasHeight: height,
+      imgNaturalWidth: natural.w,
+      imgNaturalHeight: natural.h,
+      initialBox: savedBox,
+      onConfirm: handleFrameConfirm,
+      onZoomChange,
+    })
+
+  const imageStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: userTranslateX.value },
+      { translateY: userTranslateY.value },
+      { scale: userScale.value },
+    ],
+  }))
+
+  const dotStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(holdProgress.value, [0, 1], [1, 1.4]) }],
+    opacity: interpolate(holdProgress.value, [0, 1], [1, 0.6]),
+  }))
+
+  const squareSize = Math.min(width, height)
+  const squareX = (width - squareSize) / 2
+  const squareY = (height - squareSize) / 2
 
   // width/height are runtime props — cannot be static stylesheet values
   return (
     <View style={{ width, height }}>
 
-      {/* Layer 1 (bottom): image */}
-      <FastImage
-        source={{ uri: photo.uri, cache: FastImage.cacheControl.immutable }}
-        style={StyleSheet.absoluteFill}
-        resizeMode={FastImage.resizeMode.contain}
-        accessibilityLabel="Cat observation photo"
-      />
-
-      {/* Layer 2 (top): Skia canvas, absoluteFill over image only */}
-      <GestureDetector gesture={panGesture}>
-        <Canvas style={StyleSheet.absoluteFill}>
-
-          {/* Previously saved bounding boxes */}
-          {savedBoxes.map((box) => {
-            const px = box.x * width
-            const py = box.y * height
-            const pw = box.width * width
-            const ph = box.height * height
-
-            return (
-              <Group key={box.id}>
-                <Rect x={px} y={py} width={pw} height={ph}
-                  color={`${theme.colors.accent}40`} />
-                <Rect x={px} y={py} width={pw} height={ph}>
-                  <Paint style="stroke" strokeWidth={2} color={theme.colors.accent} />
-                </Rect>
-              </Group>
-            )
-          })}
-
-          {/* Live drawing rect — driven by Reanimated SharedValues (UI thread) */}
-          <Group>
-            <Rect x={liveX} y={liveY} width={liveW} height={liveH}
-              color={`${theme.colors.warning}40`} />
-            <Rect x={liveX} y={liveY} width={liveW} height={liveH}>
-              <Paint style="stroke" strokeWidth={2} color={theme.colors.warning} />
-            </Rect>
-          </Group>
-
-        </Canvas>
+      {/* Photo: pinch/pan/double-tap to frame */}
+      <GestureDetector gesture={photoGesture}>
+        <View style={styles.photoLayer}>
+          <Animated.View style={[{ flex: 1 }, imageStyle]}>
+            <Image
+              source={{ uri: photo.uri }}
+              cachePolicy="memory-disk"
+              style={{ width, height }}
+              contentFit="contain"
+              onLoad={(e) => setNatural({ w: e.source.width, h: e.source.height })}
+              accessibilityLabel="Cat observation photo"
+            />
+          </Animated.View>
+        </View>
       </GestureDetector>
+
+      {/* Fixed centered square crosshair — crosshair lines drawn inside the square */}
+      <View pointerEvents="none" style={[styles.square, { left: squareX, top: squareY, width: squareSize, height: squareSize }]}>
+        <View style={[styles.crosshairLine, { left: 0, top: squareSize / 2 - 0.5, width: squareSize, height: 1 }]} />
+        <View style={[styles.crosshairLine, { left: squareSize / 2 - 0.5, top: 0, width: 1, height: squareSize }]} />
+      </View>
+
+      {/* Center dot — long-press to confirm */}
+      <GestureDetector gesture={dotGesture}>
+        <View style={[styles.dotTouchArea, {
+          left: width / 2 - DOT_HITBOX_SIZE / 2,
+          top: height / 2 - DOT_HITBOX_SIZE / 2,
+          width: DOT_HITBOX_SIZE,
+          height: DOT_HITBOX_SIZE,
+        }]}>
+          <Animated.View style={[styles.dot, dotStyle]} />
+        </View>
+      </GestureDetector>
+
+      {/* Confirm button — same effect as holding the dot */}
+      <Pressable onPress={confirmNow} accessibilityRole="button" style={styles.confirmBtn}>
+        <Text style={styles.confirmText}>Confirm</Text>
+      </Pressable>
     </View>
   )
 }

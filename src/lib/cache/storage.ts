@@ -1,56 +1,49 @@
 /**
  * utils/storage.ts
- * MMKV-backed Zustand persist storage adapter.
- *
- * react-native-mmkv uses JSI — reads/writes are synchronous and
- * never touch the JS bridge. ~50× faster than AsyncStorage for
- * store hydration on cold start.
- *
- * Install: npx expo install react-native-mmkv
- * Requires Expo Prebuild (not Expo Go).
+ * AsyncStorage-backed Zustand persist storage adapter.
  *
  * Usage in any Zustand store:
  *
  *   import { persist, createJSONStorage } from 'zustand/middleware'
- *   import { mmkvStorage } from '@/src/lib/cache/storage'
+ *   import { asyncStorage } from '@/src/lib/cache/storage'
  *
  *   export const useSubmissionStore = create(
  *     persist(
  *       (set, get) => ({ ... }),
  *       {
  *         name: 'submission-store',
- *         storage: createJSONStorage(() => mmkvStorage),
+ *         storage: createJSONStorage(() => asyncStorage),
  *       }
  *     )
  *   )
- *
- * Replace every occurrence of:
- *   storage: createJSONStorage(() => AsyncStorage)
- * with:
- *   storage: createJSONStorage(() => mmkvStorage)
- *
- * Stores to update:
- *   useSubmissionStore, usePhotoStore, useAnnotationStore,
- *   useSettingsStore, useUIStore
  */
 
-import { MMKV } from 'react-native-mmkv'
-import type { StateStorage } from 'zustand/middleware'
+import AsyncStorage from "@react-native-async-storage/async-storage";
+// react-native-mmkv stays installed solely for src/config/unistyles.ts's
+// synchronous theme read (that file is being migrated away from separately).
+import { createMMKV } from "react-native-mmkv";
 
-// Single shared instance for all stores.
-// Use separate instances (different `id`) if you need per-store encryption.
-export const mmkvInstance = new MMKV({ id: 'feralspotter' })
+export const mmkvInstance = createMMKV({ id: "feralspotter" });
 
-export const mmkvStorage: StateStorage = {
-  getItem:    (name)        => mmkvInstance.getString(name) ?? null,
-  setItem:    (name, value) => mmkvInstance.set(name, value),
-  removeItem: (name)        => mmkvInstance.delete(name),
-}
+export const asyncStorage = {
+  getItem: (key: string) => AsyncStorage.getItem(key),
+  setItem: (key: string, value: string) => AsyncStorage.setItem(key, value),
+  removeItem: (key: string) => AsyncStorage.removeItem(key),
+};
+
+const PERSISTED_STORE_KEYS = [
+  "ui-store",
+  "annotation-store",
+  "submission-store",
+  "bounding-box-store",
+  "settings-store",
+  "photo-store",
+];
 
 /**
- * Clears all persisted store data.
+ * Clears all persisted Zustand store data.
  * Call from settings "Clear Cache" handler instead of (or alongside) clearCache().
  */
-export function clearAllStores(): void {
-  mmkvInstance.clearAll()
+export async function clearAllStores(): Promise<void> {
+  await AsyncStorage.multiRemove(PERSISTED_STORE_KEYS);
 }

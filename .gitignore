@@ -36,8 +36,35 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-example
+**/*.ignore
 
 # generated native folders
 /ios
 /android
+
+#Skills
+.github/agents/*
+.claude/*
+CLAUDE.md
+.skills/
+.vscode/
+AGENTS.md
+.claude/settings.json
+src/hooks/useAnnotationStore.ts
+src/hooks/useBoundingBoxStore.ts
+src/hooks/useCatSubmit.ts
+src/hooks/useFeralReports.ts
+src/hooks/usePhotoStore.ts
+src/hooks/useSettingsStore.ts
+src/hooks/useSubmissionStore.ts
+src/hooks/useUIStore.ts
+src/lib/firstLaunch.ts
+src/lib/cache/storage.ts
+src/lib/cache/submissionCache.ts
+src/screens/home/index.tsx
+src/screens/submission/create/index.tsx
+src/utils/api.ts
+AGENTS.md
+CHANGELOG.md
+.claude/settings.json
+_tmp_check_exports.py

@@ -5,15 +5,18 @@ import { Trash2 } from 'lucide-react-native'
 import { useState } from 'react'
 import { Alert, Dimensions, Pressable, Text, View } from 'react-native'
 import Carousel from 'react-native-reanimated-carousel'
+import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
 
 const SCREEN_W = Dimensions.get('window').width
 
 export default function AnnotateScreen() {
+  const { theme } = useUnistyles()
   const { cat_id } = useLocalSearchParams<{ cat_id: string }>()
   const { photos, statuses, currentIndex, setCurrentIndex, carouselRef,
     handleDone, handleBack, handleLongPressRemove } = useAnnotateStateMachine(cat_id)
   const [carouselHeight, setCarouselHeight] = useState(0)
+  const [zoomedIn, setZoomedIn] = useState(false)
 
   if (photos.length === 0) return (
     <View style={styles.empty}>
@@ -59,9 +62,10 @@ export default function AnnotateScreen() {
           <Carousel ref={carouselRef} width={SCREEN_W} height={carouselHeight}
             data={photos} defaultIndex={0} onSnapToItem={setCurrentIndex}
             scrollAnimationDuration={200}
-            panGestureHandlerProps={{ activeOffsetX: [-20, 20], failOffsetY: [-5, 5] }}
+            enabled={!zoomedIn}
             renderItem={({ item }) => (
-              <AnnotateCarouselItem photo={item} catId={cat_id} width={SCREEN_W} height={carouselHeight} />
+              <AnnotateCarouselItem photo={item} catId={cat_id} width={SCREEN_W} height={carouselHeight}
+                onConfirm={handleDone} onZoomChange={setZoomedIn} />
             )} />
         )}
       </View>

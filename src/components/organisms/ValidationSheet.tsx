@@ -1,15 +1,15 @@
 import { useRef, useEffect, useCallback, useMemo } from 'react'
 import { View, Text, Pressable } from 'react-native'
-import { useStyles } from 'react-native-unistyles'
+import { useUnistyles } from 'react-native-unistyles'
 import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop, type BottomSheetBackdropProps } from '@gorhom/bottom-sheet'
 import { AlertCircle } from 'lucide-react-native'
 import type { ValidationError } from '@/src/types'
-import { stylesheet } from './ValidationSheet.styles'
+import { styles } from './ValidationSheet.styles'
 
 interface ValidationSheetProps { open: boolean; errors: ValidationError[]; onClose: () => void }
 
 export function ValidationSheet({ open, errors, onClose }: ValidationSheetProps) {
-  const { styles, theme } = useStyles(stylesheet)
+  const { theme } = useUnistyles()
   const sheetRef   = useRef<BottomSheet>(null)
   const snapPoints = useMemo(() => ['40%', '70%'], [])
 

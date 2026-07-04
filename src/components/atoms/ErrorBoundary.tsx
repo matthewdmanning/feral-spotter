@@ -1,8 +1,7 @@
 import React, { Component, type ReactNode } from 'react'
 import { View, Text, Pressable } from 'react-native'
-import { useStyles } from 'react-native-unistyles'
 import { AlertCircle } from 'lucide-react-native'
-import { stylesheet } from './ErrorBoundary.styles'
+import { styles } from './ErrorBoundary.styles'
 
 interface Props { children: ReactNode; fallback?: (error: Error, reset: () => void) => ReactNode }
 interface State { hasError: boolean; error: Error | null }
@@ -22,7 +21,6 @@ export class ErrorBoundary extends Component<Props, State> {
 }
 
 function ErrorFallback({ error, onReset }: { error: Error; onReset: () => void }) {
-  const { styles } = useStyles(stylesheet)
   return (
     <View style={styles.container}>
       <AlertCircle size={64} color="#FF6B6B" />

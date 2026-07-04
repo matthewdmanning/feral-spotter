@@ -1,17 +1,67 @@
-import { StyleSheet } from 'react-native-unistyles'
+import { StyleSheet } from "react-native-unistyles";
+const THUMB_SIZE = 110;
 
-export const stylesheet = StyleSheet.create((theme) => ({
-  scroll:       { backgroundColor: theme.colors.background },
-  inner:        { paddingHorizontal: theme.spacing.lg, gap: theme.spacing.lg },
-  title:        { color: theme.colors.text, fontSize: theme.typography.xxxl, fontWeight: '700' },
-  sourceRow:    { flexDirection: 'row', gap: theme.spacing.sm },
-  sourceBtn:    { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: theme.spacing.sm, backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.radius.md, paddingVertical: 12 },
-  sourceBtnText:{ color: theme.colors.text, fontSize: theme.typography.sm, fontWeight: '600' },
-  status:       { color: theme.colors.muted, fontSize: theme.typography.sm },
-  grid:         { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
-  thumb:        { width: THUMB_SIZE, height: THUMB_SIZE, borderRadius: 9 },
-  checkCircle:  { position: 'absolute', top: 8, right: 8, width: 24, height: 24, borderRadius: 12, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-  footer:       { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: theme.spacing.lg, paddingTop: 12, backgroundColor: theme.colors.background, borderTopWidth: 1, borderTopColor: theme.colors.surfaceAlt },
-  doneBtn:      { alignItems: 'center', paddingVertical: 16, borderRadius: theme.radius.md, backgroundColor: theme.colors.accent },
-  doneBtnText:  { color: theme.colors.accentText, fontSize: theme.typography.base, fontWeight: '600' },
-}))
+export const styles = StyleSheet.create((theme) => ({
+  scroll: { backgroundColor: theme.colors.background },
+  scrollContent: { paddingTop: theme.spacing.lg, paddingBottom: theme.spacing.xxxl * 2 },
+  inner: { paddingHorizontal: theme.spacing.lg, gap: theme.spacing.lg },
+  title: {
+    color: theme.colors.text,
+    fontSize: theme.typography.xxxl,
+    fontWeight: "700",
+  },
+  sourceRow: { flexDirection: "row", gap: theme.spacing.sm },
+  sourceBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: theme.spacing.sm,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.md,
+    paddingVertical: 12,
+  },
+  sourceBtnText: {
+    color: theme.colors.text,
+    fontSize: theme.typography.sm,
+    fontWeight: "600",
+  },
+  status: { color: theme.colors.muted, fontSize: theme.typography.sm },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: theme.spacing.sm },
+  thumb: { width: THUMB_SIZE, height: THUMB_SIZE, borderRadius: 9 },
+  checkCircle: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  footer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: 12,
+    backgroundColor: theme.colors.background,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.surfaceAlt,
+  },
+  doneBtn: {
+    alignItems: "center",
+    paddingVertical: 16,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.accent,
+  },
+  doneBtnText: {
+    color: theme.colors.accentText,
+    fontSize: theme.typography.base,
+    fontWeight: "600",
+  },
+}));

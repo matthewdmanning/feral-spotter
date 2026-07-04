@@ -1,16 +1,15 @@
 /**
  * lib/firstLaunch.ts
  * Tracks whether the app has been opened before.
- * Uses mmkvInstance (synchronous, no async delay).
  */
-import { mmkvInstance } from "@/src/lib/cache/storage";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const KEY = "has_launched";
 
-export function isFirstLaunch(): boolean {
-  return !mmkvInstance.getBoolean(KEY);
+export async function isFirstLaunch(): Promise<boolean> {
+  return (await AsyncStorage.getItem(KEY)) !== "true";
 }
 
-export function markLaunched(): void {
-  mmkvInstance.set(KEY, true);
+export async function markLaunched(): Promise<void> {
+  await AsyncStorage.setItem(KEY, "true");
 }

@@ -8,8 +8,8 @@ import { useDateTimePicker } from '@/src/hooks/useDateTimePicker'
 import RNDateTimePicker from '@react-native-community/datetimepicker'
 import { Calendar, Clock } from 'lucide-react-native'
 import { Modal, Platform, Pressable, Text, View } from 'react-native'
-import { useStyles } from 'react-native-unistyles'
-import { stylesheet } from './DateTimePicker.styles'
+import { useUnistyles } from 'react-native-unistyles'
+import { styles } from './DateTimePicker.styles'
 
 type PickerMode = 'date' | 'time' | 'datetime'
 
@@ -36,7 +36,7 @@ export function DateTimePickerButton({
   label = 'Select Date & Time',
   minimumDate, maximumDate,
 }: DateTimePickerProps) {
-  const { styles, theme } = useStyles(stylesheet)
+  const { theme } = useUnistyles()
   const { show, tempDate, currentMode, open, setStep, handleChange, handleConfirm, handleCancel } =
     useDateTimePicker(value, mode, onChange)
 

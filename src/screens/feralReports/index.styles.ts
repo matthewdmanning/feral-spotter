@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native-unistyles'
 
-export const stylesheet = StyleSheet.create((theme) => ({
+export const styles = StyleSheet.create((theme) => ({
   root:        { backgroundColor: theme.colors.background },
   inner:       { paddingHorizontal: theme.spacing.lg, gap: theme.spacing.sm },
   headerRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.xs },
@@ -13,5 +13,6 @@ export const stylesheet = StyleSheet.create((theme) => ({
   legendItem:  { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot:   { width: 8, height: 8, borderRadius: 4 },
   legendLabel: { color: theme.colors.muted, fontSize: theme.typography.xs },
+  scrollContent: { paddingBottom: 32 },
   headerIcon: { marginRight: 4 },
 }))

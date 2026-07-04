@@ -9,7 +9,7 @@
  * the unmigrated store file.
  */
 
-import { mmkvStorage } from "@/src/lib/cache/storage";
+import { asyncStorage } from "@/src/lib/cache/storage";
 import type { BoundingBox } from "@/src/types/BoundingBox";
 import { nanoid } from "nanoid";
 import { create } from "zustand";
@@ -22,6 +22,8 @@ type BoxInput = Omit<BoundingBox, "id" | "cat_id" | "photo_local_id">;
 interface BoundingBoxState {
   /** Record keyed by `${cat_id}:${photo_local_id}` */
   boxes: Record<string, BoundingBox[]>;
+  /** Box replaced by the most recent addBox call, per key — for a future "revert" affordance */
+  lastBoxes: Record<string, BoundingBox | undefined>;
 
   addBox: (catId: string, photoId: string, box: BoxInput) => void;
   removeBox: (catId: string, photoId: string, boxId: string) => void;
@@ -37,7 +39,9 @@ export const useBoundingBoxStore = create<BoundingBoxState>()(
   persist(
     (set, get) => ({
       boxes: {},
+      lastBoxes: {},
 
+      // One box per cat+photo — drawing a new box replaces the old one.
       addBox: (catId, photoId, box) => {
         const key = `${catId}:${photoId}`;
         const entry: BoundingBox = {
@@ -49,7 +53,11 @@ export const useBoundingBoxStore = create<BoundingBoxState>()(
         set((s) => ({
           boxes: {
             ...s.boxes,
-            [key]: [...(s.boxes[key] ?? []), entry],
+            [key]: [entry],
+          },
+          lastBoxes: {
+            ...s.lastBoxes,
+            [key]: s.boxes[key]?.[0],
           },
         }));
       },
@@ -88,7 +96,11 @@ export const useBoundingBoxStore = create<BoundingBoxState>()(
     }),
     {
       name: "bounding-box-store",
-      storage: createJSONStorage(() => mmkvStorage),
+      storage: createJSONStorage(() => asyncStorage),
+      // v1 -> v2: BoundingBox shape changed from x/y/width/height (canvas-relative)
+      // to lowerLeft/upperRight corners (image-pixel-relative) — old data is incompatible, drop it.
+      version: 2,
+      migrate: () => ({ boxes: {}, lastBoxes: {} }),
     },
   ),
 );
