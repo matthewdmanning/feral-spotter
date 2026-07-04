@@ -1,0 +1,75 @@
+name: "Task"
+description: "Track work items that are not bugs or feature requests."
+title: "[Task]: "
+labels:
+  - chore
+
+body:
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: Short description of the task.
+      placeholder: Refactor submission flow to use a shared state machine...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Screens / navigation
+        - Camera
+        - Submission flow
+        - Auth
+        - API
+        - Permissions
+        - Analytics
+        - UX / design
+        - Tests
+        - CI / tooling
+        - Docs
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - low
+        - medium
+        - high
+        - critical
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Details about the work to be done.
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance criteria
+      placeholder: |
+        - [ ] Criterion 1
+        - [ ] Criterion 2
+    validations:
+      required: true
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: Link any related issues or PRs.
+      placeholder: |
+        - #123
+    validations:
+      required: false
