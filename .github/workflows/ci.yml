@@ -37,7 +37,7 @@ jobs:
         run: npx tsc --noEmit
 
       - name: 🧪 Run tests
-        run: npm test -- --coverage --if-present
+        run: npm test -- --coverage
 
       - name: 📊 Upload coverage to Codecov
         uses: codecov/codecov-action@v4
