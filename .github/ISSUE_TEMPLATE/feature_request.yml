@@ -1,0 +1,89 @@
+name: "Feature request"
+description: "Suggest a new feature or enhancement."
+title: "[Feature]: "
+labels:
+  - enhancement
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please describe the *problem first*, then the proposed solution.
+        Feature requests should be actionable and scoped.
+
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: Short description of the feature.
+      placeholder: Allow users to attach photos from the library during submission...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope / intent
+      options:
+        - user-facing feature
+        - developer experience / tooling
+        - performance / optimization
+        - accessibility / UX
+        - documentation
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      options:
+        - Screens / navigation
+        - Camera
+        - Submission flow
+        - Auth
+        - API
+        - Permissions
+        - Analytics
+        - UX / design
+        - CI / tooling
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem_statement
+    attributes:
+      label: Problem statement
+      description: What problem does this feature solve? Why is the current behavior insufficient?
+      placeholder: |
+        Currently, users can only ...
+        This causes ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed solution
+      placeholder: I propose that the app...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      placeholder: |
+        Alternative A...
+        Alternative B...
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional context
+      description: Links, mockups, references, or related issues.
+    validations:
+      required: false
