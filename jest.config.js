@@ -7,4 +7,10 @@ module.exports = {
     '^@react-native-google-signin/google-signin/jest/build/jest/setup$':
       '<rootDir>/node_modules/@react-native-google-signin/google-signin/jest/build/jest/setup.js',
   },
+  coverageReporters: ['lcov', 'text-summary'],
+  collectCoverageFrom: [
+    'src/**/*.{ts,tsx}',
+    '!src/**/__tests__/**',
+    '!src/**/*.styles.{ts,tsx}',
+  ],
 }

@@ -161,10 +161,7 @@ export function useCameraCapture(): CameraCaptureResult {
     () => router.navigate("/submission/create"),
     [],
   );
-  const handleClose = useCallback(
-    () => router.navigate("/submission/create"),
-    [],
-  );
+  const handleClose = useCallback(() => router.back(), []);
 
   // ── FlashList helpers ─────────────────────────────────────────────────────
   const renderItem = useCallback(

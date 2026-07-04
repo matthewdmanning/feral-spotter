@@ -1,5 +1,7 @@
 name: CI
-
+permissions:
+  contents: read
+  pull-requests: write
 on:
   push:
     branches: [main, master]
@@ -26,13 +28,19 @@ jobs:
           cache: "npm" # Keeps your runners extremely fast by caching node_modules
 
       - name: 📦 Install dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: 🧼 Lint code
         run: npx expo lint
 
       - name: 📐 Type check (TypeScript)
-        run: npx tsc --noEmit --if-present
+        run: npx tsc --noEmit
 
       - name: 🧪 Run tests
-        run: npm test --if-present
+        run: npm test -- --coverage
+
+      - name: 📊 Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
