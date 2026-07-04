@@ -16,7 +16,8 @@
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "test": "jest",
-    "build:android": "bash scripts/android-build.sh"
+    "build:android": "bash scripts/android-build.sh",
+    "gradle:debug": "expo prebuild --clean && cd android && .\\gradlew assembleDebug"
   },
   "dependencies": {
     "@gorhom/bottom-sheet": "^5.2.14",
@@ -47,6 +48,7 @@
     "react-native": "0.85.3",
     "react-native-gesture-handler": "~2.31.1",
     "react-native-mmkv": "^4.3.2",
+    "react-native-nitro-image": "^0.15.1",
     "react-native-nitro-modules": "^0.36.1",
     "react-native-reanimated": "4.3.1",
     "react-native-reanimated-carousel": "^4.0.3",
