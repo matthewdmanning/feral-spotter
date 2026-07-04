@@ -60,7 +60,7 @@ export default function RootLayout() {
             presentation: "fullScreenModal",
             animation: "slide_from_bottom",
             headerShown: false,
-            gestureEnabled: false,
+            gestureEnabled: true,
           }}
         />
 
