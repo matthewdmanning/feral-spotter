@@ -34,7 +34,7 @@ jobs:
         run: npx expo lint
 
       - name: 📐 Type check (TypeScript)
-        run: npx tsc --noEmit --if-present
+        run: npx tsc --noEmit
 
       - name: 🧪 Run tests
         run: npm test -- --coverage --if-present
