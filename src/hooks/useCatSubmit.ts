@@ -22,7 +22,7 @@ import {
 import type { SubmissionApiPayload } from "@/src/types";
 import { submitObservation } from "@/src/utils/api";
 import { router } from "expo-router";
-import { nanoid } from "nanoid";
+import { randomUUID } from "expo-crypto";
 import { usePostHog } from "posthog-react-native";
 import { useCallback, useEffect, useState } from "react";
 import { Alert } from "react-native";
@@ -93,7 +93,7 @@ export function useCatSubmit({
   // ── Save → store + navigate ────────────────────────────────────────────────
 
   const handleSave = useCallback(() => {
-    const localId = existingCat?.local_id ?? nanoid();
+    const localId = existingCat?.local_id ?? randomUUID();
     const cat = buildCat(localId);
 
     if (existingCat) updateCat(localId, cat);
@@ -119,7 +119,7 @@ export function useCatSubmit({
   // ── Done → confirm → API submit ───────────────────────────────────────────
 
   const handleDone = useCallback(() => {
-    const localId = existingCat?.local_id ?? nanoid();
+    const localId = existingCat?.local_id ?? randomUUID();
     const cat = buildCat(localId);
 
     if (existingCat) updateCat(localId, cat);

@@ -11,7 +11,7 @@
 
 import { asyncStorage } from "@/src/lib/cache/storage";
 import type { BoundingBox } from "@/src/types/BoundingBox";
-import { nanoid } from "nanoid";
+import { randomUUID } from "expo-crypto";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
@@ -46,7 +46,7 @@ export const useBoundingBoxStore = create<BoundingBoxState>()(
         const key = `${catId}:${photoId}`;
         const entry: BoundingBox = {
           ...box,
-          id: nanoid(),
+          id: randomUUID(),
           cat_id: catId,
           photo_local_id: photoId,
         };

@@ -16,7 +16,7 @@ import {
 } from "@/src/lib/cache/submissionCache";
 import { validateSubmission } from "@/src/utils/validation";
 import { router } from "expo-router";
-import { nanoid } from "nanoid";
+import { randomUUID } from "expo-crypto";
 import {
   startTransition,
   useCallback,
@@ -74,7 +74,7 @@ export default function CreateSubmissionScreen() {
     setCurrentStep("create");
     (async () => {
       if (!(await getCurrentCacheId())) {
-        await createSubmissionCache(nanoid(), {
+        await createSubmissionCache(randomUUID(), {
           location_method: submission.location_type,
           time_method: submission.time_type,
           address: submission.address,

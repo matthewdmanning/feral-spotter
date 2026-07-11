@@ -18,7 +18,7 @@ import type { SubmissionPhoto } from "@/src/types";
 import { type FlashListRef } from "@shopify/flash-list";
 import * as MediaLibrary from "expo-media-library";
 import { router } from "expo-router";
-import { nanoid } from "nanoid";
+import { randomUUID } from "expo-crypto";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ViewStyle } from "react-native";
 import {
@@ -115,7 +115,7 @@ export function useCameraCapture(): CameraCaptureResult {
       const uri = `file://${filePath}`;
 
       const submission: SubmissionPhoto = {
-        local_id: nanoid(),
+        local_id: randomUUID(),
         uri,
         uploaded: false,
         upload_progress: 0,
