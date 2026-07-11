@@ -1,70 +1,56 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
-# dependencies
+# Dependencies
 node_modules/
 
-# Expo
+# Expo / build output
 .expo/
 dist/
 web-build/
 expo-env.d.ts
 
-# Native
+# Generated native projects
+/ios
+/android
+
+# Native signing & credentials
 .kotlin/
 *.orig.*
 *.jks
 *.p8
 *.p12
 *.key
+*.pem
 *.mobileprovision
 
 # Metro
 .metro-health-check*
 
-# debug
+# Test coverage
+/coverage/
+
+# Debug logs
 npm-debug.*
 yarn-debug.*
 yarn-error.*
 
 # macOS
 .DS_Store
-*.pem
 
-# local env files
+# Env files
 .env*.local
 
-# typescript
+# TypeScript
 *.tsbuildinfo
 
-**/*.ignore
-
-# generated native folders
-/ios
-/android
-
-#Skills
-.github/agents/*
-.claude/*
-CLAUDE.md
-.skills/
+# Editor / tooling
 .vscode/
+.claude/*
+.skills/
+.github/agents/*
 AGENTS.md
-.claude/settings.json
-src/hooks/useAnnotationStore.ts
-src/hooks/useBoundingBoxStore.ts
-src/hooks/useCatSubmit.ts
-src/hooks/useFeralReports.ts
-src/hooks/usePhotoStore.ts
-src/hooks/useSettingsStore.ts
-src/hooks/useSubmissionStore.ts
-src/hooks/useUIStore.ts
-src/lib/firstLaunch.ts
-src/lib/cache/storage.ts
-src/lib/cache/submissionCache.ts
-src/screens/home/index.tsx
-src/screens/submission/create/index.tsx
-src/utils/api.ts
-AGENTS.md
-CHANGELOG.md
-.claude/settings.json
+CLAUDE.md
+
+# Temp / scratch files
 _tmp_check_exports.py
+**/*.ignore
