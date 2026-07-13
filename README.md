@@ -34,14 +34,6 @@ A React Native mobile app for reporting and tracking feral animal sightings. Use
 | Animation | react-native-reanimated v4 |
 | Analytics | PostHog |
 
-## Project Suite
-
-FeralSpotter is part of a three-component system:
-
-- **FeralSpotter** (this repo) — mobile observation app
-- **FeralSegmentor** — computer vision model for species segmentation
-- **FeralTracker** — ecological modeling and population tracking
-
 ## Getting Started
 
 ### Prerequisites
@@ -72,29 +64,6 @@ npm run typecheck  # tsc --noEmit
 npm test           # Jest
 ```
 
-## Architecture
+## Project Structure
 
-```
-src/
-├── app/          # Expo Router routes (thin re-exports only)
-├── screens/      # Screen-level components and state
-├── components/   # Atomic Design: atoms → molecules → organisms
-├── hooks/        # Zustand stores and feature hooks
-├── lib/          # Auth, cache, analytics
-├── utils/        # Pure functions
-└── config/       # Constants and feature flags
-```
-
-Dependency direction is strictly one-way: `app/` → `screens/` → `hooks/components/lib/` → `utils/config/`. No upward imports.
-
-## Roadmap
-
-See [CHANGELOG.md](CHANGELOG.md) for completed work.
-
-**Upcoming:**
-- Cloud upload API (frontend + backend)
-- UI styling pass
-- Tutorial flow
-- Data usage agreement
-- UX testing pass
-- Beta launch
+See [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) for the system context, directory layout, and current milestone status.
