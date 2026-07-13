@@ -63,4 +63,4 @@ npm test           # Jest
 
 ## Project Structure
 
-See [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) for the system context, directory layout, and current milestone status.
+See [PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md) for the system context, directory layout, and current milestone status.
