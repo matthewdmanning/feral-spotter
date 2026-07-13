@@ -74,5 +74,9 @@
     "test-renderer": "^1.2.0",
     "typescript": "^6.0.3"
   },
+  "overrides": {
+    "react-dom": "19.2.3",
+    "react-test-renderer": "19.2.3"
+  },
   "private": true
 }
