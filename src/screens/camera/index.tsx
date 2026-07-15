@@ -170,7 +170,7 @@ export default function CameraScreen() {
         <View style={styles.shutterRow}>
           <Pressable
             onPress={flipCamera}
-            style={styles.sideBtn}
+            style={[styles.sideBtn, styles.sideBtnFilled]}
             accessibilityRole="button"
           >
             <SwitchCamera size={30} color={theme.colors.text} />
