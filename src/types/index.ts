@@ -1,7 +1,7 @@
-export * from "./Api";
-export * from "./BoundingBox";
-export * from "./Cat";
+export type * from "./Api";
+export type * from "./BoundingBox";
+export type * from "./Cat";
 export * from "./Location";
-export * from "./Photo";
+export type * from "./Photo";
 export * from "./Time";
-export * from "./Validation";
+export type * from "./Validation";
