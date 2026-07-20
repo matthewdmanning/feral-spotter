@@ -37,7 +37,12 @@ describe('StatusIcon', () => {
     expect(getByTestId(expectedTestId)).toBeTruthy()
   })
 
-  it('renders nothing for an unrecognized status (defensive default case)', () => {
+  // Documents intent, not a regression guard: a switch with no matching
+  // case already returns `undefined`, which React renders the same as
+  // `null`, so this passes with or without the explicit default branch.
+  // The `default-case` lint rule (eslint.config.js) is what actually
+  // enforces the branch exists; this only confirms the rendered output.
+  it('renders nothing for an unrecognized status', () => {
     const { toJSON } = render(
       <StatusIcon status={'Unknown' as unknown as CacheStatus} />,
     )
