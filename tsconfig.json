@@ -6,6 +6,8 @@
     "module": "esnext",
     "forceConsistentCasingInFileNames": true,
     "strict": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
     // "importHelpers": true,
     "sourceMap": true,
     "baseUrl": ".",
