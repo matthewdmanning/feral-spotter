@@ -4,9 +4,9 @@ permissions:
   pull-requests: write
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, alpha]
   pull_request:
-    branches: [main, master]
+    branches: [main, master, alpha]
 
 # Cancel in-progress jobs if a developer pushes a new commit to the same PR
 concurrency:
