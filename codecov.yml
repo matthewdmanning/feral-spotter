@@ -1,0 +1,13 @@
+# Coverage gate is intentionally minimal for Alpha: CI uploads coverage
+# (.github/workflows/ci.yml) but had no configured threshold before this
+# file, so there was no enforced gate at all. 1% makes the check real
+# without blocking on the backfill tracked in #15 — ratchet up as that
+# work lands.
+coverage:
+  status:
+    project:
+      default:
+        target: 1%
+    patch:
+      default:
+        target: 1%

@@ -19,7 +19,7 @@ import {
   getSubmissionCache,
   updateSubmissionCache,
 } from "@/src/lib/cache/submissionCache";
-import type { SubmissionApiPayload } from "@/src/types";
+import type { SubmissionApiPayload, SubmissionPhoto } from "@/src/types";
 import { submitObservation } from "@/src/utils/api";
 import { router } from "expo-router";
 import { randomUUID } from "expo-crypto";
@@ -153,11 +153,21 @@ export function useCatSubmit({
             }
 
             try {
-              const uploadedPhotos = photos.filter((p) => p.uploaded);
+              const uploadedPhotos = photos.filter(
+                (
+                  p,
+                ): p is SubmissionPhoto & {
+                  cloud_storage_path: string;
+                  cloud_storage_url: string;
+                } =>
+                  p.uploaded &&
+                  p.cloud_storage_path != null &&
+                  p.cloud_storage_url != null,
+              );
               const payload: SubmissionApiPayload = {
                 submission,
                 cats: allCats,
-                photo_paths: uploadedPhotos.map((p) => p.cloud_storage_path!),
+                photo_paths: uploadedPhotos.map((p) => p.cloud_storage_path),
               };
               const response = await submitObservation(payload);
 
@@ -172,7 +182,7 @@ export function useCatSubmit({
                   id: response.id,
                   ...submission,
                   cats: allCats,
-                  photo_urls: uploadedPhotos.map((p) => p.cloud_storage_url!),
+                  photo_urls: uploadedPhotos.map((p) => p.cloud_storage_url),
                   created_at: new Date(),
                   submitted_at: new Date(),
                   status: "submitted",
