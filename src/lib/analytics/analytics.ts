@@ -35,6 +35,10 @@ export const EVENTS = {
   REPORTS_VIEWED: 'feral_reports_viewed',
   CAMERA_OPENED: 'camera_opened',
   PHOTO_CAPTURE_FAILED: 'photo_capture_failed',
+  TUTORIAL_STARTED: 'tutorial_started',
+  TUTORIAL_STEP_COMPLETED: 'tutorial_step_completed',
+  TUTORIAL_SKIPPED: 'tutorial_skipped',
+  TUTORIAL_COMPLETED: 'tutorial_completed',
 } as const
 
 export type AnalyticsEvent = (typeof EVENTS)[keyof typeof EVENTS]
