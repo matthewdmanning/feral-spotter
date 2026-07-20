@@ -32,7 +32,7 @@ jest.mock('@/src/hooks/useSettingsStore', () => ({
 jest.mock('@shopify/flash-list', () => ({ FlashList: 'FlashList' }))
 jest.mock('@/src/components/atoms/CameraThumb', () => ({ CameraThumb: 'CameraThumb' }))
 jest.mock('expo-media-library', () => ({}))
-jest.mock('nanoid', () => ({ nanoid: () => 'test-id' }))
+jest.mock('expo-crypto', () => ({ randomUUID: () => 'test-id' }))
 
 describe('useCameraCapture navigation', () => {
   beforeEach(() => jest.clearAllMocks())

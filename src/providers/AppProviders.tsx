@@ -26,7 +26,7 @@ interface AppProvidersProps { children: ReactNode }
 export function AppProviders({ children }: AppProvidersProps) {
   return (
     <ErrorBoundary>
-      {IS_PRERELEASE ? (
+      {IS_PRERELEASE && POSTHOG_KEY ? (
         <PostHogProvider apiKey={POSTHOG_KEY} options={{ host: POSTHOG_HOST }}>
           {children}
         </PostHogProvider>

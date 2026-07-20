@@ -7,7 +7,7 @@
  */
 
 export interface BoundingBox {
-  id:             string   // nanoid
+  id:             string   // expo-crypto randomUUID
   cat_id:         string
   photo_local_id: string
   /** Bottom-left corner, normalised 0-1 */

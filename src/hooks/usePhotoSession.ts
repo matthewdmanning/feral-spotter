@@ -11,7 +11,7 @@ import { useBackHandler } from "@/src/hooks/useBackHandler";
 import type { SubmissionPhoto } from "@/src/types";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
-import { nanoid } from "nanoid";
+import { randomUUID } from "expo-crypto";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export interface PhotoSessionResult {
@@ -85,7 +85,7 @@ export function usePhotoSession(): PhotoSessionResult {
   const buildPhoto = (
     asset: ImagePicker.ImagePickerAsset,
   ): SubmissionPhoto => ({
-    local_id: nanoid(),
+    local_id: randomUUID(),
     uri: asset.uri,
     uploaded: false,
     upload_progress: 0,
