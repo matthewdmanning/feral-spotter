@@ -1,0 +1,23 @@
+| File | Line(s) | Rule |
+|---|---|---|
+| src/components/atoms/CameraThumb.tsx | 12 | no-function-expressions |
+| src/lib/auth/__tests__/GoogleSignIn.test.ts | 16 | avoid-any |
+| src/components/atoms/ErrorBoundary.tsx | 9 | document-classes |
+| src/screens/submissions/index.tsx | 8 | use-named-exports |
+| src/lib/auth/useAuth.ts | 5 | document-top-level-exports |
+| src/components/atoms/ErrorBoundary.tsx | 9 | document-top-level-exports |
+| src/lib/auth/index.ts | 4 | document-top-level-exports |
+| src/hooks/useCatSubmit.ts | 160 | avoid-unsafe-assertions |
+| src/hooks/useCatSubmit.ts | 175 | avoid-unsafe-assertions |
+| src/utils/api.ts | 295 | avoid-unsafe-assertions |
+| src/utils/api.ts | 307 | avoid-unsafe-assertions |
+| src/lib/cache/submissionCache.ts | 72 | avoid-unsafe-assertions |
+| src/lib/cache/submissionCache.ts | 113 | avoid-unsafe-assertions |
+| src/utils/api.ts | 117 | keep-try-blocks-focused |
+| src/utils/api.ts | 165 | keep-try-blocks-focused |
+| src/utils/api.ts | 221 | keep-try-blocks-focused |
+| src/utils/api.ts | 256 | keep-try-blocks-focused |
+| src/hooks/useCameraCapture.tsx | 109 | keep-try-blocks-focused |
+| src/hooks/useCatSubmit.ts | 155 | keep-try-blocks-focused |
+| src/screens/register/index.tsx | 52 | keep-try-blocks-focused |
+| src/screens/home/index.tsx | 45 | keep-try-blocks-focused |
