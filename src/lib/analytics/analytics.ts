@@ -29,6 +29,10 @@ export const EVENTS = {
   SUBMISSION_SUBMITTED: "submission_submitted",
   SUBMISSION_FAILED: "submission_failed",
   REPORTS_VIEWED: "feral_reports_viewed",
+  TUTORIAL_STARTED: "tutorial_started",
+  TUTORIAL_STEP_COMPLETED: "tutorial_step_completed",
+  TUTORIAL_SKIPPED: "tutorial_skipped",
+  TUTORIAL_COMPLETED: "tutorial_completed",
 } as const;
 
 export type AnalyticsEvent = (typeof EVENTS)[keyof typeof EVENTS];
@@ -79,4 +83,22 @@ export function fireAnalyticsEvent(
     cache_snapshot: JSON.stringify(cache),
     ...extra,
   });
+}
+
+/**
+ * Fire a PostHog event that has no submission-cache context
+ * (e.g. tutorial funnel events). Same IS_PRERELEASE guard as above.
+ */
+export function fireSimpleEvent(
+  event: AnalyticsEvent,
+  props?: Record<string, unknown>,
+): void {
+  if (!IS_PRERELEASE) return;
+  if (!_capture) {
+    console.warn(
+      "[analytics] capturer not registered — call registerCapture() in a PostHog-wrapped component",
+    );
+    return;
+  }
+  _capture(event, props as PostHogEventProperties);
 }
