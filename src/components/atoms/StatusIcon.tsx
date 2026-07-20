@@ -13,6 +13,7 @@ export function StatusIcon({ status, size = 20 }: StatusIconProps) {
     case 'Sending': return <Send size={size} color={color} />
     case 'Submitted': return <CheckCircle size={size} color={color} />
     case 'Failed': return <XCircle size={size} color={color} />
+    default: return null
   }
 }
 
