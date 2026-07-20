@@ -1,5 +1,9 @@
 import { AnnotateCarouselItem } from '@/src/components/organisms/AnnotateCarouselItem'
+import { TutorialOverlay } from '@/src/components/organisms/TutorialOverlay'
+import { ANNOTATION_TUTORIAL_STEPS } from '@/src/config/tutorial'
 import { useAnnotateStateMachine } from '@/src/hooks/useAnnotateStateMachine'
+import { useTutorialStore } from '@/src/hooks/useTutorialStore'
+import { EVENTS, fireSimpleEvent } from '@/src/lib/analytics/analytics'
 import { router, useLocalSearchParams } from 'expo-router'
 import { Trash2 } from 'lucide-react-native'
 import { useState } from 'react'
@@ -17,6 +21,25 @@ export default function AnnotateScreen() {
     handleDone, handleBack, handleLongPressRemove } = useAnnotateStateMachine(cat_id)
   const [carouselHeight, setCarouselHeight] = useState(0)
   const [zoomedIn, setZoomedIn] = useState(false)
+
+  // ── Tutorial (first annotation entry only; replay resets status to 'unseen')
+  const tutorialStatus = useTutorialStore((s) => s.annotation_tutorial_status)
+  const setTutorialStatus = useTutorialStore((s) => s.setAnnotationTutorialStatus)
+  const [tutorialStartedAt, setTutorialStartedAt] = useState(0)
+  const handleTutorialShow = () => {
+    setTutorialStartedAt(Date.now())
+    fireSimpleEvent(EVENTS.TUTORIAL_STARTED)
+  }
+  const handleTutorialStep = (step: number) =>
+    fireSimpleEvent(EVENTS.TUTORIAL_STEP_COMPLETED, { step })
+  const handleTutorialSkip = (step: number) => {
+    setTutorialStatus('skipped')
+    fireSimpleEvent(EVENTS.TUTORIAL_SKIPPED, { step })
+  }
+  const handleTutorialComplete = () => {
+    setTutorialStatus('completed')
+    fireSimpleEvent(EVENTS.TUTORIAL_COMPLETED, { duration_ms: Date.now() - tutorialStartedAt })
+  }
 
   if (photos.length === 0) return (
     <View style={styles.empty}>
@@ -81,6 +104,15 @@ export default function AnnotateScreen() {
           <Text style={styles.navBtnPrimaryText}>{isLast ? 'Finish' : 'Done →'}</Text>
         </Pressable>
       </View>
+
+      <TutorialOverlay
+        open={tutorialStatus === 'unseen'}
+        steps={ANNOTATION_TUTORIAL_STEPS}
+        onShow={handleTutorialShow}
+        onStepCompleted={handleTutorialStep}
+        onSkip={handleTutorialSkip}
+        onComplete={handleTutorialComplete}
+      />
     </View>
   )
 }

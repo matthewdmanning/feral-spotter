@@ -8,4 +8,5 @@ export * from "./useAnnotationStore";
 export * from "./usePhotoStore";
 export * from "./useSettingsStore";
 export * from "./useSubmissionStore";
+export * from "./useTutorialStore";
 export * from "./useUIStore";
