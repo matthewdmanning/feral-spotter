@@ -4,6 +4,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
   root:             { flex: 1, backgroundColor: '#000' },
   flashOverlay:     { backgroundColor: '#fff', zIndex: 10 },
   topBar:           { position: 'absolute', top: rt.insets.top + 12, left: 0, right: 0, zIndex: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20 },
+  topBarRight:      { flexDirection: 'row', alignItems: 'center', gap: 10 },
   iconBtn:          { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border, alignItems: 'center', justifyContent: 'center', zIndex: 25 },
   pill:             { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 22, backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border, zIndex: 25 },
   pillText:         { color: theme.colors.text, fontSize: 15, fontWeight: '600' },

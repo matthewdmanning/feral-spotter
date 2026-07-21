@@ -127,31 +127,34 @@ export default function CameraScreen() {
       />
 
       <View style={styles.topBar}>
-        {hasPhotos ? (
-          <Pressable
-            onPress={handleDone}
-            style={styles.pill}
-            accessibilityRole="button"
-          >
-            <Text style={styles.pillText}>Done ({capturedPhotos.length})</Text>
-          </Pressable>
-        ) : (
-          <Pressable
-            onPress={handleClose}
-            style={styles.iconBtn}
-            accessibilityRole="button"
-          >
-            <X size={24} color={theme.colors.text} />
-          </Pressable>
-        )}
         <Pressable
-          onPress={cycleFlash}
+          onPress={handleClose}
           style={styles.iconBtn}
           accessibilityRole="button"
         >
-          {FlashIcon}
-          {flashMode === "auto" && <Text style={styles.autoA}>A</Text>}
+          <X size={24} color={theme.colors.text} />
         </Pressable>
+        <View style={styles.topBarRight}>
+          {hasPhotos && (
+            <Pressable
+              onPress={handleDone}
+              style={styles.pill}
+              accessibilityRole="button"
+            >
+              <Text style={styles.pillText}>
+                Done ({capturedPhotos.length})
+              </Text>
+            </Pressable>
+          )}
+          <Pressable
+            onPress={cycleFlash}
+            style={styles.iconBtn}
+            accessibilityRole="button"
+          >
+            {FlashIcon}
+            {flashMode === "auto" && <Text style={styles.autoA}>A</Text>}
+          </Pressable>
+        </View>
       </View>
 
       <View style={styles.bottomBar}>
