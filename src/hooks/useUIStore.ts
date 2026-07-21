@@ -20,6 +20,7 @@ interface UIState {
 
   setOnlineStatus: (isOnline: boolean) => void;
   addSessionPhoto: (photo: SubmissionPhoto) => void;
+  removeSessionPhoto: (localId: string) => void;
   showError: (title: string, message: string) => void;
   showSuccess: (title: string, message: string) => void;
   setSubmitting: (isSubmitting: boolean) => void;
@@ -38,6 +39,11 @@ export const useUIStore = create<UIState>()(
 
       addSessionPhoto: (photo) =>
         set((s) => ({ sessionPhotos: [...s.sessionPhotos, photo] })),
+
+      removeSessionPhoto: (localId) =>
+        set((s) => ({
+          sessionPhotos: s.sessionPhotos.filter((p) => p.local_id !== localId),
+        })),
 
       showError: (title, message) => Alert.alert(title, message),
       showSuccess: (title, message) => Alert.alert(title, message),
