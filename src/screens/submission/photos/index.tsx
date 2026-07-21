@@ -1,10 +1,14 @@
 import { PhotoPreviewModal } from "@/src/components/molecules/PhotoPreviewModal";
+import {
+  PermissionDenied,
+  PermissionPrimer,
+} from "@/src/components/organisms/PermissionPrimer";
 import { usePhotoSession } from "@/src/hooks/usePhotoSession";
 import type { SubmissionPhoto } from "@/src/types";
 import { Image } from "expo-image";
 import { Camera, Check, ImagePlus } from "lucide-react-native";
 import { useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { useUnistyles } from "react-native-unistyles";
 import { styles } from "./index.styles";
 
@@ -18,6 +22,7 @@ export default function PhotosScreen() {
     pickFromLibrary,
     handleDone,
     toggleChecked,
+    libraryGate,
   } = usePhotoSession();
   const [previewPhoto, setPreviewPhoto] = useState<SubmissionPhoto | null>(
     null,
@@ -124,6 +129,26 @@ export default function PhotosScreen() {
           onToggle={() => toggleChecked(previewPhoto.local_id)}
         />
       )}
+
+      <Modal
+        visible={libraryGate.visible}
+        animationType="slide"
+        onRequestClose={libraryGate.onDismiss}
+      >
+        {libraryGate.blocked ? (
+          <PermissionDenied
+            primer="photo_library"
+            onDismiss={libraryGate.onDismiss}
+          />
+        ) : (
+          <PermissionPrimer
+            primer="photo_library"
+            affirmLoading={libraryGate.loading}
+            onAffirm={libraryGate.onAffirm}
+            onDefer={libraryGate.onDefer}
+          />
+        )}
+      </Modal>
     </>
   );
 }

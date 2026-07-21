@@ -16,41 +16,15 @@ import {
   DATA_AGREEMENT_LINK_LABEL,
   PRIMER_SEQUENCE,
   TUTORIAL_SLIDES,
-  type PrimerKey,
 } from "@/src/config/onboardingCopy";
 import { AppButton } from "@/src/components/atoms/AppButton";
 import { PermissionPrimer } from "@/src/components/organisms/PermissionPrimer";
 import { useConsentStore } from "@/src/hooks/useConsentStore";
+import { requestPermission } from "@/src/lib/permissions";
 import { router } from "expo-router";
-import * as ImagePicker from "expo-image-picker";
-import * as Location from "expo-location";
 import { useCallback, useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import { VisionCamera } from "react-native-vision-camera";
 import { styles } from "./index.styles";
-
-// ─── OS permission requests, one per primer ──────────────────────────────────
-
-async function requestPermission(key: PrimerKey): Promise<boolean> {
-  switch (key) {
-    case "location": {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      return status === "granted";
-    }
-    case "camera": {
-      return await VisionCamera.requestCameraPermission();
-    }
-    case "photo_library": {
-      // Scoped access: iOS "limited" counts as granted — the primer promises
-      // "only the photos you pick", and limited access is exactly that.
-      const { status, accessPrivileges } =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
-      return status === "granted" || accessPrivileges === "limited";
-    }
-    default:
-      return false;
-  }
-}
 
 // ─── Steps: 4 tutorial slides, then N primers ────────────────────────────────
 
