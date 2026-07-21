@@ -1,6 +1,7 @@
 import { act, renderHook } from '@testing-library/react-native'
 import { Alert } from 'react-native'
 import { useCatSubmit } from '@/src/hooks/useCatSubmit'
+import { useConsentStore } from '@/src/hooks/useConsentStore'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
 import { useUIStore } from '@/src/hooks/useUIStore'
@@ -83,6 +84,9 @@ describe('useCatSubmit submit flow', () => {
       sessionPhotos: [],
       isSubmitting: false,
     })
+    useConsentStore.setState({
+      dataAgreementAcceptedAt: new Date().toISOString(),
+    })
   })
 
   it('only submits photos that are uploaded with both a cloud path and url', async () => {
@@ -138,5 +142,24 @@ describe('useCatSubmit submit flow', () => {
         photo_urls: ['https://cdn/uploaded.jpg'],
       }),
     ])
+  })
+
+  it('blocks submission when the data agreement has not been accepted', async () => {
+    useConsentStore.setState({ dataAgreementAcceptedAt: null })
+    const alertSpy = jest.spyOn(Alert, 'alert')
+
+    const { result } = renderHook(() =>
+      useCatSubmit({ form: completedForm, annotationEnabled: false }),
+    )
+
+    await act(async () => {
+      result.current.handleDone()
+    })
+
+    expect(submitObservation).not.toHaveBeenCalled()
+    expect(alertSpy).toHaveBeenCalledWith(
+      'Consent Required',
+      'You must accept the data agreement before submitting.',
+    )
   })
 })

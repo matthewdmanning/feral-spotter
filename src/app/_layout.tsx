@@ -54,6 +54,8 @@ export default function RootLayout() {
           options={{ title: "Create Account", headerBackTitle: "" }}
         />
 
+        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+
         <Stack.Screen
           name="camera"
           options={{
