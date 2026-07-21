@@ -7,6 +7,7 @@
 
 import { usePhotoStore, useSubmissionStore, useUIStore } from "@/src/hooks";
 import type { CatFormValues } from "@/src/hooks/useCatForm";
+import { useConsentStore } from "@/src/hooks/useConsentStore";
 import type { ObservedCat } from "@/src/hooks/useSubmissionStore";
 import {
   EVENTS,
@@ -119,6 +120,14 @@ export function useCatSubmit({
   // ── Done → confirm → API submit ───────────────────────────────────────────
 
   const handleDone = useCallback(() => {
+    if (!useConsentStore.getState().dataAgreementAcceptedAt) {
+      showError(
+        "Consent Required",
+        "You must accept the data agreement before submitting.",
+      );
+      return;
+    }
+
     const localId = existingCat?.local_id ?? randomUUID();
     const cat = buildCat(localId);
 
