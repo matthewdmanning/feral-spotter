@@ -9,6 +9,9 @@
  * or hook required. See: Edge to edge layout guide.
  *
  * Providers:
+ *   GestureHandlerRootView — required at the app root for
+ *     react-native-gesture-handler-backed gestures (react-navigation
+ *     native-stack swipe-back included) to work at all.
  *   PostHogProvider — analytics; a third-party data-collection library, so it
  *     only mounts once the user has accepted the consent disclosure AND the
  *     narrower analytics opt-in (see useConsentStore) — in addition to the
@@ -31,6 +34,7 @@ import {
 } from '@/src/lib/analytics/analytics'
 import { PostHogProvider, usePostHog } from 'posthog-react-native'
 import { useEffect, type ReactNode } from 'react'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 
 const POSTHOG_KEY = process.env.EXPO_PUBLIC_POSTHOG_KEY ?? ''
 const POSTHOG_HOST = 'https://app.posthog.com'
@@ -63,22 +67,24 @@ export function AppProviders({ children }: AppProvidersProps) {
   const hasAcceptedAnalytics = useConsentStore((s) => s.analyticsAccepted)
 
   return (
-    <ErrorBoundary>
-      {IS_PRERELEASE &&
-      POSTHOG_KEY &&
-      hasAcceptedConsent &&
-      hasAcceptedAnalytics ? (
-        <PostHogProvider
-          apiKey={POSTHOG_KEY}
-          options={{ host: POSTHOG_HOST }}
-          debug={__DEV__}
-        >
-          <AnalyticsBridge />
-          {children}
-        </PostHogProvider>
-      ) : (
-        children
-      )}
-    </ErrorBoundary>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ErrorBoundary>
+        {IS_PRERELEASE &&
+        POSTHOG_KEY &&
+        hasAcceptedConsent &&
+        hasAcceptedAnalytics ? (
+          <PostHogProvider
+            apiKey={POSTHOG_KEY}
+            options={{ host: POSTHOG_HOST }}
+            debug={__DEV__}
+          >
+            <AnalyticsBridge />
+            {children}
+          </PostHogProvider>
+        ) : (
+          children
+        )}
+      </ErrorBoundary>
+    </GestureHandlerRootView>
   )
 }
