@@ -6,6 +6,7 @@ import { useUnistyles } from 'react-native-unistyles'
 import { useConsentStore } from '@/src/hooks/useConsentStore'
 import { PERMISSION_MAP } from '@/src/lib/permissions'
 import { useBackHandler } from '@/src/hooks/useBackHandler'
+import consentCopy from '@/src/content/consentDisclosure.json'
 import { styles } from './index.styles'
 
 export default function ConsentScreen() {
@@ -73,31 +74,25 @@ export default function ConsentScreen() {
   return (
     <View style={styles.root}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <Text style={styles.title}>Before you start</Text>
-        <Text style={styles.body}>
-          FeralSpotter collects the following each time you submit a sighting:
-        </Text>
-        <Text style={styles.item}><Text style={styles.itemLabel}>Photos</Text> you take of the animal</Text>
-        <Text style={styles.item}><Text style={styles.itemLabel}>Location</Text> (GPS) where the sighting occurred</Text>
-        <Text style={styles.item}><Text style={styles.itemLabel}>Details you enter</Text> about the animal (appearance, condition, etc.)</Text>
-        <Text style={styles.item}><Text style={styles.itemLabel}>Your Google account</Text>, so we can follow up if a submission needs clarification</Text>
-        <Text style={styles.body}>
-          This data is uploaded to a private cloud storage bucket and used to build a dataset for
-          feral cat population tracking and research. It is not made public and is not shared
-          outside this project.
-        </Text>
-        <Text style={styles.body}>
-          By continuing, you agree to this data being collected and uploaded when you submit a sighting.
-        </Text>
+        <Text style={styles.title}>{consentCopy.title}</Text>
+        <Text style={styles.body}>{consentCopy.intro}</Text>
+        {consentCopy.items.map((item) => (
+          <Text key={item.label} style={styles.item}>
+            <Text style={styles.itemLabel}>{item.label}</Text> {item.text}
+          </Text>
+        ))}
+        {consentCopy.body.map((paragraph) => (
+          <Text key={paragraph} style={styles.body}>{paragraph}</Text>
+        ))}
 
         <Pressable
           onPress={handleAgree} disabled={busy}
           style={[styles.agreeBtn, busy && styles.agreeBusy]}
-          accessibilityRole="button" accessibilityLabel="I Agree — Continue"
+          accessibilityRole="button" accessibilityLabel={consentCopy.agreeLabel}
         >
           {busy
             ? <ActivityIndicator color={theme.colors.accentText} />
-            : <Text style={styles.agreeText}>I Agree — Continue</Text>
+            : <Text style={styles.agreeText}>{consentCopy.agreeLabel}</Text>
           }
         </Pressable>
       </ScrollView>

@@ -84,8 +84,6 @@ describe('useCatSubmit submit flow', () => {
       sessionPhotos: [],
       isSubmitting: false,
     })
-    // Submission is gated on disclosure consent — this suite exercises the
-    // consented path; the guard itself belongs in its own test.
     useConsentStore.setState({ accepted: true, acceptedVersion: CONSENT_VERSION })
   })
 
@@ -144,8 +142,22 @@ describe('useCatSubmit submit flow', () => {
     ])
   })
 
-  it('blocks submission when the data-collection disclosure has not been accepted', async () => {
+  it('still submits (photos/details are not privileged) when consent has not been accepted', async () => {
     useConsentStore.setState({ accepted: false, acceptedVersion: null })
+    usePhotoStore.setState({
+      photos: [
+        photo({
+          local_id: 'photo-uploaded',
+          uploaded: true,
+          cloud_storage_path: 'gs://bucket/uploaded.jpg',
+          cloud_storage_url: 'https://cdn/uploaded.jpg',
+        }),
+      ],
+    })
+    ;(submitObservation as jest.Mock).mockResolvedValue({
+      status: 'success',
+      id: 'submission-1',
+    })
     jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
       buttons?.find((b) => b.text === 'Submit')?.onPress?.()
     })
@@ -158,6 +170,8 @@ describe('useCatSubmit submit flow', () => {
       result.current.handleDone()
     })
 
-    expect(submitObservation).not.toHaveBeenCalled()
+    expect(submitObservation).toHaveBeenCalledWith(
+      expect.objectContaining({ photo_paths: ['gs://bucket/uploaded.jpg'] }),
+    )
   })
 })

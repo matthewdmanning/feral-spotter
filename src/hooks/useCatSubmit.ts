@@ -7,7 +7,6 @@
 
 import { usePhotoStore, useSubmissionStore, useUIStore } from "@/src/hooks";
 import type { CatFormValues } from "@/src/hooks/useCatForm";
-import { hasAcceptedConsent } from "@/src/hooks/useConsentStore";
 import type { ObservedCat } from "@/src/hooks/useSubmissionStore";
 import {
   EVENTS,
@@ -139,15 +138,6 @@ export function useCatSubmit({
           text: "Submit",
           style: "default",
           onPress: async () => {
-            if (!hasAcceptedConsent()) {
-              showError(
-                "Consent Required",
-                "You need to accept the data-collection disclosure before submitting.",
-              );
-              router.replace("/consent");
-              return;
-            }
-
             setIsSubmitting(true);
             setSubmitting(true);
 

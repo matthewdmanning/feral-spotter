@@ -3,7 +3,13 @@
  * Best-effort device GPS capture at photo-take time. Never throws and never
  * blocks the caller past `timeoutMs` — callers use this to enrich a photo's
  * exif, not to gate capture on.
+ *
+ * Gated on the data-collection disclosure, not just OS permission: the app
+ * stays usable without consent (photos still capture, submission still
+ * works), but location — privileged data per the disclosure — is never
+ * touched until the user has accepted it.
  */
+import { hasAcceptedConsent } from "@/src/hooks/useConsentStore";
 import * as Location from "expo-location";
 
 export interface CapturedLocation {
@@ -15,6 +21,8 @@ export interface CapturedLocation {
 export async function captureCurrentLocation(
   timeoutMs = 4000,
 ): Promise<CapturedLocation | undefined> {
+  if (!hasAcceptedConsent()) return undefined;
+
   try {
     // Foreground-only check — the grant itself was already requested at the
     // consent gate (react-native-permissions); this just confirms it's live.
