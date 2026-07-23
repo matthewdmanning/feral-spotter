@@ -208,10 +208,11 @@ does today if the user never grants.
   such a screen would call `check()` live rather than reading cached state.
 - Google-account consent — auth provider is still a stub (`src/lib/auth/index.ts`), nothing to gate
   yet.
-- Location/GPS permission — no live `expo-location` capture exists anywhere in the codebase yet
-  (EXIF-only, passive); add its own `AppPermission` entry when that feature is actually built
-  (`PERMISSIONS.IOS.LOCATION_WHEN_IN_USE` / `PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION` slot in
-  cleanly).
+- Live GPS capture — location *permission* (when-in-use only, requested from the consent screen
+  alongside camera/media library — see `src/lib/permissions.ts`) is now in place, but no
+  `expo-location` capture call exists anywhere in the codebase yet; GPS is still EXIF-only/passive
+  from photo metadata. Wiring an actual `getCurrentPositionAsync()` call into the submission flow
+  is separate follow-up work.
 
 ## Files touched
 

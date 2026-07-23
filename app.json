@@ -11,7 +11,8 @@
       "icon": "./assets/expo.icon",
       "infoPlist": {
         "NSCameraUsageDescription": "FeralSpotter uses your camera to capture cat sighting photos for the population-tracking dataset.",
-        "NSPhotoLibraryAddUsageDescription": "FeralSpotter saves sighting photos to your library when \"keep photos on device\" is enabled."
+        "NSPhotoLibraryAddUsageDescription": "FeralSpotter saves sighting photos to your library when \"keep photos on device\" is enabled.",
+        "NSLocationWhenInUseUsageDescription": "FeralSpotter uses your location to record where a cat sighting occurred. Location is only accessed while the app is open."
       }
     },
     "android": {
@@ -23,7 +24,7 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.mmanning.feralspotter",
-      "permissions": ["android.permission.CAMERA", "android.permission.READ_MEDIA_IMAGES"]
+      "permissions": ["android.permission.CAMERA", "android.permission.READ_MEDIA_IMAGES", "android.permission.ACCESS_FINE_LOCATION"]
     },
     "web": {
       "output": "static",
@@ -46,7 +47,7 @@
       [
         "react-native-permissions",
         {
-          "iosPermissions": ["Camera", "PhotoLibraryAddOnly"]
+          "iosPermissions": ["Camera", "PhotoLibraryAddOnly", "LocationWhenInUse"]
         }
       ]
     ],

@@ -18,13 +18,18 @@ export default function ConsentScreen() {
   const handleAgree = useCallback(async () => {
     setBusy(true)
     try {
-      const [cameraStatus, mediaStatus] = await Promise.all([
+      const [cameraStatus, mediaStatus, locationStatus] = await Promise.all([
         request(PERMISSION_MAP.camera),
         request(PERMISSION_MAP.mediaLibrary),
+        request(PERMISSION_MAP.location),
       ])
       await markConsentAccepted()
 
-      if (cameraStatus === RESULTS.BLOCKED || mediaStatus === RESULTS.BLOCKED) {
+      if (
+        cameraStatus === RESULTS.BLOCKED ||
+        mediaStatus === RESULTS.BLOCKED ||
+        locationStatus === RESULTS.BLOCKED
+      ) {
         setBlocked(true)
         return
       }
@@ -43,8 +48,8 @@ export default function ConsentScreen() {
       <View style={styles.gate}>
         <Text style={styles.gateTitle}>Permission Blocked</Text>
         <Text style={styles.gateBody}>
-          Camera or photo access was denied. You can enable it later in Settings, or continue
-          without it — you&apos;ll be asked again when you try to use the camera.
+          Camera, photo, or location access was denied. You can enable it later in Settings, or
+          continue without it — you&apos;ll be asked again when the app needs it.
         </Text>
         <Pressable
           onPress={() => openSettings()}
