@@ -1,10 +1,20 @@
 import { SegmentedControl } from "@/src/components/atoms/SegmentedControl";
 import {
+  PermissionDenied,
+  PermissionPrimer,
+} from "@/src/components/organisms/PermissionPrimer";
+import {
   AUTOSAVE_CLEAR_MS,
   AUTOSAVE_INSTANT_MS,
   AUTOSAVE_TEXT_MS,
 } from "@/src/config/constants";
 import { useSubmissionStore } from "@/src/hooks";
+import { useConsentStore } from "@/src/hooks/useConsentStore";
+import {
+  getPermissionState,
+  requestPermission,
+  type PermissionState,
+} from "@/src/lib/permissions";
 import type {
   LocationMethod,
   TimeMethod,
@@ -24,7 +34,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { Alert, Pressable, Text, TextInput, View } from "react-native";
+import { Alert, Modal, Pressable, Text, TextInput, View } from "react-native";
 import { useUnistyles } from "react-native-unistyles";
 import { styles } from "./index.styles";
 
@@ -61,6 +71,10 @@ export default function CreateSubmissionScreen() {
   );
   const [address, setAddressLocal] = useState(submission.address ?? "");
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const setPrimerStatus = useConsentStore((s) => s.setPrimerStatus);
+  const [locationGateState, setLocationGateState] =
+    useState<PermissionState | null>(null);
+  const [locationGateLoading, setLocationGateLoading] = useState(false);
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMountedRef = useRef(true);
@@ -136,6 +150,15 @@ export default function CreateSubmissionScreen() {
       setLocationTypeLocal(v);
       setLocationType(v);
       scheduleAutosave(AUTOSAVE_INSTANT_MS);
+      // Actual device-GPS capture isn't wired anywhere yet (tracked
+      // elsewhere in #31) — this only re-primes the permission so it's
+      // ready when that lands, per issue #41.
+      if (v === "device") {
+        void (async () => {
+          const state = await getPermissionState("location");
+          if (state !== "granted") setLocationGateState(state);
+        })();
+      }
     },
     [setLocationType, scheduleAutosave],
   );
@@ -160,6 +183,29 @@ export default function CreateSubmissionScreen() {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     performSave();
   }, [performSave]);
+
+  const handleLocationGateAffirm = useCallback(() => {
+    void (async () => {
+      setLocationGateLoading(true);
+      try {
+        const granted = await requestPermission("location");
+        setPrimerStatus("location", granted ? "granted" : "declined");
+      } finally {
+        setLocationGateLoading(false);
+        setLocationGateState(null);
+      }
+    })();
+  }, [setPrimerStatus]);
+
+  const handleLocationGateDefer = useCallback(() => {
+    setPrimerStatus("location", "deferred");
+    setLocationGateState(null);
+  }, [setPrimerStatus]);
+
+  const handleLocationGateDismiss = useCallback(
+    () => setLocationGateState(null),
+    [],
+  );
 
   const handleContinue = useCallback(async () => {
     const errors = validateSubmission({
@@ -248,6 +294,26 @@ export default function CreateSubmissionScreen() {
           ))}
         </View>
       )}
+
+      <Modal
+        visible={locationGateState !== null}
+        animationType="slide"
+        onRequestClose={handleLocationGateDismiss}
+      >
+        {locationGateState === "blocked" ? (
+          <PermissionDenied
+            primer="location"
+            onDismiss={handleLocationGateDismiss}
+          />
+        ) : (
+          <PermissionPrimer
+            primer="location"
+            affirmLoading={locationGateLoading}
+            onAffirm={handleLocationGateAffirm}
+            onDefer={handleLocationGateDefer}
+          />
+        )}
+      </Modal>
     </View>
   );
 }

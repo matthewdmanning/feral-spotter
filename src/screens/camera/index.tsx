@@ -1,10 +1,11 @@
+import { PermissionDenied, PermissionPrimer } from "@/src/components/organisms/PermissionPrimer";
 import { useCameraCapture } from "@/src/hooks/useCameraCapture";
+import { useConsentStore } from "@/src/hooks/useConsentStore";
 import { FlashList } from "@shopify/flash-list";
 import { Stack } from "expo-router";
 import { SwitchCamera, X, Zap, ZapOff } from "lucide-react-native";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import {
-  Linking,
   Pressable,
   StyleSheet as RNStyleSheet,
   Text,
@@ -22,7 +23,10 @@ import { styles } from "./index.styles";
 
 export default function CameraScreen() {
   const { theme } = useUnistyles();
-  const { hasPermission, requestPermission } = useCameraPermission();
+  const { hasPermission, canRequestPermission, requestPermission } =
+    useCameraPermission();
+  const setPrimerStatus = useConsentStore((s) => s.setPrimerStatus);
+  const [requestingPermission, setRequestingPermission] = useState(false);
   const {
     device,
     cameraRef,
@@ -58,30 +62,39 @@ export default function CameraScreen() {
     });
   }, [shutterScale]);
 
-  if (!hasPermission)
+  if (!hasPermission) {
+    if (!canRequestPermission)
+      return (
+        <>
+          <Stack.Screen options={{ headerShown: false }} />
+          <PermissionDenied primer="camera" onDismiss={handleClose} />
+        </>
+      );
     return (
-      <View style={styles.gate}>
+      <>
         <Stack.Screen options={{ headerShown: false }} />
-        <Text style={styles.gateTitle}>Camera Access Required</Text>
-        <Text style={styles.gateBody}>
-          FeralSpotter needs camera access to capture cat observations.
-        </Text>
-        <Pressable
-          onPress={requestPermission}
-          style={styles.gatePrimary}
-          accessibilityRole="button"
-        >
-          <Text style={styles.gatePrimaryText}>Allow Camera</Text>
-        </Pressable>
-        <Pressable
-          onPress={() => Linking.openSettings()}
-          style={styles.gateSecondary}
-          accessibilityRole="button"
-        >
-          <Text style={styles.gateSecondaryText}>Open Settings</Text>
-        </Pressable>
-      </View>
+        <PermissionPrimer
+          primer="camera"
+          affirmLoading={requestingPermission}
+          onAffirm={() => {
+            void (async () => {
+              setRequestingPermission(true);
+              try {
+                const granted = await requestPermission();
+                setPrimerStatus("camera", granted ? "granted" : "declined");
+              } finally {
+                setRequestingPermission(false);
+              }
+            })();
+          }}
+          onDefer={() => {
+            setPrimerStatus("camera", "deferred");
+            handleClose();
+          }}
+        />
+      </>
     );
+  }
 
   if (!device)
     return (
