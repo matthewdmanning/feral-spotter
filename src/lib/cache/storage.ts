@@ -31,6 +31,9 @@ export const asyncStorage = {
   removeItem: (key: string) => AsyncStorage.removeItem(key),
 };
 
+// consent-store intentionally excluded — disclosure acceptance and OS permission
+// grants aren't "cache," and wiping it here would force re-consent on a routine
+// cache clear without actually revoking the underlying OS permissions.
 const PERSISTED_STORE_KEYS = [
   "ui-store",
   "annotation-store",

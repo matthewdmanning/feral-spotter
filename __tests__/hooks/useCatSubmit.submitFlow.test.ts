@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react-native'
 import { Alert } from 'react-native'
 import { useCatSubmit } from '@/src/hooks/useCatSubmit'
-import { useConsentStore } from '@/src/hooks/useConsentStore'
+import { CONSENT_VERSION, useConsentStore } from '@/src/hooks/useConsentStore'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
 import { useUIStore } from '@/src/hooks/useUIStore'
@@ -84,9 +84,7 @@ describe('useCatSubmit submit flow', () => {
       sessionPhotos: [],
       isSubmitting: false,
     })
-    useConsentStore.setState({
-      dataAgreementAcceptedAt: new Date().toISOString(),
-    })
+    useConsentStore.setState({ accepted: true, acceptedVersion: CONSENT_VERSION })
   })
 
   it('only submits photos that are uploaded with both a cloud path and url', async () => {
@@ -144,9 +142,25 @@ describe('useCatSubmit submit flow', () => {
     ])
   })
 
-  it('blocks submission when the data agreement has not been accepted', async () => {
-    useConsentStore.setState({ dataAgreementAcceptedAt: null })
-    const alertSpy = jest.spyOn(Alert, 'alert')
+  it('still submits (photos/details are not privileged) when consent has not been accepted', async () => {
+    useConsentStore.setState({ accepted: false, acceptedVersion: null })
+    usePhotoStore.setState({
+      photos: [
+        photo({
+          local_id: 'photo-uploaded',
+          uploaded: true,
+          cloud_storage_path: 'gs://bucket/uploaded.jpg',
+          cloud_storage_url: 'https://cdn/uploaded.jpg',
+        }),
+      ],
+    })
+    ;(submitObservation as jest.Mock).mockResolvedValue({
+      status: 'success',
+      id: 'submission-1',
+    })
+    jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
+      buttons?.find((b) => b.text === 'Submit')?.onPress?.()
+    })
 
     const { result } = renderHook(() =>
       useCatSubmit({ form: completedForm, annotationEnabled: false }),
@@ -156,10 +170,8 @@ describe('useCatSubmit submit flow', () => {
       result.current.handleDone()
     })
 
-    expect(submitObservation).not.toHaveBeenCalled()
-    expect(alertSpy).toHaveBeenCalledWith(
-      'Consent Required',
-      'You must accept the data agreement before submitting.',
+    expect(submitObservation).toHaveBeenCalledWith(
+      expect.objectContaining({ photo_paths: ['gs://bucket/uploaded.jpg'] }),
     )
   })
 })

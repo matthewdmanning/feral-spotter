@@ -6,6 +6,8 @@ module.exports = {
   moduleNameMapper: {
     '^@react-native-google-signin/google-signin/jest/build/jest/setup$':
       '<rootDir>/node_modules/@react-native-google-signin/google-signin/jest/build/jest/setup.js',
+    '^react-native-permissions$':
+      '<rootDir>/node_modules/react-native-permissions/dist/commonjs/extras/mock.js',
   },
   coverageReporters: ['lcov', 'text-summary'],
   collectCoverageFrom: [

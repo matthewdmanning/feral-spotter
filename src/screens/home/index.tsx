@@ -18,12 +18,12 @@ export default function HomeScreen() {
   const [promptVisible, setPromptVisible] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
 
-  // First launch → onboarding; otherwise show sign-in prompt if unauthenticated
+  // First launch → register; otherwise show sign-in prompt if unauthenticated
   useEffect(() => {
     (async () => {
       if (await isFirstLaunch()) {
         await markLaunched();
-        router.replace("/onboarding");
+        router.replace("/register");
         return;
       }
       if (!isAuthenticated) setPromptVisible(true);

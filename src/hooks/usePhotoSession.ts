@@ -8,17 +8,14 @@
 
 import { usePhotoStore, useSubmissionStore, useUIStore } from "@/src/hooks";
 import { useBackHandler } from "@/src/hooks/useBackHandler";
-import { useConsentStore } from "@/src/hooks/useConsentStore";
-import {
-  getPermissionState,
-  requestPermission,
-  type PermissionState,
-} from "@/src/lib/permissions";
+import { captureCurrentLocation } from "@/src/lib/location";
+import { PERMISSION_MAP } from "@/src/lib/permissions";
 import type { SubmissionPhoto } from "@/src/types";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { randomUUID } from "expo-crypto";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { check, RESULTS } from "react-native-permissions";
 
 export interface PhotoSessionResult {
   sessionPhotos: SubmissionPhoto[];
@@ -28,15 +25,6 @@ export interface PhotoSessionResult {
   pickFromLibrary: () => Promise<void>;
   handleDone: () => void;
   toggleChecked: (id: string) => void;
-  /** Contextual re-prime, shown when photo_library permission isn't granted. */
-  libraryGate: {
-    visible: boolean;
-    blocked: boolean;
-    loading: boolean;
-    onAffirm: () => void;
-    onDefer: () => void;
-    onDismiss: () => void;
-  };
 }
 
 export function usePhotoSession(): PhotoSessionResult {
@@ -47,11 +35,6 @@ export function usePhotoSession(): PhotoSessionResult {
   const submissionPhotos = usePhotoStore((s) => s.photos);
   const addPhotos = usePhotoStore((s) => s.addPhotos);
   const removePhoto = usePhotoStore((s) => s.removePhoto);
-  const setPrimerStatus = useConsentStore((s) => s.setPrimerStatus);
-
-  const [libraryGateState, setLibraryGateState] =
-    useState<PermissionState | null>(null);
-  const [libraryGateLoading, setLibraryGateLoading] = useState(false);
 
   const submissionIds = useMemo(
     () => new Set(submissionPhotos.map((p) => p.local_id)),
@@ -123,8 +106,8 @@ export function usePhotoSession(): PhotoSessionResult {
   });
 
   const capturePhoto = useCallback(async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== "granted") {
+    const status = await check(PERMISSION_MAP.camera);
+    if (status !== RESULTS.GRANTED && status !== RESULTS.LIMITED) {
       showError("Permission Denied", "Camera access is required");
       return;
     }
@@ -135,11 +118,15 @@ export function usePhotoSession(): PhotoSessionResult {
       exif: true,
     });
     if (!result.canceled && result.assets.length > 0) {
-      addSessionPhoto(buildPhoto(result.assets[0]));
+      const photo = buildPhoto(result.assets[0]);
+      // Prefer a live GPS fix over whatever (if anything) the camera app embedded in EXIF.
+      const location = await captureCurrentLocation();
+      if (location) photo.exif = { ...photo.exif, ...location };
+      addSessionPhoto(photo);
     }
   }, [addSessionPhoto, showError]);
 
-  const launchLibraryPicker = useCallback(async () => {
+  const pickFromLibrary = useCallback(async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsMultipleSelection: true,
@@ -150,36 +137,6 @@ export function usePhotoSession(): PhotoSessionResult {
       result.assets.forEach((asset) => addSessionPhoto(buildPhoto(asset)));
     }
   }, [addSessionPhoto]);
-
-  const pickFromLibrary = useCallback(async () => {
-    const state = await getPermissionState("photo_library");
-    if (state === "granted") {
-      await launchLibraryPicker();
-      return;
-    }
-    setLibraryGateState(state);
-  }, [launchLibraryPicker]);
-
-  const handleLibraryAffirm = useCallback(() => {
-    void (async () => {
-      setLibraryGateLoading(true);
-      try {
-        const granted = await requestPermission("photo_library");
-        setPrimerStatus("photo_library", granted ? "granted" : "declined");
-        setLibraryGateState(null);
-        if (granted) await launchLibraryPicker();
-      } finally {
-        setLibraryGateLoading(false);
-      }
-    })();
-  }, [launchLibraryPicker, setPrimerStatus]);
-
-  const handleLibraryDefer = useCallback(() => {
-    setPrimerStatus("photo_library", "deferred");
-    setLibraryGateState(null);
-  }, [setPrimerStatus]);
-
-  const handleLibraryDismiss = useCallback(() => setLibraryGateState(null), []);
 
   const checkedCount = sessionPhotos.filter(
     (p) => !unchecked.has(p.local_id),
@@ -193,13 +150,5 @@ export function usePhotoSession(): PhotoSessionResult {
     pickFromLibrary,
     handleDone,
     toggleChecked,
-    libraryGate: {
-      visible: libraryGateState !== null,
-      blocked: libraryGateState === "blocked",
-      loading: libraryGateLoading,
-      onAffirm: handleLibraryAffirm,
-      onDefer: handleLibraryDefer,
-      onDismiss: handleLibraryDismiss,
-    },
   };
 }

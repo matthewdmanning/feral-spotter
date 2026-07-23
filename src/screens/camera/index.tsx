@@ -1,10 +1,9 @@
-import { PermissionDenied, PermissionPrimer } from "@/src/components/organisms/PermissionPrimer";
 import { useCameraCapture } from "@/src/hooks/useCameraCapture";
-import { useConsentStore } from "@/src/hooks/useConsentStore";
+import { useCameraAccess } from "@/src/hooks/useCameraAccess";
 import { FlashList } from "@shopify/flash-list";
 import { Stack } from "expo-router";
 import { SwitchCamera, X, Zap, ZapOff } from "lucide-react-native";
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 import {
   Pressable,
   StyleSheet as RNStyleSheet,
@@ -18,15 +17,12 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { useUnistyles } from "react-native-unistyles";
-import { Camera, useCameraPermission } from "react-native-vision-camera";
+import { Camera } from "react-native-vision-camera";
 import { styles } from "./index.styles";
 
 export default function CameraScreen() {
   const { theme } = useUnistyles();
-  const { hasPermission, canRequestPermission, requestPermission } =
-    useCameraPermission();
-  const setPrimerStatus = useConsentStore((s) => s.setPrimerStatus);
-  const [requestingPermission, setRequestingPermission] = useState(false);
+  const { hasPermission, requestPermission, openSettings } = useCameraAccess();
   const {
     device,
     cameraRef,
@@ -62,39 +58,30 @@ export default function CameraScreen() {
     });
   }, [shutterScale]);
 
-  if (!hasPermission) {
-    if (!canRequestPermission)
-      return (
-        <>
-          <Stack.Screen options={{ headerShown: false }} />
-          <PermissionDenied primer="camera" onDismiss={handleClose} />
-        </>
-      );
+  if (!hasPermission)
     return (
-      <>
+      <View style={styles.gate}>
         <Stack.Screen options={{ headerShown: false }} />
-        <PermissionPrimer
-          primer="camera"
-          affirmLoading={requestingPermission}
-          onAffirm={() => {
-            void (async () => {
-              setRequestingPermission(true);
-              try {
-                const granted = await requestPermission();
-                setPrimerStatus("camera", granted ? "granted" : "declined");
-              } finally {
-                setRequestingPermission(false);
-              }
-            })();
-          }}
-          onDefer={() => {
-            setPrimerStatus("camera", "deferred");
-            handleClose();
-          }}
-        />
-      </>
+        <Text style={styles.gateTitle}>Camera Access Required</Text>
+        <Text style={styles.gateBody}>
+          FeralSpotter needs camera access to capture cat observations.
+        </Text>
+        <Pressable
+          onPress={requestPermission}
+          style={styles.gatePrimary}
+          accessibilityRole="button"
+        >
+          <Text style={styles.gatePrimaryText}>Allow Camera</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => openSettings()}
+          style={styles.gateSecondary}
+          accessibilityRole="button"
+        >
+          <Text style={styles.gateSecondaryText}>Open Settings</Text>
+        </Pressable>
+      </View>
     );
-  }
 
   if (!device)
     return (

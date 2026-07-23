@@ -7,7 +7,6 @@
 
 import { usePhotoStore, useSubmissionStore, useUIStore } from "@/src/hooks";
 import type { CatFormValues } from "@/src/hooks/useCatForm";
-import { useConsentStore } from "@/src/hooks/useConsentStore";
 import type { ObservedCat } from "@/src/hooks/useSubmissionStore";
 import {
   EVENTS,
@@ -120,14 +119,6 @@ export function useCatSubmit({
   // ── Done → confirm → API submit ───────────────────────────────────────────
 
   const handleDone = useCallback(() => {
-    if (!useConsentStore.getState().dataAgreementAcceptedAt) {
-      showError(
-        "Consent Required",
-        "You must accept the data agreement before submitting.",
-      );
-      return;
-    }
-
     const localId = existingCat?.local_id ?? randomUUID();
     const cat = buildCat(localId);
 
@@ -173,10 +164,17 @@ export function useCatSubmit({
                   p.cloud_storage_path != null &&
                   p.cloud_storage_url != null,
               );
+              const photoLocations = uploadedPhotos.flatMap((p) => {
+                const { latitude, longitude } = p.exif ?? {};
+                if (latitude == null || longitude == null) return [];
+                return [{ path: p.cloud_storage_path, latitude, longitude }];
+              });
+
               const payload: SubmissionApiPayload = {
                 submission,
                 cats: allCats,
                 photo_paths: uploadedPhotos.map((p) => p.cloud_storage_path),
+                ...(photoLocations.length > 0 && { photo_locations: photoLocations }),
               };
               const response = await submitObservation(payload);
 

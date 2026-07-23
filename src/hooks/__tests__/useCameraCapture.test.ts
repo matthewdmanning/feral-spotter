@@ -2,6 +2,25 @@ import { renderHook } from '@testing-library/react-native'
 import { router } from 'expo-router'
 import { useCameraCapture } from '../useCameraCapture'
 
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+)
+
+jest.mock('react-native-mmkv', () => ({
+  createMMKV: jest.fn(() => ({
+    getString: jest.fn(),
+    set: jest.fn(),
+    delete: jest.fn(),
+  })),
+}))
+
+jest.mock('expo-location', () => ({
+  getForegroundPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'denied' })),
+  getCurrentPositionAsync: jest.fn(),
+  PermissionStatus: { GRANTED: 'granted' },
+  Accuracy: { Balanced: 3 },
+}))
+
 jest.mock('expo-router', () => ({ router: { back: jest.fn(), navigate: jest.fn() } }))
 
 jest.mock('react-native-vision-camera', () => ({

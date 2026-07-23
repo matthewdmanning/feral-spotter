@@ -8,7 +8,12 @@
     "scheme": "feralspotter",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "infoPlist": {
+        "NSCameraUsageDescription": "FeralSpotter uses your camera to capture cat sighting photos for the population-tracking dataset.",
+        "NSPhotoLibraryAddUsageDescription": "FeralSpotter saves sighting photos to your library when \"keep photos on device\" is enabled.",
+        "NSLocationWhenInUseUsageDescription": "FeralSpotter uses your location to record where a cat sighting occurred. Location is only accessed while the app is open."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -18,7 +23,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.mmanning.feralspotter"
+      "package": "com.mmanning.feralspotter",
+      "permissions": ["android.permission.CAMERA", "android.permission.READ_MEDIA_IMAGES", "android.permission.ACCESS_FINE_LOCATION"]
     },
     "web": {
       "output": "static",
@@ -37,7 +43,13 @@
         }
       ],
       "expo-secure-store",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "react-native-permissions",
+        {
+          "iosPermissions": ["Camera", "PhotoLibraryAddOnly", "LocationWhenInUse"]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

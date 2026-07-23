@@ -1,0 +1,16 @@
+{
+  "title": "Before you start",
+  "intro": "FeralSpotter captures the following at the moment you take a photo, and uploads it when you submit a sighting:",
+  "items": [
+    { "label": "Photos", "text": "captured when you take them of the animal" },
+    { "label": "Location", "text": "(GPS) captured at the moment you take a photo" },
+    { "label": "Details you enter", "text": "about the animal (appearance, condition, etc.), captured when you submit" },
+    { "label": "Your Google account", "text": "so we can follow up if a submission needs clarification" },
+    { "label": "Anonymous usage analytics", "text": "such as app events and crash data, to help us improve FeralSpotter" }
+  ],
+  "body": [
+    "This data is uploaded to a private cloud storage bucket and used to build a dataset for feral cat population tracking and research. It is not made public and is not shared outside this project.",
+    "By continuing, you agree to photos and location being captured when you take a photo, and to all of this data being uploaded and analytics being collected as described above."
+  ],
+  "agreeLabel": "I Agree — Continue"
+}
