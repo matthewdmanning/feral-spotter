@@ -164,10 +164,17 @@ export function useCatSubmit({
                   p.cloud_storage_path != null &&
                   p.cloud_storage_url != null,
               );
+              const photoLocations = uploadedPhotos.flatMap((p) => {
+                const { latitude, longitude } = p.exif ?? {};
+                if (latitude == null || longitude == null) return [];
+                return [{ path: p.cloud_storage_path, latitude, longitude }];
+              });
+
               const payload: SubmissionApiPayload = {
                 submission,
                 cats: allCats,
                 photo_paths: uploadedPhotos.map((p) => p.cloud_storage_path),
+                ...(photoLocations.length > 0 && { photo_locations: photoLocations }),
               };
               const response = await submitObservation(payload);
 

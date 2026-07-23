@@ -14,6 +14,7 @@
 import { CameraThumb } from "@/src/components/atoms/CameraThumb";
 import { usePhotoStore, useUIStore } from "@/src/hooks";
 import { useSettingsStore } from "@/src/hooks/useSettingsStore";
+import { captureCurrentLocation } from "@/src/lib/location";
 import { PERMISSION_MAP } from "@/src/lib/permissions";
 import type { SubmissionPhoto } from "@/src/types";
 import { type FlashListRef } from "@shopify/flash-list";
@@ -75,6 +76,7 @@ export function useCameraCapture(): CameraCaptureResult {
     (s) => s.settings.keep_photos_on_device !== false,
   );
   const addPhoto = usePhotoStore((s) => s.addPhoto);
+  const updatePhoto = usePhotoStore((s) => s.updatePhoto);
   const addSessionPhoto = useUIStore((s) => s.addSessionPhoto);
 
   const [cameraPosition, setCameraPosition] = useState<"back" | "front">(
@@ -129,6 +131,12 @@ export function useCameraCapture(): CameraCaptureResult {
       addSessionPhoto(submission);
       addPhoto(submission);
 
+      // Fire-and-forget: never delays or fails the shutter. Patches the store
+      // entry in place if/when a fix resolves.
+      captureCurrentLocation().then((location) => {
+        if (location) updatePhoto(submission.local_id, { exif: location });
+      });
+
       if (keepOnDevice) {
         const status = await check(PERMISSION_MAP.mediaLibrary);
         if (status === RESULTS.GRANTED || status === RESULTS.LIMITED) {
@@ -148,6 +156,7 @@ export function useCameraCapture(): CameraCaptureResult {
     flashOpacity,
     photoOutput,
     addPhoto,
+    updatePhoto,
     addSessionPhoto,
     keepOnDevice,
   ]);

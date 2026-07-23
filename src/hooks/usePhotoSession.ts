@@ -8,6 +8,7 @@
 
 import { usePhotoStore, useSubmissionStore, useUIStore } from "@/src/hooks";
 import { useBackHandler } from "@/src/hooks/useBackHandler";
+import { captureCurrentLocation } from "@/src/lib/location";
 import { PERMISSION_MAP } from "@/src/lib/permissions";
 import type { SubmissionPhoto } from "@/src/types";
 import * as ImagePicker from "expo-image-picker";
@@ -117,7 +118,11 @@ export function usePhotoSession(): PhotoSessionResult {
       exif: true,
     });
     if (!result.canceled && result.assets.length > 0) {
-      addSessionPhoto(buildPhoto(result.assets[0]));
+      const photo = buildPhoto(result.assets[0]);
+      // Prefer a live GPS fix over whatever (if anything) the camera app embedded in EXIF.
+      const location = await captureCurrentLocation();
+      if (location) photo.exif = { ...photo.exif, ...location };
+      addSessionPhoto(photo);
     }
   }, [addSessionPhoto, showError]);
 

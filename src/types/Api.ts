@@ -25,6 +25,8 @@ export interface SubmissionApiPayload {
     photos_reviewed: boolean;
   }[];
   photo_paths: string[];
+  /** GPS fix captured at photo-take time, keyed by cloud_storage_path. Omitted entries have no fix. */
+  photo_locations?: { path: string; latitude: number; longitude: number }[];
 }
 
 export interface SubmissionApiResponse {
