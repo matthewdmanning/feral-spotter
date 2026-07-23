@@ -13,6 +13,7 @@
  *   "extra": { "isPrerelease": true }
  */
 
+import { hasAcceptedConsent } from "@/src/hooks/useConsentStore";
 import type { SubmissionCacheFile } from "@/src/lib/cache/submissionCache";
 import Constants from "expo-constants";
 import type { PostHogEventProperties } from "@posthog/core";
@@ -51,8 +52,9 @@ export function registerCapture(
 // ─── Fire event ───────────────────────────────────────────────────────────────
 
 /**
- * Fire a PostHog event, but only when IS_PRERELEASE is true.
- * Includes the full cache file as event properties.
+ * Fire a PostHog event, but only when IS_PRERELEASE is true and the user has
+ * accepted the data-collection disclosure. Includes the full cache file as
+ * event properties.
  */
 export function fireAnalyticsEvent(
   event: AnalyticsEvent,
@@ -60,6 +62,7 @@ export function fireAnalyticsEvent(
   extra?: Record<string, unknown>,
 ): void {
   if (!IS_PRERELEASE) return;
+  if (!hasAcceptedConsent()) return;
   if (!_capture) {
     console.warn(
       "[analytics] capturer not registered — call registerCapture() in a PostHog-wrapped component",

@@ -3,13 +3,14 @@ import { View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-nati
 import { router } from 'expo-router'
 import { request, openSettings, RESULTS } from 'react-native-permissions'
 import { useUnistyles } from 'react-native-unistyles'
-import { markConsentAccepted } from '@/src/lib/consent'
+import { useConsentStore } from '@/src/hooks/useConsentStore'
 import { PERMISSION_MAP } from '@/src/lib/permissions'
 import { useBackHandler } from '@/src/hooks/useBackHandler'
 import { styles } from './index.styles'
 
 export default function ConsentScreen() {
   const { theme } = useUnistyles()
+  const markAccepted = useConsentStore((s) => s.markAccepted)
   const [busy, setBusy] = useState(false)
   const [blocked, setBlocked] = useState(false)
 
@@ -23,7 +24,7 @@ export default function ConsentScreen() {
         request(PERMISSION_MAP.mediaLibrary),
         request(PERMISSION_MAP.location),
       ])
-      await markConsentAccepted()
+      markAccepted()
 
       if (
         cameraStatus === RESULTS.BLOCKED ||
@@ -37,7 +38,7 @@ export default function ConsentScreen() {
     } finally {
       setBusy(false)
     }
-  }, [])
+  }, [markAccepted])
 
   const handleContinueWithoutAccess = useCallback(() => {
     router.replace('/(home-tabs)')

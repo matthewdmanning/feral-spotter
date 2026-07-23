@@ -1,6 +1,7 @@
 import { act, renderHook } from '@testing-library/react-native'
 import { Alert } from 'react-native'
 import { useCatSubmit } from '@/src/hooks/useCatSubmit'
+import { CONSENT_VERSION, useConsentStore } from '@/src/hooks/useConsentStore'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
 import { useUIStore } from '@/src/hooks/useUIStore'
@@ -83,6 +84,9 @@ describe('useCatSubmit submit flow', () => {
       sessionPhotos: [],
       isSubmitting: false,
     })
+    // Submission is gated on disclosure consent — this suite exercises the
+    // consented path; the guard itself belongs in its own test.
+    useConsentStore.setState({ accepted: true, acceptedVersion: CONSENT_VERSION })
   })
 
   it('only submits photos that are uploaded with both a cloud path and url', async () => {
@@ -138,5 +142,22 @@ describe('useCatSubmit submit flow', () => {
         photo_urls: ['https://cdn/uploaded.jpg'],
       }),
     ])
+  })
+
+  it('blocks submission when the data-collection disclosure has not been accepted', async () => {
+    useConsentStore.setState({ accepted: false, acceptedVersion: null })
+    jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
+      buttons?.find((b) => b.text === 'Submit')?.onPress?.()
+    })
+
+    const { result } = renderHook(() =>
+      useCatSubmit({ form: completedForm, annotationEnabled: false }),
+    )
+
+    await act(async () => {
+      result.current.handleDone()
+    })
+
+    expect(submitObservation).not.toHaveBeenCalled()
   })
 })
