@@ -53,6 +53,14 @@ export default function RootLayout() {
           name="register"
           options={{ title: "Create Account", headerBackTitle: "" }}
         />
+        <Stack.Screen
+          name="consent"
+          options={{
+            title: "Before You Start",
+            gestureEnabled: false,
+            headerBackVisible: false,
+          }}
+        />
 
         <Stack.Screen
           name="camera"

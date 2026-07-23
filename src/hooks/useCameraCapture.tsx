@@ -14,6 +14,7 @@
 import { CameraThumb } from "@/src/components/atoms/CameraThumb";
 import { usePhotoStore, useUIStore } from "@/src/hooks";
 import { useSettingsStore } from "@/src/hooks/useSettingsStore";
+import { PERMISSION_MAP } from "@/src/lib/permissions";
 import type { SubmissionPhoto } from "@/src/types";
 import { type FlashListRef } from "@shopify/flash-list";
 import * as MediaLibrary from "expo-media-library";
@@ -27,6 +28,7 @@ import {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
+import { check, RESULTS } from "react-native-permissions";
 import {
   useCameraDevice,
   usePhotoOutput,
@@ -128,8 +130,10 @@ export function useCameraCapture(): CameraCaptureResult {
       addPhoto(submission);
 
       if (keepOnDevice) {
-        const { status } = await MediaLibrary.requestPermissionsAsync();
-        if (status === "granted") await MediaLibrary.saveToLibraryAsync(uri);
+        const status = await check(PERMISSION_MAP.mediaLibrary);
+        if (status === RESULTS.GRANTED || status === RESULTS.LIMITED) {
+          await MediaLibrary.saveToLibraryAsync(uri);
+        }
       }
 
       setCapturedPhotos((prev) => [...prev, submission]);

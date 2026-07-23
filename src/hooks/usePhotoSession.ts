@@ -8,11 +8,13 @@
 
 import { usePhotoStore, useSubmissionStore, useUIStore } from "@/src/hooks";
 import { useBackHandler } from "@/src/hooks/useBackHandler";
+import { PERMISSION_MAP } from "@/src/lib/permissions";
 import type { SubmissionPhoto } from "@/src/types";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { randomUUID } from "expo-crypto";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { check, RESULTS } from "react-native-permissions";
 
 export interface PhotoSessionResult {
   sessionPhotos: SubmissionPhoto[];
@@ -103,8 +105,8 @@ export function usePhotoSession(): PhotoSessionResult {
   });
 
   const capturePhoto = useCallback(async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== "granted") {
+    const status = await check(PERMISSION_MAP.camera);
+    if (status !== RESULTS.GRANTED && status !== RESULTS.LIMITED) {
       showError("Permission Denied", "Camera access is required");
       return;
     }
