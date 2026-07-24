@@ -48,15 +48,15 @@ jest.mock('lucide-react-native', () => ({
 describe('HomeScreen first-launch wiring', () => {
   beforeEach(() => jest.clearAllMocks())
 
-  it('redirects to /register on first launch', async () => {
+  it('redirects to /onboarding on first launch', async () => {
     jest.spyOn(firstLaunchLib, 'isFirstLaunch').mockResolvedValue(true)
     render(<HomeScreen />)
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/register'))
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/onboarding'))
   })
 
-  it('does not redirect to /register on subsequent launch', async () => {
+  it('does not redirect to /onboarding on subsequent launch', async () => {
     jest.spyOn(firstLaunchLib, 'isFirstLaunch').mockResolvedValue(false)
     render(<HomeScreen />)
-    await waitFor(() => expect(router.replace).not.toHaveBeenCalledWith('/register'))
+    await waitFor(() => expect(router.replace).not.toHaveBeenCalledWith('/onboarding'))
   })
 })

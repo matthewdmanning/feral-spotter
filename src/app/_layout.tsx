@@ -50,6 +50,10 @@ export default function RootLayout() {
           options={{ title: "Feral Reports" }}
         />
         <Stack.Screen
+          name="onboarding"
+          options={{ headerShown: false, gestureEnabled: false }}
+        />
+        <Stack.Screen
           name="register"
           options={{ title: "Create Account", headerBackTitle: "" }}
         />
@@ -60,6 +64,10 @@ export default function RootLayout() {
             gestureEnabled: false,
             headerBackVisible: false,
           }}
+        />
+        <Stack.Screen
+          name="data-agreement"
+          options={{ title: "Data Usage Agreement" }}
         />
 
         <Stack.Screen
