@@ -25,7 +25,14 @@ module.exports = defineConfig([
         // Enable type-aware linting so rules that need type information can run
         // (consistent-type-exports below). projectService uses the nearest
         // tsconfig.json and falls back to a default project for files outside it.
-        projectService: true,
+        // `+api.ts` server routes are excluded from tsconfig.json (see
+        // tsconfig.server.json / issue #56 — react-native's ambient FormData
+        // type clashes with DOM lib in a shared program), so point those at
+        // the server tsconfig explicitly.
+        projectService: {
+          allowDefaultProject: ["src/app/*+api.ts"],
+          defaultProject: "./tsconfig.server.json",
+        },
         tsconfigRootDir: __dirname,
       },
     },
