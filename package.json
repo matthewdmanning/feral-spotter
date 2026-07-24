@@ -14,7 +14,7 @@
     "web": "expo start --web",
     "compat": "npx rn-compatibility-checker ./package.json",
     "lint": "expo lint",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.server.json",
     "test": "jest",
     "build:android": "bash scripts/android-build.sh",
     "gradle:debug": "expo prebuild --clean && cd android && .\\gradlew assembleDebug"

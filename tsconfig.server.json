@@ -1,5 +1,5 @@
 {
   "extends": "./tsconfig.json",
-  "include": ["**/*+api.ts"],
+  "include": ["**/*+api.ts", "src/server-types/anchor.ts"],
   "exclude": ["node_modules"]
 }
