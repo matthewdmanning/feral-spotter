@@ -30,11 +30,14 @@ jobs:
       - name: 📦 Install dependencies
         run: npm ci --legacy-peer-deps
 
+      - name: 🧭 Generate Expo Router types
+        run: npx expo customize tsconfig.json
+
       - name: 🧼 Lint code
         run: npx expo lint
 
       - name: 📐 Type check (TypeScript)
-        run: npx tsc --noEmit
+        run: npm run typecheck
 
       - name: 🧪 Run tests
         run: npm test -- --coverage
