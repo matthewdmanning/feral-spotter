@@ -18,7 +18,7 @@ import { captureCurrentLocation } from "@/src/lib/location";
 import { PERMISSION_MAP } from "@/src/lib/permissions";
 import type { SubmissionPhoto } from "@/src/types";
 import { type FlashListRef } from "@shopify/flash-list";
-import * as MediaLibrary from "expo-media-library";
+import { Asset } from "expo-media-library";
 import { router } from "expo-router";
 import { randomUUID } from "expo-crypto";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -140,7 +140,7 @@ export function useCameraCapture(): CameraCaptureResult {
       if (keepOnDevice) {
         const status = await check(PERMISSION_MAP.mediaLibrary);
         if (status === RESULTS.GRANTED || status === RESULTS.LIMITED) {
-          await MediaLibrary.saveToLibraryAsync(uri);
+          await Asset.create(uri);
         }
       }
 
