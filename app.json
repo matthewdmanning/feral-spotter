@@ -49,6 +49,30 @@
         {
           "iosPermissions": ["Camera", "PhotoLibraryAddOnly", "LocationWhenInUse"]
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "FeralSpotter uses your location to record where a cat sighting occurred. Location is only accessed while the app is open.",
+          "locationAlwaysAndWhenInUsePermission": false,
+          "locationAlwaysPermission": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": false,
+          "cameraPermission": "FeralSpotter uses your camera to capture cat sighting photos for the population-tracking dataset.",
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": false,
+          "savePhotosPermission": "FeralSpotter saves sighting photos to your library when \"keep photos on device\" is enabled.",
+          "granularPermissions": ["photo"]
+        }
       ]
     ],
     "experiments": {
