@@ -14,6 +14,8 @@ export const styles = StyleSheet.create((theme) => ({
   agreeBtn:   { backgroundColor: theme.colors.accent, borderRadius: theme.radius.lg, paddingVertical: 15, alignItems: 'center', marginTop: theme.spacing.xl },
   agreeText:  { color: theme.colors.accentText, fontSize: theme.typography.base, fontWeight: '700' },
   agreeBusy:  { opacity: 0.6 },
+  declineBtn:  { alignItems: 'center', marginTop: theme.spacing.md, padding: theme.spacing.sm },
+  declineText: { color: theme.colors.muted, fontSize: theme.typography.base, fontWeight: '600', textDecorationLine: 'underline' },
 
   gate:             { flex: 1, backgroundColor: theme.colors.background, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 16 },
   gateTitle:        { color: theme.colors.text, fontSize: 20, fontWeight: '700', textAlign: 'center' },

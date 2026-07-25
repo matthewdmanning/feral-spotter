@@ -10,9 +10,13 @@
  *
  * Providers:
  *   PostHogProvider — analytics; a third-party data-collection library, so it
- *     only mounts once the user has accepted the consent disclosure (in
- *     addition to the existing IS_PRERELEASE gate at call sites). Before
- *     consent, no PostHog SDK code runs at all — not just "events don't fire."
+ *     only mounts once the user has accepted the consent disclosure AND the
+ *     narrower analytics opt-in (see useConsentStore) — in addition to the
+ *     existing IS_PRERELEASE gate at call sites. Before both are accepted,
+ *     no PostHog SDK code runs at all — not just "events don't fire." The
+ *     SDK does its own automatic capture (sessions, app lifecycle) as soon
+ *     as it mounts, independent of fireAnalyticsEvent call sites, so gating
+ *     only on general consent would let it run without the analytics opt-in.
  *   ErrorBoundary   — catches render errors at the root
  */
 
@@ -31,10 +35,11 @@ export function AppProviders({ children }: AppProvidersProps) {
   const hasAcceptedConsent = useConsentStore(
     (s) => s.accepted && s.acceptedVersion === CONSENT_VERSION,
   )
+  const hasAcceptedAnalytics = useConsentStore((s) => s.analyticsAccepted)
 
   return (
     <ErrorBoundary>
-      {IS_PRERELEASE && POSTHOG_KEY && hasAcceptedConsent ? (
+      {IS_PRERELEASE && POSTHOG_KEY && hasAcceptedConsent && hasAcceptedAnalytics ? (
         <PostHogProvider apiKey={POSTHOG_KEY} options={{ host: POSTHOG_HOST }}>
           {children}
         </PostHogProvider>

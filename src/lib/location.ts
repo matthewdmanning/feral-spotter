@@ -18,6 +18,11 @@ export interface CapturedLocation {
   timestamp: string;
 }
 
+// Emulators rarely have a usable GPS fix without manually driving Extended
+// Controls each run, so stub it in dev to keep the exif-location path
+// exercisable without that.
+const DEV_STUB_LOCATION = { latitude: 34.6834, longitude: -82.8374 };
+
 export async function captureCurrentLocation(
   timeoutMs = 4000,
 ): Promise<CapturedLocation | undefined> {
@@ -28,6 +33,10 @@ export async function captureCurrentLocation(
     // consent gate (react-native-permissions); this just confirms it's live.
     const { status } = await Location.getForegroundPermissionsAsync();
     if (status !== Location.PermissionStatus.GRANTED) return undefined;
+
+    if (__DEV__) {
+      return { ...DEV_STUB_LOCATION, timestamp: new Date().toISOString() };
+    }
 
     const timeout = new Promise<undefined>((resolve) =>
       setTimeout(() => resolve(undefined), timeoutMs),
