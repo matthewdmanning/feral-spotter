@@ -57,12 +57,22 @@ export async function storePassword(password: string): Promise<void> {
   }
 }
 
+// Dev builds have no reachable backend to verify a real password against
+// (see EXPO_PUBLIC_API_BASE_URL), so auto-provision one on first read to
+// keep the submission flow testable without registering first.
+const DEV_STUB_PASSWORD = "dev-stub-password";
+
 /**
  * Retrieve stored password
  */
 export async function getPassword(): Promise<string | null> {
   try {
-    return await SecureStore.getItemAsync(PASSWORD_STORAGE_KEY);
+    const password = await SecureStore.getItemAsync(PASSWORD_STORAGE_KEY);
+    if (!password && __DEV__) {
+      await SecureStore.setItemAsync(PASSWORD_STORAGE_KEY, DEV_STUB_PASSWORD);
+      return DEV_STUB_PASSWORD;
+    }
+    return password;
   } catch (error) {
     console.error("Get password error:", error);
     return null;
@@ -96,7 +106,7 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   const deviceId = await getDeviceId();
 
   if (!password) {
-    throw new Error("No password configured. Please set a password first.");
+    throw new Error("You must register first.");
   }
 
   return {
@@ -117,7 +127,7 @@ export async function uploadPhotoToCloud(
   try {
     const password = await getPassword();
     if (!password) {
-      throw new Error("No password configured");
+      throw new Error("You must register first.");
     }
 
     const deviceId = await getDeviceId();
@@ -165,7 +175,7 @@ export async function uploadPhotoWithProgress(
     try {
       const password = await getPassword();
       if (!password) {
-        throw new Error("No password configured");
+        throw new Error("You must register first.");
       }
 
       const deviceId = await getDeviceId();
