@@ -39,20 +39,36 @@ describe("captureCurrentLocation", () => {
     expect(mockGetCurrentPositionAsync).not.toHaveBeenCalled();
   });
 
-  it("captures a fix once consent has been accepted and permission is granted", async () => {
+  it("captures a real fix in production once consent is accepted and permission is granted", async () => {
+    const originalDev = global.__DEV__;
+    global.__DEV__ = false;
+    try {
+      useConsentStore.getState().markAccepted();
+      mockGetForegroundPermissionsAsync.mockResolvedValue({ status: "granted" });
+      mockGetCurrentPositionAsync.mockResolvedValue({
+        coords: { latitude: 1, longitude: 2 },
+        timestamp: 1700000000000,
+      });
+
+      const result = await captureCurrentLocation();
+
+      expect(result).toEqual({
+        latitude: 1,
+        longitude: 2,
+        timestamp: new Date(1700000000000).toISOString(),
+      });
+    } finally {
+      global.__DEV__ = originalDev;
+    }
+  });
+
+  it("returns a stubbed fix in dev without touching expo-location's GPS call", async () => {
     useConsentStore.getState().markAccepted();
     mockGetForegroundPermissionsAsync.mockResolvedValue({ status: "granted" });
-    mockGetCurrentPositionAsync.mockResolvedValue({
-      coords: { latitude: 1, longitude: 2 },
-      timestamp: 1700000000000,
-    });
 
     const result = await captureCurrentLocation();
 
-    expect(result).toEqual({
-      latitude: 1,
-      longitude: 2,
-      timestamp: new Date(1700000000000).toISOString(),
-    });
+    expect(result).toMatchObject({ latitude: 34.6834, longitude: -82.8374 });
+    expect(mockGetCurrentPositionAsync).not.toHaveBeenCalled();
   });
 });
