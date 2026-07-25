@@ -3,7 +3,6 @@ import { Alert, BackHandler, Platform, View, Text, Pressable, ScrollView, Activi
 import { router } from 'expo-router'
 import { request, openSettings, RESULTS } from 'react-native-permissions'
 import { useUnistyles } from 'react-native-unistyles'
-import { Check } from 'lucide-react-native'
 import { useConsentStore } from '@/src/hooks/useConsentStore'
 import { PERMISSION_MAP } from '@/src/lib/permissions'
 import { useBackHandler } from '@/src/hooks/useBackHandler'
@@ -15,7 +14,6 @@ export default function ConsentScreen() {
   const markAccepted = useConsentStore((s) => s.markAccepted)
   const [busy, setBusy] = useState(false)
   const [blocked, setBlocked] = useState(false)
-  const [analyticsEnabled, setAnalyticsEnabled] = useState(true)
 
   useBackHandler(useCallback(() => true, []))
 
@@ -27,7 +25,7 @@ export default function ConsentScreen() {
         request(PERMISSION_MAP.mediaLibrary),
         request(PERMISSION_MAP.location),
       ])
-      markAccepted(analyticsEnabled)
+      markAccepted()
 
       if (
         cameraStatus === RESULTS.BLOCKED ||
@@ -41,7 +39,7 @@ export default function ConsentScreen() {
     } finally {
       setBusy(false)
     }
-  }, [markAccepted, analyticsEnabled])
+  }, [markAccepted])
 
   const handleContinueWithoutAccess = useCallback(() => {
     router.replace('/(home-tabs)')
@@ -97,29 +95,11 @@ export default function ConsentScreen() {
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.title}>{consentCopy.title}</Text>
         <Text style={styles.body}>{consentCopy.intro}</Text>
-        {consentCopy.items.map((item) =>
-          'key' in item && item.key === 'analytics' ? (
-            <Pressable
-              key={item.label}
-              onPress={() => setAnalyticsEnabled((v) => !v)}
-              style={styles.analyticsRow}
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: analyticsEnabled }}
-              accessibilityLabel={`${item.label}: ${item.text}`}
-            >
-              <View style={[styles.checkbox, analyticsEnabled && styles.checkboxChecked]}>
-                {analyticsEnabled && <Check size={14} color={theme.colors.accentText} />}
-              </View>
-              <Text style={[styles.item, styles.analyticsItemText]}>
-                <Text style={styles.itemLabel}>{item.label}</Text> {item.text}
-              </Text>
-            </Pressable>
-          ) : (
-            <Text key={item.label} style={styles.item}>
-              <Text style={styles.itemLabel}>{item.label}</Text> {item.text}
-            </Text>
-          ),
-        )}
+        {consentCopy.items.map((item) => (
+          <Text key={item.label} style={styles.item}>
+            <Text style={styles.itemLabel}>{item.label}</Text> {item.text}
+          </Text>
+        ))}
         {consentCopy.body.map((paragraph) => (
           <Text key={paragraph} style={styles.body}>{paragraph}</Text>
         ))}

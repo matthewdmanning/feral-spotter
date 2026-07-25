@@ -7,10 +7,11 @@
  * (reactive, for components/providers) rather than assuming the consent
  * screen was shown.
  *
- * Analytics is a separate, narrower opt-in: it defaults to denied and is
- * only enabled if the analytics checkbox was checked at the moment consent
- * was accepted. Gate analytics on `hasAcceptedAnalytics()`/`analyticsAccepted`
- * in addition to (not instead of) the overall consent check.
+ * Analytics is a separate, narrower opt-in captured on its own screen
+ * (src/screens/analytics-consent/): it defaults to denied and is only
+ * enabled via `setAnalyticsAccepted(true)`, independent of `markAccepted()`.
+ * Gate analytics on `hasAcceptedAnalytics()`/`analyticsAccepted` in addition
+ * to (not instead of) the overall consent check.
  */
 
 import { asyncStorage } from "@/src/lib/cache/storage";
@@ -23,7 +24,8 @@ interface ConsentState {
   accepted: boolean;
   acceptedVersion: number | null;
   analyticsAccepted: boolean;
-  markAccepted: (analyticsEnabled: boolean) => void;
+  markAccepted: () => void;
+  setAnalyticsAccepted: (enabled: boolean) => void;
 }
 
 export const useConsentStore = create<ConsentState>()(
@@ -32,11 +34,14 @@ export const useConsentStore = create<ConsentState>()(
       accepted: false,
       acceptedVersion: null,
       analyticsAccepted: false,
-      markAccepted: (analyticsEnabled) =>
+      markAccepted: () =>
         set({
           accepted: true,
           acceptedVersion: CONSENT_VERSION,
-          analyticsAccepted: analyticsEnabled,
+        }),
+      setAnalyticsAccepted: (enabled) =>
+        set({
+          analyticsAccepted: enabled,
         }),
     }),
     {
