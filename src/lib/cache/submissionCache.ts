@@ -45,6 +45,7 @@ export interface CacheMetadata {
   location_type?: LocationType;
   time_type?: TimeType;
   address?: string;
+  manual_time?: string; // ISO string, set when time_method === 'manual'
 }
 
 export interface SubmissionCacheFile {

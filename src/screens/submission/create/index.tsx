@@ -1,4 +1,5 @@
 import { SegmentedControl } from "@/src/components/atoms/SegmentedControl";
+import { DateTimePickerButton } from "@/src/components/organisms/DateTimePicker";
 import {
   AUTOSAVE_CLEAR_MS,
   AUTOSAVE_INSTANT_MS,
@@ -34,7 +35,7 @@ const LOCATION_OPTIONS: { value: LocationMethod; label: string }[] = [
   { value: "address", label: "Address" },
 ];
 const TIME_OPTIONS: { value: TimeMethod; label: string }[] = [
-  { value: "device", label: "Device" },
+  { value: "device", label: "Now" },
   { value: "manual", label: "Manual" },
   { value: "metadata", label: "From Photo" },
 ];
@@ -49,6 +50,7 @@ export default function CreateSubmissionScreen() {
   const setLocationType = useSubmissionStore((s) => s.setLocationType);
   const setTimeType = useSubmissionStore((s) => s.setTimeType);
   const setAddress = useSubmissionStore((s) => s.setAddress);
+  const setManualTime = useSubmissionStore((s) => s.setManualTime);
   const saveDraft = useSubmissionStore((s) => s.saveDraft);
   const setCurrentStep = useSubmissionStore((s) => s.setCurrentStep);
   const cats = useSubmissionStore((s) => s.cats);
@@ -60,14 +62,17 @@ export default function CreateSubmissionScreen() {
     submission.time_type,
   );
   const [address, setAddressLocal] = useState(submission.address ?? "");
+  const [manualTime, setManualTimeLocal] = useState(
+    submission.manual_time ?? new Date().toISOString(),
+  );
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMountedRef = useRef(true);
   const isDirtyRef = useRef(false);
-  const formRef = useRef({ locationType, timeType, address });
+  const formRef = useRef({ locationType, timeType, address, manualTime });
   useEffect(() => {
-    formRef.current = { locationType, timeType, address };
+    formRef.current = { locationType, timeType, address, manualTime };
   });
 
   useEffect(() => {
@@ -78,6 +83,7 @@ export default function CreateSubmissionScreen() {
           location_method: submission.location_type,
           time_method: submission.time_type,
           address: submission.address,
+          manual_time: submission.manual_time,
         });
       }
     })();
@@ -90,10 +96,16 @@ export default function CreateSubmissionScreen() {
     submission.address,
     submission.location_type,
     submission.time_type,
+    submission.manual_time,
   ]);
 
   const performSave = useCallback(async () => {
-    const { locationType: lt, timeType: tt, address: addr } = formRef.current;
+    const {
+      locationType: lt,
+      timeType: tt,
+      address: addr,
+      manualTime: mt,
+    } = formRef.current;
     isDirtyRef.current = false;
     if (isMountedRef.current) startTransition(() => setSaveStatus("saving"));
     try {
@@ -101,6 +113,7 @@ export default function CreateSubmissionScreen() {
         location_type: lt,
         time_type: tt,
         address: addr || undefined,
+        manual_time: tt === "manual" ? mt : undefined,
       });
       await Promise.resolve(saveDraft());
       const cId = await getCurrentCacheId();
@@ -110,6 +123,7 @@ export default function CreateSubmissionScreen() {
             location_method: lt,
             time_method: tt,
             address: addr || undefined,
+            manual_time: tt === "manual" ? mt : undefined,
           },
         });
       if (!isMountedRef.current) return;
@@ -161,11 +175,22 @@ export default function CreateSubmissionScreen() {
     performSave();
   }, [performSave]);
 
+  const handleManualTimeChange = useCallback(
+    (date: Date) => {
+      const iso = date.toISOString();
+      setManualTimeLocal(iso);
+      setManualTime(iso);
+      scheduleAutosave(AUTOSAVE_INSTANT_MS);
+    },
+    [setManualTime, scheduleAutosave],
+  );
+
   const handleContinue = useCallback(async () => {
     const errors = validateSubmission({
       location_type: locationType,
       time_type: timeType,
       address,
+      manual_time: timeType === "manual" ? manualTime : undefined,
     });
     if (errors.length > 0) {
       Alert.alert(errors[0].message);
@@ -174,7 +199,7 @@ export default function CreateSubmissionScreen() {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     await performSave();
     router.push("/submission/cats");
-  }, [locationType, timeType, address, performSave]);
+  }, [locationType, timeType, address, manualTime, performSave]);
 
   const saveIndicatorText =
     saveStatus === "saving"
@@ -195,23 +220,33 @@ export default function CreateSubmissionScreen() {
           value={locationType}
           onChange={handleLocationTypeChange}
         />
+        {locationType === "address" && (
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Address</Text>
+            <TextInput
+              placeholder="Enter address"
+              placeholderTextColor={theme.colors.muted}
+              value={address}
+              onChangeText={handleAddressChange}
+              onBlur={handleAddressBlur}
+              style={styles.input}
+            />
+          </View>
+        )}
         <SegmentedControl
           label="Time Type"
           options={TIME_OPTIONS}
           value={timeType}
           onChange={handleTimeTypeChange}
         />
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>Address (Optional)</Text>
-          <TextInput
-            placeholder="Enter address"
-            placeholderTextColor={theme.colors.muted}
-            value={address}
-            onChangeText={handleAddressChange}
-            onBlur={handleAddressBlur}
-            style={styles.input}
+        {timeType === "manual" && (
+          <DateTimePickerButton
+            label="Date & Time"
+            mode="datetime"
+            value={new Date(manualTime)}
+            onChange={handleManualTimeChange}
           />
-        </View>
+        )}
         <View style={styles.footerGroup}>
           {saveIndicatorText !== "" && (
             <Text style={styles.saveIndicator}>{saveIndicatorText}</Text>
