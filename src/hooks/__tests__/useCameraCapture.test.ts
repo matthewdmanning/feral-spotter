@@ -1,4 +1,4 @@
-import { renderHook } from '@testing-library/react-native'
+import { act, renderHook } from '@testing-library/react-native'
 import { router } from 'expo-router'
 import { useCameraCapture } from '../useCameraCapture'
 
@@ -23,9 +23,10 @@ jest.mock('expo-location', () => ({
 
 jest.mock('expo-router', () => ({ router: { back: jest.fn(), navigate: jest.fn() } }))
 
+const mockCapturePhoto = jest.fn()
 jest.mock('react-native-vision-camera', () => ({
   useCameraDevice: jest.fn(() => ({ id: 'back' })),
-  usePhotoOutput: jest.fn(() => ({ capturePhoto: jest.fn() })),
+  usePhotoOutput: jest.fn(() => ({ capturePhoto: mockCapturePhoto })),
   Camera: 'Camera',
 }))
 
@@ -45,12 +46,17 @@ jest.mock('@/src/hooks', () => ({
 
 jest.mock('@/src/hooks/useSettingsStore', () => ({
   useSettingsStore: (sel: (s: object) => unknown) =>
-    sel({ settings: { keep_photos_on_device: false } }),
+    sel({ settings: { keep_photos_on_device: true } }),
 }))
 
 jest.mock('@shopify/flash-list', () => ({ FlashList: 'FlashList' }))
 jest.mock('@/src/components/atoms/CameraThumb', () => ({ CameraThumb: 'CameraThumb' }))
-jest.mock('expo-media-library', () => ({}))
+const mockAssetCreate = jest.fn()
+jest.mock('expo-media-library', () => ({
+  get Asset() {
+    return { create: mockAssetCreate }
+  },
+}))
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'test-id' }))
 
 describe('useCameraCapture navigation', () => {
@@ -66,5 +72,27 @@ describe('useCameraCapture navigation', () => {
     const { result } = renderHook(() => useCameraCapture())
     result.current.handleDone()
     expect(router.navigate).toHaveBeenCalledWith('/submission/create')
+  })
+})
+
+describe('useCameraCapture handleTakePhoto', () => {
+  beforeEach(() => jest.clearAllMocks())
+
+  it('keeps the captured photo in review state even if the gallery save fails', async () => {
+    mockCapturePhoto.mockResolvedValueOnce({
+      width: 100,
+      height: 100,
+      saveToTemporaryFileAsync: jest.fn(async () => '/tmp/fake.jpg'),
+      dispose: jest.fn(),
+    })
+    mockAssetCreate.mockRejectedValueOnce(new Error('save failed'))
+
+    const { result } = renderHook(() => useCameraCapture())
+
+    await act(async () => {
+      await result.current.handleTakePhoto()
+    })
+
+    expect(result.current.capturedPhotos).toHaveLength(1)
   })
 })

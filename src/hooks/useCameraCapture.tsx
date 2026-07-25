@@ -130,6 +130,7 @@ export function useCameraCapture(): CameraCaptureResult {
 
       addSessionPhoto(submission);
       addPhoto(submission);
+      setCapturedPhotos((prev) => [...prev, submission]);
 
       // Fire-and-forget: never delays or fails the shutter. Patches the store
       // entry in place if/when a fix resolves.
@@ -140,11 +141,13 @@ export function useCameraCapture(): CameraCaptureResult {
       if (keepOnDevice) {
         const status = await check(PERMISSION_MAP.mediaLibrary);
         if (status === RESULTS.GRANTED || status === RESULTS.LIMITED) {
-          await Asset.create(uri);
+          try {
+            await Asset.create(uri);
+          } catch (err) {
+            console.error("[useCameraCapture] Asset.create:", err);
+          }
         }
       }
-
-      setCapturedPhotos((prev) => [...prev, submission]);
     } catch (err) {
       console.error("[useCameraCapture] takePhoto:", err);
     } finally {
