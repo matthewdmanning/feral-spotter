@@ -34,6 +34,10 @@ export default function OnboardingScreen() {
     });
   }, [finish]);
 
+  const goBack = useCallback(() => {
+    setStep((s) => Math.max(0, s - 1));
+  }, []);
+
   const slide = TUTORIAL_SLIDES[step];
   const isAgreementSlide = step === AGREEMENT_SLIDE_INDEX;
 
@@ -59,7 +63,19 @@ export default function OnboardingScreen() {
       </View>
 
       <View style={styles.footer}>
-        <AppButton onPress={advance}>{slide.button}</AppButton>
+        <View style={styles.buttonRow}>
+          <AppButton
+            onPress={goBack}
+            variant="secondary"
+            disabled={step === 0}
+            flex1
+          >
+            Previous
+          </AppButton>
+          <AppButton onPress={advance} flex1>
+            {slide.button}
+          </AppButton>
+        </View>
         <View style={styles.dots} accessibilityElementsHidden>
           {TUTORIAL_SLIDES.map((s, i) => (
             <View

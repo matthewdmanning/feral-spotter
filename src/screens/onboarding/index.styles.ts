@@ -29,6 +29,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     marginTop: theme.spacing.sm,
   },
   footer: { gap: theme.spacing.md },
+  buttonRow: { flexDirection: "row", gap: theme.spacing.md },
   dots: {
     flexDirection: "row",
     justifyContent: "center",
