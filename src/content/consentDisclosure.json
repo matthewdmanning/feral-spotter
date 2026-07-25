@@ -6,7 +6,7 @@
     { "label": "Location", "text": "(GPS) captured at the moment you take a photo" },
     { "label": "Details you enter", "text": "about the animal (appearance, condition, etc.), captured when you submit" },
     { "label": "Your Google account", "text": "so we can follow up if a submission needs clarification" },
-    { "label": "Anonymous usage analytics", "text": "such as app events and crash data, to help us improve FeralSpotter" }
+    { "key": "analytics", "label": "Anonymous usage analytics", "text": "such as app events and crash data, to help us improve FeralSpotter" }
   ],
   "body": [
     "This data is uploaded to a private cloud storage bucket and used to build a dataset for feral cat population tracking and research. It is not made public and is not shared outside this project.",
