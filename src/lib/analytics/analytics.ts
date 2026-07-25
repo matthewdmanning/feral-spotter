@@ -13,7 +13,7 @@
  *   "extra": { "isPrerelease": true }
  */
 
-import { hasAcceptedConsent } from "@/src/hooks/useConsentStore";
+import { hasAcceptedAnalytics, hasAcceptedConsent } from "@/src/hooks/useConsentStore";
 import type { SubmissionCacheFile } from "@/src/lib/cache/submissionCache";
 import Constants from "expo-constants";
 import type { PostHogEventProperties } from "@posthog/core";
@@ -63,6 +63,7 @@ export function fireAnalyticsEvent(
 ): void {
   if (!IS_PRERELEASE) return;
   if (!hasAcceptedConsent()) return;
+  if (!hasAcceptedAnalytics()) return;
   if (!_capture) {
     console.warn(
       "[analytics] capturer not registered — call registerCapture() in a PostHog-wrapped component",
