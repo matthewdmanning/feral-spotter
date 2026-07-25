@@ -1,8 +1,8 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 import { router } from 'expo-router'
 import React from 'react'
-import { TUTORIAL_SLIDES } from '@/src/config/onboardingCopy'
-import OnboardingScreen from '../index'
+import { TUTORIAL_SLIDES } from '@/src/config/introFlowCopy'
+import IntroFlowScreen from '../index'
 
 jest.mock('expo-router', () => ({
   router: { replace: jest.fn(), push: jest.fn() },
@@ -33,22 +33,22 @@ jest.mock('react-native-unistyles', () => {
   }
 })
 
-describe('OnboardingScreen', () => {
+describe('IntroFlowScreen', () => {
   beforeEach(() => jest.clearAllMocks())
 
-  it('shows the first slide and advances through all of them to /register', async () => {
-    render(<OnboardingScreen />)
+  it('shows the first slide and advances through all of them to /sign-in', async () => {
+    render(<IntroFlowScreen />)
     expect(screen.getByText(TUTORIAL_SLIDES[0].header)).toBeTruthy()
 
     for (const slide of TUTORIAL_SLIDES) {
       fireEvent.press(screen.getByText(slide.button))
     }
 
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/register'))
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/sign-in'))
   })
 
   it('links to /data-agreement from the data-usage slide', () => {
-    render(<OnboardingScreen />)
+    render(<IntroFlowScreen />)
     // Advance to the data-usage slide (index 2)
     fireEvent.press(screen.getByText(TUTORIAL_SLIDES[0].button))
     fireEvent.press(screen.getByText(TUTORIAL_SLIDES[1].button))

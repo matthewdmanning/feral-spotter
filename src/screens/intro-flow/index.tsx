@@ -1,26 +1,27 @@
 /**
- * screens/onboarding/index.tsx
+ * screens/intro-flow/index.tsx
  * First-run tutorial: four slides (T1–T4) introducing the app, then on to
- * /register. Permission priming and data-collection consent are handled
- * downstream by /register → /consent — this screen is informational only.
+ * /sign-in. Permission priming and data-collection consent are handled
+ * downstream by /sign-in → /profile → /analytics-consent → /consent — this
+ * screen is informational only.
  */
 
 import {
   AGREEMENT_SLIDE_INDEX,
   DATA_AGREEMENT_LINK_LABEL,
   TUTORIAL_SLIDES,
-} from "@/src/config/onboardingCopy";
+} from "@/src/config/introFlowCopy";
 import { AppButton } from "@/src/components/atoms/AppButton";
 import { router } from "expo-router";
 import { useCallback, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { styles } from "./index.styles";
 
-export default function OnboardingScreen() {
+export default function IntroFlowScreen() {
   const [step, setStep] = useState(0);
 
   const finish = useCallback(() => {
-    router.replace("/register");
+    router.replace("/sign-in");
   }, []);
 
   const advance = useCallback(() => {

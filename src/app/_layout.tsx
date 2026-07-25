@@ -50,12 +50,20 @@ export default function RootLayout() {
           options={{ title: "Feral Reports" }}
         />
         <Stack.Screen
-          name="onboarding"
+          name="intro-flow"
           options={{ headerShown: false, gestureEnabled: false }}
         />
         <Stack.Screen
-          name="register"
-          options={{ title: "Create Account", headerBackTitle: "" }}
+          name="sign-in"
+          options={{ headerShown: false, gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="profile"
+          options={{ title: "Your Profile", headerBackTitle: "" }}
+        />
+        <Stack.Screen
+          name="analytics-consent"
+          options={{ headerShown: false, gestureEnabled: false }}
         />
         <Stack.Screen
           name="consent"
