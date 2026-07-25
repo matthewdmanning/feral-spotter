@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native'
+import { Alert, BackHandler, Platform, View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native'
 import { router } from 'expo-router'
 import { request, openSettings, RESULTS } from 'react-native-permissions'
 import { useUnistyles } from 'react-native-unistyles'
@@ -45,6 +45,25 @@ export default function ConsentScreen() {
 
   const handleContinueWithoutAccess = useCallback(() => {
     router.replace('/(home-tabs)')
+  }, [])
+
+  const handleDecline = useCallback(() => {
+    Alert.alert(
+      consentCopy.declineWarningTitle,
+      consentCopy.declineWarningBody,
+      [
+        { text: 'Back', style: 'cancel' },
+        {
+          text: 'Exit',
+          style: 'destructive',
+          onPress: () => {
+            // iOS has no supported way to self-terminate — Back is the only
+            // option there; Exit only does anything on Android.
+            if (Platform.OS === 'android') BackHandler.exitApp()
+          },
+        },
+      ],
+    )
   }, [])
 
   if (blocked) {
@@ -114,6 +133,14 @@ export default function ConsentScreen() {
             ? <ActivityIndicator color={theme.colors.accentText} />
             : <Text style={styles.agreeText}>{consentCopy.agreeLabel}</Text>
           }
+        </Pressable>
+
+        <Pressable
+          onPress={handleDecline} disabled={busy}
+          style={styles.declineBtn}
+          accessibilityRole="button" accessibilityLabel={consentCopy.declineLabel}
+        >
+          <Text style={styles.declineText}>{consentCopy.declineLabel}</Text>
         </Pressable>
       </ScrollView>
     </View>
