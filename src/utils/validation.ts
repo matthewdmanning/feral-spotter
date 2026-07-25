@@ -23,6 +23,7 @@ export interface ValidatableSubmission {
   location_type?: string
   time_type?: string
   address?: string
+  manual_time?: string
   latitude?: number
   longitude?: number
 }
@@ -138,7 +139,17 @@ export function validateSubmission(
       })
     }
   }
-  
+
+  if (submission.time_type === 'manual') {
+    if (!submission.manual_time || submission.manual_time.trim() === '') {
+      errors.push({
+        field: 'manual_time',
+        message: 'Date and time are required when using manual time entry.',
+        severity: 'error',
+      })
+    }
+  }
+
   return errors
 }
 

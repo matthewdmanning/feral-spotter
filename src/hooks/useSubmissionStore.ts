@@ -39,6 +39,7 @@ export interface SubmissionDraft {
   location_type: LocationMethod;
   time_type: TimeMethod;
   address?: string;
+  manual_time?: string; // ISO string, set when time_type === 'manual'
 }
 
 export interface SubmissionHistoryEntry extends SubmissionDraft {
@@ -62,6 +63,7 @@ interface SubmissionState {
   setLocationType: (v: LocationMethod) => void;
   setTimeType: (v: TimeMethod) => void;
   setAddress: (v: string) => void;
+  setManualTime: (v: string) => void;
   saveDraft: () => void;
   setCurrentStep: (step: string) => void;
   addToHistory: (entry: SubmissionHistoryEntry) => void;
@@ -103,6 +105,9 @@ export const useSubmissionStore = create<SubmissionState>()(
 
       setAddress: (v) =>
         set((s) => ({ submission: { ...s.submission, address: v } })),
+
+      setManualTime: (v) =>
+        set((s) => ({ submission: { ...s.submission, manual_time: v } })),
 
       // Draft fields already live in persisted state; nothing further to flush.
       saveDraft: () => {},
