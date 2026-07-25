@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native-unistyles'
-import { THUMB_SIZE } from './CameraThumb'
+import { THUMB_SIZE } from './CameraThumb.constants'
 
 export const styles = StyleSheet.create((theme) => ({
   wrap:      { position: 'relative' },

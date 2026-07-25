@@ -3,9 +3,7 @@ import { View, Text } from 'react-native'
 import { Image } from 'expo-image'
 import { styles } from './CameraThumb.styles'
 
-export const THUMB_SIZE  = 64
-export const THUMB_GAP   = 6
-export const THUMB_TOTAL = THUMB_SIZE + THUMB_GAP
+export { THUMB_SIZE, THUMB_GAP, THUMB_TOTAL } from './CameraThumb.constants'
 
 interface CameraThumbProps { uri: string; badgeCount: number }
 
