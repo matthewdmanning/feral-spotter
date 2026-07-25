@@ -128,11 +128,12 @@ button, `SignInPrompt` modal, and their backing state/handlers are gone.
    - #64 — broader onboarding/consent UX and gating gaps (umbrella issue;
      #68 was the only sub-item closed here).
    - #70 — improve copy explaining why precise location is necessary.
-   - #48 — MediaLibrary permission re-requested on every photo capture
-     (small, isolated, same file area as today's camera work — good
-     next pickup).
    - #52 — captured photos can't be discarded from the camera carousel.
    - #51 — no close/back button on camera screen after first capture.
+   - (#48/#49, MediaLibrary permission issues, were listed here in an
+     earlier version of this doc as a "good next pickup" — that was
+     stale; both were already fixed by prior commits 8650c06/5c36543
+     and have been closed.)
 
 5. ~~No GitHub issues exist for most of what shipped in PR #81.~~ Done —
    filed #82 (onboarding crash), #83 (require cycle), #84 (registration
@@ -145,3 +146,14 @@ button, `SignInPrompt` modal, and their backing state/handlers are gone.
    this." Not investigated — likely an uncleared timer somewhere (the
    `setTimeout` race in `location.ts`'s real-GPS path is a candidate, though
    it's now bypassed in dev by the stub). Doesn't fail the suite, just noisy.
+
+7. **#63 (setState-after-unmount crash) still open, path updated.** Found
+   while auditing issues during the #86 work: the bug it describes
+   (`router.replace(...)` inside `try`, `finally { setBusy(false) }` still
+   firing post-unmount) was never fixed — it just moved verbatim from
+   `register/index.tsx` to `profile/index.tsx` in the rename. Commented
+   with the new path; left unfixed, out of scope for #86.
+
+8. **#69 (analytics opt-out) closed.** Resolved by the #86 analytics-consent
+   split — the checkbox lives on its own screen now, independently wired
+   to `useConsentStore.setAnalyticsAccepted`.
