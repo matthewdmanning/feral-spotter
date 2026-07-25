@@ -14,26 +14,22 @@ interface FormState {
 
 interface FormErrors {
   email?: string
-  city?:  string
-  state?: string
 }
 
 function validate(f: FormState): FormErrors {
   const e: FormErrors = {}
   if (!f.email.trim())                        e.email = 'Email is required'
   else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) e.email = 'Enter a valid email'
-  if (!f.city.trim())  e.city  = 'City is required'
-  if (!f.state.trim()) e.state = 'State is required'
   return e
 }
 
-async function registerUser(form: FormState): Promise<void> {
+async function saveProfile(form: FormState): Promise<void> {
   // Placeholder — replace with real API call
-  console.log('[register] payload:', form)
+  console.log('[profile] payload:', form)
   await new Promise((r) => setTimeout(r, 800))
 }
 
-export default function RegisterScreen() {
+export default function ProfileScreen() {
   const { theme } = useUnistyles()
 
   const [form, setForm] = useState<FormState>({ email: '', city: '', state: '', firstName: '', lastName: '' })
@@ -50,10 +46,10 @@ export default function RegisterScreen() {
     if (Object.keys(errs).length) { setErrors(errs); return }
     setBusy(true)
     try {
-      await registerUser(form)
-      router.replace('/consent')
+      await saveProfile(form)
+      router.replace('/analytics-consent')
     } catch (err) {
-      console.error('[register] failed:', err)
+      console.error('[profile] failed:', err)
     } finally {
       setBusy(false)
     }
@@ -62,11 +58,8 @@ export default function RegisterScreen() {
   return (
     <View style={styles.root}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>Create Account</Text>
-        <Text style={styles.subtitle}>Register to submit cat observations.</Text>
-
-        {/* Required */}
-        <Text style={styles.section}>Required</Text>
+        <Text style={styles.title}>Your Profile</Text>
+        <Text style={styles.subtitle}>Optional details to help us reach you.</Text>
 
         <TextInput
           placeholder="Email" placeholderTextColor={theme.colors.muted}
@@ -77,24 +70,20 @@ export default function RegisterScreen() {
         />
         {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
 
+        {/* Optional */}
+        <Text style={styles.section}>Optional</Text>
+
         <TextInput
           placeholder="City" placeholderTextColor={theme.colors.muted}
           value={form.city} onChangeText={(v) => patch('city', v)}
-          style={[styles.field, errors.city && styles.fieldError]}
-          accessibilityLabel="City"
+          style={styles.field} accessibilityLabel="City"
         />
-        {errors.city && <Text style={styles.errorText}>{errors.city}</Text>}
 
         <TextInput
           placeholder="State" placeholderTextColor={theme.colors.muted}
           value={form.state} onChangeText={(v) => patch('state', v)}
-          style={[styles.field, errors.state && styles.fieldError]}
-          accessibilityLabel="State"
+          style={styles.field} accessibilityLabel="State"
         />
-        {errors.state && <Text style={styles.errorText}>{errors.state}</Text>}
-
-        {/* Optional */}
-        <Text style={styles.section}>Optional</Text>
 
         <TextInput
           placeholder="First Name" placeholderTextColor={theme.colors.muted}
@@ -112,11 +101,11 @@ export default function RegisterScreen() {
         <Pressable
           onPress={handleSubmit} disabled={busy}
           style={[styles.submitBtn, busy && styles.submitBusy]}
-          accessibilityRole="button" accessibilityLabel="Submit registration"
+          accessibilityRole="button" accessibilityLabel="Continue"
         >
           {busy
             ? <ActivityIndicator color={theme.colors.accentText} />
-            : <Text style={styles.submitText}>Submit</Text>
+            : <Text style={styles.submitText}>Continue</Text>
           }
         </Pressable>
       </ScrollView>

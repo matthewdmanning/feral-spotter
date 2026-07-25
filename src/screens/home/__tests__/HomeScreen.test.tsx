@@ -1,7 +1,8 @@
 import { render, waitFor } from '@testing-library/react-native'
 import { router } from 'expo-router'
 import React from 'react'
-import * as firstLaunchLib from '@/src/lib/firstLaunch'
+import { useAuth } from '@/src/lib/auth/useAuth'
+import { hasAcceptedConsent } from '@/src/hooks/useConsentStore'
 import HomeScreen from '../index'
 
 jest.mock('expo-router', () => ({
@@ -20,24 +21,19 @@ jest.mock('react-native-unistyles', () => {
 })
 
 jest.mock('@/src/lib/auth/useAuth', () => ({
-  useAuth: () => ({ isAuthenticated: false, signIn: jest.fn(), signOut: jest.fn() }),
+  useAuth: jest.fn(),
+}))
+
+jest.mock('@/src/hooks/useConsentStore', () => ({
+  hasAcceptedConsent: jest.fn(),
 }))
 
 jest.mock('@/src/lib/cache/submissionCache', () => ({
   getAllSubmissionCaches: jest.fn().mockResolvedValue([]),
 }))
 
-jest.mock('@/src/lib/firstLaunch', () => ({
-  isFirstLaunch: jest.fn(),
-  markLaunched: jest.fn().mockResolvedValue(undefined),
-}))
-
 jest.mock('@/src/components/molecules/BottomButtonColumn', () => ({
   BottomButtonColumn: () => null,
-}))
-
-jest.mock('@/src/components/molecules/SignInPrompt', () => ({
-  SignInPrompt: () => null,
 }))
 
 jest.mock('lucide-react-native', () => ({
@@ -45,18 +41,33 @@ jest.mock('lucide-react-native', () => ({
   Settings: () => null,
 }))
 
-describe('HomeScreen first-launch wiring', () => {
+describe('HomeScreen app-wide gate', () => {
   beforeEach(() => jest.clearAllMocks())
 
-  it('redirects to /onboarding on first launch', async () => {
-    jest.spyOn(firstLaunchLib, 'isFirstLaunch').mockResolvedValue(true)
+  it('redirects to /intro-flow when unauthenticated', async () => {
+    ;(useAuth as jest.Mock).mockReturnValue({ isAuthenticated: false, signIn: jest.fn(), signOut: jest.fn() })
+    ;(hasAcceptedConsent as jest.Mock).mockReturnValue(false)
+
     render(<HomeScreen />)
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/onboarding'))
+
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/intro-flow'))
   })
 
-  it('does not redirect to /onboarding on subsequent launch', async () => {
-    jest.spyOn(firstLaunchLib, 'isFirstLaunch').mockResolvedValue(false)
+  it('redirects to /consent when authenticated but device consent not accepted', async () => {
+    ;(useAuth as jest.Mock).mockReturnValue({ isAuthenticated: true, signIn: jest.fn(), signOut: jest.fn() })
+    ;(hasAcceptedConsent as jest.Mock).mockReturnValue(false)
+
     render(<HomeScreen />)
-    await waitFor(() => expect(router.replace).not.toHaveBeenCalledWith('/onboarding'))
+
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/consent'))
+  })
+
+  it('does not redirect when authenticated and device consent accepted', () => {
+    ;(useAuth as jest.Mock).mockReturnValue({ isAuthenticated: true, signIn: jest.fn(), signOut: jest.fn() })
+    ;(hasAcceptedConsent as jest.Mock).mockReturnValue(true)
+
+    render(<HomeScreen />)
+
+    expect(router.replace).not.toHaveBeenCalled()
   })
 })
