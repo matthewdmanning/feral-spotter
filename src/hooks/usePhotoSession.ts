@@ -15,7 +15,7 @@ import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { randomUUID } from "expo-crypto";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { check, RESULTS } from "react-native-permissions";
+import { openSettings, request, RESULTS } from "react-native-permissions";
 
 export interface PhotoSessionResult {
   sessionPhotos: SubmissionPhoto[];
@@ -106,9 +106,17 @@ export function usePhotoSession(): PhotoSessionResult {
   });
 
   const capturePhoto = useCallback(async () => {
-    const status = await check(PERMISSION_MAP.camera);
+    const status = await request(PERMISSION_MAP.camera);
     if (status !== RESULTS.GRANTED && status !== RESULTS.LIMITED) {
-      showError("Permission Denied", "Camera access is required");
+      if (status === RESULTS.BLOCKED) {
+        showError(
+          "Permission Blocked",
+          "Camera access was denied. Enable it in Settings to take a photo.",
+        );
+        openSettings();
+      } else {
+        showError("Permission Denied", "Camera access is required");
+      }
       return;
     }
     const result = await ImagePicker.launchCameraAsync({
