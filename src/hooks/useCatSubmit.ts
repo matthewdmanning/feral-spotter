@@ -20,7 +20,7 @@ import {
   updateSubmissionCache,
 } from "@/src/lib/cache/submissionCache";
 import type { SubmissionApiPayload, SubmissionPhoto } from "@/src/types";
-import { hasPassword, submitObservation } from "@/src/utils/api";
+import { submitObservation } from "@/src/utils/api";
 import { router } from "expo-router";
 import { randomUUID } from "expo-crypto";
 import { usePostHog } from "posthog-react-native";
@@ -118,21 +118,12 @@ export function useCatSubmit({
 
   // ── Done → confirm → API submit ───────────────────────────────────────────
 
-  const handleDone = useCallback(async () => {
+  const handleDone = useCallback(() => {
     const localId = existingCat?.local_id ?? randomUUID();
     const cat = buildCat(localId);
 
     if (existingCat) updateCat(localId, cat);
     else addCat(cat);
-
-    if (!(await hasPassword())) {
-      showError(
-        "Registration Required",
-        "Create an account to submit sightings. Your progress is saved — finish registering, then come back to submit.",
-      );
-      router.push("/register");
-      return;
-    }
 
     const allCats = cats.filter((c) => c.local_id !== localId).concat(cat);
     const catCount = allCats.length;

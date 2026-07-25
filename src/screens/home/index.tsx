@@ -1,62 +1,28 @@
 import type { ColumnButton } from "@/src/components/atoms/AppButton";
 import { BottomButtonColumn } from "@/src/components/molecules/BottomButtonColumn";
-import { SignInPrompt } from "@/src/components/molecules/SignInPrompt";
+import { hasAcceptedConsent } from "@/src/hooks/useConsentStore";
 import { useAuth } from "@/src/lib/auth/useAuth";
 import { getAllSubmissionCaches } from "@/src/lib/cache/submissionCache";
-import { isFirstLaunch, markLaunched } from "@/src/lib/firstLaunch";
 import { Stack, router } from "expo-router";
 import { Camera, Settings } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BackHandler, Platform, Pressable, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { useUnistyles } from "react-native-unistyles";
 import { styles } from "./index.styles";
 
 export default function HomeScreen() {
   const { theme } = useUnistyles();
-  const { isAuthenticated, signIn } = useAuth();
+  const { isAuthenticated } = useAuth();
 
-  const [promptVisible, setPromptVisible] = useState(false);
-  const [signingIn, setSigningIn] = useState(false);
-
-  // First launch → onboarding tutorial (which hands off to register);
-  // otherwise show sign-in prompt if unauthenticated
+  // App-wide gate: unauthenticated → intro flow; authenticated but no device
+  // consent → consent screen; otherwise render normal home.
   useEffect(() => {
-    (async () => {
-      if (await isFirstLaunch()) {
-        await markLaunched();
-        router.replace("/onboarding");
-        return;
-      }
-      if (!isAuthenticated) setPromptVisible(true);
-    })();
-  }, [isAuthenticated]); // intentionally empty — runs once on mount
-
-  // Android back — minimise (let Modal handle its own back)
-  useEffect(() => {
-    if (Platform.OS !== "android") return;
-    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
-      if (promptVisible) return false;
-      return true;
-    });
-    return () => sub.remove();
-  }, [promptVisible]);
-
-  const handleSignIn = useCallback(async () => {
-    setSigningIn(true);
-    try {
-      await signIn();
-      setPromptVisible(false);
-    } catch {
-      // user cancelled — leave prompt open
-    } finally {
-      setSigningIn(false);
+    if (!isAuthenticated) {
+      router.replace("/intro-flow");
+    } else if (!hasAcceptedConsent()) {
+      router.replace("/consent");
     }
-  }, [signIn]);
-
-  const handleDismiss = useCallback(() => {
-    if (signingIn) return;
-    setPromptVisible(false);
-  }, [signingIn]);
+  }, [isAuthenticated]);
 
   const [columnVisible, setColumnVisible] = useState(false);
   useEffect(() => {
@@ -68,7 +34,6 @@ export default function HomeScreen() {
   const handleCamera = useCallback(() => router.navigate("/camera"), []);
   const handleNew = useCallback(() => router.push("/submission/create"), []);
   const handleResume = useCallback(() => router.push("/submission/create"), []);
-  const handleRegister = useCallback(() => router.push("/register"), []);
 
   const buttons = useMemo<ColumnButton[]>(
     () => [
@@ -123,16 +88,6 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
-        {/* Register — always visible, above the conditional column */}
-        <Pressable
-          onPress={handleRegister}
-          style={styles.registerBtn}
-          accessibilityLabel="Create an account"
-          accessibilityRole="button"
-        >
-          <Text style={styles.registerText}>Register</Text>
-        </Pressable>
-
         <BottomButtonColumn
           buttons={buttons}
           visible={columnVisible}
@@ -140,13 +95,6 @@ export default function HomeScreen() {
           paddingBottom={16}
         />
       </View>
-
-      <SignInPrompt
-        visible={promptVisible}
-        loading={signingIn}
-        onSignIn={handleSignIn}
-        onDismiss={handleDismiss}
-      />
     </>
   );
 }

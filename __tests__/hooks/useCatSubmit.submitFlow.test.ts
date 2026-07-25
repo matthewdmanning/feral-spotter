@@ -5,8 +5,7 @@ import { CONSENT_VERSION, useConsentStore } from '@/src/hooks/useConsentStore'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
 import { useUIStore } from '@/src/hooks/useUIStore'
-import { router } from 'expo-router'
-import { hasPassword, submitObservation } from '@/src/utils/api'
+import { submitObservation } from '@/src/utils/api'
 import type { CatFormValues } from '@/src/hooks/useCatForm'
 import type { SubmissionPhoto } from '@/src/types'
 
@@ -42,7 +41,6 @@ jest.mock('react-native-mmkv', () => ({
 
 jest.mock('@/src/utils/api', () => ({
   submitObservation: jest.fn(),
-  hasPassword: jest.fn().mockResolvedValue(true),
 }))
 
 const completedForm: CatFormValues = {
@@ -175,30 +173,5 @@ describe('useCatSubmit submit flow', () => {
     expect(submitObservation).toHaveBeenCalledWith(
       expect.objectContaining({ photo_paths: ['gs://bucket/uploaded.jpg'] }),
     )
-  })
-
-  it('redirects to /register instead of submitting when no password is configured', async () => {
-    ;(hasPassword as jest.Mock).mockResolvedValueOnce(false)
-    usePhotoStore.setState({
-      photos: [
-        photo({
-          local_id: 'photo-uploaded',
-          uploaded: true,
-          cloud_storage_path: 'gs://bucket/uploaded.jpg',
-          cloud_storage_url: 'https://cdn/uploaded.jpg',
-        }),
-      ],
-    })
-
-    const { result } = renderHook(() =>
-      useCatSubmit({ form: completedForm, annotationEnabled: false }),
-    )
-
-    await act(async () => {
-      await result.current.handleDone()
-    })
-
-    expect(submitObservation).not.toHaveBeenCalled()
-    expect(router.push).toHaveBeenCalledWith('/register')
   })
 })
