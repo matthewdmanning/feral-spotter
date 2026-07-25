@@ -24,15 +24,13 @@ export default function OnboardingScreen() {
   }, []);
 
   const advance = useCallback(() => {
-    setStep((s) => {
-      const next = s + 1;
-      if (next >= TUTORIAL_SLIDES.length) {
-        finish();
-        return s;
-      }
-      return next;
-    });
-  }, [finish]);
+    const next = step + 1;
+    if (next >= TUTORIAL_SLIDES.length) {
+      finish();
+      return;
+    }
+    setStep(next);
+  }, [step, finish]);
 
   const goBack = useCallback(() => {
     setStep((s) => Math.max(0, s - 1));
