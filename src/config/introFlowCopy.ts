@@ -1,5 +1,5 @@
 /**
- * config/onboardingCopy.ts
+ * config/introFlowCopy.ts
  * Single source of truth for the first-run tutorial slides.
  * Spec: tutorial_copy.md (2026-07-13).
  * Rule: never "tracking" in reference to people — cats only.
@@ -43,7 +43,7 @@ export const TUTORIAL_SLIDES: readonly SlideCopy[] = [
   {
     header: "Almost ready",
     body: [
-      "Next, FeralSpotter will ask you to register and grant location, camera, and photo access — each screen explains exactly what's shared and why.",
+      "Next, FeralSpotter will ask you to sign in with Google and grant location, camera, and photo access — each screen explains exactly what's shared and why.",
     ],
     button: "Set up FeralSpotter",
   },

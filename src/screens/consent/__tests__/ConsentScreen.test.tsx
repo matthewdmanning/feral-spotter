@@ -16,11 +16,6 @@ jest.mock('@/src/hooks/useBackHandler', () => ({
   useBackHandler: jest.fn(),
 }))
 
-jest.mock('lucide-react-native', () => {
-  const { View } = require('react-native')
-  return { Check: () => <View /> }
-})
-
 jest.mock('react-native-unistyles', () => {
   const theme = {
     colors: { background: '#fff', text: '#000', muted: '#888', border: '#ccc', accent: '#00f', accentText: '#fff', surfaceAlt: '#eee', danger: '#f00' },
