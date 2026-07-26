@@ -59,7 +59,7 @@ export function AppProviders({ children }: AppProvidersProps) {
   return (
     <ErrorBoundary>
       {IS_PRERELEASE && POSTHOG_KEY && hasAcceptedConsent && hasAcceptedAnalytics ? (
-        <PostHogProvider apiKey={POSTHOG_KEY} options={{ host: POSTHOG_HOST }}>
+        <PostHogProvider apiKey={POSTHOG_KEY} options={{ host: POSTHOG_HOST }} debug={__DEV__}>
           <AnalyticsBridge />
           {children}
         </PostHogProvider>
