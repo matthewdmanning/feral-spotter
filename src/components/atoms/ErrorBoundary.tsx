@@ -1,6 +1,7 @@
 import React, { Component, type ReactNode } from 'react'
 import { View, Text, Pressable } from 'react-native'
 import { AlertCircle } from 'lucide-react-native'
+import { captureException } from '@/src/lib/analytics/analytics'
 import { styles } from './ErrorBoundary.styles'
 
 interface Props { children: ReactNode; fallback?: (error: Error, reset: () => void) => ReactNode }
@@ -9,7 +10,16 @@ interface State { hasError: boolean; error: Error | null }
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) { super(props); this.state = { hasError: false, error: null } }
   static getDerivedStateFromError(error: Error): State { return { hasError: true, error } }
-  override componentDidCatch(error: Error, info: React.ErrorInfo) { console.error('ErrorBoundary:', error, info) }
+  override componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error('ErrorBoundary:', error, info)
+    // Reporting a caught crash must never itself throw and escalate into an
+    // unhandled one (network failure, capturer not yet registered, etc.).
+    try {
+      captureException(error, { component_stack: info.componentStack ?? '' })
+    } catch (reportingError) {
+      console.error('ErrorBoundary: captureException failed', reportingError)
+    }
+  }
   handleReset = () => this.setState({ hasError: false, error: null })
   override render() {
     if (this.state.hasError && this.state.error) {

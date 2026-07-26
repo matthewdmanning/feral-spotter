@@ -17,19 +17,38 @@
  *     SDK does its own automatic capture (sessions, app lifecycle) as soon
  *     as it mounts, independent of fireAnalyticsEvent call sites, so gating
  *     only on general consent would let it run without the analytics opt-in.
- *   ErrorBoundary   — catches render errors at the root
+ *   ErrorBoundary   — catches render errors at the root; reports them via
+ *     captureException (see AnalyticsBridge below) once consent + analytics
+ *     opt-in allow it.
  */
 
 import { ErrorBoundary } from '@/src/components/atoms/ErrorBoundary'
 import { CONSENT_VERSION, useConsentStore } from '@/src/hooks/useConsentStore'
-import { IS_PRERELEASE } from '@/src/lib/analytics/analytics'
-import { PostHogProvider } from 'posthog-react-native'
-import { type ReactNode } from 'react'
+import { IS_PRERELEASE, registerCapture, registerCaptureException } from '@/src/lib/analytics/analytics'
+import { PostHogProvider, usePostHog } from 'posthog-react-native'
+import { useEffect, type ReactNode } from 'react'
 
 const POSTHOG_KEY  = process.env.EXPO_PUBLIC_POSTHOG_KEY ?? ''
 const POSTHOG_HOST = 'https://app.posthog.com'
 
 interface AppProvidersProps { children: ReactNode }
+
+/**
+ * Registers both capturers app-wide as soon as PostHog mounts, rather than
+ * relying on a specific screen having been visited first. Both funnel events
+ * (e.g. camera-open, which fires before the submission/reports screens that
+ * used to own this registration ever mount) and crashes can originate
+ * anywhere in the tree, so this must bind unconditionally on mount.
+ */
+function AnalyticsBridge() {
+  const posthog = usePostHog()
+  useEffect(() => {
+    if (!posthog) return
+    registerCapture(posthog.capture.bind(posthog))
+    registerCaptureException(posthog.captureException.bind(posthog))
+  }, [posthog])
+  return null
+}
 
 export function AppProviders({ children }: AppProvidersProps) {
   const hasAcceptedConsent = useConsentStore(
@@ -41,6 +60,7 @@ export function AppProviders({ children }: AppProvidersProps) {
     <ErrorBoundary>
       {IS_PRERELEASE && POSTHOG_KEY && hasAcceptedConsent && hasAcceptedAnalytics ? (
         <PostHogProvider apiKey={POSTHOG_KEY} options={{ host: POSTHOG_HOST }}>
+          <AnalyticsBridge />
           {children}
         </PostHogProvider>
       ) : (

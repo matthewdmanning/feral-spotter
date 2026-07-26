@@ -8,11 +8,7 @@
 import { usePhotoStore, useSubmissionStore, useUIStore } from "@/src/hooks";
 import type { CatFormValues } from "@/src/hooks/useCatForm";
 import type { ObservedCat } from "@/src/hooks/useSubmissionStore";
-import {
-  EVENTS,
-  fireAnalyticsEvent,
-  registerCapture,
-} from "@/src/lib/analytics/analytics";
+import { EVENTS, fireAnalyticsEvent } from "@/src/lib/analytics/analytics";
 import {
   deleteSubmissionCache,
   getCurrentCacheId,
@@ -23,8 +19,7 @@ import type { SubmissionApiPayload, SubmissionPhoto } from "@/src/types";
 import { submitObservation } from "@/src/utils/api";
 import { router } from "expo-router";
 import { randomUUID } from "expo-crypto";
-import { usePostHog } from "posthog-react-native";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { Alert } from "react-native";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -64,12 +59,6 @@ export function useCatSubmit({
   const setSubmitting = useUIStore((s) => s.setSubmitting);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Register PostHog for IS_PRERELEASE analytics
-  const posthog = usePostHog();
-  useEffect(() => {
-    if (posthog?.capture) registerCapture(posthog.capture.bind(posthog));
-  }, [posthog]);
 
   // ── Build ObservedCat from current form values ─────────────────────────────
 

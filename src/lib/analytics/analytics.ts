@@ -30,6 +30,8 @@ export const EVENTS = {
   SUBMISSION_SUBMITTED: "submission_submitted",
   SUBMISSION_FAILED: "submission_failed",
   REPORTS_VIEWED: "feral_reports_viewed",
+  CAMERA_OPENED: "camera_opened",
+  PHOTO_CAPTURE_FAILED: "photo_capture_failed",
 } as const;
 
 export type AnalyticsEvent = (typeof EVENTS)[keyof typeof EVENTS];
@@ -49,6 +51,22 @@ export function registerCapture(
   _capture = fn;
 }
 
+let _captureException:
+  | ((error: unknown, extra?: PostHogEventProperties) => void)
+  | null = null;
+
+/** Call once in a component that has PostHog context to register the exception capturer. */
+export function registerCaptureException(
+  fn: (error: unknown, extra?: PostHogEventProperties) => void,
+): void {
+  _captureException = fn;
+}
+
+/** Same gate as every capture path: pre-release build, general consent, analytics opt-in. */
+function shouldCapture(): boolean {
+  return IS_PRERELEASE && hasAcceptedConsent() && hasAcceptedAnalytics();
+}
+
 // ─── Fire event ───────────────────────────────────────────────────────────────
 
 /**
@@ -61,9 +79,7 @@ export function fireAnalyticsEvent(
   cache: SubmissionCacheFile,
   extra?: Record<string, unknown>,
 ): void {
-  if (!IS_PRERELEASE) return;
-  if (!hasAcceptedConsent()) return;
-  if (!hasAcceptedAnalytics()) return;
+  if (!shouldCapture()) return;
   if (!_capture) {
     console.warn(
       "[analytics] capturer not registered — call registerCapture() in a PostHog-wrapped component",
@@ -83,4 +99,44 @@ export function fireAnalyticsEvent(
     cache_snapshot: JSON.stringify(cache),
     ...extra,
   });
+}
+
+/**
+ * Fire a PostHog event that isn't tied to a submission cache file (e.g. a
+ * funnel or failure event from the camera/annotate flow). Same gating as
+ * fireAnalyticsEvent.
+ */
+export function captureEvent(
+  event: AnalyticsEvent,
+  props?: PostHogEventProperties,
+): void {
+  if (!shouldCapture()) return;
+  if (!_capture) {
+    console.warn(
+      "[analytics] capturer not registered — call registerCapture() in a PostHog-wrapped component",
+    );
+    return;
+  }
+
+  _capture(event, props);
+}
+
+/**
+ * Report an exception to PostHog, gated identically to every other capture
+ * path (pre-release, consent, analytics opt-in) — a stale registered capturer
+ * must not fire post-revocation.
+ */
+export function captureException(
+  error: unknown,
+  extra?: PostHogEventProperties,
+): void {
+  if (!shouldCapture()) return;
+  if (!_captureException) {
+    console.warn(
+      "[analytics] exception capturer not registered — call registerCaptureException() in a PostHog-wrapped component",
+    );
+    return;
+  }
+
+  _captureException(error, extra);
 }

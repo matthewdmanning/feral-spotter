@@ -1,19 +1,17 @@
 /**
  * hooks/useFeralReports.ts
- * Loads cache files, handles refresh, and registers PostHog.
+ * Loads cache files and handles refresh.
  */
 
 import {
   EVENTS,
   fireAnalyticsEvent,
   IS_PRERELEASE,
-  registerCapture,
 } from "@/src/lib/analytics/analytics";
 import {
   getAllSubmissionCaches,
   type SubmissionCacheFile,
 } from "@/src/lib/cache/submissionCache";
-import { usePostHog } from "posthog-react-native";
 import { useCallback, useEffect, useState } from "react";
 
 export interface FeralReportsResult {
@@ -26,11 +24,6 @@ export interface FeralReportsResult {
 export function useFeralReports(): FeralReportsResult {
   const [caches, setCaches] = useState<SubmissionCacheFile[]>([]);
   const [refreshing, setRefreshing] = useState(false);
-
-  const posthog = usePostHog();
-  useEffect(() => {
-    if (posthog?.capture) registerCapture(posthog.capture.bind(posthog));
-  }, [posthog]);
 
   const load = useCallback(async () => {
     const all = await getAllSubmissionCaches();

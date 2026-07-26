@@ -14,6 +14,7 @@
 import { CameraThumb } from "@/src/components/atoms/CameraThumb";
 import { usePhotoStore, useUIStore } from "@/src/hooks";
 import { useSettingsStore } from "@/src/hooks/useSettingsStore";
+import { captureEvent, EVENTS } from "@/src/lib/analytics/analytics";
 import { captureCurrentLocation } from "@/src/lib/location";
 import { PERMISSION_MAP } from "@/src/lib/permissions";
 import type { SubmissionPhoto } from "@/src/types";
@@ -150,6 +151,9 @@ export function useCameraCapture(): CameraCaptureResult {
       }
     } catch (err) {
       console.error("[useCameraCapture] takePhoto:", err);
+      captureEvent(EVENTS.PHOTO_CAPTURE_FAILED, {
+        error: err instanceof Error ? err.message : String(err),
+      });
     } finally {
       setIsTakingPhoto(false);
     }
@@ -202,6 +206,12 @@ export function useCameraCapture(): CameraCaptureResult {
       listRef.current?.scrollToEnd({ animated: true });
     }
   }, [capturedPhotos.length]);
+
+  // Funnel entry point — nothing else fires between opening the camera and
+  // hitting submit besides this and PHOTO_CAPTURE_FAILED above.
+  useEffect(() => {
+    captureEvent(EVENTS.CAMERA_OPENED);
+  }, []);
 
   return {
     device,
