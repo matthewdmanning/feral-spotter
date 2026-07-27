@@ -1,8 +1,9 @@
 import type { AuthUser, IAuthProvider } from './IAuthProvider'
+import { createFirebaseAuthProvider } from './firebaseAuthProvider'
 
-// No real auth provider is wired yet (Firebase integration pending). In dev,
-// stub sign-in so the rest of the app (home screen auth gate, submission
-// flow) stays exercisable without a real Google/Firebase round trip.
+// Firebase Auth's native module isn't available under Jest, so tests get a
+// stub. Everything else — dev and prod, device and emulator — gets real
+// Firebase; __DEV__ is true under Jest too, so it can't be the gate here.
 const DEV_STUB_USER: AuthUser = { uid: 'dev-stub-uid', email: 'dev@feralspotter.local' }
 
 function createDevAuthProvider(): IAuthProvider {
@@ -34,14 +35,8 @@ function createDevAuthProvider(): IAuthProvider {
   }
 }
 
-const notImplementedProvider: IAuthProvider = {
-  getToken: () => Promise.reject(new Error('NOT_IMPLEMENTED')),
-  getCurrentUser: () => null,
-  signIn: () => Promise.reject(new Error('NOT_IMPLEMENTED')),
-  signOut: () => Promise.reject(new Error('NOT_IMPLEMENTED')),
-  onAuthStateChanged: () => () => {},
-}
+const isJest = process.env.JEST_WORKER_ID !== undefined
 
-export const authProvider: IAuthProvider = __DEV__
+export const authProvider: IAuthProvider = isJest
   ? createDevAuthProvider()
-  : notImplementedProvider
+  : createFirebaseAuthProvider()
