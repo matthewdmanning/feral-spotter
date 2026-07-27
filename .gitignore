@@ -40,6 +40,12 @@ yarn-error.*
 # Env files
 .env*.local
 
+# Firebase CLI local config / project identifiers
+firebase.json
+.firebaserc
+google-services.json
+GoogleService-Info.plist
+
 # TypeScript
 *.tsbuildinfo
 
