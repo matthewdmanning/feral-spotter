@@ -1,14 +1,13 @@
 import { authProvider } from "@/src/lib/auth";
-import { useCallback, useEffect, useState } from "react";
-import type { AuthUser } from "./IAuthProvider";
+import { useAuthStore } from "@/src/lib/auth/authStore";
+import { useCallback } from "react";
 
 export function useAuth() {
-  const [user, setUser] = useState<AuthUser | null>(null);
-
-  useEffect(() => authProvider.onAuthStateChanged(setUser), []);
+  const user = useAuthStore((s) => s.user);
+  const isReady = useAuthStore((s) => s.isReady);
 
   const signIn = useCallback(() => authProvider.signIn(), []);
   const signOut = useCallback(() => authProvider.signOut(), []);
 
-  return { user, isAuthenticated: user !== null, signIn, signOut };
+  return { user, isAuthenticated: user !== null, isReady, signIn, signOut };
 }

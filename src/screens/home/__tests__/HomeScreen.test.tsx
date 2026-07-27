@@ -45,7 +45,7 @@ describe('HomeScreen app-wide gate', () => {
   beforeEach(() => jest.clearAllMocks())
 
   it('redirects to /intro-flow when unauthenticated', async () => {
-    ;(useAuth as jest.Mock).mockReturnValue({ isAuthenticated: false, signIn: jest.fn(), signOut: jest.fn() })
+    ;(useAuth as jest.Mock).mockReturnValue({ isAuthenticated: false, isReady: true, signIn: jest.fn(), signOut: jest.fn() })
     ;(hasAcceptedConsent as jest.Mock).mockReturnValue(false)
 
     render(<HomeScreen />)
@@ -54,7 +54,7 @@ describe('HomeScreen app-wide gate', () => {
   })
 
   it('redirects to /consent when authenticated but device consent not accepted', async () => {
-    ;(useAuth as jest.Mock).mockReturnValue({ isAuthenticated: true, signIn: jest.fn(), signOut: jest.fn() })
+    ;(useAuth as jest.Mock).mockReturnValue({ isAuthenticated: true, isReady: true, signIn: jest.fn(), signOut: jest.fn() })
     ;(hasAcceptedConsent as jest.Mock).mockReturnValue(false)
 
     render(<HomeScreen />)
@@ -63,8 +63,17 @@ describe('HomeScreen app-wide gate', () => {
   })
 
   it('does not redirect when authenticated and device consent accepted', () => {
-    ;(useAuth as jest.Mock).mockReturnValue({ isAuthenticated: true, signIn: jest.fn(), signOut: jest.fn() })
+    ;(useAuth as jest.Mock).mockReturnValue({ isAuthenticated: true, isReady: true, signIn: jest.fn(), signOut: jest.fn() })
     ;(hasAcceptedConsent as jest.Mock).mockReturnValue(true)
+
+    render(<HomeScreen />)
+
+    expect(router.replace).not.toHaveBeenCalled()
+  })
+
+  it('does not redirect while auth state is not yet ready', () => {
+    ;(useAuth as jest.Mock).mockReturnValue({ isAuthenticated: false, isReady: false, signIn: jest.fn(), signOut: jest.fn() })
+    ;(hasAcceptedConsent as jest.Mock).mockReturnValue(false)
 
     render(<HomeScreen />)
 

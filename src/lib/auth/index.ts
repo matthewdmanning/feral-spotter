@@ -16,6 +16,7 @@ function createDevAuthProvider(): IAuthProvider {
       if (!currentUser) throw new Error('NOT_SIGNED_IN')
       return 'dev-stub-token'
     },
+    getCurrentUser: () => currentUser,
     signIn: async () => {
       currentUser = DEV_STUB_USER
       notify()
@@ -35,6 +36,7 @@ function createDevAuthProvider(): IAuthProvider {
 
 const notImplementedProvider: IAuthProvider = {
   getToken: () => Promise.reject(new Error('NOT_IMPLEMENTED')),
+  getCurrentUser: () => null,
   signIn: () => Promise.reject(new Error('NOT_IMPLEMENTED')),
   signOut: () => Promise.reject(new Error('NOT_IMPLEMENTED')),
   onAuthStateChanged: () => () => {},

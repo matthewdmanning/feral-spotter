@@ -5,6 +5,7 @@ export interface AuthUser {
 
 export interface IAuthProvider {
   getToken():             Promise<string>
+  getCurrentUser():       AuthUser | null
   signIn():               Promise<AuthUser>
   signOut():              Promise<void>
   onAuthStateChanged(cb: (user: AuthUser | null) => void): () => void
