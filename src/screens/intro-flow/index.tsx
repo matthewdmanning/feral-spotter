@@ -2,7 +2,7 @@
  * screens/intro-flow/index.tsx
  * First-run tutorial: four slides (T1–T4) introducing the app, then on to
  * /sign-in. Permission priming and data-collection consent are handled
- * downstream by /sign-in → /profile → /analytics-consent → /consent — this
+ * downstream by /sign-in → /analytics-consent → /consent — this
  * screen is informational only.
  */
 

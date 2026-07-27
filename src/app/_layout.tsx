@@ -58,10 +58,6 @@ export default function RootLayout() {
           options={{ headerShown: false, gestureEnabled: false }}
         />
         <Stack.Screen
-          name="profile"
-          options={{ title: "Your Profile", headerBackTitle: "" }}
-        />
-        <Stack.Screen
           name="analytics-consent"
           options={{ headerShown: false, gestureEnabled: false }}
         />
