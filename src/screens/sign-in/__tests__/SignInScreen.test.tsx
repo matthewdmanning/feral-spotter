@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 import { router } from 'expo-router'
+import { Alert } from 'react-native'
 import React from 'react'
 import SignInScreen from '../index'
 
@@ -38,26 +39,29 @@ jest.mock('react-native-unistyles', () => {
 describe('SignInScreen', () => {
   beforeEach(() => jest.clearAllMocks())
 
-  it('signs in with Google and navigates to /profile on success', async () => {
+  it('signs in with Google and navigates to /analytics-consent on success', async () => {
     mockSignIn.mockResolvedValueOnce({ uid: '123', email: 'a@b.com' })
 
     render(<SignInScreen />)
     fireEvent.press(screen.getByLabelText('Sign in with Google'))
 
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/profile'))
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/analytics-consent'))
     expect(mockSignIn).toHaveBeenCalledTimes(1)
   })
 
-  it('stays on screen and does not navigate when signIn rejects', async () => {
+  it('stays on screen and shows an alert when signIn rejects', async () => {
     mockSignIn.mockRejectedValueOnce(new Error('sign-in failed'))
     const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
 
     render(<SignInScreen />)
     fireEvent.press(screen.getByLabelText('Sign in with Google'))
 
     await waitFor(() => expect(mockSignIn).toHaveBeenCalledTimes(1))
     expect(router.replace).not.toHaveBeenCalled()
+    expect(alertSpy).toHaveBeenCalledWith('Sign-in failed', expect.any(String))
 
     errorSpy.mockRestore()
+    alertSpy.mockRestore()
   })
 })

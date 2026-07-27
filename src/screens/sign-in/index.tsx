@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { View, Text } from 'react-native'
+import { View, Text, Alert } from 'react-native'
 import { router } from 'expo-router'
 import { AppButton } from '@/src/components/atoms/AppButton'
 import { useAuth } from '@/src/lib/auth/useAuth'
@@ -13,9 +13,10 @@ export default function SignInScreen() {
     setSigningIn(true)
     try {
       await signIn()
-      router.replace('/profile')
+      router.replace('/analytics-consent')
     } catch (err) {
       console.error('[sign-in] failed:', err)
+      Alert.alert('Sign-in failed', 'Something went wrong signing in. Please try again.')
     } finally {
       setSigningIn(false)
     }
