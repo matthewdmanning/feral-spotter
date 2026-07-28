@@ -164,11 +164,16 @@ export function useCatSubmit({
                   p.cloud_storage_path != null &&
                   p.cloud_storage_url != null,
               );
-              const photoLocations = uploadedPhotos.flatMap((p) => {
-                const { latitude, longitude } = p.exif ?? {};
-                if (latitude == null || longitude == null) return [];
-                return [{ path: p.cloud_storage_path, latitude, longitude }];
-              });
+              // One Submission location, shared by every photo (ADR 0002).
+              const { latitude, longitude } = submission;
+              const photoLocations =
+                latitude != null && longitude != null
+                  ? uploadedPhotos.map((p) => ({
+                      path: p.cloud_storage_path,
+                      latitude,
+                      longitude,
+                    }))
+                  : [];
 
               const payload: SubmissionApiPayload = {
                 submission,

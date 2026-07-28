@@ -40,6 +40,19 @@ export interface SubmissionDraft {
   time_type: TimeMethod;
   address?: string;
   manual_time?: string; // ISO string, set when time_type === 'manual'
+  // The single Submission location, shared by every photo (see ADR 0002).
+  // Set once per submission: a Live fix for `device`, or a map-picked point
+  // for `pin`. Absent until acquired.
+  latitude?: number;
+  longitude?: number;
+  accuracy?: number | null;
+}
+
+/** The one geographic point a submission is tagged with. */
+export interface SubmissionLocation {
+  latitude: number;
+  longitude: number;
+  accuracy?: number | null;
 }
 
 export interface SubmissionHistoryEntry extends SubmissionDraft {
@@ -61,6 +74,7 @@ interface SubmissionState {
   updateCat: (localId: string, patch: Partial<ObservedCat>) => void;
   setSubmission: (patch: Partial<SubmissionDraft>) => void;
   setLocationType: (v: LocationMethod) => void;
+  setSubmissionLocation: (loc: SubmissionLocation) => void;
   setTimeType: (v: TimeMethod) => void;
   setAddress: (v: string) => void;
   setManualTime: (v: string) => void;
@@ -99,6 +113,16 @@ export const useSubmissionStore = create<SubmissionState>()(
 
       setLocationType: (v) =>
         set((s) => ({ submission: { ...s.submission, location_type: v } })),
+
+      setSubmissionLocation: (loc) =>
+        set((s) => ({
+          submission: {
+            ...s.submission,
+            latitude: loc.latitude,
+            longitude: loc.longitude,
+            accuracy: loc.accuracy ?? null,
+          },
+        })),
 
       setTimeType: (v) =>
         set((s) => ({ submission: { ...s.submission, time_type: v } })),

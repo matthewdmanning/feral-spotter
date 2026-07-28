@@ -6,6 +6,7 @@ import {
   AUTOSAVE_TEXT_MS,
 } from "@/src/config/constants";
 import { useSubmissionStore } from "@/src/hooks";
+import { captureCurrentLocation } from "@/src/lib/location";
 import type {
   LocationMethod,
   TimeMethod,
@@ -15,9 +16,11 @@ import {
   getCurrentCacheId,
   updateSubmissionCache,
 } from "@/src/lib/cache/submissionCache";
+import type { LocationType } from "@/src/types";
 import { validateSubmission } from "@/src/utils/validation";
-import { router } from "expo-router";
+import { router, type Href } from "expo-router";
 import { randomUUID } from "expo-crypto";
+import { Info } from "lucide-react-native";
 import {
   startTransition,
   useCallback,
@@ -28,6 +31,12 @@ import {
 import { Alert, Pressable, Text, TextInput, View } from "react-native";
 import { useUnistyles } from "react-native-unistyles";
 import { styles } from "./index.styles";
+
+// The map picker (route added in the #102 slice). A `device` fix that
+// fails, or a `pin` selection, routes here to set the Submission location.
+// Cast until #102 adds the route file, which regenerates expo-router's
+// typed-route union to include it.
+const LOCATION_PICKER_ROUTE = "/submission/location-picker" as Href;
 
 const LOCATION_OPTIONS: { value: LocationMethod; label: string }[] = [
   { value: "device", label: "Device" },
@@ -48,6 +57,9 @@ export default function CreateSubmissionScreen() {
   const submission = useSubmissionStore((s) => s.submission);
   const setSubmission = useSubmissionStore((s) => s.setSubmission);
   const setLocationType = useSubmissionStore((s) => s.setLocationType);
+  const setSubmissionLocation = useSubmissionStore(
+    (s) => s.setSubmissionLocation,
+  );
   const setTimeType = useSubmissionStore((s) => s.setTimeType);
   const setAddress = useSubmissionStore((s) => s.setAddress);
   const setManualTime = useSubmissionStore((s) => s.setManualTime);
@@ -66,6 +78,7 @@ export default function CreateSubmissionScreen() {
     submission.manual_time ?? new Date().toISOString(),
   );
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const [showLocationHelp, setShowLocationHelp] = useState(false);
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMountedRef = useRef(true);
@@ -116,12 +129,22 @@ export default function CreateSubmissionScreen() {
         manual_time: tt === "manual" ? mt : undefined,
       });
       await Promise.resolve(saveDraft());
+      const { submission: cur } = useSubmissionStore.getState();
+      const location_type: LocationType | undefined =
+        cur.latitude != null && cur.longitude != null
+          ? {
+              latitude: cur.latitude,
+              longitude: cur.longitude,
+              accuracy: cur.accuracy ?? null,
+            }
+          : undefined;
       const cId = await getCurrentCacheId();
       if (cId)
         await updateSubmissionCache(cId, {
           metadata: {
             location_method: lt,
             time_method: tt,
+            location_type,
             address: addr || undefined,
             manual_time: tt === "manual" ? mt : undefined,
           },
@@ -186,11 +209,36 @@ export default function CreateSubmissionScreen() {
   );
 
   const handleContinue = useCallback(async () => {
+    // Acquire the single Submission location before validating (ADR 0002).
+    // Only one location call per submission: skip if coords already exist.
+    let latitude = submission.latitude;
+    let longitude = submission.longitude;
+    if (latitude == null || longitude == null) {
+      if (locationType === "device") {
+        const fix = await captureCurrentLocation();
+        if (fix) {
+          setSubmissionLocation(fix);
+          latitude = fix.latitude;
+          longitude = fix.longitude;
+        } else {
+          // GPS denied/timed out → fall back to the map picker.
+          router.push(LOCATION_PICKER_ROUTE);
+          return;
+        }
+      } else if (locationType === "pin") {
+        // Manual selection → map picker sets the Submission location.
+        router.push(LOCATION_PICKER_ROUTE);
+        return;
+      }
+    }
+
     const errors = validateSubmission({
       location_type: locationType,
       time_type: timeType,
       address,
       manual_time: timeType === "manual" ? manualTime : undefined,
+      latitude,
+      longitude,
     });
     if (errors.length > 0) {
       Alert.alert(errors[0].message);
@@ -199,7 +247,16 @@ export default function CreateSubmissionScreen() {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     await performSave();
     router.push("/submission/cats");
-  }, [locationType, timeType, address, manualTime, performSave]);
+  }, [
+    locationType,
+    timeType,
+    address,
+    manualTime,
+    submission.latitude,
+    submission.longitude,
+    setSubmissionLocation,
+    performSave,
+  ]);
 
   const saveIndicatorText =
     saveStatus === "saving"
@@ -220,6 +277,24 @@ export default function CreateSubmissionScreen() {
           value={locationType}
           onChange={handleLocationTypeChange}
         />
+        <Pressable
+          onPress={() => setShowLocationHelp((v) => !v)}
+          accessibilityLabel="About submission location"
+          accessibilityRole="button"
+          style={styles.locationHelpToggle}
+        >
+          <Info size={14} color={theme.colors.muted} />
+          <Text style={styles.locationHelpToggleText}>
+            One location per submission
+          </Text>
+        </Pressable>
+        {showLocationHelp && (
+          <Text style={styles.locationHelpText}>
+            Each submission is tagged with a single location shared by all its
+            photos. Record cats seen at separate locations as separate
+            submissions.
+          </Text>
+        )}
         {locationType === "address" && (
           <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>Address</Text>

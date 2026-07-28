@@ -15,6 +15,7 @@ import * as Location from "expo-location";
 export interface CapturedLocation {
   latitude: number;
   longitude: number;
+  accuracy?: number | null;
   timestamp: string;
 }
 
@@ -52,6 +53,7 @@ export async function captureCurrentLocation(
     return {
       latitude: fix.coords.latitude,
       longitude: fix.coords.longitude,
+      accuracy: fix.coords.accuracy,
       timestamp: new Date(fix.timestamp).toISOString(),
     };
   } catch {
