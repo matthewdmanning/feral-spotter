@@ -73,8 +73,11 @@ const locationFlow = createMachine({
         SELECT_PIN_AND_CONTINUE: 'routedToPicker',
       },
     },
-    continuedToCats: {},
+    // Re-pressing Continue after a fix must not take a second Live fix — the
+    // "one location call per session" invariant (guarded by existing coords).
+    continuedToCats: { on: { CONTINUE_AGAIN: 'stillOneFix' } },
     routedToPicker: {},
+    stillOneFix: {},
   },
 })
 
@@ -109,12 +112,23 @@ describe('Create screen — Submission-location flow (model-based)', () => {
         await waitFor(() =>
           expect(router.push).toHaveBeenCalledWith('/submission/cats'),
         )
+        expect(captureCurrentLocation).toHaveBeenCalledTimes(1)
       },
       routedToPicker: async () => {
         await waitFor(() =>
           expect(router.push).toHaveBeenCalledWith('/submission/location-picker'),
         )
         expect(router.push).not.toHaveBeenCalledWith('/submission/cats')
+      },
+      stillOneFix: async () => {
+        // Second Continue took no new fix and still advanced to cats.
+        await waitFor(() =>
+          expect(captureCurrentLocation).toHaveBeenCalledTimes(1),
+        )
+        expect(router.push).toHaveBeenCalledWith('/submission/cats')
+        expect(router.push).not.toHaveBeenCalledWith(
+          '/submission/location-picker',
+        )
       },
     },
     events: {
@@ -133,6 +147,12 @@ describe('Create screen — Submission-location flow (model-based)', () => {
       },
       SELECT_PIN_AND_CONTINUE: async () => {
         fireEvent.press(screen.getByText('Pin Drop'))
+        await pressContinue()
+      },
+      // Simulate returning from cats (screen stays mounted) and pressing
+      // Continue again — no fix is queued, so a second call would resolve
+      // undefined and route to the picker, which the assertion would catch.
+      CONTINUE_AGAIN: async () => {
         await pressContinue()
       },
     },
