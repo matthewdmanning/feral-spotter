@@ -71,6 +71,15 @@ export default function SubmissionLayout() {
             gestureEnabled: false,
           }}
         />
+
+        <Stack.Screen
+          name="location-picker"
+          options={{
+            title: "Pick Location",
+            presentation: "modal",
+            animation: "slide_from_bottom",
+          }}
+        />
       </Stack>
     </ErrorBoundary>
   );
