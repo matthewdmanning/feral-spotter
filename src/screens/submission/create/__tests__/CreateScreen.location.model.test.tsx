@@ -1,11 +1,17 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native'
-import { router } from 'expo-router'
-import React from 'react'
-import { createMachine } from 'xstate'
-import { createTestModel } from '@xstate/graph'
-import { captureCurrentLocation } from '@/src/lib/location'
-import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
-import CreateSubmissionScreen from '../index'
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react-native";
+import { router } from "expo-router";
+import React from "react";
+import { createMachine } from "xstate";
+import { createTestModel } from "@xstate/graph";
+import { captureCurrentLocation } from "@/src/lib/location";
+import { useSubmissionStore } from "@/src/hooks/useSubmissionStore";
+import CreateSubmissionScreen from "../index";
 
 /**
  * Model of the Create screen's Submission-location program flow
@@ -17,150 +23,166 @@ import CreateSubmissionScreen from '../index'
  * cases someone thought to hand-write.
  */
 
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-)
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
+);
 
-jest.mock('expo-router', () => ({
-  router: { push: jest.fn(), back: jest.fn(), replace: jest.fn(), navigate: jest.fn() },
-}))
+jest.mock("expo-router", () => ({
+  router: {
+    push: jest.fn(),
+    back: jest.fn(),
+    replace: jest.fn(),
+    navigate: jest.fn(),
+  },
+}));
 
-jest.mock('expo-crypto', () => ({ randomUUID: jest.fn(() => 'sub-1') }))
+jest.mock("expo-crypto", () => ({ randomUUID: jest.fn(() => "sub-1") }));
 
-jest.mock('react-native-mmkv', () => ({
-  createMMKV: jest.fn(() => ({ getString: jest.fn(), set: jest.fn(), delete: jest.fn() })),
-}))
+jest.mock("react-native-mmkv", () => ({
+  createMMKV: jest.fn(() => ({
+    getString: jest.fn(),
+    set: jest.fn(),
+    delete: jest.fn(),
+  })),
+}));
 
-jest.mock('@/src/lib/location', () => ({ captureCurrentLocation: jest.fn() }))
+jest.mock("@/src/lib/location", () => ({ captureCurrentLocation: jest.fn() }));
 
-jest.mock('@/src/lib/cache/submissionCache', () => ({
+jest.mock("@/src/lib/cache/submissionCache", () => ({
   createSubmissionCache: jest.fn().mockResolvedValue({}),
-  getCurrentCacheId: jest.fn().mockResolvedValue('cache-1'),
+  getCurrentCacheId: jest.fn().mockResolvedValue("cache-1"),
   updateSubmissionCache: jest.fn().mockResolvedValue(undefined),
-}))
+}));
 
-jest.mock('react-native-unistyles', () => {
-  const anyProp = (): unknown => new Proxy({}, { get: () => anyProp() })
-  const theme = new Proxy({}, { get: () => anyProp() })
+jest.mock("react-native-unistyles", () => {
+  const anyProp = (): unknown => new Proxy({}, { get: () => anyProp() });
+  const theme = new Proxy({}, { get: () => anyProp() });
   return {
     useUnistyles: () => ({ theme }),
-    StyleSheet: { create: (fn: unknown) => (typeof fn === 'function' ? fn(theme) : fn) },
-  }
-})
+    StyleSheet: {
+      create: (fn: unknown) => (typeof fn === "function" ? fn(theme) : fn),
+    },
+  };
+});
 
 // Bypass the real Unistyles stylesheet (its `theme.x * n` arithmetic can't run
 // against the proxy theme); styling is irrelevant to the flow under test.
-jest.mock('../index.styles', () => ({
+jest.mock("../index.styles", () => ({
   styles: new Proxy({}, { get: () => ({}) }),
-}))
+}));
 
-jest.mock('lucide-react-native', () => ({ Info: () => null }))
+jest.mock("lucide-react-native", () => ({ Info: () => null }));
 
-jest.mock('@/src/components/organisms/DateTimePicker', () => ({
+jest.mock("@/src/components/organisms/DateTimePicker", () => ({
   DateTimePickerButton: () => null,
-}))
+}));
 
-const DEFAULT_SUBMISSION = { location_type: 'device' as const, time_type: 'device' as const }
+const DEFAULT_SUBMISSION = {
+  location_type: "device" as const,
+  time_type: "device" as const,
+};
 
 const locationFlow = createMachine({
-  id: 'createLocation',
-  initial: 'editing',
+  id: "createLocation",
+  initial: "editing",
   states: {
     editing: {
       on: {
-        CONTINUE_DEVICE_FIX_OK: 'continuedToCats',
-        CONTINUE_DEVICE_FIX_FAIL: 'routedToPicker',
-        SELECT_PIN_AND_CONTINUE: 'routedToPicker',
+        CONTINUE_DEVICE_FIX_OK: "continuedToCats",
+        CONTINUE_DEVICE_FIX_FAIL: "routedToPicker",
+        SELECT_PIN_AND_CONTINUE: "routedToPicker",
       },
     },
     // Re-pressing Continue after a fix must not take a second Live fix — the
     // "one location call per session" invariant (guarded by existing coords).
-    continuedToCats: { on: { CONTINUE_AGAIN: 'stillOneFix' } },
+    continuedToCats: { on: { CONTINUE_AGAIN: "stillOneFix" } },
     routedToPicker: {},
     stillOneFix: {},
   },
-})
+});
 
-describe('Create screen — Submission-location flow (model-based)', () => {
+describe("Create screen — Submission-location flow (model-based)", () => {
   beforeEach(async () => {
-    jest.clearAllMocks()
-    const AsyncStorage = require('@react-native-async-storage/async-storage')
-    await AsyncStorage.clear()
+    jest.clearAllMocks();
+    const AsyncStorage = require("@react-native-async-storage/async-storage");
+    await AsyncStorage.clear();
     useSubmissionStore.setState({
       cats: [],
       submission: { ...DEFAULT_SUBMISSION },
       history: [],
-      currentStep: 'create',
-    })
-    render(<CreateSubmissionScreen />)
-  })
+      currentStep: "create",
+    });
+    render(<CreateSubmissionScreen />);
+  });
 
   const pressContinue = async () => {
     await act(async () => {
-      fireEvent.press(screen.getByText('Continue'))
-    })
-  }
+      fireEvent.press(screen.getByText("Continue"));
+    });
+  };
 
-  const model = createTestModel(locationFlow)
+  const model = createTestModel(locationFlow);
 
   const testParams = {
     states: {
       editing: () => {
-        expect(router.push).not.toHaveBeenCalled()
+        expect(router.push).not.toHaveBeenCalled();
       },
       continuedToCats: async () => {
         await waitFor(() =>
-          expect(router.push).toHaveBeenCalledWith('/submission/cats'),
-        )
-        expect(captureCurrentLocation).toHaveBeenCalledTimes(1)
+          expect(router.push).toHaveBeenCalledWith("/submission/cats"),
+        );
+        expect(captureCurrentLocation).toHaveBeenCalledTimes(1);
       },
       routedToPicker: async () => {
         await waitFor(() =>
-          expect(router.push).toHaveBeenCalledWith('/submission/location-picker'),
-        )
-        expect(router.push).not.toHaveBeenCalledWith('/submission/cats')
+          expect(router.push).toHaveBeenCalledWith(
+            "/submission/location-picker",
+          ),
+        );
+        expect(router.push).not.toHaveBeenCalledWith("/submission/cats");
       },
       stillOneFix: async () => {
         // Second Continue took no new fix and still advanced to cats.
         await waitFor(() =>
           expect(captureCurrentLocation).toHaveBeenCalledTimes(1),
-        )
-        expect(router.push).toHaveBeenCalledWith('/submission/cats')
+        );
+        expect(router.push).toHaveBeenCalledWith("/submission/cats");
         expect(router.push).not.toHaveBeenCalledWith(
-          '/submission/location-picker',
-        )
+          "/submission/location-picker",
+        );
       },
     },
     events: {
       CONTINUE_DEVICE_FIX_OK: async () => {
-        ;(captureCurrentLocation as jest.Mock).mockResolvedValueOnce({
+        (captureCurrentLocation as jest.Mock).mockResolvedValueOnce({
           latitude: 1,
           longitude: 2,
           accuracy: 5,
-          timestamp: '2026-07-28T00:00:00.000Z',
-        })
-        await pressContinue()
+          timestamp: "2026-07-28T00:00:00.000Z",
+        });
+        await pressContinue();
       },
       CONTINUE_DEVICE_FIX_FAIL: async () => {
-        ;(captureCurrentLocation as jest.Mock).mockResolvedValueOnce(undefined)
-        await pressContinue()
+        (captureCurrentLocation as jest.Mock).mockResolvedValueOnce(undefined);
+        await pressContinue();
       },
       SELECT_PIN_AND_CONTINUE: async () => {
-        fireEvent.press(screen.getByText('Pin Drop'))
-        await pressContinue()
+        fireEvent.press(screen.getByText("Pin Drop"));
+        await pressContinue();
       },
       // Simulate returning from cats (screen stays mounted) and pressing
       // Continue again — no fix is queued, so a second call would resolve
       // undefined and route to the picker, which the assertion would catch.
       CONTINUE_AGAIN: async () => {
-        await pressContinue()
+        await pressContinue();
       },
     },
-  }
+  };
 
   model.getShortestPaths().forEach((path) => {
     it(path.description, async () => {
-      await path.test(testParams)
-    })
-  })
-})
+      await path.test(testParams);
+    });
+  });
+});

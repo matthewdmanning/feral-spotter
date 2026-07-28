@@ -179,7 +179,9 @@ export function useCatSubmit({
                 submission,
                 cats: allCats,
                 photo_paths: uploadedPhotos.map((p) => p.cloud_storage_path),
-                ...(photoLocations.length > 0 && { photo_locations: photoLocations }),
+                ...(photoLocations.length > 0 && {
+                  photo_locations: photoLocations,
+                }),
               };
               const response = await submitObservation(payload);
 

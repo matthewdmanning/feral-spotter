@@ -5,7 +5,10 @@
  */
 
 import { asyncStorage } from "@/src/lib/cache/storage";
-import type { LocationMethod, TimeMethod } from "@/src/lib/cache/submissionCache";
+import type {
+  LocationMethod,
+  TimeMethod,
+} from "@/src/lib/cache/submissionCache";
 import type {
   CatAge,
   CatColor,
@@ -138,8 +141,7 @@ export const useSubmissionStore = create<SubmissionState>()(
 
       setCurrentStep: (step) => set({ currentStep: step }),
 
-      addToHistory: (entry) =>
-        set((s) => ({ history: [...s.history, entry] })),
+      addToHistory: (entry) => set((s) => ({ history: [...s.history, entry] })),
 
       clearDraft: () =>
         set({
