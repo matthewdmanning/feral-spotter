@@ -1,104 +1,95 @@
-# Session handoff (2026-07-28) — location services implementation
+# Session handoff (2026-07-28) — location services (DONE, pending runtime drive)
 
-Branch: `issue-47-location-services` (from `main`). Issues: **#47** device-GPS
-capture (reused as geolocation half) + **#102** map picker. Single PR planned.
+Branch: `issue-47-location-services`. Issues: **#47** (device-GPS capture /
+geolocation) + **#102** (map picker). Single branch, single eventual PR.
 
-## Decided this session (grilling + domain-modeling)
+Design of record: `docs/adr/0002-location-services-model.md` + `CONTEXT.md`.
 
-Recorded in `docs/adr/0002-location-services-model.md` and `CONTEXT.md` (both
-committed on this branch, `dca3302`). Summary:
+## What shipped this session
 
-- **One Submission location per Submission**, shared by all photos. Info
-  affordance: "Separate locations need separate submissions."
-- **Source-based trust:**
-  - Camera capture + good GPS → a single **Live fix** taken once per
-    Submission; authoritative, **not** user-editable.
-  - Camera capture + GPS denied/timeout → fall back to the **Map picker**.
-  - Uploaded (library) photo → **Map picker**, seeded from photo EXIF if
-    present.
-- **Keep `expo-location`** (already installed). Do **not** swap to
-  `react-native-geolocation-services`.
-- **Map picker = `expo-maps`** (`GoogleMaps`/`AppleMaps` native views), fixed
-  center pin as an RN overlay, `onCameraMove.coordinates` = the center; "Set
-  location" commits, cancel returns unset. Seed order: photo EXIF →
-  last-known device position → default region (~Clemson).
-- Location is an **app-level JSON value** on the submission/photo — **no**
-  rewriting GPS into image EXIF bytes.
-- `expo-maps` is **alpha** in SDK 56 — accepted for the Android-only MVP.
+| Commit | Scope |
+|---|---|
+| `7499ccf` | Slice A — one Live fix per submission; removed both per-photo GPS call sites |
+| `d12b1a3` | one-fix-per-session test invariant |
+| `6f7a0f4` | Prettier on the branch's files |
+| `bbbe6d7` | deps: `expo-maps`; declare `xstate` + `@xstate/graph` |
+| `5765dee` | Slice B — native `expo-maps` map picker (fixed centre pin) |
+| `c1feef3` | fix — clear coords when the location method changes |
 
-Deferred (not this work): address entry / autocomplete (pending nonprofit
-partnership), EXIF-vs-selected agreement validation, actual-byte EXIF embedding.
+Behaviour delivered:
 
-## `LocationMethod` mapping (existing enum in `submissionCache.ts`)
+- **One Submission location per submission**, shared by all photos (ADR 0002).
+  Stored on `SubmissionDraft` (`latitude`/`longitude`/`accuracy`), sent as
+  JSON; no image-byte EXIF writing.
+- **Create screen** (`device`): one Live fix on Continue via
+  `captureCurrentLocation`; denied/timed-out fix → map picker fallback.
+- **Map picker** (`pin`, or GPS-failure fallback): `GoogleMaps.View`, fixed
+  centre pin overlay, `onCameraMove` centre → "Set location" commits, Cancel
+  returns unchanged. Seed: last-known position → default region.
+- Both capture hooks (`usePhotoSession`, `useCameraCapture`) no longer stamp
+  per-photo GPS. `useCatSubmit` derives `photo_locations` from the one
+  Submission location.
+- Switching method clears prior coords so the new method re-acquires (fixes a
+  stale-coords bug where a device fix could be submitted as a `pin`).
 
-`device` → Live fix · `pin` → Map picker · `address` → deferred.
+## Tests
 
-## Test constraint
+State-machine program-flow model tests only (per the mandated style):
 
-**Only** state-machine program-flow tests for these screens — no
-component/util tests. Production stays plain React + Zustand (no xstate in
-`src/`). Model the flow as an xstate `createMachine` **in the test** and walk
-all paths with `@xstate/graph` `createTestModel`. Precedent to copy exactly:
-`src/screens/home/__tests__/HomeScreen.gate.model.test.tsx` (on branches
-`issue-67-*` / `issue-7-*`; not yet on `main`). File naming: `*.model.test.tsx`.
-`xstate` + `@xstate/graph` are already in devDependencies.
+- `CreateScreen.location.model.test.tsx` — device-fix, device-fail→picker,
+  pin→picker, one-fix revisit invariant, method-switch re-acquire.
+- `LocationPicker.model.test.tsx` — move-and-set vs cancel; the native map SDK
+  is mocked.
 
-## Key findings (production wiring)
+Gates green: **52 tests**, `tsc` 0, `expo lint` 0 errors, Prettier clean on
+branch files.
 
-- `validateSubmission` (`src/utils/validation.ts:123`) **already requires**
-  `latitude`/`longitude` for `location_type` `device`/`pin`, but
-  `SubmissionDraft` (`src/hooks/useSubmissionStore.ts`) has no such fields and
-  the create screen never sets them → today Continue is effectively broken for
-  device/pin. This is the #47 gap.
-- **Two competing location concepts today** to be unified into one Submission
-  location:
-  - `usePhotoSession.ts` stamps a fresh GPS fix into each `photo.exif`
-    (per-photo, via `captureCurrentLocation`).
-  - Create screen expects a submission-level coordinate (unset).
-- `CacheMetadata` (`submissionCache.ts:42`) already has slots:
-  `location_method` (how) + `location_type?: LocationType` (the coords). Reuse
-  `location_type` for the persisted coordinate.
-- `captureCurrentLocation` (`src/lib/location.ts`) already exists: consent-
-  gated, foreground-permission-checked, 4s timeout, `__DEV__` stub near
-  Clemson. Refactor its call site from per-photo to per-submission.
+## Dependencies
 
-## Plan — two slices, same branch/PR
+- `expo-maps ~56.0.7` added (native module).
+- `xstate` + `@xstate/graph` were undeclared on this branch and are now in
+  devDependencies (the model tests need them; a fresh install/CI would
+  otherwise fail).
+- Installs on this repo require `--legacy-peer-deps` (pre-existing
+  jest-preset peer conflict, #17).
 
-### Slice A — Live fix (no new deps; safe, do first)
+## Runtime verification — partial
 
-1. `SubmissionDraft`: add `latitude?`, `longitude?`, `accuracy?`; add
-   `setSubmissionLocation(loc)` setter. Persist via existing store.
-2. Create screen `device`: acquire one Live fix per submission (reuse
-   `captureCurrentLocation`); store coords; on deny/timeout route to map
-   picker as fallback.
-3. Unify: `usePhotoSession` stops per-photo GPS stamping; photos inherit the
-   single Submission location.
-4. Persist coords into `CacheMetadata.location_type` on save.
-5. FSM `*.model.test.tsx` for the flow: device→fix, device→fail→picker,
-   pin→picker, picker-confirm, picker-cancel.
+Rebuilt the Android app with `expo-maps` native (`expo prebuild` + gradle) and
+confirmed the new native + JS **loads with no crash / no redbox**. The prior
+APK (pre-expo-maps) redboxed "Cannot find native module ExpoMaps"; the rebuild
+clears that.
 
-### Slice B — Map picker (`expo-maps`, native, BLOCKED)
+**The behavioural drive (create → device → cats; pin → picker) is NOT done.**
+It is blocked upstream, not by location code: the auth/consent onboarding path
+needed to reach the create screen is not functional on this branch's base
+(it loops at onboarding). **Unblock requires `issue-7` (the Firebase auth
+migration) to land** — until then there is no runnable base that has both a
+working sign-in/consent flow and this location work. Defer the behavioural
+drive until after that merges and this branch fast-forwards onto it.
 
-Blocked on: **Google Maps API key** (create in Google Cloud, add to Android
-config) — user must provision. Steps once unblocked:
+Also note: RN Fabric exposes nothing to `uiautomator` (empty dumps, no
+bounds), so driving the UI blind is not possible — the runtime drive needs an
+interactive session with eyes on the screen.
 
-1. `npx expo install expo-maps`.
-2. Config plugin + API key in `app.json` / native config.
-3. `expo prebuild` (regenerates `android/`).
-4. Map-picker screen: `src/app/submission/location-picker.tsx` (route) +
-   `src/screens/submission/location-picker/` (screen). Fixed center pin
-   overlay, seed chain, "Set location" writes coords to store + navigates back.
-5. Extend the FSM model test with the real picker screen.
+## Remaining / deferred (not blockers to committing)
 
-## Immediate next step on reconnect
-
-Confirm sequencing choice (was mid-decision: "prep a handoff in case of lost
-connection"). Then start **Slice A** — it needs no API key and no native
-rebuild. Hold Slice B's `expo install` / `prebuild` until the Google Maps API
-key is available.
+- **Library uploads still tag the device location** (default
+  `location_type=device`); the photo-EXIF seed for uploaded photos is
+  deferred with the library-upload path.
+- **Picker seed order untested** — `getLastKnownPositionAsync` mocked null;
+  the last-known branch and Set-without-drag are unexercised.
+- **`as Href` cast** in the create screen is removable once expo-router
+  regenerates typed routes (the `location-picker` route file now exists) —
+  needs a typegen/prebuild pass.
+- **Google Maps API key** in `android.config.googleMaps.apiKey` + `expo
+  prebuild` are still needed to render map tiles on device. Config-only; no
+  code change. Slice B renders the pin + buttons without it (blank tiles).
+- Leaked autosave `setTimeout` in the create screen ("Jest did not exit")
+  — cosmetic; fake-timers later.
 
 ## Do not touch
 
-Stray untracked files carried from the Firebase branch tree —
-`.firebaserc`, `firebase.json`, `google-services.json` — are out of scope for
-this branch. Leave them untracked; do not commit.
+Untracked strays in the working tree — `.firebaserc`, `firebase.json`,
+`google-services.json` — are out of scope for this branch. Leave untracked; do
+not commit.
