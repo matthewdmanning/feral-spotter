@@ -115,7 +115,22 @@ export const useSubmissionStore = create<SubmissionState>()(
         set((s) => ({ submission: { ...s.submission, ...patch } })),
 
       setLocationType: (v) =>
-        set((s) => ({ submission: { ...s.submission, location_type: v } })),
+        set((s) => ({
+          submission: {
+            ...s.submission,
+            location_type: v,
+            // Switching method invalidates any acquired coords so the new
+            // method re-acquires — a device fix stays a device fix, a pinned
+            // point stays a pin (ADR 0002: source determines the location).
+            ...(v !== s.submission.location_type
+              ? {
+                  latitude: undefined,
+                  longitude: undefined,
+                  accuracy: undefined,
+                }
+              : {}),
+          },
+        })),
 
       setSubmissionLocation: (loc) =>
         set((s) => ({

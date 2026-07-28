@@ -95,9 +95,17 @@ const locationFlow = createMachine({
     },
     // Re-pressing Continue after a fix must not take a second Live fix — the
     // "one location call per session" invariant (guarded by existing coords).
-    continuedToCats: { on: { CONTINUE_AGAIN: "stillOneFix" } },
+    // But switching the method must invalidate those coords so the new method
+    // re-acquires, instead of reusing the old fix.
+    continuedToCats: {
+      on: {
+        CONTINUE_AGAIN: "stillOneFix",
+        SWITCH_TO_PIN: "reroutedAfterSwitch",
+      },
+    },
     routedToPicker: {},
     stillOneFix: {},
+    reroutedAfterSwitch: {},
   },
 });
 
@@ -152,6 +160,15 @@ describe("Create screen — Submission-location flow (model-based)", () => {
           "/submission/location-picker",
         );
       },
+      reroutedAfterSwitch: async () => {
+        // Switching device -> pin invalidated the device fix, so Continue
+        // routes to the picker instead of reusing the stale coords.
+        await waitFor(() =>
+          expect(router.push).toHaveBeenCalledWith(
+            "/submission/location-picker",
+          ),
+        );
+      },
     },
     events: {
       CONTINUE_DEVICE_FIX_OK: async () => {
@@ -175,6 +192,10 @@ describe("Create screen — Submission-location flow (model-based)", () => {
       // Continue again — no fix is queued, so a second call would resolve
       // undefined and route to the picker, which the assertion would catch.
       CONTINUE_AGAIN: async () => {
+        await pressContinue();
+      },
+      SWITCH_TO_PIN: async () => {
+        fireEvent.press(screen.getByText("Pin Drop"));
         await pressContinue();
       },
     },
