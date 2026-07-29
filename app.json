@@ -9,6 +9,7 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon",
+      "usesAppleSignIn": true,
       "infoPlist": {
         "NSCameraUsageDescription": "FeralSpotter uses your camera to capture cat sighting photos for the population-tracking dataset.",
         "NSPhotoLibraryAddUsageDescription": "FeralSpotter saves sighting photos to your library when \"keep photos on device\" is enabled.",
@@ -24,7 +25,12 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.mmanning.feralspotter",
-      "permissions": ["android.permission.CAMERA", "android.permission.READ_MEDIA_IMAGES", "android.permission.ACCESS_FINE_LOCATION"]
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "output": "static",
@@ -32,6 +38,7 @@
     },
     "plugins": [
       "expo-router",
+      "@react-native-firebase/app",
       [
         "expo-splash-screen",
         {
@@ -47,7 +54,11 @@
       [
         "react-native-permissions",
         {
-          "iosPermissions": ["Camera", "PhotoLibraryAddOnly", "LocationWhenInUse"]
+          "iosPermissions": [
+            "Camera",
+            "PhotoLibraryAddOnly",
+            "LocationWhenInUse"
+          ]
         }
       ],
       [
@@ -72,6 +83,19 @@
           "photosPermission": false,
           "savePhotosPermission": "FeralSpotter saves sighting photos to your library when \"keep photos on device\" is enabled.",
           "granularPermissions": ["photo"]
+        }
+      ],
+      "expo-apple-authentication",
+      [
+        "react-native-fbsdk-next",
+        {
+          "appID": "REPLACE_WITH_FACEBOOK_APP_ID",
+          "clientToken": "REPLACE_WITH_FACEBOOK_CLIENT_TOKEN",
+          "displayName": "FeralSpotter",
+          "scheme": "fbREPLACE_WITH_FACEBOOK_APP_ID",
+          "isAutoInitEnabled": false,
+          "advertiserIDCollectionEnabled": false,
+          "autoLogAppEventsEnabled": false
         }
       ]
     ],
