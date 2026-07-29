@@ -1,13 +1,5 @@
 import * as AppleAuthentication from 'expo-apple-authentication'
-import * as Crypto from 'expo-crypto'
-
-const NONCE_CHARS =
-  '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-._'
-
-function randomRawNonce(byteLength = 32): string {
-  const bytes = Crypto.getRandomBytes(byteLength)
-  return Array.from(bytes, (b) => NONCE_CHARS[b % NONCE_CHARS.length]).join('')
-}
+import { randomRawNonce, sha256Hex } from './nonce'
 
 export interface AppleCredentialInput {
   identityToken: string
@@ -22,18 +14,30 @@ export interface AppleCredentialInput {
  */
 export async function getAppleCredentialInput(): Promise<AppleCredentialInput> {
   const rawNonce = randomRawNonce()
-  const hashedNonce = await Crypto.digestStringAsync(
-    Crypto.CryptoDigestAlgorithm.SHA256,
-    rawNonce,
-  )
+  const hashedNonce = await sha256Hex(rawNonce)
 
-  const credential = await AppleAuthentication.signInAsync({
-    requestedScopes: [
-      AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-      AppleAuthentication.AppleAuthenticationScope.EMAIL,
-    ],
-    nonce: hashedNonce,
-  })
+  let credential: AppleAuthentication.AppleAuthenticationCredential
+  try {
+    credential = await AppleAuthentication.signInAsync({
+      requestedScopes: [
+        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+        AppleAuthentication.AppleAuthenticationScope.EMAIL,
+      ],
+      nonce: hashedNonce,
+    })
+  } catch (err) {
+    // User dismissing the Apple sheet is not an error — surface a typed
+    // cancellation the sign-in screen swallows silently.
+    if (
+      err &&
+      typeof err === 'object' &&
+      'code' in err &&
+      err.code === 'ERR_REQUEST_CANCELED'
+    ) {
+      throw new Error('SIGN_IN_CANCELLED')
+    }
+    throw err
+  }
 
   if (!credential.identityToken) throw new Error('NO_APPLE_IDENTITY_TOKEN')
   return { identityToken: credential.identityToken, rawNonce }

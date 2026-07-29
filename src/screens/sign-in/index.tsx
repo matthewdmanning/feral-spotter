@@ -10,6 +10,10 @@ import {
 } from '@/src/lib/auth/authProviders'
 import { styles } from './index.styles'
 
+// A user dismissing a provider sheet is not a failure — don't alert.
+const isCancellation = (err: unknown) =>
+  err instanceof Error && err.message === 'SIGN_IN_CANCELLED'
+
 export default function SignInScreen() {
   const { signInWithEmail, signInWithProvider } = useAuth()
   const [email, setEmail] = useState('')
@@ -45,6 +49,7 @@ export default function SignInScreen() {
         await signInWithProvider(providerId)
         advance()
       } catch (err) {
+        if (isCancellation(err)) return
         console.error(`[sign-in] ${providerId} failed:`, err)
         Alert.alert(
           'Sign-in failed',

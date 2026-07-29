@@ -11,7 +11,10 @@ import {
   type User,
 } from '@react-native-firebase/auth'
 import type { AuthUser, IAuthProvider } from './IAuthProvider'
-import type { FederatedProviderId } from './authProviders'
+import {
+  assertFederatedProviderReleased,
+  type FederatedProviderId,
+} from './authProviders'
 import { getGoogleIdToken, googleSignOut } from './GoogleSignIn'
 import { getAppleCredentialInput } from './AppleSignIn'
 import { getFacebookAccessToken, facebookSignOut } from './FacebookSignIn'
@@ -22,6 +25,10 @@ function toAuthUser(user: User | null): AuthUser | null {
 }
 
 async function credentialForProvider(providerId: FederatedProviderId) {
+  // Decorator-style gate: blocks not-yet-released providers (Apple/Facebook)
+  // from running their unverified native flow until their version tag is met.
+  assertFederatedProviderReleased(providerId)
+
   switch (providerId) {
     case 'google': {
       const idToken = await getGoogleIdToken()

@@ -55,3 +55,18 @@ export function isFederatedProviderReleased(
 ): boolean {
   return semverGte(appVersion, provider.releasedInVersion)
 }
+
+/**
+ * Runtime guard for the sign-in path: throws unless the provider's release/
+ * version gate is met. Belt-and-suspenders with the disabled sign-in buttons —
+ * it keeps the not-yet-verified Apple/Facebook flows from executing in a build
+ * that hasn't reached their release, even if reached programmatically.
+ */
+export function assertFederatedProviderReleased(
+  providerId: FederatedProviderId,
+): void {
+  const cfg = FEDERATED_PROVIDERS.find((p) => p.id === providerId)
+  if (cfg && !isFederatedProviderReleased(cfg)) {
+    throw new Error(`FEDERATED_PROVIDER_NOT_RELEASED: ${providerId}`)
+  }
+}
