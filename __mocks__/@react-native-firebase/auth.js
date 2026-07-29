@@ -5,7 +5,11 @@
 module.exports = {
   getAuth: jest.fn(() => ({ currentUser: null })),
   signInWithCredential: jest.fn(),
+  signInWithEmailAndPassword: jest.fn(),
+  createUserWithEmailAndPassword: jest.fn(),
   GoogleAuthProvider: { credential: jest.fn() },
+  FacebookAuthProvider: { credential: jest.fn() },
+  OAuthProvider: jest.fn(() => ({ credential: jest.fn() })),
   onAuthStateChanged: jest.fn(() => () => {}),
   signOut: jest.fn(),
 }

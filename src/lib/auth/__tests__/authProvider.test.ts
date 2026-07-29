@@ -8,28 +8,37 @@ describe('dev authProvider stub (__DEV__ is true under jest)', () => {
     unsubscribe()
   })
 
-  it('signIn resolves a stub user and notifies subscribers', async () => {
-    const cb = jest.fn()
-    const unsubscribe = authProvider.onAuthStateChanged(cb)
-    cb.mockClear()
+  it('every sign-in path resolves the same stub user and notifies subscribers', async () => {
+    const expected = { uid: 'dev-stub-uid', email: 'dev@feralspotter.local' }
 
-    const user = await authProvider.signIn()
+    for (const signIn of [
+      () => authProvider.signInWithProvider('google'),
+      () => authProvider.signInWithEmail('a@b.com', 'pw'),
+      () => authProvider.registerWithEmail('a@b.com', 'pw'),
+    ]) {
+      await authProvider.signOut()
+      const cb = jest.fn()
+      const unsubscribe = authProvider.onAuthStateChanged(cb)
+      cb.mockClear()
 
-    expect(user).toEqual({ uid: 'dev-stub-uid', email: 'dev@feralspotter.local' })
-    expect(cb).toHaveBeenCalledWith(user)
-    unsubscribe()
+      const user = await signIn()
+
+      expect(user).toEqual(expected)
+      expect(cb).toHaveBeenCalledWith(expected)
+      unsubscribe()
+    }
   })
 
   it('getToken rejects when signed out and resolves once signed in', async () => {
     await authProvider.signOut()
     await expect(authProvider.getToken()).rejects.toThrow('NOT_SIGNED_IN')
 
-    await authProvider.signIn()
+    await authProvider.signInWithProvider('google')
     await expect(authProvider.getToken()).resolves.toBe('dev-stub-token')
   })
 
   it('signOut clears the current user and notifies subscribers', async () => {
-    await authProvider.signIn()
+    await authProvider.signInWithProvider('google')
     const cb = jest.fn()
     const unsubscribe = authProvider.onAuthStateChanged(cb)
     cb.mockClear()

@@ -17,20 +17,20 @@
  * not just this dev stub.
  */
 
-import { authProvider } from "@/src/lib/auth";
-import type { AuthUser } from "@/src/lib/auth/IAuthProvider";
-import { create } from "zustand";
+import { authProvider } from '@/src/lib/auth'
+import type { AuthUser } from '@/src/lib/auth/IAuthProvider'
+import { create } from 'zustand'
 
 interface AuthState {
-  user: AuthUser | null;
-  isReady: boolean;
+  user: AuthUser | null
+  isReady: boolean
 }
 
 export const useAuthStore = create<AuthState>(() => ({
   user: authProvider.getCurrentUser(),
   isReady: false,
-}));
+}))
 
 authProvider.onAuthStateChanged((user) => {
-  useAuthStore.setState({ user, isReady: true });
-});
+  useAuthStore.setState({ user, isReady: true })
+})
