@@ -77,8 +77,10 @@ export function useCameraCapture(): CameraCaptureResult {
     (s) => s.settings.keep_photos_on_device !== false,
   )
   const addPhoto = usePhotoStore((s) => s.addPhoto)
+  const removePhoto = usePhotoStore((s) => s.removePhoto)
   const updatePhoto = usePhotoStore((s) => s.updatePhoto)
   const addSessionPhoto = useUIStore((s) => s.addSessionPhoto)
+  const removeSessionPhoto = useUIStore((s) => s.removeSessionPhoto)
 
   const [cameraPosition, setCameraPosition] = useState<'back' | 'front'>('back')
   const [capturedPhotos, setCapturedPhotos] = useState<SubmissionPhoto[]>([])
@@ -166,6 +168,16 @@ export function useCameraCapture(): CameraCaptureResult {
     keepOnDevice,
   ])
 
+  // ── Discard ───────────────────────────────────────────────────────────────
+  const handleDiscardPhoto = useCallback(
+    (localId: string) => {
+      setCapturedPhotos((prev) => prev.filter((p) => p.local_id !== localId))
+      removePhoto(localId)
+      removeSessionPhoto(localId)
+    },
+    [removePhoto, removeSessionPhoto],
+  )
+
   // ── Controls ──────────────────────────────────────────────────────────────
   const cycleFlash = useCallback(() => {
     setFlashMode((m) => (m === 'auto' ? 'on' : m === 'on' ? 'off' : 'auto'))
@@ -189,9 +201,10 @@ export function useCameraCapture(): CameraCaptureResult {
         badgeCount={
           index === capturedPhotos.length - 1 ? capturedPhotos.length : 0
         }
+        onRemove={() => handleDiscardPhoto(item.local_id)}
       />
     ),
-    [capturedPhotos.length],
+    [capturedPhotos.length, handleDiscardPhoto],
   )
 
   const keyExtractor = useCallback((item: SubmissionPhoto) => item.local_id, [])
