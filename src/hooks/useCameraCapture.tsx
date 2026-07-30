@@ -171,12 +171,12 @@ export function useCameraCapture(): CameraCaptureResult {
   // ── Discard ───────────────────────────────────────────────────────────────
   const handleDiscardPhoto = useCallback(
     (localId: string) => {
-      setCapturedPhotos((prev) => prev.filter((p) => p.local_id !== localId));
-      removePhoto(localId);
-      removeSessionPhoto(localId);
+      setCapturedPhotos((prev) => prev.filter((p) => p.local_id !== localId))
+      removePhoto(localId)
+      removeSessionPhoto(localId)
     },
     [removePhoto, removeSessionPhoto],
-  );
+  )
 
   // ── Controls ──────────────────────────────────────────────────────────────
   const cycleFlash = useCallback(() => {

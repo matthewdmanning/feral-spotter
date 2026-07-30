@@ -5,25 +5,25 @@
  * immediately via Alert rather than buffered in state.
  */
 
-import { asyncStorage } from "@/src/lib/cache/storage";
-import type { SubmissionPhoto } from "@/src/types";
-import { Alert } from "react-native";
-import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
+import { asyncStorage } from '@/src/lib/cache/storage'
+import type { SubmissionPhoto } from '@/src/types'
+import { Alert } from 'react-native'
+import { create } from 'zustand'
+import { createJSONStorage, persist } from 'zustand/middleware'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface UIState {
-  isOnline: boolean;
-  sessionPhotos: SubmissionPhoto[];
-  isSubmitting: boolean;
+  isOnline: boolean
+  sessionPhotos: SubmissionPhoto[]
+  isSubmitting: boolean
 
-  setOnlineStatus: (isOnline: boolean) => void;
-  addSessionPhoto: (photo: SubmissionPhoto) => void;
-  removeSessionPhoto: (localId: string) => void;
-  showError: (title: string, message: string) => void;
-  showSuccess: (title: string, message: string) => void;
-  setSubmitting: (isSubmitting: boolean) => void;
+  setOnlineStatus: (isOnline: boolean) => void
+  addSessionPhoto: (photo: SubmissionPhoto) => void
+  removeSessionPhoto: (localId: string) => void
+  showError: (title: string, message: string) => void
+  showSuccess: (title: string, message: string) => void
+  setSubmitting: (isSubmitting: boolean) => void
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -51,8 +51,8 @@ export const useUIStore = create<UIState>()(
       setSubmitting: (isSubmitting) => set({ isSubmitting }),
     }),
     {
-      name: "ui-store",
+      name: 'ui-store',
       storage: createJSONStorage(() => asyncStorage),
     },
   ),
-);
+)
