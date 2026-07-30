@@ -1,28 +1,23 @@
-import { useCameraCapture } from "@/src/hooks/useCameraCapture";
-import { useCameraAccess } from "@/src/hooks/useCameraAccess";
-import { FlashList } from "@shopify/flash-list";
-import { Stack } from "expo-router";
-import { SwitchCamera, X, Zap, ZapOff } from "lucide-react-native";
-import { useCallback } from "react";
-import {
-  Pressable,
-  StyleSheet as RNStyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { useCameraCapture } from '@/src/hooks/useCameraCapture'
+import { useCameraAccess } from '@/src/hooks/useCameraAccess'
+import { FlashList } from '@shopify/flash-list'
+import { Stack } from 'expo-router'
+import { SwitchCamera, X, Zap, ZapOff } from 'lucide-react-native'
+import { useCallback } from 'react'
+import { Pressable, StyleSheet as RNStyleSheet, Text, View } from 'react-native'
 import Animated, {
   Easing,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
-} from "react-native-reanimated";
-import { useUnistyles } from "react-native-unistyles";
-import { Camera } from "react-native-vision-camera";
-import { styles } from "./index.styles";
+} from 'react-native-reanimated'
+import { useUnistyles } from 'react-native-unistyles'
+import { Camera } from 'react-native-vision-camera'
+import { styles } from './index.styles'
 
 export default function CameraScreen() {
-  const { theme } = useUnistyles();
-  const { hasPermission, requestPermission, openSettings } = useCameraAccess();
+  const { theme } = useUnistyles()
+  const { hasPermission, requestPermission, openSettings } = useCameraAccess()
   const {
     device,
     cameraRef,
@@ -39,24 +34,24 @@ export default function CameraScreen() {
     flipCamera,
     handleDone,
     handleClose,
-  } = useCameraCapture();
+  } = useCameraCapture()
 
-  const shutterScale = useSharedValue(1);
+  const shutterScale = useSharedValue(1)
   const shutterStyle = useAnimatedStyle(() => ({
     transform: [{ scale: shutterScale.value }],
-  }));
+  }))
   const onPressIn = useCallback(() => {
     shutterScale.value = withTiming(0.88, {
       duration: 70,
       easing: Easing.out(Easing.quad),
-    });
-  }, [shutterScale]);
+    })
+  }, [shutterScale])
   const onPressOut = useCallback(() => {
     shutterScale.value = withTiming(1, {
       duration: 140,
       easing: Easing.out(Easing.back(1.5)),
-    });
-  }, [shutterScale]);
+    })
+  }, [shutterScale])
 
   if (!hasPermission)
     return (
@@ -81,7 +76,7 @@ export default function CameraScreen() {
           <Text style={styles.gateSecondaryText}>Open Settings</Text>
         </Pressable>
       </View>
-    );
+    )
 
   if (!device)
     return (
@@ -96,15 +91,15 @@ export default function CameraScreen() {
           <Text style={styles.gatePrimaryText}>Go Back</Text>
         </Pressable>
       </View>
-    );
+    )
 
-  const hasPhotos = capturedPhotos.length > 0;
+  const hasPhotos = capturedPhotos.length > 0
   const FlashIcon =
-    flashMode === "on" ? (
+    flashMode === 'on' ? (
       <Zap size={22} color={theme.colors.warning} />
     ) : (
       <ZapOff size={22} color={theme.colors.text} />
-    );
+    )
 
   return (
     <View style={styles.root}>
@@ -152,7 +147,7 @@ export default function CameraScreen() {
             accessibilityRole="button"
           >
             {FlashIcon}
-            {flashMode === "auto" && <Text style={styles.autoA}>A</Text>}
+            {flashMode === 'auto' && <Text style={styles.autoA}>A</Text>}
           </Pressable>
         </View>
       </View>
@@ -194,5 +189,5 @@ export default function CameraScreen() {
         </View>
       </View>
     </View>
-  );
+  )
 }
