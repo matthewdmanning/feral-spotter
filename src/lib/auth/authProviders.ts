@@ -2,9 +2,9 @@ import Constants from 'expo-constants'
 import { gte as semverGte, valid as semverValid } from 'semver'
 
 /**
- * The federated identity providers the app can sign in with. Credential Entry
- * (email + password) is deliberately not in this list — it is a separate,
- * non-federated path with its own methods on {@link IAuthProvider}.
+ * The federated identity providers the app can sign in with. Email/password
+ * sign-in is deliberately not in this list — it is a separate, non-federated
+ * path with its own methods on {@link IAuthProvider}.
  */
 export type FederatedProviderId = 'google' | 'apple' | 'facebook'
 
