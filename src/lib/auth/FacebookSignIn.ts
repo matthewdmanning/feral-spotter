@@ -1,5 +1,3 @@
-import { LoginManager, AccessToken } from 'react-native-fbsdk-next'
-
 /**
  * Runs the native Facebook Login flow and returns the access token used to
  * build a Firebase credential. Throws 'SIGN_IN_CANCELLED' on user cancellation
@@ -12,8 +10,16 @@ import { LoginManager, AccessToken } from 'react-native-fbsdk-next'
  * commented out, at the bottom of this file — enable it (and verify on a real
  * device with the real FB app) when Facebook is unblocked for release. See
  * docs/design/2026-07-29-apple-facebook-auth-setup.md.
+ *
+ * The `react-native-fbsdk-next` import is deferred to call time rather than
+ * hoisted to module scope: merely importing it touches a native HostObject
+ * getter that throws when the SDK hasn't been initialized (true today — the
+ * Facebook App ID is an unconfigured placeholder in app.json, matching
+ * Facebook being version-gated off). A static import crashed every app boot
+ * that reached this module.
  */
 export async function getFacebookAccessToken(): Promise<string> {
+  const { LoginManager, AccessToken } = await import('react-native-fbsdk-next')
   const result = await LoginManager.logInWithPermissions([
     'public_profile',
     'email',
@@ -26,6 +32,7 @@ export async function getFacebookAccessToken(): Promise<string> {
 }
 
 export async function facebookSignOut(): Promise<void> {
+  const { LoginManager } = await import('react-native-fbsdk-next')
   LoginManager.logOut()
 }
 
