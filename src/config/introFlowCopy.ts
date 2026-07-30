@@ -1,7 +1,7 @@
 /**
  * config/introFlowCopy.ts
- * Single source of truth for the first-run tutorial slides.
- * Spec: tutorial_copy.md (2026-07-13).
+ * Single source of truth for the first-run onboarding slides (route: intro-flow).
+ * Spec: tutorial_copy.md (2026-07-13) — original filename; content is onboarding copy.
  * Rule: never "tracking" in reference to people — cats only.
  *
  * Permission priming lives in /consent (eager, on "I Agree") and the
@@ -14,7 +14,7 @@ export interface SlideCopy {
   button: string;
 }
 
-export const TUTORIAL_SLIDES: readonly SlideCopy[] = [
+export const ONBOARDING_SLIDES: readonly SlideCopy[] = [
   {
     header: "Every feral counts",
     body: [

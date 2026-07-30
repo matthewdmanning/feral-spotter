@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 import { router } from 'expo-router'
 import React from 'react'
-import { TUTORIAL_SLIDES } from '@/src/config/introFlowCopy'
+import { ONBOARDING_SLIDES } from '@/src/config/introFlowCopy'
 import IntroFlowScreen from '../index'
 
 jest.mock('expo-router', () => ({
@@ -38,9 +38,9 @@ describe('IntroFlowScreen', () => {
 
   it('shows the first slide and advances through all of them to /sign-in', async () => {
     render(<IntroFlowScreen />)
-    expect(screen.getByText(TUTORIAL_SLIDES[0].header)).toBeTruthy()
+    expect(screen.getByText(ONBOARDING_SLIDES[0].header)).toBeTruthy()
 
-    for (const slide of TUTORIAL_SLIDES) {
+    for (const slide of ONBOARDING_SLIDES) {
       fireEvent.press(screen.getByText(slide.button))
     }
 
@@ -50,8 +50,8 @@ describe('IntroFlowScreen', () => {
   it('links to /data-agreement from the data-usage slide', () => {
     render(<IntroFlowScreen />)
     // Advance to the data-usage slide (index 2)
-    fireEvent.press(screen.getByText(TUTORIAL_SLIDES[0].button))
-    fireEvent.press(screen.getByText(TUTORIAL_SLIDES[1].button))
+    fireEvent.press(screen.getByText(ONBOARDING_SLIDES[0].button))
+    fireEvent.press(screen.getByText(ONBOARDING_SLIDES[1].button))
 
     fireEvent.press(screen.getByRole('link'))
     expect(router.push).toHaveBeenCalledWith('/data-agreement')

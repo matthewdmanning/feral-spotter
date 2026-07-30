@@ -9,7 +9,7 @@
 import {
   AGREEMENT_SLIDE_INDEX,
   DATA_AGREEMENT_LINK_LABEL,
-  TUTORIAL_SLIDES,
+  ONBOARDING_SLIDES,
 } from "@/src/config/introFlowCopy";
 import { AppButton } from "@/src/components/atoms/AppButton";
 import { router } from "expo-router";
@@ -26,7 +26,7 @@ export default function IntroFlowScreen() {
 
   const advance = useCallback(() => {
     const next = step + 1;
-    if (next >= TUTORIAL_SLIDES.length) {
+    if (next >= ONBOARDING_SLIDES.length) {
       finish();
       return;
     }
@@ -37,7 +37,7 @@ export default function IntroFlowScreen() {
     setStep((s) => Math.max(0, s - 1));
   }, []);
 
-  const slide = TUTORIAL_SLIDES[step];
+  const slide = ONBOARDING_SLIDES[step];
   const isAgreementSlide = step === AGREEMENT_SLIDE_INDEX;
 
   return (
@@ -76,7 +76,7 @@ export default function IntroFlowScreen() {
           </AppButton>
         </View>
         <View style={styles.dots} accessibilityElementsHidden>
-          {TUTORIAL_SLIDES.map((s, i) => (
+          {ONBOARDING_SLIDES.map((s, i) => (
             <View
               key={s.header}
               style={[styles.dot, i === step && styles.dotActive]}
