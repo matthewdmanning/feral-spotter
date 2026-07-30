@@ -17,18 +17,28 @@ jest.mock('react-native-unistyles', () => {
   const theme = new Proxy({}, { get: (_t, _k) => anyProp() })
   return {
     useUnistyles: () => ({ theme }),
-    createStyleSheet: (fn: unknown) => (typeof fn === 'function' ? fn(theme) : fn),
-    StyleSheet: { create: (fn: unknown) => (typeof fn === 'function' ? fn(theme) : fn) },
+    createStyleSheet: (fn: unknown) =>
+      typeof fn === 'function' ? fn(theme) : fn,
+    StyleSheet: {
+      create: (fn: unknown) => (typeof fn === 'function' ? fn(theme) : fn),
+    },
   }
 })
 
 jest.mock('@/src/lib/auth/useAuth', () => ({ useAuth: jest.fn() }))
-jest.mock('@/src/hooks/useConsentStore', () => ({ hasAcceptedConsent: jest.fn() }))
+jest.mock('@/src/hooks/useConsentStore', () => ({
+  hasAcceptedConsent: jest.fn(),
+}))
 jest.mock('@/src/lib/cache/submissionCache', () => ({
   getAllSubmissionCaches: jest.fn().mockResolvedValue([]),
 }))
-jest.mock('@/src/components/molecules/BottomButtonColumn', () => ({ BottomButtonColumn: () => null }))
-jest.mock('lucide-react-native', () => ({ Camera: () => null, Settings: () => null }))
+jest.mock('@/src/components/molecules/BottomButtonColumn', () => ({
+  BottomButtonColumn: () => null,
+}))
+jest.mock('lucide-react-native', () => ({
+  Camera: () => null,
+  Settings: () => null,
+}))
 
 /**
  * Model of HomeScreen's app-wide auth/consent gate (src/screens/home/index.tsx),
@@ -51,21 +61,40 @@ const gateMachine = createMachine({
       },
     },
     unauthenticated: {
-      on: { SIGN_IN: 'authenticatedNoConsent' },
+      on: {
+        // New device: sign-in leaves device consent still outstanding.
+        SIGN_IN: 'authenticatedNoConsent',
+        // Returning user: device consent persists across sign-out, so
+        // re-authenticating lands straight on home.
+        SIGN_IN_RETURNING: 'ready',
+      },
     },
     authenticatedNoConsent: {
-      on: { AGREE_CONSENT: 'ready' },
+      on: {
+        AGREE_CONSENT: 'ready',
+        // Bail out of the consent screen by signing out.
+        SIGN_OUT: 'unauthenticated',
+      },
     },
-    ready: {},
+    ready: {
+      on: { SIGN_OUT: 'unauthenticated' },
+    },
   },
 })
 
 describe('HomeScreen gate — model-based test', () => {
   let rerender: (ui: React.ReactElement) => void
 
-  const setMocks = (isReady: boolean, isAuthenticated: boolean, consent: boolean) => {
+  const setMocks = (
+    isReady: boolean,
+    isAuthenticated: boolean,
+    consent: boolean,
+  ) => {
     ;(useAuth as jest.Mock).mockReturnValue({
-      isReady, isAuthenticated, signIn: jest.fn(), signOut: jest.fn(),
+      isReady,
+      isAuthenticated,
+      signIn: jest.fn(),
+      signOut: jest.fn(),
     })
     ;(hasAcceptedConsent as jest.Mock).mockReturnValue(consent)
   }
@@ -85,11 +114,15 @@ describe('HomeScreen gate — model-based test', () => {
         expect(router.replace).not.toHaveBeenCalled()
       },
       unauthenticated: async () => {
-        await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/intro-flow'))
+        await waitFor(() =>
+          expect(router.replace).toHaveBeenCalledWith('/intro-flow'),
+        )
         ;(router.replace as jest.Mock).mockClear()
       },
       authenticatedNoConsent: async () => {
-        await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/consent'))
+        await waitFor(() =>
+          expect(router.replace).toHaveBeenCalledWith('/consent'),
+        )
         ;(router.replace as jest.Mock).mockClear()
       },
       ready: () => {
@@ -97,16 +130,77 @@ describe('HomeScreen gate — model-based test', () => {
       },
     },
     events: {
-      AUTH_READY_UNAUTHENTICATED: () => { setMocks(true, false, false); rerender(<HomeScreen />) },
-      AUTH_READY_NO_CONSENT: () => { setMocks(true, true, false); rerender(<HomeScreen />) },
-      AUTH_READY_WITH_CONSENT: () => { setMocks(true, true, true); rerender(<HomeScreen />) },
-      SIGN_IN: () => { setMocks(true, true, false); rerender(<HomeScreen />) },
-      AGREE_CONSENT: () => { setMocks(true, true, true); rerender(<HomeScreen />) },
+      AUTH_READY_UNAUTHENTICATED: () => {
+        setMocks(true, false, false)
+        rerender(<HomeScreen />)
+      },
+      AUTH_READY_NO_CONSENT: () => {
+        setMocks(true, true, false)
+        rerender(<HomeScreen />)
+      },
+      AUTH_READY_WITH_CONSENT: () => {
+        setMocks(true, true, true)
+        rerender(<HomeScreen />)
+      },
+      SIGN_IN: () => {
+        setMocks(true, true, false)
+        rerender(<HomeScreen />)
+      },
+      // Returning user on an already-consented device: authenticated and
+      // consent already on file.
+      SIGN_IN_RETURNING: () => {
+        setMocks(true, true, true)
+        rerender(<HomeScreen />)
+      },
+      AGREE_CONSENT: () => {
+        setMocks(true, true, true)
+        rerender(<HomeScreen />)
+      },
+      // Signed-in user signs out: auth drops, gate must send them back to
+      // the intro flow.
+      SIGN_OUT: () => {
+        setMocks(true, false, false)
+        rerender(<HomeScreen />)
+      },
     },
   }
 
-  model.getShortestPaths().forEach((path) => {
-    it(path.description, async () => {
+  // UX journeys, not exhaustive coverage: each is a sequence of real user
+  // actions, asserting the redirect observed at every step. getPathsFromEvents
+  // (vs getShortestPaths) lets us name the journey a user actually takes.
+  const journeys = [
+    {
+      name: 'first launch: unauthenticated → sign in → agree consent → home',
+      events: [
+        { type: 'AUTH_READY_UNAUTHENTICATED' },
+        { type: 'SIGN_IN' },
+        { type: 'AGREE_CONSENT' },
+      ],
+    },
+    {
+      name: 'returning user with consent lands on home directly',
+      events: [{ type: 'AUTH_READY_WITH_CONSENT' }],
+    },
+    {
+      name: 'signed-in user signs out → back to intro flow',
+      events: [{ type: 'AUTH_READY_WITH_CONSENT' }, { type: 'SIGN_OUT' }],
+    },
+    {
+      name: 'bail from consent screen by signing out → intro flow',
+      events: [{ type: 'AUTH_READY_NO_CONSENT' }, { type: 'SIGN_OUT' }],
+    },
+    {
+      name: 'returning user re-signs in on consented device → home',
+      events: [
+        { type: 'AUTH_READY_UNAUTHENTICATED' },
+        { type: 'SIGN_IN_RETURNING' },
+      ],
+    },
+  ] as const
+
+  journeys.forEach(({ name, events }) => {
+    it(name, async () => {
+      const [path] = model.getPathsFromEvents(events)
       await path.test(testParams)
     })
   })
