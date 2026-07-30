@@ -6,39 +6,39 @@
  *   - handleDone: syncs checked state to photoStore, navigates back
  */
 
-import { usePhotoStore, useSubmissionStore, useUIStore } from "@/src/hooks";
-import { useBackHandler } from "@/src/hooks/useBackHandler";
-import { PERMISSION_MAP } from "@/src/lib/permissions";
-import type { SubmissionPhoto } from "@/src/types";
-import * as ImagePicker from "expo-image-picker";
-import { router } from "expo-router";
-import { randomUUID } from "expo-crypto";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { openSettings, request, RESULTS } from "react-native-permissions";
+import { usePhotoStore, useSubmissionStore, useUIStore } from '@/src/hooks'
+import { useBackHandler } from '@/src/hooks/useBackHandler'
+import { PERMISSION_MAP } from '@/src/lib/permissions'
+import type { SubmissionPhoto } from '@/src/types'
+import * as ImagePicker from 'expo-image-picker'
+import { router } from 'expo-router'
+import { randomUUID } from 'expo-crypto'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { openSettings, request, RESULTS } from 'react-native-permissions'
 
 export interface PhotoSessionResult {
-  sessionPhotos: SubmissionPhoto[];
-  checked: Record<string, boolean>;
-  checkedCount: number;
-  capturePhoto: () => Promise<void>;
-  pickFromLibrary: () => Promise<void>;
-  handleDone: () => void;
-  toggleChecked: (id: string) => void;
+  sessionPhotos: SubmissionPhoto[]
+  checked: Record<string, boolean>
+  checkedCount: number
+  capturePhoto: () => Promise<void>
+  pickFromLibrary: () => Promise<void>
+  handleDone: () => void
+  toggleChecked: (id: string) => void
 }
 
 export function usePhotoSession(): PhotoSessionResult {
-  const setCurrentStep = useSubmissionStore((s) => s.setCurrentStep);
-  const sessionPhotos = useUIStore((s) => s.sessionPhotos);
-  const addSessionPhoto = useUIStore((s) => s.addSessionPhoto);
-  const showError = useUIStore((s) => s.showError);
-  const submissionPhotos = usePhotoStore((s) => s.photos);
-  const addPhotos = usePhotoStore((s) => s.addPhotos);
-  const removePhoto = usePhotoStore((s) => s.removePhoto);
+  const setCurrentStep = useSubmissionStore((s) => s.setCurrentStep)
+  const sessionPhotos = useUIStore((s) => s.sessionPhotos)
+  const addSessionPhoto = useUIStore((s) => s.addSessionPhoto)
+  const showError = useUIStore((s) => s.showError)
+  const submissionPhotos = usePhotoStore((s) => s.photos)
+  const addPhotos = usePhotoStore((s) => s.addPhotos)
+  const removePhoto = usePhotoStore((s) => s.removePhoto)
 
   const submissionIds = useMemo(
     () => new Set(submissionPhotos.map((p) => p.local_id)),
     [submissionPhotos],
-  );
+  )
 
   // Track only explicitly-unchecked IDs; new photos are checked by default.
   const [unchecked, setUnchecked] = useState<Set<string>>(
@@ -48,41 +48,41 @@ export function usePhotoSession(): PhotoSessionResult {
           .filter((p) => !submissionIds.has(p.local_id))
           .map((p) => p.local_id),
       ),
-  );
+  )
 
   const checked: Record<string, boolean> = Object.fromEntries(
     sessionPhotos.map((p) => [p.local_id, !unchecked.has(p.local_id)]),
-  );
+  )
 
   useEffect(() => {
-    setCurrentStep("photos");
-  }, [setCurrentStep]);
+    setCurrentStep('photos')
+  }, [setCurrentStep])
 
   const toggleChecked = useCallback((id: string) => {
     setUnchecked((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
 
   const handleDone = useCallback(() => {
     sessionPhotos.forEach((photo) => {
-      const isChecked = checked[photo.local_id] ?? false;
-      const inSubmission = submissionIds.has(photo.local_id);
-      if (isChecked && !inSubmission) addPhotos([photo]);
-      else if (!isChecked && inSubmission) removePhoto(photo.local_id);
-    });
-    router.back();
-  }, [sessionPhotos, checked, submissionIds, addPhotos, removePhoto]);
+      const isChecked = checked[photo.local_id] ?? false
+      const inSubmission = submissionIds.has(photo.local_id)
+      if (isChecked && !inSubmission) addPhotos([photo])
+      else if (!isChecked && inSubmission) removePhoto(photo.local_id)
+    })
+    router.back()
+  }, [sessionPhotos, checked, submissionIds, addPhotos, removePhoto])
 
   useBackHandler(
     useCallback(() => {
-      handleDone();
-      return true;
+      handleDone()
+      return true
     }, [handleDone]),
-  );
+  )
 
   const buildPhoto = (
     asset: ImagePicker.ImagePickerAsset,
@@ -102,34 +102,34 @@ export function usePhotoSession(): PhotoSessionResult {
           camera_model: asset.exif.Model,
         }
       : undefined,
-  });
+  })
 
   const capturePhoto = useCallback(async () => {
-    const status = await request(PERMISSION_MAP.camera);
+    const status = await request(PERMISSION_MAP.camera)
     if (status !== RESULTS.GRANTED && status !== RESULTS.LIMITED) {
       if (status === RESULTS.BLOCKED) {
         showError(
-          "Permission Blocked",
-          "Camera access was denied. Enable it in Settings to take a photo.",
-        );
-        openSettings();
+          'Permission Blocked',
+          'Camera access was denied. Enable it in Settings to take a photo.',
+        )
+        openSettings()
       } else {
-        showError("Permission Denied", "Camera access is required");
+        showError('Permission Denied', 'Camera access is required')
       }
-      return;
+      return
     }
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: false,
       quality: 1,
       exif: true,
-    });
+    })
     if (!result.canceled && result.assets.length > 0) {
       // Location is set once per submission on the create screen (ADR 0002),
       // not per photo — every photo inherits the one Submission location.
-      addSessionPhoto(buildPhoto(result.assets[0]));
+      addSessionPhoto(buildPhoto(result.assets[0]))
     }
-  }, [addSessionPhoto, showError]);
+  }, [addSessionPhoto, showError])
 
   const pickFromLibrary = useCallback(async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -137,15 +137,15 @@ export function usePhotoSession(): PhotoSessionResult {
       allowsMultipleSelection: true,
       quality: 1,
       exif: true,
-    });
+    })
     if (!result.canceled) {
-      result.assets.forEach((asset) => addSessionPhoto(buildPhoto(asset)));
+      result.assets.forEach((asset) => addSessionPhoto(buildPhoto(asset)))
     }
-  }, [addSessionPhoto]);
+  }, [addSessionPhoto])
 
   const checkedCount = sessionPhotos.filter(
     (p) => !unchecked.has(p.local_id),
-  ).length;
+  ).length
 
   return {
     sessionPhotos,
@@ -155,5 +155,5 @@ export function usePhotoSession(): PhotoSessionResult {
     pickFromLibrary,
     handleDone,
     toggleChecked,
-  };
+  }
 }

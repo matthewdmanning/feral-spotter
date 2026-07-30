@@ -3,13 +3,13 @@ import {
   render,
   screen,
   waitFor,
-} from "@testing-library/react-native";
-import { router } from "expo-router";
-import React from "react";
-import { createMachine } from "xstate";
-import { createTestModel } from "@xstate/graph";
-import { useSubmissionStore } from "@/src/hooks/useSubmissionStore";
-import LocationPickerScreen from "../index";
+} from '@testing-library/react-native'
+import { router } from 'expo-router'
+import React from 'react'
+import { createMachine } from 'xstate'
+import { createTestModel } from '@xstate/graph'
+import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
+import LocationPickerScreen from '../index'
 
 /**
  * Model of the map picker's program flow
@@ -20,128 +20,128 @@ import LocationPickerScreen from "../index";
  * exactly what a flow test should stub.
  */
 
-const MOVED = { latitude: 10, longitude: 20 };
+const MOVED = { latitude: 10, longitude: 20 }
 
-jest.mock("@react-native-async-storage/async-storage", () =>
-  require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
-);
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+)
 
-jest.mock("react-native-mmkv", () => ({
+jest.mock('react-native-mmkv', () => ({
   createMMKV: jest.fn(() => ({
     getString: jest.fn(),
     set: jest.fn(),
     delete: jest.fn(),
   })),
-}));
+}))
 
-jest.mock("expo-router", () => ({
+jest.mock('expo-router', () => ({
   router: { back: jest.fn(), push: jest.fn(), replace: jest.fn() },
-}));
+}))
 
 // Mock the native map: a pressable that fires onCameraMove with a fixed centre.
-jest.mock("expo-maps", () => {
-  const ReactLocal = require("react");
-  const { Pressable } = require("react-native");
+jest.mock('expo-maps', () => {
+  const ReactLocal = require('react')
+  const { Pressable } = require('react-native')
   return {
     GoogleMaps: {
       View: ({ onCameraMove }: { onCameraMove?: (e: unknown) => void }) =>
         ReactLocal.createElement(Pressable, {
-          testID: "camera-move",
+          testID: 'camera-move',
           onPress: () =>
             onCameraMove?.({ coordinates: { latitude: 10, longitude: 20 } }),
         }),
     },
-  };
-});
+  }
+})
 
-jest.mock("expo-location", () => ({
+jest.mock('expo-location', () => ({
   getLastKnownPositionAsync: jest.fn().mockResolvedValue(null),
-}));
+}))
 
-jest.mock("react-native-unistyles", () => {
-  const anyProp = (): unknown => new Proxy({}, { get: () => anyProp() });
-  const theme = new Proxy({}, { get: () => anyProp() });
+jest.mock('react-native-unistyles', () => {
+  const anyProp = (): unknown => new Proxy({}, { get: () => anyProp() })
+  const theme = new Proxy({}, { get: () => anyProp() })
   return {
     useUnistyles: () => ({ theme }),
     StyleSheet: {
-      create: (fn: unknown) => (typeof fn === "function" ? fn(theme) : fn),
+      create: (fn: unknown) => (typeof fn === 'function' ? fn(theme) : fn),
     },
-  };
-});
+  }
+})
 
-jest.mock("../index.styles", () => ({
+jest.mock('../index.styles', () => ({
   styles: new Proxy({}, { get: () => ({}) }),
-}));
+}))
 
-jest.mock("lucide-react-native", () => ({ MapPin: () => null }));
+jest.mock('lucide-react-native', () => ({ MapPin: () => null }))
 
 const pickerFlow = createMachine({
-  id: "locationPicker",
-  initial: "ready",
+  id: 'locationPicker',
+  initial: 'ready',
   states: {
     ready: {
       on: {
-        MOVE_AND_SET: "confirmed",
-        CANCEL: "cancelled",
+        MOVE_AND_SET: 'confirmed',
+        CANCEL: 'cancelled',
       },
     },
     confirmed: {},
     cancelled: {},
   },
-});
+})
 
-describe("Location picker — flow (model-based)", () => {
+describe('Location picker — flow (model-based)', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.clearAllMocks()
     useSubmissionStore.setState({
-      submission: { location_type: "pin", time_type: "device" },
-    });
-    render(<LocationPickerScreen />);
-  });
+      submission: { location_type: 'pin', time_type: 'device' },
+    })
+    render(<LocationPickerScreen />)
+  })
 
-  const model = createTestModel(pickerFlow);
+  const model = createTestModel(pickerFlow)
 
   const testParams = {
     states: {
       ready: () => {
-        expect(router.back).not.toHaveBeenCalled();
+        expect(router.back).not.toHaveBeenCalled()
         expect(
           useSubmissionStore.getState().submission.latitude,
-        ).toBeUndefined();
+        ).toBeUndefined()
       },
       confirmed: async () => {
         await waitFor(() =>
           expect(useSubmissionStore.getState().submission.latitude).toBe(
             MOVED.latitude,
           ),
-        );
+        )
         expect(useSubmissionStore.getState().submission.longitude).toBe(
           MOVED.longitude,
-        );
-        expect(router.back).toHaveBeenCalled();
+        )
+        expect(router.back).toHaveBeenCalled()
       },
       cancelled: () => {
-        expect(router.back).toHaveBeenCalled();
+        expect(router.back).toHaveBeenCalled()
         // Cancel must not write a location.
         expect(
           useSubmissionStore.getState().submission.latitude,
-        ).toBeUndefined();
+        ).toBeUndefined()
       },
     },
     events: {
       MOVE_AND_SET: () => {
-        fireEvent.press(screen.getByTestId("camera-move"));
-        fireEvent.press(screen.getByText("Set location"));
+        fireEvent.press(screen.getByTestId('camera-move'))
+        fireEvent.press(screen.getByText('Set location'))
       },
       CANCEL: () => {
-        fireEvent.press(screen.getByText("Cancel"));
+        fireEvent.press(screen.getByText('Cancel'))
       },
     },
-  };
+  }
 
   model.getShortestPaths().forEach((path) => {
     it(path.description, async () => {
-      await path.test(testParams);
-    });
-  });
-});
+      await path.test(testParams)
+    })
+  })
+})

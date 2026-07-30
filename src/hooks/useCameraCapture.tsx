@@ -11,61 +11,62 @@
  * and JSX layout.
  */
 
-import { CameraThumb } from "@/src/components/atoms/CameraThumb";
-import { usePhotoStore, useUIStore } from "@/src/hooks";
-import { useSettingsStore } from "@/src/hooks/useSettingsStore";
-import { PERMISSION_MAP } from "@/src/lib/permissions";
-import type { SubmissionPhoto } from "@/src/types";
-import { type FlashListRef } from "@shopify/flash-list";
-import { Asset } from "expo-media-library";
-import { router } from "expo-router";
-import { randomUUID } from "expo-crypto";
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { ViewStyle } from "react-native";
+import { CameraThumb } from '@/src/components/atoms/CameraThumb'
+import { usePhotoStore, useUIStore } from '@/src/hooks'
+import { useSettingsStore } from '@/src/hooks/useSettingsStore'
+import { captureEvent, EVENTS } from '@/src/lib/analytics/analytics'
+import { PERMISSION_MAP } from '@/src/lib/permissions'
+import type { SubmissionPhoto } from '@/src/types'
+import { type FlashListRef } from '@shopify/flash-list'
+import { Asset } from 'expo-media-library'
+import { router } from 'expo-router'
+import { randomUUID } from 'expo-crypto'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { ViewStyle } from 'react-native'
 import {
   Easing,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
-} from "react-native-reanimated";
-import { check, RESULTS } from "react-native-permissions";
+} from 'react-native-reanimated'
+import { check, RESULTS } from 'react-native-permissions'
 import {
   useCameraDevice,
   usePhotoOutput,
   type CameraPhotoOutput,
   type CameraRef,
-} from "react-native-vision-camera";
+} from 'react-native-vision-camera'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type FlashMode = "off" | "on" | "auto";
+type FlashMode = 'off' | 'on' | 'auto'
 
-export type { FlashMode };
+export type { FlashMode }
 
 export interface CameraCaptureResult {
   // Device
-  device: ReturnType<typeof useCameraDevice>;
-  cameraRef: React.RefObject<CameraRef | null>;
-  photoOutput: CameraPhotoOutput;
+  device: ReturnType<typeof useCameraDevice>
+  cameraRef: React.RefObject<CameraRef | null>
+  photoOutput: CameraPhotoOutput
   // State
-  capturedPhotos: SubmissionPhoto[];
-  flashMode: FlashMode;
-  isTakingPhoto: boolean;
+  capturedPhotos: SubmissionPhoto[]
+  flashMode: FlashMode
+  isTakingPhoto: boolean
   // Flash overlay (Reanimated — UI thread)
-  flashOverlayStyle: ReturnType<typeof useAnimatedStyle<ViewStyle>>;
+  flashOverlayStyle: ReturnType<typeof useAnimatedStyle<ViewStyle>>
   // FlashList
-  listRef: React.RefObject<FlashListRef<SubmissionPhoto> | null>;
+  listRef: React.RefObject<FlashListRef<SubmissionPhoto> | null>
   renderItem: (info: {
-    item: SubmissionPhoto;
-    index: number;
-  }) => React.ReactElement;
-  keyExtractor: (item: SubmissionPhoto) => string;
+    item: SubmissionPhoto
+    index: number
+  }) => React.ReactElement
+  keyExtractor: (item: SubmissionPhoto) => string
   // Handlers
-  handleTakePhoto: () => Promise<void>;
-  cycleFlash: () => void;
-  flipCamera: () => void;
-  handleDone: () => void;
-  handleClose: () => void;
+  handleTakePhoto: () => Promise<void>
+  cycleFlash: () => void
+  flipCamera: () => void
+  handleDone: () => void
+  handleClose: () => void
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -73,48 +74,46 @@ export interface CameraCaptureResult {
 export function useCameraCapture(): CameraCaptureResult {
   const keepOnDevice = useSettingsStore(
     (s) => s.settings.keep_photos_on_device !== false,
-  );
-  const addPhoto = usePhotoStore((s) => s.addPhoto);
-  const addSessionPhoto = useUIStore((s) => s.addSessionPhoto);
+  )
+  const addPhoto = usePhotoStore((s) => s.addPhoto)
+  const addSessionPhoto = useUIStore((s) => s.addSessionPhoto)
 
-  const [cameraPosition, setCameraPosition] = useState<"back" | "front">(
-    "back",
-  );
-  const [capturedPhotos, setCapturedPhotos] = useState<SubmissionPhoto[]>([]);
-  const [flashMode, setFlashMode] = useState<FlashMode>("auto");
-  const [isTakingPhoto, setIsTakingPhoto] = useState(false);
+  const [cameraPosition, setCameraPosition] = useState<'back' | 'front'>('back')
+  const [capturedPhotos, setCapturedPhotos] = useState<SubmissionPhoto[]>([])
+  const [flashMode, setFlashMode] = useState<FlashMode>('auto')
+  const [isTakingPhoto, setIsTakingPhoto] = useState(false)
 
-  const device = useCameraDevice(cameraPosition);
-  const cameraRef = useRef<CameraRef>(null);
-  const listRef = useRef<FlashListRef<SubmissionPhoto>>(null);
-  const photoOutput = usePhotoOutput();
+  const device = useCameraDevice(cameraPosition)
+  const cameraRef = useRef<CameraRef>(null)
+  const listRef = useRef<FlashListRef<SubmissionPhoto>>(null)
+  const photoOutput = usePhotoOutput()
 
   // ── Flash overlay — Reanimated SharedValue on UI thread ───────────────────
-  const flashOpacity = useSharedValue(0);
+  const flashOpacity = useSharedValue(0)
   const flashOverlayStyle = useAnimatedStyle<ViewStyle>(() => ({
     opacity: flashOpacity.value,
-  }));
+  }))
 
   // ── Capture ───────────────────────────────────────────────────────────────
   const handleTakePhoto = useCallback(async () => {
-    if (isTakingPhoto) return;
-    setIsTakingPhoto(true);
+    if (isTakingPhoto) return
+    setIsTakingPhoto(true)
 
     flashOpacity.value = withTiming(
       1,
       { duration: 25, easing: Easing.out(Easing.quad) },
       () => {
-        flashOpacity.value = withTiming(0, { duration: 180 });
+        flashOpacity.value = withTiming(0, { duration: 180 })
       },
-    );
+    )
 
     try {
       const photo = await photoOutput.capturePhoto(
         { flashMode, enableShutterSound: true },
         {},
-      );
-      const filePath = await photo.saveToTemporaryFileAsync();
-      const uri = `file://${filePath}`;
+      )
+      const filePath = await photo.saveToTemporaryFileAsync()
+      const uri = `file://${filePath}`
 
       const submission: SubmissionPhoto = {
         local_id: randomUUID(),
@@ -123,30 +122,33 @@ export function useCameraCapture(): CameraCaptureResult {
         upload_progress: 0,
         width: photo.width,
         height: photo.height,
-      };
-      photo.dispose();
+      }
+      photo.dispose()
 
-      addSessionPhoto(submission);
-      addPhoto(submission);
-      setCapturedPhotos((prev) => [...prev, submission]);
+      addSessionPhoto(submission)
+      addPhoto(submission)
+      setCapturedPhotos((prev) => [...prev, submission])
 
       // Location is set once per submission on the create screen (ADR 0002),
       // not per photo — no GPS call on the shutter path.
 
       if (keepOnDevice) {
-        const status = await check(PERMISSION_MAP.mediaLibrary);
+        const status = await check(PERMISSION_MAP.mediaLibrary)
         if (status === RESULTS.GRANTED || status === RESULTS.LIMITED) {
           try {
-            await Asset.create(uri);
+            await Asset.create(uri)
           } catch (err) {
-            console.error("[useCameraCapture] Asset.create:", err);
+            console.error('[useCameraCapture] Asset.create:', err)
           }
         }
       }
     } catch (err) {
-      console.error("[useCameraCapture] takePhoto:", err);
+      console.error('[useCameraCapture] takePhoto:', err)
+      captureEvent(EVENTS.PHOTO_CAPTURE_FAILED, {
+        error: err instanceof Error ? err.message : String(err),
+      })
     } finally {
-      setIsTakingPhoto(false);
+      setIsTakingPhoto(false)
     }
   }, [
     isTakingPhoto,
@@ -156,22 +158,22 @@ export function useCameraCapture(): CameraCaptureResult {
     addPhoto,
     addSessionPhoto,
     keepOnDevice,
-  ]);
+  ])
 
   // ── Controls ──────────────────────────────────────────────────────────────
   const cycleFlash = useCallback(() => {
-    setFlashMode((m) => (m === "auto" ? "on" : m === "on" ? "off" : "auto"));
-  }, []);
+    setFlashMode((m) => (m === 'auto' ? 'on' : m === 'on' ? 'off' : 'auto'))
+  }, [])
 
   const flipCamera = useCallback(() => {
-    setCameraPosition((p) => (p === "back" ? "front" : "back"));
-  }, []);
+    setCameraPosition((p) => (p === 'back' ? 'front' : 'back'))
+  }, [])
 
   const handleDone = useCallback(
-    () => router.navigate("/submission/create"),
+    () => router.navigate('/submission/create'),
     [],
-  );
-  const handleClose = useCallback(() => router.back(), []);
+  )
+  const handleClose = useCallback(() => router.back(), [])
 
   // ── FlashList helpers ─────────────────────────────────────────────────────
   const renderItem = useCallback(
@@ -184,18 +186,21 @@ export function useCameraCapture(): CameraCaptureResult {
       />
     ),
     [capturedPhotos.length],
-  );
+  )
 
-  const keyExtractor = useCallback(
-    (item: SubmissionPhoto) => item.local_id,
-    [],
-  );
+  const keyExtractor = useCallback((item: SubmissionPhoto) => item.local_id, [])
 
   useEffect(() => {
     if (capturedPhotos.length > 0) {
-      listRef.current?.scrollToEnd({ animated: true });
+      listRef.current?.scrollToEnd({ animated: true })
     }
-  }, [capturedPhotos.length]);
+  }, [capturedPhotos.length])
+
+  // Funnel entry point — nothing else fires between opening the camera and
+  // hitting submit besides this and PHOTO_CAPTURE_FAILED above.
+  useEffect(() => {
+    captureEvent(EVENTS.CAMERA_OPENED)
+  }, [])
 
   return {
     device,
@@ -213,5 +218,5 @@ export function useCameraCapture(): CameraCaptureResult {
     flipCamera,
     handleDone,
     handleClose,
-  };
+  }
 }

@@ -1,4 +1,4 @@
-import { StyleSheet } from "react-native-unistyles";
+import { StyleSheet } from 'react-native-unistyles'
 
 export const styles = StyleSheet.create((theme) => ({
   root: {
@@ -10,7 +10,7 @@ export const styles = StyleSheet.create((theme) => ({
   title: {
     color: theme.colors.text,
     fontSize: theme.typography.xxxl,
-    fontWeight: "700",
+    fontWeight: '700',
   },
   card: {
     borderRadius: theme.radius.xl,
@@ -24,7 +24,7 @@ export const styles = StyleSheet.create((theme) => ({
   fieldLabel: {
     color: theme.colors.muted,
     fontSize: theme.typography.sm,
-    fontWeight: "500",
+    fontWeight: '500',
   },
   input: {
     backgroundColor: theme.colors.surfaceAlt,
@@ -37,8 +37,8 @@ export const styles = StyleSheet.create((theme) => ({
     fontSize: theme.typography.sm,
   },
   locationHelpToggle: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: theme.spacing.xs,
     marginTop: -theme.spacing.sm,
   },
@@ -55,10 +55,10 @@ export const styles = StyleSheet.create((theme) => ({
   saveIndicator: {
     fontSize: theme.typography.xs,
     color: theme.colors.muted,
-    textAlign: "right",
+    textAlign: 'right',
   },
   continueBtn: {
-    alignItems: "center",
+    alignItems: 'center',
     paddingVertical: 12,
     borderRadius: theme.radius.md,
     backgroundColor: theme.colors.accent,
@@ -66,13 +66,13 @@ export const styles = StyleSheet.create((theme) => ({
   continueBtnText: {
     color: theme.colors.accentText,
     fontSize: theme.typography.sm,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   catList: { gap: theme.spacing.sm },
   catListTitle: {
     color: theme.colors.text,
     fontSize: theme.typography.base,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   catRow: {
     borderRadius: theme.radius.xl,
@@ -82,4 +82,4 @@ export const styles = StyleSheet.create((theme) => ({
     padding: theme.spacing.lg,
   },
   catRowText: { color: theme.colors.text, fontSize: theme.typography.base },
-}));
+}))

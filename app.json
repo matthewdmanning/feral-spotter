@@ -9,6 +9,7 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon",
+      "usesAppleSignIn": true,
       "infoPlist": {
         "NSCameraUsageDescription": "FeralSpotter uses your camera to capture cat sighting photos for the population-tracking dataset.",
         "NSPhotoLibraryAddUsageDescription": "FeralSpotter saves sighting photos to your library when \"keep photos on device\" is enabled.",
@@ -24,6 +25,7 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.mmanning.feralspotter",
+      "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_MEDIA_IMAGES",
@@ -36,6 +38,7 @@
     },
     "plugins": [
       "expo-router",
+      "@react-native-firebase/app",
       [
         "expo-splash-screen",
         {
@@ -79,12 +82,23 @@
         {
           "photosPermission": false,
           "savePhotosPermission": "FeralSpotter saves sighting photos to your library when \"keep photos on device\" is enabled.",
-          "granularPermissions": [
-            "photo"
-          ]
+          "granularPermissions": ["photo"]
         }
       ],
-      "expo-maps"
+      "expo-maps",
+      "expo-apple-authentication",
+      [
+        "react-native-fbsdk-next",
+        {
+          "appID": "REPLACE_WITH_FACEBOOK_APP_ID",
+          "clientToken": "REPLACE_WITH_FACEBOOK_CLIENT_TOKEN",
+          "displayName": "FeralSpotter",
+          "scheme": "fbREPLACE_WITH_FACEBOOK_APP_ID",
+          "isAutoInitEnabled": false,
+          "advertiserIDCollectionEnabled": false,
+          "autoLogAppEventsEnabled": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

@@ -7,14 +7,14 @@ Design of record: `docs/adr/0002-location-services-model.md` + `CONTEXT.md`.
 
 ## What shipped this session
 
-| Commit | Scope |
-|---|---|
+| Commit    | Scope                                                                        |
+| --------- | ---------------------------------------------------------------------------- |
 | `7499ccf` | Slice A — one Live fix per submission; removed both per-photo GPS call sites |
-| `d12b1a3` | one-fix-per-session test invariant |
-| `6f7a0f4` | Prettier on the branch's files |
-| `bbbe6d7` | deps: `expo-maps`; declare `xstate` + `@xstate/graph` |
-| `5765dee` | Slice B — native `expo-maps` map picker (fixed centre pin) |
-| `c1feef3` | fix — clear coords when the location method changes |
+| `d12b1a3` | one-fix-per-session test invariant                                           |
+| `6f7a0f4` | Prettier on the branch's files                                               |
+| `bbbe6d7` | deps: `expo-maps`; declare `xstate` + `@xstate/graph`                        |
+| `5765dee` | Slice B — native `expo-maps` map picker (fixed centre pin)                   |
+| `c1feef3` | fix — clear coords when the location method changes                          |
 
 Behaviour delivered:
 
@@ -83,7 +83,7 @@ interactive session with eyes on the screen.
   regenerates typed routes (the `location-picker` route file now exists) —
   needs a typegen/prebuild pass.
 - **Google Maps API key** in `android.config.googleMaps.apiKey` + `expo
-  prebuild` are still needed to render map tiles on device. Config-only; no
+prebuild` are still needed to render map tiles on device. Config-only; no
   code change. Slice B renders the pin + buttons without it (blank tiles).
 - Leaked autosave `setTimeout` in the create screen ("Jest did not exit")
   — cosmetic; fake-timers later.

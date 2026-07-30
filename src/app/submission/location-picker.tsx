@@ -1,1 +1,1 @@
-export { default } from "@/src/screens/submission/location-picker";
+export { default } from '@/src/screens/submission/location-picker'

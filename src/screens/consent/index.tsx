@@ -1,7 +1,7 @@
-import { useCallback, useState } from 'react'
-import { Alert, BackHandler, Platform, View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native'
+import { useCallback, useEffect, useState } from 'react'
+import { Alert, AppState, BackHandler, Platform, View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native'
 import { router } from 'expo-router'
-import { request, openSettings, RESULTS } from 'react-native-permissions'
+import { check, request, openSettings, RESULTS } from 'react-native-permissions'
 import { useUnistyles } from 'react-native-unistyles'
 import { useConsentStore } from '@/src/hooks/useConsentStore'
 import { PERMISSION_MAP } from '@/src/lib/permissions'
@@ -20,11 +20,13 @@ export default function ConsentScreen() {
   const handleAgree = useCallback(async () => {
     setBusy(true)
     try {
-      const [cameraStatus, mediaStatus, locationStatus] = await Promise.all([
-        request(PERMISSION_MAP.camera),
-        request(PERMISSION_MAP.mediaLibrary),
-        request(PERMISSION_MAP.location),
-      ])
+      // Requested sequentially, not via Promise.all: Android can only show one
+      // permission dialog at a time, so firing all three concurrently resolves
+      // every request after the first as BLOCKED/denied without the user ever
+      // seeing a prompt for it.
+      const cameraStatus = await request(PERMISSION_MAP.camera)
+      const mediaStatus = await request(PERMISSION_MAP.mediaLibrary)
+      const locationStatus = await request(PERMISSION_MAP.location)
       markAccepted()
 
       if (
@@ -40,6 +42,34 @@ export default function ConsentScreen() {
       setBusy(false)
     }
   }, [markAccepted])
+
+  // Manually granting in system Settings and returning to the app doesn't
+  // trigger a re-request — re-check on foreground so the gate clears once
+  // access is actually there instead of trapping the user behind it.
+  useEffect(() => {
+    if (!blocked) return
+
+    const recheck = async () => {
+      const [cameraStatus, mediaStatus, locationStatus] = await Promise.all([
+        check(PERMISSION_MAP.camera),
+        check(PERMISSION_MAP.mediaLibrary),
+        check(PERMISSION_MAP.location),
+      ])
+      if (
+        cameraStatus !== RESULTS.BLOCKED &&
+        mediaStatus !== RESULTS.BLOCKED &&
+        locationStatus !== RESULTS.BLOCKED
+      ) {
+        setBlocked(false)
+        router.replace('/(home-tabs)')
+      }
+    }
+
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') recheck()
+    })
+    return () => sub.remove()
+  }, [blocked])
 
   const handleContinueWithoutAccess = useCallback(() => {
     router.replace('/(home-tabs)')

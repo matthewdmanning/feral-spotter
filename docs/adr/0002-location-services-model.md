@@ -24,6 +24,6 @@ The Map picker is built on **`expo-maps`** (`GoogleMaps`/`AppleMaps` native view
 
 ## Consequences
 
-- The Android build needs a **Google Maps API key** for the map to render (native map *display* is free; only Places/autocomplete is billed).
+- The Android build needs a **Google Maps API key** for the map to render (native map _display_ is free; only Places/autocomplete is billed).
 - **Deferred, not part of this work:** address entry / autocomplete (pending a nonprofit partnership for cost), EXIF-vs-selected agreement validation for uploaded photos, and any actual-byte EXIF embedding.
 - The `SubmissionPhoto.exif` field name is a misnomer for an app-level value — flagged; rename is out of scope here.

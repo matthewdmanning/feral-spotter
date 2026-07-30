@@ -1,11 +1,13 @@
-import { fireEvent, render, screen } from '@testing-library/react-native'
-import { Alert, BackHandler, Platform } from 'react-native'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native'
+import { Alert, AppState, BackHandler, Platform } from 'react-native'
+import { check, request, RESULTS } from 'react-native-permissions'
 import React from 'react'
 import ConsentScreen from '../index'
 import consentCopy from '@/src/content/consentDisclosure.json'
 
+const mockRouterReplace = jest.fn()
 jest.mock('expo-router', () => ({
-  router: { replace: jest.fn(), push: jest.fn() },
+  router: { replace: (...args: unknown[]) => mockRouterReplace(...args), push: jest.fn() },
 }))
 
 jest.mock('@/src/hooks/useConsentStore', () => ({
@@ -73,5 +75,39 @@ describe('ConsentScreen decline flow', () => {
     fireEvent.press(screen.getByLabelText(consentCopy.declineLabel))
 
     expect(exitSpy).not.toHaveBeenCalled()
+  })
+})
+
+describe('ConsentScreen blocked-permission recovery', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    Platform.OS = 'android'
+  })
+
+  it('clears the blocked gate and continues once Settings grant is detected on foreground', async () => {
+    jest.mocked(request).mockResolvedValueOnce(RESULTS.BLOCKED)
+    jest.mocked(request).mockResolvedValueOnce(RESULTS.GRANTED)
+    jest.mocked(request).mockResolvedValueOnce(RESULTS.GRANTED)
+
+    let foregroundListener: ((state: string) => void) | undefined
+    jest.spyOn(AppState, 'addEventListener').mockImplementation((_event, listener) => {
+      foregroundListener = listener as (state: string) => void
+      return { remove: jest.fn() }
+    })
+
+    render(<ConsentScreen />)
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText(consentCopy.agreeLabel))
+    })
+
+    expect(screen.getByText('Permission Blocked')).toBeTruthy()
+
+    jest.mocked(check).mockResolvedValue(RESULTS.GRANTED)
+
+    await act(async () => {
+      foregroundListener?.('active')
+    })
+
+    await waitFor(() => expect(mockRouterReplace).toHaveBeenCalledWith('/(home-tabs)'))
   })
 })

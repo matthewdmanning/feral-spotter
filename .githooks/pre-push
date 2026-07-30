@@ -1,0 +1,16 @@
+#!/bin/sh
+# Gradual prettier — format the files this branch changed before they're pushed.
+# If prettier rewrites anything, the push is blocked so you commit the result
+# first (a pre-push hook can't amend commits already being pushed).
+#
+# Enable once per clone:  git config core.hooksPath .githooks
+
+node scripts/format-changed.mjs || exit 1
+
+if ! git diff --quiet; then
+  echo ""
+  echo "prettier reformatted changed files (see above)."
+  echo "Commit the changes, then push again."
+  git --no-pager diff --name-only
+  exit 1
+fi

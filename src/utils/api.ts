@@ -100,6 +100,11 @@ export async function hasPassword(): Promise<boolean> {
 
 /**
  * Get authentication headers
+ *
+ * TODO(firebase-auth): this legacy shared-password scheme (superseded per the
+ * 2026-07-12 roadmap) needs to become `Authorization: Bearer <Firebase ID
+ * token>` once the API route verifies Firebase tokens server-side. Out of
+ * scope for the client-side Firebase Auth migration — backend not implemented.
  */
 async function getAuthHeaders(): Promise<Record<string, string>> {
   const password = await getPassword();
@@ -118,6 +123,9 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
 
 /**
  * Upload a photo to Google Cloud Run
+ *
+ * TODO(firebase-auth): same legacy password check as getAuthHeaders() above —
+ * needs a valid Firebase ID token once the backend verifies it. Not implemented.
  */
 export async function uploadPhotoToCloud(
   uri: string,

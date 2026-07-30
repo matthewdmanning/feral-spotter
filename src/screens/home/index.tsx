@@ -12,17 +12,20 @@ import { styles } from "./index.styles";
 
 export default function HomeScreen() {
   const { theme } = useUnistyles();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isReady } = useAuth();
 
   // App-wide gate: unauthenticated → intro flow; authenticated but no device
-  // consent → consent screen; otherwise render normal home.
+  // consent → consent screen; otherwise render normal home. Never act while
+  // !isReady — auth state is indeterminate until the provider has reported
+  // at least once, and redirecting on a guess is what caused #93's loop.
   useEffect(() => {
+    if (!isReady) return;
     if (!isAuthenticated) {
       router.replace("/intro-flow");
     } else if (!hasAcceptedConsent()) {
       router.replace("/consent");
     }
-  }, [isAuthenticated]);
+  }, [isReady, isAuthenticated]);
 
   const [columnVisible, setColumnVisible] = useState(false);
   useEffect(() => {

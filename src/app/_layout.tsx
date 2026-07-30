@@ -9,24 +9,24 @@
  * react-navigation does not re-render screens on screenOptions changes.
  */
 
-import "@/src/config/unistyles";
-import { useUIStore } from "@/src/hooks";
-import { AppProviders } from "@/src/providers/AppProviders";
-import NetInfo from "@react-native-community/netinfo";
-import { Stack } from "expo-router";
-import { useEffect } from "react";
-import { useUnistyles } from "react-native-unistyles";
+import '@/src/config/unistyles'
+import { useUIStore } from '@/src/hooks'
+import { AppProviders } from '@/src/providers/AppProviders'
+import NetInfo from '@react-native-community/netinfo'
+import { Stack } from 'expo-router'
+import { useEffect } from 'react'
+import { useUnistyles } from 'react-native-unistyles'
 
 export default function RootLayout() {
-  const { theme } = useUnistyles();
-  const setOnlineStatus = useUIStore((s) => s.setOnlineStatus);
+  const { theme } = useUnistyles()
+  const setOnlineStatus = useUIStore((s) => s.setOnlineStatus)
 
   useEffect(() => {
     const unsub = NetInfo.addEventListener((s) =>
       setOnlineStatus(s.isConnected ?? false),
-    );
-    return () => unsub();
-  }, [setOnlineStatus]);
+    )
+    return () => unsub()
+  }, [setOnlineStatus])
 
   return (
     <AppProviders>
@@ -34,10 +34,10 @@ export default function RootLayout() {
         screenOptions={{
           headerStyle: { backgroundColor: theme.colors.background },
           headerTintColor: theme.colors.text,
-          headerTitleStyle: { fontWeight: "700", color: theme.colors.text },
+          headerTitleStyle: { fontWeight: '700', color: theme.colors.text },
           headerShadowVisible: false,
           contentStyle: { backgroundColor: theme.colors.background },
-          animation: "slide_from_right",
+          animation: 'slide_from_right',
           gestureEnabled: true,
         }}
       >
@@ -47,7 +47,7 @@ export default function RootLayout() {
         {/* Non-tab flows */}
         <Stack.Screen
           name="feral-reports"
-          options={{ title: "Feral Reports" }}
+          options={{ title: 'Feral Reports' }}
         />
         <Stack.Screen
           name="intro-flow"
@@ -57,10 +57,7 @@ export default function RootLayout() {
           name="sign-in"
           options={{ headerShown: false, gestureEnabled: false }}
         />
-        <Stack.Screen
-          name="profile"
-          options={{ title: "Your Profile", headerBackTitle: "" }}
-        />
+        <Stack.Screen name="register" options={{ title: 'Create account' }} />
         <Stack.Screen
           name="analytics-consent"
           options={{ headerShown: false, gestureEnabled: false }}
@@ -68,21 +65,21 @@ export default function RootLayout() {
         <Stack.Screen
           name="consent"
           options={{
-            title: "Before You Start",
+            title: 'Before You Start',
             gestureEnabled: false,
             headerBackVisible: false,
           }}
         />
         <Stack.Screen
           name="data-agreement"
-          options={{ title: "Data Usage Agreement" }}
+          options={{ title: 'Data Usage Agreement' }}
         />
 
         <Stack.Screen
           name="camera"
           options={{
-            presentation: "fullScreenModal",
-            animation: "slide_from_bottom",
+            presentation: 'fullScreenModal',
+            animation: 'slide_from_bottom',
             headerShown: false,
             gestureEnabled: true,
           }}
@@ -92,5 +89,5 @@ export default function RootLayout() {
         <Stack.Screen name="submission" options={{ headerShown: false }} />
       </Stack>
     </AppProviders>
-  );
+  )
 }
