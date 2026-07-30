@@ -24,14 +24,20 @@
 
 import { ErrorBoundary } from '@/src/components/atoms/ErrorBoundary'
 import { CONSENT_VERSION, useConsentStore } from '@/src/hooks/useConsentStore'
-import { IS_PRERELEASE, registerCapture, registerCaptureException } from '@/src/lib/analytics/analytics'
+import {
+  IS_PRERELEASE,
+  registerCapture,
+  registerCaptureException,
+} from '@/src/lib/analytics/analytics'
 import { PostHogProvider, usePostHog } from 'posthog-react-native'
 import { useEffect, type ReactNode } from 'react'
 
-const POSTHOG_KEY  = process.env.EXPO_PUBLIC_POSTHOG_KEY ?? ''
+const POSTHOG_KEY = process.env.EXPO_PUBLIC_POSTHOG_KEY ?? ''
 const POSTHOG_HOST = 'https://app.posthog.com'
 
-interface AppProvidersProps { children: ReactNode }
+interface AppProvidersProps {
+  children: ReactNode
+}
 
 /**
  * Registers both capturers app-wide as soon as PostHog mounts, rather than
@@ -58,8 +64,15 @@ export function AppProviders({ children }: AppProvidersProps) {
 
   return (
     <ErrorBoundary>
-      {IS_PRERELEASE && POSTHOG_KEY && hasAcceptedConsent && hasAcceptedAnalytics ? (
-        <PostHogProvider apiKey={POSTHOG_KEY} options={{ host: POSTHOG_HOST }} debug={__DEV__}>
+      {IS_PRERELEASE &&
+      POSTHOG_KEY &&
+      hasAcceptedConsent &&
+      hasAcceptedAnalytics ? (
+        <PostHogProvider
+          apiKey={POSTHOG_KEY}
+          options={{ host: POSTHOG_HOST }}
+          debug={__DEV__}
+        >
           <AnalyticsBridge />
           {children}
         </PostHogProvider>

@@ -13,58 +13,59 @@
  *   "extra": { "isPrerelease": true }
  */
 
-import { hasAcceptedAnalytics, hasAcceptedConsent } from "@/src/hooks/useConsentStore";
-import type { SubmissionCacheFile } from "@/src/lib/cache/submissionCache";
-import Constants from "expo-constants";
-import type { PostHogEventProperties } from "@posthog/core";
+import {
+  hasAcceptedAnalytics,
+  hasAcceptedConsent,
+} from '@/src/hooks/useConsentStore'
+import type { SubmissionCacheFile } from '@/src/lib/cache/submissionCache'
+import Constants from 'expo-constants'
+import type { PostHogEventProperties } from '@posthog/core'
 
 // ─── Flag ─────────────────────────────────────────────────────────────────────
 
 export const IS_PRERELEASE: boolean =
-  Boolean(Constants.expoConfig?.extra?.isPrerelease) || __DEV__;
+  Boolean(Constants.expoConfig?.extra?.isPrerelease) || __DEV__
 
 // ─── Event names ──────────────────────────────────────────────────────────────
 
 export const EVENTS = {
-  SUBMISSION_SENDING: "submission_sending",
-  SUBMISSION_SUBMITTED: "submission_submitted",
-  SUBMISSION_FAILED: "submission_failed",
-  REPORTS_VIEWED: "feral_reports_viewed",
-  CAMERA_OPENED: "camera_opened",
-  PHOTO_CAPTURE_FAILED: "photo_capture_failed",
-} as const;
+  SUBMISSION_SENDING: 'submission_sending',
+  SUBMISSION_SUBMITTED: 'submission_submitted',
+  SUBMISSION_FAILED: 'submission_failed',
+  REPORTS_VIEWED: 'feral_reports_viewed',
+  CAMERA_OPENED: 'camera_opened',
+  PHOTO_CAPTURE_FAILED: 'photo_capture_failed',
+} as const
 
-export type AnalyticsEvent = (typeof EVENTS)[keyof typeof EVENTS];
+export type AnalyticsEvent = (typeof EVENTS)[keyof typeof EVENTS]
 
 // ─── PostHog singleton access ─────────────────────────────────────────────────
 // We import usePostHog() at call sites for hook contexts.
 // For non-hook contexts (utils), use the client directly if needed.
 
-let _capture:
-  | ((event: string, props?: PostHogEventProperties) => void)
-  | null = null;
+let _capture: ((event: string, props?: PostHogEventProperties) => void) | null =
+  null
 
 /** Call once in a component that has PostHog context to register the capturer. */
 export function registerCapture(
   fn: (event: string, props?: PostHogEventProperties) => void,
 ): void {
-  _capture = fn;
+  _capture = fn
 }
 
 let _captureException:
-  | ((error: unknown, extra?: PostHogEventProperties) => void)
-  | null = null;
+  ((error: unknown, extra?: PostHogEventProperties) => void) | null = null
 
 /** Call once in a component that has PostHog context to register the exception capturer. */
 export function registerCaptureException(
   fn: (error: unknown, extra?: PostHogEventProperties) => void,
 ): void {
-  _captureException = fn;
+  _captureException = fn
 }
 
 /** Same gate as every capture path: pre-release build, general consent, analytics opt-in. */
 function shouldCapture(): boolean {
-  return IS_PRERELEASE && hasAcceptedConsent() && hasAcceptedAnalytics();
+  return IS_PRERELEASE && hasAcceptedConsent() && hasAcceptedAnalytics()
 }
 
 // ─── Fire event ───────────────────────────────────────────────────────────────
@@ -79,12 +80,12 @@ export function fireAnalyticsEvent(
   cache: SubmissionCacheFile,
   extra?: Record<string, unknown>,
 ): void {
-  if (!shouldCapture()) return;
+  if (!shouldCapture()) return
   if (!_capture) {
     console.warn(
-      "[analytics] capturer not registered — call registerCapture() in a PostHog-wrapped component",
-    );
-    return;
+      '[analytics] capturer not registered — call registerCapture() in a PostHog-wrapped component',
+    )
+    return
   }
 
   _capture(event, {
@@ -98,7 +99,7 @@ export function fireAnalyticsEvent(
     // Full cache payload for pre-release debugging
     cache_snapshot: JSON.stringify(cache),
     ...extra,
-  });
+  })
 }
 
 /**
@@ -110,15 +111,15 @@ export function captureEvent(
   event: AnalyticsEvent,
   props?: PostHogEventProperties,
 ): void {
-  if (!shouldCapture()) return;
+  if (!shouldCapture()) return
   if (!_capture) {
     console.warn(
-      "[analytics] capturer not registered — call registerCapture() in a PostHog-wrapped component",
-    );
-    return;
+      '[analytics] capturer not registered — call registerCapture() in a PostHog-wrapped component',
+    )
+    return
   }
 
-  _capture(event, props);
+  _capture(event, props)
 }
 
 /**
@@ -130,13 +131,13 @@ export function captureException(
   error: unknown,
   extra?: PostHogEventProperties,
 ): void {
-  if (!shouldCapture()) return;
+  if (!shouldCapture()) return
   if (!_captureException) {
     console.warn(
-      "[analytics] exception capturer not registered — call registerCaptureException() in a PostHog-wrapped component",
-    );
-    return;
+      '[analytics] exception capturer not registered — call registerCaptureException() in a PostHog-wrapped component',
+    )
+    return
   }
 
-  _captureException(error, extra);
+  _captureException(error, extra)
 }

@@ -15,13 +15,17 @@ jest.mock('react-native-mmkv', () => ({
 }))
 
 jest.mock('expo-location', () => ({
-  getForegroundPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'denied' })),
+  getForegroundPermissionsAsync: jest.fn(() =>
+    Promise.resolve({ status: 'denied' }),
+  ),
   getCurrentPositionAsync: jest.fn(),
   PermissionStatus: { GRANTED: 'granted' },
   Accuracy: { Balanced: 3 },
 }))
 
-jest.mock('expo-router', () => ({ router: { back: jest.fn(), navigate: jest.fn() } }))
+jest.mock('expo-router', () => ({
+  router: { back: jest.fn(), navigate: jest.fn() },
+}))
 
 const mockCapturePhoto = jest.fn()
 jest.mock('react-native-vision-camera', () => ({
@@ -39,7 +43,8 @@ jest.mock('react-native-reanimated', () => ({
 }))
 
 jest.mock('@/src/hooks', () => ({
-  usePhotoStore: (sel: (s: object) => unknown) => sel({ addPhoto: jest.fn(), photos: [] }),
+  usePhotoStore: (sel: (s: object) => unknown) =>
+    sel({ addPhoto: jest.fn(), photos: [] }),
   useUIStore: (sel: (s: object) => unknown) =>
     sel({ addSessionPhoto: jest.fn(), sessionPhotos: [] }),
 }))
@@ -50,7 +55,9 @@ jest.mock('@/src/hooks/useSettingsStore', () => ({
 }))
 
 jest.mock('@shopify/flash-list', () => ({ FlashList: 'FlashList' }))
-jest.mock('@/src/components/atoms/CameraThumb', () => ({ CameraThumb: 'CameraThumb' }))
+jest.mock('@/src/components/atoms/CameraThumb', () => ({
+  CameraThumb: 'CameraThumb',
+}))
 const mockAssetCreate = jest.fn()
 jest.mock('expo-media-library', () => ({
   get Asset() {
@@ -62,7 +69,10 @@ jest.mock('expo-crypto', () => ({ randomUUID: () => 'test-id' }))
 const mockCaptureEvent = jest.fn()
 jest.mock('@/src/lib/analytics/analytics', () => ({
   captureEvent: (...args: unknown[]) => mockCaptureEvent(...args),
-  EVENTS: { CAMERA_OPENED: 'camera_opened', PHOTO_CAPTURE_FAILED: 'photo_capture_failed' },
+  EVENTS: {
+    CAMERA_OPENED: 'camera_opened',
+    PHOTO_CAPTURE_FAILED: 'photo_capture_failed',
+  },
 }))
 
 describe('useCameraCapture navigation', () => {

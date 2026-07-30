@@ -17,13 +17,24 @@ jest.mock('lucide-react-native', () => {
 
 jest.mock('react-native-unistyles', () => {
   const theme = {
-    colors: { background: '#fff', text: '#000', muted: '#888', border: '#ccc', accent: '#00f', accentText: '#fff', surface: '#fff', surfaceAlt: '#eee' },
+    colors: {
+      background: '#fff',
+      text: '#000',
+      muted: '#888',
+      border: '#ccc',
+      accent: '#00f',
+      accentText: '#fff',
+      surface: '#fff',
+      surfaceAlt: '#eee',
+    },
     spacing: { xs: 2, sm: 4, md: 8, lg: 16, xl: 24, xxl: 32, xxxl: 40 },
     typography: { xs: 10, sm: 12, base: 16, xl: 20, xxl: 24 },
     radius: { sm: 4, md: 8, lg: 12, xl: 16 },
   }
   return {
-    StyleSheet: { create: (fn: unknown) => (typeof fn === 'function' ? fn(theme) : fn) },
+    StyleSheet: {
+      create: (fn: unknown) => (typeof fn === 'function' ? fn(theme) : fn),
+    },
   }
 })
 
@@ -67,7 +78,10 @@ describe('ErrorBoundary crash reporting', () => {
     )
 
     expect(captureExceptionSpy).toHaveBeenCalledTimes(1)
-    const [error, extra] = captureExceptionSpy.mock.calls[0] as [Error, { component_stack?: string }]
+    const [error, extra] = captureExceptionSpy.mock.calls[0] as [
+      Error,
+      { component_stack?: string },
+    ]
     expect(error.message).toBe('kaboom')
     expect(extra?.component_stack).toEqual(expect.stringContaining('Boom'))
   })
