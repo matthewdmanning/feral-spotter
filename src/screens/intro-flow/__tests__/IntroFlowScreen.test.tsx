@@ -1,4 +1,9 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react-native'
 import { router } from 'expo-router'
 import React from 'react'
 import { ONBOARDING_SLIDES } from '@/src/config/introFlowCopy'
@@ -11,8 +16,18 @@ jest.mock('expo-router', () => ({
 jest.mock('@/src/components/atoms/AppButton', () => {
   const { Pressable, Text } = require('react-native')
   return {
-    AppButton: ({ onPress, children }: { onPress: () => void; children: string }) => (
-      <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={children}>
+    AppButton: ({
+      onPress,
+      children,
+    }: {
+      onPress: () => void
+      children: string
+    }) => (
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={children}
+      >
         <Text>{children}</Text>
       </Pressable>
     ),
@@ -21,7 +36,13 @@ jest.mock('@/src/components/atoms/AppButton', () => {
 
 jest.mock('react-native-unistyles', () => {
   const theme = {
-    colors: { background: '#fff', text: '#000', muted: '#888', border: '#ccc', accent: '#00f' },
+    colors: {
+      background: '#fff',
+      text: '#000',
+      muted: '#888',
+      border: '#ccc',
+      accent: '#00f',
+    },
     spacing: { sm: 4, md: 8, lg: 16, xl: 24, xxxl: 40 },
     typography: { sm: 12, base: 16, xxxl: 32 },
     radius: { full: 999 },
@@ -29,7 +50,9 @@ jest.mock('react-native-unistyles', () => {
   const rt = { insets: { top: 0, bottom: 0 } }
   return {
     useUnistyles: () => ({ theme }),
-    StyleSheet: { create: (fn: unknown) => (typeof fn === 'function' ? fn(theme, rt) : fn) },
+    StyleSheet: {
+      create: (fn: unknown) => (typeof fn === 'function' ? fn(theme, rt) : fn),
+    },
   }
 })
 
