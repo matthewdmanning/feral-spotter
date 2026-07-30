@@ -31,27 +31,4 @@ export const styles = StyleSheet.create((theme) => ({
     marginBottom: theme.spacing.md,
   },
   button: { width: '100%', marginTop: theme.spacing.xs },
-  registerRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: theme.spacing.lg,
-  },
-  registerText: { color: theme.colors.muted, fontSize: theme.typography.sm },
-  registerLink: {
-    color: theme.colors.text,
-    fontSize: theme.typography.sm,
-    fontWeight: '700',
-  },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: theme.spacing.xxl,
-  },
-  dividerLine: { flex: 1, height: 1, backgroundColor: theme.colors.border },
-  dividerText: {
-    color: theme.colors.muted,
-    fontSize: theme.typography.xs,
-    marginHorizontal: theme.spacing.md,
-  },
-  providerButton: { width: '100%', marginBottom: theme.spacing.md },
 }))

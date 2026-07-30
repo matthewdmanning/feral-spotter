@@ -1,11 +1,19 @@
+import type { FederatedProviderId } from './authProviders'
+
 export interface AuthUser {
-  uid:   string
+  uid: string
   email: string | null
 }
 
 export interface IAuthProvider {
-  getToken():             Promise<string>
-  signIn():               Promise<AuthUser>
-  signOut():              Promise<void>
+  getToken(): Promise<string>
+  getCurrentUser(): AuthUser | null
+  /** Federated Sign-In through an external provider portal (Google/Apple/Facebook). */
+  signInWithProvider(providerId: FederatedProviderId): Promise<AuthUser>
+  /** Sign in to an existing email/password account (non-federated path). */
+  signInWithEmail(email: string, password: string): Promise<AuthUser>
+  /** Registration: create a new email/password account and sign in. */
+  registerWithEmail(email: string, password: string): Promise<AuthUser>
+  signOut(): Promise<void>
   onAuthStateChanged(cb: (user: AuthUser | null) => void): () => void
 }
