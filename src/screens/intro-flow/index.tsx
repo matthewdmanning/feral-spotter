@@ -9,36 +9,36 @@
 import {
   AGREEMENT_SLIDE_INDEX,
   DATA_AGREEMENT_LINK_LABEL,
-  TUTORIAL_SLIDES,
-} from "@/src/config/introFlowCopy";
-import { AppButton } from "@/src/components/atoms/AppButton";
-import { router } from "expo-router";
-import { useCallback, useState } from "react";
-import { Pressable, Text, View } from "react-native";
-import { styles } from "./index.styles";
+  ONBOARDING_SLIDES,
+} from '@/src/config/introFlowCopy'
+import { AppButton } from '@/src/components/atoms/AppButton'
+import { router } from 'expo-router'
+import { useCallback, useState } from 'react'
+import { Pressable, Text, View } from 'react-native'
+import { styles } from './index.styles'
 
 export default function IntroFlowScreen() {
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(0)
 
   const finish = useCallback(() => {
-    router.replace("/sign-in");
-  }, []);
+    router.replace('/sign-in')
+  }, [])
 
   const advance = useCallback(() => {
-    const next = step + 1;
-    if (next >= TUTORIAL_SLIDES.length) {
-      finish();
-      return;
+    const next = step + 1
+    if (next >= ONBOARDING_SLIDES.length) {
+      finish()
+      return
     }
-    setStep(next);
-  }, [step, finish]);
+    setStep(next)
+  }, [step, finish])
 
   const goBack = useCallback(() => {
-    setStep((s) => Math.max(0, s - 1));
-  }, []);
+    setStep((s) => Math.max(0, s - 1))
+  }, [])
 
-  const slide = TUTORIAL_SLIDES[step];
-  const isAgreementSlide = step === AGREEMENT_SLIDE_INDEX;
+  const slide = ONBOARDING_SLIDES[step]
+  const isAgreementSlide = step === AGREEMENT_SLIDE_INDEX
 
   return (
     <View style={styles.root}>
@@ -54,7 +54,7 @@ export default function IntroFlowScreen() {
         {isAgreementSlide && (
           <Pressable
             accessibilityRole="link"
-            onPress={() => router.push("/data-agreement")}
+            onPress={() => router.push('/data-agreement')}
           >
             <Text style={styles.link}>{DATA_AGREEMENT_LINK_LABEL}</Text>
           </Pressable>
@@ -76,7 +76,7 @@ export default function IntroFlowScreen() {
           </AppButton>
         </View>
         <View style={styles.dots} accessibilityElementsHidden>
-          {TUTORIAL_SLIDES.map((s, i) => (
+          {ONBOARDING_SLIDES.map((s, i) => (
             <View
               key={s.header}
               style={[styles.dot, i === step && styles.dotActive]}
@@ -85,5 +85,5 @@ export default function IntroFlowScreen() {
         </View>
       </View>
     </View>
-  );
+  )
 }
