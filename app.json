@@ -85,6 +85,7 @@
           "granularPermissions": ["photo"]
         }
       ],
+      "expo-maps",
       "expo-apple-authentication",
       [
         "react-native-fbsdk-next",
