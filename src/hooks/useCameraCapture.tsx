@@ -15,6 +15,7 @@ import { CameraThumb } from '@/src/components/atoms/CameraThumb'
 import { usePhotoStore, useUIStore } from '@/src/hooks'
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'
 import { captureEvent, EVENTS } from '@/src/lib/analytics/analytics'
+import { startLocationCapture } from '@/src/lib/location'
 import { PERMISSION_MAP } from '@/src/lib/permissions'
 import type { SubmissionPhoto } from '@/src/types'
 import { type FlashListRef } from '@shopify/flash-list'
@@ -213,6 +214,10 @@ export function useCameraCapture(): CameraCaptureResult {
   // hitting submit besides this and PHOTO_CAPTURE_FAILED above.
   useEffect(() => {
     captureEvent(EVENTS.CAMERA_OPENED)
+    // GPS-timing follow-up (#128): the Live fix starts here, not on
+    // Submission Details — it runs in the background independent of this
+    // screen's lifecycle (src/lib/location.ts).
+    void startLocationCapture()
   }, [])
 
   return {

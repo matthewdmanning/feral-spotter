@@ -1,92 +1,37 @@
-import { SegmentedControl } from '@/src/components/atoms/SegmentedControl'
-import { DateTimePickerButton } from '@/src/components/organisms/DateTimePicker'
-import {
-  AUTOSAVE_CLEAR_MS,
-  AUTOSAVE_INSTANT_MS,
-  AUTOSAVE_TEXT_MS,
-} from '@/src/config/constants'
+import { LOCATION_ACCURACY_THRESHOLD_M } from '@/src/config/location'
 import { useSubmissionStore } from '@/src/hooks'
-import { captureCurrentLocation } from '@/src/lib/location'
-import type {
-  LocationMethod,
-  TimeMethod,
-} from '@/src/lib/cache/submissionCache'
+import { useSubmissionSubmit } from '@/src/hooks/useSubmissionSubmit'
+import { useLocationCapture } from '@/src/lib/location'
 import {
   createSubmissionCache,
   getCurrentCacheId,
-  updateSubmissionCache,
 } from '@/src/lib/cache/submissionCache'
-import type { LocationType } from '@/src/types'
-import { validateSubmission } from '@/src/utils/validation'
 import { router, type Href } from 'expo-router'
 import { randomUUID } from 'expo-crypto'
-import { Info } from 'lucide-react-native'
-import {
-  startTransition,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from 'react'
-import { Alert, Pressable, Text, TextInput, View } from 'react-native'
+import { AlertCircle, CheckCircle } from 'lucide-react-native'
+import { useCallback, useEffect } from 'react'
+import { Pressable, Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
 
-// The map picker (route added in the #102 slice). A `device` fix that
-// fails, or a `pin` selection, routes here to set the Submission location.
-// Cast until #102 adds the route file, which regenerates expo-router's
-// typed-route union to include it.
+// #97's split: this screen is now the Cats List + Submission Details landing
+// view. Location/Time have no editable fields anymore — a Live fix runs in
+// the background from camera-open (#128) and is only ever corrected through
+// the map picker, reached by tapping the warning icon below.
 const LOCATION_PICKER_ROUTE = '/submission/location-picker' as Href
-
-const LOCATION_OPTIONS: { value: LocationMethod; label: string }[] = [
-  { value: 'device', label: 'Device' },
-  { value: 'pin', label: 'Pin Drop' },
-  { value: 'address', label: 'Address' },
-]
-const TIME_OPTIONS: { value: TimeMethod; label: string }[] = [
-  { value: 'device', label: 'Now' },
-  { value: 'manual', label: 'Manual' },
-  { value: 'metadata', label: 'From Photo' },
-]
-
-type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
 export default function CreateSubmissionScreen() {
   const { theme } = useUnistyles()
 
   const submission = useSubmissionStore((s) => s.submission)
-  const setSubmission = useSubmissionStore((s) => s.setSubmission)
-  const setLocationType = useSubmissionStore((s) => s.setLocationType)
   const setSubmissionLocation = useSubmissionStore(
     (s) => s.setSubmissionLocation,
   )
-  const setTimeType = useSubmissionStore((s) => s.setTimeType)
-  const setAddress = useSubmissionStore((s) => s.setAddress)
-  const setManualTime = useSubmissionStore((s) => s.setManualTime)
-  const saveDraft = useSubmissionStore((s) => s.saveDraft)
   const setCurrentStep = useSubmissionStore((s) => s.setCurrentStep)
   const cats = useSubmissionStore((s) => s.cats)
 
-  const [locationType, setLocationTypeLocal] = useState<LocationMethod>(
-    submission.location_type,
-  )
-  const [timeType, setTimeTypeLocal] = useState<TimeMethod>(
-    submission.time_type,
-  )
-  const [address, setAddressLocal] = useState(submission.address ?? '')
-  const [manualTime, setManualTimeLocal] = useState(
-    submission.manual_time ?? new Date().toISOString(),
-  )
-  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
-  const [showLocationHelp, setShowLocationHelp] = useState(false)
-
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const isMountedRef = useRef(true)
-  const isDirtyRef = useRef(false)
-  const formRef = useRef({ locationType, timeType, address, manualTime })
-  useEffect(() => {
-    formRef.current = { locationType, timeType, address, manualTime }
-  })
+  const capture = useLocationCapture()
+  const { handleDone } = useSubmissionSubmit()
 
   useEffect(() => {
     setCurrentStep('create')
@@ -100,10 +45,6 @@ export default function CreateSubmissionScreen() {
         })
       }
     })()
-    return () => {
-      isMountedRef.current = false
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
-    }
   }, [
     setCurrentStep,
     submission.address,
@@ -112,252 +53,101 @@ export default function CreateSubmissionScreen() {
     submission.manual_time,
   ])
 
-  const performSave = useCallback(async () => {
-    const {
-      locationType: lt,
-      timeType: tt,
-      address: addr,
-      manualTime: mt,
-    } = formRef.current
-    isDirtyRef.current = false
-    if (isMountedRef.current) startTransition(() => setSaveStatus('saving'))
-    try {
-      setSubmission({
-        location_type: lt,
-        time_type: tt,
-        address: addr || undefined,
-        manual_time: tt === 'manual' ? mt : undefined,
-      })
-      await Promise.resolve(saveDraft())
-      const { submission: cur } = useSubmissionStore.getState()
-      const location_type: LocationType | undefined =
-        cur.latitude != null && cur.longitude != null
-          ? {
-              latitude: cur.latitude,
-              longitude: cur.longitude,
-              accuracy: cur.accuracy ?? null,
-            }
-          : undefined
-      const cId = await getCurrentCacheId()
-      if (cId)
-        await updateSubmissionCache(cId, {
-          metadata: {
-            location_method: lt,
-            time_method: tt,
-            location_type,
-            address: addr || undefined,
-            manual_time: tt === 'manual' ? mt : undefined,
-          },
-        })
-      if (!isMountedRef.current) return
-      startTransition(() => setSaveStatus('saved'))
-      setTimeout(() => {
-        if (isMountedRef.current) startTransition(() => setSaveStatus('idle'))
-      }, AUTOSAVE_CLEAR_MS)
-    } catch {
-      if (isMountedRef.current) startTransition(() => setSaveStatus('error'))
+  // Commit the background Live fix into the Submission draft only once it
+  // resolves — never mid-watch, so a reacquire's early (worse) candidates
+  // can't clobber the already-stored fix while it's re-settling. Also never
+  // overwrite a location the user set by hand via the map picker
+  // (location_type === 'pin').
+  useEffect(() => {
+    if (submission.location_type === 'pin') return
+    if (capture.status === 'resolved' && capture.result) {
+      setSubmissionLocation(capture.result)
     }
-  }, [setSubmission, saveDraft])
-
-  const scheduleAutosave = useCallback(
-    (ms: number) => {
-      isDirtyRef.current = true
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
-      saveTimerRef.current = setTimeout(performSave, ms)
-    },
-    [performSave],
-  )
-
-  const handleLocationTypeChange = useCallback(
-    (v: LocationMethod) => {
-      setLocationTypeLocal(v)
-      setLocationType(v)
-      scheduleAutosave(AUTOSAVE_INSTANT_MS)
-    },
-    [setLocationType, scheduleAutosave],
-  )
-  const handleTimeTypeChange = useCallback(
-    (v: TimeMethod) => {
-      setTimeTypeLocal(v)
-      setTimeType(v)
-      scheduleAutosave(AUTOSAVE_INSTANT_MS)
-    },
-    [setTimeType, scheduleAutosave],
-  )
-  const handleAddressChange = useCallback(
-    (v: string) => {
-      setAddressLocal(v)
-      setAddress(v)
-      scheduleAutosave(AUTOSAVE_TEXT_MS)
-    },
-    [setAddress, scheduleAutosave],
-  )
-  const handleAddressBlur = useCallback(() => {
-    if (!isDirtyRef.current) return
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
-    performSave()
-  }, [performSave])
-
-  const handleManualTimeChange = useCallback(
-    (date: Date) => {
-      const iso = date.toISOString()
-      setManualTimeLocal(iso)
-      setManualTime(iso)
-      scheduleAutosave(AUTOSAVE_INSTANT_MS)
-    },
-    [setManualTime, scheduleAutosave],
-  )
-
-  const handleContinue = useCallback(async () => {
-    // Acquire the single Submission location before validating (ADR 0002).
-    // Only one location call per submission: skip if coords already exist.
-    let latitude = submission.latitude
-    let longitude = submission.longitude
-    if (latitude == null || longitude == null) {
-      if (locationType === 'device') {
-        const fix = await captureCurrentLocation()
-        if (fix) {
-          setSubmissionLocation(fix)
-          latitude = fix.latitude
-          longitude = fix.longitude
-        } else {
-          // GPS denied/timed out → fall back to the map picker.
-          router.push(LOCATION_PICKER_ROUTE)
-          return
-        }
-      } else if (locationType === 'pin') {
-        // Manual selection → map picker sets the Submission location.
-        router.push(LOCATION_PICKER_ROUTE)
-        return
-      }
-    }
-
-    const errors = validateSubmission({
-      location_type: locationType,
-      time_type: timeType,
-      address,
-      manual_time: timeType === 'manual' ? manualTime : undefined,
-      latitude,
-      longitude,
-    })
-    if (errors.length > 0) {
-      Alert.alert(errors[0].message)
-      return
-    }
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
-    await performSave()
-    router.push('/submission/cats')
   }, [
-    locationType,
-    timeType,
-    address,
-    manualTime,
-    submission.latitude,
-    submission.longitude,
+    capture.status,
+    capture.result,
+    submission.location_type,
     setSubmissionLocation,
-    performSave,
   ])
 
-  const saveIndicatorText =
-    saveStatus === 'saving'
-      ? 'Saving…'
-      : saveStatus === 'saved'
-        ? '✓ Saved'
-        : saveStatus === 'error'
-          ? 'Save failed'
-          : ''
+  const hasLowAccuracy =
+    submission.accuracy != null &&
+    submission.accuracy >= LOCATION_ACCURACY_THRESHOLD_M
+  const hasFix = submission.latitude != null && submission.longitude != null
+  const showLocationWarning = !hasFix || hasLowAccuracy
+
+  const handleLocationIconPress = useCallback(() => {
+    // A good Live fix is trusted and not user-editable (ADR 0002) — the
+    // picker is reachable only when GPS hasn't produced one.
+    if (!showLocationWarning) return
+    router.push(LOCATION_PICKER_ROUTE)
+  }, [showLocationWarning])
+
+  const handleAddCat = useCallback(() => {
+    router.push('/submission/cats')
+  }, [])
 
   return (
     <View style={styles.root}>
       <Text style={styles.title}>Submission</Text>
-      <View style={styles.card}>
-        <SegmentedControl
-          label="Location Type"
-          options={LOCATION_OPTIONS}
-          value={locationType}
-          onChange={handleLocationTypeChange}
-        />
+
+      <View style={styles.statusRow}>
         <Pressable
-          onPress={() => setShowLocationHelp((v) => !v)}
-          accessibilityLabel="About submission location"
+          onPress={handleLocationIconPress}
+          disabled={!showLocationWarning}
           accessibilityRole="button"
-          style={styles.locationHelpToggle}
+          accessibilityLabel={
+            showLocationWarning
+              ? 'Location accuracy is low or unavailable — tap to set manually'
+              : 'Location acquired'
+          }
+          style={styles.statusItem}
         >
-          <Info size={14} color={theme.colors.muted} />
-          <Text style={styles.locationHelpToggleText}>
-            One location per submission
-          </Text>
-        </Pressable>
-        {showLocationHelp && (
-          <Text style={styles.locationHelpText}>
-            Each submission is tagged with a single location shared by all its
-            photos. Record cats seen at separate locations as separate
-            submissions.
-          </Text>
-        )}
-        {locationType === 'address' && (
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>Address</Text>
-            <TextInput
-              placeholder="Enter address"
-              placeholderTextColor={theme.colors.muted}
-              value={address}
-              onChangeText={handleAddressChange}
-              onBlur={handleAddressBlur}
-              style={styles.input}
-            />
-          </View>
-        )}
-        <SegmentedControl
-          label="Time Type"
-          options={TIME_OPTIONS}
-          value={timeType}
-          onChange={handleTimeTypeChange}
-        />
-        {timeType === 'manual' && (
-          <DateTimePickerButton
-            label="Date & Time"
-            mode="datetime"
-            value={new Date(manualTime)}
-            onChange={handleManualTimeChange}
-          />
-        )}
-        <View style={styles.footerGroup}>
-          {saveIndicatorText !== '' && (
-            <Text style={styles.saveIndicator}>{saveIndicatorText}</Text>
+          {showLocationWarning ? (
+            <AlertCircle size={20} color={theme.colors.warning} />
+          ) : (
+            <CheckCircle size={20} color={theme.colors.success} />
           )}
-          <Pressable
-            onPress={handleContinue}
-            disabled={!locationType || !timeType}
-            style={styles.continueBtn}
-          >
-            <Text style={styles.continueBtnText}>Continue</Text>
-          </Pressable>
+          <Text style={styles.statusItemText}>Location</Text>
+        </Pressable>
+
+        <View style={styles.statusItem}>
+          <CheckCircle size={20} color={theme.colors.success} />
+          <Text style={styles.statusItemText}>Date & Time Recorded</Text>
         </View>
       </View>
 
-      {cats.length > 0 && (
-        <View style={styles.catList}>
-          <Text style={styles.catListTitle}>Cats Recorded</Text>
-          {cats.map((cat) => (
-            <Pressable
-              key={cat.local_id}
-              onPress={() =>
-                router.push({
-                  pathname: '/submission/cats',
-                  params: { edit: cat.local_id },
-                })
-              }
-              style={styles.catRow}
-            >
-              <Text style={styles.catRowText}>
-                {cat.age.charAt(0).toUpperCase() + cat.age.slice(1)} ·{' '}
-                {cat.pattern} · {cat.hair_length} hair
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      )}
+      <View style={styles.catList}>
+        <Text style={styles.catListTitle}>Cats Recorded</Text>
+        {cats.map((cat) => (
+          <Pressable
+            key={cat.local_id}
+            onPress={() =>
+              router.push({
+                pathname: '/submission/cats',
+                params: { edit: cat.local_id },
+              })
+            }
+            style={styles.catRow}
+          >
+            <Text style={styles.catRowText}>
+              {cat.age.charAt(0).toUpperCase() + cat.age.slice(1)} ·{' '}
+              {cat.pattern} · {cat.hair_length} hair
+            </Text>
+          </Pressable>
+        ))}
+        <Pressable
+          onPress={handleAddCat}
+          style={styles.addCatBtn}
+          accessibilityRole="button"
+        >
+          <Text style={styles.addCatBtnText}>Add a Cat</Text>
+        </Pressable>
+      </View>
+
+      <Pressable onPress={handleDone} style={styles.doneBtn}>
+        <Text style={styles.doneBtnText}>Done</Text>
+      </Pressable>
     </View>
   )
 }

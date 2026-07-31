@@ -27,3 +27,28 @@ The Map picker is built on **`expo-maps`** (`GoogleMaps`/`AppleMaps` native view
 - The Android build needs a **Google Maps API key** for the map to render (native map _display_ is free; only Places/autocomplete is billed).
 - **Deferred, not part of this work:** address entry / autocomplete (pending a nonprofit partnership for cost), EXIF-vs-selected agreement validation for uploaded photos, and any actual-byte EXIF embedding.
 - The `SubmissionPhoto.exif` field name is a misnomer for an app-level value — flagged; rename is out of scope here.
+
+## Amendment (2026-07-31): trigger timing and staleness
+
+Live-fix acquisition was originally triggered from Submission Details, racing a
+4-second timeout. User test-drive feedback (#128) moved the trigger earlier
+and removed the give-up:
+
+- **Trigger point**: the Live fix now starts in the background the moment the
+  camera opens (`useCameraCapture.tsx`'s mount effect) — not on Submission
+  Details — so slow GPS resolution has the whole capture session to resolve
+  instead of racing a fixed timeout at the end.
+- **No restart while in flight**: the acquisition is a module-level singleton
+  (`src/lib/location.ts`), not tied to any screen's mount/unmount. It cannot
+  be restarted while actively watching.
+- **One threshold, two jobs**: it watches (`Location.watchPositionAsync`)
+  until accuracy crosses `LOCATION_ACCURACY_THRESHOLD_M` (50m) — that's both
+  "good enough to stop watching" and the bar Submission Details' status icon
+  checks. Still not user-editable once acquired — this only changes when the
+  fetch happens, not the source-based trust model above.
+- **Staleness reacquire**: if 5 minutes (`LOCATION_STALE_THRESHOLD_MS`) pass
+  without crossing the accuracy bar, the singleton settles for its
+  best-so-far fix and automatically retries — this repeats for as long as the
+  submission stays open, without needing another caller to notice and
+  re-trigger it. A location the user set manually via the Map picker
+  (`location_type === 'pin'`) is never overwritten by a later reacquire.

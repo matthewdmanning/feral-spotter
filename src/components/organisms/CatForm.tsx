@@ -106,23 +106,10 @@ export function CatForm({
         <View style={styles.actions}>
           <Pressable
             onPress={submit.handleSave}
-            disabled={submit.isSubmitting}
-            style={[styles.saveBtn, submit.isSubmitting && styles.disabled]}
+            style={styles.saveBtn}
             accessibilityRole="button"
-            accessibilityState={{ disabled: submit.isSubmitting }}
           >
             <Text style={styles.saveBtnText}>{submit.saveLabel}</Text>
-          </Pressable>
-          <Pressable
-            onPress={submit.handleDone}
-            disabled={submit.isSubmitting}
-            style={[styles.doneBtn, submit.isSubmitting && styles.disabled]}
-            accessibilityRole="button"
-            accessibilityState={{ disabled: submit.isSubmitting }}
-          >
-            <Text style={styles.doneBtnText}>
-              {submit.isSubmitting ? 'Submitting…' : 'Done'}
-            </Text>
           </Pressable>
         </View>
       </View>
