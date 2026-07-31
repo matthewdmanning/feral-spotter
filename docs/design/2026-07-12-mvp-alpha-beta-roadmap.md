@@ -5,12 +5,12 @@
 
 ## Milestone structure
 
-| Milestone | Scope | Exit criteria |
-|---|---|---|
-| **MVP** | Android build for a small trusted tester group. Real upload to GCS (`gs://feral-segmentor-alpha`). Backend is validation-only (file type/size/MIME check + auth check, no malicious-code risk). Google Sign-In auth with a hardcoded tester allowlist. Minimal in-app consent screen. No integration with FeralSegmentor/FeralTracker. | 2-week trailing window with zero P0s (crashes, failed uploads, lost data), evidenced by PostHog data (submission funnel + capture funnel + exception capture) plus a manual QA checklist run under arranged conditions (poor network, specific devices). |
-| **Alpha** | Google Play Store release (Android). Real data-transparency website page (domain already acquired, not yet hosted). Tutorial/onboarding flow. Sentry crash reporting added alongside PostHog. Auth/registration design revisited — real backend-persisted allowlist, registration screen wired to authenticated identity instead of free text. | Store listing live and passing review. |
-| **Beta** | iOS support, feature parity with Alpha. | — |
-| **v2.0** | Integration with FeralSegmentor (CV) and FeralTracker (ecological modeling). Out of scope before this point by explicit decision. | — |
+| Milestone | Scope                                                                                                                                                                                                                                                                                                                                          | Exit criteria                                                                                                                                                                                                                                            |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **MVP**   | Android build for a small trusted tester group. Real upload to GCS (`gs://feral-segmentor-alpha`). Backend is validation-only (file type/size/MIME check + auth check, no malicious-code risk). Google Sign-In auth with a hardcoded tester allowlist. Minimal in-app consent screen. No integration with FeralSegmentor/FeralTracker.         | 2-week trailing window with zero P0s (crashes, failed uploads, lost data), evidenced by PostHog data (submission funnel + capture funnel + exception capture) plus a manual QA checklist run under arranged conditions (poor network, specific devices). |
+| **Alpha** | Google Play Store release (Android). Real data-transparency website page (domain already acquired, not yet hosted). Tutorial/onboarding flow. Sentry crash reporting added alongside PostHog. Auth/registration design revisited — real backend-persisted allowlist, registration screen wired to authenticated identity instead of free text. | Store listing live and passing review.                                                                                                                                                                                                                   |
+| **Beta**  | iOS support, feature parity with Alpha.                                                                                                                                                                                                                                                                                                        | —                                                                                                                                                                                                                                                        |
+| **v2.0**  | Integration with FeralSegmentor (CV) and FeralTracker (ecological modeling). Out of scope before this point by explicit decision.                                                                                                                                                                                                              | —                                                                                                                                                                                                                                                        |
 
 ## Decisions and rationale
 
@@ -24,6 +24,7 @@
 
    > **Before you start**
    > FeralSpotter collects the following each time you submit a sighting:
+   >
    > - **Photos** you take of the animal
    > - **Location** (GPS) where the sighting occurred
    > - **Details you enter** about the animal (appearance, condition, etc.)
@@ -36,6 +37,7 @@
    > **[ I Agree — Continue ]**
 
    Retention policy, precise research framing, and exact data-sharing scope are intentionally left for the website page, not the in-app screen.
+
 8. **GCP infra: shared project with FeralSegmentor**, not an isolated project — this is infra co-location only, not the pipeline integration ruled out in decision 1. Bucket `gs://feral-segmentor-alpha` already exists. Cloud Run service and OAuth client ID are still to-do (MVP issues).
 9. **Access control: hardcoded email allowlist**, checked against the cryptographically verified Google ID token — not the existing registration screen. `src/screens/register/index.tsx` is currently free-text (email typed by the user, not tied to any authenticated identity) with a no-op `registerUser()` — unsuitable as a security boundary without a redesign. Registration stays as-is (untouched, non-blocking) for MVP; revisiting auth/registration design (real backend-persisted allowlist, registration tied to authenticated identity) is flagged as Alpha-milestone work.
 10. **Tutorial/onboarding flow: deferred to Alpha.** Redundant for a handful of personally-briefed testers; earns its cost once testers are strangers via Play Store.
@@ -44,25 +46,16 @@
 ## MVP issues (dependency-ordered)
 
 **Phase 1 — Infra foundation** — done
+
 1. ~~Provision Cloud Run service + OAuth client ID in the shared GCP project~~ Done (#8, #9, closed)
 2. ~~Set `app.json` `web.output: "server"`; scaffold `expo-server/adapter/http` deploy pipeline to Cloud Run~~ Done
 
-**Phase 2 — Auth & backend** (depends on Phase 1) — done
-3. ~~Wire `src/lib/auth/index.ts` `IAuthProvider` to real Google Sign-In (`GoogleSignIn.ts`)~~ Done via Firebase multi-provider auth instead (#7, closed; see decision 2 above and issue-7's PR #107 — Google + email live, Apple/Facebook version-gated off)
-4. ~~Build `app/upload+api.ts` validation route: verify Google ID token, check hardcoded tester allowlist, validate file type/size/MIME, write to `gs://feral-segmentor-alpha`~~ Done (#10, closed)
-5. ~~Update `src/utils/api.ts` to call the real Cloud Run endpoint with the ID token; remove the superseded password-gate code~~ Done (#11, closed)
+**Phase 2 — Auth & backend** (depends on Phase 1) — done 3. ~~Wire `src/lib/auth/index.ts` `IAuthProvider` to real Google Sign-In (`GoogleSignIn.ts`)~~ Done via Firebase multi-provider auth instead (#7, closed; see decision 2 above and issue-7's PR #107 — Google + email live, Apple/Facebook version-gated off) 4. ~~Build `app/upload+api.ts` validation route: verify Google ID token, check hardcoded tester allowlist, validate file type/size/MIME, write to `gs://feral-segmentor-alpha`~~ Done (#10, closed) 5. ~~Update `src/utils/api.ts` to call the real Cloud Run endpoint with the ID token; remove the superseded password-gate code~~ Done (#11, closed)
 
-**Phase 3 — App-side work** (parallelizable with Phase 2) — done except README/coverage
-6. ~~Fix #3 (no buttons on camera screen)~~ Done (closed)
-7. ~~Build minimal consent screen (copy above), gate first submission behind acceptance, link out to the domain (not yet hosted)~~ Done (#12, closed)
-8. ~~Add PostHog capture/annotate funnel events + `posthog.captureException` at top-level error boundaries~~ Done (#13, closed)
-9. Write/update the GitHub repo README to reflect actual current state (general housekeeping, non-blocking) — **open** (#14)
-10. Code coverage for core features: Unit and basic integration testing — **open** (#15)
+**Phase 3 — App-side work** (parallelizable with Phase 2) — done except README/coverage 6. ~~Fix #3 (no buttons on camera screen)~~ Done (closed) 7. ~~Build minimal consent screen (copy above), gate first submission behind acceptance, link out to the domain (not yet hosted)~~ Done (#12, closed) 8. ~~Add PostHog capture/annotate funnel events + `posthog.captureException` at top-level error boundaries~~ Done (#13, closed) 9. Write/update the GitHub repo README to reflect actual current state (general housekeeping, non-blocking) — **open** (#14) 10. Code coverage for core features: Unit and basic integration testing — **open** (#15)
 
 Also shipped, not originally scoped in this list: device-GPS capture and map pin picker for submission location (#47, #102, PR #118).
 
-**Phase 4 — Exit validation** (depends on Phases 1–3) — not started
-11. Define and run the manual QA checklist under arranged conditions (poor network, specific device models) — **open** (#16)
-12. Run the 2-week trailing MVP window; go/no-go for Alpha based on PostHog data + checklist results — **not started**
+**Phase 4 — Exit validation** (depends on Phases 1–3) — not started 11. Define and run the manual QA checklist under arranged conditions (poor network, specific device models) — **open** (#16) 12. Run the 2-week trailing MVP window; go/no-go for Alpha based on PostHog data + checklist results — **not started**
 
 Registration-screen rework and the tutorial flow are explicitly **out of MVP scope** — Alpha milestone instead.
