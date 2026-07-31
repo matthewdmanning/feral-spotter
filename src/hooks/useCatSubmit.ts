@@ -1,25 +1,21 @@
 /**
  * hooks/useCatSubmit.ts
- * Handles save, done (submit), and reset actions for the cat observation screen.
- * Owns all store mutations, API calls, cache updates, analytics events, and
- * navigation — none of this lives in the component.
+ * Handles save and reset actions for the cat observation screen. Owns all
+ * store mutations and navigation for those two — final submission ("Done")
+ * moved to Submission Details (useSubmissionSubmit.ts, #130).
  */
 
-import { usePhotoStore, useSubmissionStore, useUIStore } from '@/src/hooks'
+import { usePhotoStore, useSubmissionStore } from '@/src/hooks'
 import type { CatFormValues } from '@/src/hooks/useCatForm'
 import type { ObservedCat } from '@/src/hooks/useSubmissionStore'
-import { EVENTS, fireAnalyticsEvent } from '@/src/lib/analytics/analytics'
 import {
   deleteSubmissionCache,
   getCurrentCacheId,
-  getSubmissionCache,
-  updateSubmissionCache,
 } from '@/src/lib/cache/submissionCache'
-import type { SubmissionApiPayload, SubmissionPhoto } from '@/src/types'
-import { submitObservation } from '@/src/utils/api'
+import { stopLocationCapture } from '@/src/lib/location'
 import { router } from 'expo-router'
 import { randomUUID } from 'expo-crypto'
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import { Alert } from 'react-native'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -32,9 +28,7 @@ interface UseCatSubmitParams {
 
 export interface CatSubmitResult {
   handleSave: () => void
-  handleDone: () => void
   handleReset: () => void
-  isSubmitting: boolean
   saveLabel: string
 }
 
@@ -45,20 +39,11 @@ export function useCatSubmit({
   existingCat,
   annotationEnabled,
 }: UseCatSubmitParams): CatSubmitResult {
-  const cats = useSubmissionStore((s) => s.cats)
   const addCat = useSubmissionStore((s) => s.addCat)
   const updateCat = useSubmissionStore((s) => s.updateCat)
-  const submission = useSubmissionStore((s) => s.submission)
-  const addToHistory = useSubmissionStore((s) => s.addToHistory)
   const clearDraft = useSubmissionStore((s) => s.clearDraft)
 
-  const photos = usePhotoStore((s) => s.photos)
   const clearPhotos = usePhotoStore((s) => s.clearPhotos)
-
-  const showError = useUIStore((s) => s.showError)
-  const setSubmitting = useUIStore((s) => s.setSubmitting)
-
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // ── Build ObservedCat from current form values ─────────────────────────────
 
@@ -105,130 +90,6 @@ export function useCatSubmit({
     form.photoIds.length,
   ])
 
-  // ── Done → confirm → API submit ───────────────────────────────────────────
-
-  const handleDone = useCallback(() => {
-    const localId = existingCat?.local_id ?? randomUUID()
-    const cat = buildCat(localId)
-
-    if (existingCat) updateCat(localId, cat)
-    else addCat(cat)
-
-    const allCats = cats.filter((c) => c.local_id !== localId).concat(cat)
-    const catCount = allCats.length
-    const photoCount = photos.length
-
-    Alert.alert(
-      'Submit Submission',
-      `Submit ${catCount} cat${catCount !== 1 ? 's' : ''} and ${photoCount} photo${photoCount !== 1 ? 's' : ''}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Submit',
-          style: 'default',
-          onPress: async () => {
-            setIsSubmitting(true)
-            setSubmitting(true)
-
-            const cId = await getCurrentCacheId()
-            if (cId) {
-              await updateSubmissionCache(cId, {
-                status: 'Sending',
-                cats: allCats,
-                photo_links: photos.map((p) => p.uri),
-              })
-              const snap = await getSubmissionCache(cId)
-              if (snap) fireAnalyticsEvent(EVENTS.SUBMISSION_SENDING, snap)
-            }
-
-            try {
-              const uploadedPhotos = photos.filter(
-                (
-                  p,
-                ): p is SubmissionPhoto & {
-                  cloud_storage_path: string
-                  cloud_storage_url: string
-                } =>
-                  p.uploaded &&
-                  p.cloud_storage_path != null &&
-                  p.cloud_storage_url != null,
-              )
-              // One Submission location, shared by every photo (ADR 0002).
-              const { latitude, longitude } = submission
-              const photoLocations =
-                latitude != null && longitude != null
-                  ? uploadedPhotos.map((p) => ({
-                      path: p.cloud_storage_path,
-                      latitude,
-                      longitude,
-                    }))
-                  : []
-
-              const payload: SubmissionApiPayload = {
-                submission,
-                cats: allCats,
-                photo_paths: uploadedPhotos.map((p) => p.cloud_storage_path),
-                ...(photoLocations.length > 0 && {
-                  photo_locations: photoLocations,
-                }),
-              }
-              const response = await submitObservation(payload)
-
-              if (response.status === 'success') {
-                if (cId) {
-                  await updateSubmissionCache(cId, { status: 'Submitted' })
-                  const snap = await getSubmissionCache(cId)
-                  if (snap)
-                    fireAnalyticsEvent(EVENTS.SUBMISSION_SUBMITTED, snap)
-                }
-                addToHistory({
-                  id: response.id,
-                  ...submission,
-                  cats: allCats,
-                  photo_urls: uploadedPhotos.map((p) => p.cloud_storage_url),
-                  created_at: new Date(),
-                  submitted_at: new Date(),
-                  status: 'submitted',
-                })
-                clearDraft()
-                clearPhotos()
-                router.replace('/')
-              } else {
-                throw new Error(response.message ?? 'Submission failed')
-              }
-            } catch (err) {
-              if (cId) {
-                await updateSubmissionCache(cId, { status: 'Failed' })
-                const snap = await getSubmissionCache(cId)
-                if (snap) fireAnalyticsEvent(EVENTS.SUBMISSION_FAILED, snap)
-              }
-              showError(
-                'Submission Failed',
-                err instanceof Error ? err.message : 'Please try again',
-              )
-            } finally {
-              setIsSubmitting(false)
-              setSubmitting(false)
-            }
-          },
-        },
-      ],
-    )
-  }, [
-    buildCat,
-    existingCat,
-    addCat,
-    updateCat,
-    cats,
-    photos,
-    submission,
-    addToHistory,
-    clearDraft,
-    clearPhotos,
-    showError,
-    setSubmitting,
-  ])
-
   // ── Reset → confirm → clear all ──────────────────────────────────────────
 
   const handleReset = useCallback(() => {
@@ -245,6 +106,7 @@ export function useCatSubmit({
             if (cId) await deleteSubmissionCache(cId)
             clearDraft()
             clearPhotos()
+            stopLocationCapture()
             router.replace('/')
           },
         },
@@ -259,5 +121,5 @@ export function useCatSubmit({
       ? 'Put the Cat in a Box'
       : 'Save Observation'
 
-  return { handleSave, handleDone, handleReset, isSubmitting, saveLabel }
+  return { handleSave, handleReset, saveLabel }
 }

@@ -12,67 +12,32 @@ export const styles = StyleSheet.create((theme) => ({
     fontSize: theme.typography.xxxl,
     fontWeight: '700',
   },
-  card: {
+  statusRow: {
+    flexDirection: 'row',
+    gap: theme.spacing.lg,
     borderRadius: theme.radius.xl,
     borderWidth: 1,
     borderColor: theme.colors.border,
     backgroundColor: theme.colors.surface,
     padding: theme.spacing.lg,
-    gap: theme.spacing.lg,
   },
-  fieldGroup: { gap: theme.spacing.sm },
-  fieldLabel: {
-    color: theme.colors.muted,
-    fontSize: theme.typography.sm,
-    fontWeight: '500',
-  },
-  input: {
-    backgroundColor: theme.colors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.radius.md,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    color: theme.colors.text,
-    fontSize: theme.typography.sm,
-  },
-  locationHelpToggle: {
+  statusItem: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing.xs,
-    marginTop: -theme.spacing.sm,
   },
-  locationHelpToggleText: {
-    color: theme.colors.muted,
-    fontSize: theme.typography.xs,
-  },
-  locationHelpText: {
-    color: theme.colors.muted,
-    fontSize: theme.typography.xs,
-    lineHeight: theme.typography.sm * 1.4,
-  },
-  footerGroup: { gap: theme.spacing.sm },
-  saveIndicator: {
-    fontSize: theme.typography.xs,
-    color: theme.colors.muted,
-    textAlign: 'right',
-  },
-  continueBtn: {
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderRadius: theme.radius.md,
-    backgroundColor: theme.colors.accent,
-  },
-  continueBtnText: {
-    color: theme.colors.accentText,
+  statusItemText: {
+    color: theme.colors.text,
     fontSize: theme.typography.sm,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   catList: { gap: theme.spacing.sm },
   catListTitle: {
     color: theme.colors.text,
-    fontSize: theme.typography.base,
-    fontWeight: '600',
+    fontSize: theme.typography.lg,
+    fontWeight: '700',
+    textAlign: 'center',
   },
   catRow: {
     borderRadius: theme.radius.xl,
@@ -82,4 +47,28 @@ export const styles = StyleSheet.create((theme) => ({
     padding: theme.spacing.lg,
   },
   catRowText: { color: theme.colors.text, fontSize: theme.typography.base },
+  addCatBtn: {
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderRadius: theme.radius.xl,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderStyle: 'dashed',
+  },
+  addCatBtnText: {
+    color: theme.colors.accent,
+    fontSize: theme.typography.sm,
+    fontWeight: '600',
+  },
+  doneBtn: {
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.accent,
+  },
+  doneBtnText: {
+    color: theme.colors.accentText,
+    fontSize: theme.typography.sm,
+    fontWeight: '600',
+  },
 }))

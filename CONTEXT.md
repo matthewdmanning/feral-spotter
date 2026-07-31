@@ -15,7 +15,7 @@ The single geographic point a Submission is tagged with, shared by every photo i
 _Avoid_: metadata, geotag, coordinates (when referring to the app-level value)
 
 **Live fix**:
-A device GPS reading taken once per Submission at camera-capture time. Trusted as authoritative for camera-captured photos and therefore not user-editable.
+The device GPS reading used for a Submission's location. Acquired by a background task that starts when the camera opens, keeps watching until accuracy is good enough, and silently reacquires if too much time passes without a good result (docs/adr/0002-location-services-model.md, 2026-07-31 amendment). Trusted as authoritative for camera-captured photos and therefore not user-editable.
 _Avoid_: GPS location, current location, geolocation (as a noun for the value)
 
 **Map picker**:

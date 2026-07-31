@@ -47,6 +47,7 @@ export default function LocationPickerScreen() {
   const setSubmissionLocation = useSubmissionStore(
     (s) => s.setSubmissionLocation,
   )
+  const setLocationType = useSubmissionStore((s) => s.setLocationType)
 
   const [seed, setSeed] = useState<Required<Coordinates>>(DEFAULT_REGION)
   // Latest map centre, updated as the user drags. A ref (not state) so every
@@ -76,9 +77,13 @@ export default function LocationPickerScreen() {
   )
 
   const handleSetLocation = useCallback(() => {
+    // Mark this as a manual pin first — the background Live-fix reacquire
+    // (src/lib/location.ts) checks this before writing a new fix, so it
+    // never clobbers a location the user picked by hand.
+    setLocationType('pin')
     setSubmissionLocation(centerRef.current)
     router.back()
-  }, [setSubmissionLocation])
+  }, [setLocationType, setSubmissionLocation])
 
   const handleCancel = useCallback(() => {
     router.back()

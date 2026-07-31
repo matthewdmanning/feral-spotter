@@ -1,12 +1,11 @@
 import { act, renderHook } from '@testing-library/react-native'
 import { Alert } from 'react-native'
-import { useCatSubmit } from '@/src/hooks/useCatSubmit'
+import { useSubmissionSubmit } from '@/src/hooks/useSubmissionSubmit'
 import { CONSENT_VERSION, useConsentStore } from '@/src/hooks/useConsentStore'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
 import { useUIStore } from '@/src/hooks/useUIStore'
 import { submitObservation } from '@/src/utils/api'
-import type { CatFormValues } from '@/src/hooks/useCatForm'
 import type { SubmissionPhoto } from '@/src/types'
 
 jest.mock('@react-native-async-storage/async-storage', () =>
@@ -14,7 +13,12 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 )
 
 jest.mock('expo-router', () => ({
-  router: { back: jest.fn(), push: jest.fn(), replace: jest.fn(), navigate: jest.fn() },
+  router: {
+    back: jest.fn(),
+    push: jest.fn(),
+    replace: jest.fn(),
+    navigate: jest.fn(),
+  },
 }))
 
 jest.mock('expo-crypto', () => ({
@@ -43,17 +47,10 @@ jest.mock('@/src/utils/api', () => ({
   submitObservation: jest.fn(),
 }))
 
-const completedForm: CatFormValues = {
-  age: 'adult',
-  earTipped: 'yes',
-  owned: 'no',
-  pattern: 'tabby',
-  hairLength: 'short',
-  color: 'orange',
-  sex: 'female',
-  health: 3,
-  photoIds: ['photo-1'],
-}
+const mockStopLocationCapture = jest.fn()
+jest.mock('@/src/lib/location', () => ({
+  stopLocationCapture: () => mockStopLocationCapture(),
+}))
 
 function photo(overrides: Partial<SubmissionPhoto>): SubmissionPhoto {
   return {
@@ -67,7 +64,7 @@ function photo(overrides: Partial<SubmissionPhoto>): SubmissionPhoto {
   }
 }
 
-describe('useCatSubmit submit flow', () => {
+describe('useSubmissionSubmit submit flow', () => {
   beforeEach(async () => {
     jest.clearAllMocks()
     const AsyncStorage = require('@react-native-async-storage/async-storage')
@@ -76,7 +73,7 @@ describe('useCatSubmit submit flow', () => {
       cats: [],
       submission: { location_type: 'device', time_type: 'device' },
       history: [],
-      currentStep: 'cats',
+      currentStep: 'create',
     })
     usePhotoStore.setState({ photos: [] })
     useUIStore.setState({
@@ -84,7 +81,10 @@ describe('useCatSubmit submit flow', () => {
       sessionPhotos: [],
       isSubmitting: false,
     })
-    useConsentStore.setState({ accepted: true, acceptedVersion: CONSENT_VERSION })
+    useConsentStore.setState({
+      accepted: true,
+      acceptedVersion: CONSENT_VERSION,
+    })
   })
 
   it('only submits photos that are uploaded with both a cloud path and url', async () => {
@@ -121,9 +121,7 @@ describe('useCatSubmit submit flow', () => {
       buttons?.find((b) => b.text === 'Submit')?.onPress?.()
     })
 
-    const { result } = renderHook(() =>
-      useCatSubmit({ form: completedForm, annotationEnabled: false }),
-    )
+    const { result } = renderHook(() => useSubmissionSubmit())
 
     await act(async () => {
       result.current.handleDone()
@@ -140,6 +138,9 @@ describe('useCatSubmit submit flow', () => {
         photo_urls: ['https://cdn/uploaded.jpg'],
       }),
     ])
+    // The background Live-fix reacquire (src/lib/location.ts) would otherwise
+    // keep re-watching every 5 minutes for the rest of the app's lifetime.
+    expect(mockStopLocationCapture).toHaveBeenCalled()
   })
 
   it('still submits (photos/details are not privileged) when consent has not been accepted', async () => {
@@ -162,9 +163,7 @@ describe('useCatSubmit submit flow', () => {
       buttons?.find((b) => b.text === 'Submit')?.onPress?.()
     })
 
-    const { result } = renderHook(() =>
-      useCatSubmit({ form: completedForm, annotationEnabled: false }),
-    )
+    const { result } = renderHook(() => useSubmissionSubmit())
 
     await act(async () => {
       result.current.handleDone()
