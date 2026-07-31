@@ -33,11 +33,11 @@ The first-run flow that explains the app's purpose and why each permission will 
 _Avoid_: tutorial, walkthrough.
 
 **Tutorial**:
-In-feature guidance that shows the user how to operate a _complex_ part of the app. In FeralSpotter the (planned) tutorial teaches the Box Annotation operation. Distinct from Onboarding. **Not implemented** — only scaffolded, then deferred (issue #30).
+In-feature guidance that shows the user how to operate a _complex_ part of the app. In FeralSpotter the tutorial teaches the Box Annotation operation. Distinct from Onboarding. Implemented, version-gated (see `src/config/tutorial.ts`'s `isTutorialReleased()`).
 _Avoid_: using this word for anything in the Onboarding flow.
 
-**Box Annotation**:
-Drawing a bounding box around each cat in a photo. The app's one genuinely complex operation — the reason a Tutorial is warranted. **Not implemented yet.**
+**Box Annotation** ("Box the Cat"):
+Drawing a bounding box around each cat in a photo. The app's one genuinely complex operation — the reason a Tutorial is warranted. User-facing term: "Box the Cat." Implemented (`src/screens/submission/annotate/`).
 
 **Consent**:
 The user's explicit acceptance of the data-collection disclosure, and the granting of OS permissions (location, camera, photos). This is where acceptance is recorded and permissions are requested — unlike Onboarding, which only explains. Eager priming happens on "I Agree"; contextual re-priming happens at point of use (issue #41).

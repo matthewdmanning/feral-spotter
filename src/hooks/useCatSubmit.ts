@@ -256,7 +256,7 @@ export function useCatSubmit({
 
   const saveLabel =
     annotationEnabled && form.photoIds.length > 0
-      ? 'Save & Review Photos'
+      ? 'Put the Cat in a Box'
       : 'Save Observation'
 
   return { handleSave, handleDone, handleReset, isSubmitting, saveLabel }
