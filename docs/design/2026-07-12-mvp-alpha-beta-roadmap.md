@@ -43,24 +43,26 @@
 
 ## MVP issues (dependency-ordered)
 
-**Phase 1 — Infra foundation**
-1. Provision Cloud Run service + OAuth client ID in the shared GCP project
-2. Set `app.json` `web.output: "server"`; scaffold `expo-server/adapter/http` deploy pipeline to Cloud Run
+**Phase 1 — Infra foundation** — done
+1. ~~Provision Cloud Run service + OAuth client ID in the shared GCP project~~ Done (#8, #9, closed)
+2. ~~Set `app.json` `web.output: "server"`; scaffold `expo-server/adapter/http` deploy pipeline to Cloud Run~~ Done
 
-**Phase 2 — Auth & backend** (depends on Phase 1)
-3. Wire `src/lib/auth/index.ts` `IAuthProvider` to real Google Sign-In (`GoogleSignIn.ts`)
-4. Build `app/upload+api.ts` validation route: verify Google ID token, check hardcoded tester allowlist, validate file type/size/MIME, write to `gs://feral-segmentor-alpha`
-5. Update `src/utils/api.ts` to call the real Cloud Run endpoint with the ID token; remove the superseded password-gate code
+**Phase 2 — Auth & backend** (depends on Phase 1) — done
+3. ~~Wire `src/lib/auth/index.ts` `IAuthProvider` to real Google Sign-In (`GoogleSignIn.ts`)~~ Done via Firebase multi-provider auth instead (#7, closed; see decision 2 above and issue-7's PR #107 — Google + email live, Apple/Facebook version-gated off)
+4. ~~Build `app/upload+api.ts` validation route: verify Google ID token, check hardcoded tester allowlist, validate file type/size/MIME, write to `gs://feral-segmentor-alpha`~~ Done (#10, closed)
+5. ~~Update `src/utils/api.ts` to call the real Cloud Run endpoint with the ID token; remove the superseded password-gate code~~ Done (#11, closed)
 
-**Phase 3 — App-side work** (parallelizable with Phase 2)
-6. Fix #3 (no buttons on camera screen) — untouched scope, just the navigation bug
-7. Build minimal consent screen (copy above), gate first submission behind acceptance, link out to the domain (not yet hosted)
-8. Add PostHog capture/annotate funnel events + `posthog.captureException` at top-level error boundaries
-9. Write/update the GitHub repo README to reflect actual current state (general housekeeping, non-blocking)
-10. Code coverage for core features: Unit and basic integration testing.
+**Phase 3 — App-side work** (parallelizable with Phase 2) — done except README/coverage
+6. ~~Fix #3 (no buttons on camera screen)~~ Done (closed)
+7. ~~Build minimal consent screen (copy above), gate first submission behind acceptance, link out to the domain (not yet hosted)~~ Done (#12, closed)
+8. ~~Add PostHog capture/annotate funnel events + `posthog.captureException` at top-level error boundaries~~ Done (#13, closed)
+9. Write/update the GitHub repo README to reflect actual current state (general housekeeping, non-blocking) — **open** (#14)
+10. Code coverage for core features: Unit and basic integration testing — **open** (#15)
 
-**Phase 4 — Exit validation** (depends on Phases 1–3)
-10. Define and run the manual QA checklist under arranged conditions (poor network, specific device models)
-11. Run the 2-week trailing MVP window; go/no-go for Alpha based on PostHog data + checklist results
+Also shipped, not originally scoped in this list: device-GPS capture and map pin picker for submission location (#47, #102, PR #118).
+
+**Phase 4 — Exit validation** (depends on Phases 1–3) — not started
+11. Define and run the manual QA checklist under arranged conditions (poor network, specific device models) — **open** (#16)
+12. Run the 2-week trailing MVP window; go/no-go for Alpha based on PostHog data + checklist results — **not started**
 
 Registration-screen rework and the tutorial flow are explicitly **out of MVP scope** — Alpha milestone instead.

@@ -9,4 +9,5 @@
 - [Domain documentation](domain.md)
 - [Code quality](../code_standards/CODE_QUALITY.md)
 - [Design decisions](../design/)
+- [MVP/Alpha/Beta/v2.0 roadmap](../design/2026-07-12-mvp-alpha-beta-roadmap.md) — higher-level planning: milestone scope, exit criteria, dependency-ordered issue list
 - [Folder structure and milestones](../PROJECT_STRUCTURE.md)
