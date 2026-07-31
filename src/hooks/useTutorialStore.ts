@@ -5,18 +5,18 @@
  * `skipped` and `completed` suppress it (replay via Settings resets to `unseen`).
  */
 
-import { asyncStorage } from "@/src/lib/cache/storage";
-import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
+import { asyncStorage } from '@/src/lib/cache/storage'
+import { create } from 'zustand'
+import { createJSONStorage, persist } from 'zustand/middleware'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type TutorialStatus = "unseen" | "skipped" | "completed";
+export type TutorialStatus = 'unseen' | 'skipped' | 'completed'
 
 interface TutorialState {
-  annotation_tutorial_status: TutorialStatus;
+  annotation_tutorial_status: TutorialStatus
 
-  setAnnotationTutorialStatus: (status: TutorialStatus) => void;
+  setAnnotationTutorialStatus: (status: TutorialStatus) => void
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -24,14 +24,14 @@ interface TutorialState {
 export const useTutorialStore = create<TutorialState>()(
   persist(
     (set) => ({
-      annotation_tutorial_status: "unseen",
+      annotation_tutorial_status: 'unseen',
 
       setAnnotationTutorialStatus: (status) =>
         set({ annotation_tutorial_status: status }),
     }),
     {
-      name: "tutorial-store",
+      name: 'tutorial-store',
       storage: createJSONStorage(() => asyncStorage),
     },
   ),
-);
+)

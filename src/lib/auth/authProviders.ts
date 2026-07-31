@@ -46,6 +46,18 @@ export function getAppVersion(): string {
 }
 
 /**
+ * Whether a target version's release/version gate has been reached against
+ * the running app version. Shared by any feature using the release-gate
+ * pattern (federated auth providers, the annotation tutorial, etc.).
+ */
+export function isVersionReleased(
+  targetVersion: string,
+  appVersion: string = getAppVersion(),
+): boolean {
+  return semverGte(appVersion, targetVersion)
+}
+
+/**
  * Whether a provider's release/version gate has been reached, so its button
  * may be pressed. Unreleased providers are shown but blocked.
  */
@@ -53,7 +65,7 @@ export function isFederatedProviderReleased(
   provider: FederatedProviderConfig,
   appVersion: string = getAppVersion(),
 ): boolean {
-  return semverGte(appVersion, provider.releasedInVersion)
+  return isVersionReleased(provider.releasedInVersion, appVersion)
 }
 
 /**

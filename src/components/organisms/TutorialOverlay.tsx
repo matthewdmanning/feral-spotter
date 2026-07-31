@@ -37,7 +37,14 @@ interface TutorialOverlayProps {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function TutorialOverlay({ open, steps, onShow, onStepCompleted, onSkip, onComplete }: TutorialOverlayProps) {
+export function TutorialOverlay({
+  open,
+  steps,
+  onShow,
+  onStepCompleted,
+  onSkip,
+  onComplete,
+}: TutorialOverlayProps) {
   const [index, setIndex] = useState(0)
 
   if (steps.length === 0) return null
@@ -54,16 +61,33 @@ export function TutorialOverlay({ open, steps, onShow, onStepCompleted, onSkip, 
   }
 
   return (
-    <Modal visible={open} transparent animationType="fade" onShow={onShow} onRequestClose={() => onSkip(index + 1)} statusBarTranslucent>
+    <Modal
+      visible={open}
+      transparent
+      animationType="fade"
+      onShow={onShow}
+      onRequestClose={() => onSkip(index + 1)}
+      statusBarTranslucent
+    >
       <View style={styles.backdrop}>
-        <Pressable onPress={() => onSkip(index + 1)} style={styles.skipBtn} accessibilityRole="button">
+        <Pressable
+          onPress={() => onSkip(index + 1)}
+          style={styles.skipBtn}
+          accessibilityRole="button"
+        >
           <Text style={styles.skipText}>Skip</Text>
         </Pressable>
         <View style={styles.card}>
-          <Text style={styles.counter}>{index + 1} / {steps.length}</Text>
+          <Text style={styles.counter}>
+            {index + 1} / {steps.length}
+          </Text>
           <Text style={styles.title}>{step.title}</Text>
           <Text style={styles.body}>{step.body}</Text>
-          <Pressable onPress={handlePrimary} style={styles.primary} accessibilityRole="button">
+          <Pressable
+            onPress={handlePrimary}
+            style={styles.primary}
+            accessibilityRole="button"
+          >
             <Text style={styles.primaryText}>{step.primaryLabel}</Text>
           </Pressable>
         </View>
