@@ -66,3 +66,9 @@ Equivalent terms: social login, third-party login.
 **Registration**:
 A user's initial authenticated entry into the app through Firebase Authentication, via any provider (Google, Apple, Facebook, or email/password). Distinct from a returning sign-in, which authenticates an already-registered user.
 _Avoid_: sign-up (prefer Registration), onboarding (that is the first-run explainer, not authentication).
+
+### Cat observation
+
+**Unknown / Unsure**:
+The value recorded for a cat attribute (age, sex, ear tipped, owned/domesticated, pattern, hair length, color, health) that the observer cannot determine — a real, first-class value, not the absence of one. It is the default for every attribute. "Unknown" and "Unsure" name the same concept, surfaced under two labels depending on the attribute.
+_Avoid_: unanswered, not-yet-selected, undefined, Touched — there is no separate "left blank" versus "confirmed unknown"; leaving an attribute at its default and explicitly choosing Unknown/Unsure are the same thing.

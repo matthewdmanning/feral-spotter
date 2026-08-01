@@ -13,7 +13,7 @@ import type {
   CatSex,
   EarTipped,
   HairLength,
-  HealthLevel,
+  HealthLabel,
   Owned,
 } from "@/src/types";
 import { useCallback, useState } from "react";
@@ -29,7 +29,7 @@ export interface CatFormValues {
   hairLength: HairLength;
   color: CatColor;
   sex: CatSex;
-  health: HealthLevel;
+  healthLabel: HealthLabel;
   photoIds: string[];
 }
 
@@ -41,7 +41,7 @@ export interface CatFormActions {
   setHairLength: (v: HairLength) => void;
   setColor: (v: CatColor) => void;
   setSex: (v: CatSex) => void;
-  setHealth: (v: HealthLevel) => void;
+  setHealthLabel: (v: HealthLabel) => void;
   handleTogglePhoto: (photoId: string) => void;
   handleClear: () => void; // shows confirmation Alert, then resets
 }
@@ -72,8 +72,8 @@ export function useCatForm(existingCat?: ObservedCat): CatForm {
   const [sex, setSex] = useState<CatSex>(
     (existingCat?.sex as CatSex) ?? CAT_DEFAULTS.sex,
   );
-  const [health, setHealth] = useState<HealthLevel>(
-    (existingCat?.health as HealthLevel) ?? CAT_DEFAULTS.health,
+  const [healthLabel, setHealthLabel] = useState<HealthLabel>(
+    (existingCat?.health_label as HealthLabel) ?? CAT_DEFAULTS.healthLabel,
   );
   const [photoIds, setPhotoIds] = useState<string[]>(
     existingCat?.photo_local_ids ?? [],
@@ -104,7 +104,7 @@ export function useCatForm(existingCat?: ObservedCat): CatForm {
             setHairLength(CAT_DEFAULTS.hairLength);
             setColor(CAT_DEFAULTS.color);
             setSex(CAT_DEFAULTS.sex);
-            setHealth(CAT_DEFAULTS.health);
+            setHealthLabel(CAT_DEFAULTS.healthLabel);
             setPhotoIds([]);
           },
         },
@@ -120,7 +120,7 @@ export function useCatForm(existingCat?: ObservedCat): CatForm {
     hairLength,
     color,
     sex,
-    health,
+    healthLabel,
     photoIds,
     setAge,
     setEarTipped,
@@ -129,7 +129,7 @@ export function useCatForm(existingCat?: ObservedCat): CatForm {
     setHairLength,
     setColor,
     setSex,
-    setHealth,
+    setHealthLabel,
     handleTogglePhoto,
     handleClear,
   };

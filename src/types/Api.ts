@@ -22,7 +22,7 @@ export interface SubmissionApiPayload {
     hair_length: string
     color: string
     sex: string
-    health: number
+    health_label: string
     photo_local_ids: string[]
     photos_reviewed: boolean
   }[]

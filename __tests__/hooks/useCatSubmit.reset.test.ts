@@ -41,7 +41,7 @@ const emptyForm: CatFormValues = {
   hairLength: 'short',
   color: 'orange',
   sex: 'female',
-  health: 3,
+  healthLabel: 'good',
   photoIds: [],
 }
 

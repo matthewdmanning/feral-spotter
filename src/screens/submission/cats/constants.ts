@@ -11,28 +11,22 @@ import type {
   CatSex,
   EarTipped,
   HairLength,
-  HealthLevel,
+  HealthLabel,
   Owned,
 } from '@/src/types'
 
 // ─── Defaults ─────────────────────────────────────────────────────────────────
 
 export const CAT_DEFAULTS = {
-  age: 'adult' as CatAge,
+  age: 'unknown' as CatAge,
   earTipped: 'unsure' as EarTipped,
   owned: 'unsure' as Owned,
   pattern: 'unknown' as CatPattern,
-  hairLength: 'short' as HairLength,
-  color: 'mixed' as CatColor,
+  hairLength: 'unknown' as HairLength,
+  color: 'unknown' as CatColor,
   sex: 'unknown' as CatSex,
-  health: 2 as HealthLevel,
+  healthLabel: 'unknown' as HealthLabel,
 } as const
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-export function healthLabel(value: HealthLevel): string {
-  return value === 1 ? 'Poor' : value === 3 ? 'Good' : 'Fair'
-}
 
 // ─── Options ──────────────────────────────────────────────────────────────────
 
@@ -94,8 +88,8 @@ export const SEX_OPTIONS: { value: CatSex; label: string }[] = [
   { value: 'unknown', label: 'Unknown' },
 ]
 
-export const HEALTH_OPTIONS: { value: HealthLevel; label: string }[] = [
-  { value: 1 as HealthLevel, label: 'Poor' },
-  { value: 2 as HealthLevel, label: 'Fair' },
-  { value: 3 as HealthLevel, label: 'Good' },
+export const HEALTH_OPTIONS: { value: HealthLabel; label: string }[] = [
+  { value: 'poor', label: 'Poor' },
+  { value: 'fair', label: 'Fair' },
+  { value: 'good', label: 'Good' },
 ]

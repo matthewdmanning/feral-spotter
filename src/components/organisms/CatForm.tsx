@@ -12,7 +12,6 @@ import {
   HAIR_LENGTH_OPTIONS,
   SEX_OPTIONS,
   HEALTH_OPTIONS,
-  healthLabel,
   colorOptionsForPattern,
 } from '@/src/screens/submission/cats/constants'
 import { styles } from './CatForm.styles'
@@ -84,10 +83,10 @@ export function CatForm({
             onChange={form.setOwned}
           />
           <SegmentedControl
-            label={`Health: ${healthLabel(form.health)}`}
+            label="Health"
             options={HEALTH_OPTIONS}
-            value={form.health}
-            onChange={form.setHealth}
+            value={form.healthLabel}
+            onChange={form.setHealthLabel}
             accessibilityLabel="Cat health rating"
           />
         </View>

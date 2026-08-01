@@ -29,7 +29,7 @@ export interface CachedCat {
   local_id: string
   age: string
   ear_tipped: string
-  health: number
+  health_label: string
   owned_domesticated: string
   pattern: string
   hair_length: string
