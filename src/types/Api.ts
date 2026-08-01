@@ -7,55 +7,55 @@
 
 export interface SubmissionApiPayload {
   submission: {
-    location_type: string;
-    time_type: string;
-    address?: string;
+    location_type: string
+    time_type: string
+    address?: string
     /** ISO — set only for a Library pick with trusted EXIF DateTime (ADR 0003). */
-    captured_at?: string;
-  };
+    captured_at?: string
+  }
   cats: {
-    local_id: string;
-    age: string;
-    ear_tipped: string;
-    owned_domesticated: string;
-    pattern: string;
-    hair_length: string;
-    color: string;
-    sex: string;
-    health: number;
-    photo_local_ids: string[];
-    photos_reviewed: boolean;
-  }[];
-  photo_paths: string[];
+    local_id: string
+    age: string
+    ear_tipped: string
+    owned_domesticated: string
+    pattern: string
+    hair_length: string
+    color: string
+    sex: string
+    health: number
+    photo_local_ids: string[]
+    photos_reviewed: boolean
+  }[]
+  photo_paths: string[]
   /** GPS fix captured at photo-take time, keyed by cloud_storage_path. Omitted entries have no fix. */
-  photo_locations?: { path: string; latitude: number; longitude: number }[];
+  photo_locations?: { path: string; latitude: number; longitude: number }[]
 }
 
 export interface SubmissionApiResponse {
-  status: "success" | "error";
-  id: string;
-  message?: string;
+  status: 'success' | 'error'
+  id: string
+  message?: string
 }
 
 export interface PhotoUploadResponse {
-  cloud_storage_path: string;
-  cloud_storage_url: string;
+  cloud_storage_path: string
+  cloud_storage_url: string
 }
 
 export interface ApiError {
-  message: string;
-  code?: string;
+  message: string
+  code?: string
 }
 
 /** A submission persisted to the post-submission cache (utils/cache.ts). */
 export interface SubmittedSubmission {
-  id: string;
-  location_type: string;
-  time_type: string;
-  address?: string;
-  cats: SubmissionApiPayload["cats"];
-  photo_urls: string[];
-  created_at: string;
-  submitted_at: string;
-  status: string;
+  id: string
+  location_type: string
+  time_type: string
+  address?: string
+  cats: SubmissionApiPayload['cats']
+  photo_urls: string[]
+  created_at: string
+  submitted_at: string
+  status: string
 }

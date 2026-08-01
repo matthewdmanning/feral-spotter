@@ -11,6 +11,7 @@ device/emulator** — see Verification status below before merging.
 The Settings tab itself is untouched.
 
 **#105 + #104 — Two-button entrypoint, library picker, time model**
+
 - Home screen's round camera button replaced with two equal-size stacked
   `AppButton`s: "Take a Photo" (camera, top) / "Choose from Library"
   (bottom). Multi-select on for the library pick.
@@ -27,7 +28,7 @@ The Settings tab itself is untouched.
   `CacheMetadata` — reaches the API payload for free since `useSubmissionSubmit`
   already spreads the whole `submission` object in.
 - **Photo-source-exclusivity gate**: `usePhotoStore` gained a `source:
-  'camera' | 'library' | null` field. `addPhoto` (camera's only call site)
+'camera' | 'library' | null` field. `addPhoto` (camera's only call site)
   pins `'camera'`; `addPhotos` (library's only call site) pins `'library'`;
   `removePhoto` clears it back to `null` only once the pool is actually
   empty (post-filter length, not pre-filter — fixed after an advisor-caught
@@ -36,7 +37,7 @@ The Settings tab itself is untouched.
   0002's "a draft is single-source by construction" amendment — not in the
   original build-spec file list, but required to actually implement it,
   since neither `location_type` nor pool-length alone can tell you which
-  source is already in use (a GPS-denied *camera* draft can also end up
+  source is already in use (a GPS-denied _camera_ draft can also end up
   `location_type: 'pin'`).
 - **#94 closed as a side effect**: `DateTimePickerButton` gets its first
   real call site (`create/index.tsx`'s new Date & Time warning row) with
@@ -90,11 +91,11 @@ exposed to that renderer bug.
 
 ## Tests written (each purpose advisor-approved before writing)
 
-| File | Purpose |
-|---|---|
-| `src/utils/__tests__/libraryPickTime.test.ts` | `parseExifDateTime`: EXIF's `"YYYY:MM:DD HH:MM:SS"` isn't `new Date()`-parseable — this was the single highest-value test (advisor's term: "the landmine"). Covers valid, zeroed-clock, malformed/undefined. `classifyLibraryPickTime`: earliest-wins (out-of-order input, to prove it's not just `[0]`), any-missing→manual, single-present, single-missing. |
-| `src/hooks/__tests__/usePhotoStore.source.test.ts` | Pure reducer test for the source-pinning logic the gate is built on, including the last-photo clear edge. |
-| `src/screens/home/__tests__/HomeScreen.photoSourceGate.model.test.tsx` | xstate model of the exclusivity gate across all three states and both clear-paths (manual removal, submit/reset). |
+| File                                                                   | Purpose                                                                                                                                                                                                                                                                                                                                                       |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/utils/__tests__/libraryPickTime.test.ts`                          | `parseExifDateTime`: EXIF's `"YYYY:MM:DD HH:MM:SS"` isn't `new Date()`-parseable — this was the single highest-value test (advisor's term: "the landmine"). Covers valid, zeroed-clock, malformed/undefined. `classifyLibraryPickTime`: earliest-wins (out-of-order input, to prove it's not just `[0]`), any-missing→manual, single-present, single-missing. |
+| `src/hooks/__tests__/usePhotoStore.source.test.ts`                     | Pure reducer test for the source-pinning logic the gate is built on, including the last-photo clear edge.                                                                                                                                                                                                                                                     |
+| `src/screens/home/__tests__/HomeScreen.photoSourceGate.model.test.tsx` | xstate model of the exclusivity gate across all three states and both clear-paths (manual removal, submit/reset).                                                                                                                                                                                                                                             |
 
 **Dropped after advisor review:** a `captured_at` cache-round-trip test —
 confirmed the resume path reads from the persisted `useSubmissionStore`
@@ -115,6 +116,7 @@ Gates run and passing: `tsc --noEmit` (both `tsconfig.json` and
 lint` (0 errors, pre-existing require()-in-tests warnings only).
 
 **Not run on an emulator/device.** Before merging, at minimum check:
+
 - Swipe-up-to-remove — the build spec itself flags a possible conflict
   with the Android system home/back edge gesture on a bottom-of-screen
   thumbnail strip; this needs a real on-device pass, not just a direction

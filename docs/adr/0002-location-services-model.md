@@ -65,7 +65,7 @@ wherever the library photo was actually taken." Any arrival-order tiebreaker
 arrives second — not a UI quirk, a wrong lat/long transmitted for that photo.
 
 **Resolution: a draft only ever has one source.** Once `usePhotoStore` holds
-any photo, the Home screen entrypoint for the *other* source is disabled
+any photo, the Home screen entrypoint for the _other_ source is disabled
 until the draft is submitted or reset (clearing the pool). `location_type`
 for a Library-sourced draft is simply `'pin'` (forced at the first pick,
 pool guaranteed empty by the guard above) — no arrival-order logic needed,

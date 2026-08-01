@@ -1,7 +1,4 @@
-import {
-  classifyLibraryPickTime,
-  parseExifDateTime,
-} from '../libraryPickTime'
+import { classifyLibraryPickTime, parseExifDateTime } from '../libraryPickTime'
 
 // Purpose: EXIF `DateTime` is "YYYY:MM:DD HH:MM:SS" — `new Date()` cannot
 // parse it directly (colons in the date segment), and `captured_at` must be

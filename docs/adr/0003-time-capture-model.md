@@ -4,7 +4,7 @@ status: accepted
 
 # Time capture model: device-trusted by default, EXIF-absence triggers manual fallback
 
-A Submission carries exactly **one Submission time** shared by all its photos — the time equivalent of Submission location (ADR 0002). For camera captures, `time_type` defaults to `'device'` with no explicit timestamp stored: `submitted_at` (set at API-call time, `src/utils/api.ts:247`) *is* the sighting time, because a camera photo is definitionally submitted moments after capture.
+A Submission carries exactly **one Submission time** shared by all its photos — the time equivalent of Submission location (ADR 0002). For camera captures, `time_type` defaults to `'device'` with no explicit timestamp stored: `submitted_at` (set at API-call time, `src/utils/api.ts:247`) _is_ the sighting time, because a camera photo is definitionally submitted moments after capture.
 
 The **Library pick** entrypoint (sprint:camera, #104) breaks that equivalence — a picked photo could be days old, so "moment of submission" is no longer a safe stand-in for "moment of sighting." A Library pick reads the asset's EXIF `DateTime`:
 
@@ -23,6 +23,6 @@ The **Library pick** entrypoint (sprint:camera, #104) breaks that equivalence �
 ## Consequences
 
 - `submission.captured_at` is new: optional, set only by a Library pick with EXIF time. Camera captures and manual-fallback submissions never set it.
-- **Backend consumption is unverified, not "read order" logic** — checked `src/app/*+api.ts`: no field named `time_type`/`manual_time`/`captured_at` is read anywhere server-side today. The MVP backend is validation-only (file type/size/MIME + auth, per the roadmap), so this is pure JSON passthrough — same as `submission.location_type` under ADR 0002. `captured_at` exists so the *value* is preserved in the payload; whatever consumes sighting-time downstream (a later research pipeline, out of this app's scope) is where the actual "which field wins" logic would live, not in this app.
+- **Backend consumption is unverified, not "read order" logic** — checked `src/app/*+api.ts`: no field named `time_type`/`manual_time`/`captured_at` is read anywhere server-side today. The MVP backend is validation-only (file type/size/MIME + auth, per the roadmap), so this is pure JSON passthrough — same as `submission.location_type` under ADR 0002. `captured_at` exists so the _value_ is preserved in the payload; whatever consumes sighting-time downstream (a later research pipeline, out of this app's scope) is where the actual "which field wins" logic would live, not in this app.
 - Same asymmetry as ADR 0002's Live fix: a Library pick's EXIF-derived `'device'` classification is not user-editable, only the `'manual'` fallback is.
 - The MVP multi-select rule (earliest-EXIF-wins / any-missing-forces-manual) is explicitly interim and will be superseded, not extended, by the Beta per-photo clustering work.

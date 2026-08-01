@@ -109,8 +109,7 @@ describe('HomeScreen photo-source-exclusivity gate — model-based test', () => 
         getByLabelText('Take a Photo').props.accessibilityState.disabled,
       ).toBe(camera)
       expect(
-        getByLabelText('Choose from Library').props.accessibilityState
-          .disabled,
+        getByLabelText('Choose from Library').props.accessibilityState.disabled,
       ).toBe(library)
     })
   }

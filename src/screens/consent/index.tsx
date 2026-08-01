@@ -1,5 +1,15 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, AppState, BackHandler, Platform, View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native'
+import {
+  Alert,
+  AppState,
+  BackHandler,
+  Platform,
+  View,
+  Text,
+  Pressable,
+  ScrollView,
+  ActivityIndicator,
+} from 'react-native'
 import { router } from 'expo-router'
 import { check, request, openSettings, RESULTS } from 'react-native-permissions'
 import { useUnistyles } from 'react-native-unistyles'
@@ -96,8 +106,9 @@ export default function ConsentScreen() {
       <View style={styles.gate}>
         <Text style={styles.gateTitle}>Permission Blocked</Text>
         <Text style={styles.gateBody}>
-          Camera, photo, or location access was denied. You can enable it later in Settings, or
-          continue without it — you&apos;ll be asked again when the app needs it.
+          Camera, photo, or location access was denied. You can enable it later
+          in Settings, or continue without it — you&apos;ll be asked again when
+          the app needs it.
         </Text>
         <Pressable
           onPress={() => openSettings()}
@@ -128,24 +139,31 @@ export default function ConsentScreen() {
           </Text>
         ))}
         {consentCopy.body.map((paragraph) => (
-          <Text key={paragraph} style={styles.body}>{paragraph}</Text>
+          <Text key={paragraph} style={styles.body}>
+            {paragraph}
+          </Text>
         ))}
 
         <Pressable
-          onPress={handleAgree} disabled={busy}
+          onPress={handleAgree}
+          disabled={busy}
           style={[styles.agreeBtn, busy && styles.agreeBusy]}
-          accessibilityRole="button" accessibilityLabel={consentCopy.agreeLabel}
+          accessibilityRole="button"
+          accessibilityLabel={consentCopy.agreeLabel}
         >
-          {busy
-            ? <ActivityIndicator color={theme.colors.accentText} />
-            : <Text style={styles.agreeText}>{consentCopy.agreeLabel}</Text>
-          }
+          {busy ? (
+            <ActivityIndicator color={theme.colors.accentText} />
+          ) : (
+            <Text style={styles.agreeText}>{consentCopy.agreeLabel}</Text>
+          )}
         </Pressable>
 
         <Pressable
-          onPress={handleDecline} disabled={busy}
+          onPress={handleDecline}
+          disabled={busy}
           style={styles.declineBtn}
-          accessibilityRole="button" accessibilityLabel={consentCopy.declineLabel}
+          accessibilityRole="button"
+          accessibilityLabel={consentCopy.declineLabel}
         >
           <Text style={styles.declineText}>{consentCopy.declineLabel}</Text>
         </Pressable>

@@ -10,8 +10,7 @@
 // not directly parseable by `new Date()`. A zeroed clock ("0000:00:00 00:00:00")
 // is a known camera quirk meaning "no real timestamp" and must be rejected,
 // not returned as an invalid Date.
-const EXIF_DATETIME_RE =
-  /^(\d{4}):(\d{2}):(\d{2}) (\d{2}):(\d{2}):(\d{2})$/
+const EXIF_DATETIME_RE = /^(\d{4}):(\d{2}):(\d{2}) (\d{2}):(\d{2}):(\d{2})$/
 
 /** Parses an EXIF `DateTime` string into an ISO string, or undefined if absent/invalid. */
 export function parseExifDateTime(raw: string | undefined): string | undefined {
@@ -24,9 +23,7 @@ export function parseExifDateTime(raw: string | undefined): string | undefined {
 
   // No timezone in EXIF DateTime — treated as local capture time, same as
   // the ISO string the Date constructor would parse without a trailing Z.
-  const date = new Date(
-    `${year}-${month}-${day}T${hour}:${minute}:${second}`,
-  )
+  const date = new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`)
   if (Number.isNaN(date.getTime())) return undefined
   return date.toISOString()
 }

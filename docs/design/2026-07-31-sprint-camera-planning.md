@@ -5,22 +5,26 @@ Grilling session output. Scope: #121 (parent) → #122, #123, #104, #105. Not ye
 ## Build spec
 
 ### #122 — Remove redundant Settings button
+
 Mechanical, no decision. `src/screens/home/index.tsx:69-78` — delete the `headerRight` `Pressable` (Settings icon → `/settings`). Keep `headerShown: true`, `title: "FeralSpotter"`, and the existing Settings tab (`src/app/(home-tabs)/_layout.tsx:47-53`) untouched.
 
 ### #105 — Camera icon label
+
 Add "Take a Photo" caption under the camera button in `src/screens/home/index.tsx`.
 
 ### #104 — Manual-upload entrypoint (full flow)
 
 **Delete (dead, pre-dates Cat Observations photo-pool redesign):**
+
 - `src/hooks/usePhotoSession.ts`
 - `src/screens/submission/photos/` (index.tsx + styles + tests)
 - `src/app/submission/photos.tsx`
 - `'photos'` entry in `STEPS` array, `src/app/submission/_layout.tsx:13,52-62`
 
-**Check before deleting:** `useUIStore.sessionPhotos`/`addSessionPhoto`/`removeSessionPhoto` (`useUIStore.ts:18-45`) are written by the *live* `useCameraCapture.tsx:81-82,131,171` on every shutter press, but once `PhotosScreen` (the only reader) is deleted, nothing reads `sessionPhotos` anymore. Decide at implementation time whether to strip those write calls from `useCameraCapture.tsx` too (dead write) or leave them (harmless, unread) — not decided this session, flagging so it isn't missed.
+**Check before deleting:** `useUIStore.sessionPhotos`/`addSessionPhoto`/`removeSessionPhoto` (`useUIStore.ts:18-45`) are written by the _live_ `useCameraCapture.tsx:81-82,131,171` on every shutter press, but once `PhotosScreen` (the only reader) is deleted, nothing reads `sessionPhotos` anymore. Decide at implementation time whether to strip those write calls from `useCameraCapture.tsx` too (dead write) or leave them (harmless, unread) — not decided this session, flagging so it isn't missed.
 
 **Build new:**
+
 - Library picker (new hook, e.g. `useLibraryPhotoPicker.ts`): `expo-image-picker`'s `launchImageLibraryAsync({ allowsMultipleSelection: true, exif: true })`. For each picked asset, build a `SubmissionPhoto` (same shape `usePhotoSession.ts:87-105`'s `buildPhoto` already used — reuse that logic) and call `addPhoto`/`addPhotos` directly on `usePhotoStore` — no staging/review screen, mirrors camera's direct-add.
 - Home screen: two equal-size stacked buttons — camera on top ("Take a Photo"), library on bottom ("Choose from Library"). Multi-select on.
 - Navigate to `/submission/create` after picking, same destination as camera's `handleDone` (`useCameraCapture.tsx:185-188`).
@@ -29,6 +33,7 @@ Add "Take a Photo" caption under the camera button in `src/screens/home/index.ts
 **#91 fix (photo-library slice only):** remove `mediaLibrary` from the consent screen's eager `Promise.all` in `src/screens/consent/index.tsx` (`handleAgree`, ~line 23-27). Camera/location eager-request pieces of #91 stay untouched.
 
 **Time model (ADR 0003, `docs/adr/0003-time-capture-model.md`):**
+
 - New optional field `submission.captured_at?: string` (ISO) — add to `useSubmissionStore.ts`'s submission shape + setter, and `SubmissionApiPayload`/`src/types/Api.ts`.
 - Library pick with EXIF `DateTime` present → `time_type` stays `'device'`, `captured_at` = extracted ISO timestamp (trusted, not user-editable, no warning).
 - EXIF absent → `time_type: 'manual'` → existing validation gate (`src/utils/validation.ts:143-146`) requires `manual_time`, filled via existing `DateTimePickerButton` (`src/components/organisms/DateTimePicker.tsx`, currently zero call sites — wire it in).
@@ -39,7 +44,7 @@ Add "Take a Photo" caption under the camera button in `src/screens/home/index.ts
 
 **Location for library picks — settled after 3 advisor rounds (see ADR 0002's 2026-07-31 "single-source by construction" amendment):** `location_type` has no library-pick value today (only `'device'`/`'pin'`). Two arrival-order patches were tried and rejected — forcing `'pin'` unconditionally regresses a camera-first draft's trusted fix; gating the force on pool-emptiness just relocates the bug to whichever source arrives second, since a single Submission location can't correctly represent two different photos' real locations.
 
-**Correct rule — a draft is single-source, enforced, not inferred:** once `usePhotoStore` holds any photo, the Home screen disables the entrypoint for the *other* source until the draft is submitted or reset. A Library-sourced draft simply forces `location_type: 'pin'` at the first pick (pool guaranteed empty by the guard) — no arrival-order logic needed because mixed drafts can't occur. True per-photo/multi-place location remains #133 (Beta), unchanged.
+**Correct rule — a draft is single-source, enforced, not inferred:** once `usePhotoStore` holds any photo, the Home screen disables the entrypoint for the _other_ source until the draft is submitted or reset. A Library-sourced draft simply forces `location_type: 'pin'` at the first pick (pool guaranteed empty by the guard) — no arrival-order logic needed because mixed drafts can't occur. True per-photo/multi-place location remains #133 (Beta), unchanged.
 
 **New implementation item:** Home screen (`src/screens/home/index.tsx`) needs to read `usePhotoStore.photos.length` and disable/hide whichever of "Take a Photo"/"Choose from Library" wasn't the source already used for the in-progress draft.
 
@@ -50,6 +55,7 @@ Add "Take a Photo" caption under the camera button in `src/screens/home/index.ts
 **Explicitly deferred (own ticket, #133, Beta):** per-photo EXIF location/time sent to backend for real clustering across a multi-select batch. Breaks the "one Submission location/time" premise — real data-model change, not in scope here.
 
 ### #123 — Swipe-up to remove (replaces tap-X entirely)
+
 `src/components/atoms/CameraThumb.tsx` — remove the `Pressable`+`X` remove button (lines 33-40). Add a vertical `Gesture.Pan()`, directional-locked (`activeOffsetY`/`failOffsetX`) so it doesn't steal the horizontal `FlashList` scroll — same idiom as `useBoundingBoxFrame.ts:161-204`'s gesture composition. Wrap in `GestureDetector`, drive `translateY`/opacity via Reanimated, call existing `onRemove` (→ `handleDiscardPhoto`, `useCameraCapture.tsx:167-174`) past threshold.
 
 Accessibility: keep `accessibilityRole="button"` + add an `accessibilityAction` ("Discard photo") so screen-reader users have a non-gesture path — no visible second button.
@@ -70,7 +76,7 @@ Accessibility: keep `accessibilityRole="button"` + add an `accessibilityAction` 
 
 Tests needed: swipe-gesture removal + accessibility action; library-picker EXIF branching (device vs manual, multi-select earliest-wins / any-missing-manual); Home screen disables the unused-source entrypoint once the pool is non-empty (both directions); library pick forces `location_type: 'pin'`; `captured_at` survives a cache save/resume round-trip; consent screen no longer requests mediaLibrary; Date&Time warning/modal parity test in `create/index.tsx`; `DateTimePickerButton` rejects a future date (closes #94).
 
-**Build risk, not a redesign item:** swipe-*up* on a bottom-of-screen thumbnail strip may compete with the Android system home/back edge gesture — worth a manual test pass on-device, not a gesture-direction change.
+**Build risk, not a redesign item:** swipe-_up_ on a bottom-of-screen thumbnail strip may compete with the Android system home/back edge gesture — worth a manual test pass on-device, not a gesture-direction change.
 
 ## Decisions this session (brief reasoning)
 
