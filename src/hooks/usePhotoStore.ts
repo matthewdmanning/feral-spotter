@@ -3,23 +3,27 @@
  * Persisted Zustand store for photos attached to the in-progress submission.
  */
 
-import { asyncStorage } from "@/src/lib/cache/storage";
-import type { SubmissionPhoto } from "@/src/types";
-import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
+import { asyncStorage } from '@/src/lib/cache/storage'
+import type { SubmissionPhoto } from '@/src/types'
+import { create } from 'zustand'
+import { createJSONStorage, persist } from 'zustand/middleware'
 
-export type { SubmissionPhoto };
+export type { SubmissionPhoto }
+
+/** Which entrypoint populated the current draft's pool (single-source by construction, ADR 0002). */
+export type PhotoSource = 'camera' | 'library' | null
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface PhotoState {
-  photos: SubmissionPhoto[];
+  photos: SubmissionPhoto[]
+  source: PhotoSource
 
-  addPhoto: (photo: SubmissionPhoto) => void;
-  addPhotos: (photos: SubmissionPhoto[]) => void;
-  updatePhoto: (localId: string, patch: Partial<SubmissionPhoto>) => void;
-  removePhoto: (localId: string) => void;
-  clearPhotos: () => void;
+  addPhoto: (photo: SubmissionPhoto) => void
+  addPhotos: (photos: SubmissionPhoto[]) => void
+  updatePhoto: (localId: string, patch: Partial<SubmissionPhoto>) => void
+  removePhoto: (localId: string) => void
+  clearPhotos: () => void
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -28,11 +32,18 @@ export const usePhotoStore = create<PhotoState>()(
   persist(
     (set) => ({
       photos: [],
+      source: null,
 
-      addPhoto: (photo) => set((s) => ({ photos: [...s.photos, photo] })),
+      // Camera-only call site (useCameraCapture.tsx) — pins source: 'camera'.
+      addPhoto: (photo) =>
+        set((s) => ({ photos: [...s.photos, photo], source: 'camera' })),
 
+      // Library-only call site (useLibraryPhotoPicker.ts) — pins source: 'library'.
       addPhotos: (photos) =>
-        set((s) => ({ photos: [...s.photos, ...photos] })),
+        set((s) => ({
+          photos: [...s.photos, ...photos],
+          source: 'library',
+        })),
 
       updatePhoto: (localId, patch) =>
         set((s) => ({
@@ -42,15 +53,16 @@ export const usePhotoStore = create<PhotoState>()(
         })),
 
       removePhoto: (localId) =>
-        set((s) => ({
-          photos: s.photos.filter((p) => p.local_id !== localId),
-        })),
+        set((s) => {
+          const photos = s.photos.filter((p) => p.local_id !== localId)
+          return { photos, source: photos.length === 0 ? null : s.source }
+        }),
 
-      clearPhotos: () => set({ photos: [] }),
+      clearPhotos: () => set({ photos: [], source: null }),
     }),
     {
-      name: "photo-store",
+      name: 'photo-store',
       storage: createJSONStorage(() => asyncStorage),
     },
   ),
-);
+)

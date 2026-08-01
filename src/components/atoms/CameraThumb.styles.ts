@@ -24,17 +24,4 @@ export const styles = StyleSheet.create((theme) => ({
     fontSize: theme.typography.xs,
     fontWeight: '700',
   },
-  removeBtn: {
-    position: 'absolute',
-    top: -6,
-    right: -6,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: 'rgba(0,0,0,0.75)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.4)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 }))

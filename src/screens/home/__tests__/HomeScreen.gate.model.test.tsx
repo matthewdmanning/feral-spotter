@@ -15,12 +15,15 @@ jest.mock('expo-router', () => ({
 jest.mock('react-native-unistyles', () => {
   const anyProp = (): unknown => new Proxy({}, { get: (_t, _k) => anyProp() })
   const theme = new Proxy({}, { get: (_t, _k) => anyProp() })
+  const withVariants = (obj: object) =>
+    Object.assign(obj, { useVariants: jest.fn() })
   return {
     useUnistyles: () => ({ theme }),
     createStyleSheet: (fn: unknown) =>
       typeof fn === 'function' ? fn(theme) : fn,
     StyleSheet: {
-      create: (fn: unknown) => (typeof fn === 'function' ? fn(theme) : fn),
+      create: (fn: unknown) =>
+        withVariants(typeof fn === 'function' ? fn(theme) : fn),
     },
   }
 })
@@ -35,9 +38,18 @@ jest.mock('@/src/lib/cache/submissionCache', () => ({
 jest.mock('@/src/components/molecules/BottomButtonColumn', () => ({
   BottomButtonColumn: () => null,
 }))
+// This suite covers the auth/consent gate only — the photo-source gate has
+// its own model test (HomeScreen.photoSourceGate.model.test.tsx).
+jest.mock('@/src/hooks/usePhotoStore', () => ({
+  usePhotoStore: (sel: (s: { source: null }) => unknown) =>
+    sel({ source: null }),
+}))
+jest.mock('@/src/hooks/useLibraryPhotoPicker', () => ({
+  useLibraryPhotoPicker: () => ({ pickFromLibrary: jest.fn() }),
+}))
 jest.mock('lucide-react-native', () => ({
   Camera: () => null,
-  Settings: () => null,
+  ImagePlus: () => null,
 }))
 
 /**

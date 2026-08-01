@@ -1,5 +1,15 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, AppState, BackHandler, Platform, View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native'
+import {
+  Alert,
+  AppState,
+  BackHandler,
+  Platform,
+  View,
+  Text,
+  Pressable,
+  ScrollView,
+  ActivityIndicator,
+} from 'react-native'
 import { router } from 'expo-router'
 import { check, request, openSettings, RESULTS } from 'react-native-permissions'
 import { useUnistyles } from 'react-native-unistyles'
@@ -21,17 +31,16 @@ export default function ConsentScreen() {
     setBusy(true)
     try {
       // Requested sequentially, not via Promise.all: Android can only show one
-      // permission dialog at a time, so firing all three concurrently resolves
+      // permission dialog at a time, so firing both concurrently resolves
       // every request after the first as BLOCKED/denied without the user ever
-      // seeing a prompt for it.
+      // seeing a prompt for it. Photo-library access (#91) is not requested
+      // here — it's asked lazily at point of use by the library picker.
       const cameraStatus = await request(PERMISSION_MAP.camera)
-      const mediaStatus = await request(PERMISSION_MAP.mediaLibrary)
       const locationStatus = await request(PERMISSION_MAP.location)
       markAccepted()
 
       if (
         cameraStatus === RESULTS.BLOCKED ||
-        mediaStatus === RESULTS.BLOCKED ||
         locationStatus === RESULTS.BLOCKED
       ) {
         setBlocked(true)
@@ -50,14 +59,12 @@ export default function ConsentScreen() {
     if (!blocked) return
 
     const recheck = async () => {
-      const [cameraStatus, mediaStatus, locationStatus] = await Promise.all([
+      const [cameraStatus, locationStatus] = await Promise.all([
         check(PERMISSION_MAP.camera),
-        check(PERMISSION_MAP.mediaLibrary),
         check(PERMISSION_MAP.location),
       ])
       if (
         cameraStatus !== RESULTS.BLOCKED &&
-        mediaStatus !== RESULTS.BLOCKED &&
         locationStatus !== RESULTS.BLOCKED
       ) {
         setBlocked(false)
@@ -99,8 +106,9 @@ export default function ConsentScreen() {
       <View style={styles.gate}>
         <Text style={styles.gateTitle}>Permission Blocked</Text>
         <Text style={styles.gateBody}>
-          Camera, photo, or location access was denied. You can enable it later in Settings, or
-          continue without it — you&apos;ll be asked again when the app needs it.
+          Camera, photo, or location access was denied. You can enable it later
+          in Settings, or continue without it — you&apos;ll be asked again when
+          the app needs it.
         </Text>
         <Pressable
           onPress={() => openSettings()}
@@ -131,24 +139,31 @@ export default function ConsentScreen() {
           </Text>
         ))}
         {consentCopy.body.map((paragraph) => (
-          <Text key={paragraph} style={styles.body}>{paragraph}</Text>
+          <Text key={paragraph} style={styles.body}>
+            {paragraph}
+          </Text>
         ))}
 
         <Pressable
-          onPress={handleAgree} disabled={busy}
+          onPress={handleAgree}
+          disabled={busy}
           style={[styles.agreeBtn, busy && styles.agreeBusy]}
-          accessibilityRole="button" accessibilityLabel={consentCopy.agreeLabel}
+          accessibilityRole="button"
+          accessibilityLabel={consentCopy.agreeLabel}
         >
-          {busy
-            ? <ActivityIndicator color={theme.colors.accentText} />
-            : <Text style={styles.agreeText}>{consentCopy.agreeLabel}</Text>
-          }
+          {busy ? (
+            <ActivityIndicator color={theme.colors.accentText} />
+          ) : (
+            <Text style={styles.agreeText}>{consentCopy.agreeLabel}</Text>
+          )}
         </Pressable>
 
         <Pressable
-          onPress={handleDecline} disabled={busy}
+          onPress={handleDecline}
+          disabled={busy}
           style={styles.declineBtn}
-          accessibilityRole="button" accessibilityLabel={consentCopy.declineLabel}
+          accessibilityRole="button"
+          accessibilityLabel={consentCopy.declineLabel}
         >
           <Text style={styles.declineText}>{consentCopy.declineLabel}</Text>
         </Pressable>

@@ -1,4 +1,10 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native'
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react-native'
 import { Alert, AppState, BackHandler, Platform } from 'react-native'
 import { check, request, RESULTS } from 'react-native-permissions'
 import React from 'react'
@@ -7,11 +13,15 @@ import consentCopy from '@/src/content/consentDisclosure.json'
 
 const mockRouterReplace = jest.fn()
 jest.mock('expo-router', () => ({
-  router: { replace: (...args: unknown[]) => mockRouterReplace(...args), push: jest.fn() },
+  router: {
+    replace: (...args: unknown[]) => mockRouterReplace(...args),
+    push: jest.fn(),
+  },
 }))
 
 jest.mock('@/src/hooks/useConsentStore', () => ({
-  useConsentStore: (sel: (s: object) => unknown) => sel({ markAccepted: jest.fn() }),
+  useConsentStore: (sel: (s: object) => unknown) =>
+    sel({ markAccepted: jest.fn() }),
 }))
 
 jest.mock('@/src/hooks/useBackHandler', () => ({
@@ -20,14 +30,25 @@ jest.mock('@/src/hooks/useBackHandler', () => ({
 
 jest.mock('react-native-unistyles', () => {
   const theme = {
-    colors: { background: '#fff', text: '#000', muted: '#888', border: '#ccc', accent: '#00f', accentText: '#fff', surfaceAlt: '#eee', danger: '#f00' },
+    colors: {
+      background: '#fff',
+      text: '#000',
+      muted: '#888',
+      border: '#ccc',
+      accent: '#00f',
+      accentText: '#fff',
+      surfaceAlt: '#eee',
+      danger: '#f00',
+    },
     spacing: { xs: 2, sm: 4, md: 8, lg: 16, xl: 24, xxl: 32, xxxl: 40 },
     typography: { sm: 12, base: 16, xl: 20, xxl: 24 },
     radius: { sm: 4, md: 8, lg: 12 },
   }
   return {
     useUnistyles: () => ({ theme }),
-    StyleSheet: { create: (fn: unknown) => (typeof fn === 'function' ? fn(theme) : fn) },
+    StyleSheet: {
+      create: (fn: unknown) => (typeof fn === 'function' ? fn(theme) : fn),
+    },
   }
 })
 
@@ -54,7 +75,9 @@ describe('ConsentScreen decline flow', () => {
   })
 
   it('exits the app on Android when Exit is confirmed', () => {
-    const exitSpy = jest.spyOn(BackHandler, 'exitApp').mockImplementation(() => {})
+    const exitSpy = jest
+      .spyOn(BackHandler, 'exitApp')
+      .mockImplementation(() => {})
     jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
       buttons?.find((b) => b.text === 'Exit')?.onPress?.()
     })
@@ -66,7 +89,9 @@ describe('ConsentScreen decline flow', () => {
   })
 
   it('does not exit when Back is chosen', () => {
-    const exitSpy = jest.spyOn(BackHandler, 'exitApp').mockImplementation(() => {})
+    const exitSpy = jest
+      .spyOn(BackHandler, 'exitApp')
+      .mockImplementation(() => {})
     jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
       buttons?.find((b) => b.text === 'Back')?.onPress?.()
     })
@@ -87,13 +112,14 @@ describe('ConsentScreen blocked-permission recovery', () => {
   it('clears the blocked gate and continues once Settings grant is detected on foreground', async () => {
     jest.mocked(request).mockResolvedValueOnce(RESULTS.BLOCKED)
     jest.mocked(request).mockResolvedValueOnce(RESULTS.GRANTED)
-    jest.mocked(request).mockResolvedValueOnce(RESULTS.GRANTED)
 
     let foregroundListener: ((state: string) => void) | undefined
-    jest.spyOn(AppState, 'addEventListener').mockImplementation((_event, listener) => {
-      foregroundListener = listener as (state: string) => void
-      return { remove: jest.fn() }
-    })
+    jest
+      .spyOn(AppState, 'addEventListener')
+      .mockImplementation((_event, listener) => {
+        foregroundListener = listener as (state: string) => void
+        return { remove: jest.fn() }
+      })
 
     render(<ConsentScreen />)
     await act(async () => {
@@ -108,6 +134,8 @@ describe('ConsentScreen blocked-permission recovery', () => {
       foregroundListener?.('active')
     })
 
-    await waitFor(() => expect(mockRouterReplace).toHaveBeenCalledWith('/(home-tabs)'))
+    await waitFor(() =>
+      expect(mockRouterReplace).toHaveBeenCalledWith('/(home-tabs)'),
+    )
   })
 })

@@ -1,4 +1,5 @@
 import { LOCATION_ACCURACY_THRESHOLD_M } from '@/src/config/location'
+import { DateTimePickerButton } from '@/src/components/organisms/DateTimePicker'
 import { useSubmissionStore } from '@/src/hooks'
 import { useSubmissionSubmit } from '@/src/hooks/useSubmissionSubmit'
 import { useLocationCapture } from '@/src/lib/location'
@@ -27,6 +28,7 @@ export default function CreateSubmissionScreen() {
   const setSubmissionLocation = useSubmissionStore(
     (s) => s.setSubmissionLocation,
   )
+  const setManualTime = useSubmissionStore((s) => s.setManualTime)
   const setCurrentStep = useSubmissionStore((s) => s.setCurrentStep)
   const cats = useSubmissionStore((s) => s.cats)
 
@@ -42,6 +44,7 @@ export default function CreateSubmissionScreen() {
           time_method: submission.time_type,
           address: submission.address,
           manual_time: submission.manual_time,
+          captured_at: submission.captured_at,
         })
       }
     })()
@@ -51,6 +54,7 @@ export default function CreateSubmissionScreen() {
     submission.location_type,
     submission.time_type,
     submission.manual_time,
+    submission.captured_at,
   ])
 
   // Commit the background Live fix into the Submission draft only once it
@@ -75,6 +79,16 @@ export default function CreateSubmissionScreen() {
     submission.accuracy >= LOCATION_ACCURACY_THRESHOLD_M
   const hasFix = submission.latitude != null && submission.longitude != null
   const showLocationWarning = !hasFix || hasLowAccuracy
+
+  // Same warning-icon/tap-to-fix treatment as location, applied to a Library
+  // pick whose photos lacked EXIF time (ADR 0003) — manual_time is unset
+  // until the user fills it in via the picker below.
+  const showTimeWarning =
+    submission.time_type === 'manual' && !submission.manual_time
+  const handleManualTimeChange = useCallback(
+    (date: Date) => setManualTime(date.toISOString()),
+    [setManualTime],
+  )
 
   const handleLocationIconPress = useCallback(() => {
     // A good Live fix is trusted and not user-editable (ADR 0002) — the
@@ -111,10 +125,26 @@ export default function CreateSubmissionScreen() {
           <Text style={styles.statusItemText}>Location</Text>
         </Pressable>
 
-        <View style={styles.statusItem}>
-          <CheckCircle size={20} color={theme.colors.success} />
-          <Text style={styles.statusItemText}>Date & Time Recorded</Text>
-        </View>
+        {showTimeWarning ? (
+          <View style={styles.statusItem}>
+            <AlertCircle size={20} color={theme.colors.warning} />
+            <DateTimePickerButton
+              value={
+                submission.manual_time
+                  ? new Date(submission.manual_time)
+                  : new Date()
+              }
+              onChange={handleManualTimeChange}
+              label=""
+              maximumDate={new Date()}
+            />
+          </View>
+        ) : (
+          <View style={styles.statusItem}>
+            <CheckCircle size={20} color={theme.colors.success} />
+            <Text style={styles.statusItemText}>Date & Time Recorded</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.catList}>

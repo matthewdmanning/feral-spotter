@@ -1,12 +1,11 @@
 /**
  * hooks/useUIStore.ts
- * Cross-screen UI state: connectivity, in-progress capture session photos,
- * and submission-in-flight status. Error/success messages are surfaced
- * immediately via Alert rather than buffered in state.
+ * Cross-screen UI state: connectivity and submission-in-flight status.
+ * Error/success messages are surfaced immediately via Alert rather than
+ * buffered in state.
  */
 
 import { asyncStorage } from '@/src/lib/cache/storage'
-import type { SubmissionPhoto } from '@/src/types'
 import { Alert } from 'react-native'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
@@ -15,12 +14,9 @@ import { createJSONStorage, persist } from 'zustand/middleware'
 
 interface UIState {
   isOnline: boolean
-  sessionPhotos: SubmissionPhoto[]
   isSubmitting: boolean
 
   setOnlineStatus: (isOnline: boolean) => void
-  addSessionPhoto: (photo: SubmissionPhoto) => void
-  removeSessionPhoto: (localId: string) => void
   showError: (title: string, message: string) => void
   showSuccess: (title: string, message: string) => void
   setSubmitting: (isSubmitting: boolean) => void
@@ -32,18 +28,9 @@ export const useUIStore = create<UIState>()(
   persist(
     (set) => ({
       isOnline: true,
-      sessionPhotos: [],
       isSubmitting: false,
 
       setOnlineStatus: (isOnline) => set({ isOnline }),
-
-      addSessionPhoto: (photo) =>
-        set((s) => ({ sessionPhotos: [...s.sessionPhotos, photo] })),
-
-      removeSessionPhoto: (localId) =>
-        set((s) => ({
-          sessionPhotos: s.sessionPhotos.filter((p) => p.local_id !== localId),
-        })),
 
       showError: (title, message) => Alert.alert(title, message),
       showSuccess: (title, message) => Alert.alert(title, message),

@@ -12,7 +12,7 @@
  */
 
 import { CameraThumb } from '@/src/components/atoms/CameraThumb'
-import { usePhotoStore, useUIStore } from '@/src/hooks'
+import { usePhotoStore } from '@/src/hooks'
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'
 import { captureEvent, EVENTS } from '@/src/lib/analytics/analytics'
 import { startLocationCapture } from '@/src/lib/location'
@@ -30,7 +30,7 @@ import {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated'
-import { check, RESULTS } from 'react-native-permissions'
+import { check, request, RESULTS } from 'react-native-permissions'
 import {
   useCameraDevice,
   usePhotoOutput,
@@ -78,8 +78,6 @@ export function useCameraCapture(): CameraCaptureResult {
   )
   const addPhoto = usePhotoStore((s) => s.addPhoto)
   const removePhoto = usePhotoStore((s) => s.removePhoto)
-  const addSessionPhoto = useUIStore((s) => s.addSessionPhoto)
-  const removeSessionPhoto = useUIStore((s) => s.removeSessionPhoto)
 
   const [cameraPosition, setCameraPosition] = useState<'back' | 'front'>('back')
   const [capturedPhotos, setCapturedPhotos] = useState<SubmissionPhoto[]>([])
@@ -128,7 +126,6 @@ export function useCameraCapture(): CameraCaptureResult {
       }
       photo.dispose()
 
-      addSessionPhoto(submission)
       addPhoto(submission)
       setCapturedPhotos((prev) => [...prev, submission])
 
@@ -136,7 +133,13 @@ export function useCameraCapture(): CameraCaptureResult {
       // not per photo — no GPS call on the shutter path.
 
       if (keepOnDevice) {
-        const status = await check(PERMISSION_MAP.mediaLibrary)
+        // #91 removed the eager consent-time request for this permission —
+        // request it lazily here instead, at the point the write is actually
+        // needed, rather than silently no-op-ing the gallery save.
+        let status = await check(PERMISSION_MAP.mediaLibrary)
+        if (status !== RESULTS.GRANTED && status !== RESULTS.LIMITED) {
+          status = await request(PERMISSION_MAP.mediaLibrary)
+        }
         if (status === RESULTS.GRANTED || status === RESULTS.LIMITED) {
           try {
             await Asset.create(uri)
@@ -159,7 +162,6 @@ export function useCameraCapture(): CameraCaptureResult {
     flashOpacity,
     photoOutput,
     addPhoto,
-    addSessionPhoto,
     keepOnDevice,
   ])
 
@@ -168,9 +170,8 @@ export function useCameraCapture(): CameraCaptureResult {
     (localId: string) => {
       setCapturedPhotos((prev) => prev.filter((p) => p.local_id !== localId))
       removePhoto(localId)
-      removeSessionPhoto(localId)
     },
-    [removePhoto, removeSessionPhoto],
+    [removePhoto],
   )
 
   // ── Controls ──────────────────────────────────────────────────────────────
