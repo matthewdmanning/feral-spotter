@@ -46,6 +46,7 @@ export interface CacheMetadata {
   time_type?: TimeType;
   address?: string;
   manual_time?: string; // ISO string, set when time_method === 'manual'
+  captured_at?: string; // ISO string, set for a Library pick with trusted EXIF DateTime
 }
 
 export interface SubmissionCacheFile {

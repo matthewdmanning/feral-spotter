@@ -45,8 +45,6 @@ jest.mock('react-native-reanimated', () => ({
 jest.mock('@/src/hooks', () => ({
   usePhotoStore: (sel: (s: object) => unknown) =>
     sel({ addPhoto: jest.fn(), photos: [] }),
-  useUIStore: (sel: (s: object) => unknown) =>
-    sel({ addSessionPhoto: jest.fn(), sessionPhotos: [] }),
 }))
 
 jest.mock('@/src/hooks/useSettingsStore', () => ({

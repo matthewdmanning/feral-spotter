@@ -1,12 +1,14 @@
-import type { ColumnButton } from "@/src/components/atoms/AppButton";
+import { AppButton, type ColumnButton } from "@/src/components/atoms/AppButton";
 import { BottomButtonColumn } from "@/src/components/molecules/BottomButtonColumn";
 import { hasAcceptedConsent } from "@/src/hooks/useConsentStore";
+import { useLibraryPhotoPicker } from "@/src/hooks/useLibraryPhotoPicker";
+import { usePhotoStore } from "@/src/hooks/usePhotoStore";
 import { useAuth } from "@/src/lib/auth/useAuth";
 import { getAllSubmissionCaches } from "@/src/lib/cache/submissionCache";
 import { Stack, router } from "expo-router";
-import { Camera, Settings } from "lucide-react-native";
+import { Camera, ImagePlus } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 import { useUnistyles } from "react-native-unistyles";
 import { styles } from "./index.styles";
 
@@ -33,6 +35,15 @@ export default function HomeScreen() {
       setColumnVisible(caches.length > 0 && caches[0].status === "In Progress");
     });
   }, []);
+
+  // A draft is single-source by construction (ADR 0002 amendment): once the
+  // shared pool holds a photo, the entrypoint for the *other* source is
+  // disabled until the draft is submitted or reset (pool cleared).
+  const photoSource = usePhotoStore((s) => s.source);
+  const cameraDisabled = photoSource === "library";
+  const libraryDisabled = photoSource === "camera";
+
+  const { pickFromLibrary } = useLibraryPhotoPicker();
 
   const handleCamera = useCallback(() => router.navigate("/camera"), []);
   const handleNew = useCallback(() => router.push("/submission/create"), []);
@@ -66,29 +77,31 @@ export default function HomeScreen() {
           headerTintColor: theme.colors.text,
           headerTitleStyle: { fontWeight: "700", color: theme.colors.text },
           headerShadowVisible: false,
-          headerRight: () => (
-            <Pressable
-              onPress={() => router.push("/settings")}
-              style={styles.headerIcon}
-              accessibilityLabel="Open settings"
-              accessibilityRole="button"
-            >
-              <Settings size={22} color={theme.colors.text} />
-            </Pressable>
-          ),
         }}
       />
 
       <View style={styles.root}>
-        <View style={styles.cameraArea}>
-          <Pressable
+        <View style={styles.entrypointArea}>
+          <AppButton
             onPress={handleCamera}
-            style={styles.cameraBtn}
-            accessibilityLabel="Open camera"
-            accessibilityRole="button"
+            variant="primary"
+            disabled={cameraDisabled}
+            icon={<Camera size={20} color={theme.colors.accentText} />}
+            accessibilityLabel="Take a Photo"
           >
-            <Camera size={80} color={theme.colors.accentText} />
-          </Pressable>
+            Take a Photo
+          </AppButton>
+          <View style={styles.entrypointGap}>
+            <AppButton
+              onPress={pickFromLibrary}
+              variant="secondary"
+              disabled={libraryDisabled}
+              icon={<ImagePlus size={20} color={theme.colors.text} />}
+              accessibilityLabel="Choose from Library"
+            >
+              Choose from Library
+            </AppButton>
+          </View>
         </View>
 
         <BottomButtonColumn

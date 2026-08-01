@@ -21,17 +21,16 @@ export default function ConsentScreen() {
     setBusy(true)
     try {
       // Requested sequentially, not via Promise.all: Android can only show one
-      // permission dialog at a time, so firing all three concurrently resolves
+      // permission dialog at a time, so firing both concurrently resolves
       // every request after the first as BLOCKED/denied without the user ever
-      // seeing a prompt for it.
+      // seeing a prompt for it. Photo-library access (#91) is not requested
+      // here — it's asked lazily at point of use by the library picker.
       const cameraStatus = await request(PERMISSION_MAP.camera)
-      const mediaStatus = await request(PERMISSION_MAP.mediaLibrary)
       const locationStatus = await request(PERMISSION_MAP.location)
       markAccepted()
 
       if (
         cameraStatus === RESULTS.BLOCKED ||
-        mediaStatus === RESULTS.BLOCKED ||
         locationStatus === RESULTS.BLOCKED
       ) {
         setBlocked(true)
@@ -50,14 +49,12 @@ export default function ConsentScreen() {
     if (!blocked) return
 
     const recheck = async () => {
-      const [cameraStatus, mediaStatus, locationStatus] = await Promise.all([
+      const [cameraStatus, locationStatus] = await Promise.all([
         check(PERMISSION_MAP.camera),
-        check(PERMISSION_MAP.mediaLibrary),
         check(PERMISSION_MAP.location),
       ])
       if (
         cameraStatus !== RESULTS.BLOCKED &&
-        mediaStatus !== RESULTS.BLOCKED &&
         locationStatus !== RESULTS.BLOCKED
       ) {
         setBlocked(false)

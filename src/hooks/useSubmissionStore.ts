@@ -43,6 +43,9 @@ export interface SubmissionDraft {
   time_type: TimeMethod
   address?: string
   manual_time?: string // ISO string, set when time_type === 'manual'
+  // ISO string — set only when a Library pick's EXIF DateTime was trusted
+  // (ADR 0003). Camera captures and manual-fallback submissions never set it.
+  captured_at?: string
   // The single Submission location, shared by every photo (see ADR 0002).
   // Set once per submission: a Live fix for `device`, or a map-picked point
   // for `pin`. Absent until acquired.
@@ -81,6 +84,7 @@ interface SubmissionState {
   setTimeType: (v: TimeMethod) => void
   setAddress: (v: string) => void
   setManualTime: (v: string) => void
+  setCapturedAt: (v: string | undefined) => void
   saveDraft: () => void
   setCurrentStep: (step: string) => void
   addToHistory: (entry: SubmissionHistoryEntry) => void
@@ -150,6 +154,9 @@ export const useSubmissionStore = create<SubmissionState>()(
 
       setManualTime: (v) =>
         set((s) => ({ submission: { ...s.submission, manual_time: v } })),
+
+      setCapturedAt: (v) =>
+        set((s) => ({ submission: { ...s.submission, captured_at: v } })),
 
       // Draft fields already live in persisted state; nothing further to flush.
       saveDraft: () => {},

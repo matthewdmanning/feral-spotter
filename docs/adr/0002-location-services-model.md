@@ -52,3 +52,23 @@ and removed the give-up:
   submission stays open, without needing another caller to notice and
   re-trigger it. A location the user set manually via the Map picker
   (`location_type === 'pin'`) is never overwritten by a later reacquire.
+
+## Amendment (2026-07-31): a draft is single-source by construction
+
+Sprint:camera (#104) adds a second photo entrypoint (Library pick) into the
+same shared `usePhotoStore` pool the camera flow already writes to. A mixed
+camera+library pool in one draft was considered and **rejected** — a
+Submission has exactly **one** location (ADR body above), and a single value
+cannot correctly represent "these photos are here-and-now, those are from
+wherever the library photo was actually taken." Any arrival-order tiebreaker
+(camera-first-wins, library-first-wins) silently mislocates whichever source
+arrives second — not a UI quirk, a wrong lat/long transmitted for that photo.
+
+**Resolution: a draft only ever has one source.** Once `usePhotoStore` holds
+any photo, the Home screen entrypoint for the *other* source is disabled
+until the draft is submitted or reset (clearing the pool). `location_type`
+for a Library-sourced draft is simply `'pin'` (forced at the first pick,
+pool guaranteed empty by the guard above) — no arrival-order logic needed,
+because the mixed case this sprint's earlier drafts of this amendment tried
+to patch around cannot occur. True per-photo location for a genuinely mixed
+or multi-place batch is #133 (Beta), unchanged.

@@ -26,6 +26,20 @@ _Avoid_: map view, location selector, place picker
 The metadata tags physically embedded in an image file (including any GPS the source camera wrote). Read-only to this app — a possible _seed_ for the Map picker, never the Submission location itself, and never rewritten by us.
 _Avoid_: photo metadata (as a synonym for Submission location)
 
+### Sighting & time
+
+**Submission time**:
+The single date/time a Submission is tagged with, shared by every photo in it — the time equivalent of Submission location. Defaults to `'device'` (the moment of submission is trusted, no capture-time timestamp is recorded) and falls back to Manual time when that trust doesn't hold (a Library pick with no EXIF timestamp).
+_Avoid_: timestamp, date taken (when referring to the app-level value)
+
+**Manual time**:
+The user-entered fallback date/time, set via the existing date-time-picker modal, used when Submission time can't be trusted automatically. Corresponds to `time_type === 'manual'` and `submission.manual_time`.
+_Avoid_: custom time, override
+
+**Library pick**:
+A photo added to the Submission's shared photo pool via the device's photo library rather than the live Camera. Uses the same `SubmissionPhoto` shape and the same pool as camera-captured photos — there is no `source` field distinguishing them once added; a Library pick's only special handling is triggering Manual time when its EXIF has no timestamp.
+_Avoid_: uploaded photo, imported photo
+
 ### First-run and gating
 
 **Onboarding**:

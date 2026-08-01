@@ -1,6 +1,6 @@
 /**
  * Submission Layout — nested Stack
- * Linear flow: create → cats → photos
+ * Linear flow: create → cats
  * annotate: fullScreenModal (opened from cats)
  */
 
@@ -10,13 +10,12 @@ import { Settings } from 'lucide-react-native'
 import { Pressable } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 
-const STEPS = ['create', 'cats', 'photos'] as const
+const STEPS = ['create', 'cats'] as const
 type Step = (typeof STEPS)[number]
 
 const STEP_TITLES: Record<Step, string> = {
   create: 'Submission Details',
   cats: 'Cat Observations',
-  photos: 'Photos',
 }
 
 export default function SubmissionLayout() {

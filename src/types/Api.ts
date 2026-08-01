@@ -10,6 +10,8 @@ export interface SubmissionApiPayload {
     location_type: string;
     time_type: string;
     address?: string;
+    /** ISO — set only for a Library pick with trusted EXIF DateTime (ADR 0003). */
+    captured_at?: string;
   };
   cats: {
     local_id: string;

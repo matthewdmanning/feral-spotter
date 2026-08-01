@@ -87,7 +87,6 @@ describe('ConsentScreen blocked-permission recovery', () => {
   it('clears the blocked gate and continues once Settings grant is detected on foreground', async () => {
     jest.mocked(request).mockResolvedValueOnce(RESULTS.BLOCKED)
     jest.mocked(request).mockResolvedValueOnce(RESULTS.GRANTED)
-    jest.mocked(request).mockResolvedValueOnce(RESULTS.GRANTED)
 
     let foregroundListener: ((state: string) => void) | undefined
     jest.spyOn(AppState, 'addEventListener').mockImplementation((_event, listener) => {
