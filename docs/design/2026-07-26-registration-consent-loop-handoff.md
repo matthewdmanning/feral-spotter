@@ -31,16 +31,16 @@ export function useAuth() {
 }
 ```
 
-Every *fresh mount* of a component using this hook renders
+Every _fresh mount_ of a component using this hook renders
 `isAuthenticated=false` for one commit before the effect corrects it (the
 effect's `onAuthStateChanged` callback fires synchronously with the real
 value, but one render late). `src/screens/home/index.tsx`'s app-wide gate:
 
 ```ts
 useEffect(() => {
-  if (!isAuthenticated) router.replace("/intro-flow");
-  else if (!hasAcceptedConsent()) router.replace("/consent");
-}, [isAuthenticated]);
+  if (!isAuthenticated) router.replace('/intro-flow')
+  else if (!hasAcceptedConsent()) router.replace('/consent')
+}, [isAuthenticated])
 ```
 
 acts on that transient `false` immediately. Suspected sequence: consent
@@ -101,7 +101,7 @@ one render later" flash can't happen at all, regardless of render timing.
 
 **Verified live** on the emulator: cleared logcat, force-stopped, cold
 launch, drove the full chain by hand (intro-flow → sign-in → profile →
-analytics-consent → **Agree**) and landed on `/(home-tabs)` and *stayed*
+analytics-consent → **Agree**) and landed on `/(home-tabs)` and _stayed_
 there — no bounce to `/intro-flow`, a single `Running "main"` log line (no
 unexpected reload), no repeated `[profile] payload` submissions. Previously
 this transition reproduced the loop every time.
@@ -127,13 +127,18 @@ confirmation evidence:
 
 - `src/screens/home/index.tsx`, inside the gate `useEffect`:
   ```ts
-  console.log("[home-gate] fired isAuth=", isAuthenticated, "consent=", hasAcceptedConsent());
+  console.log(
+    '[home-gate] fired isAuth=',
+    isAuthenticated,
+    'consent=',
+    hasAcceptedConsent(),
+  )
   ```
 - `src/screens/intro-flow/index.tsx`, right before the `return`:
   ```ts
-  console.log("[intro-flow] render step=", step, "button=", slide.button);
+  console.log('[intro-flow] render step=', step, 'button=', slide.button)
   ```
-  (added for a *separate* but adjacent live report — see "Also observed" below.)
+  (added for a _separate_ but adjacent live report — see "Also observed" below.)
 
 **CONFIRMED (2026-07-26, follow-up session)**, via `adb logcat | grep
 home-gate`:
@@ -208,7 +213,7 @@ plugin runs at transform time.
 
 - **#67** (settings-grant doesn't advance consent flow) was fixed this
   session (`fix(consent): request permissions sequentially, recover from
-  Settings grant`, branch `issue-67-consent-blocked-gate-recheck`,
+Settings grant`, branch `issue-67-consent-blocked-gate-recheck`,
   committed `10e544b`) — sequential permission requests instead of
   `Promise.all` (Android can only show one dialog at a time), plus an
   `AppState`-triggered re-check so returning from Settings clears the
@@ -220,7 +225,7 @@ plugin runs at transform time.
 - User raised a decision claim — "we decided no continue-without-access
   option" — that could not be verified anywhere in git history, design
   docs, or the issue tracker. Only documented decision found is the
-  *disclosure*-screen Decline forcing exit (#68, closed) — a different
+  _disclosure_-screen Decline forcing exit (#68, closed) — a different
   screen/button than `/consent`'s "Continue Without Access" gate. Needs a
   human answer on where/whether this was actually decided before removing
   that button.

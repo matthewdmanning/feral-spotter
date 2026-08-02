@@ -1,6 +1,6 @@
 # ESLint Resolver Errors
 
-**Trigger:** `expo lint` reports `Resolve error: typescript with invalid interface loaded as resolver` across *all* TypeScript files (not just one).
+**Trigger:** `expo lint` reports `Resolve error: typescript with invalid interface loaded as resolver` across _all_ TypeScript files (not just one).
 
 This project has had stale-cache false positives after resolver package version changes. Before investigating further, run:
 

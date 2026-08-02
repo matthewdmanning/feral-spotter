@@ -13,8 +13,8 @@ Audited all `useEffect` calls in `src/` against the React "You Might Not Need an
 useEffect(() => {
   setChecked((prev) => {
     /* add new photos */
-  });
-}, [sessionPhotos]);
+  })
+}, [sessionPhotos])
 ```
 
 **Fix:** Inverted the state model. Instead of tracking all checked IDs, track only explicitly-_unchecked_ IDs (`Set<string>`). New photos are checked by default without any effect — `checked` is computed inline during render from `sessionPhotos` and `unchecked`.
@@ -26,8 +26,8 @@ useEffect(() => {
 ```js
 // Before — useEffect to sync a ref
 useEffect(() => {
-  formRef.current = { locationType, timeType, address };
-});
+  formRef.current = { locationType, timeType, address }
+})
 ```
 
 **Fix:** Assign the ref inline during render. Refs are mutable values React owns; they don't need an effect to update, and updating them in render is safe when the ref is only read in callbacks (not during render).
@@ -39,8 +39,8 @@ useEffect(() => {
 ```js
 // Before — "sync state from props" anti-pattern
 useEffect(() => {
-  setDraft({ ...savedSettings });
-}, [savedSettings]);
+  setDraft({ ...savedSettings })
+}, [savedSettings])
 ```
 
 **Fix:** Deleted. `draft` is already initialised from `savedSettings` in `useState`. `savedSettings` does not change while the settings screen is mounted (saving navigates back first), so this effect was redundant and caused an extra render on every settings store update.
