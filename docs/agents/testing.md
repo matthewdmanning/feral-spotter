@@ -4,7 +4,7 @@ Authoritative rules for how tests are written in this repo. Agents follow this b
 
 ## Default: model-based + stateful-flow tests only
 
-Write **only** state-machine models and stateful-flow checks as tests — **unless the request explicitly asks for something else** (e.g. a specific unit test, a regression repro).
+Write **only** business logic unit tests, state-machine models, stateful-flow checks as tests — **unless the request explicitly asks for something else** (e.g. a regression repro). The unit tests must be load-bearing.
 
 - Do not default to hand-written, per-case `it()` assertion tests. They repeat setup, assert one shallow thing each, miss transition coverage, and accumulate as bloat.
 - When a model test covers a flow, delete the hand-written tests it subsumes. Example: `src/screens/home/__tests__/HomeScreen.test.tsx` (4 hand cases) was fully covered by the gate model and removed.
