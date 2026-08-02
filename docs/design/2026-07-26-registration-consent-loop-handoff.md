@@ -224,3 +224,8 @@ plugin runs at transform time.
   screen/button than `/consent`'s "Continue Without Access" gate. Needs a
   human answer on where/whether this was actually decided before removing
   that button.
+- **Resolved 2026-08-02** (Matthew, live): confirmed directly — the
+  decision is real. `/consent`'s blocked-gate "Continue Without Access"
+  button is misleading (it navigates to Home unconditionally regardless
+  of actual permission state, per this doc's FSM notes above) and should
+  be removed. Filed as issue #141.
