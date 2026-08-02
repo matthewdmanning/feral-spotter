@@ -4,9 +4,7 @@ permissions:
   pull-requests: write
 on:
   push:
-    branches: [main, master, alpha]
   pull_request:
-    branches: [main, master, alpha]
 
 # Cancel in-progress jobs if a developer pushes a new commit to the same PR
 concurrency:
@@ -27,7 +25,7 @@ jobs:
       - name: ⚙️ Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20 # Fixed typo: 'node-node-version' changed to 'node-version'
+          node-version: 18
           cache: 'npm' # Keeps your runners extremely fast by caching node_modules
 
       - name: 📦 Install dependencies
