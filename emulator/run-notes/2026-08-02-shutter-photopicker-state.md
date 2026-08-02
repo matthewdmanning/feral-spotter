@@ -3,21 +3,25 @@
 Git state: branch `ci-security-and-commitlint-checks`, commit `5dcd4fa720054337d3a18916483b8c0a0946e891`.
 
 ## Foreground activity
+
 ```
     topResumedActivity=ActivityRecord{4a02dfe u0 com.google.android.providers.media.module/com.android.providers.media.photopicker.PhotoPickerUserSelectActivity t41}
 ```
 
 ## App process
+
 ```
 15680
 ```
 
 ## dumpsys location (feralspotter entries)
+
 ```
 (none)
 ```
 
 ## Recent logcat (last 80 lines, pid 15680)
+
 ```
 08-02 17:37:38.458 W/Choreographer(15680): Frame time is 0.851578 ms in the future!  Check that graphics HAL is generating vsync timestamps using the correct timebase.
 08-02 17:37:38.508 W/Choreographer(15680): Frame time is 0.655011 ms in the future!  Check that graphics HAL is generating vsync timestamps using the correct timebase.
