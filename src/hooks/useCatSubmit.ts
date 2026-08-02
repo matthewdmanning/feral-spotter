@@ -52,7 +52,7 @@ export function useCatSubmit({
       local_id: localId,
       age: form.age,
       ear_tipped: form.earTipped,
-      health: form.health,
+      health_label: form.healthLabel,
       owned_domesticated: form.owned,
       pattern: form.pattern,
       hair_length: form.hairLength,

@@ -16,7 +16,7 @@ import type {
   CatSex,
   EarTipped,
   HairLength,
-  HealthLevel,
+  HealthLabel,
   Owned,
 } from '@/src/types'
 import { create } from 'zustand'
@@ -33,7 +33,7 @@ export interface ObservedCat {
   hair_length: HairLength
   color: CatColor
   sex: CatSex
-  health: HealthLevel
+  health_label: HealthLabel
   photo_local_ids: string[]
   photos_reviewed: boolean
 }
