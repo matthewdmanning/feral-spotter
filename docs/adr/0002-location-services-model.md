@@ -35,9 +35,12 @@ Live-fix acquisition was originally triggered from Submission Details, racing a
 and removed the give-up:
 
 - **Trigger point**: the Live fix now starts in the background the moment the
-  camera opens (`useCameraCapture.tsx`'s mount effect) — not on Submission
-  Details — so slow GPS resolution has the whole capture session to resolve
-  instead of racing a fixed timeout at the end.
+  camera opens (`useCameraCapture.tsx`'s `CAMERA_OPENED` mount effect,
+  `startLocationCapture()`) — not on Submission Details — so slow GPS
+  resolution has the whole capture session to resolve instead of racing a
+  fixed timeout at the end. A separate mount effect in the same hook
+  requests the media-library save permission (#145/#146, unrelated to
+  location) — the two are independent effects, not a shared trigger.
 - **No restart while in flight**: the acquisition is a module-level singleton
   (`src/lib/location.ts`), not tied to any screen's mount/unmount. It cannot
   be restarted while actively watching.

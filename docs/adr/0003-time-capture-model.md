@@ -4,7 +4,7 @@ status: accepted
 
 # Time capture model: device-trusted by default, EXIF-absence triggers manual fallback
 
-A Submission carries exactly **one Submission time** shared by all its photos — the time equivalent of Submission location (ADR 0002). For camera captures, `time_type` defaults to `'device'` with no explicit timestamp stored: `submitted_at` (set at API-call time, `src/utils/api.ts:247`) _is_ the sighting time, because a camera photo is definitionally submitted moments after capture.
+A Submission carries exactly **one Submission time** shared by all its photos — the time equivalent of Submission location (ADR 0002). For camera captures, `time_type` defaults to `'device'` with no explicit timestamp stored: `submitted_at` (set at API-call time in `src/utils/api.ts`) _is_ the sighting time, because a camera photo is definitionally submitted moments after capture.
 
 The **Library pick** entrypoint (sprint:camera, #104) breaks that equivalence — a picked photo could be days old, so "moment of submission" is no longer a safe stand-in for "moment of sighting." A Library pick reads the asset's EXIF `DateTime`:
 
