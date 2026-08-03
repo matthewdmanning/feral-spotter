@@ -133,13 +133,13 @@ export function useCameraCapture(): CameraCaptureResult {
       // not per photo — no GPS call on the shutter path.
 
       if (keepOnDevice) {
-        // #91 removed the eager consent-time request for this permission —
-        // request it lazily here instead, at the point the write is actually
-        // needed, rather than silently no-op-ing the gallery save.
-        let status = await check(PERMISSION_MAP.mediaLibrary)
-        if (status !== RESULTS.GRANTED && status !== RESULTS.LIMITED) {
-          status = await request(PERMISSION_MAP.mediaLibrary)
-        }
+        // #145/#146: the shutter path only ever *checks* status — it never
+        // calls request(). request() surfaces OS UI (incl. the Android 14+
+        // "Select photos" picker, #140), so it belongs at screen-open time
+        // (see the mount effect below), not synced to every capture. If the
+        // mount-time request hasn't resolved yet, this capture just skips
+        // the gallery save rather than re-triggering the OS prompt.
+        const status = await check(PERMISSION_MAP.mediaLibrary)
         if (status === RESULTS.GRANTED || status === RESULTS.LIMITED) {
           try {
             await Asset.create(uri)
@@ -220,6 +220,21 @@ export function useCameraCapture(): CameraCaptureResult {
     // screen's lifecycle (src/lib/location.ts).
     void startLocationCapture()
   }, [])
+
+  // #145/#146: request the gallery-save permission once, when the Camera
+  // screen opens — not per shutter press. request() can surface OS UI (the
+  // Android 14+ "Select photos" picker, #140); doing that once at screen-open
+  // is predictable, doing it from the shutter path re-triggered it on every
+  // press while status stayed non-terminal.
+  useEffect(() => {
+    if (!keepOnDevice) return
+    void (async () => {
+      const status = await check(PERMISSION_MAP.mediaLibrary)
+      if (status !== RESULTS.GRANTED && status !== RESULTS.LIMITED) {
+        await request(PERMISSION_MAP.mediaLibrary)
+      }
+    })()
+  }, [keepOnDevice])
 
   return {
     device,

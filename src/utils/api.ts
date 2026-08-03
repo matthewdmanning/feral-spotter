@@ -230,12 +230,21 @@ export async function uploadPhotoWithProgress(
   });
 }
 
+// Dev builds have no reachable backend to submit against (see
+// EXPO_PUBLIC_API_BASE_URL) — mock a successful response so the capture ->
+// cat-observations -> submission flow stays testable end-to-end during
+// manual test-drives without a live Cloud Run deployment.
+const IS_MOCK_BACKEND = __DEV__ && !process.env.EXPO_PUBLIC_API_BASE_URL;
+
 /**
  * Submit observation to Google Cloud Run
  */
 export async function submitObservation(
   payload: SubmissionApiPayload,
 ): Promise<SubmissionApiResponse> {
+  if (IS_MOCK_BACKEND) {
+    return { status: "success", id: `mock-${Date.now()}` };
+  }
   try {
     const headers = await getAuthHeaders();
     const deviceId = await getDeviceId();

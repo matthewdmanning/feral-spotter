@@ -1,5 +1,6 @@
 import { act, renderHook } from '@testing-library/react-native'
 import { router } from 'expo-router'
+import { check, request, RESULTS } from 'react-native-permissions'
 import { useCameraCapture } from '../useCameraCapture'
 
 jest.mock('@react-native-async-storage/async-storage', () =>
@@ -124,5 +125,33 @@ describe('useCameraCapture handleTakePhoto', () => {
     })
 
     expect(result.current.capturedPhotos).toHaveLength(1)
+  })
+
+  it('#145: never re-requests media-library permission from the shutter path', async () => {
+    ;(check as jest.Mock).mockResolvedValue(RESULTS.DENIED)
+    ;(request as jest.Mock).mockResolvedValue(RESULTS.DENIED)
+
+    mockCapturePhoto.mockResolvedValue({
+      width: 100,
+      height: 100,
+      saveToTemporaryFileAsync: jest.fn(async () => '/tmp/fake.jpg'),
+      dispose: jest.fn(),
+    })
+
+    const { result } = renderHook(() => useCameraCapture())
+    // let the mount-time permission-request effect resolve first
+    await act(async () => {})
+
+    await act(async () => {
+      await result.current.handleTakePhoto()
+    })
+    await act(async () => {
+      await result.current.handleTakePhoto()
+    })
+
+    // request() only ever fires once, from the mount effect — repeated
+    // shutter presses with a still-denied status must not re-trigger it.
+    expect(request).toHaveBeenCalledTimes(1)
+    expect(mockAssetCreate).not.toHaveBeenCalled()
   })
 })
