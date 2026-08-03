@@ -1,6 +1,5 @@
 import { act, renderHook } from '@testing-library/react-native'
 import { router } from 'expo-router'
-import { check, request, RESULTS } from 'react-native-permissions'
 import { useCameraCapture } from '../useCameraCapture'
 
 jest.mock('@react-native-async-storage/async-storage', () =>
@@ -58,10 +57,18 @@ jest.mock('@/src/components/atoms/CameraThumb', () => ({
   CameraThumb: 'CameraThumb',
 }))
 const mockAssetCreate = jest.fn()
+const mockGetPermissionsAsync = jest.fn(async () => ({ status: 'granted' }))
+const mockRequestPermissionsAsync = jest.fn(async () => ({
+  status: 'granted',
+}))
 jest.mock('expo-media-library', () => ({
   get Asset() {
     return { create: mockAssetCreate }
   },
+  getPermissionsAsync: (...args: unknown[]) => mockGetPermissionsAsync(...args),
+  requestPermissionsAsync: (...args: unknown[]) =>
+    mockRequestPermissionsAsync(...args),
+  PermissionStatus: { GRANTED: 'granted', DENIED: 'denied' },
 }))
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'test-id' }))
 
@@ -127,9 +134,9 @@ describe('useCameraCapture handleTakePhoto', () => {
     expect(result.current.capturedPhotos).toHaveLength(1)
   })
 
-  it('#145: never re-requests media-library permission from the shutter path', async () => {
-    ;(check as jest.Mock).mockResolvedValue(RESULTS.DENIED)
-    ;(request as jest.Mock).mockResolvedValue(RESULTS.DENIED)
+  it('#145/#146: requests write-only gallery access once at mount, never re-requests from the shutter path', async () => {
+    mockGetPermissionsAsync.mockResolvedValue({ status: 'denied' })
+    mockRequestPermissionsAsync.mockResolvedValue({ status: 'denied' })
 
     mockCapturePhoto.mockResolvedValue({
       width: 100,
@@ -149,9 +156,13 @@ describe('useCameraCapture handleTakePhoto', () => {
       await result.current.handleTakePhoto()
     })
 
-    // request() only ever fires once, from the mount effect — repeated
-    // shutter presses with a still-denied status must not re-trigger it.
-    expect(request).toHaveBeenCalledTimes(1)
+    // requestPermissionsAsync only ever fires once, from the mount effect —
+    // repeated shutter presses with a still-denied status must not
+    // re-trigger it, and it must ask for write-only (add-only) access, not
+    // full read — that's what pulled in the Android 14+ "Select photos"
+    // picker (#140) when this used to gate on READ_MEDIA_IMAGES.
+    expect(mockRequestPermissionsAsync).toHaveBeenCalledTimes(1)
+    expect(mockRequestPermissionsAsync).toHaveBeenCalledWith(true)
     expect(mockAssetCreate).not.toHaveBeenCalled()
   })
 })
