@@ -13,8 +13,12 @@ export default function CatObservationScreen() {
   const { edit: editId } = useLocalSearchParams<{ edit?: string }>()
 
   const cats = useSubmissionStore((s) => s.cats)
-  const existingCat = editId ? cats.find((c) => c.local_id === editId) : undefined
-  const annotationEnabled = useSettingsStore((s) => s.settings.annotation_enabled)
+  const existingCat = editId
+    ? cats.find((c) => c.local_id === editId)
+    : undefined
+  const annotationEnabled = useSettingsStore(
+    (s) => s.settings.annotation_enabled,
+  )
 
   const form = useCatForm(existingCat)
   const submit = useCatSubmit({ form, existingCat, annotationEnabled })
@@ -23,16 +27,30 @@ export default function CatObservationScreen() {
     <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
       <View style={styles.inner}>
         <View style={styles.header}>
-          <Text style={styles.title}>{existingCat ? 'Edit Cat' : 'Observed Cat'}</Text>
+          <Text style={styles.title}>
+            {existingCat ? 'Edit Cat' : 'Observed Cat'}
+          </Text>
           <View style={styles.headerActions}>
-            <Pressable onPress={form.handleClear} style={styles.headerBtn} accessibilityRole="button">
-              <Text style={[styles.headerBtnText, { color: theme.colors.danger }]}>Clear</Text>
+            <Pressable
+              onPress={form.handleClear}
+              style={styles.headerBtn}
+              accessibilityRole="button"
+            >
+              <Text
+                style={[styles.headerBtnText, { color: theme.colors.danger }]}
+              >
+                Clear
+              </Text>
             </Pressable>
           </View>
         </View>
-        <CatForm form={form} submit={submit} existingCat={existingCat} annotationEnabled={annotationEnabled} />
+        <CatForm
+          form={form}
+          submit={submit}
+          existingCat={existingCat}
+          annotationEnabled={annotationEnabled}
+        />
       </View>
     </ScrollView>
   )
 }
-

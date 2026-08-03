@@ -17,6 +17,7 @@ flagged so it isn't mistaken for done elsewhere.
 ## What shipped
 
 `useCatSubmit.ts` `handleSave`:
+
 - Added `FIELD_LABELS`, a display-name map over all 8 `CAT_DEFAULTS`
   keys (age, earTipped, owned, pattern, hairLength, color, sex,
   healthLabel).
@@ -39,10 +40,10 @@ went to "true touched/dirty tracking" (a real state-shape change to
 `useCatForm`), then reversed back to a plain value-equals-default check
 on the next question — the user's own words: "no part item is selected,
 user or loaded state doesn't matter." This also matches
-`docs/agents/domain.md`'s Unknown/Unsure entry directly: *"there is no
+`docs/agents/domain.md`'s Unknown/Unsure entry directly: _"there is no
 separate 'left blank' versus 'confirmed unknown'; leaving an attribute
 at its default and explicitly choosing Unknown/Unsure are the same
-thing."* Building touched-tracking would have fought the domain model,
+thing."_ Building touched-tracking would have fought the domain model,
 not served it.
 
 **Never a hard block.** Confirmed explicitly: "if any option is

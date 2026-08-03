@@ -24,7 +24,7 @@ move was safe as a pure relocation.
   `submissionCache` import; `getCurrentCacheId`, `clearDraft`,
   `clearPhotos`, `stopLocationCapture` were already in scope there.
   `SubmissionSubmitResult` now returns `{ handleDone, handleReset,
-  isSubmitting }`.
+isSubmitting }`.
 - `cats/index.tsx`: removed the `Reset` `Pressable` and the `divider`
   between it and `Clear`. `Clear` (`form.handleClear`, per-cat form
   reset) stays — it was explicitly out of scope, it clears only the

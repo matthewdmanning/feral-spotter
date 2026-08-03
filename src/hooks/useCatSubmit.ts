@@ -111,14 +111,7 @@ export function useCatSubmit({
     } else {
       commit()
     }
-  }, [
-    buildCat,
-    existingCat,
-    addCat,
-    updateCat,
-    annotationEnabled,
-    form,
-  ])
+  }, [buildCat, existingCat, addCat, updateCat, annotationEnabled, form])
 
   // ── Derived ───────────────────────────────────────────────────────────────
 

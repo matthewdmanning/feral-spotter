@@ -17,6 +17,7 @@ and a bottom-nav primary button — both calling the same `handleDone`
 ## What shipped
 
 `annotate/index.tsx`:
+
 - Deleted the top-bar `Done` `Pressable` (was `topBtn`/`topBtnText`,
   calling `handleDone`). `topRow` now holds just the photo counter and
   the remove (trash) button.
