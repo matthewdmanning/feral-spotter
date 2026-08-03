@@ -8,5 +8,4 @@ export const styles = StyleSheet.create((theme) => ({
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
   headerBtn:     { paddingVertical: 4, paddingHorizontal: 8 },
   headerBtnText: { fontSize: theme.typography.sm, fontWeight: '500' },
-  divider:       { width: 1, height: 16, backgroundColor: theme.colors.border },
 }))

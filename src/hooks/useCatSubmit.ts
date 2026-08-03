@@ -1,22 +1,35 @@
 /**
  * hooks/useCatSubmit.ts
- * Handles save and reset actions for the cat observation screen. Owns all
- * store mutations and navigation for those two — final submission ("Done")
- * moved to Submission Details (useSubmissionSubmit.ts, #130).
+ * Handles the save action for the cat observation screen. Owns the store
+ * mutation and navigation for it — final submission ("Done") moved to
+ * Submission Details (useSubmissionSubmit.ts, #130); Reset moved there too
+ * (#153), since it clears the whole submission, not just this cat.
  */
 
-import { usePhotoStore, useSubmissionStore } from '@/src/hooks'
+import { useSubmissionStore } from '@/src/hooks'
 import type { CatFormValues } from '@/src/hooks/useCatForm'
 import type { ObservedCat } from '@/src/hooks/useSubmissionStore'
-import {
-  deleteSubmissionCache,
-  getCurrentCacheId,
-} from '@/src/lib/cache/submissionCache'
-import { stopLocationCapture } from '@/src/lib/location'
+import { CAT_DEFAULTS } from '@/src/screens/submission/cats/constants'
 import { router } from 'expo-router'
 import { randomUUID } from 'expo-crypto'
 import { useCallback } from 'react'
 import { Alert } from 'react-native'
+
+// ─── Missing-field warning (#152) ──────────────────────────────────────────
+
+// "Unknown"/"Unsure" is a real value (docs/agents/domain.md), so this warns
+// rather than blocks — a field deliberately left at its default looks
+// identical to one the user never touched, and that's accepted (#152).
+const FIELD_LABELS: Record<keyof typeof CAT_DEFAULTS, string> = {
+  age: 'Age',
+  earTipped: 'Ear Tipped',
+  owned: 'Owned / Domesticated',
+  pattern: 'Pattern',
+  hairLength: 'Hair Length',
+  color: 'Color',
+  sex: 'Sex',
+  healthLabel: 'Health',
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -28,7 +41,6 @@ interface UseCatSubmitParams {
 
 export interface CatSubmitResult {
   handleSave: () => void
-  handleReset: () => void
   saveLabel: string
 }
 
@@ -41,9 +53,6 @@ export function useCatSubmit({
 }: UseCatSubmitParams): CatSubmitResult {
   const addCat = useSubmissionStore((s) => s.addCat)
   const updateCat = useSubmissionStore((s) => s.updateCat)
-  const clearDraft = useSubmissionStore((s) => s.clearDraft)
-
-  const clearPhotos = usePhotoStore((s) => s.clearPhotos)
 
   // ── Build ObservedCat from current form values ─────────────────────────────
 
@@ -64,22 +73,43 @@ export function useCatSubmit({
     [form, existingCat],
   )
 
-  // ── Save → store + navigate ────────────────────────────────────────────────
+  // ── Save → warn on unset fields → store + navigate ─────────────────────────
 
   const handleSave = useCallback(() => {
     const localId = existingCat?.local_id ?? randomUUID()
     const cat = buildCat(localId)
 
-    if (existingCat) updateCat(localId, cat)
-    else addCat(cat)
+    const commit = () => {
+      if (existingCat) updateCat(localId, cat)
+      else addCat(cat)
 
-    if (annotationEnabled && form.photoIds.length > 0) {
-      router.replace({
-        pathname: '/submission/annotate',
-        params: { cat_id: localId },
-      })
+      if (annotationEnabled && form.photoIds.length > 0) {
+        router.replace({
+          pathname: '/submission/annotate',
+          params: { cat_id: localId },
+        })
+      } else {
+        router.back()
+      }
+    }
+
+    const unsetFields = (
+      Object.keys(CAT_DEFAULTS) as (keyof typeof CAT_DEFAULTS)[]
+    )
+      .filter((field) => form[field] === CAT_DEFAULTS[field])
+      .map((field) => FIELD_LABELS[field])
+
+    if (unsetFields.length > 0) {
+      Alert.alert(
+        `${unsetFields.length} field${unsetFields.length !== 1 ? 's' : ''} not set`,
+        `${unsetFields.join(', ')} — Save anyway?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Save anyway', style: 'default', onPress: commit },
+        ],
+      )
     } else {
-      router.back()
+      commit()
     }
   }, [
     buildCat,
@@ -87,32 +117,8 @@ export function useCatSubmit({
     addCat,
     updateCat,
     annotationEnabled,
-    form.photoIds.length,
+    form,
   ])
-
-  // ── Reset → confirm → clear all ──────────────────────────────────────────
-
-  const handleReset = useCallback(() => {
-    Alert.alert(
-      'Reset Submission',
-      'This will permanently clear all cats, photos and submission data.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Reset',
-          style: 'destructive',
-          onPress: async () => {
-            const cId = await getCurrentCacheId()
-            if (cId) await deleteSubmissionCache(cId)
-            clearDraft()
-            clearPhotos()
-            stopLocationCapture()
-            router.replace('/')
-          },
-        },
-      ],
-    )
-  }, [clearDraft, clearPhotos])
 
   // ── Derived ───────────────────────────────────────────────────────────────
 
@@ -121,5 +127,5 @@ export function useCatSubmit({
       ? 'Put the Cat in a Box'
       : 'Save Observation'
 
-  return { handleSave, handleReset, saveLabel }
+  return { handleSave, saveLabel }
 }

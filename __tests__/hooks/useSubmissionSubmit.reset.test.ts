@@ -1,9 +1,9 @@
 import { act, renderHook } from '@testing-library/react-native'
 import { Alert } from 'react-native'
-import { useCatSubmit } from '@/src/hooks/useCatSubmit'
+import { useSubmissionSubmit } from '@/src/hooks/useSubmissionSubmit'
+import { CONSENT_VERSION, useConsentStore } from '@/src/hooks/useConsentStore'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
-import type { CatFormValues } from '@/src/hooks/useCatForm'
 
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
@@ -20,6 +20,16 @@ jest.mock('expo-router', () => ({
 
 jest.mock('expo-crypto', () => ({ randomUUID: jest.fn(() => 'cat-1') }))
 
+jest.mock('expo-secure-store', () => ({
+  getItemAsync: jest.fn(),
+  setItemAsync: jest.fn(),
+  deleteItemAsync: jest.fn(),
+}))
+
+jest.mock('posthog-react-native', () => ({
+  usePostHog: () => null,
+}))
+
 jest.mock('react-native-mmkv', () => ({
   createMMKV: jest.fn(() => ({
     getString: jest.fn(),
@@ -28,24 +38,16 @@ jest.mock('react-native-mmkv', () => ({
   })),
 }))
 
+jest.mock('@/src/utils/api', () => ({
+  submitObservation: jest.fn(),
+}))
+
 const mockStopLocationCapture = jest.fn()
 jest.mock('@/src/lib/location', () => ({
   stopLocationCapture: () => mockStopLocationCapture(),
 }))
 
-const emptyForm: CatFormValues = {
-  age: 'adult',
-  earTipped: 'yes',
-  owned: 'no',
-  pattern: 'tabby',
-  hairLength: 'short',
-  color: 'orange',
-  sex: 'female',
-  healthLabel: 'good',
-  photoIds: [],
-}
-
-describe('useCatSubmit handleReset', () => {
+describe('useSubmissionSubmit handleReset', () => {
   beforeEach(async () => {
     jest.clearAllMocks()
     const AsyncStorage = require('@react-native-async-storage/async-storage')
@@ -57,6 +59,10 @@ describe('useCatSubmit handleReset', () => {
       currentStep: 'create',
     })
     usePhotoStore.setState({ photos: [] })
+    useConsentStore.setState({
+      accepted: true,
+      acceptedVersion: CONSENT_VERSION,
+    })
   })
 
   it('tears down the background Live-fix reacquire on reset', async () => {
@@ -64,9 +70,7 @@ describe('useCatSubmit handleReset', () => {
       buttons?.find((b) => b.text === 'Reset')?.onPress?.()
     })
 
-    const { result } = renderHook(() =>
-      useCatSubmit({ form: emptyForm, annotationEnabled: false }),
-    )
+    const { result } = renderHook(() => useSubmissionSubmit())
 
     await act(async () => {
       result.current.handleReset()

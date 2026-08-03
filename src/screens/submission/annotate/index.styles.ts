@@ -4,8 +4,6 @@ export const styles = StyleSheet.create((theme) => ({
   root:                { flex: 1, backgroundColor: theme.colors.background },
   topBar:              { backgroundColor: theme.colors.surface, paddingHorizontal: theme.spacing.lg, paddingBottom: 10, borderBottomWidth: 0.5, borderBottomColor: theme.colors.surfaceAlt, zIndex: 2 },
   topRow:              { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  topBtn:              { paddingVertical: 4, paddingHorizontal: 4 },
-  topBtnText:          { color: theme.colors.muted, fontSize: 14, fontWeight: '500' },
   counter:             { color: theme.colors.text, fontSize: 15, fontWeight: '600' },
   removeBtn:           { width: 36, height: 36, borderRadius: theme.radius.md, borderWidth: 1, borderColor: theme.colors.surfaceAlt, justifyContent: 'center', alignItems: 'center' },
   dotsRow:             { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 4, marginTop: 8 },

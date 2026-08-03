@@ -28,10 +28,6 @@ export default function CatObservationScreen() {
             <Pressable onPress={form.handleClear} style={styles.headerBtn} accessibilityRole="button">
               <Text style={[styles.headerBtnText, { color: theme.colors.danger }]}>Clear</Text>
             </Pressable>
-            <View style={styles.divider} />
-            <Pressable onPress={submit.handleReset} style={styles.headerBtn} accessibilityRole="button">
-              <Text style={[styles.headerBtnText, { color: theme.colors.danger }]}>Reset</Text>
-            </Pressable>
           </View>
         </View>
         <CatForm form={form} submit={submit} existingCat={existingCat} annotationEnabled={annotationEnabled} />

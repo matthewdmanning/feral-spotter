@@ -33,7 +33,7 @@ export default function CreateSubmissionScreen() {
   const cats = useSubmissionStore((s) => s.cats)
 
   const capture = useLocationCapture()
-  const { handleDone } = useSubmissionSubmit()
+  const { handleDone, handleReset } = useSubmissionSubmit()
 
   useEffect(() => {
     setCurrentStep('create')
@@ -175,8 +175,21 @@ export default function CreateSubmissionScreen() {
         </Pressable>
       </View>
 
-      <Pressable onPress={handleDone} style={styles.doneBtn}>
-        <Text style={styles.doneBtnText}>Done</Text>
+      <Pressable
+        onPress={handleDone}
+        disabled={cats.length === 0}
+        style={[styles.doneBtn, cats.length === 0 && styles.doneBtnDisabled]}
+        accessibilityRole="button"
+      >
+        <Text style={styles.doneBtnText}>Finished!</Text>
+      </Pressable>
+
+      <Pressable
+        onPress={handleReset}
+        style={styles.resetBtn}
+        accessibilityRole="button"
+      >
+        <Text style={styles.resetBtnText}>Reset</Text>
       </Pressable>
     </View>
   )
