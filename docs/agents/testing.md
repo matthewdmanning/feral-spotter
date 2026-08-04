@@ -32,3 +32,8 @@ Pick the path generator by intent (`@xstate/graph` `TestModel`):
 
 - Model the machine with the **real user events** — including back, cancel, sign-out, retry — not just the forward happy-path transitions.
 - Assert **what the user sees at each step**, not only a redirect or a single side effect.
+
+## Unit and Integration Tests
+
+- You must only write these when explicitly instructed.
+- Unit and Integration Tests must be **load-bearing** and have a **reasonable probability of happening**.
