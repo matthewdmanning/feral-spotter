@@ -11,12 +11,12 @@ PR #81 (branch `issue-71-media-library-legacy-import`, open, not yet merged) bun
 - `CameraThumb.tsx` ↔ `CameraThumb.styles.ts` require cycle that left
   `THUMB_SIZE` undefined and collapsed capture-review thumbnails to near-zero
   size. Confirmed via logcat (`TypeError: Cannot read property 'THUMB_SIZE'
-  of undefined`) before the fix.
+of undefined`) before the fix.
 - Registration gate on submission: `useCatSubmit` now checks `hasPassword()`
   before showing the submit confirmation and redirects to `/register`
   instead of failing the network call after the user already filled out the
   form.
-- PostHog only mounts now if the user accepted the *analytics* opt-in
+- PostHog only mounts now if the user accepted the _analytics_ opt-in
   specifically, not just general consent — `AppProviders` was gating on
   general consent alone, so the SDK's own automatic capture (sessions, app
   lifecycle) could run without the narrower analytics permission.
@@ -54,6 +54,7 @@ typecheck clean, lint clean (only the same pre-existing require-import
 warnings as before), jest 14 suites / 46 tests green.
 
 **Confirmed first-run order:**
+
 ```
 Intro Flow (renamed from Onboarding, 4 slides)
   -> Sign in with Google        (authProvider — dev stub for now)
@@ -76,6 +77,7 @@ Otherwise renders today's camera home unchanged; the persistent "Register"
 button, `SignInPrompt` modal, and their backing state/handlers are gone.
 
 **Key file changes:**
+
 - Renames: `onboarding` → `intro-flow` (route, screen folder, config file,
   tests) throughout; `register` → `profile` (route, screen folder).
 - New: `/sign-in` screen (logo + "Sign in with Google" button only), `/analytics-consent`
@@ -96,8 +98,9 @@ button, `SignInPrompt` modal, and their backing state/handlers are gone.
   during the design discussion, not implemented, deferred).
 
 **Explicitly deferred, noted but not built this pass:**
+
 - `src/utils/api.ts`'s `storePassword`/`hasPassword`/password-header
-  submission mechanism is *not* being ripped out yet — submission should
+  submission mechanism is _not_ being ripped out yet — submission should
   eventually send the real auth token instead, but that's follow-up work.
   Today's dev password auto-stub in `getPassword()` keeps submission
   working in the meantime.

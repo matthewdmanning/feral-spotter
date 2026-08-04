@@ -8,12 +8,12 @@ Root cause: `saveToLibraryAsync` imported from top-level `expo-media-library` is
 deprecated stub in the installed SDK version that unconditionally throws
 (`node_modules/expo-media-library/src/legacyWarnings.ts`). It was called inside the
 same `try` block as `setCapturedPhotos(...)` in
-`src/hooks/useCameraCapture.tsx:handleTakePhoto`, *before* that state update — so the
+`src/hooks/useCameraCapture.tsx:handleTakePhoto`, _before_ that state update — so the
 throw aborted the function early. `addSessionPhoto`/`addPhoto` ran fine (they're above
 the save call), but the camera screen never showed the captured photo (no strip
 thumbnail, no Done pill). This is very likely the real cause behind the "still asked
 to select photos" report — the OS's own Selected-Photos-Access picker (triggered
-separately, by the *pre-#48/#49* `requestPermissionsAsync()` call requesting granular
+separately, by the _pre-#48/#49_ `requestPermissionsAsync()` call requesting granular
 read permission) was a red herring layered on top of this.
 
 Fix (uncommitted): swap to `MediaLibrary.Asset.create(uri)` (the new class-based API,
@@ -76,7 +76,7 @@ file the GitHub issue (sub-issue of #41 — same file/area as #48/#49), commit o
   (`powershell -Command "Stop-Process -Id <pid> -Force"`) before assuming Metro is
   actually fresh.
 - **git-bash mangles device-absolute adb paths** — `adb shell screencap -p
-  /sdcard/x.png` gets rewritten to `C:/Program Files/Git/sdcard/x.png` by MSYS path
+/sdcard/x.png` gets rewritten to `C:/Program Files/Git/sdcard/x.png` by MSYS path
   conversion. Prefix with `MSYS_NO_PATHCONV=1` or use a doubled leading slash
   (`//sdcard/x.png`) for any `adb shell`/`adb pull`/`adb push` argument that's a
   device path, not a Windows path.
