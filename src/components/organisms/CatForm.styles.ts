@@ -9,12 +9,6 @@ export const styles = StyleSheet.create((theme) => ({
   },
   inner: { padding: theme.spacing.lg, gap: theme.spacing.xl },
   section: { gap: theme.spacing.md },
-  sectionTitle: {
-    fontSize: theme.typography.sm,
-    fontWeight: '700',
-    color: theme.colors.text,
-    marginBottom: theme.spacing.xs,
-  },
   photoSection: { gap: theme.spacing.sm },
   photoLabel: {
     color: theme.colors.muted,
