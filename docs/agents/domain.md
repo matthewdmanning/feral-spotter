@@ -105,6 +105,10 @@ _Avoid_: sign-up (prefer Registration), onboarding (that is the first-run explai
 
 ### Cat observation
 
+**Observed Cat / Edit Cat**:
+Two labels for the same screen and code path (`src/screens/submission/cats/index.tsx`), not two screens. The title toggles on whether `existingCat` resolves — i.e. whether the `local_id` being opened is already saved in the Submission's cat list. "Observed Cat": no existing record, `addCat` on save. "Edit Cat": record already exists, `updateCat` on save. Same `useCatForm`, `useCatSubmit`, `CatForm`.
+_Avoid_: treating these as separate screens/flows when reasoning about the code — there is one implementation, branched on `existingCat`.
+
 **Unknown / Unsure**:
 The value recorded for a cat attribute (age, sex, ear tipped, owned/domesticated, pattern, hair length, color, health) that the observer cannot determine — a real, first-class value, not the absence of one. It is the default for every attribute. "Unknown" and "Unsure" name the same concept, surfaced under two labels depending on the attribute.
 _Avoid_: unanswered, not-yet-selected, undefined, Touched — there is no separate "left blank" versus "confirmed unknown"; leaving an attribute at its default and explicitly choosing Unknown/Unsure are the same thing.

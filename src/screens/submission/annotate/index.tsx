@@ -71,20 +71,12 @@ export default function AnnotateScreen() {
     )
 
   const isFirst = currentIndex === 0
-  const isLast = currentIndex === photos.length - 1
 
   return (
     <View style={styles.root}>
       {/* Top bar */}
       <View style={styles.topBar}>
         <View style={styles.topRow}>
-          <Pressable
-            onPress={handleDone}
-            style={styles.topBtn}
-            accessibilityRole="button"
-          >
-            <Text style={styles.topBtnText}>Done</Text>
-          </Pressable>
           <Text style={styles.counter}>
             {currentIndex + 1} / {photos.length}
           </Text>
@@ -172,9 +164,7 @@ export default function AnnotateScreen() {
           style={[styles.navBtn, styles.navBtnPrimary]}
           accessibilityRole="button"
         >
-          <Text style={styles.navBtnPrimaryText}>
-            {isLast ? 'Finish' : 'Done →'}
-          </Text>
+          <Text style={styles.navBtnPrimaryText}>Boxing Complete</Text>
         </Pressable>
       </View>
 

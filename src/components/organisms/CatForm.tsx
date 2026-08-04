@@ -54,7 +54,6 @@ export function CatForm({
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Look</Text>
           <SegmentedControl
             label="Hair Length"
             options={HAIR_LENGTH_OPTIONS}
