@@ -97,8 +97,11 @@ export default function CreateSubmissionScreen() {
     router.push(LOCATION_PICKER_ROUTE)
   }, [showLocationWarning])
 
+  // Annotate-first (ADR 0004): discovering a cat starts with boxing it, not
+  // filling out a form — Cat Form is reached from annotate's Boxing
+  // Complete, not from here.
   const handleAddCat = useCallback(() => {
-    router.push('/submission/cats')
+    router.push('/submission/annotate')
   }, [])
 
   return (

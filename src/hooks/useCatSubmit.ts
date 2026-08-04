@@ -4,9 +4,15 @@
  * mutation and navigation for it — final submission ("Done") moved to
  * Submission Details (useSubmissionSubmit.ts, #130); Reset moved there too
  * (#153), since it clears the whole submission, not just this cat.
+ *
+ * Under the annotate-first flow (ADR 0004), a new cat's id was already
+ * minted by useActiveCatFlow when its first box was confirmed — this hook
+ * reuses it rather than minting its own, and clears it on save since the
+ * cat is no longer "in-progress."
  */
 
 import { useSubmissionStore } from '@/src/hooks'
+import { useActiveCatFlow } from '@/src/hooks/useActiveCatFlow'
 import type { CatFormValues } from '@/src/hooks/useCatForm'
 import type { ObservedCat } from '@/src/hooks/useSubmissionStore'
 import { CAT_DEFAULTS } from '@/src/screens/submission/cats/constants'
@@ -53,6 +59,7 @@ export function useCatSubmit({
 }: UseCatSubmitParams): CatSubmitResult {
   const addCat = useSubmissionStore((s) => s.addCat)
   const updateCat = useSubmissionStore((s) => s.updateCat)
+  const { activeCatId, clearActiveCat } = useActiveCatFlow()
 
   // ── Build ObservedCat from current form values ─────────────────────────────
 
@@ -76,21 +83,20 @@ export function useCatSubmit({
   // ── Save → warn on unset fields → store + navigate ─────────────────────────
 
   const handleSave = useCallback(() => {
-    const localId = existingCat?.local_id ?? randomUUID()
+    // Annotate now runs before Cat Form (ADR 0004) — a new cat's id was
+    // already minted there on its first confirmed box; reuse it instead of
+    // minting a second one.
+    const localId = existingCat?.local_id ?? activeCatId ?? randomUUID()
     const cat = buildCat(localId)
 
     const commit = () => {
       if (existingCat) updateCat(localId, cat)
       else addCat(cat)
 
-      if (annotationEnabled && form.photoIds.length > 0) {
-        router.replace({
-          pathname: '/submission/annotate',
-          params: { cat_id: localId },
-        })
-      } else {
-        router.back()
-      }
+      // The cat is saved, not "in-progress" anymore — a later "Add a Cat"
+      // must mint a fresh id, not resume this one.
+      clearActiveCat()
+      router.back()
     }
 
     const unsetFields = (
@@ -111,7 +117,15 @@ export function useCatSubmit({
     } else {
       commit()
     }
-  }, [buildCat, existingCat, addCat, updateCat, annotationEnabled, form])
+  }, [
+    buildCat,
+    existingCat,
+    addCat,
+    updateCat,
+    activeCatId,
+    clearActiveCat,
+    form,
+  ])
 
   // ── Derived ───────────────────────────────────────────────────────────────
 
