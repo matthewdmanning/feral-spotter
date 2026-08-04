@@ -46,7 +46,7 @@ warnings only), `scripts/format-changed.mjs --check` against
 `origin/main`.
 
 **Not run on-device.** A prior on-device session for #145/#146 (same
-branch, same emulator) *was* a dev build with `EXPO_PUBLIC_API_BASE_URL`
+branch, same emulator) _was_ a dev build with `EXPO_PUBLIC_API_BASE_URL`
 unset (so `IS_MOCK_BACKEND` was `true` throughout), but the session was
 torn down after the camera-flow checks without pushing a submission
 through to exercise this path. Covered instead by the

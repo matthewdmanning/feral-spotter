@@ -4,12 +4,12 @@ Source: `docs/design/2026-08-02-ui-bug-punchlist.md`. Triaged against open issue
 
 ## Sprint clusters (MVP milestone)
 
-| Sprint | Parent | Children |
-| --- | --- | --- |
-| camera | #144 | #145 repeated permission requests, #146 "Limited access" opens library picker, #147 mock submission path |
-| photo-selection *(new)* | #158 | #159 submit w/o photos -> auto-route to Box Annotation, #160 verify persisted selection across reselect |
-| cat-observations | #148 | #149 "Done" -> "Finished!" + hide-if-empty, #150 remove "Look" header, #151 remove Done/Cancel on Annotation Box, #152 Edit Cat missing-field validation, #153 relocate Reset to whole-submission screen |
-| submission-details *(new)* | #154 | #155 blocks submit with 0 cats, #156 drop back button / add Select-Take-More-Photos action, #157 Home -> Submission Details return path |
+| Sprint                     | Parent | Children                                                                                                                                                                                                 |
+| -------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| camera                     | #144   | #145 repeated permission requests, #146 "Limited access" opens library picker, #147 mock submission path                                                                                                 |
+| photo-selection _(new)_    | #158   | #159 submit w/o photos -> auto-route to Box Annotation, #160 verify persisted selection across reselect                                                                                                  |
+| cat-observations           | #148   | #149 "Done" -> "Finished!" + hide-if-empty, #150 remove "Look" header, #151 remove Done/Cancel on Annotation Box, #152 Edit Cat missing-field validation, #153 relocate Reset to whole-submission screen |
+| submission-details _(new)_ | #154   | #155 blocks submit with 0 cats, #156 drop back button / add Select-Take-More-Photos action, #157 Home -> Submission Details return path                                                                  |
 
 ## Implementation order
 
@@ -57,7 +57,7 @@ if (status !== GRANTED && status !== LIMITED) {
 }
 ```
 
-This `check` + conditional `request` runs inline in the capture path itself, not once at consent time — a comment on L136-138 explains it's intentional: issue #91 removed an eager consent-time request for this exact permission, so it moved here as a lazy request "at the point the write is actually needed." The gap the comment doesn't cover: if the OS status is anything other than `GRANTED`/`LIMITED` (denied-but-askable, or the Android "Limited access" partial-grant state), `request()` fires again on *every* capture, not just the first. On Android 14+, `request()` for this permission itself surfaces the system Photo Picker (`ACTION_PICK_IMAGES`) as the OS's UI for "Select photos" — so from the user's POV, pressing the shutter opens a picker instead of capturing (#140), and it can recur on every shutter press (#145) or after picking "Limited access" specifically (#146).
+This `check` + conditional `request` runs inline in the capture path itself, not once at consent time — a comment on L136-138 explains it's intentional: issue #91 removed an eager consent-time request for this exact permission, so it moved here as a lazy request "at the point the write is actually needed." The gap the comment doesn't cover: if the OS status is anything other than `GRANTED`/`LIMITED` (denied-but-askable, or the Android "Limited access" partial-grant state), `request()` fires again on _every_ capture, not just the first. On Android 14+, `request()` for this permission itself surfaces the system Photo Picker (`ACTION_PICK_IMAGES`) as the OS's UI for "Select photos" — so from the user's POV, pressing the shutter opens a picker instead of capturing (#140), and it can recur on every shutter press (#145) or after picking "Limited access" specifically (#146).
 
 - **#145** (repeated permission requests): fix is likely gating the request so it only fires once per session/permanently-denied state, or caching a "user already said no this session" flag — needs a decision on UX (silently skip gallery-save vs. re-prompt) since PR #61's whole point was avoiding double-asks.
 - **#146** ("Limited access" opens picker): same code path — Android's partial-access grant flow re-enters the picker; verify whether `status === RESULTS.LIMITED` is actually being treated as terminal (it is, per the code above) or whether the OS keeps re-surfacing the picker on subsequent `check()` calls regardless.
@@ -73,18 +73,18 @@ Not code-verified — inferred from punchlist wording only.
 
 ### 3. Cat Observations (#148)
 
-Not code-verified — inferred from punchlist wording, cross-referenced against related *closed* issues from the 2026-07-31 test-drive (#124/#125/#126/#116/#135/#130) which already touched this same screen family, so there's likely recent context in those diffs/PRs worth checking before starting.
+Not code-verified — inferred from punchlist wording, cross-referenced against related _closed_ issues from the 2026-07-31 test-drive (#124/#125/#126/#116/#135/#130) which already touched this same screen family, so there's likely recent context in those diffs/PRs worth checking before starting.
 
-- **#149** ("Done" -> "Finished!", hide if cat list empty): straightforward label + conditional-render change on whatever component renders the final-submit button. #130 (closed) already moved a "Done" button from Cat Observations to Submission Details — worth checking whether this is the *same* button post-move or a different one, since the punchlist still calls it "Cat Observations screen."
+- **#149** ("Done" -> "Finished!", hide if cat list empty): straightforward label + conditional-render change on whatever component renders the final-submit button. #130 (closed) already moved a "Done" button from Cat Observations to Submission Details — worth checking whether this is the _same_ button post-move or a different one, since the punchlist still calls it "Cat Observations screen."
 - **#150** (remove "Look" header on Observed Cat screen): simple header removal, low risk.
 - **#151** (remove "Done"/"Cancel" on Annotation Box screen): simple button removal — but check what currently drives navigation away from this screen if both buttons disappear; something needs to replace their implicit "confirm and leave" function, or the screen needs another exit path already.
 - **#152** (Edit Cat: no missing-field validation warning): needs whatever form-state the Edit Cat screen already holds (species/pattern/color etc. — color-by-pattern constraint already exists per closed #96) extended with a required-field check before allow-save/continue.
-- **#153** (relocate Reset from Edit Cat to whole-submission screen): punchlist is explicit the button's *logic* already works correctly — this is placement only, move the existing handler up a level to wherever Submission Details/Cat Observations list-level actions live (likely alongside where #149's Finished! button ends up).
+- **#153** (relocate Reset from Edit Cat to whole-submission screen): punchlist is explicit the button's _logic_ already works correctly — this is placement only, move the existing handler up a level to wherever Submission Details/Cat Observations list-level actions live (likely alongside where #149's Finished! button ends up).
 
 ### 4. Submission Details (#154)
 
 Not code-verified — inferred from punchlist wording only. This is the newest cluster with the least existing issue history to cross-reference against.
 
 - **#155** (submit possible with 0 cats): validation gate — needs a count check on whatever list backs "cats in this submission" before enabling/allowing the submit action.
-- **#156** (remove back button, add Select/Take More Photos action): two changes bundled — hide/remove an existing back-navigation control, and add a new bottom action. Punchlist explicitly leaves open *which* label ("Select More Photos" vs "Take More Photos") — may need both (branching by entry point: came from camera vs. library) rather than picking one; flagged `ready-for-human` for that reason.
+- **#156** (remove back button, add Select/Take More Photos action): two changes bundled — hide/remove an existing back-navigation control, and add a new bottom action. Punchlist explicitly leaves open _which_ label ("Select More Photos" vs "Take More Photos") — may need both (branching by entry point: came from camera vs. library) rather than picking one; flagged `ready-for-human` for that reason.
 - **#157** (Home -> Submission Details return path not obvious): pure UX/discoverability problem, no described mechanism — likely needs a resume-in-progress-submission affordance on Home (a card/banner) rather than a screen-level fix. Least specified of all four sprints; expect this one needs a design pass before an agent can implement it blind.

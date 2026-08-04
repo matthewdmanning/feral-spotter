@@ -9,7 +9,7 @@ Implements #146, part of #144 (Camera flow: user-test-drive UI fixes,
 ## What shipped
 
 Root cause was one level deeper than #145: the app was gating a
-*write-only* operation (`Asset.create`, saving a newly captured photo)
+_write-only_ operation (`Asset.create`, saving a newly captured photo)
 behind `react-native-permissions`' `READ_MEDIA_IMAGES` — a full read
 permission. On Android 14+, that permission's grant flow includes a
 "Select photos…" option that itself launches the system Photo Picker
