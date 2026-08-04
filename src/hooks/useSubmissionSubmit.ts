@@ -1,17 +1,20 @@
 /**
  * hooks/useSubmissionSubmit.ts
- * Final "Done" action for the submission, called from Submission Details
- * (src/screens/submission/create/index.tsx) — moved here from the Cat
- * Observations screen (#130). Unlike useCatSubmit's handleSave, this has no
- * per-cat form to fold in first: every cat is already saved in the store by
- * the time the user reaches Submission Details, so this just submits the
- * cats/photos/location as they stand. It does not itself validate — the
- * warning icon is informational, not a submit gate.
+ * Final "Done" and "Reset" actions for the submission, both called from
+ * Submission Details (src/screens/submission/create/index.tsx). handleDone
+ * moved here from the Cat Observations screen (#130); handleReset moved
+ * here from useCatSubmit (#153) — it wipes the whole submission, so it
+ * belongs on the whole-submission screen, not a single cat's form. Neither
+ * has a per-cat form to fold in first: every cat is already saved in the
+ * store by the time the user reaches Submission Details. handleDone does
+ * not itself validate — the warning icon is informational, not a submit
+ * gate.
  */
 
 import { usePhotoStore, useSubmissionStore, useUIStore } from '@/src/hooks'
 import { EVENTS, fireAnalyticsEvent } from '@/src/lib/analytics/analytics'
 import {
+  deleteSubmissionCache,
   getCurrentCacheId,
   getSubmissionCache,
   updateSubmissionCache,
@@ -25,6 +28,7 @@ import { Alert } from 'react-native'
 
 export interface SubmissionSubmitResult {
   handleDone: () => void
+  handleReset: () => void
   isSubmitting: boolean
 }
 
@@ -154,5 +158,29 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
     setSubmitting,
   ])
 
-  return { handleDone, isSubmitting }
+  // ── Reset → confirm → clear all (#153) ─────────────────────────────────────
+
+  const handleReset = useCallback(() => {
+    Alert.alert(
+      'Reset Submission',
+      'This will permanently clear all cats, photos and submission data.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: async () => {
+            const cId = await getCurrentCacheId()
+            if (cId) await deleteSubmissionCache(cId)
+            clearDraft()
+            clearPhotos()
+            stopLocationCapture()
+            router.replace('/')
+          },
+        },
+      ],
+    )
+  }, [clearDraft, clearPhotos])
+
+  return { handleDone, handleReset, isSubmitting }
 }

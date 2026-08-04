@@ -71,4 +71,17 @@ export const styles = StyleSheet.create((theme) => ({
     fontSize: theme.typography.sm,
     fontWeight: '600',
   },
+  doneBtnDisabled: { opacity: 0.4 },
+  resetBtn: {
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.danger,
+  },
+  resetBtnText: {
+    color: theme.colors.danger,
+    fontSize: theme.typography.sm,
+    fontWeight: '600',
+  },
 }))
