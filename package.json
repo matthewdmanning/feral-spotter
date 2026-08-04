@@ -19,7 +19,6 @@
     "test": "jest",
     "format": "node scripts/format-changed.mjs",
     "format:check": "node scripts/format-changed.mjs --check",
-    "format:all": "prettier --write .",
     "clean-debug": "bash scripts/android-build.sh",
     "gradle:debug": "expo prebuild --clean && cd android && .\\gradlew assembleDebug"
   },

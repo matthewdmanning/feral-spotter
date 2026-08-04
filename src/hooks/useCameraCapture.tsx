@@ -16,10 +16,14 @@ import { usePhotoStore } from '@/src/hooks'
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'
 import { captureEvent, EVENTS } from '@/src/lib/analytics/analytics'
 import { startLocationCapture } from '@/src/lib/location'
-import { PERMISSION_MAP } from '@/src/lib/permissions'
 import type { SubmissionPhoto } from '@/src/types'
 import { type FlashListRef } from '@shopify/flash-list'
-import { Asset } from 'expo-media-library'
+import {
+  Asset,
+  getPermissionsAsync,
+  PermissionStatus,
+  requestPermissionsAsync,
+} from 'expo-media-library'
 import { router } from 'expo-router'
 import { randomUUID } from 'expo-crypto'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -30,7 +34,6 @@ import {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated'
-import { check, request, RESULTS } from 'react-native-permissions'
 import {
   useCameraDevice,
   usePhotoOutput,
@@ -133,14 +136,13 @@ export function useCameraCapture(): CameraCaptureResult {
       // not per photo — no GPS call on the shutter path.
 
       if (keepOnDevice) {
-        // #91 removed the eager consent-time request for this permission —
-        // request it lazily here instead, at the point the write is actually
-        // needed, rather than silently no-op-ing the gallery save.
-        let status = await check(PERMISSION_MAP.mediaLibrary)
-        if (status !== RESULTS.GRANTED && status !== RESULTS.LIMITED) {
-          status = await request(PERMISSION_MAP.mediaLibrary)
-        }
-        if (status === RESULTS.GRANTED || status === RESULTS.LIMITED) {
+        // #145/#146: check() only, never request() — see the mount effect
+        // below for why. writeOnly (true) requests add-only access, which
+        // matches app.json's savePhotosPermission config; unlike a full
+        // read request, it has no Android 14+ "Select photos" partial-access
+        // flow to surface (#140), since this path never reads the library.
+        const { status } = await getPermissionsAsync(true)
+        if (status === PermissionStatus.GRANTED) {
           try {
             await Asset.create(uri)
           } catch (err) {
@@ -220,6 +222,23 @@ export function useCameraCapture(): CameraCaptureResult {
     // screen's lifecycle (src/lib/location.ts).
     void startLocationCapture()
   }, [])
+
+  // #145/#146: request the gallery-save permission once, when the Camera
+  // screen opens — not per shutter press (that re-triggered the OS prompt on
+  // every press while status stayed non-terminal). writeOnly (true) requests
+  // add-only access rather than the full READ_MEDIA_IMAGES grant, which is
+  // what previously pulled in Android 14+'s "Select photos" picker UI (#140)
+  // — this path only ever writes newly captured photos, never reads the
+  // library, so it never needed read access in the first place.
+  useEffect(() => {
+    if (!keepOnDevice) return
+    void (async () => {
+      const { status } = await getPermissionsAsync(true)
+      if (status !== PermissionStatus.GRANTED) {
+        await requestPermissionsAsync(true)
+      }
+    })()
+  }, [keepOnDevice])
 
   return {
     device,

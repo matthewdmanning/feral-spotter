@@ -1,4 +1,4 @@
-import { retryApiCall } from '@/src/utils/api'
+import { retryApiCall, submitObservation } from '@/src/utils/api'
 
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
@@ -43,5 +43,22 @@ describe('retryApiCall', () => {
       'retryApiCall: apiCall did not run (maxRetries <= 0)',
     )
     expect(apiCall).not.toHaveBeenCalled()
+  })
+})
+
+describe('submitObservation', () => {
+  it('#147: mocks a success response in dev builds with no configured backend, without hitting the network', async () => {
+    // No global.fetch mock is installed in this suite — if submitObservation
+    // fell through to the real fetch() path, this would throw/reject rather
+    // than resolve, since EXPO_PUBLIC_API_BASE_URL is unset here (as in a
+    // fresh test-drive build) and there's nothing to answer the request.
+    const response = await submitObservation({
+      submission: { location_type: 'device', time_type: 'device' },
+      cats: [],
+      photo_paths: [],
+    })
+
+    expect(response.status).toBe('success')
+    expect(response.id).toMatch(/^mock-/)
   })
 })
