@@ -40,7 +40,7 @@ thing to verify, not assume):
 
 - `lastBoxes` is swept alongside `boxes`/`absences`, even though
   `clearForCat` doesn't sweep it (precedent for leaving it). For a
-  *deleted* photo specifically, keeping a "revert to" box for a photo
+  _deleted_ photo specifically, keeping a "revert to" box for a photo
   that no longer exists would recreate the exact class of staleness this
   ticket fixes — included deliberately, not by default.
 - This branch is based on `sprint/cat-annotate-flow` before #172 merged,
@@ -59,7 +59,7 @@ functions:
 - multi-cat sweep: two cats with boxes on the same photo, both cleared.
 - absences swept across cats the same way.
 - `lastBoxes` cleared.
-- same cat's *other* photo untouched (suffix match, not prefix).
+- same cat's _other_ photo untouched (suffix match, not prefix).
 
 ## Explicitly not addressed (flagged in the issue, not this PR's job)
 
