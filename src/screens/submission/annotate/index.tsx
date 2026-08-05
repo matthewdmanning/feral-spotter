@@ -28,6 +28,7 @@ export default function AnnotateScreen() {
     setCurrentIndex,
     carouselRef,
     handleConfirmBox,
+    handleNotInPhoto,
     handleBoxingComplete,
     clearActiveCat,
     handlePrevPhoto,
@@ -121,7 +122,9 @@ export default function AnnotateScreen() {
                         ? theme.colors.text
                         : s === 'located'
                           ? theme.colors.accent
-                          : theme.colors.muted,
+                          : s === 'not-in-photo'
+                            ? theme.colors.warning
+                            : theme.colors.muted,
                   },
                 ]}
               />
@@ -172,6 +175,15 @@ export default function AnnotateScreen() {
           accessibilityRole="button"
         >
           <Text style={styles.navBtnSecondaryText}>← Back</Text>
+        </Pressable>
+        <Pressable
+          onPress={handleNotInPhoto}
+          disabled={!activeCatId}
+          style={[styles.pillBtn, !activeCatId && styles.navBtnDisabled]}
+          accessibilityRole="button"
+          accessibilityLabel="Not in this photo"
+        >
+          <Text style={styles.pillBtnText}>Not in Photo</Text>
         </Pressable>
         <Pressable
           onPress={handleBoxingComplete}
