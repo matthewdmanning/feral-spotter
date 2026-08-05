@@ -19,12 +19,13 @@ import { useCallback } from 'react'
 
 type BoxInput = Omit<BoundingBox, 'id' | 'cat_id' | 'photo_local_id'>
 
-export type PhotoPassStatus = 'pending' | 'located'
+export type PhotoPassStatus = 'pending' | 'located' | 'not-in-photo'
 
 export interface ActiveCatFlow {
   activeCatId: string | null
   getPhotoStatus: (photoId: string) => PhotoPassStatus
   handleBoxConfirmed: (photoId: string, box: BoxInput) => void
+  handleNotInPhoto: (photoId: string) => void
   handleBoxingComplete: () => void
   clearActiveCat: () => void
 }
@@ -35,16 +36,21 @@ export function useActiveCatFlow(): ActiveCatFlow {
   const activeCatId = useActiveCatFlowStore((s) => s.activeCatId)
   const setActiveCatId = useActiveCatFlowStore((s) => s.setActiveCatId)
   const addBox = useBoundingBoxStore((s) => s.addBox)
+  const markAbsent = useBoundingBoxStore((s) => s.markAbsent)
   // Subscribed directly (not via the stable getBoxes function ref) so a
   // confirmed box re-renders callers, e.g. the dots strip.
   const boxes = useBoundingBoxStore((s) => s.boxes)
+  const absences = useBoundingBoxStore((s) => s.absences)
 
   const getPhotoStatus = useCallback(
-    (photoId: string): PhotoPassStatus =>
-      activeCatId && (boxes[`${activeCatId}:${photoId}`]?.length ?? 0) > 0
-        ? 'located'
-        : 'pending',
-    [activeCatId, boxes],
+    (photoId: string): PhotoPassStatus => {
+      if (!activeCatId) return 'pending'
+      const key = `${activeCatId}:${photoId}`
+      if ((boxes[key]?.length ?? 0) > 0) return 'located'
+      if (absences[key]) return 'not-in-photo'
+      return 'pending'
+    },
+    [activeCatId, boxes, absences],
   )
 
   // First confirmed box of a pass with no active cat declares a new one.
@@ -55,6 +61,17 @@ export function useActiveCatFlow(): ActiveCatFlow {
       addBox(catId, photoId, box)
     },
     [activeCatId, setActiveCatId, addBox],
+  )
+
+  // No cat has been declared yet (no box drawn this pass) — nothing to
+  // record absence against. The UI is expected to disable the affordance
+  // in that state; this guard is defense in depth.
+  const handleNotInPhoto = useCallback(
+    (photoId: string) => {
+      if (!activeCatId) return
+      markAbsent(activeCatId, photoId)
+    },
+    [activeCatId, markAbsent],
   )
 
   // Callable at any point in the pass. With no boxes drawn yet there is no
@@ -81,6 +98,7 @@ export function useActiveCatFlow(): ActiveCatFlow {
     activeCatId,
     getPhotoStatus,
     handleBoxConfirmed,
+    handleNotInPhoto,
     handleBoxingComplete,
     clearActiveCat,
   }

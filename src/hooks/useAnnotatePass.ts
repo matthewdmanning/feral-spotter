@@ -32,6 +32,7 @@ export interface AnnotatePass {
   carouselRef: React.RefObject<ICarouselInstance | null>
   // Handlers
   handleConfirmBox: (box: BoxInput) => void
+  handleNotInPhoto: () => void
   handleBoxingComplete: () => void
   clearActiveCat: () => void
   handlePrevPhoto: () => void
@@ -51,6 +52,7 @@ export function useAnnotatePass(): AnnotatePass {
     activeCatId,
     getPhotoStatus,
     handleBoxConfirmed,
+    handleNotInPhoto: markNotInPhoto,
     handleBoxingComplete,
     clearActiveCat,
   } = useActiveCatFlow()
@@ -84,6 +86,20 @@ export function useAnnotatePass(): AnnotatePass {
     },
     [currentIndex, photos, handleBoxConfirmed],
   )
+
+  // ── "Not in this photo" — record explicit absence, advance same as a
+  //    confirmed box does ─────────────────────────────────────────────────
+  const handleNotInPhoto = useCallback(() => {
+    const photo = photos[currentIndex]
+    if (!photo) return
+    markNotInPhoto(photo.local_id)
+
+    if (currentIndex < photos.length - 1) {
+      const next = currentIndex + 1
+      carouselRef.current?.scrollTo({ index: next, animated: true })
+      setCurrentIndex(next)
+    }
+  }, [currentIndex, photos, markNotInPhoto])
 
   // ── Prev — go to previous photo ───────────────────────────────────────────
   const handlePrevPhoto = useCallback(() => {
@@ -155,6 +171,7 @@ export function useAnnotatePass(): AnnotatePass {
     setCurrentIndex,
     carouselRef,
     handleConfirmBox,
+    handleNotInPhoto,
     handleBoxingComplete,
     clearActiveCat,
     handlePrevPhoto,

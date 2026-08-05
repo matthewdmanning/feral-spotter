@@ -68,6 +68,21 @@ export const styles = StyleSheet.create((theme) => ({
     fontWeight: '600',
   },
   navBtnDisabled: { opacity: 0.35 },
+  pillBtn: {
+    paddingVertical: 14,
+    paddingHorizontal: theme.spacing.lg,
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pillBtnText: {
+    color: theme.colors.text,
+    fontSize: 13,
+    fontWeight: '600',
+  },
   empty: {
     flex: 1,
     backgroundColor: theme.colors.background,
