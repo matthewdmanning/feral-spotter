@@ -13,6 +13,7 @@
 
 import { useSubmissionStore } from '@/src/hooks'
 import { useActiveCatFlow } from '@/src/hooks/useActiveCatFlow'
+import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import type { CatFormValues } from '@/src/hooks/useCatForm'
 import type { ObservedCat } from '@/src/hooks/useSubmissionStore'
 import { CAT_DEFAULTS } from '@/src/screens/submission/cats/constants'
@@ -60,24 +61,36 @@ export function useCatSubmit({
   const addCat = useSubmissionStore((s) => s.addCat)
   const updateCat = useSubmissionStore((s) => s.updateCat)
   const { activeCatId, clearActiveCat } = useActiveCatFlow()
+  const getBoxedPhotoIds = useBoundingBoxStore((s) => s.getBoxedPhotoIds)
 
   // ── Build ObservedCat from current form values ─────────────────────────────
+  // photo_local_ids is derived from useBoundingBoxStore, not form input
+  // (ADR 0004) — the manual CatPhotoSelector this used to come from is gone.
+  // Editing a cat with no boxes recorded under its id (pre-#170 draft, or a
+  // useBoundingBoxStore migration wipe) keeps its existing list rather than
+  // blanking it — the derivation is additive/corrective, not destructive.
 
   const buildCat = useCallback(
-    (localId: string): ObservedCat => ({
-      local_id: localId,
-      age: form.age,
-      ear_tipped: form.earTipped,
-      health_label: form.healthLabel,
-      owned_domesticated: form.owned,
-      pattern: form.pattern,
-      hair_length: form.hairLength,
-      color: form.color,
-      sex: form.sex,
-      photo_local_ids: form.photoIds,
-      photos_reviewed: existingCat?.photos_reviewed ?? false,
-    }),
-    [form, existingCat],
+    (localId: string): ObservedCat => {
+      const boxedPhotoIds = getBoxedPhotoIds(localId)
+      return {
+        local_id: localId,
+        age: form.age,
+        ear_tipped: form.earTipped,
+        health_label: form.healthLabel,
+        owned_domesticated: form.owned,
+        pattern: form.pattern,
+        hair_length: form.hairLength,
+        color: form.color,
+        sex: form.sex,
+        photo_local_ids:
+          boxedPhotoIds.length > 0
+            ? boxedPhotoIds
+            : (existingCat?.photo_local_ids ?? []),
+        photos_reviewed: existingCat?.photos_reviewed ?? false,
+      }
+    },
+    [form, existingCat, getBoxedPhotoIds],
   )
 
   // ── Save → warn on unset fields → store + navigate ─────────────────────────
@@ -129,8 +142,10 @@ export function useCatSubmit({
 
   // ── Derived ───────────────────────────────────────────────────────────────
 
+  const catId = existingCat?.local_id ?? activeCatId
+  const boxedPhotoCount = catId ? getBoxedPhotoIds(catId).length : 0
   const saveLabel =
-    annotationEnabled && form.photoIds.length > 0
+    annotationEnabled && boxedPhotoCount > 0
       ? 'Put the Cat in a Box'
       : 'Save Observation'
 
