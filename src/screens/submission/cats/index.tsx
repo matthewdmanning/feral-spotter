@@ -1,5 +1,6 @@
 import { CatForm } from '@/src/components/organisms/CatForm'
 import { useSubmissionStore } from '@/src/hooks'
+import { useActiveCatFlow } from '@/src/hooks/useActiveCatFlow'
 import { useCatForm } from '@/src/hooks/useCatForm'
 import { useCatSubmit } from '@/src/hooks/useCatSubmit'
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'
@@ -19,9 +20,11 @@ export default function CatObservationScreen() {
   const annotationEnabled = useSettingsStore(
     (s) => s.settings.annotation_enabled,
   )
+  const { activeCatId } = useActiveCatFlow()
 
   const form = useCatForm(existingCat)
   const submit = useCatSubmit({ form, existingCat, annotationEnabled })
+  const catId = existingCat?.local_id ?? activeCatId
 
   return (
     <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
@@ -44,12 +47,7 @@ export default function CatObservationScreen() {
             </Pressable>
           </View>
         </View>
-        <CatForm
-          form={form}
-          submit={submit}
-          existingCat={existingCat}
-          annotationEnabled={annotationEnabled}
-        />
+        <CatForm form={form} submit={submit} catId={catId} />
       </View>
     </ScrollView>
   )
