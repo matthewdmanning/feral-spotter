@@ -3,6 +3,9 @@
 # If prettier rewrites anything, the push is blocked so you commit the result
 # first (a pre-push hook can't amend commits already being pushed).
 #
+# No-op unless PRETTIER_BASE is set (CI sets it; local pushes don't) — see
+# scripts/format-changed.mjs for why local base-branch guessing was dropped.
+#
 # Enable once per clone:  git config core.hooksPath .githooks
 
 node scripts/format-changed.mjs || exit 1
