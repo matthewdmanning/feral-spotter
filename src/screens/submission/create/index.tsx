@@ -57,6 +57,14 @@ export default function CreateSubmissionScreen() {
     submission.captured_at,
   ])
 
+  // Zero-friction on-ramp (#173): with no cats recorded yet, skip straight
+  // into annotate instead of rendering an empty Cat List. replace (not
+  // push) so annotate's hardware back pops past Cat List entirely rather
+  // than landing back on it and re-triggering this redirect.
+  useEffect(() => {
+    if (cats.length === 0) router.replace('/submission/annotate')
+  }, [cats.length])
+
   // Commit the background Live fix into the Submission draft only once it
   // resolves — never mid-watch, so a reacquire's early (worse) candidates
   // can't clobber the already-stored fix while it's re-settling. Also never
@@ -103,6 +111,9 @@ export default function CreateSubmissionScreen() {
   const handleAddCat = useCallback(() => {
     router.push('/submission/annotate')
   }, [])
+
+  // Auto-skip in flight (#173) — nothing to show this frame.
+  if (cats.length === 0) return null
 
   return (
     <View style={styles.root}>
