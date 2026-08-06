@@ -81,12 +81,13 @@ A beautifully designed UI can still deliver poor UX if the underlying flows are 
    - Use flexible layouts, relative sizing, and adaptive patterns (e.g., switching from a bottom tab bar to a side navigation on larger screens).
 
 10. Simplify Navigation
-   - Navigation is the backbone of mobile UI. Poor navigation is the most common reason users abandon apps.
-   - Limit primary navigation to 3–5 items (bottom tab bar or navigation drawer)
-   - Make the current location clear at all times
-   - Provide a consistent way to go back
-   - Use progressive disclosure — show only what’s needed at each level
-   - Avoid deep nesting — most content should be reachable in 2–3 taps from the home screen
+
+- Navigation is the backbone of mobile UI. Poor navigation is the most common reason users abandon apps.
+- Limit primary navigation to 3–5 items (bottom tab bar or navigation drawer)
+- Make the current location clear at all times
+- Provide a consistent way to go back
+- Use progressive disclosure — show only what’s needed at each level
+- Avoid deep nesting — most content should be reachable in 2–3 taps from the home screen
 
 Common Mobile UI Patterns
 These established patterns solve recurring mobile design problems. Using familiar patterns reduces learning curves and improves usability:
