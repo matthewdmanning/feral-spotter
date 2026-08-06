@@ -1,0 +1,8 @@
+#!/bin/sh
+# Local commitlint enforcement — same commitlint.config.js the CI
+# commitlint Action checks, run before the commit lands instead of after
+# it's pushed (a bad subject caught only in CI needs a force-push to fix).
+#
+# Enable once per clone:  git config core.hooksPath .githooks
+
+npx commitlint --edit "$1"
