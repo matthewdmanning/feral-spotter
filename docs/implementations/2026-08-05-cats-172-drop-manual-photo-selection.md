@@ -123,3 +123,16 @@ Commit and PR not created this session. PR should target
 `sprint/cat-annotate-flow` (not `main`), same as #170/#171 — override
 `gh pr create`'s default base explicitly with `--base
 sprint/cat-annotate-flow`.
+
+## 2026-08-06 — extension
+
+**Purpose:** #174 replaces this ticket's placeholder with the real
+designed component — the "no test coverage... would need a plain unit
+test if this stops being a plain, undesigned placeholder" gap flagged
+above is exactly what #174 closes.
+
+**Change:** `CatFormInsetCrop.{tsx,styles.ts}` renamed to
+`InsetCropBubble.{tsx,styles.ts}` and rewritten as a floating circular
+bubble (design decided in #168), now rendered on both `annotate` and Cat
+Form instead of Cat Form alone. Full detail:
+[2026-08-06-cats-174-inset-crop-bubble.md](2026-08-06-cats-174-inset-crop-bubble.md).

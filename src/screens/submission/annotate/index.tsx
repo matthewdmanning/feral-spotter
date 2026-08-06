@@ -1,4 +1,5 @@
 import { AnnotateCarouselItem } from '@/src/components/organisms/AnnotateCarouselItem'
+import { InsetCropBubble } from '@/src/components/organisms/InsetCropBubble'
 import { TutorialOverlay } from '@/src/components/organisms/TutorialOverlay'
 import {
   ANNOTATION_TUTORIAL_STEPS,
@@ -161,6 +162,12 @@ export default function AnnotateScreen() {
           />
         )}
       </View>
+
+      {/* Floating inset crop (#174) — hidden until the first box is
+          confirmed for the current cat (activeCatId is null until then). */}
+      {activeCatId && (
+        <InsetCropBubble catId={activeCatId} edge="bottom-right" />
+      )}
 
       {/* Bottom buttons — below carousel, never covered by canvas */}
       <View style={styles.bottomBar}>

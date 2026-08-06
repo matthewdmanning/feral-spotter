@@ -1,6 +1,5 @@
 import { View, Text, Pressable } from 'react-native'
 import { SegmentedControl } from '@/src/components/atoms/SegmentedControl'
-import { CatFormInsetCrop } from '@/src/components/organisms/CatFormInsetCrop'
 import type { CatForm as CatFormValues } from '@/src/hooks/useCatForm'
 import type { CatSubmitResult } from '@/src/hooks/useCatSubmit'
 import {
@@ -18,16 +17,12 @@ import { styles } from './CatForm.styles'
 interface CatFormProps {
   form: CatFormValues
   submit: CatSubmitResult
-  /** The cat this form is for — an already-saved cat's id, or the in-progress id from an annotate pass */
-  catId: string | null
 }
 
-export function CatForm({ form, submit, catId }: CatFormProps) {
+export function CatForm({ form, submit }: CatFormProps) {
   return (
     <View style={styles.card}>
       <View style={styles.inner}>
-        {catId && <CatFormInsetCrop catId={catId} />}
-
         <View style={styles.section}>
           <SegmentedControl
             label="Age"
