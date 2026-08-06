@@ -36,6 +36,10 @@ interface BoundingBoxState {
   getBoxesForPhoto: (photoId: string) => BoundingBox[]
   /** Sweeps boxes/absences/lastBoxes for a removed photo, across every cat (#177) */
   removeBoxesForPhoto: (photoId: string) => void
+  /** photo_local_ids with a box for this cat — the derived source of ObservedCat.photo_local_ids (#172) */
+  getBoxedPhotoIds: (catId: string) => string[]
+  /** The cat's first-drawn box (by key insertion order) — persists as the Cat Form inset crop (#172) */
+  getFirstBox: (catId: string) => BoundingBox | undefined
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -144,6 +148,27 @@ export const useBoundingBoxStore = create<BoundingBoxState>()(
           }
           return { boxes, absences, lastBoxes }
         })
+      },
+
+      getBoxedPhotoIds: (catId) => {
+        const all = get().boxes
+        return Object.entries(all)
+          .filter(
+            ([key, boxes]) => key.startsWith(`${catId}:`) && boxes.length > 0,
+          )
+          .map(([key]) => key.slice(`${catId}:`.length))
+      },
+
+      // Object key insertion order == box-confirmation order, since addBox
+      // only ever assigns new keys or overwrites an existing key in place.
+      // Skips keys left empty by removeBox — those aren't "the first box"
+      // anymore, they're a removed one.
+      getFirstBox: (catId) => {
+        const all = get().boxes
+        const firstKey = Object.keys(all).find(
+          (key) => key.startsWith(`${catId}:`) && (all[key]?.length ?? 0) > 0,
+        )
+        return firstKey ? all[firstKey]?.[0] : undefined
       },
     }),
     {

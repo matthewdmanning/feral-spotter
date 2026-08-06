@@ -1,9 +1,8 @@
 import { View, Text, Pressable } from 'react-native'
 import { SegmentedControl } from '@/src/components/atoms/SegmentedControl'
-import { CatPhotoSelector } from '@/src/components/organisms/CatPhotoSelector'
+import { CatFormInsetCrop } from '@/src/components/organisms/CatFormInsetCrop'
 import type { CatForm as CatFormValues } from '@/src/hooks/useCatForm'
 import type { CatSubmitResult } from '@/src/hooks/useCatSubmit'
-import type { ObservedCat } from '@/src/hooks/useSubmissionStore'
 import {
   AGE_OPTIONS,
   EAR_TIPPED_OPTIONS,
@@ -19,19 +18,16 @@ import { styles } from './CatForm.styles'
 interface CatFormProps {
   form: CatFormValues
   submit: CatSubmitResult
-  existingCat?: ObservedCat
-  annotationEnabled: boolean
+  /** The cat this form is for — an already-saved cat's id, or the in-progress id from an annotate pass */
+  catId: string | null
 }
 
-export function CatForm({
-  form,
-  submit,
-  existingCat,
-  annotationEnabled,
-}: CatFormProps) {
+export function CatForm({ form, submit, catId }: CatFormProps) {
   return (
     <View style={styles.card}>
       <View style={styles.inner}>
+        {catId && <CatFormInsetCrop catId={catId} />}
+
         <View style={styles.section}>
           <SegmentedControl
             label="Age"
@@ -87,17 +83,6 @@ export function CatForm({
             value={form.healthLabel}
             onChange={form.setHealthLabel}
             accessibilityLabel="Cat health rating"
-          />
-        </View>
-
-        <View style={styles.photoSection}>
-          <Text style={styles.photoLabel}>Photos showing this cat</Text>
-          <CatPhotoSelector
-            catLocalId={existingCat?.local_id ?? ''}
-            selectedPhotoIds={form.photoIds}
-            onTogglePhoto={form.handleTogglePhoto}
-            annotationEnabled={annotationEnabled}
-            photosReviewed={existingCat?.photos_reviewed ?? false}
           />
         </View>
 
