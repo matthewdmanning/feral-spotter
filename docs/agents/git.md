@@ -1,6 +1,6 @@
 # Git mechanics
 
-Lessons about raw git/GitHub mechanics — not `gh` issue-tracker conventions (see [issue-tracker.md](issue-tracker.md) for those) and not commit/branch/PR *hygiene* (see the global CLAUDE.md git-workflow rules for that).
+Lessons about raw git/GitHub mechanics — not `gh` issue-tracker conventions (see [issue-tracker.md](issue-tracker.md) for those) and not commit/branch/PR _hygiene_ (see the global CLAUDE.md git-workflow rules for that).
 
 ## Learned the hard way
 
