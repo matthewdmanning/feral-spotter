@@ -1,0 +1,4 @@
+# Normalize line endings to LF for text files regardless of local
+# core.autocrlf — matches prettier's default LF output and stops the
+# checkout/commit CRLF flap that reformats files with no real diff.
+* text=auto eol=lf
