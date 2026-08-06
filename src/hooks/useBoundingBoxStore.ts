@@ -34,6 +34,8 @@ interface BoundingBoxState {
   clearForCat: (catId: string) => void
   /** Returns every box for a photo across all cats — for display-only views */
   getBoxesForPhoto: (photoId: string) => BoundingBox[]
+  /** Sweeps boxes/absences/lastBoxes for a removed photo, across every cat (#177) */
+  removeBoxesForPhoto: (photoId: string) => void
   /** photo_local_ids with a box for this cat — the derived source of ObservedCat.photo_local_ids (#172) */
   getBoxedPhotoIds: (catId: string) => string[]
   /** The cat's first-drawn box (by key insertion order) — persists as the Cat Form inset crop (#172) */
@@ -124,6 +126,28 @@ export const useBoundingBoxStore = create<BoundingBoxState>()(
         return Object.entries(all)
           .filter(([key]) => key.endsWith(`:${photoId}`))
           .flatMap(([, boxes]) => boxes)
+      },
+
+      // A photo removed mid-pass (useAnnotatePass.handleLongPressRemove) can
+      // carry boxes for more than one cat — sweep every cat's entry for this
+      // photo, not just the active one.
+      removeBoxesForPhoto: (photoId) => {
+        set((s) => {
+          const suffix = `:${photoId}`
+          const boxes = { ...s.boxes }
+          const absences = { ...s.absences }
+          const lastBoxes = { ...s.lastBoxes }
+          for (const key of Object.keys(boxes)) {
+            if (key.endsWith(suffix)) delete boxes[key]
+          }
+          for (const key of Object.keys(absences)) {
+            if (key.endsWith(suffix)) delete absences[key]
+          }
+          for (const key of Object.keys(lastBoxes)) {
+            if (key.endsWith(suffix)) delete lastBoxes[key]
+          }
+          return { boxes, absences, lastBoxes }
+        })
       },
 
       getBoxedPhotoIds: (catId) => {
