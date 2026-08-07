@@ -84,3 +84,38 @@ sprint; no automated UI coverage of the annotate screen exists.
 
 Commit and PR not created this session. PR should target
 `sprint/cat-annotate-flow` (not `main`), same as #170/#171/#172.
+
+## 2026-08-07 — fix (#187)
+
+**Purpose:** the on-device pass that finally exercised `annotate`
+(`emulator/run-notes/2026-08-06-cats-sprint-annotate-drive.md`) couldn't
+reach the remove-photo trigger at all — five tap/long-press attempts at
+its reported bounds all failed, one opened the Android notification
+shade instead of hitting the app. That meant the cleanup logic shipped
+by this note had never actually been exercised for real, only unit-
+tested. Root cause: `annotate` is a `fullScreenModal` with
+`headerShown: false`, edge-to-edge, and `index.styles.ts`'s `topBar` had
+no top safe-area inset — the OS status-bar strip sat directly over
+`topRow`'s content, including the remove-photo button, intercepting
+touches before they reached the app.
+
+**Change:** `index.styles.ts`'s `topBar` gains `paddingTop: rt.insets.top + 10`
+(this repo's existing `StyleSheet.create((theme, rt) => ...)` / `rt.insets`
+pattern, matching `PhotoPreviewModal.styles.ts` rather than introducing a
+`useSafeAreaInsets` hook). Also added the missing
+`accessibilityLabel="Remove photo"` on the same `Pressable`
+(`index.tsx:101-109`) — a separate a11y gap found in the same spot, fixed
+in the same pass rather than as its own ticket.
+
+No change to `useAnnotatePass.ts` or `useBoundingBoxStore.ts` — the
+sweep logic (`removeBoxesForPhoto`) was already correctly wired to
+`handleLongPressRemove`'s `doRemove()`; this was purely a touch-target
+reachability bug, not a logic bug.
+
+**Verification status:** `tsc --noEmit`, `eslint`, full `jest` (29/29
+suites) all pass — none of the sweep logic changed, so its existing unit
+coverage stands unchanged. **Not yet re-verified live on-device** — the
+actual point of this fix (confirming the button is now tappable and the
+sweep fires for real) requires the emulator pass this note's prior entry
+never got; blocked this session on host battery mid-boot, tracked as the
+remaining open item on #187.
