@@ -14,6 +14,12 @@ When a skill mentions a role (e.g. "apply the AFK-ready triage label"), use the 
 
 Edit the right-hand column to match whatever vocabulary you actually use.
 
+## Repo-specific label (not part of the five canonical roles)
+
+| Label                | Meaning                                                                                                                                                                                                                                                     |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `needs-verification` | Related/adjacent work landed since this issue was filed, but nobody has confirmed live whether it actually fixed _this_ issue's exact symptom. Distinct from `needs-info` (waiting on the reporter) — here the ball is in an agent/dev's court to go check. |
+
 ## Milestones
 
 Tracked via GitHub Milestones + Issues (source of truth: [milestones](https://github.com/matthewdmanning/feral-spotter/milestones), [project board](https://github.com/users/matthewdmanning/projects/1)).

@@ -1,6 +1,6 @@
 /**
  * hooks/useCatForm.ts
- * Manages the 8 cat observation fields + photo IDs.
+ * Manages the 8 cat observation fields.
  * No store, API, or navigation dependencies — pure form state.
  */
 
@@ -30,7 +30,6 @@ export interface CatFormValues {
   color: CatColor
   sex: CatSex
   healthLabel: HealthLabel
-  photoIds: string[]
 }
 
 export interface CatFormActions {
@@ -42,7 +41,6 @@ export interface CatFormActions {
   setColor: (v: CatColor) => void
   setSex: (v: CatSex) => void
   setHealthLabel: (v: HealthLabel) => void
-  handleTogglePhoto: (photoId: string) => void
   handleClear: () => void // shows confirmation Alert, then resets
 }
 
@@ -75,18 +73,6 @@ export function useCatForm(existingCat?: ObservedCat): CatForm {
   const [healthLabel, setHealthLabel] = useState<HealthLabel>(
     (existingCat?.health_label as HealthLabel) ?? CAT_DEFAULTS.healthLabel,
   )
-  const [photoIds, setPhotoIds] = useState<string[]>(
-    existingCat?.photo_local_ids ?? [],
-  )
-
-  const handleTogglePhoto = useCallback((photoId: string) => {
-    setPhotoIds((prev) =>
-      prev.includes(photoId)
-        ? prev.filter((id) => id !== photoId)
-        : [...prev, photoId],
-    )
-  }, [])
-
   const handleClear = useCallback(() => {
     Alert.alert(
       'Clear form?',
@@ -105,7 +91,6 @@ export function useCatForm(existingCat?: ObservedCat): CatForm {
             setColor(CAT_DEFAULTS.color)
             setSex(CAT_DEFAULTS.sex)
             setHealthLabel(CAT_DEFAULTS.healthLabel)
-            setPhotoIds([])
           },
         },
       ],
@@ -121,7 +106,6 @@ export function useCatForm(existingCat?: ObservedCat): CatForm {
     color,
     sex,
     healthLabel,
-    photoIds,
     setAge,
     setEarTipped,
     setOwned,
@@ -130,7 +114,6 @@ export function useCatForm(existingCat?: ObservedCat): CatForm {
     setColor,
     setSex,
     setHealthLabel,
-    handleTogglePhoto,
     handleClear,
   }
 }

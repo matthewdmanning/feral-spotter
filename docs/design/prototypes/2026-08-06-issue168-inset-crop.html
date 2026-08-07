@@ -1,0 +1,691 @@
+<title>inset crop — #168 (decided: B)</title>
+<style>
+  /* ── viewer-chrome tokens (outer page, follows claude.ai theme) ───────── */
+  :root {
+    --chrome-bg: #EFEFF1;
+    --chrome-surface: #FFFFFF;
+    --chrome-text: #17171A;
+    --chrome-muted: #63636B;
+    --chrome-border: #DCDCE1;
+    --chrome-accent: #6E56CF;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+    --sans: -apple-system, "SF Pro Text", "Segoe UI", Roboto, system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --chrome-bg: #16161A;
+      --chrome-surface: #1E1E23;
+      --chrome-text: #EDEDF0;
+      --chrome-muted: #93939C;
+      --chrome-border: #313138;
+      --chrome-accent: #9B87F5;
+    }
+  }
+  :root[data-theme="dark"] {
+    --chrome-bg: #16161A;
+    --chrome-surface: #1E1E23;
+    --chrome-text: #EDEDF0;
+    --chrome-muted: #93939C;
+    --chrome-border: #313138;
+    --chrome-accent: #9B87F5;
+  }
+  :root[data-theme="light"] {
+    --chrome-bg: #EFEFF1;
+    --chrome-surface: #FFFFFF;
+    --chrome-text: #17171A;
+    --chrome-muted: #63636B;
+    --chrome-border: #DCDCE1;
+    --chrome-accent: #6E56CF;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--chrome-bg);
+    color: var(--chrome-text);
+    font-family: var(--sans);
+    padding: 28px 20px 120px;
+  }
+  h1 {
+    font-size: 15px;
+    font-weight: 650;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--chrome-muted);
+    margin: 0 0 2px;
+  }
+  h1 span { color: var(--chrome-text); text-transform: none; letter-spacing: 0; font-weight: 700; }
+  .subtitle {
+    font-size: 14px;
+    color: var(--chrome-muted);
+    max-width: 640px;
+    line-height: 1.5;
+    margin: 0 0 16px;
+  }
+  .subtitle code {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    background: var(--chrome-surface);
+    border: 1px solid var(--chrome-border);
+    border-radius: 4px;
+    padding: 1px 5px;
+  }
+
+  .decided-banner {
+    background: linear-gradient(135deg, var(--chrome-accent), var(--chrome-accent) 60%, transparent);
+    background: var(--chrome-accent);
+    color: #fff;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin: 0 0 20px;
+    max-width: 720px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .decided-banner b { font-weight: 700; }
+  .decided-banner .tag {
+    display: inline-block; font-family: var(--mono); font-size: 11px; font-weight: 700;
+    background: rgba(255,255,255,0.22); border-radius: 5px; padding: 1px 6px; margin-right: 8px;
+  }
+  .decided-banner ul { margin: 6px 0 0; padding-left: 18px; }
+  .decided-banner li { margin: 2px 0; }
+  .decided-banner .assumption {
+    margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.25);
+    font-style: italic; opacity: 0.92;
+  }
+
+  .toprow { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .apptheme-toggle {
+    display: flex; gap: 2px; background: var(--chrome-surface); border: 1px solid var(--chrome-border);
+    border-radius: 8px; padding: 2px; flex-shrink: 0;
+  }
+  .apptheme-toggle button {
+    font-family: var(--sans); font-size: 12.5px; font-weight: 600; border: none; background: transparent;
+    color: var(--chrome-muted); padding: 6px 12px; border-radius: 6px; cursor: pointer;
+  }
+  .apptheme-toggle button[aria-pressed="true"] { background: var(--chrome-accent); color: #fff; }
+
+  .variant-card {
+    background: var(--chrome-surface);
+    border: 1px solid var(--chrome-border);
+    border-radius: 10px;
+    padding: 4px 16px 16px;
+    margin: 0 0 18px;
+  }
+  .variant-head { display: flex; align-items: baseline; gap: 10px; padding: 12px 0 2px; flex-wrap: wrap; }
+  .variant-key {
+    font-family: var(--mono); font-size: 12px; font-weight: 700; color: #fff;
+    background: var(--chrome-accent); border-radius: 5px; padding: 2px 7px;
+  }
+  .variant-key.won { background: #2C9A5A; }
+  .variant-name { font-size: 15px; font-weight: 700; }
+  .won-pill {
+    font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+    color: #2C9A5A; border: 1px solid #2C9A5A; border-radius: 999px; padding: 2px 8px;
+  }
+  .variant-desc { font-size: 13px; color: var(--chrome-muted); line-height: 1.5; margin: 4px 0 14px; max-width: 620px; }
+  .variant-spec {
+    font-family: var(--mono); font-size: 11.5px; color: var(--chrome-muted);
+    background: var(--chrome-bg); border: 1px solid var(--chrome-border); border-radius: 6px;
+    padding: 8px 10px; margin: 10px 0 0; max-width: 620px; line-height: 1.6;
+  }
+  .variant-spec b { color: var(--chrome-text); }
+
+  .controls {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    margin: 12px 0 14px; padding: 10px 12px; background: var(--chrome-bg);
+    border: 1px solid var(--chrome-border); border-radius: 8px; max-width: 620px;
+  }
+  .controls .group { display: flex; align-items: center; gap: 6px; }
+  .controls label.grouplabel { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--chrome-muted); }
+  .controls .segbtn {
+    font-family: var(--sans); font-size: 12px; font-weight: 600; border: 1px solid var(--chrome-border);
+    background: var(--chrome-surface); color: var(--chrome-text); padding: 5px 10px; border-radius: 6px; cursor: pointer;
+  }
+  .controls .segbtn[aria-pressed="true"] { background: var(--chrome-accent); border-color: var(--chrome-accent); color: #fff; }
+  .controls .readout { font-family: var(--mono); font-size: 11.5px; color: var(--chrome-muted); }
+  .controls .readout b { color: var(--chrome-text); }
+
+  .phones { display: flex; gap: 22px; flex-wrap: wrap; }
+  .phone-slot { flex: 0 0 auto; }
+  .phone-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--chrome-muted); margin: 0 0 6px 4px;
+  }
+
+  /* ── phone frame ─────────────────────────────────────────────────────── */
+  .device {
+    width: 267px;
+    border-radius: 30px;
+    padding: 8px;
+    background: #050506;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.28);
+  }
+  .screen {
+    width: 100%;
+    height: 480px;
+    border-radius: 23px;
+    overflow: hidden;
+    position: relative;
+    font-family: var(--sans);
+  }
+
+  /* ── app theme tokens (mirrors src/config/unistyles.ts verbatim) ───── */
+  .screen[data-apptheme="dark"] {
+    --bg: #0B0B0C; --surface: #151518; --surfaceAlt: #1D1D22; --text: #F5F5F7;
+    --textInverse: #0B0B0C; --muted: #9B9BA1; --accent: #6EA8FE; --accentText: #0B0B0C;
+    --border: #2C2C2E; --overlay: rgba(0,0,0,0.5);
+  }
+  .screen[data-apptheme="light"] {
+    --bg: #F5F5F7; --surface: #FFFFFF; --surfaceAlt: #F0F0F2; --text: #0B0B0C;
+    --textInverse: #F5F5F7; --muted: #6B6B71; --accent: #2563EB; --accentText: #FFFFFF;
+    --border: #D1D1D6; --overlay: rgba(0,0,0,0.3);
+  }
+  .screen { background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
+
+  /* ── annotate screen chrome (mirrors index.styles.ts) ───────────────── */
+  .an-topbar { background: var(--surface); padding: 10px 16px 8px; border-bottom: 0.5px solid var(--surfaceAlt); z-index: 2; }
+  .an-toprow { display: flex; justify-content: space-between; align-items: center; }
+  .an-counter { font-size: 13px; font-weight: 600; }
+  .an-removebtn { width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--surfaceAlt); display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 13px; }
+  .an-dots { display: flex; justify-content: center; align-items: center; gap: 4px; margin-top: 7px; }
+  .an-dot { height: 6px; border-radius: 3px; background: var(--muted); }
+  .an-dot.active { width: 17px; background: var(--text); }
+  .an-dot.located { width: 6px; background: var(--accent); }
+
+  .an-carousel {
+    flex: 1; position: relative; overflow: hidden;
+    background:
+      repeating-linear-gradient(135deg, rgba(255,255,255,0.03) 0 2px, transparent 2px 14px),
+      linear-gradient(160deg, #3b2a20 0%, #55402c 45%, #2c2018 100%);
+  }
+  .an-box {
+    position: absolute; left: 34%; top: 30%; width: 40%; height: 34%;
+    border: 2px dashed var(--accent); border-radius: 4px;
+    transition: opacity 200ms ease;
+  }
+  .an-box::after {
+    content: "box just drawn"; position: absolute; top: -20px; left: -2px;
+    font-size: 10px; font-weight: 700; color: var(--accent); font-family: var(--mono);
+  }
+  .an-box.no-box { opacity: 0; }
+  .an-nobox-hint {
+    position: absolute; left: 16px; bottom: 12px; font-size: 11px; color: rgba(255,255,255,0.55);
+    font-family: var(--mono);
+  }
+
+  .an-bottombar {
+    display: flex; gap: 10px; padding: 10px 16px 12px; background: var(--surface);
+    border-top: 0.5px solid var(--surfaceAlt); z-index: 2; align-items: center;
+  }
+  .an-navbtn { flex: 1; padding: 11px; border-radius: 10px; text-align: center; font-size: 13px; font-weight: 700; }
+  .an-navbtn.secondary { background: var(--surfaceAlt); border: 1px solid var(--border); color: var(--text); font-weight: 600; }
+  .an-navbtn.primary { background: var(--accent); color: var(--accentText); }
+
+  /* ── Cat Form screen chrome (mirrors index.styles.ts) ───────────────── */
+  .cf-scroll { flex: 1; padding: 14px 16px; overflow: hidden; }
+  .cf-header-zone { position: relative; }
+  .cf-header { display: flex; justify-content: space-between; align-items: center; }
+  .cf-title { font-size: 24px; font-weight: 700; }
+  .cf-clear { font-size: 13px; font-weight: 500; color: #E5484D; }
+  .cf-field { margin-top: 16px; }
+  .cf-field-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); margin-bottom: 6px; }
+  .cf-field-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; height: 38px; }
+  .cf-pillrow { display: flex; gap: 6px; margin-top: 6px; }
+  .cf-pill { background: var(--surface); border: 1px solid var(--border); border-radius: 999px; height: 26px; width: 58px; }
+
+  /* ── shared crop-image content (used inside every variant) ──────────── */
+  .crop-img {
+    width: 100%; height: 100%; border-radius: inherit;
+    background: linear-gradient(155deg, #d98a3d 0%, #b5652a 55%, #7a441c 100%);
+    position: relative; overflow: hidden;
+  }
+  .crop-img svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  /* ══════════════════════════════════════════════════════════════════
+     VARIANT A — Docked Band (historical — not chosen)
+     ══════════════════════════════════════════════════════════════════ */
+  .A .inset-band {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface); border-bottom: 0.5px solid var(--surfaceAlt);
+    padding: 8px 16px; overflow: hidden;
+    max-height: 64px; transition: max-height 220ms ease, padding 220ms ease;
+  }
+  .A .inset-band.is-collapsed { max-height: 14px; padding-top: 0; padding-bottom: 0; }
+  .A .inset-band .crop-img { width: 44px; height: 44px; border-radius: 8px; flex-shrink: 0; border: 1px solid var(--border); transition: opacity 160ms ease; }
+  .A .inset-band.is-collapsed .crop-img { opacity: 0; }
+  .A .inset-band .band-label { font-size: 12px; font-weight: 600; color: var(--muted); flex: 1; transition: opacity 140ms ease; }
+  .A .inset-band.is-collapsed .band-label { opacity: 0; }
+  .A .band-tab {
+    width: 100%; height: 14px; display: flex; align-items: center; justify-content: center;
+    background: transparent; border: none; cursor: pointer; color: var(--muted); font-size: 9px;
+  }
+  .A .band-tab::before { content: "▾ this cat"; letter-spacing: 0.02em; }
+  .A .inset-band.is-collapsed .band-tab::before { content: "▸ this cat"; }
+  .A.cf .inset-band { border-top: 0.5px solid var(--surfaceAlt); border-bottom: none; border-radius: 0 0 12px 12px; margin: 0 -16px; width: calc(100% + 32px); }
+
+  /* ══════════════════════════════════════════════════════════════════
+     VARIANT B — Floating Docked Bubble  ★ DECIDED (2026-08-06)
+     Diameter = (box diagonal + box short side) / 1.6 — computed live below.
+     Collapse = slide toward the anchoring edge (translate, not resize) —
+     matches #167's "pop-out / slide-to-side" wording; see assumption note.
+     ══════════════════════════════════════════════════════════════════ */
+  .B .inset-bubble-wrap {
+    position: absolute; z-index: 5;
+    transition: opacity 180ms ease, transform 180ms ease;
+  }
+  .B .inset-bubble-wrap.no-bubble { opacity: 0; pointer-events: none; transform: scale(0.6); }
+  .B.an .inset-bubble-wrap { right: 12px; bottom: 78px; }
+  /* Cat Form: header-zone reserves height = bubble diameter, so the bubble can
+     only ever sit over the title row — form fields below are structurally
+     unreachable regardless of diameter. */
+  .B.cf .inset-bubble-wrap { top: 0; right: 0; }
+  .B .inset-bubble {
+    width: var(--bubble-d, 68px); height: var(--bubble-d, 68px);
+    border-radius: 999px; overflow: hidden;
+    border: 2px solid var(--accent); box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+    cursor: pointer; background: var(--surface);
+    transition: transform 220ms ease;
+  }
+  .B[data-collapse-mode="slide"] .inset-bubble.is-collapsed { transform: translateX(62%); }
+  .B[data-collapse-mode="shrink"] .inset-bubble.is-collapsed { transform: scale(0.4); }
+  .B .inset-bubble .crop-img { border-radius: inherit; }
+  .B .bubble-grab {
+    position: absolute; bottom: -3px; left: 50%; transform: translateX(-50%);
+    width: 22px; height: 14px; border-radius: 999px; background: var(--surface);
+    border: 1px solid var(--border); font-size: 8px; color: var(--muted);
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* variant visibility */
+  .variant-block { display: none; }
+  [data-active="A"] .variant-block.A,
+  [data-active="B"] .variant-block.B,
+  [data-active="C"] .variant-block.C { display: block; }
+  [data-active="A"] .phones.A,
+  [data-active="B"] .phones.B,
+  [data-active="C"] .phones.C { display: flex; }
+  .phones { display: none; }
+
+  /* ── floating switcher ───────────────────────────────────────────── */
+  .switcher {
+    position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 4px;
+    background: var(--chrome-text); color: var(--chrome-bg);
+    border-radius: 999px; padding: 6px 6px 6px 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    font-family: var(--sans); z-index: 20;
+  }
+  .switcher button.arrow {
+    width: 30px; height: 30px; border-radius: 999px; border: none; cursor: pointer;
+    background: rgba(120,120,140,0.28); color: inherit; font-size: 15px; display: flex; align-items: center; justify-content: center;
+  }
+  .switcher .label { font-size: 12.5px; font-weight: 700; padding: 0 4px; white-space: nowrap; }
+  .switcher .label small { font-weight: 500; opacity: 0.65; margin-left: 5px; }
+
+  .footnote { font-size: 12px; color: var(--chrome-muted); max-width: 640px; line-height: 1.6; margin-top: 26px; }
+  .footnote code { font-family: var(--mono); }
+</style>
+
+<div class="toprow">
+  <div>
+    <h1>issue #168 — <span>inset crop, visual/interaction design</span></h1>
+    <p class="subtitle">
+      A and C kept below for the record (rejected). Cycle with the pill, or <code>←</code> / <code>→</code>.
+    </p>
+  </div>
+  <div class="apptheme-toggle" role="group" aria-label="App theme (not viewer theme)">
+    <button data-apptheme-btn="dark" aria-pressed="true">App: Dark</button>
+    <button data-apptheme-btn="light" aria-pressed="false">App: Light</button>
+  </div>
+</div>
+
+<div class="decided-banner">
+  <span class="tag">DECIDED 2026-08-06</span><b>B — Floating Docked Bubble</b>
+  <ul>
+    <li>Bubble diameter = <b>(box diagonal + box short side) / 1.6</b>, live-computed from the drawn box below.</li>
+    <li>On Cat Form: must never cover any form field. Covering the "Observed Cat" title is fine.</li>
+    <li>On <code>annotate</code>: hidden entirely until the first box is drawn for the current cat.</li>
+  </ul>
+  <div class="assumption">
+    Collapse mechanic confirmed 2026-08-06: <b>slide</b> to the anchoring edge at fixed diameter is primary.
+    <b>Shrink</b> (scale down in place) is the documented fallback if slide proves impractical at
+    implementation time. Switch modes below to compare.
+  </div>
+</div>
+
+<div id="root" data-active="B">
+
+  <!-- ══════════════ VARIANT A (historical) ══════════════ -->
+  <div class="variant-block A">
+    <div class="variant-card">
+      <div class="variant-head">
+        <span class="variant-key">A</span>
+        <span class="variant-name">Docked Band</span>
+      </div>
+      <p class="variant-desc">Rejected. Kept for the record — see #168 comment thread for why B was chosen.</p>
+    </div>
+    <div class="phones A">
+      <div class="phone-slot">
+        <div class="phone-label">annotate</div>
+        <div class="device"><div class="screen A an" data-apptheme="dark">
+          <div class="an-topbar">
+            <div class="an-toprow"><span class="an-counter">2 / 6</span><div class="an-removebtn">🗑</div></div>
+            <div class="an-dots">
+              <div class="an-dot located"></div><div class="an-dot active"></div><div class="an-dot"></div>
+              <div class="an-dot"></div><div class="an-dot"></div><div class="an-dot"></div>
+            </div>
+          </div>
+          <div class="an-carousel"><div class="an-box"></div></div>
+          <div class="inset-band" onclick="this.classList.toggle('is-collapsed')">
+            <div class="crop-img">SVGCAT</div>
+            <span class="band-label">Boxing: this cat</span>
+          </div>
+          <button class="band-tab" onclick="this.previousElementSibling.classList.toggle('is-collapsed')"></button>
+          <div class="an-bottombar">
+            <div class="an-navbtn secondary">← Back</div>
+            <div class="an-navbtn primary">Boxing Complete</div>
+          </div>
+        </div></div>
+      </div>
+      <div class="phone-slot">
+        <div class="phone-label">Cat Form</div>
+        <div class="device"><div class="screen A cf" data-apptheme="dark">
+          <div class="cf-scroll">
+            <div class="cf-header"><span class="cf-title">Observed Cat</span><span class="cf-clear">Clear</span></div>
+            <div class="inset-band" onclick="this.classList.toggle('is-collapsed')" style="margin-top:10px;">
+              <div class="crop-img">SVGCAT</div>
+              <span class="band-label">From your first box</span>
+            </div>
+            <button class="band-tab" onclick="this.previousElementSibling.classList.toggle('is-collapsed')"></button>
+            <div class="cf-field"><div class="cf-field-label">Sex</div><div class="cf-pillrow"><div class="cf-pill"></div><div class="cf-pill"></div><div class="cf-pill"></div></div></div>
+            <div class="cf-field"><div class="cf-field-label">Age</div><div class="cf-field-box"></div></div>
+          </div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ VARIANT B — DECIDED ══════════════ -->
+  <div class="variant-block B" id="variant-b-block" data-collapse-mode="slide">
+    <div class="variant-card">
+      <div class="variant-head">
+        <span class="variant-key won">B</span>
+        <span class="variant-name">Floating Docked Bubble</span>
+        <span class="won-pill">Decided</span>
+      </div>
+      <p class="variant-desc">
+        A circular chip that floats clear of interactive content — bottom-right on <code>annotate</code>,
+        top-right on Cat Form. Size tracks the box that was actually drawn; collapses toward the edge to get
+        out of the way (slide primary, shrink fallback).
+      </p>
+      <div class="controls">
+        <div class="group">
+          <label class="grouplabel">Box size</label>
+          <button class="segbtn" data-boxsize="small">Small</button>
+          <button class="segbtn" data-boxsize="medium" aria-pressed="true">Medium</button>
+          <button class="segbtn" data-boxsize="large">Large</button>
+        </div>
+        <div class="readout" id="diam-readout"></div>
+      </div>
+      <div class="controls">
+        <div class="group">
+          <label class="grouplabel">annotate: first box drawn?</label>
+          <button class="segbtn" data-boxdrawn="no">Not yet</button>
+          <button class="segbtn" data-boxdrawn="yes" aria-pressed="true">Yes</button>
+        </div>
+        <div class="group">
+          <label class="grouplabel">Collapse mechanic</label>
+          <button class="segbtn" data-collapsemode="slide" aria-pressed="true">Slide (primary)</button>
+          <button class="segbtn" data-collapsemode="shrink">Shrink (fallback)</button>
+        </div>
+        <div class="group">
+          <button class="segbtn" id="toggle-collapse-all">Toggle collapse on both phones</button>
+        </div>
+      </div>
+      <div class="variant-spec">
+        diameter = <b>(√(w²+h²) + min(w,h)) / 1.6</b> — w/h are the confirmed box's px dimensions<br/>
+        collapsed (slide, primary): <b>translateX(62%)</b> toward the docked edge, same diameter, not resized<br/>
+        collapsed (shrink, fallback): <b>scale(0.4)</b> in place — use only if slide proves impractical<br/>
+        Cat Form: header zone reserves <code>min-height: bubble-d</code> so fields can't be covered<br/>
+        open flag: very small boxes can compute below the 44–48dp min touch target (ux_principles.md #1) — not resolved here
+      </div>
+    </div>
+    <div class="phones B">
+      <div class="phone-slot">
+        <div class="phone-label">annotate — bottom-right, gated on first box</div>
+        <div class="device"><div class="screen B an" data-apptheme="dark" style="position:relative;">
+          <div class="an-topbar">
+            <div class="an-toprow"><span class="an-counter">2 / 6</span><div class="an-removebtn">🗑</div></div>
+            <div class="an-dots">
+              <div class="an-dot located"></div><div class="an-dot active"></div><div class="an-dot"></div>
+              <div class="an-dot"></div><div class="an-dot"></div><div class="an-dot"></div>
+            </div>
+          </div>
+          <div class="an-carousel">
+            <div class="an-box" id="an-box-b"></div>
+            <div class="an-nobox-hint" id="an-nobox-hint">no box drawn for this cat yet — bubble hidden</div>
+          </div>
+          <div class="inset-bubble-wrap" id="an-bubble-wrap">
+            <div class="inset-bubble" id="an-bubble" onclick="this.classList.toggle('is-collapsed')">
+              <div class="crop-img">SVGCAT</div>
+              <div class="bubble-grab">⋮⋮</div>
+            </div>
+          </div>
+          <div class="an-bottombar">
+            <div class="an-navbtn secondary">← Back</div>
+            <div class="an-navbtn primary">Boxing Complete</div>
+          </div>
+        </div></div>
+      </div>
+      <div class="phone-slot">
+        <div class="phone-label">Cat Form — header-reserved, never over fields</div>
+        <div class="device"><div class="screen B cf" data-apptheme="dark">
+          <div class="cf-scroll">
+            <div class="cf-header-zone" id="cf-header-zone">
+              <div class="cf-header"><span class="cf-title">Observed Cat</span><span class="cf-clear">Clear</span></div>
+              <div class="inset-bubble-wrap" id="cf-bubble-wrap">
+                <div class="inset-bubble" id="cf-bubble" onclick="this.classList.toggle('is-collapsed')">
+                  <div class="crop-img">SVGCAT</div>
+                  <div class="bubble-grab">⋮⋮</div>
+                </div>
+              </div>
+            </div>
+            <div class="cf-field"><div class="cf-field-label">Sex</div><div class="cf-pillrow"><div class="cf-pill"></div><div class="cf-pill"></div><div class="cf-pill"></div></div></div>
+            <div class="cf-field"><div class="cf-field-label">Age</div><div class="cf-field-box"></div></div>
+          </div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ VARIANT C (historical) ══════════════ -->
+  <div class="variant-block C">
+    <div class="variant-card">
+      <div class="variant-head">
+        <span class="variant-key">C</span>
+        <span class="variant-name">Inline Header Avatar</span>
+      </div>
+      <p class="variant-desc">Rejected. Kept for the record — see #168 comment thread for why B was chosen.</p>
+    </div>
+    <div class="phones C">
+      <div class="phone-slot">
+        <div class="phone-label">annotate</div>
+        <div class="device"><div class="screen C an" data-apptheme="dark">
+          <div class="an-topbar">
+            <div class="an-toprow">
+              <span class="an-counter">2 / 6</span>
+              <div class="an-inline-thumb" onclick="this.classList.toggle('is-expanded')" style="width:26px;height:26px;border-radius:7px;overflow:hidden;border:1px solid var(--border);"><div class="crop-img">SVGCAT</div></div>
+              <div class="an-removebtn">🗑</div>
+            </div>
+            <div class="an-dots">
+              <div class="an-dot located"></div><div class="an-dot active"></div><div class="an-dot"></div>
+              <div class="an-dot"></div><div class="an-dot"></div><div class="an-dot"></div>
+            </div>
+          </div>
+          <div class="an-carousel"><div class="an-box"></div></div>
+          <div class="an-bottombar">
+            <div class="an-navbtn secondary">← Back</div>
+            <div class="an-navbtn primary">Boxing Complete</div>
+          </div>
+        </div></div>
+      </div>
+      <div class="phone-slot">
+        <div class="phone-label">Cat Form</div>
+        <div class="device"><div class="screen C cf" data-apptheme="dark">
+          <div class="cf-scroll">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div class="an-inline-thumb" onclick="this.classList.toggle('is-expanded')" style="width:34px;height:34px;border-radius:9px;overflow:hidden;border:1px solid var(--border);"><div class="crop-img">SVGCAT</div></div>
+              <div class="cf-header" style="flex:1;"><span class="cf-title">Observed Cat</span><span class="cf-clear">Clear</span></div>
+            </div>
+            <div class="cf-field"><div class="cf-field-label">Sex</div><div class="cf-pillrow"><div class="cf-pill"></div><div class="cf-pill"></div><div class="cf-pill"></div></div></div>
+            <div class="cf-field"><div class="cf-field-label">Age</div><div class="cf-field-box"></div></div>
+          </div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<p class="footnote">
+  Placeholder crop art stands in for a real cropped photo. Box px dimensions (Small/Medium/Large) are mock
+  stand-ins for whatever the real drawn box measures — not a decided set of size buckets. The mock clamps
+  rendered diameter to 34–140px for legibility on a 267px-wide device frame only; that clamp is not part of
+  the decision. Colors and spacing tokens are pulled directly from <code>src/config/unistyles.ts</code>;
+  layout chrome mirrors <code>annotate/index.styles.ts</code> and <code>cats/index.styles.ts</code> as of
+  this branch.
+</p>
+
+<div class="switcher">
+  <button class="arrow" id="prev" aria-label="Previous variant">‹</button>
+  <span class="label" id="switcher-label">B <small>Floating Docked Bubble</small></span>
+  <button class="arrow" id="next" aria-label="Next variant">›</button>
+</div>
+
+<script>
+  var VARIANTS = [
+    { key: "A", name: "Docked Band" },
+    { key: "B", name: "Floating Docked Bubble" },
+    { key: "C", name: "Inline Header Avatar" }
+  ];
+  var root = document.getElementById("root");
+  var label = document.getElementById("switcher-label");
+
+  function currentIndex() {
+    var active = root.getAttribute("data-active");
+    for (var i = 0; i < VARIANTS.length; i++) if (VARIANTS[i].key === active) return i;
+    return 0;
+  }
+  function setVariant(key, pushHash) {
+    root.setAttribute("data-active", key);
+    var v = VARIANTS.filter(function (x) { return x.key === key; })[0];
+    label.innerHTML = v.key + " <small>" + v.name + "</small>";
+    if (pushHash !== false) location.hash = key;
+  }
+  function step(delta) {
+    var i = (currentIndex() + delta + VARIANTS.length) % VARIANTS.length;
+    setVariant(VARIANTS[i].key);
+  }
+  document.getElementById("prev").addEventListener("click", function () { step(-1); });
+  document.getElementById("next").addEventListener("click", function () { step(1); });
+  document.addEventListener("keydown", function (e) {
+    var tag = (document.activeElement && document.activeElement.tagName) || "";
+    if (tag === "INPUT" || tag === "TEXTAREA" || (document.activeElement && document.activeElement.isContentEditable)) return;
+    if (e.key === "ArrowLeft") step(-1);
+    if (e.key === "ArrowRight") step(1);
+  });
+
+  var initial = (location.hash || "").replace("#", "").toUpperCase();
+  setVariant(VARIANTS.some(function (v) { return v.key === initial; }) ? initial : "B", false);
+
+  // app-theme toggle (independent of viewer theme) — drives every .screen[data-apptheme]
+  document.querySelectorAll("[data-apptheme-btn]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var mode = btn.getAttribute("data-apptheme-btn");
+      document.querySelectorAll("[data-apptheme-btn]").forEach(function (b) {
+        b.setAttribute("aria-pressed", b === btn ? "true" : "false");
+      });
+      document.querySelectorAll(".screen").forEach(function (s) { s.setAttribute("data-apptheme", mode); });
+    });
+  });
+
+  // swap the "SVGCAT" placeholder text for a tiny inline cat-mark, once, reused everywhere
+  var CAT_SVG =
+    '<svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">' +
+    '<polygon points="22,38 34,10 44,40" fill="rgba(0,0,0,0.28)"/>' +
+    '<polygon points="78,38 66,10 56,40" fill="rgba(0,0,0,0.28)"/>' +
+    '<ellipse cx="50" cy="58" rx="30" ry="26" fill="rgba(255,255,255,0.10)"/>' +
+    '<circle cx="38" cy="54" r="4" fill="rgba(0,0,0,0.55)"/>' +
+    '<circle cx="62" cy="54" r="4" fill="rgba(0,0,0,0.55)"/>' +
+    '<polygon points="47,62 53,62 50,67" fill="rgba(0,0,0,0.45)"/>' +
+    '</svg>';
+  document.querySelectorAll(".crop-img").forEach(function (el) { el.innerHTML = CAT_SVG; });
+
+  // ── Variant B: live diameter formula ────────────────────────────────
+  var BOX_SIZES = {
+    small:  { w: 40,  h: 30 },
+    medium: { w: 96,  h: 74 },
+    large:  { w: 170, h: 132 }
+  };
+  var diamReadout = document.getElementById("diam-readout");
+  var anBubble = document.getElementById("an-bubble");
+  var cfBubble = document.getElementById("cf-bubble");
+
+  function computeDiameter(w, h) {
+    var diagonal = Math.sqrt(w * w + h * h);
+    var shortSide = Math.min(w, h);
+    return (diagonal + shortSide) / 1.6;
+  }
+  function applyBoxSize(sizeKey) {
+    var box = BOX_SIZES[sizeKey];
+    var raw = computeDiameter(box.w, box.h);
+    var clamped = Math.max(34, Math.min(140, raw)); // mock-only clamp, see footnote
+    [anBubble, cfBubble].forEach(function (el) {
+      el.style.setProperty("--bubble-d", clamped.toFixed(0) + "px");
+    });
+    diamReadout.innerHTML =
+      "box " + box.w + "×" + box.h + "px → diagonal " + Math.sqrt(box.w * box.w + box.h * box.h).toFixed(0) +
+      " + short " + Math.min(box.w, box.h) + " over 1.6 = <b>" + raw.toFixed(0) + "px</b>" +
+      (raw !== clamped ? " (mock-clamped to " + clamped.toFixed(0) + "px)" : "");
+  }
+  document.querySelectorAll("[data-boxsize]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll("[data-boxsize]").forEach(function (b) { b.setAttribute("aria-pressed", "false"); });
+      btn.setAttribute("aria-pressed", "true");
+      applyBoxSize(btn.getAttribute("data-boxsize"));
+    });
+  });
+  applyBoxSize("medium");
+
+  // ── Variant B: annotate "first box drawn" gate ──────────────────────
+  var anBoxEl = document.getElementById("an-box-b");
+  var anHint = document.getElementById("an-nobox-hint");
+  var anBubbleWrap = document.getElementById("an-bubble-wrap");
+  function setBoxDrawn(drawn) {
+    anBoxEl.classList.toggle("no-box", !drawn);
+    anHint.style.opacity = drawn ? "0" : "1";
+    anBubbleWrap.classList.toggle("no-bubble", !drawn);
+  }
+  document.querySelectorAll("[data-boxdrawn]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll("[data-boxdrawn]").forEach(function (b) { b.setAttribute("aria-pressed", "false"); });
+      btn.setAttribute("aria-pressed", "true");
+      setBoxDrawn(btn.getAttribute("data-boxdrawn") === "yes");
+    });
+  });
+  setBoxDrawn(true);
+
+  // ── Variant B: collapse demo toggle + mechanic switch ───────────────
+  document.getElementById("toggle-collapse-all").addEventListener("click", function () {
+    anBubble.classList.toggle("is-collapsed");
+    cfBubble.classList.toggle("is-collapsed");
+  });
+  var variantBBlock = document.getElementById("variant-b-block");
+  document.querySelectorAll("[data-collapsemode]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll("[data-collapsemode]").forEach(function (b) { b.setAttribute("aria-pressed", "false"); });
+      btn.setAttribute("aria-pressed", "true");
+      variantBBlock.setAttribute("data-collapse-mode", btn.getAttribute("data-collapsemode"));
+    });
+  });
+</script>

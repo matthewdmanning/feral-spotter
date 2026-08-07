@@ -66,3 +66,4 @@ CLAUDE.md
 # Temp / scratch files
 _tmp_check_exports.py
 **/*.ignore
+docs/scratchpad/*.*

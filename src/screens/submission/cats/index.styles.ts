@@ -3,6 +3,7 @@ import { StyleSheet } from 'react-native-unistyles'
 export const styles = StyleSheet.create((theme) => ({
   scroll: { backgroundColor: theme.colors.background },
   inner: { paddingHorizontal: theme.spacing.lg, gap: theme.spacing.lg },
+  headerZone: { position: 'relative' },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',

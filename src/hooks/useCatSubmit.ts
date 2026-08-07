@@ -4,9 +4,16 @@
  * mutation and navigation for it — final submission ("Done") moved to
  * Submission Details (useSubmissionSubmit.ts, #130); Reset moved there too
  * (#153), since it clears the whole submission, not just this cat.
+ *
+ * Under the annotate-first flow (ADR 0004), a new cat's id was already
+ * minted by useActiveCatFlow when its first box was confirmed — this hook
+ * reuses it rather than minting its own, and clears it on save since the
+ * cat is no longer "in-progress."
  */
 
 import { useSubmissionStore } from '@/src/hooks'
+import { useActiveCatFlow } from '@/src/hooks/useActiveCatFlow'
+import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import type { CatFormValues } from '@/src/hooks/useCatForm'
 import type { ObservedCat } from '@/src/hooks/useSubmissionStore'
 import { CAT_DEFAULTS } from '@/src/screens/submission/cats/constants'
@@ -53,44 +60,56 @@ export function useCatSubmit({
 }: UseCatSubmitParams): CatSubmitResult {
   const addCat = useSubmissionStore((s) => s.addCat)
   const updateCat = useSubmissionStore((s) => s.updateCat)
+  const { activeCatId, clearActiveCat } = useActiveCatFlow()
+  const getBoxedPhotoIds = useBoundingBoxStore((s) => s.getBoxedPhotoIds)
 
   // ── Build ObservedCat from current form values ─────────────────────────────
+  // photo_local_ids is derived from useBoundingBoxStore, not form input
+  // (ADR 0004) — the manual CatPhotoSelector this used to come from is gone.
+  // Editing a cat with no boxes recorded under its id (pre-#170 draft, or a
+  // useBoundingBoxStore migration wipe) keeps its existing list rather than
+  // blanking it — the derivation is additive/corrective, not destructive.
 
   const buildCat = useCallback(
-    (localId: string): ObservedCat => ({
-      local_id: localId,
-      age: form.age,
-      ear_tipped: form.earTipped,
-      health_label: form.healthLabel,
-      owned_domesticated: form.owned,
-      pattern: form.pattern,
-      hair_length: form.hairLength,
-      color: form.color,
-      sex: form.sex,
-      photo_local_ids: form.photoIds,
-      photos_reviewed: existingCat?.photos_reviewed ?? false,
-    }),
-    [form, existingCat],
+    (localId: string): ObservedCat => {
+      const boxedPhotoIds = getBoxedPhotoIds(localId)
+      return {
+        local_id: localId,
+        age: form.age,
+        ear_tipped: form.earTipped,
+        health_label: form.healthLabel,
+        owned_domesticated: form.owned,
+        pattern: form.pattern,
+        hair_length: form.hairLength,
+        color: form.color,
+        sex: form.sex,
+        photo_local_ids:
+          boxedPhotoIds.length > 0
+            ? boxedPhotoIds
+            : (existingCat?.photo_local_ids ?? []),
+        photos_reviewed: existingCat?.photos_reviewed ?? false,
+      }
+    },
+    [form, existingCat, getBoxedPhotoIds],
   )
 
   // ── Save → warn on unset fields → store + navigate ─────────────────────────
 
   const handleSave = useCallback(() => {
-    const localId = existingCat?.local_id ?? randomUUID()
+    // Annotate now runs before Cat Form (ADR 0004) — a new cat's id was
+    // already minted there on its first confirmed box; reuse it instead of
+    // minting a second one.
+    const localId = existingCat?.local_id ?? activeCatId ?? randomUUID()
     const cat = buildCat(localId)
 
     const commit = () => {
       if (existingCat) updateCat(localId, cat)
       else addCat(cat)
 
-      if (annotationEnabled && form.photoIds.length > 0) {
-        router.replace({
-          pathname: '/submission/annotate',
-          params: { cat_id: localId },
-        })
-      } else {
-        router.back()
-      }
+      // The cat is saved, not "in-progress" anymore — a later "Add a Cat"
+      // must mint a fresh id, not resume this one.
+      clearActiveCat()
+      router.back()
     }
 
     const unsetFields = (
@@ -111,12 +130,22 @@ export function useCatSubmit({
     } else {
       commit()
     }
-  }, [buildCat, existingCat, addCat, updateCat, annotationEnabled, form])
+  }, [
+    buildCat,
+    existingCat,
+    addCat,
+    updateCat,
+    activeCatId,
+    clearActiveCat,
+    form,
+  ])
 
   // ── Derived ───────────────────────────────────────────────────────────────
 
+  const catId = existingCat?.local_id ?? activeCatId
+  const boxedPhotoCount = catId ? getBoxedPhotoIds(catId).length : 0
   const saveLabel =
-    annotationEnabled && form.photoIds.length > 0
+    annotationEnabled && boxedPhotoCount > 0
       ? 'Put the Cat in a Box'
       : 'Save Observation'
 

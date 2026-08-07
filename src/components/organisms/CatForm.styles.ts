@@ -9,12 +9,6 @@ export const styles = StyleSheet.create((theme) => ({
   },
   inner: { padding: theme.spacing.lg, gap: theme.spacing.xl },
   section: { gap: theme.spacing.md },
-  photoSection: { gap: theme.spacing.sm },
-  photoLabel: {
-    color: theme.colors.muted,
-    fontSize: theme.typography.sm,
-    fontWeight: '500',
-  },
   actions: { gap: theme.spacing.md },
   saveBtn: {
     alignItems: 'center',

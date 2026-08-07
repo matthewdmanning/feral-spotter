@@ -8,58 +8,77 @@
  * it to frame the cat, then long-presses the center dot (or taps Confirm) to
  * save the framing and advance — see useBoundingBoxFrame for the gesture +
  * coordinate-transform logic.
+ *
+ * Persisting the confirmed box is the caller's job (useActiveCatFlow), not
+ * this component's — under the annotate-first flow the first confirmed box
+ * of a pass is what mints the cat id, so this item can't own that write.
  */
 
-import { DOT_HITBOX_SIZE, useBoundingBoxFrame } from '@/src/hooks/useBoundingBoxFrame'
+import {
+  DOT_HITBOX_SIZE,
+  useBoundingBoxFrame,
+} from '@/src/hooks/useBoundingBoxFrame'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
+import type { BoundingBox } from '@/src/types/BoundingBox'
 import type { SubmissionPhoto } from '@/src/types'
-import { useCallback, useState } from 'react'
+import { useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { GestureDetector } from 'react-native-gesture-handler'
-import Animated, { interpolate, useAnimatedStyle } from 'react-native-reanimated'
+import Animated, {
+  interpolate,
+  useAnimatedStyle,
+} from 'react-native-reanimated'
 import { styles } from './AnnotateCarouselItem.styles'
+
+type BoxInput = Omit<BoundingBox, 'id' | 'cat_id' | 'photo_local_id'>
 
 interface AnnotateCarouselItemProps {
   photo: SubmissionPhoto
-  catId: string
+  /** The cat currently being discovered, or null before the pass's first box */
+  activeCatId: string | null
   /** Width of the carousel slide (= screen width) */
   width: number
   /** Height of the carousel slide (= available height between top bar and buttons) */
   height: number
-  /** Called after a confirmed frame is saved — typically advances to the next photo */
-  onConfirm: () => void
+  /** Called with the confirmed frame — caller persists it and advances */
+  onConfirm: (box: BoxInput) => void
   /** Called when the photo crosses the zoomed-in threshold — disable carousel swipe while true */
   onZoomChange?: (zoomedIn: boolean) => void
 }
 
 export function AnnotateCarouselItem({
-  photo, catId, width, height, onConfirm, onZoomChange,
+  photo,
+  activeCatId,
+  width,
+  height,
+  onConfirm,
+  onZoomChange,
 }: AnnotateCarouselItemProps) {
-  const addBox = useBoundingBoxStore((s) => s.addBox)
   const getBoxes = useBoundingBoxStore((s) => s.getBoxes)
 
-  const savedBox = getBoxes(catId, photo.local_id)[0]
+  const savedBox = activeCatId
+    ? getBoxes(activeCatId, photo.local_id)[0]
+    : undefined
   const [natural, setNatural] = useState({ w: 0, h: 0 })
 
-  const handleFrameConfirm = useCallback(
-    (box: Parameters<typeof addBox>[2]) => {
-      addBox(catId, photo.local_id, box)
-      onConfirm()
-    },
-    [addBox, catId, photo.local_id, onConfirm],
-  )
-
-  const { photoGesture, dotGesture, userScale, userTranslateX, userTranslateY, holdProgress, confirmNow } =
-    useBoundingBoxFrame({
-      canvasWidth: width,
-      canvasHeight: height,
-      imgNaturalWidth: natural.w,
-      imgNaturalHeight: natural.h,
-      initialBox: savedBox,
-      onConfirm: handleFrameConfirm,
-      onZoomChange,
-    })
+  const {
+    photoGesture,
+    dotGesture,
+    userScale,
+    userTranslateX,
+    userTranslateY,
+    holdProgress,
+    confirmNow,
+  } = useBoundingBoxFrame({
+    canvasWidth: width,
+    canvasHeight: height,
+    imgNaturalWidth: natural.w,
+    imgNaturalHeight: natural.h,
+    initialBox: savedBox,
+    onConfirm,
+    onZoomChange,
+  })
 
   const imageStyle = useAnimatedStyle(() => ({
     transform: [
@@ -81,7 +100,6 @@ export function AnnotateCarouselItem({
   // width/height are runtime props — cannot be static stylesheet values
   return (
     <View style={{ width, height }}>
-
       {/* Photo: pinch/pan/double-tap to frame */}
       <GestureDetector gesture={photoGesture}>
         <View style={styles.photoLayer}>
@@ -91,7 +109,9 @@ export function AnnotateCarouselItem({
               cachePolicy="memory-disk"
               style={{ width, height }}
               contentFit="contain"
-              onLoad={(e) => setNatural({ w: e.source.width, h: e.source.height })}
+              onLoad={(e) =>
+                setNatural({ w: e.source.width, h: e.source.height })
+              }
               accessibilityLabel="Cat observation photo"
             />
           </Animated.View>
@@ -99,25 +119,65 @@ export function AnnotateCarouselItem({
       </GestureDetector>
 
       {/* Fixed centered square crosshair — crosshair lines drawn inside the square */}
-      <View pointerEvents="none" style={[styles.square, { left: squareX, top: squareY, width: squareSize, height: squareSize }]}>
-        <View style={[styles.crosshairLine, { left: 0, top: squareSize / 2 - 0.5, width: squareSize, height: 1 }]} />
-        <View style={[styles.crosshairLine, { left: squareSize / 2 - 0.5, top: 0, width: 1, height: squareSize }]} />
+      <View
+        pointerEvents="none"
+        style={[
+          styles.square,
+          {
+            left: squareX,
+            top: squareY,
+            width: squareSize,
+            height: squareSize,
+          },
+        ]}
+      >
+        <View
+          style={[
+            styles.crosshairLine,
+            {
+              left: 0,
+              top: squareSize / 2 - 0.5,
+              width: squareSize,
+              height: 1,
+            },
+          ]}
+        />
+        <View
+          style={[
+            styles.crosshairLine,
+            {
+              left: squareSize / 2 - 0.5,
+              top: 0,
+              width: 1,
+              height: squareSize,
+            },
+          ]}
+        />
       </View>
 
       {/* Center dot — long-press to confirm */}
       <GestureDetector gesture={dotGesture}>
-        <View style={[styles.dotTouchArea, {
-          left: width / 2 - DOT_HITBOX_SIZE / 2,
-          top: height / 2 - DOT_HITBOX_SIZE / 2,
-          width: DOT_HITBOX_SIZE,
-          height: DOT_HITBOX_SIZE,
-        }]}>
+        <View
+          style={[
+            styles.dotTouchArea,
+            {
+              left: width / 2 - DOT_HITBOX_SIZE / 2,
+              top: height / 2 - DOT_HITBOX_SIZE / 2,
+              width: DOT_HITBOX_SIZE,
+              height: DOT_HITBOX_SIZE,
+            },
+          ]}
+        >
           <Animated.View style={[styles.dot, dotStyle]} />
         </View>
       </GestureDetector>
 
       {/* Confirm button — same effect as holding the dot */}
-      <Pressable onPress={confirmNow} accessibilityRole="button" style={styles.confirmBtn}>
+      <Pressable
+        onPress={confirmNow}
+        accessibilityRole="button"
+        style={styles.confirmBtn}
+      >
         <Text style={styles.confirmText}>Confirm</Text>
       </Pressable>
     </View>
