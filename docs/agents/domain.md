@@ -73,7 +73,7 @@ The user-entered fallback date/time, set via the existing date-time-picker modal
 _Avoid_: custom time, override
 
 **Library pick**:
-A photo added to the Submission's shared photo pool via the device's photo library rather than the live Camera. Uses the same `SubmissionPhoto` shape and the same pool as camera-captured photos — there is no `source` field distinguishing them once added; a Library pick's only special handling is triggering Manual time when its EXIF has no timestamp.
+A photo added to the Submission's shared photo pool via the device's photo library rather than the live Camera. Uses the same `SubmissionPhoto` shape and the same pool as camera-captured photos. A draft is **single-source by construction** (ADR 0002 amendment, 2026-07-31): `usePhotoStore`'s `source: 'camera' | 'library' | null` pins to whichever entrypoint wrote the first photo, and the Home screen disables the other entrypoint until the pool is cleared — mixing camera and Library picks in one Submission cannot occur. A Library pick's only other special handling is triggering Manual time when its EXIF has no timestamp.
 _Avoid_: uploaded photo, imported photo
 
 ### First-run and gating
