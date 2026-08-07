@@ -1,10 +1,15 @@
 import { StyleSheet } from 'react-native-unistyles'
 
-export const styles = StyleSheet.create((theme) => ({
+export const styles = StyleSheet.create((theme, rt) => ({
   root: { flex: 1, backgroundColor: theme.colors.background },
   topBar: {
     backgroundColor: theme.colors.surface,
     paddingHorizontal: theme.spacing.lg,
+    // #187: annotate is a fullScreenModal with headerShown off, edge-to-edge
+    // — with no top inset the OS status-bar strip overlapped topRow's
+    // content, including the remove-photo button, so touches there hit the
+    // status bar instead of the button.
+    paddingTop: rt.insets.top + 10,
     paddingBottom: 10,
     borderBottomWidth: 0.5,
     borderBottomColor: theme.colors.surfaceAlt,

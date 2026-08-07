@@ -104,6 +104,7 @@ export default function AnnotateScreen() {
             delayLongPress={500}
             style={styles.removeBtn}
             accessibilityRole="button"
+            accessibilityLabel="Remove photo"
           >
             <Trash2 size={18} color={theme.colors.muted} />
           </Pressable>
