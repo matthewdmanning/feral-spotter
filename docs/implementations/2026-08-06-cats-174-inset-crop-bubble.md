@@ -250,7 +250,7 @@ right: theme.spacing.md`), same positioning strategy as `wrapBottomRight`
   pattern) — lets Cat Form react to collapse state without either
   component knowing the other's internals.
 - Cat Form's title fade is now collapse-aware: `catId && !bubbleCollapsed
-  ? styles.titleFaded : null`, instead of fading unconditionally whenever
+? styles.titleFaded : null`, instead of fading unconditionally whenever
   a bubble exists. Once the bubble docks at the edge, it no longer covers
   the title, so there's no reason to keep it faded.
 

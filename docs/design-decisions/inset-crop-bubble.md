@@ -27,6 +27,7 @@ Supersedes #168's ratified "circular pill" for `annotate`. Reason (2026-08-07, l
 ## Expanded position
 
 Unchanged from #168:
+
 - `annotate`: bottom-right, docked against the bottom bar.
 - Cat Form: top-center, horizontally centered in the header zone (changed from #168's original top-right in the #186 pass — confirmed correct as-is).
 
