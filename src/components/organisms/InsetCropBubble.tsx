@@ -1,11 +1,16 @@
 /**
  * components/organisms/InsetCropBubble.tsx
  *
- * Floating circular "docked bubble" inset crop (#174, design decided in
- * #168 as Variant B). Renders on both `annotate` (bottom-right) and Cat
- * Form (top-right, inside its header zone) — same component, different
- * edge. Reuses #172's box-lookup/crop-centering seam unchanged; only the
+ * Floating "docked bubble" inset crop (#174, design decided in #168 as
+ * Variant B). Renders on both `annotate` (bottom-right) and Cat Form
+ * (top-center, inside its header zone) — same component, different edge.
+ * Reuses #172's box-lookup/crop-centering seam unchanged; only the
  * container shape, sizing, positioning, and collapse behavior are new.
+ *
+ * Rounded square, not #168's circular pill (#186 regression fix) — the
+ * circle read as visually heavier than intended and gave no clean way to
+ * signal the Cat Form title fading beneath it the way a squared-off edge
+ * does.
  *
  * Unit note (deviation from #174's literal spec text, flagged on the
  * issue): the ticket says diameter should come from the box's
@@ -40,7 +45,7 @@ export const DEFAULT_DIAMETER = 68
 // #168 decided: translateX(62%) toward the anchoring edge, fixed diameter.
 const COLLAPSE_SLIDE_FRACTION = 0.62
 
-export type InsetCropEdge = 'top-right' | 'bottom-right'
+export type InsetCropEdge = 'top-center' | 'bottom-right'
 
 interface InsetCropBubbleProps {
   catId: string
@@ -116,30 +121,30 @@ export function InsetCropBubble({
     }
   }
 
+  // top-center has no anchoring side edge to slide toward, so it collapses
+  // upward (off the top) instead of sideways; bottom-right keeps #168's
+  // decided edge-ward horizontal slide.
+  const collapseOffset = slideAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, diameter * COLLAPSE_SLIDE_FRACTION],
+  })
+  const collapseTransform =
+    edge === 'top-center'
+      ? [{ translateY: Animated.multiply(collapseOffset, -1) }]
+      : [{ translateX: collapseOffset }]
+
   return (
     <Animated.View
       style={[
         styles.wrap,
-        edge === 'top-right' ? styles.wrapTopRight : styles.wrapBottomRight,
-        {
-          transform: [
-            {
-              translateX: slideAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0, diameter * COLLAPSE_SLIDE_FRACTION],
-              }),
-            },
-          ],
-        },
+        edge === 'top-center' ? styles.wrapTopCenter : styles.wrapBottomRight,
+        { transform: collapseTransform },
       ]}
     >
       <Pressable
         testID="inset-crop-bubble"
         onPress={() => setCollapsed((c) => !c)}
-        style={[
-          styles.bubble,
-          { width: diameter, height: diameter, borderRadius: diameter / 2 },
-        ]}
+        style={[styles.bubble, { width: diameter, height: diameter }]}
         accessibilityRole="button"
         accessibilityLabel={
           collapsed ? 'Expand cat photo preview' : 'Collapse cat photo preview'

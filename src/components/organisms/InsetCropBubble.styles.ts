@@ -5,9 +5,11 @@ export const styles = StyleSheet.create((theme) => ({
     position: 'absolute',
     zIndex: 3,
   },
-  wrapTopRight: {
+  wrapTopCenter: {
     top: 0,
+    left: 0,
     right: 0,
+    alignItems: 'center',
   },
   wrapBottomRight: {
     // Clears annotate's bottomBar (paddingVertical 14 + nav-button content +
@@ -17,6 +19,10 @@ export const styles = StyleSheet.create((theme) => ({
   },
   bubble: {
     overflow: 'hidden',
+    // Rounded square, not the #168 prototype's circular pill (regression
+    // fix, #186) — a fixed corner radius, not diameter/2, so it stays a
+    // square at any size instead of degenerating into a circle.
+    borderRadius: theme.radius.lg,
     borderWidth: 2,
     borderColor: theme.colors.accent,
     backgroundColor: theme.colors.surface,

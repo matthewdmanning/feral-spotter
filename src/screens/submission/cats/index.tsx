@@ -49,7 +49,7 @@ export default function CatObservationScreen() {
           ]}
         >
           <View style={styles.header}>
-            <Text style={styles.title}>
+            <Text style={[styles.title, catId ? styles.titleFaded : null]}>
               {existingCat ? 'Edit Cat' : 'Observed Cat'}
             </Text>
             <View style={styles.headerActions}>
@@ -69,7 +69,7 @@ export default function CatObservationScreen() {
           {catId && (
             <InsetCropBubble
               catId={catId}
-              edge="top-right"
+              edge="top-center"
               onDiameterChange={setBubbleDiameter}
             />
           )}
