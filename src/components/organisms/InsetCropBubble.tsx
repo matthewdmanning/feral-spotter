@@ -1,11 +1,25 @@
 /**
  * components/organisms/InsetCropBubble.tsx
  *
- * Floating circular "docked bubble" inset crop (#174, design decided in
- * #168 as Variant B). Renders on both `annotate` (bottom-right) and Cat
- * Form (top-right, inside its header zone) — same component, different
- * edge. Reuses #172's box-lookup/crop-centering seam unchanged; only the
- * container shape, sizing, positioning, and collapse behavior are new.
+ * Floating "docked bubble" inset crop (#174, design decided in #168 as
+ * Variant B). Renders on both `annotate` (bottom-right) and Cat Form
+ * (top-center, inside its header zone) — same component, same collapse
+ * behavior, different edge. Reuses #172's box-lookup/crop-centering seam
+ * unchanged; only the container shape, sizing, positioning, and collapse
+ * behavior are new.
+ *
+ * Rounded square, not #168's circular pill (#186 regression fix) — the
+ * circle read as visually heavier than intended and gave no clean way to
+ * signal the Cat Form title fading beneath it the way a squared-off edge
+ * does.
+ *
+ * Collapse is unified across both screens (2026-08-07, superseding #168's
+ * per-screen edge-ward-slide-only spec): both dock toward the right screen
+ * edge and shrink to a flat `COLLAPSED_DIAMETER`. `top-center` has no
+ * anchoring side edge by default, so its wrap is right-anchored like
+ * `bottom-right` and centered *while expanded* via a computed translateX,
+ * animating back to the anchor (then past it, same as `bottom-right`) on
+ * collapse — see `docs/design-decisions/inset-crop-bubble.md`.
  *
  * Unit note (deviation from #174's literal spec text, flagged on the
  * issue): the ticket says diameter should come from the box's
@@ -29,6 +43,7 @@ import { computeBubbleDiameter } from '@/src/lib/insetCrop/diameter'
 import { Image } from 'expo-image'
 import { useEffect, useState } from 'react'
 import { Animated, Dimensions, Pressable } from 'react-native'
+import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './InsetCropBubble.styles'
 
 const window = Dimensions.get('window')
@@ -37,23 +52,34 @@ const window = Dimensions.get('window')
 // degenerate (zero-area) box, and as the pre-report default a host layout
 // (Cat Form's header zone) reserves before any bubble has confirmed a size.
 export const DEFAULT_DIAMETER = 68
-// #168 decided: translateX(62%) toward the anchoring edge, fixed diameter.
+// Flat collapsed size (2026-08-07), not proportional to the expanded
+// diameter — deliberate deviation from #168's prototype-documented
+// scale(0.4) shrink-fallback. Same numeric value as DEFAULT_DIAMETER, but
+// an independently tunable constant — different semantic role (a
+// not-yet-confirmed-box placeholder vs. a collapsed-state target size).
+export const COLLAPSED_DIAMETER = 68
+// #168 decided: translateX(62%) toward the anchoring edge at the anchor's
+// own offset (0 for bottom-right's already-edge-anchored wrap).
 const COLLAPSE_SLIDE_FRACTION = 0.62
 
-export type InsetCropEdge = 'top-right' | 'bottom-right'
+export type InsetCropEdge = 'top-center' | 'bottom-right'
 
 interface InsetCropBubbleProps {
   catId: string
   edge: InsetCropEdge
   /** Reports the live computed diameter so a host layout (Cat Form's header zone) can reserve space for it. */
   onDiameterChange?: (diameter: number) => void
+  /** Reports collapsed state so a host layout (Cat Form's title) can react — e.g. only fade while the bubble is actually covering it. */
+  onCollapsedChange?: (collapsed: boolean) => void
 }
 
 export function InsetCropBubble({
   catId,
   edge,
   onDiameterChange,
+  onCollapsedChange,
 }: InsetCropBubbleProps) {
+  const { theme } = useUnistyles()
   const getFirstBox = useBoundingBoxStore((s) => s.getFirstBox)
   const photos = usePhotoStore((s) => s.photos)
   const [natural, setNatural] = useState({ w: 0, h: 0 })
@@ -82,6 +108,10 @@ export function InsetCropBubble({
   useEffect(() => {
     if (box && photo) onDiameterChange?.(diameter)
   }, [diameter, box, photo, onDiameterChange])
+
+  useEffect(() => {
+    onCollapsedChange?.(collapsed)
+  }, [collapsed, onCollapsedChange])
 
   useEffect(() => {
     Animated.timing(slideAnim, {
@@ -116,30 +146,37 @@ export function InsetCropBubble({
     }
   }
 
+  // top-center's wrap is right-anchored (styles.wrapTopCenter), same as
+  // bottom-right — so at the anchor (offset 0) it already sits flush at the
+  // edge. To read as "centered" while expanded, it needs a leftward offset
+  // pulling it in from that edge to the screen's horizontal center; both
+  // edges then converge on the same collapsed offset (docked at/past the
+  // anchor), per #168's decided translateX(62%)-of-diameter slide.
+  const centeringOffset =
+    edge === 'top-center' ? theme.spacing.md - (window.width - diameter) / 2 : 0
+  const collapsedOffset = diameter * COLLAPSE_SLIDE_FRACTION
+  const translateX = slideAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [centeringOffset, collapsedOffset],
+  })
+  const scale = slideAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, COLLAPSED_DIAMETER / diameter],
+  })
+  const collapseTransform = [{ translateX }, { scale }]
+
   return (
     <Animated.View
       style={[
         styles.wrap,
-        edge === 'top-right' ? styles.wrapTopRight : styles.wrapBottomRight,
-        {
-          transform: [
-            {
-              translateX: slideAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0, diameter * COLLAPSE_SLIDE_FRACTION],
-              }),
-            },
-          ],
-        },
+        edge === 'top-center' ? styles.wrapTopCenter : styles.wrapBottomRight,
+        { transform: collapseTransform },
       ]}
     >
       <Pressable
         testID="inset-crop-bubble"
         onPress={() => setCollapsed((c) => !c)}
-        style={[
-          styles.bubble,
-          { width: diameter, height: diameter, borderRadius: diameter / 2 },
-        ]}
+        style={[styles.bubble, { width: diameter, height: diameter }]}
         accessibilityRole="button"
         accessibilityLabel={
           collapsed ? 'Expand cat photo preview' : 'Collapse cat photo preview'

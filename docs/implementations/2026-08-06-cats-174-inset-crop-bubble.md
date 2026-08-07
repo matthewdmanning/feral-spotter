@@ -167,3 +167,102 @@ holding it in `useState(() => new Animated.Value(0))` instead),
 **Not run on-device.** The bubble's real size/position/collapse
 interaction has never been visually verified against a real photo/box —
 same unverified-on-device gap already flagged for #170-#172.
+
+## 2026-08-07 — fix (#186)
+
+**Purpose:** the on-device pass that finally exercised this component
+(`emulator/run-notes/2026-08-06-cats-sprint-annotate-drive.md`) found the
+no-field-overlap guarantee above doesn't actually prevent visual overlap:
+`headerZone`'s `minHeight` reserves total height, but the title row and
+the bubble are both anchored at `top: 0` inside it, so a bubble wider
+than the title row's own natural height paints directly over the title
+instead of using the reserved space below. Confirmed bug, not the
+diameter formula (that was independently re-verified correct against a
+screenshot this same run).
+
+**Change:** per Matthew's live direction, stopped trying to dodge the
+overlap positionally and instead accepted it, styling around it:
+
+- `InsetCropBubble`: circular bubble (`borderRadius: diameter / 2`)
+  replaced with a fixed rounded square (`theme.radius.lg`) — Matthew's
+  call ("use a rounded square throughout"), not a tap-triggered
+  shape-morph.
+- Cat Form's bubble anchor changed from `top-right` to a new `top-center`
+  edge (horizontally centered, `InsetCropEdge` updated to
+  `'top-center' | 'bottom-right'`; `top-right`/`wrapTopRight` removed,
+  no longer used anywhere). `annotate`'s `bottom-right` placement is
+  unchanged — it wasn't part of this bug.
+- Collapse slide direction is now edge-aware: `bottom-right` keeps #168's
+  decided horizontal edge-ward slide; `top-center` has no side edge to
+  slide toward, so it collapses upward (`translateY`) instead.
+- Cat Form's title (`"Observed Cat"`/`"Edit Cat"`) fades to `opacity:
+0.15` whenever a bubble is showing (`catId` truthy) — accepts that the
+  centered bubble can be wider than the header row and sits over the
+  title, rather than pretending `minHeight` alone prevents it.
+
+No changes to the diameter formula, the header-zone `minHeight`
+reservation itself (still tracks the live diameter, still guards the
+pre-report frame), or the crop-centering math — this was a
+positioning/styling fix, not a sizing one. Existing tests (diameter
+derivation, header-zone `minHeight`) still pass unchanged; no new
+automated coverage added for the shape/centering/fade change itself
+(visual, not logic — matches this component's existing "component-level
+only" testing scope).
+
+**Verification status:** `tsc --noEmit`, `eslint`, full `jest` (29/29
+suites) all pass. **Not yet re-verified live on-device** — the emulator
+session that would confirm the fix visually was paused mid-boot (host
+battery). Live check remains outstanding on #186.
+
+## 2026-08-07 — collapse unification (#186 continued)
+
+**Purpose:** the previous entry's `top-center` collapse (`translateY`,
+upward) was itself a design mistake, caught in a live grilling session
+before implementation went further — Matthew's ruling: collapse should
+be identical on both screens (same component, same behavior), docking
+toward the right screen edge like `bottom-right` already does, not a
+per-edge-shape special case. Separately, the collapsed state was flagged
+as visually too large on Cat Form — collapse only ever translated
+position, never resized.
+
+**Change:**
+
+- `InsetCropBubble.styles.ts`'s `wrapTopCenter`: right-anchored (`top: 0,
+right: theme.spacing.md`), same positioning strategy as `wrapBottomRight`
+  — no longer flex-centered (`alignItems: 'center'` / `left: 0` removed).
+  "Centered while expanded" is now a computed `translateX`, not a layout
+  property.
+- New `COLLAPSED_DIAMETER = 68` constant — a flat, non-proportional
+  collapsed size (Matthew's explicit call, deviating from #168's
+  prototype-documented `scale(0.4)` shrink-fallback). Same numeric value
+  as `DEFAULT_DIAMETER` but a separate constant — different semantic role
+  (pre-report placeholder vs. collapsed-state target), independently
+  tunable.
+- Collapse transform is now `[translateX, scale]` on both edges: `scale`
+  interpolates `1 → COLLAPSED_DIAMETER / diameter` (native-driver
+  compatible, unlike animating literal `width`/`height`). `translateX`
+  interpolates `centeringOffset → diameter * COLLAPSE_SLIDE_FRACTION` —
+  `centeringOffset` is `0` for `bottom-right` (already anchored at rest)
+  and a computed leftward pull for `top-center` (anchor-to-screen-center
+  distance), so both converge on the same collapsed-state math (#168's
+  decided `translateX(62%)`-of-diameter slide past the anchor).
+- New optional `onCollapsedChange` callback (mirrors `onDiameterChange`'s
+  pattern) — lets Cat Form react to collapse state without either
+  component knowing the other's internals.
+- Cat Form's title fade is now collapse-aware: `catId && !bubbleCollapsed
+? styles.titleFaded : null`, instead of fading unconditionally whenever
+  a bubble exists. Once the bubble docks at the edge, it no longer covers
+  the title, so there's no reason to keep it faded.
+
+No change to the diameter formula, header-zone `minHeight` reservation
+(still fed the raw/expanded `diameter`, never the collapsed value — the
+reservation intentionally does not shrink on collapse, Matthew's call:
+the no-overlap guarantee outranks reclaiming space), or crop-centering
+math.
+
+**Verification status:** `tsc --noEmit` (0 errors), `eslint` on all
+touched files (0 errors), full `jest` (29/29 suites, 106/106 tests,
+unchanged from the previous entry's baseline — no new coverage added,
+consistent with this component's existing component-level-only,
+visual-change-untested scope), `prettier --check` (clean). **Not
+verified live on-device** — same outstanding gap as the previous entry.

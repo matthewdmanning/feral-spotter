@@ -37,6 +37,10 @@ export default function CatObservationScreen() {
   // Starts at the bubble's own pre-report default (not 0) so the
   // guarantee holds on the first frame too, before onDiameterChange fires.
   const [bubbleDiameter, setBubbleDiameter] = useState(DEFAULT_DIAMETER)
+  // Fade only while the bubble is actually expanded over the title — once
+  // collapsed (docked at the right edge, shrunk), it no longer covers
+  // anything, so the title should read normally again (2026-08-07).
+  const [bubbleCollapsed, setBubbleCollapsed] = useState(false)
 
   return (
     <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
@@ -49,7 +53,12 @@ export default function CatObservationScreen() {
           ]}
         >
           <View style={styles.header}>
-            <Text style={styles.title}>
+            <Text
+              style={[
+                styles.title,
+                catId && !bubbleCollapsed ? styles.titleFaded : null,
+              ]}
+            >
               {existingCat ? 'Edit Cat' : 'Observed Cat'}
             </Text>
             <View style={styles.headerActions}>
@@ -69,8 +78,9 @@ export default function CatObservationScreen() {
           {catId && (
             <InsetCropBubble
               catId={catId}
-              edge="top-right"
+              edge="top-center"
               onDiameterChange={setBubbleDiameter}
+              onCollapsedChange={setBubbleCollapsed}
             />
           )}
         </View>

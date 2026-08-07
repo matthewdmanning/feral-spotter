@@ -14,6 +14,10 @@ export const styles = StyleSheet.create((theme) => ({
     fontSize: theme.typography.xxxl,
     fontWeight: '700',
   },
+  // The inset-crop bubble is centered over this title (#186) — fade it
+  // significantly rather than trying to dodge the bubble positionally,
+  // since the bubble can be wider than the available header row.
+  titleFaded: { opacity: 0.15 },
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
