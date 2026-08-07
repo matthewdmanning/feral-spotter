@@ -6,10 +6,11 @@ export const styles = StyleSheet.create((theme) => ({
     zIndex: 3,
   },
   wrapTopCenter: {
+    // Right-anchored like wrapBottomRight, not flex-centered — collapse now
+    // needs a real edge to dock against (2026-08-07). Centering while
+    // expanded is done with a computed translateX in the component instead.
     top: 0,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
+    right: theme.spacing.md,
   },
   wrapBottomRight: {
     // Clears annotate's bottomBar (paddingVertical 14 + nav-button content +
