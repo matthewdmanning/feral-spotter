@@ -39,7 +39,10 @@ jest.mock('@/src/lib/cache/submissionCache', () => ({
 }))
 
 jest.mock('@/src/hooks/useSubmissionSubmit', () => ({
-  useSubmissionSubmit: () => ({ handleDone: jest.fn(), handleReset: jest.fn() }),
+  useSubmissionSubmit: () => ({
+    handleDone: jest.fn(),
+    handleReset: jest.fn(),
+  }),
 }))
 
 jest.mock('@/src/lib/location', () => ({
@@ -70,7 +73,12 @@ jest.mock('lucide-react-native', () => ({
   CheckCircle: () => null,
 }))
 
-type Cat = { local_id: string; age: string; pattern: string; hair_length: string }
+type Cat = {
+  local_id: string
+  age: string
+  pattern: string
+  hair_length: string
+}
 
 let mockCats: Cat[] = []
 
@@ -144,7 +152,12 @@ describe('Cat List auto-skip gate — model-based test', () => {
     events: {
       CAT_ADDED: () => {
         mockCats = [
-          { local_id: 'cat-1', age: 'adult', pattern: 'tabby', hair_length: 'short' },
+          {
+            local_id: 'cat-1',
+            age: 'adult',
+            pattern: 'tabby',
+            hair_length: 'short',
+          },
         ]
         rerender(<CreateSubmissionScreen />)
       },

@@ -4,6 +4,7 @@ permissions:
   pull-requests: write
 on:
   push:
+    branches: [main]
   pull_request:
 
 # Cancel in-progress jobs if a developer pushes a new commit to the same PR
