@@ -10,7 +10,7 @@ import {
 import { router, type Href } from 'expo-router'
 import { randomUUID } from 'expo-crypto'
 import { AlertCircle, CheckCircle } from 'lucide-react-native'
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
@@ -61,9 +61,21 @@ export default function CreateSubmissionScreen() {
   // into annotate instead of rendering an empty Cat List. replace (not
   // push) so annotate's hardware back pops past Cat List entirely rather
   // than landing back on it and re-triggering this redirect.
+  //
+  // Gate on the mount-time snapshot (#189), not a live cats.length watch:
+  // this is a landing-time check ("I arrived here with nothing recorded"),
+  // not a standing invariant. A live watch also fires when cats drops to 0
+  // for a reason other than landing here empty -- e.g. handleReset's own
+  // router.replace('/') racing this effect's replace('/submission/annotate')
+  // for whichever one wins the actual navigation, sending Reset to
+  // annotate's empty state instead of Home. useEffect always runs after the
+  // triggering synchronous callback finishes, so reordering handleReset's
+  // own clearDraft()/router.replace() calls can't fix that race -- only not
+  // re-running this effect on every cats.length change can.
+  const wasEmptyOnMountRef = useRef(cats.length === 0)
   useEffect(() => {
-    if (cats.length === 0) router.replace('/submission/annotate')
-  }, [cats.length])
+    if (wasEmptyOnMountRef.current) router.replace('/submission/annotate')
+  }, [])
 
   // Commit the background Live fix into the Submission draft only once it
   // resolves — never mid-watch, so a reacquire's early (worse) candidates

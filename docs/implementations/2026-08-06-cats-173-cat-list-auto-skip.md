@@ -62,3 +62,45 @@ List auto-skip specifically.
 ## Not yet done
 
 PR not created this session — see next commit for branch/PR details.
+
+## 2026-08-07 — fix (#189)
+
+**Purpose:** the "no real way to reach [`cats` dropping back to 0 while
+mounted]" reasoning above (both the removed test journey and
+`useSubmissionSubmit.ts`'s own comment: "handleReset navigates straight
+to `/` before Cat List could re-render with an empty list") turned out
+to be wrong. Live-reproduced on-device (`Reset` → confirm on Submission
+Details): the underlying stores (`cats`, `photos`) correctly cleared —
+confirmed by pulling and inspecting the app's `RKStorage` AsyncStorage
+DB directly before/after — but the screen landed on `annotate`'s empty
+state instead of Home. Root cause: this effect's own
+`router.replace('/submission/annotate')` (fired by `cats.length`
+dropping to 0) raced `handleReset`'s `router.replace('/')` and won.
+Reordering `handleReset`'s statements was tried first and **did not
+fix it** — confirmed live, twice, with a forced reload each time to
+rule out stale bundles — because `useEffect` always runs after the
+triggering synchronous callback finishes regardless of statement order
+within it; the race isn't call-order-determined.
+
+**Change:** `create/index.tsx`'s auto-skip effect now gates on a
+mount-time snapshot (`useRef(cats.length === 0)`, checked inside a
+`useEffect(() => {...}, [])`) instead of reactively watching
+`cats.length`. This matches #173's actual intent — a landing-time check
+("I arrived here with nothing recorded"), not a standing invariant —
+and structurally can't re-fire later in the same mount for any reason,
+Reset included. The early `return null` render guard (`cats.length ===
+0`) is unchanged; only the effect's trigger changed.
+
+Added the `CAT_REMOVED` journey the original test explicitly declined
+to write, now that it's a real, reproduced path: `hasCats` →
+`emptiedAfterHavingCats` (a distinct state from `emptyList`, not a
+return to it — same `cats.length === 0` app state, different expected
+behavior by history) asserts `router.replace` stays at its
+already-fired count, not a second call.
+
+**Verification status:** `tsc --noEmit`, `eslint`, full `jest` (30/30
+suites) all pass. **Live-verified on-device** (not just unit tests) —
+reproduced the bug pre-fix (landed on annotate's empty state after
+Reset), then reproduced the fix post-fix (lands on Home, `RKStorage`
+dump confirms `cats:[]`/`photos:[]`) via a forced Metro reload between
+each attempt.
