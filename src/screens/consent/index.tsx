@@ -46,7 +46,7 @@ export default function ConsentScreen() {
         setBlocked(true)
         return
       }
-      router.replace('/(home-tabs)')
+      router.replace('/sign-in')
     } finally {
       setBusy(false)
     }
@@ -68,7 +68,7 @@ export default function ConsentScreen() {
         locationStatus !== RESULTS.BLOCKED
       ) {
         setBlocked(false)
-        router.replace('/(home-tabs)')
+        router.replace('/sign-in')
       }
     }
 
@@ -79,7 +79,7 @@ export default function ConsentScreen() {
   }, [blocked])
 
   const handleContinueWithoutAccess = useCallback(() => {
-    router.replace('/(home-tabs)')
+    router.replace('/sign-in')
   }, [])
 
   const handleDecline = useCallback(() => {

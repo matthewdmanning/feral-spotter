@@ -56,10 +56,21 @@ jest.mock('lucide-react-native', () => ({
  * Model of HomeScreen's app-wide auth/consent gate (src/screens/home/index.tsx),
  * scoped only to this flow — not a project-wide pattern. Guards against #93
  * (registration->consent loop): the gate must never redirect while auth state
- * is indeterminate ("initializing" here, isReady=false in the real code),
- * and must land on the right screen for every authenticated/consent
- * combination. Model-based testing walks every reachable state via
- * @xstate/graph instead of only the cases someone thought to hand-write.
+ * is indeterminate ("initializing" here, isReady=false in the real code).
+ * Consent is checked first, ahead of auth (issue #163) — it's a device-level
+ * grant that must survive sign-out, so a consented-but-signed-out user lands
+ * on /sign-in, never back on /intro-flow.
+ *
+ * Transitions are restricted to changes in `isAuthenticated` — the gate
+ * effect's only real reactive dependency (`hasAcceptedConsent()` is a plain
+ * snapshot read, not subscribed). This also matches reality: in the actual
+ * app Home is never mounted between /consent and /sign-in — each screen
+ * navigates explicitly — so a live Home instance never witnesses consent
+ * changing underneath it. The "no consent" states are dead ends for the
+ * same reason: once redirected away, that Home instance's job is done;
+ * a later visit is a fresh mount, modeled as a new entry from `initializing`.
+ * Model-based testing walks every reachable state via @xstate/graph instead
+ * of only the cases someone thought to hand-write.
  */
 const gateMachine = createMachine({
   id: 'homeGate',
@@ -67,29 +78,27 @@ const gateMachine = createMachine({
   states: {
     initializing: {
       on: {
-        AUTH_READY_UNAUTHENTICATED: 'unauthenticated',
-        AUTH_READY_NO_CONSENT: 'authenticatedNoConsent',
+        AUTH_READY_UNAUTHENTICATED_NO_CONSENT: 'noConsentUnauthenticated',
+        // Edge case: an existing account (e.g. re-installed app, local
+        // consent store cleared) still has no device consent on file.
+        AUTH_READY_AUTHENTICATED_NO_CONSENT: 'noConsentAuthenticated',
+        // Consent already on file for this device, no active session.
+        AUTH_READY_CONSENTED_UNAUTHENTICATED: 'consentedUnauthenticated',
         AUTH_READY_WITH_CONSENT: 'ready',
       },
     },
-    unauthenticated: {
+    noConsentUnauthenticated: {},
+    noConsentAuthenticated: {},
+    consentedUnauthenticated: {
       on: {
-        // New device: sign-in leaves device consent still outstanding.
-        SIGN_IN: 'authenticatedNoConsent',
-        // Returning user: device consent persists across sign-out, so
-        // re-authenticating lands straight on home.
-        SIGN_IN_RETURNING: 'ready',
-      },
-    },
-    authenticatedNoConsent: {
-      on: {
-        AGREE_CONSENT: 'ready',
-        // Bail out of the consent screen by signing out.
-        SIGN_OUT: 'unauthenticated',
+        SIGN_IN: 'ready',
       },
     },
     ready: {
-      on: { SIGN_OUT: 'unauthenticated' },
+      on: {
+        // Consent is device-level, not session-level — it survives sign-out.
+        SIGN_OUT: 'consentedUnauthenticated',
+      },
     },
   },
 })
@@ -125,15 +134,21 @@ describe('HomeScreen gate — model-based test', () => {
       initializing: () => {
         expect(router.replace).not.toHaveBeenCalled()
       },
-      unauthenticated: async () => {
+      noConsentUnauthenticated: async () => {
         await waitFor(() =>
           expect(router.replace).toHaveBeenCalledWith('/intro-flow'),
         )
         ;(router.replace as jest.Mock).mockClear()
       },
-      authenticatedNoConsent: async () => {
+      noConsentAuthenticated: async () => {
         await waitFor(() =>
-          expect(router.replace).toHaveBeenCalledWith('/consent'),
+          expect(router.replace).toHaveBeenCalledWith('/intro-flow'),
+        )
+        ;(router.replace as jest.Mock).mockClear()
+      },
+      consentedUnauthenticated: async () => {
+        await waitFor(() =>
+          expect(router.replace).toHaveBeenCalledWith('/sign-in'),
         )
         ;(router.replace as jest.Mock).mockClear()
       },
@@ -142,12 +157,16 @@ describe('HomeScreen gate — model-based test', () => {
       },
     },
     events: {
-      AUTH_READY_UNAUTHENTICATED: () => {
+      AUTH_READY_UNAUTHENTICATED_NO_CONSENT: () => {
         setMocks(true, false, false)
         rerender(<HomeScreen />)
       },
-      AUTH_READY_NO_CONSENT: () => {
+      AUTH_READY_AUTHENTICATED_NO_CONSENT: () => {
         setMocks(true, true, false)
+        rerender(<HomeScreen />)
+      },
+      AUTH_READY_CONSENTED_UNAUTHENTICATED: () => {
+        setMocks(true, false, true)
         rerender(<HomeScreen />)
       },
       AUTH_READY_WITH_CONSENT: () => {
@@ -155,23 +174,12 @@ describe('HomeScreen gate — model-based test', () => {
         rerender(<HomeScreen />)
       },
       SIGN_IN: () => {
-        setMocks(true, true, false)
-        rerender(<HomeScreen />)
-      },
-      // Returning user on an already-consented device: authenticated and
-      // consent already on file.
-      SIGN_IN_RETURNING: () => {
         setMocks(true, true, true)
         rerender(<HomeScreen />)
       },
-      AGREE_CONSENT: () => {
-        setMocks(true, true, true)
-        rerender(<HomeScreen />)
-      },
-      // Signed-in user signs out: auth drops, gate must send them back to
-      // the intro flow.
       SIGN_OUT: () => {
-        setMocks(true, false, false)
+        // Consent persists across sign-out — only auth drops.
+        setMocks(true, false, true)
         rerender(<HomeScreen />)
       },
     },
@@ -182,30 +190,30 @@ describe('HomeScreen gate — model-based test', () => {
   // (vs getShortestPaths) lets us name the journey a user actually takes.
   const journeys = [
     {
-      name: 'first launch: unauthenticated → sign in → agree consent → home',
-      events: [
-        { type: 'AUTH_READY_UNAUTHENTICATED' },
-        { type: 'SIGN_IN' },
-        { type: 'AGREE_CONSENT' },
-      ],
+      name: 'first launch: unauthenticated, no consent → redirected to intro-flow',
+      events: [{ type: 'AUTH_READY_UNAUTHENTICATED_NO_CONSENT' }],
+    },
+    {
+      name: 'existing account, device consent missing → redirected to intro-flow',
+      events: [{ type: 'AUTH_READY_AUTHENTICATED_NO_CONSENT' }],
+    },
+    {
+      name: 'consent already on device but signed out → straight to sign-in, skips intro-flow',
+      events: [{ type: 'AUTH_READY_CONSENTED_UNAUTHENTICATED' }],
     },
     {
       name: 'returning user with consent lands on home directly',
       events: [{ type: 'AUTH_READY_WITH_CONSENT' }],
     },
     {
-      name: 'signed-in user signs out → back to intro flow',
+      name: 'signed-in consented user signs out → sign-in, not intro-flow',
       events: [{ type: 'AUTH_READY_WITH_CONSENT' }, { type: 'SIGN_OUT' }],
     },
     {
-      name: 'bail from consent screen by signing out → intro flow',
-      events: [{ type: 'AUTH_READY_NO_CONSENT' }, { type: 'SIGN_OUT' }],
-    },
-    {
-      name: 'returning user re-signs in on consented device → home',
+      name: 'consented, signed out, then signs back in → home',
       events: [
-        { type: 'AUTH_READY_UNAUTHENTICATED' },
-        { type: 'SIGN_IN_RETURNING' },
+        { type: 'AUTH_READY_CONSENTED_UNAUTHENTICATED' },
+        { type: 'SIGN_IN' },
       ],
     },
   ] as const
