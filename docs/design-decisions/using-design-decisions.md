@@ -1,6 +1,6 @@
 # Using design-decisions/
 
-Rules for any agent changing or reviewing code, on how to weigh `docs/design-decisions/` against other sources.
+Rules for any agent changing or reviewing code, on how to weigh `docs/design-decisions/` against other sources. You may read any file in docs/design-decisions that is relevant to your task -- including if it may be impacted by your task.
 
 ## Priority order
 
