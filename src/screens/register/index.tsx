@@ -39,12 +39,11 @@ export default function RegisterScreen() {
       router.replace('/analytics-consent')
     } catch (err) {
       console.error('[register] failed:', err)
+      setBusy(false)
       Alert.alert(
         'Registration failed',
         'Could not create the account. Try a different email.',
       )
-    } finally {
-      setBusy(false)
     }
   }, [email, password, confirm, registerWithEmail])
 
