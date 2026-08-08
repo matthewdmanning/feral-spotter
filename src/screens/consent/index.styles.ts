@@ -18,6 +18,4 @@ export const styles = StyleSheet.create((theme) => ({
   gateBody:         { color: theme.colors.muted, fontSize: 15, textAlign: 'center', lineHeight: 22 },
   gatePrimary:      { backgroundColor: theme.colors.accent, borderRadius: 10, paddingVertical: 14, paddingHorizontal: 32, width: '100%', alignItems: 'center', marginTop: 8 },
   gatePrimaryText:  { color: theme.colors.accentText, fontSize: 15, fontWeight: '600' },
-  gateSecondary:    { backgroundColor: theme.colors.surfaceAlt, borderRadius: 10, borderWidth: 1, borderColor: theme.colors.border, paddingVertical: 14, paddingHorizontal: 32, width: '100%', alignItems: 'center' },
-  gateSecondaryText:{ color: theme.colors.text, fontSize: 15, fontWeight: '600' },
 }))
