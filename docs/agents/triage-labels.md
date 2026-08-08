@@ -31,4 +31,4 @@ Tracked via GitHub Milestones + Issues (source of truth: [milestones](https://gi
 | **Beta**  | iOS support, feature parity with Alpha.                                                                                                                                            | —          |
 | **v2.0**  | FeralSegmentor / FeralTracker integration.                                                                                                                                         | —          |
 
-Design rationale for this roadmap: `docs/design/2026-07-12-mvp-alpha-beta-roadmap.md`.
+Design rationale for this roadmap: `docs/planning/2026-07-12-mvp-alpha-beta-roadmap.md`.

@@ -2,7 +2,7 @@
 
 How the engineering skills should consume this repo's domain documentation when exploring the codebase.
 
-All shared vocabulary lives in this file — there is no separate `CONTEXT.md` to read.
+All shared vocabulary lives in this file. No other files contain the vocabulary list.
 
 ## Before exploring, read these
 
@@ -88,6 +88,9 @@ _Avoid_: using this word for anything in the Onboarding flow.
 
 **Box Annotation** ("Box the Cat"):
 Drawing a bounding box around each cat in a photo. The app's one genuinely complex operation — the reason a Tutorial is warranted. User-facing term: "Box the Cat." Implemented (`src/screens/submission/annotate/`).
+
+**Camera screen**:
+The live photo-capture screen (`src/screens/camera/`). Distinct from Box Annotation (`src/screens/submission/annotate/`) — a common colloquial mix-up since both deal with a just-taken photo.
 
 **Consent**:
 The user's explicit acceptance of the data-collection disclosure, and the granting of OS permissions (location, camera, photos). This is where acceptance is recorded and permissions are requested — unlike Onboarding, which only explains. Eager priming happens on "I Agree"; contextual re-priming happens at point of use (issue #41).

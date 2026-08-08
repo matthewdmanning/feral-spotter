@@ -1,6 +1,6 @@
 # Sprint:camera implementation notes (2026-08-01)
 
-Implements the build spec in `docs/design/2026-07-31-sprint-camera-planning.md`
+Implements the build spec in `docs/planning/2026-07-31-sprint-camera-planning.md`
 (#121 umbrella → #122, #105, #104, #123) on branch
 `issue-128-location-capture-timing`. Code complete; **not yet run on a
 device/emulator** — see Verification status below before merging.

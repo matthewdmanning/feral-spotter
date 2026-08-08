@@ -51,7 +51,7 @@ This was a real bug in the pre-#194 gate (auth-first order sent a consented-but-
 
 - Camera/location's own contextual re-priming at point of use (issue #41) if a user declines/blocks at the `/consent` step — unchanged by this decision.
 - `/consent`'s decline/exit behavior (Alert -> Android app-exit) — unchanged; now fires before any account exists, which is a cleaner state to exit from but wasn't itself re-decided here.
-- Punchlist item 9 (`docs/design/2026-08-02-ui-bug-punchlist.md`, "Don't allow" on media consent exits the app unprompted) — related but separate, not resolved by this change.
+- Punchlist item 9 (`docs/planning/2026-08-02-ui-bug-punchlist.md`, "Don't allow" on media consent exits the app unprompted) — related but separate, not resolved by this change.
 
 ## Open follow-ups
 

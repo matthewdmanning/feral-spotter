@@ -76,6 +76,6 @@ carry boxes for more than one cat.
   (post-MVP, not yet built) extension is a button on Cat Form to
   re-enter `annotate` for an already-described cat.
 
-See spec: `docs/design/grilling/2026-08-04-cats-annotate-flow-spec.md`
+See spec: `docs/planning/grilling/2026-08-04-cats-annotate-flow-spec.md`
 (published as [issue #169](https://github.com/matthewdmanning/feral-spotter/issues/169)).
 Originating wayfinder map: [#167](https://github.com/matthewdmanning/feral-spotter/issues/167).

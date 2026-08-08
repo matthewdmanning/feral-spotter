@@ -1,6 +1,6 @@
 # Punchlist triage — 2026-08-02 test-drive
 
-Source: `docs/design/2026-08-02-ui-bug-punchlist.md`. Triaged against open issues/milestones 2026-08-03. Clustering is approximate — not a deep-dive dependency analysis.
+Source: `docs/planning/2026-08-02-ui-bug-punchlist.md`. Triaged against open issues/milestones 2026-08-03. Clustering is approximate — not a deep-dive dependency analysis.
 
 ## Sprint clusters (MVP milestone)
 
