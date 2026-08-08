@@ -1,6 +1,6 @@
 # Using design-decisions/
 
-Rules for any agent changing or reviewing code, on how to weigh `docs/design-decisions/` against other sources. You may read any file in docs/design-decisions that is relevant to your task -- including if it may be impacted by your task.
+Rules for any agent changing or reviewing code, on how to weigh `docs/design-decisions/` against other sources. You may read any file in docs/design-decisions that is relevant to your task -- including if it may be impacted by your task. See `docs/design-decisions/design-decision-template.md` for proper formatting.
 
 ## Priority order
 
@@ -14,11 +14,18 @@ A design-decisions file does not override a live user report or a test-drive fin
 
 Never change a `design-decisions/` file unless the user has explicitly confirmed the change first. These files are the current source of truth for UI/UX state for every future agent — an unconfirmed edit corrupts that record.
 
+## Before writing or editing a file here
+
+Read `docs/design-decisions/design-decision-template.md` first, if you haven't already this session. Every design-decisions file follows that structure (Context / Design Specifications / Reason) — no dates, change history, implementation detail, filenames, commit/PR references, or analysis.
+
 ## What belongs in a design-decisions file
 
 Only the **current state** of the design — what the UI/UX is supposed to look like and behave like right now.
 
-- No change history, no dates, no "supersedes X" narrative, no decision log. That belongs in `docs/adr/` (durable rationale for a decision) or `docs/implementations/` (what was actually built, when).
+## Metadata
+
+- Design metadata lives in `docs/design-decisions/design-metadata`. Those files are meant only for in-depth debugging. Do not read when writing, modifying, or reviewing code.-
+- No change history, no dates, no "supersedes X" narrative, no decision log.
 - No issue tracking. A design-decisions file records the target state, not open bugs or TODOs against it.
 
 ## Codebase vs. design-decisions mismatches
