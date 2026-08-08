@@ -7,6 +7,9 @@
     "email": "mattmanningclemson@gmail.com"
   },
   "version": "0.1.0",
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "start": "expo start",
     "preandroid": "adb kill-server && adb start-server && (adb shell pm clear com.mmanning.feralspotter || true)",
