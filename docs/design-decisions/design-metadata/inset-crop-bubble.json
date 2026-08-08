@@ -13,8 +13,5 @@
     { "target": 174 },
     { "target": 186 }
   ],
-  "supersedes_gh_issues": [
-    { "target": 168 },
-    { "target": 186 }
-  ]
+  "supersedes_gh_issues": [{ "target": 168 }, { "target": 186 }]
 }

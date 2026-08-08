@@ -5,22 +5,22 @@ Issue: #12 ("Consent screen"). Branch: `matthewdmanning/issue12`.
 ## Context
 
 The app-level disclosure screen (register → `/consent` → home-tabs, `src/screens/consent/`) already
-ships. That screen is platform-*independent* — an AsyncStorage flag (`src/lib/consent.ts`) plus a
-static "I Agree" gate. What it does *not* yet handle is the platform-dependent layer underneath it:
+ships. That screen is platform-_independent_ — an AsyncStorage flag (`src/lib/consent.ts`) plus a
+static "I Agree" gate. What it does _not_ yet handle is the platform-dependent layer underneath it:
 the actual OS camera/photo-library permission grants that "I Agree" is supposed to trigger. Two
 distinct consents exist and must not be conflated:
 
-|Layer|What it is|Platform-dependent?|
-|-|-|-|
-|Data-collection disclosure|User agrees FeralSpotter collects photos/GPS/details/Google account|No — AsyncStorage flag, same copy, both platforms|
-|OS permission grant|Camera / photo-library access actually granted by iOS or Android|Yes — different config, prompts, denial recovery per OS|
+| Layer                      | What it is                                                          | Platform-dependent?                                     |
+| -------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------- |
+| Data-collection disclosure | User agrees FeralSpotter collects photos/GPS/details/Google account | No — AsyncStorage flag, same copy, both platforms       |
+| OS permission grant        | Camera / photo-library access actually granted by iOS or Android    | Yes — different config, prompts, denial recovery per OS |
 
 This plan covers the second layer, and switches the codebase's permission check/request calls onto
 `react-native-permissions` — a single unified API replacing three separate ad-hoc permission
 surfaces currently in the codebase (vision-camera's own hook, `expo-media-library`'s
 `requestPermissionsAsync`, `expo-image-picker`'s `requestCameraPermissionsAsync`).
 
-**No "ConsentManager" module.** `react-native-permissions` already *is* the unified permission
+**No "ConsentManager" module.** `react-native-permissions` already _is_ the unified permission
 manager — `check()`/`request()`/`openSettings()` plus a `RESULTS` enum that includes `BLOCKED`
 (the one thing the three existing libraries don't agree on). It's stateless by design; adding a
 wrapper class around it that just forwards to `check`/`request` would be a facade with no behavior
@@ -52,18 +52,18 @@ Not yet a dependency — add `react-native-permissions`.
 Same AsyncStorage pattern as `src/lib/firstLaunch.ts`, still the only persisted consent state:
 
 ```ts
-const KEY = "has_accepted_consent";
-const CONSENT_VERSION = 1; // bump when disclosure copy changes materially
+const KEY = 'has_accepted_consent'
+const CONSENT_VERSION = 1 // bump when disclosure copy changes materially
 
 export async function hasAcceptedConsent(): Promise<boolean> {
-  const raw = await AsyncStorage.getItem(KEY);
-  if (!raw) return false;
-  const { version } = JSON.parse(raw);
-  return version === CONSENT_VERSION;
+  const raw = await AsyncStorage.getItem(KEY)
+  if (!raw) return false
+  const { version } = JSON.parse(raw)
+  return version === CONSENT_VERSION
 }
 
 export async function markConsentAccepted(): Promise<void> {
-  await AsyncStorage.setItem(KEY, JSON.stringify({ version: CONSENT_VERSION }));
+  await AsyncStorage.setItem(KEY, JSON.stringify({ version: CONSENT_VERSION }))
 }
 ```
 
@@ -87,22 +87,23 @@ The only genuinely shared logic: mapping app-level permission names to platform-
 `react-native-permissions` constants, so call sites don't each hand-roll `Platform.select`:
 
 ```ts
-import { Platform } from "react-native";
-import { PERMISSIONS, type Permission } from "react-native-permissions";
+import { Platform } from 'react-native'
+import { PERMISSIONS, type Permission } from 'react-native-permissions'
 
-export type AppPermission = "camera" | "mediaLibrary";
+export type AppPermission = 'camera' | 'mediaLibrary'
 
-export const PERMISSION_MAP: Record<AppPermission, Permission> = Platform.select({
-  ios: {
-    camera: PERMISSIONS.IOS.CAMERA,
-    mediaLibrary: PERMISSIONS.IOS.PHOTO_LIBRARY_ADD_ONLY, // add-only: saveToLibraryAsync only writes
-  },
-  android: {
-    camera: PERMISSIONS.ANDROID.CAMERA,
-    mediaLibrary: PERMISSIONS.ANDROID.READ_MEDIA_IMAGES, // API 33+; older APIs don't need a runtime
-                                                           // permission for MediaStore inserts
-  },
-})!;
+export const PERMISSION_MAP: Record<AppPermission, Permission> =
+  Platform.select({
+    ios: {
+      camera: PERMISSIONS.IOS.CAMERA,
+      mediaLibrary: PERMISSIONS.IOS.PHOTO_LIBRARY_ADD_ONLY, // add-only: saveToLibraryAsync only writes
+    },
+    android: {
+      camera: PERMISSIONS.ANDROID.CAMERA,
+      mediaLibrary: PERMISSIONS.ANDROID.READ_MEDIA_IMAGES, // API 33+; older APIs don't need a runtime
+      // permission for MediaStore inserts
+    },
+  })!
 ```
 
 Call sites import `check`/`request`/`openSettings`/`RESULTS` directly from `react-native-permissions`
@@ -208,7 +209,7 @@ does today if the user never grants.
   such a screen would call `check()` live rather than reading cached state.
 - Google-account consent — auth provider is still a stub (`src/lib/auth/index.ts`), nothing to gate
   yet.
-- Live GPS capture — location *permission* (when-in-use only, requested from the consent screen
+- Live GPS capture — location _permission_ (when-in-use only, requested from the consent screen
   alongside camera/media library — see `src/lib/permissions.ts`) is now in place, but no
   `expo-location` capture call exists anywhere in the codebase yet; GPS is still EXIF-only/passive
   from photo metadata. Wiring an actual `getCurrentPositionAsync()` call into the submission flow

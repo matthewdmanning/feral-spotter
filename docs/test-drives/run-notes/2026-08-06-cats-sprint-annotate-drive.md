@@ -56,7 +56,7 @@ to get a clean submission state after an old leftover draft was found.
   photo 1 (minting the cat), the pill became `enabled=true` on photo 2/3;
   tapping it advanced the pass to 3/3, same as a confirmed box would.
 - **#170 item 6 (Boxing Complete tappable early) — PASS.** `Boxing
-  Complete` was `enabled=true` at photo 1/3, before any photo in the pass
+Complete` was `enabled=true` at photo 1/3, before any photo in the pass
   had a box or absence marked.
 - **#170 multi-cat — PASS.** Ran a second `Add a Cat` pass after saving
   the first cat; Submission Details showed two distinct cat entries
