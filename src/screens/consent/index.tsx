@@ -47,6 +47,12 @@ export default function ConsentScreen() {
         return
       }
       router.replace('/sign-in')
+    } catch (err) {
+      console.error('[consent] permission request failed:', err)
+      Alert.alert(
+        'Something went wrong',
+        'Could not process permissions. Please try again.',
+      )
     } finally {
       setBusy(false)
     }
