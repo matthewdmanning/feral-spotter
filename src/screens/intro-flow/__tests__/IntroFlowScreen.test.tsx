@@ -59,7 +59,7 @@ jest.mock('react-native-unistyles', () => {
 describe('IntroFlowScreen', () => {
   beforeEach(() => jest.clearAllMocks())
 
-  it('shows the first slide and advances through all of them to /sign-in', async () => {
+  it('shows the first slide and advances through all of them to /consent', async () => {
     render(<IntroFlowScreen />)
     expect(screen.getByText(ONBOARDING_SLIDES[0].header)).toBeTruthy()
 
@@ -67,7 +67,7 @@ describe('IntroFlowScreen', () => {
       fireEvent.press(screen.getByText(slide.button))
     }
 
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/sign-in'))
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/consent'))
   })
 
   it('links to /data-agreement from the data-usage slide', () => {

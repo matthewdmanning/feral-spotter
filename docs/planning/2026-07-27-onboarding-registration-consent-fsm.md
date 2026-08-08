@@ -14,17 +14,17 @@ bugs found in this same flow, both fixed). Open issues touching this flow:
 
 ## States
 
-| State | Screen file | Android hardware-back |
-|---|---|---|
-| `introFlow.T1`..`introFlow.T4` | `intro-flow/index.tsx` | not intercepted — falls through to native stack pop (would exit past the first route; see Gaps) |
-| `dataAgreement` | `dataAgreement/index.tsx` | not intercepted — default pop, returns to whichever `introFlow.Tn` pushed it |
-| `signIn` | `sign-in/index.tsx` | not intercepted — default pop, returns to `introFlow.T4` |
-| `profile` | `profile/index.tsx` | not intercepted — default pop, returns to `signIn` (only screen in this chain with a *visible* header back button too, since it doesn't set `headerBackVisible:false`/`gestureEnabled:false` in `_layout.tsx`) |
-| `analyticsConsent` | `analytics-consent/index.tsx` | not intercepted — default pop, returns to `profile` |
-| `consent.disclosure` | `consent/index.tsx` (default render) | **intercepted and swallowed unconditionally** via `useBackHandler(() => true)` — back button does nothing |
-| `consent.busy` | same file, `busy` state | same interception; Agree/Decline buttons are `disabled` |
-| `consent.blocked` | same file, `blocked` state | same interception (hook doesn't distinguish) |
-| `home` | `home/index.tsx` | default (not part of this flow's concern) |
+| State                          | Screen file                          | Android hardware-back                                                                                                                                                                                          |
+| ------------------------------ | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `introFlow.T1`..`introFlow.T4` | `intro-flow/index.tsx`               | not intercepted — falls through to native stack pop (would exit past the first route; see Gaps)                                                                                                                |
+| `dataAgreement`                | `dataAgreement/index.tsx`            | not intercepted — default pop, returns to whichever `introFlow.Tn` pushed it                                                                                                                                   |
+| `signIn`                       | `sign-in/index.tsx`                  | not intercepted — default pop, returns to `introFlow.T4`                                                                                                                                                       |
+| `profile`                      | `profile/index.tsx`                  | not intercepted — default pop, returns to `signIn` (only screen in this chain with a _visible_ header back button too, since it doesn't set `headerBackVisible:false`/`gestureEnabled:false` in `_layout.tsx`) |
+| `analyticsConsent`             | `analytics-consent/index.tsx`        | not intercepted — default pop, returns to `profile`                                                                                                                                                            |
+| `consent.disclosure`           | `consent/index.tsx` (default render) | **intercepted and swallowed unconditionally** via `useBackHandler(() => true)` — back button does nothing                                                                                                      |
+| `consent.busy`                 | same file, `busy` state              | same interception; Agree/Decline buttons are `disabled`                                                                                                                                                        |
+| `consent.blocked`              | same file, `blocked` state           | same interception (hook doesn't distinguish)                                                                                                                                                                   |
+| `home`                         | `home/index.tsx`                     | default (not part of this flow's concern)                                                                                                                                                                      |
 
 ## Transition table
 
@@ -37,7 +37,7 @@ Format: **State — action (trigger) → target** — guard / side effect.
 - `introFlow.T2` — press **Previous** → `introFlow.T1`
 - `introFlow.T3` — press **Next** → `introFlow.T4`
 - `introFlow.T3` — press **Previous** → `introFlow.T2`
-- `introFlow.T3` — press **"Read the full data usage agreement"** (link) → `dataAgreement` (native *push*, not replace — a real sub-stack entry, not just a step change)
+- `introFlow.T3` — press **"Read the full data usage agreement"** (link) → `dataAgreement` (native _push_, not replace — a real sub-stack entry, not just a step change)
 - `introFlow.T4` — press **Previous** → `introFlow.T3`
 - `introFlow.T4` — press **"Set up FeralSpotter"** (the `Next` slot's label on the last slide) → `signIn` (`router.replace`)
 - `introFlow.T1` — **Previous** is `disabled` (step===0), not a live action
@@ -67,8 +67,8 @@ Format: **State — action (trigger) → target** — guard / side effect.
   - **Exit** → `BackHandler.exitApp()` — Android only; iOS has no equivalent and the button effectively does nothing there (per the code comment)
 - `consent.disclosure` — press **"I Agree — Continue"** → `consent.busy` (both buttons disabled) → sequential `request()` for camera, then media, then location (Android can only show one native permission dialog at a time — this sequencing is the #67 fix)
   - if **none** of the three results is `BLOCKED` → `markAccepted()` (persisted) → `home` (`router.replace('/(home-tabs)')`)
-  - if **any** of the three is `BLOCKED` → `consent.blocked` (note: `markAccepted()` still runs *before* this check — device consent is recorded even when permission-blocked)
-- `consent.blocked` — press **"Open Settings"** → `openSettings()` (OS Settings app opens; app itself doesn't transition — it's the *foreground* event below that does)
+  - if **any** of the three is `BLOCKED` → `consent.blocked` (note: `markAccepted()` still runs _before_ this check — device consent is recorded even when permission-blocked)
+- `consent.blocked` — press **"Open Settings"** → `openSettings()` (OS Settings app opens; app itself doesn't transition — it's the _foreground_ event below that does)
 - `consent.blocked` — **app returns to foreground** (not a button press, but a real trigger — `AppState` `'active'` event) → re-`check()`s all three permissions
   - if none still `BLOCKED` → `home` (`router.replace`)
   - if still blocked → stays on `consent.blocked`
@@ -116,7 +116,7 @@ consent.blocked --CONTINUE_WITHOUT_ACCESS--> home (unconditional)
 
 ## Gaps this exercise surfaced (not yet filed/fixed, flagging only)
 
-- **Unhandled hardware-back on 5 of 8 states** (`introFlow.*`, `dataAgreement`, `signIn`, `profile`, `analyticsConsent`): only `consent` intercepts it. Falling through to native pop is *probably* fine mid-chain (returns to the previous screen, which is a reasonable back action) but on `introFlow.T1` specifically — the very first screen — a hardware-back press has no route left to pop to and its effect wasn't verified this session. Worth a quick check: does it exit the app cleanly, or does it expose a blank/crashed screen?
+- **Unhandled hardware-back on 5 of 8 states** (`introFlow.*`, `dataAgreement`, `signIn`, `profile`, `analyticsConsent`): only `consent` intercepts it. Falling through to native pop is _probably_ fine mid-chain (returns to the previous screen, which is a reasonable back action) but on `introFlow.T1` specifically — the very first screen — a hardware-back press has no route left to pop to and its effect wasn't verified this session. Worth a quick check: does it exit the app cleanly, or does it expose a blank/crashed screen?
 - **`signIn`'s rejection path is silent**: `catch (err) { console.error(...) }` with no user-facing feedback — a failed sign-in just re-enables the button with zero visible explanation.
 - **`profile`'s optional fields have zero validation** — not necessarily wrong (they're optional), but worth confirming that's intentional for city/state free text.
 - **`consent.busy`'s permission-request failure path isn't in this table** because none of the three `request()` calls have a `.catch` — an unexpected rejection (not just a `DENIED`/`BLOCKED` result) would throw inside `handleAgree`'s `try` and hit the `finally` (clearing `busy`) without ever calling `markAccepted()` or navigating, silently stranding the user on `consent.disclosure` with no error shown.

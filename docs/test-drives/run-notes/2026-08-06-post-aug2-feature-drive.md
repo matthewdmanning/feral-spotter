@@ -35,7 +35,7 @@ dev-launcher's own connect screen. Screen identity was verified by dumping + gre
 - Stale installed APK was missing `RNFBAppModule`/`ExpoMaps` native modules (pre-Firebase-link build) — fixed with a native rebuild (`npm run android`) before this drive started.
 - Hit one real crash: `NullPointerException` in `ReactActivityDelegate.onKeyDown` (react-native), triggered by a key event racing the React delegate's readiness. Unrelated to the branch under test.
 - #168/#167 GitHub links originally pointed to a pre-push branch (404'd); fixed once `matthewdmanning/issue168` was pushed.
-- Inset-crop prototype (`docs/design/prototypes/2026-08-06-issue168-inset-crop.*`) lives on `matthewdmanning/issue168`, **not reachable from `sprint/cat-annotate-flow`** — will need merging into whatever branch #174 gets built from.
+- Inset-crop prototype (`docs/planning/prototypes/2026-08-06-issue168-inset-crop.*`) lives on `matthewdmanning/issue168`, **not reachable from `sprint/cat-annotate-flow`** — will need merging into whatever branch #174 gets built from.
 
 ## Required per-run checks (project_instructions.md)
 

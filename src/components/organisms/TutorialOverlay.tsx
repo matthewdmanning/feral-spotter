@@ -5,7 +5,7 @@
  *
  * Skeleton (first pass): all steps advance via the primary button.
  * TODO(second pass): gesture-validated advancement (draw/adjust/label on a
- * sandboxed sample photo) per docs/design/2026-07-14-annotation-tutorial-spec.md.
+ * sandboxed sample photo) per docs/planning/2026-07-14-annotation-tutorial-spec.md.
  */
 
 import { Modal, Pressable, Text, View } from 'react-native'

@@ -1,7 +1,7 @@
 /**
  * config/tutorial.ts
  * Step content for the annotation tutorial overlay.
- * Copy is draft — see docs/design/2026-07-14-annotation-tutorial-spec.md.
+ * Copy is draft — see docs/planning/2026-07-14-annotation-tutorial-spec.md.
  */
 
 import type { TutorialStep } from '@/src/components/organisms/TutorialOverlay'
@@ -9,7 +9,7 @@ import { getAppVersion, isVersionReleased } from '@/src/lib/auth/authProviders'
 
 /**
  * Deferred to the Alpha milestone — see
- * docs/design/2026-07-12-mvp-alpha-beta-roadmap.md, decision 10. Same
+ * docs/planning/2026-07-12-mvp-alpha-beta-roadmap.md, decision 10. Same
  * release-gate mechanism as the federated auth providers.
  */
 export const TUTORIAL_RELEASED_IN_VERSION = '1.0.0'

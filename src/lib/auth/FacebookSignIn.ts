@@ -9,7 +9,7 @@
  * null and this throws. The full cross-platform implementation is preserved,
  * commented out, at the bottom of this file — enable it (and verify on a real
  * device with the real FB app) when Facebook is unblocked for release. See
- * docs/design/2026-07-29-apple-facebook-auth-setup.md.
+ * docs/planning/2026-07-29-apple-facebook-auth-setup.md.
  *
  * The `react-native-fbsdk-next` import is deferred to call time rather than
  * hoisted to module scope: merely importing it touches a native HostObject

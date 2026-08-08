@@ -1,6 +1,14 @@
 import { useSettingsDraft } from '@/src/hooks/useSettingsDraft'
-import { Check, Key, Trash2 } from 'lucide-react-native'
-import { Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native'
+import { router } from 'expo-router'
+import { Check, FileText, Key, Trash2 } from 'lucide-react-native'
+import {
+  Pressable,
+  ScrollView,
+  Switch,
+  Text,
+  TextInput,
+  View,
+} from 'react-native'
 import { useUnistyles, withUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
 
@@ -12,16 +20,39 @@ const UniSwitch = withUnistyles(Switch, (theme) => ({
 }))
 
 const PHOTO_TOGGLES = [
-  { key: 'delete_unused_photos', label: 'Delete Unused Photos', desc: 'Remove unchecked session photos after submission' },
-  { key: 'delete_all_photos', label: 'Delete All Photos', desc: 'Remove all session photos after submission' },
-  { key: 'keep_photos_on_device', label: 'Keep Photos on Device', desc: 'Save captured photos to your camera roll' },
+  {
+    key: 'delete_unused_photos',
+    label: 'Delete Unused Photos',
+    desc: 'Remove unchecked session photos after submission',
+  },
+  {
+    key: 'delete_all_photos',
+    label: 'Delete All Photos',
+    desc: 'Remove all session photos after submission',
+  },
+  {
+    key: 'keep_photos_on_device',
+    label: 'Keep Photos on Device',
+    desc: 'Save captured photos to your camera roll',
+  },
 ] as const
 
 export default function SettingsScreen() {
   const { theme } = useUnistyles()
-  const { draft, patch, passwordConfigured, newPassword, confirmPassword, isVerifying,
-    setNewPassword, setConfirmPassword, handleSave, handleDiscard,
-    handleClearCache, handleRemovePassword } = useSettingsDraft()
+  const {
+    draft,
+    patch,
+    passwordConfigured,
+    newPassword,
+    confirmPassword,
+    isVerifying,
+    setNewPassword,
+    setConfirmPassword,
+    handleSave,
+    handleDiscard,
+    handleClearCache,
+    handleRemovePassword,
+  } = useSettingsDraft()
 
   return (
     <View style={styles.root}>
@@ -29,7 +60,9 @@ export default function SettingsScreen() {
         <View style={styles.inner}>
           <View style={styles.header}>
             <Text style={styles.title}>Settings</Text>
-            <Text style={styles.subtitle}>Configure authentication and storage</Text>
+            <Text style={styles.subtitle}>
+              Configure authentication and storage
+            </Text>
           </View>
 
           {/* Auth */}
@@ -41,9 +74,17 @@ export default function SettingsScreen() {
                   <Check size={18} color={theme.colors.accentText} />
                   <Text style={styles.configuredText}>Password configured</Text>
                 </View>
-                <Pressable onPress={handleRemovePassword} style={styles.linkRow} accessibilityRole="button">
+                <Pressable
+                  onPress={handleRemovePassword}
+                  style={styles.linkRow}
+                  accessibilityRole="button"
+                >
                   <Key size={16} color={theme.colors.danger} />
-                  <Text style={[styles.linkText, { color: theme.colors.danger }]}>Remove Password</Text>
+                  <Text
+                    style={[styles.linkText, { color: theme.colors.danger }]}
+                  >
+                    Remove Password
+                  </Text>
                 </Pressable>
               </View>
             ) : (
@@ -52,10 +93,17 @@ export default function SettingsScreen() {
                 {(['Password', 'Confirm Password'] as const).map((lbl, i) => (
                   <View key={lbl} style={styles.fieldGroup}>
                     <Text style={styles.fieldLabel}>{lbl}</Text>
-                    <TextInput secureTextEntry placeholder={lbl} placeholderTextColor={theme.colors.muted}
+                    <TextInput
+                      secureTextEntry
+                      placeholder={lbl}
+                      placeholderTextColor={theme.colors.muted}
                       value={i === 0 ? newPassword : confirmPassword}
-                      onChangeText={i === 0 ? setNewPassword : setConfirmPassword}
-                      autoCapitalize="none" style={styles.input} />
+                      onChangeText={
+                        i === 0 ? setNewPassword : setConfirmPassword
+                      }
+                      autoCapitalize="none"
+                      style={styles.input}
+                    />
                   </View>
                 ))}
               </View>
@@ -67,17 +115,31 @@ export default function SettingsScreen() {
             <Text style={styles.cardTitle}>Cache</Text>
             <View style={styles.fieldGroup}>
               <Text style={styles.fieldLabel}>Keep cache for (days)</Text>
-              <TextInput keyboardType="numeric" placeholderTextColor={theme.colors.muted}
+              <TextInput
+                keyboardType="numeric"
+                placeholderTextColor={theme.colors.muted}
                 value={String(draft.cache_ttl_days)}
-                onChangeText={(v) => patch('cache_ttl_days', Math.max(1, parseInt(v) || 1))}
-                style={styles.input} />
+                onChangeText={(v) =>
+                  patch('cache_ttl_days', Math.max(1, parseInt(v) || 1))
+                }
+                style={styles.input}
+              />
             </View>
             <View style={styles.divider} />
-            <Pressable onPress={handleClearCache} style={styles.linkRow} accessibilityRole="button">
+            <Pressable
+              onPress={handleClearCache}
+              style={styles.linkRow}
+              accessibilityRole="button"
+            >
               <Trash2 size={16} color={theme.colors.danger} />
-              <Text style={[styles.linkText, { color: theme.colors.danger }]}>Clear Cache</Text>
+              <Text style={[styles.linkText, { color: theme.colors.danger }]}>
+                Clear Cache
+              </Text>
             </Pressable>
-            <Text style={styles.hint}>Removes expired and all cached submissions. Does not delete photos.</Text>
+            <Text style={styles.hint}>
+              Removes expired and all cached submissions. Does not delete
+              photos.
+            </Text>
           </View>
 
           {/* Photos */}
@@ -92,7 +154,11 @@ export default function SettingsScreen() {
                     <Text style={styles.hint}>{desc}</Text>
                   </View>
                   <UniSwitch
-                    value={key === 'keep_photos_on_device' ? draft[key] !== false : Boolean(draft[key])}
+                    value={
+                      key === 'keep_photos_on_device'
+                        ? draft[key] !== false
+                        : Boolean(draft[key])
+                    }
                     onValueChange={(v) => patch(key, v)}
                   />
                 </View>
@@ -104,19 +170,37 @@ export default function SettingsScreen() {
           <View style={styles.card}>
             <Text style={styles.cardTitle}>FeralSpotter</Text>
             <Text style={styles.subtitle}>Version 1.0.0</Text>
+            <View style={styles.divider} />
+            <Pressable
+              onPress={() => router.push('/data-agreement')}
+              style={styles.linkRow}
+              accessibilityRole="button"
+            >
+              <FileText size={16} color={theme.colors.accent} />
+              <Text style={styles.linkText}>Data Policy</Text>
+            </Pressable>
           </View>
         </View>
       </ScrollView>
 
       <View style={styles.footer}>
-        <Pressable onPress={handleDiscard} disabled={isVerifying} style={[styles.footerBtn, styles.footerBtnSecondary]}>
+        <Pressable
+          onPress={handleDiscard}
+          disabled={isVerifying}
+          style={[styles.footerBtn, styles.footerBtnSecondary]}
+        >
           <Text style={styles.footerBtnSecondaryText}>Discard</Text>
         </Pressable>
-        <Pressable onPress={handleSave} disabled={isVerifying} style={[styles.footerBtn, styles.footerBtnPrimary]}>
-          <Text style={styles.footerBtnPrimaryText}>{isVerifying ? 'Verifying...' : 'Save'}</Text>
+        <Pressable
+          onPress={handleSave}
+          disabled={isVerifying}
+          style={[styles.footerBtn, styles.footerBtnPrimary]}
+        >
+          <Text style={styles.footerBtnPrimaryText}>
+            {isVerifying ? 'Verifying...' : 'Save'}
+          </Text>
         </Pressable>
       </View>
     </View>
   )
 }
-

@@ -2,7 +2,7 @@
 
 Implements #145, part of #144 (Camera flow: user-test-drive UI fixes,
 2026-08-02), first sprint per
-`docs/design/2026-08-03-punchlist-triage-sprints.md`. Branch
+`docs/planning/2026-08-03-punchlist-triage-sprints.md`. Branch
 `issue-144-camera`, off fresh `origin/main` (`4546fae`). Code complete
 **and verified on-device** (Pixel_6_-_API_35 emulator).
 

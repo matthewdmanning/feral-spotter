@@ -15,7 +15,7 @@ export default function AnalyticsConsentScreen() {
 
   const handleContinue = useCallback(() => {
     setAnalyticsAccepted(analyticsEnabled)
-    router.replace('/consent')
+    router.replace('/(home-tabs)')
   }, [setAnalyticsAccepted, analyticsEnabled])
 
   return (
@@ -31,18 +31,27 @@ export default function AnalyticsConsentScreen() {
           accessibilityState={{ checked: analyticsEnabled }}
           accessibilityLabel={`${analytics.label}: ${analytics.text}`}
         >
-          <View style={[styles.checkbox, analyticsEnabled && styles.checkboxChecked]}>
-            {analyticsEnabled && <Check size={14} color={theme.colors.accentText} />}
+          <View
+            style={[
+              styles.checkbox,
+              analyticsEnabled && styles.checkboxChecked,
+            ]}
+          >
+            {analyticsEnabled && (
+              <Check size={14} color={theme.colors.accentText} />
+            )}
           </View>
           <Text style={styles.analyticsItemText}>
-            <Text style={styles.itemLabel}>{analytics.label}</Text> {analytics.text}
+            <Text style={styles.itemLabel}>{analytics.label}</Text>{' '}
+            {analytics.text}
           </Text>
         </Pressable>
 
         <Pressable
           onPress={handleContinue}
           style={styles.continueBtn}
-          accessibilityRole="button" accessibilityLabel={analytics.continueLabel}
+          accessibilityRole="button"
+          accessibilityLabel={analytics.continueLabel}
         >
           <Text style={styles.continueText}>{analytics.continueLabel}</Text>
         </Pressable>

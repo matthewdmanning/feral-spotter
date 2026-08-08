@@ -10,7 +10,7 @@ Result: correct. `AppProviders.tsx` never mounts `PostHogProvider` when `analyti
 
 ## Media consent — "Don't allow"
 
-Clicking "Don't allow" on the media-library consent prompt immediately exits the app — no warning, unprompted. Logged on punchlist (`docs/design/2026-08-02-ui-bug-punchlist.md`, item 9) as a bug: should route back to Home with a pop-up instead. Possibly overlaps open issues #66 (any camera consent selection treated as denial) and #101 (unhandled exception in consent's permission-request chain silently strands the user).
+Clicking "Don't allow" on the media-library consent prompt immediately exits the app — no warning, unprompted. Logged on punchlist (`docs/planning/2026-08-02-ui-bug-punchlist.md`, item 9) as a bug: should route back to Home with a pop-up instead. Possibly overlaps open issues #66 (any camera consent selection treated as denial) and #101 (unhandled exception in consent's permission-request chain silently strands the user).
 
 ## GPS/location firing
 

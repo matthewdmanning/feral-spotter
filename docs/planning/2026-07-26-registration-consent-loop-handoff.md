@@ -4,7 +4,7 @@ Tracked as **#93** (new, filed this session), sub-issue of **#63**
 ("setState-on-unmounted crash on Register→Consent transition" — same code
 neighborhood, different specific mechanism, not yet proven to be the same
 bug). Full session context (this was found while verifying #13's PostHog
-work, unrelated to it): `docs/design/2026-07-26-posthog-analytics-emulator-debrief.md`.
+work, unrelated to it): `docs/planning/2026-07-26-posthog-analytics-emulator-debrief.md`.
 
 ## RESOLVED (2026-07-26, follow-up session)
 

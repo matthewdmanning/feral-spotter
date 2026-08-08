@@ -20,7 +20,7 @@ Branch `issue-13-posthog-analytics` (2 commits), off updated `main`:
      `useEffect`) — removed as dead/redundant once `AnalyticsBridge` covers
      it unconditionally.
    - **Why the bridge was necessary, not optional:** spec-review sub-agent
-     caught that the camera screen mounts *before* the submission/reports
+     caught that the camera screen mounts _before_ the submission/reports
      screens that used to own registration, so `CAMERA_OPENED` would have
      silently no-op (`_capture` still null) on the primary first-run path.
      Confirmed as a real bug, fixed before commit.
@@ -85,6 +85,7 @@ commits yet** — investigation only, not implemented.
   #66, #67, #70.
 
 **Unresolved from this session — needs debrief:**
+
 - User stated "we decided no 'continue without registration / consent'
   option." I checked git history (`git log --all --grep`), design docs, and
   issue #68 (closed — "no reject affordance on consent disclosure screen")
@@ -116,11 +117,12 @@ data — confirmed via `metro.log`: `[profile] payload: {"city": "asdfla",
 "Give partial access" → Permission Blocked gate → tapped **"Continue Without
 Access"** → landed back on the Profile/registration screen instead of home.
 
-This is *not* simply "everything reset to the very first screen" (that
+This is _not_ simply "everything reset to the very first screen" (that
 already happened once, separately — see incident below) — profile had
 genuinely been submitted moments before in the same session, per the log.
 
 Investigated but not concluded before being asked to stop and take notes:
+
 - `handleContinueWithoutAccess` in `src/screens/consent/index.tsx` just does
   `router.replace('/(home-tabs)')`.
 - `src/screens/home/index.tsx`'s app-wide gate only redirects to
@@ -221,7 +223,7 @@ user, not root-caused this session.
 
 - Emulator `Pixel_8_APIs` running, debug APK (`com.mmanning.feralspotter`)
   installed, Metro running detached (`/tmp/metro.log`), reachable via `adb
-  reverse tcp:8081 tcp:8081`.
+reverse tcp:8081 tcp:8081`.
 - Persistent `Monitor` task tailing logcat filtered for
   `posthog|camera_opened|photo_capture_failed|captureexception|ErrorBoundary`
   is still armed.

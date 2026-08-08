@@ -51,13 +51,13 @@ Annotation is FeralSpotter's highest-value, highest-friction feature. At Alpha, 
 
 Each step = dimmed overlay + one instruction card + spotlight on the relevant control. **Advance by doing, not by tapping Next** (steps 2–4 validate the actual gesture).
 
-| # | Step | Instruction (draft copy) | Advance condition |
-|---|------|--------------------------|-------------------|
-| 1 | Welcome | "Let's practice on a sample photo. In the app you'll get here by taking or picking a photo of a cat. Takes about a minute." | Tap **Start** (or **Skip**) |
-| 2 | Draw | "Drag to draw a box around the cat. Get the whole body inside." | Valid annotation shape created |
-| 3 | Adjust | "Drag a corner to tighten the box to the cat's edges." | Shape edited (any handle moved) |
-| 4 | Label | "Pick what you see. Ear-tip = already neutered — it matters." | Label/attribute applied |
-| 5 | Done | "That's it. Real photos save automatically to your submission. Replay anytime from Settings." | Tap **Finish** |
+| #   | Step    | Instruction (draft copy)                                                                                                    | Advance condition               |
+| --- | ------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| 1   | Welcome | "Let's practice on a sample photo. In the app you'll get here by taking or picking a photo of a cat. Takes about a minute." | Tap **Start** (or **Skip**)     |
+| 2   | Draw    | "Drag to draw a box around the cat. Get the whole body inside."                                                             | Valid annotation shape created  |
+| 3   | Adjust  | "Drag a corner to tighten the box to the cat's edges."                                                                      | Shape edited (any handle moved) |
+| 4   | Label   | "Pick what you see. Ear-tip = already neutered — it matters."                                                               | Label/attribute applied         |
+| 5   | Done    | "That's it. Real photos save automatically to your submission. Replay anytime from Settings."                               | Tap **Finish**                  |
 
 - **Skip** visible on every step (top-right, one tap → sets `skipped`, exits to real screen).
 - Copy tone: short, plain, one idea per card. Max 2 lines per card.
@@ -109,12 +109,12 @@ By Alpha, the capture/annotate funnel and `posthog.captureException` exist (MVP 
 
 ## Success Metrics
 
-| Metric | Target | Source |
-|--------|--------|--------|
-| Tutorial completion rate | ≥70% (stretch 85%) | PostHog funnel, first 2 weeks post-Play Store release |
-| Median completion time | <90s | `tutorial_completed.duration_ms` |
-| Skip rate at step 1 | <20% | `tutorial_skipped` where step=1 |
-| First real annotation malformed/empty | ~0 | Manual review of GCS uploads (backend validates type/size/MIME only, not annotation quality) |
+| Metric                                | Target             | Source                                                                                       |
+| ------------------------------------- | ------------------ | -------------------------------------------------------------------------------------------- |
+| Tutorial completion rate              | ≥70% (stretch 85%) | PostHog funnel, first 2 weeks post-Play Store release                                        |
+| Median completion time                | <90s               | `tutorial_completed.duration_ms`                                                             |
+| Skip rate at step 1                   | <20%               | `tutorial_skipped` where step=1                                                              |
+| First real annotation malformed/empty | ~0                 | Manual review of GCS uploads (backend validates type/size/MIME only, not annotation quality) |
 
 Evaluate 1 week after store listing goes live; if step 2→3 drop-off >25%, the draw gesture needs work — that's a product signal, not a tutorial signal. Per-tester attribution (Google Sign-In) lets you compare annotation quality of completers vs. skippers.
 

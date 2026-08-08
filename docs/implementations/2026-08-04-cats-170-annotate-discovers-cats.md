@@ -55,7 +55,7 @@ not `#173`'s auto-skip, which didn't exist yet at this point in the
 sprint.
 
 Also in this commit: `docs/adr/0004-cats-annotate-flow.md` (new ADR),
-`docs/design/grilling/2026-08-04-cats-annotate-flow-spec.md` and
+`docs/planning/grilling/2026-08-04-cats-annotate-flow-spec.md` and
 `docs/sprint_planning/2026-08-04-cats-annotate-flow-tickets.md` (sprint
 planning docs that seeded #169's ticket breakdown).
 

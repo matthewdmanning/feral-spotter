@@ -135,7 +135,7 @@ describe('ConsentScreen blocked-permission recovery', () => {
     })
 
     await waitFor(() =>
-      expect(mockRouterReplace).toHaveBeenCalledWith('/(home-tabs)'),
+      expect(mockRouterReplace).toHaveBeenCalledWith('/sign-in'),
     )
   })
 })

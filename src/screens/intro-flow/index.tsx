@@ -1,9 +1,8 @@
 /**
  * screens/intro-flow/index.tsx
  * First-run tutorial: four slides (T1–T4) introducing the app, then on to
- * /sign-in. Permission priming and data-collection consent are handled
- * downstream by /sign-in → /analytics-consent → /consent — this
- * screen is informational only.
+ * /consent. Data-collection disclosure and device-permission priming happen
+ * there, before sign-in — this screen is informational only.
  */
 
 import {
@@ -21,7 +20,7 @@ export default function IntroFlowScreen() {
   const [step, setStep] = useState(0)
 
   const finish = useCallback(() => {
-    router.replace('/sign-in')
+    router.replace('/consent')
   }, [])
 
   const advance = useCallback(() => {
