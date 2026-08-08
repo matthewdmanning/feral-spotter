@@ -19,6 +19,7 @@ import {
   LOCATION_ACCURACY_THRESHOLD_M,
   LOCATION_STALE_THRESHOLD_MS,
 } from '@/src/config/location'
+import * as Device from 'expo-device'
 import * as Location from 'expo-location'
 import { useSyncExternalStore } from 'react'
 
@@ -39,7 +40,8 @@ export interface LocationCaptureState {
 
 // Emulators rarely have a usable GPS fix without manually driving Extended
 // Controls each run, so stub it in dev to keep the location path exercisable
-// without that.
+// without that. Physical dev-build devices have real GPS and no Extended
+// Controls equivalent, so they're excluded from the stub via Device.isDevice.
 const DEV_STUB_LOCATION = { latitude: 34.6834, longitude: -82.8374 }
 
 // ─── Singleton state ───────────────────────────────────────────────────────
@@ -105,7 +107,7 @@ export async function startLocationCapture(): Promise<void> {
   }
   setState({ status: 'pending', startedAt: Date.now(), result: undefined })
 
-  if (__DEV__) {
+  if (__DEV__ && !Device.isDevice) {
     setState({
       result: { ...DEV_STUB_LOCATION, timestamp: new Date().toISOString() },
     })
