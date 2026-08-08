@@ -1,0 +1,20 @@
+{
+  "active": true,
+  "last_reviewed": "2026-08-08",
+  "effected": [
+    "src/components/organisms/InsetCropBubble.tsx",
+    "src/components/organisms/InsetCropBubble.styles.ts",
+    "src/screens/submission/cats/index.tsx",
+    "src/screens/submission/cats/index.styles.ts",
+    "src/screens/submission/annotate/index.tsx"
+  ],
+  "assigned_to_gh_issues": [
+    { "target": 168 },
+    { "target": 174 },
+    { "target": 186 }
+  ],
+  "supersedes_gh_issues": [
+    { "target": 168 },
+    { "target": 186 }
+  ]
+}
