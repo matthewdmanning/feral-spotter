@@ -61,6 +61,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     color: theme.colors.accentText,
     fontSize: 15,
     fontWeight: '700',
+    textAlign: 'center',
   },
   navBtnSecondary: {
     backgroundColor: theme.colors.surfaceAlt,
