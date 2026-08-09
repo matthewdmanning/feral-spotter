@@ -19,9 +19,10 @@ jest.mock('expo-router', () => ({
   },
 }))
 
+const mockMarkAccepted = jest.fn()
 jest.mock('@/src/hooks/useConsentStore', () => ({
   useConsentStore: (sel: (s: object) => unknown) =>
-    sel({ markAccepted: jest.fn() }),
+    sel({ markAccepted: mockMarkAccepted }),
 }))
 
 jest.mock('@/src/hooks/useBackHandler', () => ({
@@ -127,6 +128,9 @@ describe('ConsentScreen blocked-permission recovery', () => {
     })
 
     expect(screen.getByText('Permission Blocked')).toBeTruthy()
+    // #66 relaunch-bypass reopen: consent must not be recorded while still
+    // gated, or a relaunch here would skip this screen with access denied.
+    expect(mockMarkAccepted).not.toHaveBeenCalled()
 
     jest.mocked(check).mockResolvedValue(RESULTS.GRANTED)
 
@@ -137,5 +141,6 @@ describe('ConsentScreen blocked-permission recovery', () => {
     await waitFor(() =>
       expect(mockRouterReplace).toHaveBeenCalledWith('/sign-in'),
     )
+    expect(mockMarkAccepted).toHaveBeenCalled()
   })
 })

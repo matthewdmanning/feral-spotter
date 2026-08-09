@@ -114,3 +114,43 @@ Verified: `jest src/screens/consent` (3 suites / 17 tests), `tsc --noEmit`,
 `expo lint` (0 errors). Not run on-device — same rationale as above; no new
 permission-status branching beyond what #226 already device-verified for
 the identical BLOCKED/DENIED logic, now just applied to a second field.
+
+## 2026-08-09 — fix: relaunch bypassed the gate via early markAccepted()
+
+**Purpose:** advisor review of the merged fix above found a second, distinct
+bypass surviving it: `markAccepted()` fired unconditionally right after the
+`request()` calls, before the gate check — so consent got recorded even on
+a gated (BLOCKED/DENIED) outcome. A user who hit Permission Blocked and then
+force-quit/relaunched was already "consented" on the next launch and got
+routed straight past this screen (HomeScreen's gate treats consented as
+consented, regardless of permission status) with location still denied and
+nothing downstream re-checking it — the exact bypass #66 exists to prevent,
+via app restart instead of the original request flow. Confirmed via grep
+that no other call site in `src/` ever checks/requests location permission,
+so nothing catches this at point of use either. Reopened #66 for this.
+
+**Change:** moved `markAccepted()` in `handleAgree` to fire only after
+confirming neither camera nor location came back gated, right before
+`router.replace('/sign-in')`. Added the same call to the foreground-recheck
+effect's success branch, since that's the other path where consent
+genuinely completes (user granted via Settings, recheck detects it). Added
+`markAccepted` to that effect's dependency array.
+
+Tests: both `ConsentScreen.locationGate.model.test.tsx` (every `gated`
+journey state now asserts `markAccepted` was _not_ called; every `granted`
+state asserts it _was_) and `ConsentScreen.test.tsx`'s blocked-permission
+recovery test updated the same way. Both suites' `useConsentStore` mocks
+switched from a fresh inline `jest.fn()` per render to a shared
+module-level mock so call assertions are meaningful.
+
+Verified: `jest src/screens/consent` (2 suites / 9 tests), `tsc --noEmit`,
+`expo lint` (0 errors). Not run on-device — same rationale as above.
+
+**Note (post-conflict-resolution):** by the time this branch was rebased
+onto `main`, #237's `isPermissionGated()` refactor (above) had already
+independently reordered `markAccepted()` to fire only after the gate
+check, in both paths — the code change described here was already present
+on `main` and is not part of this branch's diff after rebase. What this
+branch still adds: the explicit `markAccepted`-timing assertions in the
+test suites below, which didn't exist before and now guard the invariant
+directly instead of it being an unverified side effect of #237's refactor.
