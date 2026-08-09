@@ -64,10 +64,22 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
 
             const cId = await getCurrentCacheId()
             if (cId) {
+              // metadata is replaced wholesale on update (no deep merge), so
+              // resend the full current snapshot here — not just the fields
+              // this submit touches — or fields set after cache creation
+              // (e.g. manual_time, filled in after the initial snapshot on
+              // an EXIF-less Library pick) get silently dropped.
               await updateSubmissionCache(cId, {
                 status: 'Sending',
                 cats,
                 photo_links: photos.map((p) => p.uri),
+                metadata: {
+                  location_method: submission.location_type,
+                  time_method: submission.time_type,
+                  address: submission.address,
+                  manual_time: submission.manual_time,
+                  captured_at: submission.captured_at,
+                },
               })
               const snap = await getSubmissionCache(cId)
               if (snap) fireAnalyticsEvent(EVENTS.SUBMISSION_SENDING, snap)
