@@ -23,6 +23,7 @@
     "format": "node scripts/format-changed.mjs",
     "format:check": "node scripts/format-changed.mjs --check",
     "clean-debug": "bash scripts/android-build.sh",
+    "device-monitor": "bash scripts/device-monitor.sh",
     "gradle:debug": "expo prebuild --clean && cd android && .\\gradlew assembleDebug"
   },
   "dependencies": {

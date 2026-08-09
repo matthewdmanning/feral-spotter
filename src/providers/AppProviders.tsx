@@ -32,12 +32,19 @@ import {
   registerCapture,
   registerCaptureException,
 } from '@/src/lib/analytics/analytics'
+import { usePathname } from 'expo-router'
 import { PostHogProvider, usePostHog } from 'posthog-react-native'
 import { useEffect, type ReactNode } from 'react'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 
 const POSTHOG_KEY = process.env.EXPO_PUBLIC_POSTHOG_KEY ?? ''
 const POSTHOG_HOST = 'https://app.posthog.com'
+
+// #201: missing key otherwise silently voids every analytics check with no
+// signal — this was mistaken for a real bug in a previous test-drive session.
+if (__DEV__ && IS_PRERELEASE && !POSTHOG_KEY) {
+  console.warn('[analytics] disabled — EXPO_PUBLIC_POSTHOG_KEY not set')
+}
 
 interface AppProvidersProps {
   children: ReactNode
@@ -60,6 +67,19 @@ function AnalyticsBridge() {
   return null
 }
 
+// #201: no in-app screen-transition trail existed — a test-drive session's
+// "user journey" could only be reconstructed from the tester's own
+// narration. This is local-only console output (no network, no PII, dev
+// builds only), so it's mounted unconditionally rather than gated behind
+// analytics consent like AnalyticsBridge above.
+function ScreenTransitionLogger() {
+  const pathname = usePathname()
+  useEffect(() => {
+    if (__DEV__) console.log(`[nav] ${pathname}`)
+  }, [pathname])
+  return null
+}
+
 export function AppProviders({ children }: AppProvidersProps) {
   const hasAcceptedConsent = useConsentStore(
     (s) => s.accepted && s.acceptedVersion === CONSENT_VERSION,
@@ -68,6 +88,7 @@ export function AppProviders({ children }: AppProvidersProps) {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+      {__DEV__ && <ScreenTransitionLogger />}
       <ErrorBoundary>
         {IS_PRERELEASE &&
         POSTHOG_KEY &&

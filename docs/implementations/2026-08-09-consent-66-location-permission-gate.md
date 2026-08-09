@@ -56,3 +56,25 @@ require()-in-tests warnings only, none in touched files).
 **Not run on-device** — this is a JS-only status-branching fix; the sweep
 in #66 that identified the bug was already device-tested and is not
 re-verified here per the ticket's own instruction not to re-run it.
+
+## 2026-08-09 — extension
+
+**Purpose:** #232 — found while syncing `docs/planning/2026-07-27-onboarding-registration-consent-fsm.md` against this fix. `isLocationGated()` covered `BLOCKED`/`DENIED` but not `UNAVAILABLE` (the permission/feature doesn't exist on this device) — a Submission can't get a real location in that case either, so it should gate the same way.
+
+**Change:** `isLocationGated()` now also gates on `RESULTS.UNAVAILABLE`.
+`ConsentScreen.locationGate.model.test.tsx` wires `UNAVAILABLE` into the
+machine as `gated` (`AGREE_UNAVAILABLE`, `FOREGROUND_STILL_UNAVAILABLE`),
+and adds dedicated journeys for `LIMITED` (an iOS partial-access concept,
+not applicable to Android's `ACCESS_FINE_LOCATION` — does not gate, same
+as `GRANTED`) — no standalone `UNAVAILABLE`/`BLOCKED` journeys, since both
+land on the same `gated` state `DENIED` already exercises.
+
+Also fixed unrelated drift in the FSM planning doc, independent of this
+gating change: it still described a 3-permission `request()` sequence
+(camera/media/location — code only requests camera + location, #91 made
+photo-library access lazy) and a "Continue Without Access" blocked-gate
+button removed same-day by #215.
+
+Verification: `npx jest src/screens/consent` (2 suites / 11 tests) pass,
+`npx tsc --noEmit` clean, `npx eslint`/`npx prettier --check` clean on
+touched files. Not device-tested (no physical device in this environment).

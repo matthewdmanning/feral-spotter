@@ -66,14 +66,15 @@ Format: **State — action (trigger) → target** — guard / side effect.
 - `consent.disclosure` — press **Decline** → `Alert` with **Back** / **Exit**
   - **Back** → stays on `consent.disclosure` (dismisses alert only)
   - **Exit** → `BackHandler.exitApp()` — Android only; iOS has no equivalent and the button effectively does nothing there (per the code comment)
-- `consent.disclosure` — press **"I Agree — Continue"** → `consent.busy` (both buttons disabled) → sequential `request()` for camera, then media, then location (Android can only show one native permission dialog at a time — this sequencing is the #67 fix)
-  - if **none** of the three results is `BLOCKED` → `markAccepted()` (persisted) → `home` (`router.replace('/(home-tabs)')`)
-  - if **any** of the three is `BLOCKED` → `consent.blocked` (note: `markAccepted()` still runs _before_ this check — device consent is recorded even when permission-blocked)
+- `consent.disclosure` — press **"I Agree — Continue"** → `consent.busy` (both buttons disabled) → sequential `request()` for camera, then location (two calls, not three — photo-library access (#91) is requested lazily at point of use, not here; Android can only show one native permission dialog at a time, so even these two are sequential — the #67 fix)
+  - Gating differs by permission, not a shared "any `BLOCKED`" rule: camera gates only on `BLOCKED`. Location gates on `BLOCKED`, `DENIED`, **or** `UNAVAILABLE` — `react-native-permissions` reports a first-time full "Don't allow" as `DENIED`, not `BLOCKED` (Android only escalates to `BLOCKED` on a second denial or "don't ask again"); the old code checked `BLOCKED` only, so a first-time full denial bypassed the gate entirely (#66, fixed 2026-08-09 — see `isLocationGated()` in `consent/index.tsx`, and the canonical model of this exact branching: `src/screens/consent/__tests__/ConsentScreen.locationGate.model.test.tsx`). `UNAVAILABLE` (the feature/permission doesn't exist on this device) gates too, same reasoning. `LIMITED` (an iOS partial-access concept, not applicable to Android's `ACCESS_FINE_LOCATION`) does not gate, same as `GRANTED`.
+  - if camera not `BLOCKED` and location not gated → `markAccepted()` (persisted) → `home` (`router.replace('/(home-tabs)')`)
+  - if camera `BLOCKED`, or location gated → `consent.blocked` (note: `markAccepted()` still runs _before_ this check — device consent is recorded even when permission-blocked)
 - `consent.blocked` — press **"Open Settings"** → `openSettings()` (OS Settings app opens; app itself doesn't transition — it's the _foreground_ event below that does)
-- `consent.blocked` — **app returns to foreground** (not a button press, but a real trigger — `AppState` `'active'` event) → re-`check()`s all three permissions
-  - if none still `BLOCKED` → `home` (`router.replace`)
-  - if still blocked → stays on `consent.blocked`
-- `consent.blocked` — press **"Continue Without Access"** → `home` (`router.replace`) unconditionally, regardless of actual permission state
+- `consent.blocked` — **app returns to foreground** (not a button press, but a real trigger — `AppState` `'active'` event) → re-`check()`s both permissions, same per-permission gating rule as above
+  - if neither still gated → `home` (`router.replace`)
+  - if either still gated → stays on `consent.blocked`
+- ~~`consent.blocked` — press **"Continue Without Access"**~~ — **removed** (#215, 2026-08-09): this button navigated to `home` unconditionally regardless of actual permission state, which was misleading. `consent.blocked` now has exactly one action (Open Settings) plus the foreground re-check above.
 
 ## Consolidated machine (XState-shaped pseudocode)
 
@@ -109,13 +110,13 @@ consent.disclosure --DECLINE--> [alert: BACK|EXIT]
   EXIT --> (Android) app terminates
 consent.disclosure --AGREE--> consent.busy
 consent.busy --PERMISSIONS_RESOLVED--
-  guard: noneBlocked --> home (side effect: persist accepted)
-  guard: anyBlocked   --> consent.blocked (side effect: persist accepted, same as above)
+  guard: cameraOk && !locationGated --> home (side effect: persist accepted)
+  guard: cameraBlocked || locationGated --> consent.blocked (side effect: persist accepted, same as above)
+  // locationGated := status === BLOCKED || status === DENIED || status === UNAVAILABLE (#66)
 consent.blocked --OPEN_SETTINGS--> consent.blocked (external OS navigation, no in-app transition)
 consent.blocked --APP_FOREGROUNDED--
-  guard: noneBlocked --> home
-  guard: stillBlocked --> consent.blocked
-consent.blocked --CONTINUE_WITHOUT_ACCESS--> home (unconditional)
+  guard: cameraOk && !locationGated --> home
+  guard: cameraBlocked || locationGated --> consent.blocked
 ```
 
 ## Gaps this exercise surfaced (not yet filed/fixed, flagging only)
