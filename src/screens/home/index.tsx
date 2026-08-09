@@ -88,23 +88,23 @@ export default function HomeScreen() {
           <AppButton
             onPress={handleCamera}
             variant="primary"
+            size="large"
             disabled={cameraDisabled}
-            icon={<Camera size={20} color={theme.colors.accentText} />}
+            icon={<Camera size={48} color={theme.colors.accentText} />}
             accessibilityLabel="Take a Photo"
           >
             Take a Photo
           </AppButton>
-          <View style={styles.entrypointGap}>
-            <AppButton
-              onPress={pickFromLibrary}
-              variant="secondary"
-              disabled={libraryDisabled}
-              icon={<ImagePlus size={20} color={theme.colors.text} />}
-              accessibilityLabel="Choose from Library"
-            >
-              Choose from Library
-            </AppButton>
-          </View>
+          <AppButton
+            onPress={pickFromLibrary}
+            variant="secondary"
+            size="large"
+            disabled={libraryDisabled}
+            icon={<ImagePlus size={48} color={theme.colors.text} />}
+            accessibilityLabel="Choose from Library"
+          >
+            Choose from Library
+          </AppButton>
         </View>
 
         <BottomButtonColumn

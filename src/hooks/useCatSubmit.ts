@@ -25,8 +25,10 @@ import { Alert } from 'react-native'
 // ─── Missing-field warning (#152) ──────────────────────────────────────────
 
 // "Unknown"/"Unsure" is a real value (docs/agents/domain.md), so this warns
-// rather than blocks — a field deliberately left at its default looks
-// identical to one the user never touched, and that's accepted (#152).
+// rather than blocks. Category selectors start unselected and a chosen
+// "Unknown"/"Unsure" is a distinct state from never-touched (#205) — the
+// warning fires only on fields still `undefined`, not on a deliberate
+// Unknown/Unsure pick.
 const FIELD_LABELS: Record<keyof typeof CAT_DEFAULTS, string> = {
   age: 'Age',
   earTipped: 'Ear Tipped',
@@ -75,14 +77,14 @@ export function useCatSubmit({
       const boxedPhotoIds = getBoxedPhotoIds(localId)
       return {
         local_id: localId,
-        age: form.age,
-        ear_tipped: form.earTipped,
-        health_label: form.healthLabel,
-        owned_domesticated: form.owned,
-        pattern: form.pattern,
-        hair_length: form.hairLength,
-        color: form.color,
-        sex: form.sex,
+        age: form.age ?? CAT_DEFAULTS.age,
+        ear_tipped: form.earTipped ?? CAT_DEFAULTS.earTipped,
+        health_label: form.healthLabel ?? CAT_DEFAULTS.healthLabel,
+        owned_domesticated: form.owned ?? CAT_DEFAULTS.owned,
+        pattern: form.pattern ?? CAT_DEFAULTS.pattern,
+        hair_length: form.hairLength ?? CAT_DEFAULTS.hairLength,
+        color: form.color ?? CAT_DEFAULTS.color,
+        sex: form.sex ?? CAT_DEFAULTS.sex,
         photo_local_ids:
           boxedPhotoIds.length > 0
             ? boxedPhotoIds
@@ -115,13 +117,13 @@ export function useCatSubmit({
     const unsetFields = (
       Object.keys(CAT_DEFAULTS) as (keyof typeof CAT_DEFAULTS)[]
     )
-      .filter((field) => form[field] === CAT_DEFAULTS[field])
+      .filter((field) => form[field] === undefined)
       .map((field) => FIELD_LABELS[field])
 
     if (unsetFields.length > 0) {
       Alert.alert(
         `${unsetFields.length} field${unsetFields.length !== 1 ? 's' : ''} not set`,
-        `${unsetFields.join(', ')} — Save anyway?`,
+        unsetFields.map((field) => `• ${field}`).join('\n'),
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Save anyway', style: 'default', onPress: commit },

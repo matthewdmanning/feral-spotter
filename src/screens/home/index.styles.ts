@@ -6,6 +6,5 @@ export const styles = StyleSheet.create((theme) => ({
     backgroundColor: theme.colors.background,
     paddingHorizontal: theme.spacing.lg,
   },
-  entrypointArea: { flex: 1, justifyContent: 'center' },
-  entrypointGap: { marginTop: theme.spacing.md },
+  entrypointArea: { flex: 1, justifyContent: 'center', gap: 30 },
 }))
