@@ -45,6 +45,8 @@ interface AnnotateCarouselItemProps {
   onConfirm: (box: BoxInput) => void
   /** Called when the photo crosses the zoomed-in threshold — disable carousel swipe while true */
   onZoomChange?: (zoomedIn: boolean) => void
+  /** Called on a fast upward flick of the photo (#204) — same effect as the Not in Photo button */
+  onNotInPhoto?: () => void
 }
 
 export function AnnotateCarouselItem({
@@ -54,6 +56,7 @@ export function AnnotateCarouselItem({
   height,
   onConfirm,
   onZoomChange,
+  onNotInPhoto,
 }: AnnotateCarouselItemProps) {
   const getBoxes = useBoundingBoxStore((s) => s.getBoxes)
 
@@ -78,6 +81,9 @@ export function AnnotateCarouselItem({
     initialBox: savedBox,
     onConfirm,
     onZoomChange,
+    // Mirrors the Not in Photo button's own disabled={!activeCatId} — no
+    // active cat, no gesture.
+    onNotInPhoto: activeCatId ? onNotInPhoto : undefined,
   })
 
   const imageStyle = useAnimatedStyle(() => ({

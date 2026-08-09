@@ -158,6 +158,7 @@ export default function AnnotateScreen() {
                 height={carouselHeight}
                 onConfirm={handleConfirmBox}
                 onZoomChange={setZoomedIn}
+                onNotInPhoto={handleNotInPhoto}
               />
             )}
           />
@@ -182,7 +183,7 @@ export default function AnnotateScreen() {
           ]}
           accessibilityRole="button"
         >
-          <Text style={styles.navBtnSecondaryText}>← Back</Text>
+          <Text style={styles.navBtnSecondaryText}>← Previous</Text>
         </Pressable>
         <Pressable
           onPress={handleNotInPhoto}
