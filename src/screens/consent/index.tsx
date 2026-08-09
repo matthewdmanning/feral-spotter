@@ -47,6 +47,12 @@ export default function ConsentScreen() {
         return
       }
       router.replace('/sign-in')
+    } catch (err) {
+      console.error('[consent] permission request failed:', err)
+      Alert.alert(
+        'Something went wrong',
+        'Could not process permissions. Please try again.',
+      )
     } finally {
       setBusy(false)
     }
@@ -78,10 +84,6 @@ export default function ConsentScreen() {
     return () => sub.remove()
   }, [blocked])
 
-  const handleContinueWithoutAccess = useCallback(() => {
-    router.replace('/sign-in')
-  }, [])
-
   const handleDecline = useCallback(() => {
     Alert.alert(
       consentCopy.declineWarningTitle,
@@ -106,9 +108,9 @@ export default function ConsentScreen() {
       <View style={styles.gate}>
         <Text style={styles.gateTitle}>Permission Blocked</Text>
         <Text style={styles.gateBody}>
-          Camera, photo, or location access was denied. You can enable it later
-          in Settings, or continue without it — you&apos;ll be asked again when
-          the app needs it.
+          Camera, photo, or location access was denied. Enable it in Settings to
+          continue — you&apos;ll be brought back here automatically once
+          it&apos;s granted.
         </Text>
         <Pressable
           onPress={() => openSettings()}
@@ -116,13 +118,6 @@ export default function ConsentScreen() {
           accessibilityRole="button"
         >
           <Text style={styles.gatePrimaryText}>Open Settings</Text>
-        </Pressable>
-        <Pressable
-          onPress={handleContinueWithoutAccess}
-          style={styles.gateSecondary}
-          accessibilityRole="button"
-        >
-          <Text style={styles.gateSecondaryText}>Continue Without Access</Text>
         </Pressable>
       </View>
     )
