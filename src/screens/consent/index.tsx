@@ -108,8 +108,8 @@ export default function ConsentScreen() {
       <View style={styles.gate}>
         <Text style={styles.gateTitle}>Permission Blocked</Text>
         <Text style={styles.gateBody}>
-          Camera, photo, or location access was denied. Enable it in Settings
-          to continue — you&apos;ll be brought back here automatically once
+          Camera, photo, or location access was denied. Enable it in Settings to
+          continue — you&apos;ll be brought back here automatically once
           it&apos;s granted.
         </Text>
         <Pressable
