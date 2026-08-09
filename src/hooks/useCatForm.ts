@@ -5,7 +5,6 @@
  */
 
 import type { ObservedCat } from '@/src/hooks/useSubmissionStore'
-import { CAT_DEFAULTS } from '@/src/screens/submission/cats/constants'
 import type {
   CatAge,
   CatColor,
@@ -22,25 +21,25 @@ import { Alert } from 'react-native'
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface CatFormValues {
-  age: CatAge
-  earTipped: EarTipped
-  owned: Owned
-  pattern: CatPattern
-  hairLength: HairLength
-  color: CatColor
-  sex: CatSex
-  healthLabel: HealthLabel
+  age: CatAge | undefined
+  earTipped: EarTipped | undefined
+  owned: Owned | undefined
+  pattern: CatPattern | undefined
+  hairLength: HairLength | undefined
+  color: CatColor | undefined
+  sex: CatSex | undefined
+  healthLabel: HealthLabel | undefined
 }
 
 export interface CatFormActions {
-  setAge: (v: CatAge) => void
-  setEarTipped: (v: EarTipped) => void
-  setOwned: (v: Owned) => void
-  setPattern: (v: CatPattern) => void
-  setHairLength: (v: HairLength) => void
-  setColor: (v: CatColor) => void
-  setSex: (v: CatSex) => void
-  setHealthLabel: (v: HealthLabel) => void
+  setAge: (v: CatAge | undefined) => void
+  setEarTipped: (v: EarTipped | undefined) => void
+  setOwned: (v: Owned | undefined) => void
+  setPattern: (v: CatPattern | undefined) => void
+  setHairLength: (v: HairLength | undefined) => void
+  setColor: (v: CatColor | undefined) => void
+  setSex: (v: CatSex | undefined) => void
+  setHealthLabel: (v: HealthLabel | undefined) => void
   handleClear: () => void // shows confirmation Alert, then resets
 }
 
@@ -49,48 +48,51 @@ export type CatForm = CatFormValues & CatFormActions
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useCatForm(existingCat?: ObservedCat): CatForm {
-  const [age, setAge] = useState<CatAge>(
-    (existingCat?.age as CatAge) ?? CAT_DEFAULTS.age,
+  // A fresh cat starts with no category selected (#205) — CAT_DEFAULTS is
+  // only the fallback substituted at save time for fields left unset, not an
+  // initial selection.
+  const [age, setAge] = useState<CatAge | undefined>(
+    existingCat?.age as CatAge | undefined,
   )
-  const [earTipped, setEarTipped] = useState<EarTipped>(
-    (existingCat?.ear_tipped as EarTipped) ?? CAT_DEFAULTS.earTipped,
+  const [earTipped, setEarTipped] = useState<EarTipped | undefined>(
+    existingCat?.ear_tipped as EarTipped | undefined,
   )
-  const [owned, setOwned] = useState<Owned>(
-    (existingCat?.owned_domesticated as Owned) ?? CAT_DEFAULTS.owned,
+  const [owned, setOwned] = useState<Owned | undefined>(
+    existingCat?.owned_domesticated as Owned | undefined,
   )
-  const [pattern, setPattern] = useState<CatPattern>(
-    (existingCat?.pattern as CatPattern) ?? CAT_DEFAULTS.pattern,
+  const [pattern, setPattern] = useState<CatPattern | undefined>(
+    existingCat?.pattern as CatPattern | undefined,
   )
-  const [hairLength, setHairLength] = useState<HairLength>(
-    (existingCat?.hair_length as HairLength) ?? CAT_DEFAULTS.hairLength,
+  const [hairLength, setHairLength] = useState<HairLength | undefined>(
+    existingCat?.hair_length as HairLength | undefined,
   )
-  const [color, setColor] = useState<CatColor>(
-    (existingCat?.color as CatColor) ?? CAT_DEFAULTS.color,
+  const [color, setColor] = useState<CatColor | undefined>(
+    existingCat?.color as CatColor | undefined,
   )
-  const [sex, setSex] = useState<CatSex>(
-    (existingCat?.sex as CatSex) ?? CAT_DEFAULTS.sex,
+  const [sex, setSex] = useState<CatSex | undefined>(
+    existingCat?.sex as CatSex | undefined,
   )
-  const [healthLabel, setHealthLabel] = useState<HealthLabel>(
-    (existingCat?.health_label as HealthLabel) ?? CAT_DEFAULTS.healthLabel,
+  const [healthLabel, setHealthLabel] = useState<HealthLabel | undefined>(
+    existingCat?.health_label as HealthLabel | undefined,
   )
   const handleClear = useCallback(() => {
     Alert.alert(
       'Clear form?',
-      'All fields will be reset to defaults. This cannot be undone.',
+      'All fields will be cleared. This cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Clear',
           style: 'destructive',
           onPress: () => {
-            setAge(CAT_DEFAULTS.age)
-            setEarTipped(CAT_DEFAULTS.earTipped)
-            setOwned(CAT_DEFAULTS.owned)
-            setPattern(CAT_DEFAULTS.pattern)
-            setHairLength(CAT_DEFAULTS.hairLength)
-            setColor(CAT_DEFAULTS.color)
-            setSex(CAT_DEFAULTS.sex)
-            setHealthLabel(CAT_DEFAULTS.healthLabel)
+            setAge(undefined)
+            setEarTipped(undefined)
+            setOwned(undefined)
+            setPattern(undefined)
+            setHairLength(undefined)
+            setColor(undefined)
+            setSex(undefined)
+            setHealthLabel(undefined)
           },
         },
       ],
