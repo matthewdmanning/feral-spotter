@@ -94,12 +94,24 @@ function resolve() {
  * restarted, only allowed to settle or reacquire on its own schedule.
  */
 export async function startLocationCapture(): Promise<void> {
-  if (state.status === 'pending') return
+  if (state.status === 'pending') {
+    if (__DEV__) console.log('[location] already pending — no-op')
+    return
+  }
 
-  if (!hasAcceptedConsent()) return
+  if (!hasAcceptedConsent()) {
+    if (__DEV__) console.log('[location] no consent — not starting')
+    return
+  }
 
   const { status } = await Location.getForegroundPermissionsAsync()
-  if (status !== Location.PermissionStatus.GRANTED) return
+  if (status !== Location.PermissionStatus.GRANTED) {
+    if (__DEV__)
+      console.log(
+        `[location] permission not granted (${status}) — not starting`,
+      )
+    return
+  }
 
   if (recheckTimer) {
     clearTimeout(recheckTimer)
@@ -116,6 +128,8 @@ export async function startLocationCapture(): Promise<void> {
   }
 
   settleTimer = setTimeout(resolve, LOCATION_STALE_THRESHOLD_MS)
+
+  if (__DEV__) console.log('[location] starting watchPositionAsync')
 
   try {
     watchSubscription = await Location.watchPositionAsync(
@@ -140,7 +154,8 @@ export async function startLocationCapture(): Promise<void> {
         }
       },
     )
-  } catch {
+  } catch (err) {
+    if (__DEV__) console.log('[location] watchPositionAsync threw:', err)
     resolve()
   }
 }
