@@ -11,7 +11,9 @@ import type { CatFormValues } from '../useCatForm'
  * them.
  */
 
-jest.mock('expo-router', () => ({ router: { back: jest.fn() } }))
+jest.mock('expo-router', () => ({
+  router: { back: jest.fn(), replace: jest.fn() },
+}))
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'new-cat-id' }))
 jest.mock('@/src/hooks', () => ({
   useSubmissionStore: (

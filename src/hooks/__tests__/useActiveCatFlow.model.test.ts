@@ -8,9 +8,11 @@ import { useActiveCatFlow } from '../useActiveCatFlow'
  * Model of useActiveCatFlow (ADR 0004): the seam that survives the
  * annotate -> Cat Form navigation and decides which cat "first box declares
  * a cat" applies to. idle -> annotating -> catFormOpen -> idle, per the
- * spec's Testing Decisions. NOT_IN_PHOTO (#171) only self-loops on
- * `annotating` — the annotate screen disables the pill until a cat exists,
- * so the real user journey never fires it from `idle`.
+ * spec's Testing Decisions. NOT_IN_PHOTO (#171) self-loops on `annotating`
+ * in these journeys — its lazy-mint from `idle` (#203, so the pill works on
+ * the first photo too, not just a confirmed box) is covered by its own
+ * standalone test below rather than a journey, since it would otherwise
+ * conflict with the shared `annotating` assertion's photo-1/photo-2 setup.
  *
  * Both dependency stores are replaced with real, non-persisted zustand
  * stores (not the actual persisted modules) — this sidesteps the
@@ -35,6 +37,13 @@ jest.mock('../useActiveCatFlowStore', () => {
       activeCatId: null,
       setActiveCatId: (id: string | null) => set({ activeCatId: id }),
     })),
+  }
+})
+
+jest.mock('../useSubmissionStore', () => {
+  const { create } = require('zustand')
+  return {
+    useSubmissionStore: create(() => ({ cats: [] })),
   }
 })
 
@@ -79,6 +88,10 @@ jest.mock('../useBoundingBoxStore', () => {
         },
         getBoxes: (catId: string, photoId: string) =>
           get().boxes[`${catId}:${photoId}`] ?? [],
+        getBoxedPhotoIds: (catId: string) =>
+          Object.keys(get().boxes)
+            .filter((key) => key.startsWith(`${catId}:`))
+            .map((key) => key.slice(catId.length + 1)),
       }),
     ),
   }
@@ -123,6 +136,8 @@ describe('useActiveCatFlow — model-based test', () => {
     useActiveCatFlowStore.setState({ activeCatId: null })
     const { useBoundingBoxStore } = require('../useBoundingBoxStore')
     useBoundingBoxStore.setState({ boxes: {}, absences: {} })
+    const { useSubmissionStore } = require('../useSubmissionStore')
+    useSubmissionStore.setState({ cats: [] })
     hook = renderHook(() => useActiveCatFlow())
   })
 
@@ -159,11 +174,13 @@ describe('useActiveCatFlow — model-based test', () => {
       BOXING_COMPLETE: () => {
         act(() => hook.result.current.handleBoxingComplete())
       },
-      // Mirrors the annotate screen's hardware-back handler, which calls
-      // clearActiveCat directly rather than routing through this hook's own
-      // navigation (see src/screens/submission/annotate/index.tsx).
+      // The annotate screen's hardware-back handler calls this directly
+      // (see src/screens/submission/annotate/index.tsx) — #203: must land
+      // on Home, never a default pop (which lands on Camera for the
+      // very-first-cat path) or Cat List (loops for a zero-cats submission).
       BACK: () => {
-        act(() => hook.result.current.clearActiveCat())
+        act(() => hook.result.current.handleAbandonPass())
+        expect(router.replace).toHaveBeenCalledWith('/')
       },
       // Mirrors useCatSubmit's post-save clearActiveCat call.
       FORM_SAVED: () => {
@@ -217,10 +234,26 @@ describe('useActiveCatFlow — model-based test', () => {
     expect(hook.result.current.activeCatId).not.toBe(firstId)
   })
 
-  it('boxing complete with zero boxes drawn goes back instead of opening Cat Form', () => {
+  it('boxing complete with zero boxes drawn abandons the pass instead of opening Cat Form (#203)', () => {
+    // Routes through handleAbandonPass, not router.back() — same Camera-leak
+    // risk on the first cat of a submission as the hardware-back path.
     act(() => hook.result.current.handleBoxingComplete())
-    expect(router.back).toHaveBeenCalled()
-    expect(router.replace).not.toHaveBeenCalled()
+    expect(router.back).not.toHaveBeenCalled()
+    expect(router.replace).toHaveBeenCalledWith('/')
+  })
+
+  it('boxing complete after only not-in-photo marks (no box) also abandons the pass — no phantom cat (#203)', () => {
+    // handleNotInPhoto lazily mints activeCatId same as handleBoxConfirmed
+    // (#203, so the pill works on photo 1) — boxing complete must still
+    // gate on an actual box, not just activeCatId, or a pass where every
+    // photo was marked "not in photo" would open Cat Form for a cat with
+    // zero photo_local_ids.
+    act(() => hook.result.current.handleNotInPhoto('photo-1'))
+    expect(hook.result.current.activeCatId).not.toBeNull()
+
+    act(() => hook.result.current.handleBoxingComplete())
+    expect(router.back).not.toHaveBeenCalled()
+    expect(router.replace).toHaveBeenCalledWith('/')
   })
 
   it('a box and an absence marker are mutually exclusive for the same cat+photo slot', () => {
@@ -234,9 +267,19 @@ describe('useActiveCatFlow — model-based test', () => {
     expect(hook.result.current.getPhotoStatus('photo-1')).toBe('located')
   })
 
-  it('not-in-photo before any box exists is a no-op — nothing to record against', () => {
+  it('not-in-photo before any box exists lazily starts the pass (#203)', () => {
     act(() => hook.result.current.handleNotInPhoto('photo-1'))
-    expect(hook.result.current.activeCatId).toBeNull()
-    expect(hook.result.current.getPhotoStatus('photo-1')).toBe('pending')
+    expect(hook.result.current.activeCatId).not.toBeNull()
+    expect(hook.result.current.getPhotoStatus('photo-1')).toBe('not-in-photo')
+  })
+
+  it('abandoning with cats already recorded lands on Cat List, not Home (#203)', () => {
+    const { useSubmissionStore } = require('../useSubmissionStore')
+    act(() => {
+      useSubmissionStore.setState({ cats: [{ local_id: 'existing-cat' }] })
+    })
+
+    act(() => hook.result.current.handleAbandonPass())
+    expect(router.replace).toHaveBeenCalledWith('/submission/create')
   })
 })

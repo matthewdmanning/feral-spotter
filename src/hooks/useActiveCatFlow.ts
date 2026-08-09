@@ -10,6 +10,7 @@
 
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { useActiveCatFlowStore } from '@/src/hooks/useActiveCatFlowStore'
+import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
 import type { BoundingBox } from '@/src/types/BoundingBox'
 import { randomUUID } from 'expo-crypto'
 import { router } from 'expo-router'
@@ -28,6 +29,7 @@ export interface ActiveCatFlow {
   handleNotInPhoto: (photoId: string) => void
   handleBoxingComplete: () => void
   clearActiveCat: () => void
+  handleAbandonPass: () => void
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -37,6 +39,8 @@ export function useActiveCatFlow(): ActiveCatFlow {
   const setActiveCatId = useActiveCatFlowStore((s) => s.setActiveCatId)
   const addBox = useBoundingBoxStore((s) => s.addBox)
   const markAbsent = useBoundingBoxStore((s) => s.markAbsent)
+  const getBoxedPhotoIds = useBoundingBoxStore((s) => s.getBoxedPhotoIds)
+  const hasRecordedCats = useSubmissionStore((s) => s.cats.length > 0)
   // Subscribed directly (not via the stable getBoxes function ref) so a
   // confirmed box re-renders callers, e.g. the dots strip.
   const boxes = useBoundingBoxStore((s) => s.boxes)
@@ -63,36 +67,61 @@ export function useActiveCatFlow(): ActiveCatFlow {
     [activeCatId, setActiveCatId, addBox],
   )
 
-  // No cat has been declared yet (no box drawn this pass) — nothing to
-  // record absence against. The UI is expected to disable the affordance
-  // in that state; this guard is defense in depth.
+  // Mirrors handleBoxConfirmed's lazy mint (#203): the very first photo of a
+  // pass has no cat yet either way, so "not in photo" must be able to start
+  // the pass too, not just a confirmed box — otherwise the affordance is
+  // unusable on photo 1 specifically (the button was previously disabled
+  // until activeCatId existed, which a box, not an absence mark, produced).
   const handleNotInPhoto = useCallback(
     (photoId: string) => {
-      if (!activeCatId) return
-      markAbsent(activeCatId, photoId)
+      const catId = activeCatId ?? randomUUID()
+      if (!activeCatId) setActiveCatId(catId)
+      markAbsent(catId, photoId)
     },
-    [activeCatId, markAbsent],
+    [activeCatId, setActiveCatId, markAbsent],
   )
 
-  // Callable at any point in the pass. With no boxes drawn yet there is no
-  // cat to describe, so treat it the same as abandoning.
-  const handleBoxingComplete = useCallback(() => {
-    if (!activeCatId) {
-      router.back()
-      return
-    }
-    router.replace('/submission/cats')
-  }, [activeCatId])
-
-  // Clears whichever cat is in-progress. Two call sites use this for
-  // different reasons: leaving annotate before Cat Form (abandons the pass —
-  // boxes already drawn stay in useBoundingBoxStore untouched, cleanup
-  // deferred, a later "Add a Cat" mints a fresh cat rather than resuming
-  // this one) and a completed Cat Form save (the cat is no longer
-  // "in-progress," it's saved).
+  // Clears whichever cat is in-progress, no navigation. Used by a completed
+  // Cat Form save (useCatSubmit navigates itself, to Cat List) — the cat is
+  // no longer "in-progress," it's saved.
   const clearActiveCat = useCallback(() => {
     setActiveCatId(null)
   }, [setActiveCatId])
+
+  // Leaving Annotate before Cat Form (hardware back, or Boxing Complete on a
+  // pass with no photo evidence — see handleBoxingComplete) — boxes already
+  // drawn stay in useBoundingBoxStore untouched (cleanup deferred), a later
+  // "Add a Cat" mints a fresh cat rather than resuming this one. Explicit
+  // destination, not router.back() (#203): for the very first cat of a
+  // submission Annotate sits directly on top of Camera (Cat List's
+  // zero-cats auto-skip replaces itself with Annotate), so a plain pop
+  // landed there.
+  //
+  // Destination depends on whether any cats are already recorded: with zero
+  // cats, Cat List's own auto-skip effect would immediately replace itself
+  // back into Annotate (a loop), so Home is the only safe landing. With at
+  // least one cat already recorded, that risk doesn't exist — landing on
+  // Home anyway would eject the user from a submission they were actively
+  // building, so Cat List is correct there instead.
+  const handleAbandonPass = useCallback(() => {
+    setActiveCatId(null)
+    router.replace(hasRecordedCats ? '/submission/create' : '/')
+  }, [setActiveCatId, hasRecordedCats])
+
+  // Callable at any point in the pass. Gated on an actual box, not just
+  // activeCatId (#203): handleNotInPhoto now mints a catId too (so the
+  // affordance works on photo 1), so activeCatId alone no longer implies
+  // "this cat has photo evidence." Routes through handleAbandonPass rather
+  // than router.back() for a photo-evidence-free pass — same Camera-leak
+  // risk on the first cat of a submission as the hardware-back case, since
+  // it's the identical Camera -> Annotate replace-chain stack.
+  const handleBoxingComplete = useCallback(() => {
+    if (!activeCatId || getBoxedPhotoIds(activeCatId).length === 0) {
+      handleAbandonPass()
+      return
+    }
+    router.replace('/submission/cats')
+  }, [activeCatId, getBoxedPhotoIds, handleAbandonPass])
 
   return {
     activeCatId,
@@ -101,5 +130,6 @@ export function useActiveCatFlow(): ActiveCatFlow {
     handleNotInPhoto,
     handleBoxingComplete,
     clearActiveCat,
+    handleAbandonPass,
   }
 }

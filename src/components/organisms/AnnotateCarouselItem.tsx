@@ -81,9 +81,10 @@ export function AnnotateCarouselItem({
     initialBox: savedBox,
     onConfirm,
     onZoomChange,
-    // Mirrors the Not in Photo button's own disabled={!activeCatId} — no
-    // active cat, no gesture.
-    onNotInPhoto: activeCatId ? onNotInPhoto : undefined,
+    // handleNotInPhoto mints a catId itself when absent (#203), so the
+    // gesture no longer needs an activeCatId gate — matches the button,
+    // which dropped its disabled={!activeCatId} for the same reason.
+    onNotInPhoto,
   })
 
   const imageStyle = useAnimatedStyle(() => ({

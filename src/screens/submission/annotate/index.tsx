@@ -32,6 +32,7 @@ export default function AnnotateScreen() {
     handleNotInPhoto,
     handleBoxingComplete,
     clearActiveCat,
+    handleAbandonPass,
     handlePrevPhoto,
     handleLongPressRemove,
   } = useAnnotatePass()
@@ -39,13 +40,13 @@ export default function AnnotateScreen() {
   const [zoomedIn, setZoomedIn] = useState(false)
 
   // Hardware back is the only way to leave mid-pass (annotate is a
-  // fullScreenModal with gestureEnabled/headerShown off) — clear the active
-  // cat so a later "Add a Cat" mints a fresh one instead of resuming this
-  // abandoned pass. Boxes already drawn stay in useBoundingBoxStore
-  // untouched (story: mid-pass abandonment keeps data; cleanup deferred).
+  // fullScreenModal with gestureEnabled/headerShown off). Swallow the event
+  // (return true) — handleAbandonPass (useActiveCatFlow) owns the actual
+  // navigation decision, alongside this flow's other navigation calls; see
+  // its doc comment for why that's Home and not a default pop or Cat List.
   useBackHandler(() => {
-    clearActiveCat()
-    return false
+    handleAbandonPass()
+    return true
   })
 
   // ── Tutorial (first annotation entry only; replay resets status to 'unseen')
@@ -187,8 +188,7 @@ export default function AnnotateScreen() {
         </Pressable>
         <Pressable
           onPress={handleNotInPhoto}
-          disabled={!activeCatId}
-          style={[styles.pillBtn, !activeCatId && styles.navBtnDisabled]}
+          style={styles.pillBtn}
           accessibilityRole="button"
           accessibilityLabel="Not in this photo"
         >
