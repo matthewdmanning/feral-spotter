@@ -60,6 +60,18 @@ export const styles = StyleSheet.create((theme) => ({
     fontSize: theme.typography.sm,
     fontWeight: '600',
   },
+  addPhotosBtn: {
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  addPhotosBtnText: {
+    color: theme.colors.text,
+    fontSize: theme.typography.sm,
+    fontWeight: '600',
+  },
   doneBtn: {
     alignItems: 'center',
     paddingVertical: 14,
