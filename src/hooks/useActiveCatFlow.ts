@@ -81,20 +81,6 @@ export function useActiveCatFlow(): ActiveCatFlow {
     [activeCatId, setActiveCatId, markAbsent],
   )
 
-  // Callable at any point in the pass. Gated on an actual box, not just
-  // activeCatId (#203): handleNotInPhoto now mints a catId too (so the
-  // affordance works on photo 1), so activeCatId alone no longer implies
-  // "this cat has photo evidence" — without this check, boxing complete
-  // straight off an all-not-in-photo pass would open Cat Form for a
-  // phantom cat with zero photo_local_ids.
-  const handleBoxingComplete = useCallback(() => {
-    if (!activeCatId || getBoxedPhotoIds(activeCatId).length === 0) {
-      router.back()
-      return
-    }
-    router.replace('/submission/cats')
-  }, [activeCatId, getBoxedPhotoIds])
-
   // Clears whichever cat is in-progress, no navigation. Used by a completed
   // Cat Form save (useCatSubmit navigates itself, to Cat List) — the cat is
   // no longer "in-progress," it's saved.
@@ -102,9 +88,10 @@ export function useActiveCatFlow(): ActiveCatFlow {
     setActiveCatId(null)
   }, [setActiveCatId])
 
-  // Leaving Annotate before Cat Form (hardware back) — boxes already drawn
-  // stay in useBoundingBoxStore untouched (cleanup deferred), a later "Add a
-  // Cat" mints a fresh cat rather than resuming this one. Explicit
+  // Leaving Annotate before Cat Form (hardware back, or Boxing Complete on a
+  // pass with no photo evidence — see handleBoxingComplete) — boxes already
+  // drawn stay in useBoundingBoxStore untouched (cleanup deferred), a later
+  // "Add a Cat" mints a fresh cat rather than resuming this one. Explicit
   // destination, not router.back() (#203): for the very first cat of a
   // submission Annotate sits directly on top of Camera (Cat List's
   // zero-cats auto-skip replaces itself with Annotate), so a plain pop
@@ -120,6 +107,21 @@ export function useActiveCatFlow(): ActiveCatFlow {
     setActiveCatId(null)
     router.replace(hasRecordedCats ? '/submission/create' : '/')
   }, [setActiveCatId, hasRecordedCats])
+
+  // Callable at any point in the pass. Gated on an actual box, not just
+  // activeCatId (#203): handleNotInPhoto now mints a catId too (so the
+  // affordance works on photo 1), so activeCatId alone no longer implies
+  // "this cat has photo evidence." Routes through handleAbandonPass rather
+  // than router.back() for a photo-evidence-free pass — same Camera-leak
+  // risk on the first cat of a submission as the hardware-back case, since
+  // it's the identical Camera -> Annotate replace-chain stack.
+  const handleBoxingComplete = useCallback(() => {
+    if (!activeCatId || getBoxedPhotoIds(activeCatId).length === 0) {
+      handleAbandonPass()
+      return
+    }
+    router.replace('/submission/cats')
+  }, [activeCatId, getBoxedPhotoIds, handleAbandonPass])
 
   return {
     activeCatId,

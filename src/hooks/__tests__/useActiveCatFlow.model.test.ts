@@ -234,13 +234,15 @@ describe('useActiveCatFlow — model-based test', () => {
     expect(hook.result.current.activeCatId).not.toBe(firstId)
   })
 
-  it('boxing complete with zero boxes drawn goes back instead of opening Cat Form', () => {
+  it('boxing complete with zero boxes drawn abandons the pass instead of opening Cat Form (#203)', () => {
+    // Routes through handleAbandonPass, not router.back() — same Camera-leak
+    // risk on the first cat of a submission as the hardware-back path.
     act(() => hook.result.current.handleBoxingComplete())
-    expect(router.back).toHaveBeenCalled()
-    expect(router.replace).not.toHaveBeenCalled()
+    expect(router.back).not.toHaveBeenCalled()
+    expect(router.replace).toHaveBeenCalledWith('/')
   })
 
-  it('boxing complete after only not-in-photo marks (no box) also goes back — no phantom cat (#203)', () => {
+  it('boxing complete after only not-in-photo marks (no box) also abandons the pass — no phantom cat (#203)', () => {
     // handleNotInPhoto lazily mints activeCatId same as handleBoxConfirmed
     // (#203, so the pill works on photo 1) — boxing complete must still
     // gate on an actual box, not just activeCatId, or a pass where every
@@ -250,8 +252,8 @@ describe('useActiveCatFlow — model-based test', () => {
     expect(hook.result.current.activeCatId).not.toBeNull()
 
     act(() => hook.result.current.handleBoxingComplete())
-    expect(router.back).toHaveBeenCalled()
-    expect(router.replace).not.toHaveBeenCalled()
+    expect(router.back).not.toHaveBeenCalled()
+    expect(router.replace).toHaveBeenCalledWith('/')
   })
 
   it('a box and an absence marker are mutually exclusive for the same cat+photo slot', () => {
