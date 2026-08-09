@@ -15,6 +15,12 @@
             "if": "Bash(gh pr *)",
             "command": "python -c \"import json,sys,os,pathlib as pl\nd=json.load(sys.stdin)\nsid=d.get('session_id','unknown')\nf=pl.Path(os.environ.get('TEMP', os.environ.get('TMPDIR','/tmp'))) / ('claude-gh-docs-'+sid)\nif not f.exists():\n    f.touch()\n    print(json.dumps({'hookSpecificOutput':{'hookEventName':'PreToolUse','additionalContext':'Before this gh issue/pr operation: read docs/agents/issue-tracker.md and docs/agents/triage-labels.md if not already read this session. Two easy-to-miss conventions found 2026-08-02: wontfix closures need the actual wontfix label applied (gh issue edit --add-label wontfix), not just stated in the close comment; closing a wayfinder:task-labeled issue needs a context pointer appended to its parent map issue Decisions-so-far section.'}}))\n\"",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Bash(git *)",
+            "command": "python -c \"import json,sys,re\nd=json.load(sys.stdin)\ncmd=d.get('tool_input',{}).get('command','')\nif re.search(r'git\\s+merge\\s+(origin/)?main(?:\\s|\\$)', cmd):\n    print(json.dumps({'hookSpecificOutput':{'hookEventName':'PreToolUse','permissionDecision':'deny','permissionDecisionReason':'Blocked: merging main into a feature branch creates unwanted merge commits. Use git rebase main instead, or let the PR merge handle it.'}}))\n\"",
+            "timeout": 10
           }
         ]
       }
