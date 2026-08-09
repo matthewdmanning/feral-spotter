@@ -2,6 +2,8 @@ import { LOCATION_ACCURACY_THRESHOLD_M } from '@/src/config/location'
 import { DateTimePickerButton } from '@/src/components/organisms/DateTimePicker'
 import { useSubmissionStore } from '@/src/hooks'
 import { useSubmissionSubmit } from '@/src/hooks/useSubmissionSubmit'
+import { useLibraryPhotoPicker } from '@/src/hooks/useLibraryPhotoPicker'
+import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useLocationCapture } from '@/src/lib/location'
 import {
   createSubmissionCache,
@@ -34,6 +36,19 @@ export default function CreateSubmissionScreen() {
 
   const capture = useLocationCapture()
   const { handleDone, handleReset } = useSubmissionSubmit()
+
+  // No back path off this screen (#156) — instead, a bottom action returns
+  // the user to whichever entrypoint sourced this draft (ADR 0002
+  // amendment's single-source-by-construction `source`).
+  const photoSource = usePhotoStore((s) => s.source)
+  const { pickFromLibrary } = useLibraryPhotoPicker()
+  const handleAddMorePhotos = useCallback(() => {
+    if (photoSource === 'camera') {
+      router.navigate('/camera')
+    } else {
+      pickFromLibrary()
+    }
+  }, [photoSource, pickFromLibrary])
 
   useEffect(() => {
     setCurrentStep('create')
@@ -200,6 +215,16 @@ export default function CreateSubmissionScreen() {
           <Text style={styles.addCatBtnText}>Add a Cat</Text>
         </Pressable>
       </View>
+
+      <Pressable
+        onPress={handleAddMorePhotos}
+        style={styles.addPhotosBtn}
+        accessibilityRole="button"
+      >
+        <Text style={styles.addPhotosBtnText}>
+          {photoSource === 'camera' ? 'Take More Photos' : 'Select More Photos'}
+        </Text>
+      </Pressable>
 
       <Pressable
         onPress={handleDone}

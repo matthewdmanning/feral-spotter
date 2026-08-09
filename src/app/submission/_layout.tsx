@@ -56,6 +56,13 @@ export default function SubmissionLayout() {
               title: STEP_TITLES[step],
               headerBackTitle: '',
               headerRight: () => null, // step indicator: ${STEP_NUMBER[step]} / ${STEPS.length}
+              // Submission Details (#156) has its own bottom action instead
+              // of a back path — header back and swipe-back are disabled for
+              // this screen only; the rest of the stack keeps its defaults.
+              ...(step === 'create' && {
+                headerBackVisible: false,
+                gestureEnabled: false,
+              }),
             }}
           />
         ))}
