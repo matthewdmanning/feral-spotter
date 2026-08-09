@@ -8,7 +8,7 @@ module.exports = defineConfig([
   // copies of the repo); linting them is redundant and slow. ESLint flat config
   // does not read .gitignore, so ignore them explicitly.
   {
-    ignores: ["dist/*", ".claude/**"],
+    ignores: ["dist/*", ".claude/**", "ts-ailiot/**"],
   },
   {
     files: ["babel.config.js"],
