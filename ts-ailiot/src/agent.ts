@@ -1,7 +1,7 @@
-import { query } from "@anthropic-ai/claude-agent-sdk";
-import type { Options, SettingSource } from "@anthropic-ai/claude-agent-sdk";
-import type { AgentRunConfiguration, SettingsScope } from "./cli.js";
-import { formatTicketForPrompt, type GitHubTicket } from "./ticket.js";
+import { query } from '@anthropic-ai/claude-agent-sdk'
+import type { Options, SettingSource } from '@anthropic-ai/claude-agent-sdk'
+import type { AgentRunConfiguration, SettingsScope } from './cli.js'
+import { formatTicketForPrompt, type GitHubTicket } from './ticket.js'
 
 /**
  * Tools the agent may use without prompting.
@@ -11,14 +11,14 @@ import { formatTicketForPrompt, type GitHubTicket } from "./ticket.js";
  * that from being open season.
  */
 const ALLOWED_TOOLS = [
-  "Read",
-  "Glob",
-  "Grep",
-  "Edit",
-  "Write",
-  "TodoWrite",
-  "Bash",
-];
+  'Read',
+  'Glob',
+  'Grep',
+  'Edit',
+  'Write',
+  'TodoWrite',
+  'Bash',
+]
 
 /**
  * Shell patterns denied in every permission mode.
@@ -29,14 +29,14 @@ const ALLOWED_TOOLS = [
  * anything outward.
  */
 const DESTRUCTIVE_COMMAND_DENY_RULES = [
-  "Bash(rm -rf *)",
-  "Bash(git reset --hard*)",
-  "Bash(git clean*)",
-  "Bash(git checkout -- *)",
-  "Bash(git push*)",
-  "Bash(gh pr merge*)",
-  "Bash(gh release*)",
-];
+  'Bash(rm -rf *)',
+  'Bash(git reset --hard*)',
+  'Bash(git clean*)',
+  'Bash(git checkout -- *)',
+  'Bash(git push*)',
+  'Bash(gh pr merge*)',
+  'Bash(gh release*)',
+]
 
 const TICKET_IMPLEMENTER_INSTRUCTIONS = `You implement one GitHub ticket at a time: a bug fix or a small, self-contained feature.
 
@@ -48,17 +48,17 @@ Work in this order:
 
 Do not commit, push, open pull requests, or otherwise change git state. Leave the work in the working tree for a human to review.
 
-Finish with a short summary: what changed, which files, which tests were added, and anything you deliberately left alone.`;
+Finish with a short summary: what changed, which files, which tests were added, and anything you deliberately left alone.`
 
 function toSettingSources(scope: SettingsScope): SettingSource[] {
   switch (scope) {
-    case "project":
-      return ["project"];
-    case "all":
-      return ["user", "project", "local"];
-    case "none":
+    case 'project':
+      return ['project']
+    case 'all':
+      return ['user', 'project', 'local']
+    case 'none':
     default:
-      return [];
+      return []
   }
 }
 
@@ -70,33 +70,35 @@ export function buildAgentOptions(
     // Keep the Claude Code system prompt (tool usage, code conventions) and
     // append the ticket-implementer behaviour on top of it.
     systemPrompt: {
-      type: "preset",
-      preset: "claude_code",
+      type: 'preset',
+      preset: 'claude_code',
       append: TICKET_IMPLEMENTER_INSTRUCTIONS,
     },
     allowedTools: ALLOWED_TOOLS,
     disallowedTools: DESTRUCTIVE_COMMAND_DENY_RULES,
     // Edits are auto-approved so the run is headless; deny rules still apply.
     // Never bypassPermissions: allowedTools does not constrain that mode.
-    permissionMode: "acceptEdits",
+    permissionMode: 'acceptEdits',
     // Explicit, so the agent does not inherit the target repo's hooks, skills,
     // and memory unless the caller asked for it with --settings.
     settingSources: toSettingSources(configuration.settingsScope),
-    ...(configuration.model === undefined ? {} : { model: configuration.model }),
-  };
+    ...(configuration.model === undefined
+      ? {}
+      : { model: configuration.model }),
+  }
 }
 
 export function buildAgentPrompt(ticket: GitHubTicket): string {
   return `Implement this ticket in the current working directory, then write basic tests for it.
 
-${formatTicketForPrompt(ticket)}`;
+${formatTicketForPrompt(ticket)}`
 }
 
 export interface AgentRunSummary {
-  subtype: string;
-  isError: boolean;
-  turnCount: number;
-  finalMessage: string;
+  subtype: string
+  isError: boolean
+  turnCount: number
+  finalMessage: string
 }
 
 /**
@@ -108,31 +110,31 @@ export async function runTicketImplementationAgent(
   options: Options,
 ): Promise<AgentRunSummary> {
   let summary: AgentRunSummary = {
-    subtype: "no_result",
+    subtype: 'no_result',
     isError: true,
     turnCount: 0,
-    finalMessage: "The agent stream ended without a result message.",
-  };
+    finalMessage: 'The agent stream ended without a result message.',
+  }
 
   for await (const message of query({ prompt, options })) {
-    if (message.type === "assistant" && message.message?.content) {
+    if (message.type === 'assistant' && message.message?.content) {
       for (const block of message.message.content) {
-        if ("text" in block) {
-          console.log(block.text);
-        } else if ("name" in block) {
-          console.log(`[tool] ${block.name}`);
+        if ('text' in block) {
+          console.log(block.text)
+        } else if ('name' in block) {
+          console.log(`[tool] ${block.name}`)
         }
       }
-    } else if (message.type === "result") {
+    } else if (message.type === 'result') {
       summary = {
         subtype: message.subtype,
         isError: message.is_error,
         turnCount: message.num_turns,
         finalMessage:
-          message.subtype === "success" ? message.result : message.subtype,
-      };
+          message.subtype === 'success' ? message.result : message.subtype,
+      }
     }
   }
 
-  return summary;
+  return summary
 }

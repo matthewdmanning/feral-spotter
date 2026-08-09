@@ -1,22 +1,22 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
 
-const runCommand = promisify(execFile);
+const runCommand = promisify(execFile)
 
 export interface GitHubTicket {
-  number: number;
-  title: string;
-  body: string;
-  labels: string[];
-  url: string;
+  number: number
+  title: string
+  body: string
+  labels: string[]
+  url: string
 }
 
 interface GitHubIssuePayload {
-  number: number;
-  title: string;
-  body: string | null;
-  labels: { name: string }[];
-  url: string;
+  number: number
+  title: string
+  body: string | null
+  labels: { name: string }[]
+  url: string
 }
 
 /**
@@ -35,48 +35,50 @@ export async function fetchGitHubTicket(
   repository?: string,
 ): Promise<GitHubTicket> {
   const commandArguments = [
-    "issue",
-    "view",
+    'issue',
+    'view',
     String(issueNumber),
-    "--json",
-    "number,title,body,labels,url",
-  ];
+    '--json',
+    'number,title,body,labels,url',
+  ]
   if (repository !== undefined) {
-    commandArguments.push("--repo", repository);
+    commandArguments.push('--repo', repository)
   }
 
-  let stdout: string;
+  let stdout: string
   try {
-    ({ stdout } = await runCommand("gh", commandArguments, {
+    ;({ stdout } = await runCommand('gh', commandArguments, {
       cwd: workingDirectory,
       windowsHide: true,
-    }));
+    }))
   } catch (error) {
     throw new Error(
       `Could not read issue #${issueNumber} via gh. Check that gh is installed, ` +
         `authenticated (\`gh auth status\`), and that the issue exists.\n${String(error)}`,
-    );
+    )
   }
 
-  const payload = JSON.parse(stdout) as GitHubIssuePayload;
+  const payload = JSON.parse(stdout) as GitHubIssuePayload
   return {
     number: payload.number,
     title: payload.title,
-    body: payload.body ?? "",
+    body: payload.body ?? '',
     labels: payload.labels.map((label) => label.name),
     url: payload.url,
-  };
+  }
 }
 
 /** Renders a ticket as the task description handed to the agent. */
 export function formatTicketForPrompt(ticket: GitHubTicket): string {
   const labelLine =
-    ticket.labels.length > 0 ? `Labels: ${ticket.labels.join(", ")}` : "Labels: none";
+    ticket.labels.length > 0
+      ? `Labels: ${ticket.labels.join(', ')}`
+      : 'Labels: none'
   return [
     `Issue #${ticket.number}: ${ticket.title}`,
     ticket.url,
     labelLine,
-    "",
-    ticket.body.trim() || "(no description provided)",
-  ].join("\n");
+    '',
+    ticket.body.trim() || '(no description provided)',
+  ].join('\n')
 }
