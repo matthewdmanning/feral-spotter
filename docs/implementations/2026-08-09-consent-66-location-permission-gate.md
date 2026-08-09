@@ -78,3 +78,39 @@ button removed same-day by #215.
 Verification: `npx jest src/screens/consent` (2 suites / 11 tests) pass,
 `npx tsc --noEmit` clean, `npx eslint`/`npx prettier --check` clean on
 touched files. Not device-tested (no physical device in this environment).
+
+## 2026-08-09 — fix: camera had the same untested DENIED gap (#237)
+
+**Purpose:** advisor review of a separate relaunch-bypass follow-up to #66
+(deferring `markAccepted()` until the gate check clears — tracked on its
+own branch/PR, not part of this file's history since it doesn't touch
+gating logic) also flagged that `cameraStatus === RESULTS.BLOCKED` was
+never updated alongside location's gating — camera's first-time "Don't
+allow" has the identical DENIED-not-BLOCKED asymmetry #66 fixed for
+location, just untested and unfixed for camera. #66's older camera
+sub-thread only ever confirmed camera _grants_, never a denial, and every
+model journey up to this point pinned camera to `GRANTED`, so nothing could
+see the gap. Filed and fixed as #237.
+
+**Change:** `isLocationGated()` renamed to `isPermissionGated()` and applied
+to both `cameraStatus` and `locationStatus` in `handleAgree`'s gate check
+and the foreground-recheck effect — same `BLOCKED`/`DENIED`/`UNAVAILABLE`
+rule for both permissions now.
+
+Tests: new `ConsentScreen.cameraGate.model.test.tsx`, mirroring the
+location model but scoped to camera's status (location held `GRANTED`
+throughout) — full grant, BLOCKED (regression guard), first-time DENIED
+(the fix), DENIED surviving a plain foreground, DENIED clearing via
+Settings, and UNAVAILABLE. No LIMITED journey — not a real outcome for the
+`CAMERA` permission. Updated `ConsentScreen.locationGate.model.test.tsx`'s
+doc comment to point at the new file instead of the stale "camera
+sub-thread resolved" note.
+
+Also synced `docs/planning/2026-07-27-onboarding-registration-consent-fsm.md`
+again — it documented "camera gates only on BLOCKED" as the intentional
+rule; updated to reflect both permissions sharing `isPermissionGated()`.
+
+Verified: `jest src/screens/consent` (3 suites / 17 tests), `tsc --noEmit`,
+`expo lint` (0 errors). Not run on-device — same rationale as above; no new
+permission-status branching beyond what #226 already device-verified for
+the identical BLOCKED/DENIED logic, now just applied to a second field.

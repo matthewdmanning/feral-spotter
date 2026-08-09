@@ -24,9 +24,11 @@ import { styles } from './index.styles'
 // "don't ask again"). Location's Approximate accuracy choice already reads
 // as BLOCKED on the first denial and gates correctly; DENIED must gate too
 // or a first-time full denial bypasses the gate entirely (#66). UNAVAILABLE
-// (the permission/feature doesn't exist on this device) gates too — a
-// Submission can't get a real location without it, same as BLOCKED/DENIED.
-function isLocationGated(status: string) {
+// (the permission/feature doesn't exist on this device) gates too — neither
+// permission is usable without it, same as BLOCKED/DENIED. Applies equally
+// to camera — its first-time "Don't allow" has the same DENIED-not-BLOCKED
+// asymmetry, just never tested/fixed alongside location's (#237).
+function isPermissionGated(status: string) {
   return (
     status === RESULTS.BLOCKED ||
     status === RESULTS.DENIED ||
@@ -54,7 +56,10 @@ export default function ConsentScreen() {
       const locationStatus = await request(PERMISSION_MAP.location)
       markAccepted()
 
-      if (cameraStatus === RESULTS.BLOCKED || isLocationGated(locationStatus)) {
+      if (
+        isPermissionGated(cameraStatus) ||
+        isPermissionGated(locationStatus)
+      ) {
         setBlocked(true)
         return
       }
@@ -82,8 +87,8 @@ export default function ConsentScreen() {
         check(PERMISSION_MAP.location),
       ])
       if (
-        cameraStatus !== RESULTS.BLOCKED &&
-        !isLocationGated(locationStatus)
+        !isPermissionGated(cameraStatus) &&
+        !isPermissionGated(locationStatus)
       ) {
         setBlocked(false)
         router.replace('/sign-in')
