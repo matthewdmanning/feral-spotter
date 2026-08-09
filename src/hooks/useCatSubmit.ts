@@ -111,7 +111,11 @@ export function useCatSubmit({
       // The cat is saved, not "in-progress" anymore — a later "Add a Cat"
       // must mint a fresh id, not resume this one.
       clearActiveCat()
-      router.back()
+      // Explicit destination, not router.back() (#203): for the very first
+      // cat of a submission, Cat Form was reached via a chain of `replace`s
+      // (create's zero-cats auto-skip -> annotate -> here), which strips
+      // Cat List entirely off the stack — back() landed on Camera instead.
+      router.replace('/submission/create')
     }
 
     const unsetFields = (

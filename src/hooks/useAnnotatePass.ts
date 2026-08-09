@@ -36,6 +36,7 @@ export interface AnnotatePass {
   handleNotInPhoto: () => void
   handleBoxingComplete: () => void
   clearActiveCat: () => void
+  handleAbandonPass: () => void
   handlePrevPhoto: () => void
   handleLongPressRemove: () => void
   setCurrentIndex: (index: number) => void
@@ -57,6 +58,7 @@ export function useAnnotatePass(): AnnotatePass {
     handleNotInPhoto: markNotInPhoto,
     handleBoxingComplete,
     clearActiveCat,
+    handleAbandonPass,
   } = useActiveCatFlow()
 
   // ── Carousel state ────────────────────────────────────────────────────────
@@ -178,6 +180,7 @@ export function useAnnotatePass(): AnnotatePass {
     handleNotInPhoto,
     handleBoxingComplete,
     clearActiveCat,
+    handleAbandonPass,
     handlePrevPhoto,
     handleLongPressRemove,
   }
