@@ -77,7 +77,7 @@ export const COLOR_OPTIONS: { value: CatColor; label: string }[] = [
 // from Matthew) — pass-through today so CatForm already reads through this
 // seam; only the mapping table changes once that reference lands.
 export function colorOptionsForPattern(
-  _pattern: CatPattern,
+  _pattern: CatPattern | undefined,
 ): { value: CatColor; label: string }[] {
   return COLOR_OPTIONS
 }

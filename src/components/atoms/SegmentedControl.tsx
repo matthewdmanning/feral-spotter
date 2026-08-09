@@ -2,38 +2,49 @@ import { View, Text, Pressable } from 'react-native'
 import { styles } from './SegmentedControl.styles'
 
 interface Option<T extends string | number> {
-  value: T; label: string
+  value: T
+  label: string
 }
 
 interface SegmentedControlProps<T extends string | number> {
-  label: string; options: Option<T>[]; value: T
-  onChange: (value: T) => void; accessibilityLabel?: string
+  label: string
+  options: Option<T>[]
+  value: T | undefined
+  onChange: (value: T | undefined) => void
+  accessibilityLabel?: string
 }
 
 export function SegmentedControl<T extends string | number>({
-  label, options, value, onChange, accessibilityLabel,
+  label,
+  options,
+  value,
+  onChange,
+  accessibilityLabel,
 }: SegmentedControlProps<T>) {
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
-      <View style={styles.row} accessibilityLabel={accessibilityLabel ?? label} accessibilityRole="radiogroup">
+      <View style={styles.row} accessibilityLabel={accessibilityLabel ?? label}>
         {options.map((opt, i) => {
           const selected = opt.value === value
-          const isLast   = i === options.length - 1
+          const isLast = i === options.length - 1
           return (
             <Pressable
               key={String(opt.value)}
-              onPress={() => onChange(opt.value)}
+              onPress={() => onChange(selected ? undefined : opt.value)}
               style={[
                 styles.option,
                 selected ? styles.optionSelected : styles.optionIdle,
                 !isLast && styles.optionBorder,
               ]}
-              accessibilityRole="radio"
-              accessibilityState={{ checked: selected }}
+              accessibilityRole="button"
+              accessibilityState={{ selected }}
               accessibilityLabel={opt.label}
             >
-              <Text style={selected ? styles.textSelected : styles.textIdle} numberOfLines={1}>
+              <Text
+                style={selected ? styles.textSelected : styles.textIdle}
+                numberOfLines={1}
+              >
                 {opt.label}
               </Text>
             </Pressable>
