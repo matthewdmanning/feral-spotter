@@ -123,7 +123,7 @@ export function useCatSubmit({
     if (unsetFields.length > 0) {
       Alert.alert(
         `${unsetFields.length} field${unsetFields.length !== 1 ? 's' : ''} not set`,
-        `${unsetFields.join(', ')} — Save anyway?`,
+        unsetFields.map((field) => `• ${field}`).join('\n'),
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Save anyway', style: 'default', onPress: commit },
