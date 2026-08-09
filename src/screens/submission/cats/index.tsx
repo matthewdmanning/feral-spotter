@@ -1,5 +1,6 @@
 import { CatForm } from '@/src/components/organisms/CatForm'
 import {
+  COLLAPSED_DIAMETER,
   DEFAULT_DIAMETER,
   InsetCropBubble,
 } from '@/src/components/organisms/InsetCropBubble'
@@ -37,10 +38,22 @@ export default function CatObservationScreen() {
   // Starts at the bubble's own pre-report default (not 0) so the
   // guarantee holds on the first frame too, before onDiameterChange fires.
   const [bubbleDiameter, setBubbleDiameter] = useState(DEFAULT_DIAMETER)
-  // Fade only while the bubble is actually expanded over the title — once
-  // collapsed (docked at the right edge, shrunk), it no longer covers
-  // anything, so the title should read normally again (2026-08-07).
-  const [bubbleCollapsed, setBubbleCollapsed] = useState(false)
+  // Bubble defaults to collapsed on mount (#202) — this mirror starts
+  // collapsed too, so the header reserves the collapsed size, not the
+  // (not-yet-reported) expanded diameter, before the bubble's own mount
+  // effect confirms it. Drives minHeight only — eager-on-expand,
+  // delayed-on-collapse (never-shrink-while-overlapping rule).
+  const [bubbleCollapsed, setBubbleCollapsed] = useState(true)
+  // Separate from bubbleCollapsed (#202): the title fade needs "is the
+  // bubble actually covering me right now," delayed in *both* directions
+  // (docs/design-decisions/inset-crop-bubble.md) — bubbleCollapsed's eager
+  // expand-report would fade the title before the bubble has visually slid
+  // into place over it.
+  const [bubbleSettledCollapsed, setBubbleSettledCollapsed] = useState(true)
+  // While collapsed, the bubble is docked flat at the edge — the header
+  // only needs to reserve the collapsed size, not whatever it last
+  // expanded to (#202).
+  const reservedHeight = bubbleCollapsed ? COLLAPSED_DIAMETER : bubbleDiameter
 
   return (
     <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
@@ -49,14 +62,14 @@ export default function CatObservationScreen() {
           testID="cat-form-header-zone"
           style={[
             styles.headerZone,
-            catId ? { minHeight: bubbleDiameter } : null,
+            catId ? { minHeight: reservedHeight } : null,
           ]}
         >
           <View style={styles.header}>
             <Text
               style={[
                 styles.title,
-                catId && !bubbleCollapsed ? styles.titleFaded : null,
+                catId && !bubbleSettledCollapsed ? styles.titleFaded : null,
               ]}
             >
               {existingCat ? 'Edit Cat' : 'Observed Cat'}
@@ -81,6 +94,7 @@ export default function CatObservationScreen() {
               edge="top-center"
               onDiameterChange={setBubbleDiameter}
               onCollapsedChange={setBubbleCollapsed}
+              onSettledChange={setBubbleSettledCollapsed}
             />
           )}
         </View>

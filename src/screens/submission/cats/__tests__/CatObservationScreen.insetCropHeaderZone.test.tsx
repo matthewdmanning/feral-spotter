@@ -1,14 +1,20 @@
-import { render } from '@testing-library/react-native'
+import { act, render } from '@testing-library/react-native'
 import { StyleSheet } from 'react-native'
+import { createMachine } from 'xstate'
+import { createTestModel } from '@xstate/graph'
 import CatObservationScreen from '../index'
 
 /**
- * #174's Cat Form no-field-overlap guarantee, as a rendered-layout
- * assertion rather than a visual/pixel snapshot: the header-zone
- * container's `minHeight` must track the inset-crop bubble's own
- * computed diameter exactly, since that's what structurally confines the
- * bubble to the title row (it can never be pushed down over a field,
- * regardless of how large the diameter computes).
+ * #174's Cat Form no-field-overlap guarantee, extended by #202: the
+ * header-zone container's `minHeight` must track not just the bubble's
+ * reported diameter, but also its collapsed/expanded state — collapsed
+ * reserves only `COLLAPSED_DIAMETER`, not whatever the bubble last expanded
+ * to, or the header holds dead space once the bubble docks at the edge.
+ * Modeled as a flow (not hand-written per-case assertions) because it's a
+ * real sequence of states a live bubble walks the screen through: default
+ * collapsed on mount, reports a diameter once a box exists, collapses back
+ * down, re-expands. Subsumes the two hand-written cases this replaced
+ * (default-diameter-before-report, and reserves-the-reported-diameter).
  */
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() },
@@ -48,49 +54,142 @@ jest.mock('react-native-unistyles', () => {
   }
 })
 
-const MOCK_DIAMETER = 150
-const MOCK_DEFAULT_DIAMETER = 68
+const REPORTED_DIAMETER = 150
+const DEFAULT_DIAMETER = 68
+const COLLAPSED_DIAMETER = 68
 
-// Mutable per-test so one test can simulate the bubble never having
-// reported a diameter yet (the state before its onDiameterChange effect
-// fires for the first time).
-let mockShouldReportDiameter = true
+// The real InsetCropBubble owns its own default-collapsed / report-timing
+// behavior (covered by InsetCropBubble.collapseFlow.model.test.tsx). This
+// stub exposes its callback contract directly so the model here can drive
+// the screen's own reservation logic through each state a live bubble
+// would put it in, without re-testing the bubble's internals.
+let latestOnDiameterChange: ((d: number) => void) | undefined
+let latestOnCollapsedChange: ((c: boolean) => void) | undefined
 
 jest.mock('@/src/components/organisms/InsetCropBubble', () => ({
   DEFAULT_DIAMETER: 68,
+  COLLAPSED_DIAMETER: 68,
   InsetCropBubble: ({
     onDiameterChange,
+    onCollapsedChange,
   }: {
     onDiameterChange?: (d: number) => void
+    onCollapsedChange?: (c: boolean) => void
   }) => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    require('react').useEffect(() => {
-      if (mockShouldReportDiameter) onDiameterChange?.(MOCK_DIAMETER)
-    }, [onDiameterChange])
+    latestOnDiameterChange = onDiameterChange
+    latestOnCollapsedChange = onCollapsedChange
     return null
   },
 }))
 
-describe('Cat Form header zone — no-field-overlap guarantee (#174)', () => {
+const headerZoneMachine = createMachine({
+  id: 'catFormHeaderZone',
+  initial: 'mountedCollapsedNoDiameterYet',
+  states: {
+    mountedCollapsedNoDiameterYet: {
+      on: { EXPAND: 'expandedNoDiameterYet' },
+    },
+    expandedNoDiameterYet: {
+      on: { REPORT_DIAMETER: 'expandedWithDiameter' },
+    },
+    expandedWithDiameter: {
+      on: { COLLAPSE: 'collapsedAfterDiameterKnown' },
+    },
+    collapsedAfterDiameterKnown: {
+      on: { EXPAND: 'reExpandedRetainsDiameter' },
+    },
+    reExpandedRetainsDiameter: {},
+  },
+})
+
+describe('Cat Form header zone — no-field-overlap guarantee (#174, #202)', () => {
+  let getByTestId: ReturnType<typeof render>['getByTestId']
+
   beforeEach(() => {
-    mockShouldReportDiameter = true
+    latestOnDiameterChange = undefined
+    latestOnCollapsedChange = undefined
+    const result = render(<CatObservationScreen />)
+    getByTestId = result.getByTestId
   })
 
-  it('reserves header-zone min-height equal to the bubble diameter once reported', () => {
-    const { getByTestId } = render(<CatObservationScreen />)
+  const minHeight = () => {
     const headerZone = getByTestId('cat-form-header-zone')
-    const flattened = StyleSheet.flatten(headerZone.props.style)
-    expect(flattened.minHeight).toBe(MOCK_DIAMETER)
-  })
+    const flattened = StyleSheet.flatten(headerZone.props.style) as {
+      minHeight?: number
+    }
+    return flattened.minHeight
+  }
 
-  it('reserves at least the default diameter before the bubble has reported one', () => {
-    mockShouldReportDiameter = false
-    const { getByTestId } = render(<CatObservationScreen />)
-    const headerZone = getByTestId('cat-form-header-zone')
-    const flattened = StyleSheet.flatten(headerZone.props.style)
-    // Must never be 0 or undefined — that would let the bubble's own
-    // (nonzero, absolutely-positioned) default size overhang the header
-    // and cover a field for a frame.
-    expect(flattened.minHeight).toBe(MOCK_DEFAULT_DIAMETER)
+  const model = createTestModel(headerZoneMachine)
+
+  const testParams = {
+    states: {
+      mountedCollapsedNoDiameterYet: () => {
+        // Must never be 0/undefined — that would let the bubble's own
+        // (nonzero, absolutely-positioned) size overhang the header for a
+        // frame before either callback has fired. Note: DEFAULT_DIAMETER
+        // and COLLAPSED_DIAMETER are both 68 by design, so this assertion
+        // can't tell which one actually produced the value — the
+        // `expandedNoDiameterYet` state below (reached via journey 2's
+        // leading EXPAND event) is what actually pins bubbleDiameter's own
+        // default, independent of collapse state.
+        expect(minHeight()).toBe(DEFAULT_DIAMETER)
+      },
+      expandedNoDiameterYet: () => {
+        expect(minHeight()).toBe(DEFAULT_DIAMETER)
+      },
+      expandedWithDiameter: () => {
+        expect(minHeight()).toBe(REPORTED_DIAMETER)
+      },
+      collapsedAfterDiameterKnown: () => {
+        // The reservation shrinks to the collapsed size, not the diameter
+        // it was last expanded to (#202) — a stale full-size reservation
+        // would leave dead space in the header once the bubble docks.
+        expect(minHeight()).toBe(COLLAPSED_DIAMETER)
+      },
+      reExpandedRetainsDiameter: () => {
+        // Re-expanding restores the previously-reported diameter, not the
+        // pre-report default — the bubble doesn't forget its size.
+        expect(minHeight()).toBe(REPORTED_DIAMETER)
+      },
+    },
+    events: {
+      EXPAND: () => {
+        act(() => latestOnCollapsedChange?.(false))
+      },
+      REPORT_DIAMETER: () => {
+        act(() => latestOnDiameterChange?.(REPORTED_DIAMETER))
+      },
+      COLLAPSE: () => {
+        act(() => latestOnCollapsedChange?.(true))
+      },
+    },
+  }
+
+  const journeys = [
+    {
+      name: 'reserves the default before any diameter is known',
+      events: [],
+    },
+    {
+      name: 'reserves the reported diameter once expanded and known',
+      events: [{ type: 'EXPAND' }, { type: 'REPORT_DIAMETER' }],
+    },
+    {
+      name: 'shrinks to the collapsed size once docked, then restores on re-expand',
+      events: [
+        { type: 'EXPAND' },
+        { type: 'REPORT_DIAMETER' },
+        { type: 'COLLAPSE' },
+        { type: 'EXPAND' },
+      ],
+    },
+  ] as const
+
+  journeys.forEach(({ name, events }) => {
+    it(name, async () => {
+      const [path] = model.getPathsFromEvents(events)
+      await path.test(testParams)
+    })
   })
 })
