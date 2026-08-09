@@ -56,33 +56,21 @@ jest.mock('react-native-unistyles', () => {
 })
 
 /**
- * Model of ConsentScreen's location-permission gate (src/screens/consent/index.tsx),
- * scoped to the status react-native-permissions actually reports for
- * `PERMISSION_MAP.location` — not the on-device grant dialog options. Camera
- * is held GRANTED throughout: that permission's gating has its own mirrored
- * model, ConsentScreen.cameraGate.model.test.tsx (#237), out of scope here.
+ * Model of ConsentScreen's camera-permission gate (src/screens/consent/index.tsx),
+ * mirroring ConsentScreen.locationGate.model.test.tsx but for camera's status
+ * — location is held GRANTED throughout, out of scope here. `RESULTS.LIMITED`
+ * isn't a real outcome for `PERMISSIONS.*.CAMERA` (it's an iOS photo-library
+ * partial-access concept), so no LIMITED journey exists here unlike the
+ * location model.
  *
- * Guards against #66: a first-time full "Don't allow" reports DENIED, not
- * BLOCKED (Android only escalates to BLOCKED on a second denial). The old
- * gate checked BLOCKED only, so a first-time denial bypassed it entirely and
- * proceeded like a full grant. `blocked` here covers both the
- * escalated-denial case and location's Approximate-accuracy case, which
- * reads as BLOCKED on the very first request and already gated correctly
- * before this fix — that path must keep working unchanged.
- *
- * All 5 `RESULTS` values `react-native-permissions` can report are wired
- * into this machine, not just the 3 Android's location prompt realistically
- * returns: UNAVAILABLE (the feature/permission doesn't exist on this
- * device) gates, same as BLOCKED/DENIED — a Submission can't get a real
- * location without it. LIMITED (an iOS partial-access concept, not
- * applicable to Android's ACCESS_FINE_LOCATION) does not gate, same as
- * GRANTED. Only GRANTED/LIMITED/DENIED get dedicated journeys below —
- * BLOCKED and UNAVAILABLE both land on the same `gated` state DENIED
- * already exercises, so a standalone journey for either would just re-test
- * the same assertions.
+ * Guards #237: the gate used to check `cameraStatus === RESULTS.BLOCKED`
+ * only, unlike location's `isPermissionGated` (which already covers DENIED
+ * and UNAVAILABLE after #66/#233). A first-time camera "Don't allow" reports
+ * DENIED, not BLOCKED — same asymmetry #66 fixed for location, just never
+ * applied to camera. Both permissions now share `isPermissionGated`.
  */
-const locationGateMachine = createMachine({
-  id: 'consentLocationGate',
+const cameraGateMachine = createMachine({
+  id: 'consentCameraGate',
   initial: 'idle',
   states: {
     idle: {
@@ -91,45 +79,37 @@ const locationGateMachine = createMachine({
         AGREE_DENIED: 'gated',
         AGREE_BLOCKED: 'gated',
         AGREE_UNAVAILABLE: 'gated',
-        AGREE_LIMITED: 'granted',
       },
     },
     granted: {},
     gated: {
       on: {
         FOREGROUND_STILL_DENIED: 'gated',
-        FOREGROUND_STILL_BLOCKED: 'gated',
-        FOREGROUND_STILL_UNAVAILABLE: 'gated',
         FOREGROUND_GRANTED: 'granted',
-        FOREGROUND_LIMITED: 'granted',
       },
     },
   },
 })
 
-describe('ConsentScreen location gate — model-based test', () => {
+describe('ConsentScreen camera gate — model-based test', () => {
   let foregroundListener: ((state: string) => void) | undefined
-  let locationResult: string
+  let cameraResult: string
 
   beforeEach(() => {
     jest.clearAllMocks()
     Platform.OS = 'android'
-    locationResult = RESULTS.GRANTED
+    cameraResult = RESULTS.GRANTED
     foregroundListener = undefined
 
     jest
       .mocked(request)
       .mockImplementation(async (permission) =>
-        permission === PERMISSION_MAP.location
-          ? locationResult
-          : RESULTS.GRANTED,
+        permission === PERMISSION_MAP.camera ? cameraResult : RESULTS.GRANTED,
       )
     jest
       .mocked(check)
       .mockImplementation(async (permission) =>
-        permission === PERMISSION_MAP.location
-          ? locationResult
-          : RESULTS.GRANTED,
+        permission === PERMISSION_MAP.camera ? cameraResult : RESULTS.GRANTED,
       )
     jest
       .spyOn(AppState, 'addEventListener')
@@ -141,7 +121,7 @@ describe('ConsentScreen location gate — model-based test', () => {
     render(<ConsentScreen />)
   })
 
-  const model = createTestModel(locationGateMachine)
+  const model = createTestModel(cameraGateMachine)
 
   const pressAgree = async () => {
     await act(async () => {
@@ -174,43 +154,27 @@ describe('ConsentScreen location gate — model-based test', () => {
     },
     events: {
       AGREE_GRANTED: async () => {
-        locationResult = RESULTS.GRANTED
+        cameraResult = RESULTS.GRANTED
         await pressAgree()
       },
       AGREE_DENIED: async () => {
-        locationResult = RESULTS.DENIED
+        cameraResult = RESULTS.DENIED
         await pressAgree()
       },
       AGREE_BLOCKED: async () => {
-        locationResult = RESULTS.BLOCKED
+        cameraResult = RESULTS.BLOCKED
         await pressAgree()
       },
       AGREE_UNAVAILABLE: async () => {
-        locationResult = RESULTS.UNAVAILABLE
-        await pressAgree()
-      },
-      AGREE_LIMITED: async () => {
-        locationResult = RESULTS.LIMITED
+        cameraResult = RESULTS.UNAVAILABLE
         await pressAgree()
       },
       FOREGROUND_STILL_DENIED: async () => {
-        locationResult = RESULTS.DENIED
-        await triggerForeground()
-      },
-      FOREGROUND_STILL_BLOCKED: async () => {
-        locationResult = RESULTS.BLOCKED
-        await triggerForeground()
-      },
-      FOREGROUND_STILL_UNAVAILABLE: async () => {
-        locationResult = RESULTS.UNAVAILABLE
+        cameraResult = RESULTS.DENIED
         await triggerForeground()
       },
       FOREGROUND_GRANTED: async () => {
-        locationResult = RESULTS.GRANTED
-        await triggerForeground()
-      },
-      FOREGROUND_LIMITED: async () => {
-        locationResult = RESULTS.LIMITED
+        cameraResult = RESULTS.GRANTED
         await triggerForeground()
       },
     },
@@ -220,32 +184,28 @@ describe('ConsentScreen location gate — model-based test', () => {
   // actions, asserting what the user sees at every step.
   const journeys = [
     {
-      name: 'full precise grant proceeds straight to sign-in',
+      name: 'full camera grant proceeds straight to sign-in',
       events: [{ type: 'AGREE_GRANTED' }],
     },
     {
-      name: 'Approximate accuracy stays gated (regression guard — already correct)',
+      name: 'camera BLOCKED stays gated (regression guard — already correct)',
       events: [{ type: 'AGREE_BLOCKED' }],
     },
     {
-      name: 'first-time Don’t allow is gated, not passed through (#66 fix)',
+      name: 'first-time camera Don’t allow is gated, not passed through (#237 fix)',
       events: [{ type: 'AGREE_DENIED' }],
     },
     {
-      name: 'Don’t allow, backgrounded without visiting Settings, stays gated',
+      name: 'camera Don’t allow, backgrounded without visiting Settings, stays gated',
       events: [{ type: 'AGREE_DENIED' }, { type: 'FOREGROUND_STILL_DENIED' }],
     },
     {
-      name: 'Don’t allow, then granted in Settings, gate clears to sign-in',
+      name: 'camera Don’t allow, then granted in Settings, gate clears to sign-in',
       events: [{ type: 'AGREE_DENIED' }, { type: 'FOREGROUND_GRANTED' }],
     },
     {
-      name: 'LIMITED proceeds ungated, same as a full grant',
-      events: [{ type: 'AGREE_LIMITED' }],
-    },
-    {
-      name: 'Don’t allow, then Settings reports LIMITED, gate clears to sign-in',
-      events: [{ type: 'AGREE_DENIED' }, { type: 'FOREGROUND_LIMITED' }],
+      name: 'camera UNAVAILABLE stays gated',
+      events: [{ type: 'AGREE_UNAVAILABLE' }],
     },
   ] as const
 
