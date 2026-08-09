@@ -19,6 +19,15 @@ import { useBackHandler } from '@/src/hooks/useBackHandler'
 import consentCopy from '@/src/content/consentDisclosure.json'
 import { styles } from './index.styles'
 
+// react-native-permissions reports a first-time "Don't allow" as DENIED, not
+// BLOCKED — Android only escalates to BLOCKED on a second denial (or
+// "don't ask again"). Location's Approximate accuracy choice already reads
+// as BLOCKED on the first denial and gates correctly; DENIED must gate too
+// or a first-time full denial bypasses the gate entirely (#66).
+function isLocationGated(status: string) {
+  return status === RESULTS.BLOCKED || status === RESULTS.DENIED
+}
+
 export default function ConsentScreen() {
   const { theme } = useUnistyles()
   const markAccepted = useConsentStore((s) => s.markAccepted)
@@ -39,10 +48,7 @@ export default function ConsentScreen() {
       const locationStatus = await request(PERMISSION_MAP.location)
       markAccepted()
 
-      if (
-        cameraStatus === RESULTS.BLOCKED ||
-        locationStatus === RESULTS.BLOCKED
-      ) {
+      if (cameraStatus === RESULTS.BLOCKED || isLocationGated(locationStatus)) {
         setBlocked(true)
         return
       }
@@ -71,7 +77,7 @@ export default function ConsentScreen() {
       ])
       if (
         cameraStatus !== RESULTS.BLOCKED &&
-        locationStatus !== RESULTS.BLOCKED
+        !isLocationGated(locationStatus)
       ) {
         setBlocked(false)
         router.replace('/sign-in')
