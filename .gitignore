@@ -67,3 +67,6 @@ CLAUDE.md
 _tmp_check_exports.py
 **/*.ignore
 docs/scratchpad/*.*
+
+# Local Obsidian vault state (workspace layout, plugin bundles)
+docs/.obsidian/
