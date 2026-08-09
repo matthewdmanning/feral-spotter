@@ -144,3 +144,32 @@ deprecated in recent `expo-image-picker` versions (string-array
 type-checks in this project's installed SDK — flagging since this is now a
 live path, not touching it since it's an existing codebase convention, out
 of scope for this sprint.
+
+## 2026-08-09 — fix
+
+**Purpose:** #228 — found while auditing #224 (Library Pick Manual-time
+fallback, untested/needs-fixture). The local submission cache
+(`databases/RKStorage`, `submission_cache_<uuid>`) never picked up
+`manual_time`/`time_type` set after the cache's initial creation, because
+`createSubmissionCache` snapshots `metadata` once on mount — before the
+user has touched the manual date-time picker on an EXIF-less Library
+pick — and `updateSubmissionCache`'s `metadata` field replaces wholesale
+(no deep merge), so nothing later re-synced it.
+
+**Change:** `useSubmissionSubmit.ts`'s `handleDone` now resends the full
+current `metadata` snapshot (`location_method`, `time_method`, `address`,
+`manual_time`, `captured_at`) in its `updateSubmissionCache` call at
+submit. The live API payload was already correct (built from the
+zustand store directly) — this only fixes the cached copy, which feeds
+`SUBMISSION_SENDING`/`SUBMITTED`/`FAILED` and `REPORTS_VIEWED` analytics
+events. Resume Submission is unaffected (reads the live store, not this
+cache).
+
+Test: `src/hooks/__tests__/useSubmissionSubmit.cacheSync.test.ts` — sets
+`time_type: 'manual'` + `manual_time`, drives `handleDone`, asserts
+`updateSubmissionCache` is called with that metadata.
+
+Verification: `npx jest src/hooks/__tests__/useSubmissionSubmit` (2/2
+pass), `npx tsc --noEmit` clean, `npx eslint` clean on touched files (one
+pre-existing `no-require-imports` warning, same pattern as the sibling
+reset test). Not device-tested (no physical device in this environment).
