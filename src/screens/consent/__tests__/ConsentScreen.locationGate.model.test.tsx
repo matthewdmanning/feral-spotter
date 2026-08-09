@@ -70,6 +70,17 @@ jest.mock('react-native-unistyles', () => {
  * escalated-denial case and location's Approximate-accuracy case, which
  * reads as BLOCKED on the very first request and already gated correctly
  * before this fix — that path must keep working unchanged.
+ *
+ * All 5 `RESULTS` values `react-native-permissions` can report are wired
+ * into this machine, not just the 3 Android's location prompt realistically
+ * returns: UNAVAILABLE (the feature/permission doesn't exist on this
+ * device) gates, same as BLOCKED/DENIED — a Submission can't get a real
+ * location without it. LIMITED (an iOS partial-access concept, not
+ * applicable to Android's ACCESS_FINE_LOCATION) does not gate, same as
+ * GRANTED. Only GRANTED/LIMITED/DENIED get dedicated journeys below —
+ * BLOCKED and UNAVAILABLE both land on the same `gated` state DENIED
+ * already exercises, so a standalone journey for either would just re-test
+ * the same assertions.
  */
 const locationGateMachine = createMachine({
   id: 'consentLocationGate',
@@ -80,6 +91,8 @@ const locationGateMachine = createMachine({
         AGREE_GRANTED: 'granted',
         AGREE_DENIED: 'gated',
         AGREE_BLOCKED: 'gated',
+        AGREE_UNAVAILABLE: 'gated',
+        AGREE_LIMITED: 'granted',
       },
     },
     granted: {},
@@ -87,7 +100,9 @@ const locationGateMachine = createMachine({
       on: {
         FOREGROUND_STILL_DENIED: 'gated',
         FOREGROUND_STILL_BLOCKED: 'gated',
+        FOREGROUND_STILL_UNAVAILABLE: 'gated',
         FOREGROUND_GRANTED: 'granted',
+        FOREGROUND_LIMITED: 'granted',
       },
     },
   },
@@ -171,6 +186,14 @@ describe('ConsentScreen location gate — model-based test', () => {
         locationResult = RESULTS.BLOCKED
         await pressAgree()
       },
+      AGREE_UNAVAILABLE: async () => {
+        locationResult = RESULTS.UNAVAILABLE
+        await pressAgree()
+      },
+      AGREE_LIMITED: async () => {
+        locationResult = RESULTS.LIMITED
+        await pressAgree()
+      },
       FOREGROUND_STILL_DENIED: async () => {
         locationResult = RESULTS.DENIED
         await triggerForeground()
@@ -179,8 +202,16 @@ describe('ConsentScreen location gate — model-based test', () => {
         locationResult = RESULTS.BLOCKED
         await triggerForeground()
       },
+      FOREGROUND_STILL_UNAVAILABLE: async () => {
+        locationResult = RESULTS.UNAVAILABLE
+        await triggerForeground()
+      },
       FOREGROUND_GRANTED: async () => {
         locationResult = RESULTS.GRANTED
+        await triggerForeground()
+      },
+      FOREGROUND_LIMITED: async () => {
+        locationResult = RESULTS.LIMITED
         await triggerForeground()
       },
     },
@@ -208,6 +239,14 @@ describe('ConsentScreen location gate — model-based test', () => {
     {
       name: 'Don’t allow, then granted in Settings, gate clears to sign-in',
       events: [{ type: 'AGREE_DENIED' }, { type: 'FOREGROUND_GRANTED' }],
+    },
+    {
+      name: 'LIMITED proceeds ungated, same as a full grant',
+      events: [{ type: 'AGREE_LIMITED' }],
+    },
+    {
+      name: 'Don’t allow, then Settings reports LIMITED, gate clears to sign-in',
+      events: [{ type: 'AGREE_DENIED' }, { type: 'FOREGROUND_LIMITED' }],
     },
   ] as const
 

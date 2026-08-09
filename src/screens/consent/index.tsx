@@ -23,9 +23,15 @@ import { styles } from './index.styles'
 // BLOCKED — Android only escalates to BLOCKED on a second denial (or
 // "don't ask again"). Location's Approximate accuracy choice already reads
 // as BLOCKED on the first denial and gates correctly; DENIED must gate too
-// or a first-time full denial bypasses the gate entirely (#66).
+// or a first-time full denial bypasses the gate entirely (#66). UNAVAILABLE
+// (the permission/feature doesn't exist on this device) gates too — a
+// Submission can't get a real location without it, same as BLOCKED/DENIED.
 function isLocationGated(status: string) {
-  return status === RESULTS.BLOCKED || status === RESULTS.DENIED
+  return (
+    status === RESULTS.BLOCKED ||
+    status === RESULTS.DENIED ||
+    status === RESULTS.UNAVAILABLE
+  )
 }
 
 export default function ConsentScreen() {
