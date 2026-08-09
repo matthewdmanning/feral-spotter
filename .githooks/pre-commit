@@ -1,0 +1,8 @@
+#!/bin/sh
+# Format staged files with prettier before they're committed (lint-staged
+# style) — no base branch needed, so unlike the pre-push check this actually
+# runs locally every time.
+#
+# Enable once per clone:  git config core.hooksPath .githooks
+
+node scripts/format-staged.mjs || exit 1
