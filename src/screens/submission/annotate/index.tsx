@@ -164,13 +164,18 @@ export default function AnnotateScreen() {
             )}
           />
         )}
-      </View>
 
-      {/* Floating inset crop (#174) — hidden until the first box is
-          confirmed for the current cat (activeCatId is null until then). */}
-      {activeCatId && (
-        <InsetCropBubble catId={activeCatId} edge="bottom-right" />
-      )}
+        {/* Floating inset crop (#174) — hidden until the first box is
+            confirmed for the current cat (activeCatId is null until then).
+            Positioned relative to this carousel container, not the screen
+            root (#202) — its top-right dock needs to clear topBar's
+            counter/remove-button row, not overlap it, and RN Views
+            default to position: relative, so top: 0 here already lands
+            below topBar without hardcoding its height. */}
+        {activeCatId && (
+          <InsetCropBubble catId={activeCatId} edge="top-right" />
+        )}
+      </View>
 
       {/* Bottom buttons — below carousel, never covered by canvas */}
       <View style={styles.bottomBar}>

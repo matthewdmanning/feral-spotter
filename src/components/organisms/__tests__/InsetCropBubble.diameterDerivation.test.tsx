@@ -65,7 +65,7 @@ jest.mock('@/src/hooks/useBoundingBoxStore', () => ({
 describe('InsetCropBubble — normalized box -> dp derivation', () => {
   it('scales both box axes by the same window dimension (isotropic)', () => {
     const { getByTestId } = render(
-      <InsetCropBubble catId="cat-1" edge="bottom-right" />,
+      <InsetCropBubble catId="cat-1" edge="top-right" />,
     )
     const bubble = getByTestId('inset-crop-bubble')
     const flattened = StyleSheet.flatten(bubble.props.style) as {

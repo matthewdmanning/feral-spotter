@@ -12,11 +12,12 @@ export const styles = StyleSheet.create((theme) => ({
     top: 0,
     right: theme.spacing.md,
   },
-  wrapBottomRight: {
-    // Clears annotate's bottomBar (paddingVertical 14 + nav-button content +
-    // border), matching the #168 prototype's right:12/bottom:78 spacing.
+  wrapTopRight: {
+    // Annotate's expanded dock position (#202 fix — was bottom-right,
+    // which the design decision docks top-right instead, see
+    // docs/design-decisions/inset-crop-bubble.md).
+    top: 0,
     right: theme.spacing.md,
-    bottom: 84,
   },
   bubble: {
     overflow: 'hidden',

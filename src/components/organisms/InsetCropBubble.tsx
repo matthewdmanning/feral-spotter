@@ -2,7 +2,7 @@
  * components/organisms/InsetCropBubble.tsx
  *
  * Floating "docked bubble" inset crop (#174, design decided in #168 as
- * Variant B). Renders on both `annotate` (bottom-right) and Cat Form
+ * Variant B). Renders on both `annotate` (top-right) and Cat Form
  * (top-center, inside its header zone) — same component, same collapse
  * behavior, different edge. Reuses #172's box-lookup/crop-centering seam
  * unchanged; only the container shape, sizing, positioning, and collapse
@@ -17,9 +17,11 @@
  * per-screen edge-ward-slide-only spec): both dock toward the right screen
  * edge and shrink to a flat `COLLAPSED_DIAMETER`. `top-center` has no
  * anchoring side edge by default, so its wrap is right-anchored like
- * `bottom-right` and centered *while expanded* via a computed translateX,
- * animating back to the anchor (then past it, same as `bottom-right`) on
- * collapse — see `docs/design-decisions/inset-crop-bubble.md`.
+ * `top-right` and centered *while expanded* via a computed translateX,
+ * animating back to the anchor on collapse — see
+ * `docs/design-decisions/inset-crop-bubble.md`. Defaults to collapsed on
+ * mount (#202) — both screens land with a docked bubble, not one already
+ * covering the frame.
  *
  * Unit note (deviation from #174's literal spec text, flagged on the
  * issue): the ticket says diameter should come from the box's
@@ -39,9 +41,10 @@
 
 import { usePhotoStore } from '@/src/hooks'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
+import { computeCollapsedOffset } from '@/src/lib/insetCrop/collapse'
 import { computeBubbleDiameter } from '@/src/lib/insetCrop/diameter'
 import { Image } from 'expo-image'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Animated, Dimensions, Pressable } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './InsetCropBubble.styles'
@@ -58,19 +61,33 @@ export const DEFAULT_DIAMETER = 68
 // an independently tunable constant — different semantic role (a
 // not-yet-confirmed-box placeholder vs. a collapsed-state target size).
 export const COLLAPSED_DIAMETER = 68
-// #168 decided: translateX(62%) toward the anchoring edge at the anchor's
-// own offset (0 for bottom-right's already-edge-anchored wrap).
-const COLLAPSE_SLIDE_FRACTION = 0.62
+const COLLAPSE_DURATION_MS = 220
 
-export type InsetCropEdge = 'top-center' | 'bottom-right'
+export type InsetCropEdge = 'top-center' | 'top-right'
 
 interface InsetCropBubbleProps {
   catId: string
   edge: InsetCropEdge
   /** Reports the live computed diameter so a host layout (Cat Form's header zone) can reserve space for it. */
   onDiameterChange?: (diameter: number) => void
-  /** Reports collapsed state so a host layout (Cat Form's title) can react — e.g. only fade while the bubble is actually covering it. */
+  /**
+   * Reports collapsed state eagerly on expand, delayed (until the slide
+   * finishes) on collapse — for a host layout (Cat Form's header zone) that
+   * must never shrink its reservation while the bubble could still overlap
+   * it, but is safe to grow early. Not the same signal a title fade should
+   * use — see `onSettledChange`.
+   */
   onCollapsedChange?: (collapsed: boolean) => void
+  /**
+   * Reports collapsed state only once the slide has actually finished, in
+   * *both* directions — for a host that wants "is the bubble actually
+   * covering me right now" (e.g. Cat Form's title fade: fades only once
+   * expanded and positioned over it, un-fades only once collapsed and
+   * docked — docs/design-decisions/inset-crop-bubble.md). Reporting the
+   * expand direction eagerly here (like `onCollapsedChange` does) would
+   * fade the title before the bubble has actually slid into place over it.
+   */
+  onSettledChange?: (collapsed: boolean) => void
 }
 
 export function InsetCropBubble({
@@ -78,15 +95,20 @@ export function InsetCropBubble({
   edge,
   onDiameterChange,
   onCollapsedChange,
+  onSettledChange,
 }: InsetCropBubbleProps) {
   const { theme } = useUnistyles()
   const getFirstBox = useBoundingBoxStore((s) => s.getFirstBox)
   const photos = usePhotoStore((s) => s.photos)
   const [natural, setNatural] = useState({ w: 0, h: 0 })
-  const [collapsed, setCollapsed] = useState(false)
+  // Collapsed by default (#202) — both screens land with the bubble docked
+  // at the edge, not already covering the photo/title.
+  const [collapsed, setCollapsed] = useState(true)
   // useState (not useRef) for the stable Animated.Value — reading `.current`
   // during render trips this repo's `react-hooks/refs` lint rule.
-  const [slideAnim] = useState(() => new Animated.Value(0))
+  const [slideAnim] = useState(() => new Animated.Value(1))
+  const hasMounted = useRef(false)
+  const hasSettledMounted = useRef(false)
 
   const box = getFirstBox(catId)
   const photo = box
@@ -109,17 +131,60 @@ export function InsetCropBubble({
     if (box && photo) onDiameterChange?.(diameter)
   }, [diameter, box, photo, onDiameterChange])
 
-  useEffect(() => {
-    onCollapsedChange?.(collapsed)
-  }, [collapsed, onCollapsedChange])
-
+  // Drives the visual slide/scale only — fire-and-forget, independent of
+  // when (or whether) the host is told about it below. Runs even on the
+  // initial mount, but from-1-to-1 is a no-op since collapsed defaults true.
   useEffect(() => {
     Animated.timing(slideAnim, {
       toValue: collapsed ? 1 : 0,
-      duration: 220,
+      duration: COLLAPSE_DURATION_MS,
       useNativeDriver: true,
     }).start()
   }, [collapsed, slideAnim])
+
+  // Reports collapsed state to the host at the right moment (#202): a host
+  // layout (Cat Form's header zone) uses this to shrink its reservation, and
+  // must never shrink while the bubble could still overlap the title — so
+  // "becoming collapsed" is only reported once the slide animation has had
+  // time to finish, not at the tap that starts it. A plain timer matching
+  // the animation's own duration, not the Animated completion callback —
+  // decouples the signal from Animated's timing internals, which are hard
+  // to drive deterministically in tests. "Becoming expanded" is reported
+  // immediately instead: over-reserving space early is safe, only shrinking
+  // early is not. The initial mount (already collapsed by default) reports
+  // synchronously too — there's no animation to wait for when there was
+  // nothing expanded to begin with.
+  useEffect(() => {
+    if (!hasMounted.current) {
+      hasMounted.current = true
+      onCollapsedChange?.(collapsed)
+      return
+    }
+    if (!collapsed) {
+      onCollapsedChange?.(false)
+      return
+    }
+    const timer = setTimeout(() => {
+      onCollapsedChange?.(true)
+    }, COLLAPSE_DURATION_MS)
+    return () => clearTimeout(timer)
+  }, [collapsed, onCollapsedChange])
+
+  // Symmetric version of the above for onSettledChange — delayed in both
+  // directions, since a title fade needs "actually covering" rather than
+  // "started moving toward." The initial mount reports immediately (no
+  // animation happened, already settled).
+  useEffect(() => {
+    if (!hasSettledMounted.current) {
+      hasSettledMounted.current = true
+      onSettledChange?.(collapsed)
+      return
+    }
+    const timer = setTimeout(() => {
+      onSettledChange?.(collapsed)
+    }, COLLAPSE_DURATION_MS)
+    return () => clearTimeout(timer)
+  }, [collapsed, onSettledChange])
 
   // No box confirmed yet for this cat (story 2) — nothing to anchor on.
   if (!box || !photo) return null
@@ -147,14 +212,16 @@ export function InsetCropBubble({
   }
 
   // top-center's wrap is right-anchored (styles.wrapTopCenter), same as
-  // bottom-right — so at the anchor (offset 0) it already sits flush at the
+  // top-right — so at the anchor (offset 0) it already sits flush at the
   // edge. To read as "centered" while expanded, it needs a leftward offset
   // pulling it in from that edge to the screen's horizontal center; both
-  // edges then converge on the same collapsed offset (docked at/past the
-  // anchor), per #168's decided translateX(62%)-of-diameter slide.
+  // edges then converge on the same collapsed offset, computed to land the
+  // collapsed (scaled-down) bubble's visual edge back at the anchor rather
+  // than short of it or past it off-screen (#202 — see
+  // src/lib/insetCrop/collapse.ts).
   const centeringOffset =
     edge === 'top-center' ? theme.spacing.md - (window.width - diameter) / 2 : 0
-  const collapsedOffset = diameter * COLLAPSE_SLIDE_FRACTION
+  const collapsedOffset = computeCollapsedOffset(diameter, COLLAPSED_DIAMETER)
   const translateX = slideAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [centeringOffset, collapsedOffset],
@@ -169,7 +236,7 @@ export function InsetCropBubble({
     <Animated.View
       style={[
         styles.wrap,
-        edge === 'top-center' ? styles.wrapTopCenter : styles.wrapBottomRight,
+        edge === 'top-center' ? styles.wrapTopCenter : styles.wrapTopRight,
         { transform: collapseTransform },
       ]}
     >
