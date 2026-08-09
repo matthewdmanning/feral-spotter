@@ -4,13 +4,25 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react-native'
+import { Alert, BackHandler, Platform } from 'react-native'
 import { router } from 'expo-router'
 import React from 'react'
-import { ONBOARDING_SLIDES } from '@/src/config/introFlowCopy'
+import {
+  EXIT_WARNING_BODY,
+  EXIT_WARNING_TITLE,
+  ONBOARDING_SLIDES,
+} from '@/src/config/introFlowCopy'
 import IntroFlowScreen from '../index'
 
 jest.mock('expo-router', () => ({
   router: { replace: jest.fn(), push: jest.fn() },
+}))
+
+let backHandler: (() => boolean) | undefined
+jest.mock('@/src/hooks/useBackHandler', () => ({
+  useBackHandler: (handler: () => boolean) => {
+    backHandler = handler
+  },
 }))
 
 jest.mock('@/src/components/atoms/AppButton', () => {
@@ -57,7 +69,11 @@ jest.mock('react-native-unistyles', () => {
 })
 
 describe('IntroFlowScreen', () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    backHandler = undefined
+    Platform.OS = 'android'
+  })
 
   it('shows the first slide and advances through all of them to /consent', async () => {
     render(<IntroFlowScreen />)
@@ -78,5 +94,47 @@ describe('IntroFlowScreen', () => {
 
     fireEvent.press(screen.getByRole('link'))
     expect(router.push).toHaveBeenCalledWith('/data-agreement')
+  })
+
+  it('warns before exiting on hardware back at T1', () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    render(<IntroFlowScreen />)
+
+    const swallowed = backHandler?.()
+
+    expect(swallowed).toBe(true)
+    expect(alertSpy).toHaveBeenCalledWith(
+      EXIT_WARNING_TITLE,
+      EXIT_WARNING_BODY,
+      expect.arrayContaining([
+        expect.objectContaining({ text: 'Back' }),
+        expect.objectContaining({ text: 'Exit' }),
+      ]),
+    )
+  })
+
+  it('exits the app on Android when Exit is confirmed at T1', () => {
+    const exitSpy = jest
+      .spyOn(BackHandler, 'exitApp')
+      .mockImplementation(() => {})
+    jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
+      buttons?.find((b) => b.text === 'Exit')?.onPress?.()
+    })
+    render(<IntroFlowScreen />)
+
+    backHandler?.()
+
+    expect(exitSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not intercept hardware back past T1', () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    render(<IntroFlowScreen />)
+    fireEvent.press(screen.getByText(ONBOARDING_SLIDES[0].button))
+
+    const swallowed = backHandler?.()
+
+    expect(swallowed).toBe(false)
+    expect(alertSpy).not.toHaveBeenCalled()
   })
 })

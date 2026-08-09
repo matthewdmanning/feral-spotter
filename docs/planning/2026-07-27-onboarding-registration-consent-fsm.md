@@ -16,7 +16,8 @@ bugs found in this same flow, both fixed). Open issues touching this flow:
 
 | State                          | Screen file                          | Android hardware-back                                                                                                                                                                                          |
 | ------------------------------ | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `introFlow.T1`..`introFlow.T4` | `intro-flow/index.tsx`               | not intercepted — falls through to native stack pop (would exit past the first route; see Gaps)                                                                                                                |
+| `introFlow.T1`                 | `intro-flow/index.tsx`               | **intercepted** via `useBackHandler` (#98, 2026-08-09) — confirm-exit `Alert` (Back/Exit), same pattern as `consent`                                                                                           |
+| `introFlow.T2`..`introFlow.T4` | `intro-flow/index.tsx`               | not intercepted — falls through to native stack pop (returns to the previous slide)                                                                                                                            |
 | `dataAgreement`                | `dataAgreement/index.tsx`            | not intercepted — default pop, returns to whichever `introFlow.Tn` pushed it                                                                                                                                   |
 | `signIn`                       | `sign-in/index.tsx`                  | not intercepted — default pop, returns to `introFlow.T4`                                                                                                                                                       |
 | `profile`                      | `profile/index.tsx`                  | not intercepted — default pop, returns to `signIn` (only screen in this chain with a _visible_ header back button too, since it doesn't set `headerBackVisible:false`/`gestureEnabled:false` in `_layout.tsx`) |
@@ -85,6 +86,9 @@ introFlow.T3 --PREVIOUS--> introFlow.T2
 introFlow.T3 --VIEW_DATA_AGREEMENT--> dataAgreement (push)
 introFlow.T4 --PREVIOUS--> introFlow.T3
 introFlow.T4 --SET_UP--> signIn
+introFlow.T1 --BACK--> [alert: BACK|EXIT]
+  BACK --> introFlow.T1
+  EXIT --> (Android) app terminates
 
 dataAgreement --BACK--> introFlow.Tn (pop, step preserved)
 
@@ -116,7 +120,7 @@ consent.blocked --CONTINUE_WITHOUT_ACCESS--> home (unconditional)
 
 ## Gaps this exercise surfaced (not yet filed/fixed, flagging only)
 
-- **Unhandled hardware-back on 5 of 8 states** (`introFlow.*`, `dataAgreement`, `signIn`, `profile`, `analyticsConsent`): only `consent` intercepts it. Falling through to native pop is _probably_ fine mid-chain (returns to the previous screen, which is a reasonable back action) but on `introFlow.T1` specifically — the very first screen — a hardware-back press has no route left to pop to and its effect wasn't verified this session. Worth a quick check: does it exit the app cleanly, or does it expose a blank/crashed screen?
+- **Unhandled hardware-back on `dataAgreement`, `signIn`, `profile`, `analyticsConsent`** (and `introFlow.T2`-`T4`): falling through to native pop is _probably_ fine mid-chain (returns to the previous screen, which is a reasonable back action) but not re-verified. `introFlow.T1` is fixed (#98, 2026-08-09) — it now intercepts and confirms before exit, same as `consent`.
 - **`signIn`'s rejection path is silent**: `catch (err) { console.error(...) }` with no user-facing feedback — a failed sign-in just re-enables the button with zero visible explanation.
 - **`profile`'s optional fields have zero validation** — not necessarily wrong (they're optional), but worth confirming that's intentional for city/state free text.
 - **`consent.busy`'s permission-request failure path isn't in this table** because none of the three `request()` calls have a `.catch` — an unexpected rejection (not just a `DENIED`/`BLOCKED` result) would throw inside `handleAgree`'s `try` and hit the `finally` (clearing `busy`) without ever calling `markAccepted()` or navigating, silently stranding the user on `consent.disclosure` with no error shown.

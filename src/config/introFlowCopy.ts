@@ -53,3 +53,8 @@ export const ONBOARDING_SLIDES: readonly SlideCopy[] = [
 export const AGREEMENT_SLIDE_INDEX = 2
 
 export const DATA_AGREEMENT_LINK_LABEL = 'Read the full data usage agreement'
+
+/** Hardware-back confirm-exit prompt, shown only on the first slide (T1). */
+export const EXIT_WARNING_TITLE = 'Leave FeralSpotter?'
+export const EXIT_WARNING_BODY =
+  "You're about to exit the app. You can pick up right where you left off next time you open FeralSpotter."

@@ -8,16 +8,47 @@
 import {
   AGREEMENT_SLIDE_INDEX,
   DATA_AGREEMENT_LINK_LABEL,
+  EXIT_WARNING_BODY,
+  EXIT_WARNING_TITLE,
   ONBOARDING_SLIDES,
 } from '@/src/config/introFlowCopy'
 import { AppButton } from '@/src/components/atoms/AppButton'
+import { useBackHandler } from '@/src/hooks/useBackHandler'
 import { router } from 'expo-router'
 import { useCallback, useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import {
+  Alert,
+  BackHandler,
+  Platform,
+  Pressable,
+  Text,
+  View,
+} from 'react-native'
 import { styles } from './index.styles'
 
 export default function IntroFlowScreen() {
   const [step, setStep] = useState(0)
+
+  // T1 has no route to pop to — hardware back would otherwise fall through
+  // to native stack pop and exit past the first screen unconfirmed. T2-T4
+  // are left to their default pop (returns to the previous slide), matching
+  // the rest of this flow's unhandled-back behavior.
+  useBackHandler(
+    useCallback(() => {
+      if (step !== 0) return false
+      Alert.alert(EXIT_WARNING_TITLE, EXIT_WARNING_BODY, [
+        { text: 'Back', style: 'cancel' },
+        {
+          text: 'Exit',
+          style: 'destructive',
+          onPress: () => {
+            if (Platform.OS === 'android') BackHandler.exitApp()
+          },
+        },
+      ])
+      return true
+    }, [step]),
+  )
 
   const finish = useCallback(() => {
     router.replace('/consent')
