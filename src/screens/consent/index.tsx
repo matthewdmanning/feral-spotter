@@ -54,15 +54,18 @@ export default function ConsentScreen() {
       // here — it's asked lazily at point of use by the library picker.
       const cameraStatus = await request(PERMISSION_MAP.camera)
       const locationStatus = await request(PERMISSION_MAP.location)
-      markAccepted()
 
       if (
         isPermissionGated(cameraStatus) ||
         isPermissionGated(locationStatus)
       ) {
+        // Consent isn't recorded on a gated outcome (#66) — a relaunch while
+        // still blocked must land back on this screen and re-request, not
+        // read as "already consented" and skip straight past the gate.
         setBlocked(true)
         return
       }
+      markAccepted()
       router.replace('/sign-in')
     } catch (err) {
       console.error('[consent] permission request failed:', err)
@@ -91,6 +94,7 @@ export default function ConsentScreen() {
         !isPermissionGated(locationStatus)
       ) {
         setBlocked(false)
+        markAccepted()
         router.replace('/sign-in')
       }
     }
@@ -99,7 +103,7 @@ export default function ConsentScreen() {
       if (state === 'active') recheck()
     })
     return () => sub.remove()
-  }, [blocked])
+  }, [blocked, markAccepted])
 
   const handleDecline = useCallback(() => {
     Alert.alert(

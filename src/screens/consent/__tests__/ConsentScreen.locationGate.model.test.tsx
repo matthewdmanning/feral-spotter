@@ -22,9 +22,10 @@ jest.mock('expo-router', () => ({
   },
 }))
 
+const mockMarkAccepted = jest.fn()
 jest.mock('@/src/hooks/useConsentStore', () => ({
   useConsentStore: (sel: (s: object) => unknown) =>
-    sel({ markAccepted: jest.fn() }),
+    sel({ markAccepted: mockMarkAccepted }),
 }))
 
 jest.mock('@/src/hooks/useBackHandler', () => ({
@@ -80,6 +81,14 @@ jest.mock('react-native-unistyles', () => {
  * BLOCKED and UNAVAILABLE both land on the same `gated` state DENIED
  * already exercises, so a standalone journey for either would just re-test
  * the same assertions.
+ *
+ * Also guards the relaunch-bypass reopen of #66: `markAccepted()` must not
+ * fire while gated. It used to fire unconditionally before the gate check,
+ * so a gated user who force-quit and relaunched was already "consented" and
+ * skipped straight past this screen on the next launch, with location still
+ * denied and nothing downstream re-checking it. Every `gated` assertion
+ * below confirms `markAccepted` was *not* called; every `granted` assertion
+ * confirms it *was*.
  */
 const locationGateMachine = createMachine({
   id: 'consentLocationGate',
@@ -160,16 +169,19 @@ describe('ConsentScreen location gate — model-based test', () => {
       idle: () => {
         expect(mockRouterReplace).not.toHaveBeenCalled()
         expect(screen.queryByText('Permission Blocked')).toBeNull()
+        expect(mockMarkAccepted).not.toHaveBeenCalled()
       },
       granted: async () => {
         await waitFor(() =>
           expect(mockRouterReplace).toHaveBeenCalledWith('/sign-in'),
         )
+        expect(mockMarkAccepted).toHaveBeenCalled()
       },
       gated: async () => {
         await waitFor(() =>
           expect(screen.getByText('Permission Blocked')).toBeTruthy(),
         )
+        expect(mockMarkAccepted).not.toHaveBeenCalled()
       },
     },
     events: {
