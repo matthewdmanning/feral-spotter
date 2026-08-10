@@ -70,3 +70,5 @@ docs/scratchpad/*.*
 
 # Local Obsidian vault state (workspace layout, plugin bundles)
 docs/.obsidian/
+*.base
+*.canvas
