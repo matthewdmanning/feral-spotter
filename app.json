@@ -52,16 +52,6 @@
       "expo-secure-store",
       "@react-native-community/datetimepicker",
       [
-        "react-native-permissions",
-        {
-          "iosPermissions": [
-            "Camera",
-            "PhotoLibraryAddOnly",
-            "LocationWhenInUse"
-          ]
-        }
-      ],
-      [
         "expo-location",
         {
           "locationWhenInUsePermission": "FeralSpotter uses your location to record where a cat sighting occurred. Location is only accessed while the app is open.",

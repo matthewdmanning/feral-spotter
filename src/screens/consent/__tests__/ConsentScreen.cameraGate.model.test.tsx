@@ -6,13 +6,36 @@ import {
   waitFor,
 } from '@testing-library/react-native'
 import { AppState, Platform } from 'react-native'
-import { check, request, RESULTS } from 'react-native-permissions'
 import React from 'react'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import ConsentScreen from '../index'
-import { PERMISSION_MAP } from '@/src/lib/permissions'
 import consentCopy from '@/src/content/consentDisclosure.json'
+
+const mockRequestCameraPermission = jest.fn()
+let mockCameraPermissionStatus: string
+jest.mock('react-native-vision-camera', () => ({
+  get VisionCamera() {
+    return {
+      requestCameraPermission: mockRequestCameraPermission,
+      get cameraPermissionStatus() {
+        return mockCameraPermissionStatus
+      },
+    }
+  },
+}))
+
+// Location held granted+fine throughout — out of scope here, mirrors the
+// old model holding location GRANTED.
+const grantedLocation = { granted: true, android: { accuracy: 'fine' } }
+const mockRequestForegroundPermissionsAsync = jest.fn()
+const mockGetForegroundPermissionsAsync = jest.fn()
+jest.mock('expo-location', () => ({
+  requestForegroundPermissionsAsync: (...args: unknown[]) =>
+    mockRequestForegroundPermissionsAsync(...args),
+  getForegroundPermissionsAsync: (...args: unknown[]) =>
+    mockGetForegroundPermissionsAsync(...args),
+}))
 
 const mockRouterReplace = jest.fn()
 jest.mock('expo-router', () => ({
@@ -58,16 +81,17 @@ jest.mock('react-native-unistyles', () => {
 /**
  * Model of ConsentScreen's camera-permission gate (src/screens/consent/index.tsx),
  * mirroring ConsentScreen.locationGate.model.test.tsx but for camera's status
- * — location is held GRANTED throughout, out of scope here. `RESULTS.LIMITED`
- * isn't a real outcome for `PERMISSIONS.*.CAMERA` (it's an iOS photo-library
- * partial-access concept), so no LIMITED journey exists here unlike the
- * location model.
+ * — location is held granted+fine throughout, out of scope here. There's no
+ * camera equivalent of the location model's LIMITED journey — vision-camera
+ * has no partial-access concept for camera.
  *
  * Guards #237: the gate used to check `cameraStatus === RESULTS.BLOCKED`
- * only, unlike location's `isPermissionGated` (which already covers DENIED
- * and UNAVAILABLE after #66/#233). A first-time camera "Don't allow" reports
- * DENIED, not BLOCKED — same asymmetry #66 fixed for location, just never
- * applied to camera. Both permissions now share `isPermissionGated`.
+ * only, unlike location's gate (which already covered DENIED and UNAVAILABLE
+ * after #66/#233). A first-time camera "Don't allow" reports 'not-determined'
+ * under react-native-vision-camera, not 'denied' — same asymmetry #66 fixed
+ * for location, just never applied to camera. Both permissions gate via
+ * `isCameraGated`/`isLocationGated` now (#243 — migrated off
+ * react-native-permissions).
  */
 const cameraGateMachine = createMachine({
   id: 'consentCameraGate',
@@ -98,19 +122,16 @@ describe('ConsentScreen camera gate — model-based test', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     Platform.OS = 'android'
-    cameraResult = RESULTS.GRANTED
+    cameraResult = 'authorized'
+    mockCameraPermissionStatus = 'authorized'
     foregroundListener = undefined
 
-    jest
-      .mocked(request)
-      .mockImplementation(async (permission) =>
-        permission === PERMISSION_MAP.camera ? cameraResult : RESULTS.GRANTED,
-      )
-    jest
-      .mocked(check)
-      .mockImplementation(async (permission) =>
-        permission === PERMISSION_MAP.camera ? cameraResult : RESULTS.GRANTED,
-      )
+    mockRequestCameraPermission.mockImplementation(async () => {
+      mockCameraPermissionStatus = cameraResult
+      return cameraResult === 'authorized'
+    })
+    mockRequestForegroundPermissionsAsync.mockResolvedValue(grantedLocation)
+    mockGetForegroundPermissionsAsync.mockResolvedValue(grantedLocation)
     jest
       .spyOn(AppState, 'addEventListener')
       .mockImplementation((_event, listener) => {
@@ -154,27 +175,27 @@ describe('ConsentScreen camera gate — model-based test', () => {
     },
     events: {
       AGREE_GRANTED: async () => {
-        cameraResult = RESULTS.GRANTED
+        cameraResult = 'authorized'
         await pressAgree()
       },
       AGREE_DENIED: async () => {
-        cameraResult = RESULTS.DENIED
+        cameraResult = 'not-determined'
         await pressAgree()
       },
       AGREE_BLOCKED: async () => {
-        cameraResult = RESULTS.BLOCKED
+        cameraResult = 'denied'
         await pressAgree()
       },
       AGREE_UNAVAILABLE: async () => {
-        cameraResult = RESULTS.UNAVAILABLE
+        cameraResult = 'restricted'
         await pressAgree()
       },
       FOREGROUND_STILL_DENIED: async () => {
-        cameraResult = RESULTS.DENIED
+        mockCameraPermissionStatus = 'not-determined'
         await triggerForeground()
       },
       FOREGROUND_GRANTED: async () => {
-        cameraResult = RESULTS.GRANTED
+        mockCameraPermissionStatus = 'authorized'
         await triggerForeground()
       },
     },
