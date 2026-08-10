@@ -65,6 +65,17 @@ export default function ConsentScreen() {
         setBlocked(true)
         return
       }
+      // react-native-permissions reports Android's "Only this time" and
+      // "While using the app" location choices identically as GRANTED —
+      // there's no distinct status to branch on (#225) — so the notice
+      // fires on every fresh grant and is worded conditionally ("if you
+      // chose...") rather than claiming to know which one the user picked.
+      if (Platform.OS === 'android' && locationStatus === RESULTS.GRANTED) {
+        Alert.alert(
+          consentCopy.locationOnceWarningTitle,
+          consentCopy.locationOnceWarningBody,
+        )
+      }
       markAccepted()
       router.replace('/sign-in')
     } catch (err) {
