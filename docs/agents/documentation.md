@@ -8,7 +8,7 @@ Any documentation change that describes a specific code change (implementation n
 
 ## New feature or sprint → new implementation note
 
-When implementing a new feature or sprint, write a separate implementation note in `docs/implementations/`, named `YYYY-MM-DD-short-description.md`.
+When implementing a new feature or sprint, write a separate implementation note in `docs/implementations/`.
 
 Include:
 
