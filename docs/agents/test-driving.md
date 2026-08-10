@@ -4,42 +4,31 @@ This is the authoritative document for **test drives** -- tesing app functionali
 
 ## Documenting Test Drives
 
-Reports must be filed under `emulator`. Any screen captures must be saved to `emulator`/`screen-captures`. Logs must be saved to a session unique file under `emulator`/`logs`. All files must follow project file format specifications.
+Reports must be filed under `docs/test-drives`. Any screen captures must be saved to `docs/test-drives/screen-captures`. Logs must be saved to a session unique file under `docs/test-drives/logs`. All files must follow project file format specifications.
 
 ## Every emulator run
 
-Check that PostHog analytics only fires with consent (unchecking analytics-consent must prevent `PostHogProvider` from mounting — no `posthog`/`[analytics]`/`captureEvent(`/`captureException(`/`fireAnalyticsEvent` calls in Metro's log) and that GPS/location capture is actually firing (`startLocationCapture`/`[location]`/`FusedLocationProvider`/`GnssLocationProvider`/`LocationManagerService`/`watchPositionAsync`). Write findings to a dated file in `emulator/run-notes/` (create the folder on first use). Every file written or updated during an emulator run — run-notes, punchlists, any other working doc — must record the git state it was tested against (`git rev-parse HEAD` + `git branch --show-current`) near the top.
+Check that PostHog analytics only fires with consent (unchecking analytics-consent must prevent `PostHogProvider` from mounting — no `posthog`/`[analytics]`/`captureEvent(`/`captureException(`/`fireAnalyticsEvent`). **Note the channel:** these calls surface in Metro's JSONL log (`.expo/dev/logs/start.log`, `metro:client_log` entries), not in `adb logcat` — `logcat` will show nothing even when the check is failing. Also check that GPS/location capture is actually firing (`startLocationCapture`/`[location]`/`FusedLocationProvider`/`GnssLocationProvider`/`LocationManagerService`/`watchPositionAsync`) — this one genuinely is in `logcat`, unfiltered (not pid-scoped — the location provider logs come from system processes, not the app's own pid). Write findings to a dated file in `docs/test-drives/run-notes/` (create the folder on first use). Every file written or updated during an emulator run — run-notes, punchlists, any other working doc — must record the git state it was tested against (`git rev-parse HEAD` + `git branch --show-current`) near the top.
 
-If `EXPO_PUBLIC_POSTHOG_KEY` isn't set, `PostHogProvider` never mounts and every analytics check above is vacuously true — a `[analytics] disabled — EXPO_PUBLIC_POSTHOG_KEY not set` warning logs on startup in dev builds so this isn't mistaken for a real bug (#201).
+## Device/environment notes (accumulated from test-drive sessions)
 
-## Where JS console output actually lands (not logcat)
-
-`console.log`/`console.warn` calls in app code (`[analytics]`, `[location]`, `[nav]`, etc.) do **not** reliably reach `adb logcat`'s `ReactNativeJS` tag on this project — confirmed 2026-08-09 (#201) after a session found genuinely-firing `[location]`-tagged logs invisible to logcat despite permissions and location services both confirmed on. Check **Metro's JSONL log** (`.expo/dev/logs/start.log`) for anything the app itself logs via `console.*`. Reserve `adb logcat` for native/system signals: uncaught JS/native crashes (`AndroidRuntime`), `System.err`, and app-lifecycle events (`ActivityManager`) — see below.
-
-## Monitoring a physical-device run
-
-`bash scripts/device-monitor.sh` (or `npm run device-monitor`) resolves the app's current pid (`adb shell pidof com.mmanning.feralspotter`), streams pid-scoped `AndroidRuntime`/`System.err`/`ReactNativeJS` plus package-scoped `ActivityManager` logcat lines, and automatically re-resolves the pid after an app restart (a plain hand-rolled filter breaks silently here, since pid changes on every relaunch). Combine with the Metro JSONL log above for full coverage — this script alone will not show JS-side `console.*` output.
-
-**Screen-transition trail**: a dev-only `[nav] <pathname>` log fires on every route change (`ScreenTransitionLogger` in `src/providers/AppProviders.tsx`, mounted unconditionally in dev builds — no network, no PII, so it isn't gated behind analytics consent). Decided (#201) in favor of this thin `usePathname()` wrapper over wiring existing analytics calls to also log in dev: it needs no per-call-site changes and covers every route, not just ones with an existing analytics event. Read it from Metro's JSONL log, same as the other JS-side tags above — not logcat.
-
-## Getting a no-EXIF photo onto the test device
-
-Some flows (e.g. Library Pick's Manual-time fallback, #224) need a photo with
-no EXIF `DateTime` tag on the device's photo library — not something you can
-exercise from jest, since `expo-image-picker` does the actual EXIF read
-natively and hands the app a plain JS object. Don't hunt for one online:
-generating a fixture locally is faster, license-free, and reproducible.
-
-`emulator/push_no_exif_fixture.py` does this end to end:
-
-```console
-python emulator/push_no_exif_fixture.py
-```
-
-It generates a small JPEG via Pillow with `exif=b""` (no EXIF segment at
-all — not just a blank `DateTime`), pushes it to
-`/sdcard/Pictures/FeralSpotterTest/` on the connected device, and fires a
-`MEDIA_SCANNER_SCAN_FILE` broadcast so it's indexed and shows up in the
-system Photo Picker / "Choose from Library" right away. The generated local
-`.jpg` is a throwaway build artifact, not a fixture to commit — the script
-regenerates it each run.
+- Metro must run with `CI=1` on Windows dev machines — without it, Metro's
+  file watcher can hang indefinitely on startup (reproduced 3x in one
+  session, 2026-08-09, root cause unresolved). `CI=1` disables Fast
+  Refresh, so code changes need a fresh `npm run android` / Metro restart
+  to see, not a reload.
+- `EXPO_PUBLIC_AUTH_MOCK=true` in local dev envs — sign-in/profile behavior
+  during manual testing is mocked, not production auth. Check `.env.local`
+  before trusting any auth-flow observation as representative.
+- Screen-state verification technique: `adb shell uiautomator dump` +
+  `adb pull` (prefix with `MSYS_NO_PATHCONV=1` in git-bash, or
+  `/sdcard/...` paths get mangled into Windows paths), parse
+  `text="..."`/`content-desc="..."` attributes, tap the center of the
+  nearest `bounds="[x1,y1][x2,y2]"`. Do **not** use `dumpsys activity`'s
+  `mFocusedApp`/`topResumedActivity` to claim which _screen_ is showing —
+  it only proves which native Activity has focus, and Expo/RN hosts every
+  JS route in one Activity (confirmed the hard way: an agent misread this,
+  closed [#66](https://github.com/matthewdmanning/feral-spotter/issues/66),
+  had to reopen it).
+- (Established 2026-08-09, Pixel 7 physical device, branch `main` @
+  `780da4606c396fbdb5fbe7752c189a72aedbfe1a`.)
