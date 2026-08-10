@@ -68,7 +68,9 @@ _tmp_check_exports.py
 **/*.ignore
 docs/scratchpad/*.*
 
-# Local Obsidian vault state (workspace layout, plugin bundles)
+# Local Obsidian vault state (workspace layout, plugin bundles/plugin data)
 docs/.obsidian/
+docs/.claudian/
+docs/.smart-env/
 *.base
 *.canvas
