@@ -196,3 +196,11 @@ Verified: `jest src/screens/consent` (3 suites / 21 tests) and full `jest`
 pre-existing `require()`-in-tests warnings only), `prettier --check` clean
 on touched files. Not device-tested — no physical device in this
 environment; same rationale as prior entries in this file.
+
+**Note (Matthew, 2026-08-10):** the permission library is planned to move
+off `react-native-permissions` before MVP. The "can't distinguish 'Only
+this time' from a persistent grant" limitation driving this notice's
+unconditional-on-GRANTED wording is specific to that library — revisit
+whether the replacement exposes a real distinction when that migration
+happens, since it may let the notice become properly conditional instead
+of always-shown.

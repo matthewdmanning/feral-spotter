@@ -1,7 +1,7 @@
 ---
 topic: first-run-flow-order
 status: active
-last_reviewed: 2026-08-07
+last_reviewed: 2026-08-10
 governs:
   - src/screens/intro-flow/index.tsx
   - src/screens/consent/index.tsx
@@ -43,7 +43,7 @@ if (!hasAcceptedConsent()) router.replace('/intro-flow')
 else if (!isAuthenticated) router.replace('/sign-in')
 ```
 
-Consent is a device-level grant (persisted via `useConsentStore`, `markAccepted()` fires unconditionally on "I Agree" regardless of permission grant outcome — including OS "only this time" grants or `BLOCKED`) and must survive sign-out. A consented-but-signed-out user (e.g. after logging out) lands on `/sign-in`, never back on `/intro-flow` or `/consent` — those must never fire again once consent has been granted, for the life of the app on that device.
+Consent is a device-level grant (persisted via `useConsentStore`, `markAccepted()` fires only once camera and location permissions both clear the gate — not on `BLOCKED`/`DENIED`/`UNAVAILABLE`; a grant the OS reports as `GRANTED`, including an "only this time" choice, does clear it, since the OS reports that identically to a persistent grant) and must survive sign-out. A consented-but-signed-out user (e.g. after logging out) lands on `/sign-in`, never back on `/intro-flow` or `/consent` — those must never fire again once consent has been granted, for the life of the app on that device.
 
 This was a real bug in the pre-#194 gate (auth-first order sent a consented-but-signed-out user back through `/intro-flow`), not just a consequence of the reorder — caught during grilling, fixed in the same PR.
 
