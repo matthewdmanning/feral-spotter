@@ -144,3 +144,60 @@ describe('ConsentScreen blocked-permission recovery', () => {
     expect(mockMarkAccepted).toHaveBeenCalled()
   })
 })
+
+describe('ConsentScreen location one-time-grant notice (#225)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    Platform.OS = 'android'
+  })
+
+  it('surfaces the convenience-tradeoff notice on a fresh location grant', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    jest.mocked(request).mockResolvedValue(RESULTS.GRANTED)
+    render(<ConsentScreen />)
+
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText(consentCopy.agreeLabel))
+    })
+
+    expect(alertSpy).toHaveBeenCalledWith(
+      consentCopy.locationOnceWarningTitle,
+      consentCopy.locationOnceWarningBody,
+    )
+    // No gate — proceeds normally after the notice, same as any other grant.
+    await waitFor(() =>
+      expect(mockRouterReplace).toHaveBeenCalledWith('/sign-in'),
+    )
+  })
+
+  it('does not show the notice when access is granted via Settings recovery', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    jest.mocked(request).mockResolvedValueOnce(RESULTS.BLOCKED)
+
+    let foregroundListener: ((state: string) => void) | undefined
+    jest
+      .spyOn(AppState, 'addEventListener')
+      .mockImplementation((_event, listener) => {
+        foregroundListener = listener as (state: string) => void
+        return { remove: jest.fn() }
+      })
+
+    render(<ConsentScreen />)
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText(consentCopy.agreeLabel))
+    })
+
+    jest.mocked(check).mockResolvedValue(RESULTS.GRANTED)
+    await act(async () => {
+      foregroundListener?.('active')
+    })
+
+    await waitFor(() =>
+      expect(mockRouterReplace).toHaveBeenCalledWith('/sign-in'),
+    )
+    expect(alertSpy).not.toHaveBeenCalledWith(
+      consentCopy.locationOnceWarningTitle,
+      expect.anything(),
+    )
+  })
+})

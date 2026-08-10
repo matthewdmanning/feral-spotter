@@ -154,3 +154,45 @@ on `main` and is not part of this branch's diff after rebase. What this
 branch still adds: the explicit `markAccepted`-timing assertions in the
 test suites below, which didn't exist before and now guard the invariant
 directly instead of it being an unverified side effect of #237's refactor.
+
+## 2026-08-10 — extension: #225 "Only this time" convenience notice
+
+**Purpose:** #225 — split from #66's corrected requirement. Location's
+"Only this time" grant should not gate (already didn't), but should surface
+a warning that the grant won't persist across app restarts.
+
+**Change:** `react-native-permissions` cannot distinguish Android's "Only
+this time" from "While using the app" — both resolve `request()` to
+`RESULTS.GRANTED` (confirmed via the library's own docs and #66's prior
+device-tested findings). So the notice can't be conditioned on which one
+the user picked; `handleAgree` now shows an `Alert.alert` (new
+`locationOnceWarningTitle`/`locationOnceWarningBody` keys in
+`consentDisclosure.json`) on every fresh Android `GRANTED` location result,
+worded conditionally ("If you chose... Android revokes that access...").
+Android-only (`Platform.OS === 'android'`) — the issue frames this as
+Android-specific one-time-permission behavior. Not shown for the
+Settings-recovery path (`FOREGROUND_GRANTED`) — that grant is always
+persistent, never a one-time choice. Fires alongside the existing
+`markAccepted()`/`router.replace('/sign-in')` — no gate, same as any other
+grant, per the acceptance criteria.
+
+**Known gap, out of scope here:** the notice's wording says location "may
+not be captured next time" rather than promising a re-prompt, because
+nothing in the app currently re-requests location after this screen —
+`src/lib/location.ts`'s `startLocationCapture()` checks
+`getForegroundPermissionsAsync()` and silently no-ops if it's not granted.
+A one-time grant that expires between sessions degrades silently with no
+user-facing re-prompt. This is the same gap #66's relaunch-bypass reopen
+already flagged (no call site re-checks/re-requests location at point of
+use) — not resolved by this change.
+
+Tests: `ConsentScreen.test.tsx` — two new hand-written cases (not folded
+into the existing `locationGate` model, since this is a side effect on an
+already-modeled `GRANTED` transition, not a new state): notice fires on a
+fresh Android grant; notice does not fire on the Settings-recovery path.
+
+Verified: `jest src/screens/consent` (3 suites / 21 tests) and full `jest`
+(49 suites / 201 tests) pass, `tsc --noEmit` clean, `expo lint` (0 errors,
+pre-existing `require()`-in-tests warnings only), `prettier --check` clean
+on touched files. Not device-tested — no physical device in this
+environment; same rationale as prior entries in this file.

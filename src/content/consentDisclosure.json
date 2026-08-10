@@ -3,9 +3,18 @@
   "intro": "FeralSpotter captures the following at the moment you take a photo, and uploads it when you submit a sighting:",
   "items": [
     { "label": "Photos", "text": "captured when you take them of the animal" },
-    { "label": "Location", "text": "(GPS) captured at the moment you take a photo" },
-    { "label": "Details you enter", "text": "about the animal (appearance, condition, etc.), captured when you submit" },
-    { "label": "Your Google account", "text": "so we can follow up if a submission needs clarification" }
+    {
+      "label": "Location",
+      "text": "(GPS) captured at the moment you take a photo"
+    },
+    {
+      "label": "Details you enter",
+      "text": "about the animal (appearance, condition, etc.), captured when you submit"
+    },
+    {
+      "label": "Your Google account",
+      "text": "so we can follow up if a submission needs clarification"
+    }
   ],
   "body": [
     "This data is uploaded to a private cloud storage bucket and used to build a dataset for feral cat population tracking and research. It is not made public and is not shared outside this project.",
@@ -15,6 +24,8 @@
   "declineLabel": "Decline",
   "declineWarningTitle": "FeralSpotter needs this to work",
   "declineWarningBody": "Photos, location, and the details you enter are what make a sighting submittable. Without agreeing to collect and upload them, the app has nothing to do — you won't be able to use FeralSpotter at all.",
+  "locationOnceWarningTitle": "About location access",
+  "locationOnceWarningBody": "If you chose \"Only this time\" for location, Android revokes that access as soon as the app closes. Location may not be captured next time you open FeralSpotter until you grant access again.",
   "analytics": {
     "title": "One more thing",
     "intro": "FeralSpotter is still a little feral itself, and anonymous usage data helps us tame the rough edges.",
