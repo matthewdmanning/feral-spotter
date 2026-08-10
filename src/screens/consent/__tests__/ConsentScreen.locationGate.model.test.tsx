@@ -6,13 +6,35 @@ import {
   waitFor,
 } from '@testing-library/react-native'
 import { AppState, Platform } from 'react-native'
-import { check, request, RESULTS } from 'react-native-permissions'
 import React from 'react'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import ConsentScreen from '../index'
-import { PERMISSION_MAP } from '@/src/lib/permissions'
 import consentCopy from '@/src/content/consentDisclosure.json'
+
+// Camera held authorized throughout — out of scope here, mirrors the old
+// model holding camera GRANTED.
+const mockRequestCameraPermission = jest.fn()
+let mockCameraPermissionStatus: string
+jest.mock('react-native-vision-camera', () => ({
+  get VisionCamera() {
+    return {
+      requestCameraPermission: mockRequestCameraPermission,
+      get cameraPermissionStatus() {
+        return mockCameraPermissionStatus
+      },
+    }
+  },
+}))
+
+const mockRequestForegroundPermissionsAsync = jest.fn()
+const mockGetForegroundPermissionsAsync = jest.fn()
+jest.mock('expo-location', () => ({
+  requestForegroundPermissionsAsync: (...args: unknown[]) =>
+    mockRequestForegroundPermissionsAsync(...args),
+  getForegroundPermissionsAsync: (...args: unknown[]) =>
+    mockGetForegroundPermissionsAsync(...args),
+}))
 
 const mockRouterReplace = jest.fn()
 jest.mock('expo-router', () => ({
@@ -58,29 +80,29 @@ jest.mock('react-native-unistyles', () => {
 
 /**
  * Model of ConsentScreen's location-permission gate (src/screens/consent/index.tsx),
- * scoped to the status react-native-permissions actually reports for
- * `PERMISSION_MAP.location` — not the on-device grant dialog options. Camera
- * is held GRANTED throughout: that permission's gating has its own mirrored
- * model, ConsentScreen.cameraGate.model.test.tsx (#237), out of scope here.
+ * scoped to `expo-location`'s `LocationPermissionResponse` shape (#243 —
+ * migrated off react-native-permissions). Camera is held authorized
+ * throughout: that permission's gating has its own mirrored model,
+ * ConsentScreen.cameraGate.model.test.tsx (#237), out of scope here.
  *
- * Guards against #66: a first-time full "Don't allow" reports DENIED, not
- * BLOCKED (Android only escalates to BLOCKED on a second denial). The old
- * gate checked BLOCKED only, so a first-time denial bypassed it entirely and
- * proceeded like a full grant. `blocked` here covers both the
- * escalated-denial case and location's Approximate-accuracy case, which
- * reads as BLOCKED on the very first request and already gated correctly
- * before this fix — that path must keep working unchanged.
+ * Guards against #66: a first-time full "Don't allow" resolves
+ * `granted: false`, not a terminal denial (react-native-permissions called
+ * this DENIED vs BLOCKED). The old gate checked BLOCKED only, so a
+ * first-time denial bypassed it entirely and proceeded like a full grant.
+ * `gated` here covers both the escalated-denial case and location's
+ * Approximate-accuracy case (`granted: true, android.accuracy: 'coarse'`),
+ * which already gated correctly before this fix — that path must keep
+ * working unchanged.
  *
- * All 5 `RESULTS` values `react-native-permissions` can report are wired
- * into this machine, not just the 3 Android's location prompt realistically
- * returns: UNAVAILABLE (the feature/permission doesn't exist on this
- * device) gates, same as BLOCKED/DENIED — a Submission can't get a real
- * location without it. LIMITED (an iOS partial-access concept, not
- * applicable to Android's ACCESS_FINE_LOCATION) does not gate, same as
- * GRANTED. Only GRANTED/LIMITED/DENIED get dedicated journeys below —
- * BLOCKED and UNAVAILABLE both land on the same `gated` state DENIED
- * already exercises, so a standalone journey for either would just re-test
- * the same assertions.
+ * Every outcome `expo-location` can report on Android is wired into this
+ * machine: a bare denial and Approximate (coarse-only) grant both gate, same
+ * as before — there's no expo-location equivalent of the old UNAVAILABLE
+ * status, and no dedicated journey for it since it would just re-test the
+ * same assertions a plain denial already covers. The iOS reduced-accuracy
+ * journeys (`ios.accuracy: 'reduced'`, the old LIMITED concept) switch
+ * `Platform.OS` to `'ios'` for that event only, since reduced access is a
+ * genuinely iOS-only outcome under the new, platform-aware gate — it does
+ * not gate, same as a full grant.
  *
  * Also guards the relaunch-bypass reopen of #66: `markAccepted()` must not
  * fire while gated. It used to fire unconditionally before the gate check,
@@ -116,30 +138,29 @@ const locationGateMachine = createMachine({
   },
 })
 
+const grantedLocation = { granted: true, android: { accuracy: 'fine' } }
+const deniedLocation = { granted: false, android: { accuracy: 'none' } }
+const approximateLocation = { granted: true, android: { accuracy: 'coarse' } }
+const reducedIosLocation = { granted: true, ios: { accuracy: 'reduced' } }
+
 describe('ConsentScreen location gate — model-based test', () => {
   let foregroundListener: ((state: string) => void) | undefined
-  let locationResult: string
+  let locationResult: object
 
   beforeEach(() => {
     jest.clearAllMocks()
     Platform.OS = 'android'
-    locationResult = RESULTS.GRANTED
+    locationResult = grantedLocation
+    mockCameraPermissionStatus = 'authorized'
     foregroundListener = undefined
 
-    jest
-      .mocked(request)
-      .mockImplementation(async (permission) =>
-        permission === PERMISSION_MAP.location
-          ? locationResult
-          : RESULTS.GRANTED,
-      )
-    jest
-      .mocked(check)
-      .mockImplementation(async (permission) =>
-        permission === PERMISSION_MAP.location
-          ? locationResult
-          : RESULTS.GRANTED,
-      )
+    mockRequestCameraPermission.mockResolvedValue(true)
+    mockRequestForegroundPermissionsAsync.mockImplementation(
+      async () => locationResult,
+    )
+    mockGetForegroundPermissionsAsync.mockImplementation(
+      async () => locationResult,
+    )
     jest
       .spyOn(AppState, 'addEventListener')
       .mockImplementation((_event, listener) => {
@@ -186,43 +207,48 @@ describe('ConsentScreen location gate — model-based test', () => {
     },
     events: {
       AGREE_GRANTED: async () => {
-        locationResult = RESULTS.GRANTED
+        locationResult = grantedLocation
         await pressAgree()
       },
       AGREE_DENIED: async () => {
-        locationResult = RESULTS.DENIED
+        locationResult = deniedLocation
         await pressAgree()
       },
       AGREE_BLOCKED: async () => {
-        locationResult = RESULTS.BLOCKED
+        locationResult = approximateLocation
         await pressAgree()
       },
       AGREE_UNAVAILABLE: async () => {
-        locationResult = RESULTS.UNAVAILABLE
+        // No expo-location equivalent of UNAVAILABLE — reuses the denied
+        // response, which lands on the same `gated` state either way.
+        locationResult = deniedLocation
         await pressAgree()
       },
       AGREE_LIMITED: async () => {
-        locationResult = RESULTS.LIMITED
+        // Reduced accuracy is an iOS-only outcome under the new gate.
+        Platform.OS = 'ios'
+        locationResult = reducedIosLocation
         await pressAgree()
       },
       FOREGROUND_STILL_DENIED: async () => {
-        locationResult = RESULTS.DENIED
+        locationResult = deniedLocation
         await triggerForeground()
       },
       FOREGROUND_STILL_BLOCKED: async () => {
-        locationResult = RESULTS.BLOCKED
+        locationResult = approximateLocation
         await triggerForeground()
       },
       FOREGROUND_STILL_UNAVAILABLE: async () => {
-        locationResult = RESULTS.UNAVAILABLE
+        locationResult = deniedLocation
         await triggerForeground()
       },
       FOREGROUND_GRANTED: async () => {
-        locationResult = RESULTS.GRANTED
+        locationResult = grantedLocation
         await triggerForeground()
       },
       FOREGROUND_LIMITED: async () => {
-        locationResult = RESULTS.LIMITED
+        Platform.OS = 'ios'
+        locationResult = reducedIosLocation
         await triggerForeground()
       },
     },

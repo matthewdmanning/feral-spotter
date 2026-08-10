@@ -3,6 +3,7 @@ import {
   Alert,
   AppState,
   BackHandler,
+  Linking,
   Platform,
   View,
   Text,
@@ -11,28 +12,42 @@ import {
   ActivityIndicator,
 } from 'react-native'
 import { router } from 'expo-router'
-import { check, request, openSettings, RESULTS } from 'react-native-permissions'
+import * as Location from 'expo-location'
+import {
+  VisionCamera,
+  type PermissionStatus as CameraPermissionStatus,
+} from 'react-native-vision-camera'
 import { useUnistyles } from 'react-native-unistyles'
 import { useConsentStore } from '@/src/hooks/useConsentStore'
-import { PERMISSION_MAP } from '@/src/lib/permissions'
 import { useBackHandler } from '@/src/hooks/useBackHandler'
 import consentCopy from '@/src/content/consentDisclosure.json'
 import { styles } from './index.styles'
 
-// react-native-permissions reports a first-time "Don't allow" as DENIED, not
-// BLOCKED — Android only escalates to BLOCKED on a second denial (or
-// "don't ask again"). Location's Approximate accuracy choice already reads
-// as BLOCKED on the first denial and gates correctly; DENIED must gate too
-// or a first-time full denial bypasses the gate entirely (#66). UNAVAILABLE
-// (the permission/feature doesn't exist on this device) gates too — neither
-// permission is usable without it, same as BLOCKED/DENIED. Applies equally
-// to camera — its first-time "Don't allow" has the same DENIED-not-BLOCKED
-// asymmetry, just never tested/fixed alongside location's (#237).
-function isPermissionGated(status: string) {
+// Used by the foreground-recheck path only — handleAgree reads the boolean
+// requestCameraPermission() itself resolves with instead (see comment
+// there). react-native-vision-camera reports a first-time "Don't allow" as
+// 'not-determined' (still askable), not 'denied' — Android only escalates to
+// 'denied' on a second denial (or "don't ask again"). 'not-determined' must
+// gate too or a first-time full denial bypasses the gate entirely (#66,
+// #237 — ported from react-native-permissions's identical DENIED/BLOCKED
+// split). 'restricted' (e.g. parental controls) gates too — the camera isn't
+// usable without it either way.
+function isCameraGated(status: CameraPermissionStatus) {
+  return status !== 'authorized'
+}
+
+// expo-location's `granted` alone isn't enough on Android: choosing
+// "Approximate" still resolves granted === true, just with
+// `android.accuracy === 'coarse'` — that must gate the same way
+// Approximate reading as BLOCKED did under react-native-permissions (#66),
+// since a Submission needs a Live fix accurate enough to be usable.
+// `ios.accuracy === 'reduced'` intentionally does NOT gate — it didn't
+// under the old LIMITED status either, and reduced iOS access is a real,
+// working state, unlike Android's coarse-only grant.
+function isLocationGated(response: Location.LocationPermissionResponse) {
   return (
-    status === RESULTS.BLOCKED ||
-    status === RESULTS.DENIED ||
-    status === RESULTS.UNAVAILABLE
+    !response.granted ||
+    (Platform.OS === 'android' && response.android?.accuracy !== 'fine')
   )
 }
 
@@ -52,25 +67,30 @@ export default function ConsentScreen() {
       // every request after the first as BLOCKED/denied without the user ever
       // seeing a prompt for it. Photo-library access (#91) is not requested
       // here — it's asked lazily at point of use by the library picker.
-      const cameraStatus = await request(PERMISSION_MAP.camera)
-      const locationStatus = await request(PERMISSION_MAP.location)
+      // Read the boolean `requestCameraPermission()` itself resolves with,
+      // rather than re-reading `cameraPermissionStatus` right after — not
+      // relying on the native getter having settled by the time the promise
+      // resolves. The getter is used for the foreground-recheck path below,
+      // where there's no request in flight and it's the only source of truth.
+      const cameraGranted = await VisionCamera.requestCameraPermission()
+      const locationResponse =
+        await Location.requestForegroundPermissionsAsync()
 
-      if (
-        isPermissionGated(cameraStatus) ||
-        isPermissionGated(locationStatus)
-      ) {
+      if (!cameraGranted || isLocationGated(locationResponse)) {
         // Consent isn't recorded on a gated outcome (#66) — a relaunch while
         // still blocked must land back on this screen and re-request, not
         // read as "already consented" and skip straight past the gate.
         setBlocked(true)
         return
       }
-      // react-native-permissions reports Android's "Only this time" and
-      // "While using the app" location choices identically as GRANTED —
-      // there's no distinct status to branch on (#225) — so the notice
+      // Neither react-native-permissions nor expo-location can distinguish
+      // Android's "Only this time" from "While using the app" location
+      // choices — expo-location's `expires` field is hardcoded to `'never'`
+      // for every Android grant, not just one-time ones — so the notice
       // fires on every fresh grant and is worded conditionally ("if you
-      // chose...") rather than claiming to know which one the user picked.
-      if (Platform.OS === 'android' && locationStatus === RESULTS.GRANTED) {
+      // chose...") rather than claiming to know which one the user picked
+      // (#225).
+      if (Platform.OS === 'android' && locationResponse.granted) {
         Alert.alert(
           consentCopy.locationOnceWarningTitle,
           consentCopy.locationOnceWarningBody,
@@ -96,14 +116,9 @@ export default function ConsentScreen() {
     if (!blocked) return
 
     const recheck = async () => {
-      const [cameraStatus, locationStatus] = await Promise.all([
-        check(PERMISSION_MAP.camera),
-        check(PERMISSION_MAP.location),
-      ])
-      if (
-        !isPermissionGated(cameraStatus) &&
-        !isPermissionGated(locationStatus)
-      ) {
+      const cameraStatus = VisionCamera.cameraPermissionStatus
+      const locationResponse = await Location.getForegroundPermissionsAsync()
+      if (!isCameraGated(cameraStatus) && !isLocationGated(locationResponse)) {
         setBlocked(false)
         markAccepted()
         router.replace('/sign-in')
@@ -145,7 +160,7 @@ export default function ConsentScreen() {
           it&apos;s granted.
         </Text>
         <Pressable
-          onPress={() => openSettings()}
+          onPress={() => Linking.openSettings()}
           style={styles.gatePrimary}
           accessibilityRole="button"
         >
