@@ -19,6 +19,7 @@ import { useActiveCatFlow } from '@/src/hooks/useActiveCatFlow'
 import { useAnnotationStore } from '@/src/hooks/useAnnotationStore'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'
+import { EVENTS, captureEvent } from '@/src/lib/analytics/analytics'
 import type { BoundingBox } from '@/src/types/BoundingBox'
 import type { SubmissionPhoto } from '@/src/hooks/usePhotoStore'
 import type { PhotoPassStatus } from '@/src/hooks/useActiveCatFlow'
@@ -56,10 +57,17 @@ export function useAnnotatePass(): AnnotatePass {
     getPhotoStatus,
     handleBoxConfirmed,
     handleNotInPhoto: markNotInPhoto,
-    handleBoxingComplete,
+    handleBoxingComplete: completeBoxing,
     clearActiveCat,
     handleAbandonPass,
   } = useActiveCatFlow()
+
+  const handleBoxingComplete = useCallback(() => {
+    captureEvent(EVENTS.CAT_BOXING_COMPLETED, {
+      photo_count: photos.length,
+    })
+    completeBoxing()
+  }, [photos.length, completeBoxing])
 
   // ── Carousel state ────────────────────────────────────────────────────────
   const [currentIndex, setCurrentIndex] = useState(0)

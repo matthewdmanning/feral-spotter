@@ -27,23 +27,34 @@
 
 import { ErrorBoundary } from '@/src/components/atoms/ErrorBoundary'
 import { CONSENT_VERSION, useConsentStore } from '@/src/hooks/useConsentStore'
+import { useAuthStore } from '@/src/lib/auth/authStore'
 import {
   IS_PRERELEASE,
   registerCapture,
   registerCaptureException,
 } from '@/src/lib/analytics/analytics'
+import Constants from 'expo-constants'
 import { usePathname } from 'expo-router'
 import { PostHogProvider, usePostHog } from 'posthog-react-native'
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 
-const POSTHOG_KEY = process.env.EXPO_PUBLIC_POSTHOG_KEY ?? ''
-const POSTHOG_HOST = 'https://app.posthog.com'
+// Expo embeds values from app.config.js extras into native builds.
+const POSTHOG_KEY = Constants.expoConfig?.extra?.posthogProjectToken as
+  string | undefined
+const POSTHOG_HOST = Constants.expoConfig?.extra?.posthogHost as
+  string | undefined
 
-// #201: missing key otherwise silently voids every analytics check with no
-// signal — this was mistaken for a real bug in a previous test-drive session.
-if (__DEV__ && IS_PRERELEASE && !POSTHOG_KEY) {
-  console.warn('[analytics] disabled — EXPO_PUBLIC_POSTHOG_KEY not set')
+if (__DEV__ && !POSTHOG_KEY) {
+  console.error(
+    'POSTHOG_PROJECT_TOKEN variable required by PostHog is missing or un-configured, this causes events to be silently missed. This error stops appearing once POSTHOG_PROJECT_TOKEN is configured',
+  )
+}
+
+if (__DEV__ && !POSTHOG_HOST) {
+  console.error(
+    'POSTHOG_HOST variable required by PostHog is missing or un-configured, this causes events to be silently missed. This error stops appearing once POSTHOG_HOST is configured',
+  )
 }
 
 interface AppProvidersProps {
@@ -59,11 +70,35 @@ interface AppProvidersProps {
  */
 function AnalyticsBridge() {
   const posthog = usePostHog()
+  const user = useAuthStore((s) => s.user)
+  const isAuthReady = useAuthStore((s) => s.isReady)
+  const identifiedUserId = useRef<string | null>(null)
+
   useEffect(() => {
     if (!posthog) return
     registerCapture(posthog.capture.bind(posthog))
     registerCaptureException(posthog.captureException.bind(posthog))
   }, [posthog])
+
+  // Firebase's UID is the stable app identifier. This bridge mounts only after
+  // analytics consent, so restoring an existing session identifies as soon as
+  // collection is permitted; later captures and exception reports inherit it.
+  useEffect(() => {
+    if (!posthog || !isAuthReady) return
+
+    if (!user) {
+      if (identifiedUserId.current) posthog.reset()
+      identifiedUserId.current = null
+      return
+    }
+
+    if (identifiedUserId.current === user.uid) return
+    if (identifiedUserId.current) posthog.reset()
+
+    posthog.identify(user.uid, user.email ? { email: user.email } : undefined)
+    identifiedUserId.current = user.uid
+  }, [isAuthReady, posthog, user])
+
   return null
 }
 
@@ -92,11 +127,18 @@ export function AppProviders({ children }: AppProvidersProps) {
       <ErrorBoundary>
         {IS_PRERELEASE &&
         POSTHOG_KEY &&
+        POSTHOG_HOST &&
         hasAcceptedConsent &&
         hasAcceptedAnalytics ? (
           <PostHogProvider
             apiKey={POSTHOG_KEY}
-            options={{ host: POSTHOG_HOST }}
+            options={{
+              host: POSTHOG_HOST,
+              // Capture unhandled JS exceptions globally. The root ErrorBoundary
+              // reports render failures separately, so exclude console capture to
+              // avoid React's console logging generating duplicate exceptions.
+              errorTracking: { autocapture: { console: [] } },
+            }}
             debug={__DEV__}
           >
             <AnalyticsBridge />

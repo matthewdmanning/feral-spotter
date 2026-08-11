@@ -14,6 +14,7 @@
 import { useSubmissionStore } from '@/src/hooks'
 import { useActiveCatFlow } from '@/src/hooks/useActiveCatFlow'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
+import { EVENTS, captureEvent } from '@/src/lib/analytics/analytics'
 import type { CatFormValues } from '@/src/hooks/useCatForm'
 import type { ObservedCat } from '@/src/hooks/useSubmissionStore'
 import { CAT_DEFAULTS } from '@/src/screens/submission/cats/constants'
@@ -107,6 +108,12 @@ export function useCatSubmit({
     const commit = () => {
       if (existingCat) updateCat(localId, cat)
       else addCat(cat)
+      captureEvent(EVENTS.CAT_OBSERVATION_SAVED, {
+        is_edit: Boolean(existingCat),
+        photo_count: cat.photo_local_ids.length,
+        age: cat.age,
+        health_label: cat.health_label,
+      })
 
       // The cat is saved, not "in-progress" anymore — a later "Add a Cat"
       // must mint a fresh id, not resume this one.

@@ -8,6 +8,7 @@
  */
 
 import { usePhotoStore, useSubmissionStore } from '@/src/hooks'
+import { EVENTS, captureEvent } from '@/src/lib/analytics/analytics'
 import { buildSubmissionPhoto } from '@/src/utils/buildSubmissionPhoto'
 import {
   classifyLibraryPickTime,
@@ -41,6 +42,10 @@ export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
     const isFirstPick = photos.length === 0
     const newPhotos = result.assets.map(buildSubmissionPhoto)
     addPhotos(newPhotos)
+    captureEvent(EVENTS.LIBRARY_PHOTOS_SELECTED, {
+      photo_count: newPhotos.length,
+      is_first_pick: isFirstPick,
+    })
 
     // A draft is single-source by construction (ADR 0002 amendment): the
     // Home screen guard guarantees the pool was empty before this pick.
