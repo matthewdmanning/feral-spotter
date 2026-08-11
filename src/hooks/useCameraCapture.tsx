@@ -24,10 +24,10 @@ import {
   PermissionStatus,
   requestPermissionsAsync,
 } from 'expo-media-library'
-import { router } from 'expo-router'
+import { router, useIsFocused } from 'expo-router'
 import { randomUUID } from 'expo-crypto'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { ViewStyle } from 'react-native'
+import { AppState, type AppStateStatus, type ViewStyle } from 'react-native'
 import {
   Easing,
   useAnimatedStyle,
@@ -52,6 +52,7 @@ export interface CameraCaptureResult {
   device: ReturnType<typeof useCameraDevice>
   cameraRef: React.RefObject<CameraRef | null>
   photoOutput: CameraPhotoOutput
+  isActive: boolean
   // State
   capturedPhotos: SubmissionPhoto[]
   flashMode: FlashMode
@@ -91,6 +92,19 @@ export function useCameraCapture(): CameraCaptureResult {
   const cameraRef = useRef<CameraRef>(null)
   const listRef = useRef<FlashListRef<SubmissionPhoto>>(null)
   const photoOutput = usePhotoOutput()
+
+  // #253: Android reclaims the camera hardware whenever the app is
+  // backgrounded for long enough (e.g. screen lock), regardless of this
+  // prop. Without isActive tracking that, vision-camera never releases its
+  // side of the session, and reconfiguring streams on resume against a
+  // device the OS already reclaimed throws an uncaught native error.
+  const isFocused = useIsFocused()
+  const [appState, setAppState] = useState<AppStateStatus>('active')
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', setAppState)
+    return () => sub.remove()
+  }, [])
+  const isActive = isFocused && appState === 'active'
 
   // ── Flash overlay — Reanimated SharedValue on UI thread ───────────────────
   const flashOpacity = useSharedValue(0)
@@ -249,6 +263,7 @@ export function useCameraCapture(): CameraCaptureResult {
     device,
     cameraRef,
     photoOutput,
+    isActive,
     capturedPhotos,
     flashMode,
     isTakingPhoto,

@@ -22,6 +22,7 @@ export default function CameraScreen() {
     device,
     cameraRef,
     photoOutput,
+    isActive,
     capturedPhotos,
     flashMode,
     isTakingPhoto,
@@ -108,7 +109,7 @@ export default function CameraScreen() {
         ref={cameraRef}
         style={RNStyleSheet.absoluteFill}
         device={device}
-        isActive
+        isActive={isActive}
         outputs={[photoOutput]}
         enableNativeZoomGesture
       />

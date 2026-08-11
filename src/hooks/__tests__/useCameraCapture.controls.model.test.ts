@@ -33,6 +33,7 @@ jest.mock('expo-location', () => ({
 
 jest.mock('expo-router', () => ({
   router: { back: jest.fn(), navigate: jest.fn() },
+  useIsFocused: () => true,
 }))
 
 const mockUseCameraDevice = jest.fn((position: string) => ({ id: position }))
