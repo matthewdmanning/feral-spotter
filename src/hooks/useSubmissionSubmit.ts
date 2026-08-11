@@ -14,6 +14,7 @@
 import { usePhotoStore, useSubmissionStore, useUIStore } from '@/src/hooks'
 import { EVENTS, fireAnalyticsEvent } from '@/src/lib/analytics/analytics'
 import {
+  clearCurrentCacheId,
   deleteSubmissionCache,
   getCurrentCacheId,
   getSubmissionCache,
@@ -124,6 +125,11 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
                   const snap = await getSubmissionCache(cId)
                   if (snap)
                     fireAnalyticsEvent(EVENTS.SUBMISSION_SUBMITTED, snap)
+                  // Without this, submission_cache_current keeps pointing at
+                  // this now-Submitted entry forever — every later draft's
+                  // createSubmissionCache() guard in create/index.tsx sees a
+                  // truthy current ID and never creates its own cache row.
+                  await clearCurrentCacheId()
                 }
                 addToHistory({
                   id: response.id,
