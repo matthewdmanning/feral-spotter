@@ -34,7 +34,11 @@ export const EVENTS = {
   SUBMISSION_FAILED: 'submission_failed',
   REPORTS_VIEWED: 'feral_reports_viewed',
   CAMERA_OPENED: 'camera_opened',
+  PHOTO_CAPTURED: 'photo_captured',
   PHOTO_CAPTURE_FAILED: 'photo_capture_failed',
+  LIBRARY_PHOTOS_SELECTED: 'library_photos_selected',
+  CAT_BOXING_COMPLETED: 'cat_boxing_completed',
+  CAT_OBSERVATION_SAVED: 'cat_observation_saved',
   TUTORIAL_STARTED: 'tutorial_started',
   TUTORIAL_STEP_COMPLETED: 'tutorial_step_completed',
   TUTORIAL_SKIPPED: 'tutorial_skipped',
@@ -76,7 +80,7 @@ function shouldCapture(): boolean {
 
 /**
  * Fire a PostHog event, but only when IS_PRERELEASE is true and the user has
- * accepted the data-collection disclosure. Includes the full cache file as
+ * accepted the data-collection disclosure. Includes submission metadata as
  * event properties.
  */
 export function fireAnalyticsEvent(
@@ -100,8 +104,6 @@ export function fireAnalyticsEvent(
     time_method: cache.metadata.time_method,
     cat_count: cache.cats.length,
     photo_count: cache.photo_links?.length ?? 0,
-    // Full cache payload for pre-release debugging
-    cache_snapshot: JSON.stringify(cache),
     ...extra,
   })
 }

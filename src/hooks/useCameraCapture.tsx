@@ -131,6 +131,11 @@ export function useCameraCapture(): CameraCaptureResult {
 
       addPhoto(submission)
       setCapturedPhotos((prev) => [...prev, submission])
+      captureEvent(EVENTS.PHOTO_CAPTURED, {
+        flash_mode: flashMode,
+        photo_width: photo.width,
+        photo_height: photo.height,
+      })
 
       // Location is set once per submission on the create screen (ADR 0002),
       // not per photo — no GPS call on the shutter path.

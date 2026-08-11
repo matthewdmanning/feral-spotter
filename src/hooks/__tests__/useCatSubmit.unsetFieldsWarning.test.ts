@@ -31,6 +31,10 @@ jest.mock('@/src/hooks/useBoundingBoxStore', () => ({
     sel: (s: { getBoxedPhotoIds: () => string[] }) => unknown,
   ) => sel({ getBoxedPhotoIds: () => [] }),
 }))
+jest.mock('@/src/lib/analytics/analytics', () => ({
+  captureEvent: jest.fn(),
+  EVENTS: { CAT_OBSERVATION_SAVED: 'cat_observation_saved' },
+}))
 
 const untouchedForm: CatFormValues = {
   age: undefined,
