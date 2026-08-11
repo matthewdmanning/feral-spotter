@@ -50,6 +50,13 @@ export default function CreateSubmissionScreen() {
     }
   }, [photoSource, pickFromLibrary])
 
+  // Mount-once (#224 follow-up): this only needs to ensure a cache row
+  // exists for the current draft, not react to every field edit. Depending
+  // on submission.* fields here made it re-run when handleDone's
+  // clearDraft() reset them to defaults mid-navigation (post-Submit,
+  // before this screen unmounts) — current was just cleared by
+  // clearCurrentCacheId(), so getCurrentCacheId() came back null and this
+  // created a stray empty cache row for the already-submitted draft.
   useEffect(() => {
     setCurrentStep('create')
     ;(async () => {
@@ -63,14 +70,8 @@ export default function CreateSubmissionScreen() {
         })
       }
     })()
-  }, [
-    setCurrentStep,
-    submission.address,
-    submission.location_type,
-    submission.time_type,
-    submission.manual_time,
-    submission.captured_at,
-  ])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Zero-friction on-ramp (#173): with no cats recorded yet, skip straight
   // into annotate instead of rendering an empty Cat List. replace (not
