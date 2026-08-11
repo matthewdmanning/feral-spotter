@@ -1,5 +1,6 @@
 import { act, renderHook } from '@testing-library/react-native'
 import { router } from 'expo-router'
+import { AppState } from 'react-native'
 import { useCameraCapture } from '../useCameraCapture'
 
 jest.mock('@react-native-async-storage/async-storage', () =>
@@ -23,8 +24,10 @@ jest.mock('expo-location', () => ({
   Accuracy: { Balanced: 3 },
 }))
 
+let mockIsFocused = true
 jest.mock('expo-router', () => ({
   router: { back: jest.fn(), navigate: jest.fn() },
+  useIsFocused: () => mockIsFocused,
 }))
 
 const mockCapturePhoto = jest.fn()
@@ -80,6 +83,41 @@ jest.mock('@/src/lib/analytics/analytics', () => ({
     PHOTO_CAPTURE_FAILED: 'photo_capture_failed',
   },
 }))
+
+describe('useCameraCapture isActive (#253)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockIsFocused = true
+  })
+
+  it('starts active when the screen is focused and the app is foregrounded', () => {
+    const { result } = renderHook(() => useCameraCapture())
+    expect(result.current.isActive).toBe(true)
+  })
+
+  it('goes inactive on background and reactivates on foreground, without unmounting', () => {
+    let listener: ((state: string) => void) | undefined
+    jest.spyOn(AppState, 'addEventListener').mockImplementation((_e, l) => {
+      listener = l as (state: string) => void
+      return { remove: jest.fn() }
+    })
+
+    const { result } = renderHook(() => useCameraCapture())
+    expect(result.current.isActive).toBe(true)
+
+    act(() => listener?.('background'))
+    expect(result.current.isActive).toBe(false)
+
+    act(() => listener?.('active'))
+    expect(result.current.isActive).toBe(true)
+  })
+
+  it('stays inactive while foregrounded if the screen has navigated away', () => {
+    mockIsFocused = false
+    const { result } = renderHook(() => useCameraCapture())
+    expect(result.current.isActive).toBe(false)
+  })
+})
 
 describe('useCameraCapture navigation', () => {
   beforeEach(() => jest.clearAllMocks())
