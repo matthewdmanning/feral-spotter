@@ -17,9 +17,24 @@ import {
 import * as ImagePicker from 'expo-image-picker'
 import { router } from 'expo-router'
 import { useCallback } from 'react'
+import { Alert, Linking } from 'react-native'
 
 export interface LibraryPhotoPickerResult {
   pickFromLibrary: () => Promise<void>
+}
+
+// Yes means yes, not merely absence of no (#249, extending the camera/location
+// pattern from #66/#237/#243): a decline inside launchImageLibraryAsync() and
+// backing out of the picker without choosing anything both resolve as
+// `{ canceled: true }` — indistinguishable unless permission is checked
+// explicitly first. `limited` (iOS "Select Photos") counts as a valid yes.
+function isLibraryPermissionUsable(
+  response: ImagePicker.MediaLibraryPermissionResponse,
+) {
+  return (
+    response.status === ImagePicker.PermissionStatus.GRANTED ||
+    response.accessPrivileges === 'limited'
+  )
 }
 
 export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
@@ -30,7 +45,27 @@ export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
   const setCapturedAt = useSubmissionStore((s) => s.setCapturedAt)
 
   const pickFromLibrary = useCallback(async () => {
-    // Lazy, point-of-use permission prompt — no eager request() call.
+    // Check-then-request, mirroring useCameraCapture's write-only gallery-save
+    // check (#145/#146): a granted/limited check short-circuits every repeat
+    // tap, so request() only ever fires once, on the first undetermined pick.
+    const current = await ImagePicker.getMediaLibraryPermissionsAsync()
+    let usable = isLibraryPermissionUsable(current)
+    if (!usable) {
+      const requested = await ImagePicker.requestMediaLibraryPermissionsAsync()
+      usable = isLibraryPermissionUsable(requested)
+    }
+    if (!usable) {
+      Alert.alert(
+        'Photo library access needed',
+        'Choose from Library needs access to your photos. Enable it in Settings, then try again.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Open Settings', onPress: () => Linking.openSettings() },
+        ],
+      )
+      return
+    }
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsMultipleSelection: true,
