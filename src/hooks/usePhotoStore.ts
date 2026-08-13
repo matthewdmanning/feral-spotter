@@ -5,6 +5,7 @@
 
 import { asyncStorage } from '@/src/lib/cache/storage'
 import type { SubmissionPhoto } from '@/src/types'
+import { randomUUID } from 'expo-crypto'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 
@@ -18,6 +19,11 @@ export type PhotoSource = 'camera' | 'library' | null
 interface PhotoState {
   photos: SubmissionPhoto[]
   source: PhotoSource
+  // Storage upload path key (submissions/{uid}/{submissionId}/...) — generated
+  // on the first photo, since the submission-cache ID (Submission Details
+  // screen) doesn't exist yet at capture time. Distinct ID space from that
+  // cache ID; see ADR-0005.
+  submissionId: string | null
 
   addPhoto: (photo: SubmissionPhoto) => void
   addPhotos: (photos: SubmissionPhoto[]) => void
@@ -33,16 +39,22 @@ export const usePhotoStore = create<PhotoState>()(
     (set) => ({
       photos: [],
       source: null,
+      submissionId: null,
 
       // Camera-only call site (useCameraCapture.tsx) — pins source: 'camera'.
       addPhoto: (photo) =>
-        set((s) => ({ photos: [...s.photos, photo], source: 'camera' })),
+        set((s) => ({
+          photos: [...s.photos, photo],
+          source: 'camera',
+          submissionId: s.submissionId ?? randomUUID(),
+        })),
 
       // Library-only call site (useLibraryPhotoPicker.ts) — pins source: 'library'.
       addPhotos: (photos) =>
         set((s) => ({
           photos: [...s.photos, ...photos],
           source: 'library',
+          submissionId: s.submissionId ?? randomUUID(),
         })),
 
       updatePhoto: (localId, patch) =>
@@ -58,7 +70,7 @@ export const usePhotoStore = create<PhotoState>()(
           return { photos, source: photos.length === 0 ? null : s.source }
         }),
 
-      clearPhotos: () => set({ photos: [], source: null }),
+      clearPhotos: () => set({ photos: [], source: null, submissionId: null }),
     }),
     {
       name: 'photo-store',

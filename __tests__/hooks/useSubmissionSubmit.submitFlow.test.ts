@@ -87,7 +87,7 @@ describe('useSubmissionSubmit submit flow', () => {
     })
   })
 
-  it('only submits photos that are uploaded with both a cloud path and url', async () => {
+  it('only submits photos with both a cloud path and url, among uploaded photos', async () => {
     usePhotoStore.setState({
       photos: [
         photo({
@@ -103,13 +103,6 @@ describe('useSubmissionSubmit submit flow', () => {
           local_id: 'photo-missing-path',
           uploaded: true,
           cloud_storage_url: 'https://cdn/missing-path.jpg',
-        }),
-        // not uploaded at all
-        photo({
-          local_id: 'photo-not-uploaded',
-          uploaded: false,
-          cloud_storage_path: 'gs://bucket/not-uploaded.jpg',
-          cloud_storage_url: 'https://cdn/not-uploaded.jpg',
         }),
       ],
     })
@@ -141,6 +134,33 @@ describe('useSubmissionSubmit submit flow', () => {
     // The background Live-fix reacquire (src/lib/location.ts) would otherwise
     // keep re-watching every 5 minutes for the rest of the app's lifetime.
     expect(mockStopLocationCapture).toHaveBeenCalled()
+  })
+
+  // P0 (map #31): a submission that "succeeds" while silently missing a
+  // still-uploading photo must not happen — block instead of filtering it out.
+  it('blocks submit and shows an error when a photo is still uploading', async () => {
+    usePhotoStore.setState({
+      photos: [
+        photo({
+          local_id: 'photo-uploaded',
+          uploaded: true,
+          cloud_storage_path: 'gs://bucket/uploaded.jpg',
+          cloud_storage_url: 'https://cdn/uploaded.jpg',
+        }),
+        photo({ local_id: 'photo-not-uploaded', uploaded: false }),
+      ],
+    })
+    jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
+      buttons?.find((b) => b.text === 'Submit')?.onPress?.()
+    })
+
+    const { result } = renderHook(() => useSubmissionSubmit())
+
+    await act(async () => {
+      result.current.handleDone()
+    })
+
+    expect(submitObservation).not.toHaveBeenCalled()
   })
 
   it('still submits (photos/details are not privileged) when consent has not been accepted', async () => {

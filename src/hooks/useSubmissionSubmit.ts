@@ -60,6 +60,18 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
           text: 'Submit',
           style: 'default',
           onPress: async () => {
+            // A submission that "succeeds" while silently missing photos is
+            // exactly the P0 map #31 defines — surface this instead of
+            // letting the uploadedPhotos filter below drop them quietly.
+            const stillUploading = photos.filter((p) => !p.uploaded)
+            if (stillUploading.length > 0) {
+              showError(
+                'Photos Still Uploading',
+                `${stillUploading.length} photo${stillUploading.length !== 1 ? 's are' : ' is'} still uploading. Wait a moment and try again.`,
+              )
+              return
+            }
+
             setIsSubmitting(true)
             setSubmitting(true)
 

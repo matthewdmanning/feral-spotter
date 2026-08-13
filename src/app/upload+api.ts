@@ -13,7 +13,14 @@ import { isAllowedEmail, parseAllowlist } from '@/src/lib/upload/allowlist'
 import { validateUploadFile } from '@/src/lib/upload/fileValidation'
 
 const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID
-const BUCKET_NAME = process.env.GCS_BUCKET_NAME ?? 'feral-segmentor-alpha'
+const BUCKET_NAME = process.env.GCS_BUCKET_NAME ?? 'feral-spotter-image-uploads'
+// Duplicated from src/config/constants.ts, not imported — that file pulls in
+// the RN-only `__DEV__` global, which tsconfig.server.json's compile
+// boundary (this route only) doesn't declare. Keep the two in sync by hand.
+const MAX_PHOTOS = Number(process.env.EXPO_PUBLIC_MAX_PHOTOS) || 10
+
+// Object paths are built from this directly — restrict to safe path characters.
+const SUBMISSION_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/
 
 const oauthClient = new OAuth2Client()
 const storage = new Storage()
@@ -22,7 +29,9 @@ interface VerifiedRequester {
   email: string
 }
 
-async function verifyRequester(request: Request): Promise<VerifiedRequester | Response> {
+async function verifyRequester(
+  request: Request,
+): Promise<VerifiedRequester | Response> {
   const authHeader = request.headers.get('authorization')
   const idToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
   if (!idToken) {
@@ -37,7 +46,10 @@ async function verifyRequester(request: Request): Promise<VerifiedRequester | Re
   let email: string | undefined
   let emailVerified: boolean | undefined
   try {
-    const ticket = await oauthClient.verifyIdToken({ idToken, audience: GOOGLE_CLIENT_ID })
+    const ticket = await oauthClient.verifyIdToken({
+      idToken,
+      audience: GOOGLE_CLIENT_ID,
+    })
     const payload = ticket.getPayload()
     email = payload?.email
     emailVerified = payload?.email_verified
@@ -65,7 +77,10 @@ export async function POST(request: Request) {
   try {
     formData = await request.formData()
   } catch {
-    return Response.json({ error: 'Expected multipart/form-data' }, { status: 400 })
+    return Response.json(
+      { error: 'Expected multipart/form-data' },
+      { status: 400 },
+    )
   }
 
   const file = formData.get('file')
@@ -73,12 +88,37 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Missing file field' }, { status: 400 })
   }
 
-  const validation = validateUploadFile(file)
-  if (!validation.ok) {
-    return Response.json({ error: validation.error }, { status: validation.status })
+  const submissionId = formData.get('submission_id')
+  if (
+    typeof submissionId !== 'string' ||
+    !SUBMISSION_ID_PATTERN.test(submissionId)
+  ) {
+    return Response.json(
+      { error: 'Missing or invalid submission_id field' },
+      { status: 400 },
+    )
   }
 
-  const objectName = `uploads/${requester.email}/${Date.now()}.${validation.extension}`
+  const validation = validateUploadFile(file)
+  if (!validation.ok) {
+    return Response.json(
+      { error: validation.error },
+      { status: validation.status },
+    )
+  }
+
+  const submissionPrefix = `uploads/${requester.email}/${submissionId}/`
+  const [existing] = await storage
+    .bucket(BUCKET_NAME)
+    .getFiles({ prefix: submissionPrefix })
+  if (existing.length >= MAX_PHOTOS) {
+    return Response.json(
+      { error: `Submission already has the maximum of ${MAX_PHOTOS} photos` },
+      { status: 409 },
+    )
+  }
+
+  const objectName = `${submissionPrefix}${Date.now()}.${validation.extension}`
   const buffer = Buffer.from(await file.arrayBuffer())
 
   try {
@@ -91,5 +131,8 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Upload failed' }, { status: 502 })
   }
 
-  return Response.json({ path: `gs://${BUCKET_NAME}/${objectName}` }, { status: 201 })
+  return Response.json(
+    { path: `gs://${BUCKET_NAME}/${objectName}` },
+    { status: 201 },
+  )
 }

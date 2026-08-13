@@ -3,6 +3,9 @@
 # Dependencies
 node_modules/
 
+# Cloud Functions build output
+functions/lib/
+
 # Expo / build output
 .expo/
 dist/

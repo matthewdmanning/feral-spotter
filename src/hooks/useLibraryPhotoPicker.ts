@@ -8,7 +8,9 @@
  */
 
 import { usePhotoStore, useSubmissionStore } from '@/src/hooks'
+import { useAuth } from '@/src/lib/auth/useAuth'
 import { EVENTS, captureEvent } from '@/src/lib/analytics/analytics'
+import { uploadNewPhoto } from '@/src/lib/upload/uploadNewPhoto'
 import { buildSubmissionPhoto } from '@/src/utils/buildSubmissionPhoto'
 import {
   classifyLibraryPickTime,
@@ -40,9 +42,11 @@ function isLibraryPermissionUsable(
 export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
   const photos = usePhotoStore((s) => s.photos)
   const addPhotos = usePhotoStore((s) => s.addPhotos)
+  const updatePhoto = usePhotoStore((s) => s.updatePhoto)
   const setLocationType = useSubmissionStore((s) => s.setLocationType)
   const setTimeType = useSubmissionStore((s) => s.setTimeType)
   const setCapturedAt = useSubmissionStore((s) => s.setCapturedAt)
+  const { user } = useAuth()
 
   const pickFromLibrary = useCallback(async () => {
     // Check-then-request, mirroring useCameraCapture's write-only gallery-save
@@ -82,6 +86,18 @@ export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
       is_first_pick: isFirstPick,
     })
 
+    const uid = user?.uid
+    const submissionId = usePhotoStore.getState().submissionId
+    if (uid && submissionId) {
+      for (const photo of newPhotos) {
+        uploadNewPhoto(photo, uid, submissionId, updatePhoto)
+      }
+    } else {
+      console.error(
+        '[useLibraryPhotoPicker] missing uid/submissionId for upload',
+      )
+    }
+
     // A draft is single-source by construction (ADR 0002 amendment): the
     // Home screen guard guarantees the pool was empty before this pick.
     if (isFirstPick) setLocationType('pin')
@@ -94,7 +110,15 @@ export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
     setCapturedAt(captured_at)
 
     router.navigate('/submission/create')
-  }, [photos.length, addPhotos, setLocationType, setTimeType, setCapturedAt])
+  }, [
+    photos.length,
+    addPhotos,
+    updatePhoto,
+    setLocationType,
+    setTimeType,
+    setCapturedAt,
+    user,
+  ])
 
   return { pickFromLibrary }
 }
