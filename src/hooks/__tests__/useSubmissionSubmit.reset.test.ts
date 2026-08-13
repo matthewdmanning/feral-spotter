@@ -1,5 +1,6 @@
 import { act, renderHook } from '@testing-library/react-native'
 import { Alert } from 'react-native'
+import { stopLocationCapture } from '@/src/lib/location'
 import { useSubmissionSubmit } from '../useSubmissionSubmit'
 import { useSubmissionStore } from '../useSubmissionStore'
 import { usePhotoStore } from '../usePhotoStore'
@@ -106,6 +107,7 @@ describe('useSubmissionSubmit — handleReset (#189)', () => {
 
     expect(useSubmissionStore.getState().cats).toEqual([])
     expect(usePhotoStore.getState().photos).toEqual([])
+    expect(stopLocationCapture).toHaveBeenCalled()
 
     alertSpy.mockRestore()
   })
