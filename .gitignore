@@ -55,6 +55,7 @@ GoogleService-Info.plist
 
 # Editor / tooling
 .vscode/
+.codegraph/
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
 .claude/worktrees/
