@@ -17,5 +17,11 @@
     }
   },
   "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
-  "exclude": ["**/__tests__/**", "**/*+api.ts", "node_modules", "ts-ailiot"]
+  "exclude": [
+    "**/__tests__/**",
+    "**/*+api.ts",
+    "node_modules",
+    "ts-ailiot",
+    "functions"
+  ]
 }

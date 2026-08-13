@@ -73,8 +73,8 @@ const cat = (id: string) => ({
 const photo = (id: string) => ({
   local_id: id,
   uri: `file://${id}.jpg`,
-  uploaded: false,
-  upload_progress: 0,
+  uploaded: true,
+  upload_progress: 100,
   width: 100,
   height: 100,
 })

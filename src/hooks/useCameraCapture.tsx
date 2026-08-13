@@ -14,8 +14,10 @@
 import { CameraThumb } from '@/src/components/atoms/CameraThumb'
 import { usePhotoStore } from '@/src/hooks'
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'
+import { useAuth } from '@/src/lib/auth/useAuth'
 import { captureEvent, EVENTS } from '@/src/lib/analytics/analytics'
 import { startLocationCapture } from '@/src/lib/location'
+import { uploadNewPhoto } from '@/src/lib/upload/uploadNewPhoto'
 import type { SubmissionPhoto } from '@/src/types'
 import { type FlashListRef } from '@shopify/flash-list'
 import {
@@ -82,6 +84,8 @@ export function useCameraCapture(): CameraCaptureResult {
   )
   const addPhoto = usePhotoStore((s) => s.addPhoto)
   const removePhoto = usePhotoStore((s) => s.removePhoto)
+  const updatePhoto = usePhotoStore((s) => s.updatePhoto)
+  const { user } = useAuth()
 
   const [cameraPosition, setCameraPosition] = useState<'back' | 'front'>('back')
   const [capturedPhotos, setCapturedPhotos] = useState<SubmissionPhoto[]>([])
@@ -151,6 +155,17 @@ export function useCameraCapture(): CameraCaptureResult {
         photo_height: photo.height,
       })
 
+      // Upload starts immediately, in the background — not gated on this
+      // screen's lifecycle — so a slow/spotty connection doesn't block
+      // capturing more photos.
+      const uid = user?.uid
+      const submissionId = usePhotoStore.getState().submissionId
+      if (uid && submissionId) {
+        uploadNewPhoto(submission, uid, submissionId, updatePhoto)
+      } else {
+        console.error('[useCameraCapture] missing uid/submissionId for upload')
+      }
+
       // Location is set once per submission on the create screen (ADR 0002),
       // not per photo — no GPS call on the shutter path.
 
@@ -183,7 +198,9 @@ export function useCameraCapture(): CameraCaptureResult {
     flashOpacity,
     photoOutput,
     addPhoto,
+    updatePhoto,
     keepOnDevice,
+    user,
   ])
 
   // ── Discard ───────────────────────────────────────────────────────────────

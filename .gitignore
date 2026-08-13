@@ -3,6 +3,9 @@
 # Dependencies
 node_modules/
 
+# Cloud Functions build output
+functions/lib/
+
 # Expo / build output
 .expo/
 dist/
@@ -44,8 +47,8 @@ yarn-error.*
 # Env files
 .env*.local
 
-# Firebase CLI local config / project identifiers
-firebase.json
+# Firebase CLI local project identifiers (firebase.json is committed —
+# rules/functions/emulator config, no credentials in it)
 .firebaserc
 google-services.json
 GoogleService-Info.plist
