@@ -38,6 +38,8 @@ interface BoundingBoxState {
   removeBoxesForPhoto: (photoId: string) => void
   /** photo_local_ids with a box for this cat — the derived source of ObservedCat.photo_local_ids (#172) */
   getBoxedPhotoIds: (catId: string) => string[]
+  /** Every box drawn for this cat, across all its photos — for #264's submit payload */
+  getBoxesForCat: (catId: string) => BoundingBox[]
   /** The cat's first-drawn box (by key insertion order) — persists as the Cat Form inset crop (#172) */
   getFirstBox: (catId: string) => BoundingBox | undefined
 }
@@ -157,6 +159,13 @@ export const useBoundingBoxStore = create<BoundingBoxState>()(
             ([key, boxes]) => key.startsWith(`${catId}:`) && boxes.length > 0,
           )
           .map(([key]) => key.slice(`${catId}:`.length))
+      },
+
+      getBoxesForCat: (catId) => {
+        const all = get().boxes
+        return Object.entries(all)
+          .filter(([key]) => key.startsWith(`${catId}:`))
+          .flatMap(([, boxes]) => boxes)
       },
 
       // Object key insertion order == box-confirmation order, since addBox

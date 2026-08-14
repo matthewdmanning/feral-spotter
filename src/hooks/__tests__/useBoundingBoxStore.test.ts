@@ -80,3 +80,26 @@ describe('useBoundingBoxStore — removeBoxesForPhoto', () => {
     )
   })
 })
+
+/**
+ * Purpose: #264's submit payload needs every box for a cat, across all its
+ * photos, without leaking another cat's boxes — the key scheme is a plain
+ * string prefix match, which is the exact class of bug that would let
+ * 'cat-1' accidentally match a 'cat-10:...' key without the colon separator.
+ */
+describe('useBoundingBoxStore — getBoxesForCat', () => {
+  beforeEach(() => {
+    useBoundingBoxStore.setState({ boxes: {}, lastBoxes: {}, absences: {} })
+  })
+
+  it("returns every box across a cat's photos, excluding other cats", () => {
+    useBoundingBoxStore.getState().addBox('cat-1', 'photo-1', box())
+    useBoundingBoxStore.getState().addBox('cat-1', 'photo-2', box())
+    useBoundingBoxStore.getState().addBox('cat-10', 'photo-1', box())
+
+    const result = useBoundingBoxStore.getState().getBoxesForCat('cat-1')
+
+    expect(result).toHaveLength(2)
+    expect(result.every((b) => b.cat_id === 'cat-1')).toBe(true)
+  })
+})
