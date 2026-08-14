@@ -32,28 +32,38 @@ function event(
 describe('onSubmissionPhotoUploaded', () => {
   beforeEach(() => jest.clearAllMocks())
 
-  it('increments photoCount and sets ownerUid for a well-formed path', async () => {
+  it('increments photoCount and sets ownerUidHash for a well-formed path', async () => {
     await onSubmissionPhotoUploaded.run(
-      event('submissions/uid-1/sub-1/photo.jpg'),
+      event('submissions/a1b2c3d4e5f6hash/sub-1/photo.jpg'),
     )
 
     expect(mockCollection).toHaveBeenCalledWith('submissions')
     expect(mockDoc).toHaveBeenCalledWith('sub-1')
     expect(mockIncrement).toHaveBeenCalledWith(1)
     expect(mockSet).toHaveBeenCalledWith(
-      { ownerUid: 'uid-1', photoCount: { __increment: 1 } },
+      { ownerUidHash: 'a1b2c3d4e5f6hash', photoCount: { __increment: 1 } },
       { merge: true },
     )
   })
 
-  it('no-ops on a malformed path (no uid/submissionId segments)', async () => {
+  it('no-ops on a malformed path (no uidHash/submissionId segments)', async () => {
     await onSubmissionPhotoUploaded.run(event('not-a-submission-path.jpg'))
 
     expect(mockCollection).not.toHaveBeenCalled()
   })
 
   it('no-ops on a path missing the fileName segment', async () => {
-    await onSubmissionPhotoUploaded.run(event('submissions/uid-1/sub-1'))
+    await onSubmissionPhotoUploaded.run(
+      event('submissions/a1b2c3d4e5f6hash/sub-1'),
+    )
+
+    expect(mockCollection).not.toHaveBeenCalled()
+  })
+
+  it('no-ops on metadata.json — not a photo, must not move the counter', async () => {
+    await onSubmissionPhotoUploaded.run(
+      event('submissions/a1b2c3d4e5f6hash/sub-1/metadata.json'),
+    )
 
     expect(mockCollection).not.toHaveBeenCalled()
   })
@@ -64,7 +74,7 @@ describe('onSubmissionPhotoDeleted', () => {
 
   it('decrements photoCount for a well-formed path', async () => {
     await onSubmissionPhotoDeleted.run(
-      event('submissions/uid-1/sub-1/photo.jpg'),
+      event('submissions/a1b2c3d4e5f6hash/sub-1/photo.jpg'),
     )
 
     expect(mockDoc).toHaveBeenCalledWith('sub-1')
@@ -77,6 +87,14 @@ describe('onSubmissionPhotoDeleted', () => {
 
   it('no-ops on a malformed path', async () => {
     await onSubmissionPhotoDeleted.run(event('junk'))
+
+    expect(mockCollection).not.toHaveBeenCalled()
+  })
+
+  it('no-ops on metadata.json deletion', async () => {
+    await onSubmissionPhotoDeleted.run(
+      event('submissions/a1b2c3d4e5f6hash/sub-1/metadata.json'),
+    )
 
     expect(mockCollection).not.toHaveBeenCalled()
   })

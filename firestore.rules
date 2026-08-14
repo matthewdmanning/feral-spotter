@@ -4,8 +4,13 @@ service cloud.firestore {
     // photoCount is maintained only by the Cloud Function storage triggers
     // (functions/src/index.ts), which use the Admin SDK and bypass these
     // rules — clients get read-only access to their own submission.
+    // ownerUidHash is the same sha256(salt + uid) storage.rules uses
+    // (docs/adr/0005) — the Cloud Function only ever sees the hashed path
+    // segment, never the raw uid, so this field can't hold anything else.
     match /submissions/{submissionId} {
-      allow read: if request.auth != null && request.auth.uid == resource.data.ownerUid;
+      allow read: if request.auth != null
+                   && hashing.sha256('feralspotter-photo-metadata-uid-v1' + request.auth.uid).toHexString()
+                      == resource.data.ownerUidHash;
       allow write: if false;
     }
   }
