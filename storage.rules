@@ -49,7 +49,7 @@ service firebase.storage {
                  // src/config/constants.ts documents the same number —
                  // rules can't read it.
                  !firestore.exists(/databases/(default)/documents/submissionCounts/$(uidHash))
-                 || firestore.get(/databases/(default)/documents/submissionCounts/$(uidHash)).data.count < 50
+                 || firestore.get(/databases/(default)/documents/submissionCounts/$(uidHash)).data.count < 250
                );
       }
 

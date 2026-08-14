@@ -23,7 +23,7 @@ export const MAX_PHOTOS = Number(process.env.EXPO_PUBLIC_MAX_PHOTOS) || 10
  * Documentation only — rules can't read this constant, so the literal in
  * storage.rules must be kept in sync by hand.
  */
-export const MAX_SUBMISSIONS_PER_UID = 50
+export const MAX_SUBMISSIONS_PER_UID = 250
 
 /**
  * Explicit opt-in tag for test-drive builds with no real Firebase project
