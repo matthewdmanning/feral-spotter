@@ -13,5 +13,20 @@ service cloud.firestore {
                       == resource.data.ownerUidHash;
       allow write: if false;
     }
+
+    // #270: per-uid submission count (functions/src/index.ts's
+    // onSubmissionSubmitted), read by storage.rules to cap submissions
+    // per uidHash. The {submissionId} marker subcollection under each doc
+    // exists only to dedupe metadata.json retries — clients never need it.
+    match /submissionCounts/{uidHash} {
+      allow read: if request.auth != null
+                   && hashing.sha256('feralspotter-photo-metadata-uid-v1' + request.auth.uid).toHexString()
+                      == uidHash;
+      allow write: if false;
+
+      match /items/{submissionId} {
+        allow read, write: if false;
+      }
+    }
   }
 }

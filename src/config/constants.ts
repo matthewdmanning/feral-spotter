@@ -17,6 +17,15 @@ export const APP_VERSION: string = Constants.expoConfig?.version ?? '1.0.0'
 export const MAX_PHOTOS = Number(process.env.EXPO_PUBLIC_MAX_PHOTOS) || 10
 
 /**
+ * Maximum distinct submissions per uidHash (#270), enforced by
+ * storage.rules' isValidMetadataWrite against the
+ * submissionCounts/{uidHash} doc functions/src/index.ts maintains.
+ * Documentation only — rules can't read this constant, so the literal in
+ * storage.rules must be kept in sync by hand.
+ */
+export const MAX_SUBMISSIONS_PER_UID = 250
+
+/**
  * Explicit opt-in tag for test-drive builds with no real Firebase project
  * access — short-circuits submission-metadata upload to a fake success
  * instead of hitting Cloud Storage. Set EXPO_PUBLIC_UPLOADS_MOCK=true (same

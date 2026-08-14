@@ -3,22 +3,61 @@ import type {
   StorageObjectData,
 } from 'firebase-functions/v2/storage'
 import type { CloudEvent } from 'firebase-functions/v2'
+import type { AuthBlockingEvent } from 'firebase-functions/v2/identity'
 
 jest.mock('firebase-admin/app', () => ({
   initializeApp: jest.fn(),
 }))
 
+interface MockDocRef {
+  id: string
+  set: typeof mockSet
+  collection: (name: string) => MockCollectionRef
+}
+interface MockCollectionRef {
+  name: string
+  doc: (id: string) => MockDocRef
+}
+
 const mockSet = jest.fn().mockResolvedValue(undefined)
-const mockDoc = jest.fn(() => ({ set: mockSet }))
-const mockCollection = jest.fn(() => ({ doc: mockDoc }))
+const mockDoc = jest.fn((id: string): MockDocRef => ({
+  id,
+  set: mockSet,
+  collection: mockCollection,
+}))
+const mockCollection = jest.fn((name: string): MockCollectionRef => ({
+  name,
+  doc: mockDoc,
+}))
 const mockIncrement = jest.fn((n: number) => ({ __increment: n }))
 
+const mockTxGet = jest.fn()
+const mockTxSet = jest.fn()
+const mockRunTransaction = jest.fn(
+  async (
+    fn: (tx: { get: typeof mockTxGet; set: typeof mockTxSet }) => unknown,
+  ) => fn({ get: mockTxGet, set: mockTxSet }),
+)
+
 jest.mock('firebase-admin/firestore', () => ({
-  getFirestore: jest.fn(() => ({ collection: mockCollection })),
+  getFirestore: jest.fn(() => ({
+    collection: mockCollection,
+    runTransaction: mockRunTransaction,
+  })),
   FieldValue: { increment: (n: number) => mockIncrement(n) },
 }))
 
-import { onSubmissionPhotoDeleted, onSubmissionPhotoUploaded } from '../index'
+const mockSetCustomUserClaims = jest.fn().mockResolvedValue(undefined)
+jest.mock('firebase-admin/auth', () => ({
+  getAuth: jest.fn(() => ({ setCustomUserClaims: mockSetCustomUserClaims })),
+}))
+
+import {
+  resolveTesterClaim,
+  onSubmissionPhotoDeleted,
+  onSubmissionPhotoUploaded,
+  onSubmissionSubmitted,
+} from '../index'
 
 function event(
   name: string,
@@ -29,10 +68,18 @@ function event(
   } as StorageEvent
 }
 
+function authEvent(
+  data: Partial<AuthBlockingEvent['data']>,
+): AuthBlockingEvent {
+  return { data } as AuthBlockingEvent
+}
+
 describe('onSubmissionPhotoUploaded', () => {
   beforeEach(() => jest.clearAllMocks())
 
   it('increments photoCount and sets ownerUidHash for a well-formed path', async () => {
+    mockTxGet.mockResolvedValueOnce({ get: () => undefined })
+
     await onSubmissionPhotoUploaded.run(
       event('submissions/a1b2c3d4e5f6hash/sub-1/photo.jpg'),
     )
@@ -40,10 +87,41 @@ describe('onSubmissionPhotoUploaded', () => {
     expect(mockCollection).toHaveBeenCalledWith('submissions')
     expect(mockDoc).toHaveBeenCalledWith('sub-1')
     expect(mockIncrement).toHaveBeenCalledWith(1)
-    expect(mockSet).toHaveBeenCalledWith(
+    expect(mockTxSet).toHaveBeenCalledWith(
+      expect.anything(),
       { ownerUidHash: 'a1b2c3d4e5f6hash', photoCount: { __increment: 1 } },
       { merge: true },
     )
+  })
+
+  it('increments when the existing doc is owned by the same uidHash', async () => {
+    mockTxGet.mockResolvedValueOnce({
+      get: (field: string) =>
+        field === 'ownerUidHash' ? 'a1b2c3d4e5f6hash' : undefined,
+    })
+
+    await onSubmissionPhotoUploaded.run(
+      event('submissions/a1b2c3d4e5f6hash/sub-1/photo.jpg'),
+    )
+
+    expect(mockTxSet).toHaveBeenCalledWith(
+      expect.anything(),
+      { ownerUidHash: 'a1b2c3d4e5f6hash', photoCount: { __increment: 1 } },
+      { merge: true },
+    )
+  })
+
+  it('#268: does not increment or flip ownership when submissionId collides with a different uid', async () => {
+    mockTxGet.mockResolvedValueOnce({
+      get: (field: string) =>
+        field === 'ownerUidHash' ? 'some-other-hash' : undefined,
+    })
+
+    await onSubmissionPhotoUploaded.run(
+      event('submissions/a1b2c3d4e5f6hash/sub-1/photo.jpg'),
+    )
+
+    expect(mockTxSet).not.toHaveBeenCalled()
   })
 
   it('no-ops on a malformed path (no uidHash/submissionId segments)', async () => {
@@ -97,5 +175,104 @@ describe('onSubmissionPhotoDeleted', () => {
     )
 
     expect(mockCollection).not.toHaveBeenCalled()
+  })
+})
+
+describe('onSubmissionSubmitted', () => {
+  beforeEach(() => jest.clearAllMocks())
+
+  it('#270: increments the per-uid submission count on a new metadata.json', async () => {
+    mockTxGet.mockResolvedValueOnce({ exists: false })
+
+    await onSubmissionSubmitted.run(
+      event('submissions/a1b2c3d4e5f6hash/sub-1/metadata.json'),
+    )
+
+    expect(mockCollection).toHaveBeenCalledWith('submissionCounts')
+    expect(mockDoc).toHaveBeenCalledWith('a1b2c3d4e5f6hash')
+    expect(mockCollection).toHaveBeenCalledWith('items')
+    expect(mockDoc).toHaveBeenCalledWith('sub-1')
+    expect(mockTxSet).toHaveBeenCalledWith(expect.anything(), {})
+    expect(mockTxSet).toHaveBeenCalledWith(
+      expect.anything(),
+      { count: { __increment: 1 } },
+      { merge: true },
+    )
+  })
+
+  it('dedupes a metadata.json retry — does not double-count an existing marker', async () => {
+    mockTxGet.mockResolvedValueOnce({ exists: true })
+
+    await onSubmissionSubmitted.run(
+      event('submissions/a1b2c3d4e5f6hash/sub-1/metadata.json'),
+    )
+
+    expect(mockTxSet).not.toHaveBeenCalled()
+  })
+
+  it('no-ops on a photo upload (not metadata.json)', async () => {
+    await onSubmissionSubmitted.run(
+      event('submissions/a1b2c3d4e5f6hash/sub-1/photo.jpg'),
+    )
+
+    expect(mockRunTransaction).not.toHaveBeenCalled()
+  })
+})
+
+describe('resolveTesterClaim', () => {
+  const ORIGINAL_ENV = process.env.TESTER_ALLOWLIST_EMAILS
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    process.env.TESTER_ALLOWLIST_EMAILS =
+      'tester@example.com, Other@Example.com'
+  })
+
+  afterAll(() => {
+    process.env.TESTER_ALLOWLIST_EMAILS = ORIGINAL_ENV
+  })
+
+  it('sets allowedTester true for an allowlisted email (case-insensitive)', async () => {
+    await resolveTesterClaim(
+      authEvent({ uid: 'uid-1', email: 'OTHER@example.com', customClaims: {} }),
+    )
+
+    expect(mockSetCustomUserClaims).toHaveBeenCalledWith('uid-1', {
+      allowedTester: true,
+    })
+  })
+
+  it('sets allowedTester false for a non-allowlisted email', async () => {
+    await resolveTesterClaim(
+      authEvent({
+        uid: 'uid-2',
+        email: 'stranger@example.com',
+        customClaims: {},
+      }),
+    )
+
+    expect(mockSetCustomUserClaims).toHaveBeenCalledWith('uid-2', {
+      allowedTester: false,
+    })
+  })
+
+  it('is a no-op once the claim already matches (no redundant write)', async () => {
+    await resolveTesterClaim(
+      authEvent({
+        uid: 'uid-1',
+        email: 'tester@example.com',
+        customClaims: { allowedTester: true },
+      }),
+    )
+
+    expect(mockSetCustomUserClaims).not.toHaveBeenCalled()
+  })
+
+  it('no-ops when there is no uid on the event', async () => {
+    await resolveTesterClaim(
+      authEvent({ email: 'tester@example.com', customClaims: {} }),
+    )
+
+    expect(mockSetCustomUserClaims).not.toHaveBeenCalled()
   })
 })
