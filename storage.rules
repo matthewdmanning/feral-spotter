@@ -34,6 +34,8 @@ service firebase.storage {
       }
 
       function isValidPhotoWrite() {
+        let docExists = firestore.exists(/databases/(default)/documents/submissions/$(submissionId));
+        let doc = firestore.get(/databases/(default)/documents/submissions/$(submissionId));
         return (
                  // #264: finalizeSubmissionPhotoMetadata patches an already-
                  // uploaded, already-counted photo's customMetadata at Submit
@@ -50,16 +52,29 @@ service firebase.storage {
                  (resource != null && resource.size == request.resource.size)
                )
                || (
-                 request.resource.size < 20 * 1024 * 1024
+                 // #269: create-only. A same-fileName overwrite with
+                 // different bytes falls through here (it isn't the
+                 // same-size patch above) — without resource == null it
+                 // would re-fire onObjectFinalized and double-count a photo
+                 // that already exists, drifting photoCount out of sync
+                 // with the real object count.
+                 resource == null
+                 && request.resource.size < 20 * 1024 * 1024
                  && request.resource.contentType.matches('image/(jpeg|png|heic|heif)')
                  && (
                    // No counter doc yet == first photo for this submission,
                    // allow it; the Cloud Function creates the doc after the
                    // write lands.
-                   !firestore.exists(/databases/(default)/documents/submissions/$(submissionId))
+                   !docExists
+                   // #268: submissionId is client-generated, so two
+                   // different uids can collide on the same id. Once a
+                   // counter doc exists, only the uidHash it belongs to may
+                   // keep writing photos against it — a collision must fail
+                   // closed (denied write) rather than merge into someone
+                   // else's submission.
                    // 10 must match MAX_PHOTOS: src/config/constants.ts (client) and
                    // the duplicate in src/app/upload+api.ts (server) — rules can't read it.
-                   || firestore.get(/databases/(default)/documents/submissions/$(submissionId)).data.photoCount < 10
+                   || (doc.data.ownerUidHash == uidHash && doc.data.photoCount < 10)
                  )
                );
       }

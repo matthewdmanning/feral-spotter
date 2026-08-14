@@ -9,12 +9,27 @@ jest.mock('firebase-admin/app', () => ({
 }))
 
 const mockSet = jest.fn().mockResolvedValue(undefined)
+let mockExistingOwner: string | undefined
 const mockDoc = jest.fn(() => ({ set: mockSet }))
 const mockCollection = jest.fn(() => ({ doc: mockDoc }))
 const mockIncrement = jest.fn((n: number) => ({ __increment: n }))
+const mockTxGet = jest.fn(async () => ({
+  get: (field: string) =>
+    field === 'ownerUidHash' ? mockExistingOwner : undefined,
+}))
+const mockTxSet = jest.fn()
+const mockRunTransaction = jest.fn(
+  async (
+    fn: (tx: { get: typeof mockTxGet; set: typeof mockTxSet }) => unknown,
+  ) => fn({ get: mockTxGet, set: mockTxSet }),
+)
 
 jest.mock('firebase-admin/firestore', () => ({
-  getFirestore: jest.fn(() => ({ collection: mockCollection })),
+  getFirestore: jest.fn(() => ({
+    collection: mockCollection,
+    runTransaction: mockRunTransaction,
+    set: mockSet,
+  })),
   FieldValue: { increment: (n: number) => mockIncrement(n) },
 }))
 
@@ -30,7 +45,10 @@ function event(
 }
 
 describe('onSubmissionPhotoUploaded', () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockExistingOwner = undefined
+  })
 
   it('increments photoCount and sets ownerUidHash for a well-formed path', async () => {
     await onSubmissionPhotoUploaded.run(
@@ -40,10 +58,35 @@ describe('onSubmissionPhotoUploaded', () => {
     expect(mockCollection).toHaveBeenCalledWith('submissions')
     expect(mockDoc).toHaveBeenCalledWith('sub-1')
     expect(mockIncrement).toHaveBeenCalledWith(1)
-    expect(mockSet).toHaveBeenCalledWith(
+    expect(mockTxSet).toHaveBeenCalledWith(
+      expect.anything(),
       { ownerUidHash: 'a1b2c3d4e5f6hash', photoCount: { __increment: 1 } },
       { merge: true },
     )
+  })
+
+  it('increments when the existing doc is owned by the same uidHash', async () => {
+    mockExistingOwner = 'a1b2c3d4e5f6hash'
+
+    await onSubmissionPhotoUploaded.run(
+      event('submissions/a1b2c3d4e5f6hash/sub-1/photo.jpg'),
+    )
+
+    expect(mockTxSet).toHaveBeenCalledWith(
+      expect.anything(),
+      { ownerUidHash: 'a1b2c3d4e5f6hash', photoCount: { __increment: 1 } },
+      { merge: true },
+    )
+  })
+
+  it('#268: does not increment or flip ownership when submissionId collides with a different uid', async () => {
+    mockExistingOwner = 'some-other-hash'
+
+    await onSubmissionPhotoUploaded.run(
+      event('submissions/a1b2c3d4e5f6hash/sub-1/photo.jpg'),
+    )
+
+    expect(mockTxSet).not.toHaveBeenCalled()
   })
 
   it('no-ops on a malformed path (no uidHash/submissionId segments)', async () => {

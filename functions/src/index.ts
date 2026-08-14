@@ -39,16 +39,27 @@ export const onSubmissionPhotoUploaded = onObjectFinalized(
     const parsed = parseSubmissionPath(event.data.name)
     if (!parsed) return
 
-    await getFirestore()
-      .collection('submissions')
-      .doc(parsed.submissionId)
-      .set(
-        {
-          ownerUidHash: parsed.uidHash,
-          photoCount: FieldValue.increment(1),
-        },
+    const firestore = getFirestore()
+    const doc = firestore.collection('submissions').doc(parsed.submissionId)
+
+    // #268: submissionId is client-generated, so two different uids can
+    // collide on the same id. The Storage write already landed by the time
+    // this trigger runs — it can't retroactively deny it — but it must not
+    // flip ownerUidHash or inflate another uid's photoCount. Transaction
+    // guards against a same-id race between two first-writers; the loser
+    // simply doesn't get counted.
+    await firestore.runTransaction(async (tx) => {
+      const snapshot = await tx.get(doc)
+      const existingOwner = snapshot.get('ownerUidHash') as string | undefined
+
+      if (existingOwner != null && existingOwner !== parsed.uidHash) return
+
+      tx.set(
+        doc,
+        { ownerUidHash: parsed.uidHash, photoCount: FieldValue.increment(1) },
         { merge: true },
       )
+    })
   },
 )
 
