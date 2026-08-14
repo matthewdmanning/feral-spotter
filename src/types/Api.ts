@@ -1,8 +1,9 @@
 /**
  * types/Api.ts
- * Shapes for the Cloud Run submission API and the local post-submission cache.
- * Field shapes mirror SubmissionDraft/ObservedCat (src/hooks/useSubmissionStore)
- * structurally rather than importing them, since types/ must not depend on hooks/.
+ * Shapes for the submission-metadata Cloud Storage upload and the local
+ * post-submission cache. Field shapes mirror SubmissionDraft/ObservedCat
+ * (src/hooks/useSubmissionStore) structurally rather than importing them,
+ * since types/ must not depend on hooks/.
  */
 
 export interface SubmissionApiPayload {
@@ -25,16 +26,20 @@ export interface SubmissionApiPayload {
     health_label: string
     photo_local_ids: string[]
     photos_reviewed: boolean
+    /** Box geometry drawn for this cat — normalised 0-1 image-pixel corners (src/types/BoundingBox.ts). */
+    boxes: {
+      photo_local_id: string
+      /** Undefined only if the box's photo somehow isn't among the uploaded set at submit time. */
+      cloud_storage_path?: string
+      lowerLeftX: number
+      lowerLeftY: number
+      upperRightX: number
+      upperRightY: number
+    }[]
   }[]
   photo_paths: string[]
   /** GPS fix captured at photo-take time, keyed by cloud_storage_path. Omitted entries have no fix. */
   photo_locations?: { path: string; latitude: number; longitude: number }[]
-}
-
-export interface SubmissionApiResponse {
-  status: 'success' | 'error'
-  id: string
-  message?: string
 }
 
 export interface PhotoUploadResponse {

@@ -144,6 +144,10 @@ export function useCameraCapture(): CameraCaptureResult {
         upload_progress: 0,
         width: photo.width,
         height: photo.height,
+        // No EXIF to read a capture time from (camera captures never set
+        // `exif`, unlike a Library pick) — the shutter-press moment is the
+        // only source of truth, and it's only available here, right now.
+        captured_at: new Date().toISOString(),
       }
       photo.dispose()
 

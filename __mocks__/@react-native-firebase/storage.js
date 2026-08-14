@@ -13,4 +13,9 @@ module.exports = {
   getDownloadURL: jest.fn(() =>
     Promise.resolve('https://example.com/mock.jpg'),
   ),
+  uploadString: jest.fn(() => Promise.resolve()),
+  getMetadata: jest.fn(() =>
+    Promise.resolve({ timeCreated: '2026-01-01T00:00:00.000Z' }),
+  ),
+  updateMetadata: jest.fn(() => Promise.resolve({})),
 }

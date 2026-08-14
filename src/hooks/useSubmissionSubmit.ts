@@ -12,7 +12,9 @@
  */
 
 import { usePhotoStore, useSubmissionStore, useUIStore } from '@/src/hooks'
+import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { EVENTS, fireAnalyticsEvent } from '@/src/lib/analytics/analytics'
+import { useAuth } from '@/src/lib/auth/useAuth'
 import {
   clearCurrentCacheId,
   deleteSubmissionCache,
@@ -21,8 +23,13 @@ import {
   updateSubmissionCache,
 } from '@/src/lib/cache/submissionCache'
 import { stopLocationCapture } from '@/src/lib/location'
+import {
+  finalizeSubmissionPhotoMetadata,
+  hashUid,
+  uploadSubmissionMetadata,
+} from '@/src/lib/upload/firebaseUpload'
 import type { SubmissionApiPayload, SubmissionPhoto } from '@/src/types'
-import { submitObservation } from '@/src/utils/api'
+import { parseExifDateTime } from '@/src/utils/libraryPickTime'
 import { router } from 'expo-router'
 import { useCallback, useState } from 'react'
 import { Alert } from 'react-native'
@@ -41,6 +48,9 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
 
   const photos = usePhotoStore((s) => s.photos)
   const clearPhotos = usePhotoStore((s) => s.clearPhotos)
+  const cloudSubmissionId = usePhotoStore((s) => s.submissionId)
+
+  const { user } = useAuth()
 
   const showError = useUIStore((s) => s.showError)
   const setSubmitting = useUIStore((s) => s.setSubmitting)
@@ -121,44 +131,133 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
                     }))
                   : []
 
+              // #264: box geometry lived only in useBoundingBoxStore's local
+              // AsyncStorage — never left the device. Fold it in per cat here
+              // so it's shared by both the upload payload and the history entry.
+              // cloud_storage_path is attached per box, not just left to the
+              // uploadSubmissionPhoto naming convention (photo_local_id.ext)
+              // — a box is worthless downstream without a recoverable link to
+              // its image.
+              const cloudPathByLocalId = new Map(
+                uploadedPhotos.map((p) => [p.local_id, p.cloud_storage_path]),
+              )
+              const catsWithBoxes = cats.map((cat) => ({
+                ...cat,
+                boxes: useBoundingBoxStore
+                  .getState()
+                  .getBoxesForCat(cat.local_id)
+                  .map(
+                    ({
+                      photo_local_id,
+                      lowerLeftX,
+                      lowerLeftY,
+                      upperRightX,
+                      upperRightY,
+                    }) => ({
+                      photo_local_id,
+                      cloud_storage_path:
+                        cloudPathByLocalId.get(photo_local_id),
+                      lowerLeftX,
+                      lowerLeftY,
+                      upperRightX,
+                      upperRightY,
+                    }),
+                  ),
+              }))
+
               const payload: SubmissionApiPayload = {
                 submission,
-                cats,
+                cats: catsWithBoxes,
                 photo_paths: uploadedPhotos.map((p) => p.cloud_storage_path),
                 ...(photoLocations.length > 0 && {
                   photo_locations: photoLocations,
                 }),
               }
-              const response = await submitObservation(payload)
 
-              if (response.status === 'success') {
-                if (cId) {
-                  await updateSubmissionCache(cId, { status: 'Submitted' })
-                  const snap = await getSubmissionCache(cId)
-                  if (snap)
-                    fireAnalyticsEvent(EVENTS.SUBMISSION_SUBMITTED, snap)
-                  // Without this, submission_cache_current keeps pointing at
-                  // this now-Submitted entry forever — every later draft's
-                  // createSubmissionCache() guard in create/index.tsx sees a
-                  // truthy current ID and never creates its own cache row.
-                  await clearCurrentCacheId()
-                }
-                addToHistory({
-                  id: response.id,
-                  ...submission,
-                  cats,
-                  photo_urls: uploadedPhotos.map((p) => p.cloud_storage_url),
-                  created_at: new Date(),
-                  submitted_at: new Date(),
-                  status: 'submitted',
-                })
-                clearDraft()
-                clearPhotos()
-                stopLocationCapture()
-                router.replace('/')
-              } else {
-                throw new Error(response.message ?? 'Submission failed')
+              if (!user?.uid || !cloudSubmissionId) {
+                throw new Error('Missing uid/submissionId for submission')
               }
+
+              // #264 amendment to ADR-0002/ADR-0003: each photo's Storage
+              // object must be self-describing — images get exported/consumed
+              // separately from metadata.json downstream (ML pipeline), so a
+              // fetch back to the submission record can't be assumed. Same
+              // hashUid() the object path itself is built from (ADR-0005) —
+              // still deterministic, so a later "delete my data" request can
+              // recompute the same hash from the signed-in user's own uid.
+              const userIdHash = await hashUid(user.uid)
+              // Prefers each photo's own capture moment over the submission-
+              // wide value — submission.captured_at is the *earliest* EXIF
+              // time across a multi-select Library pick (ADR-0003's interim
+              // MVP rule), which is only correct as a submission-level
+              // approximation; stamped per image it would misdate every
+              // photo but the earliest one. Camera captures set captured_at
+              // at shutter press (no EXIF exists to read); Library picks
+              // parse their own exif.timestamp the same way buildSubmissionPhoto
+              // does. Only a genuinely timeless photo (parse failure, no
+              // EXIF, no manual/captured_at) falls back to Submit time.
+              const submitFallbackTime = new Date().toISOString()
+              const photoTimeFor = (p: SubmissionPhoto) =>
+                p.captured_at ??
+                parseExifDateTime(p.exif?.timestamp) ??
+                submission.captured_at ??
+                submission.manual_time ??
+                submitFallbackTime
+
+              // Best-effort: the P0 this app guards hard against is silently
+              // missing photos (blocked above), not a metadata patch on an
+              // already-fully-uploaded photo — don't fail an otherwise-
+              // successful submission over a flaky-network patch failure.
+              const finalizeResults = await Promise.allSettled(
+                uploadedPhotos.map((p) =>
+                  finalizeSubmissionPhotoMetadata(
+                    p.cloud_storage_path,
+                    userIdHash,
+                    photoTimeFor(p),
+                    latitude,
+                    longitude,
+                  ),
+                ),
+              )
+              finalizeResults.forEach((result, i) => {
+                if (result.status === 'rejected') {
+                  console.error(
+                    '[useSubmissionSubmit] finalizeSubmissionPhotoMetadata',
+                    uploadedPhotos[i].local_id,
+                    result.reason,
+                  )
+                }
+              })
+
+              await uploadSubmissionMetadata(
+                payload,
+                user.uid,
+                cloudSubmissionId,
+              )
+
+              if (cId) {
+                await updateSubmissionCache(cId, { status: 'Submitted' })
+                const snap = await getSubmissionCache(cId)
+                if (snap) fireAnalyticsEvent(EVENTS.SUBMISSION_SUBMITTED, snap)
+                // Without this, submission_cache_current keeps pointing at
+                // this now-Submitted entry forever — every later draft's
+                // createSubmissionCache() guard in create/index.tsx sees a
+                // truthy current ID and never creates its own cache row.
+                await clearCurrentCacheId()
+              }
+              addToHistory({
+                id: cloudSubmissionId,
+                ...submission,
+                cats: catsWithBoxes,
+                photo_urls: uploadedPhotos.map((p) => p.cloud_storage_url),
+                created_at: new Date(),
+                submitted_at: new Date(),
+                status: 'submitted',
+              })
+              clearDraft()
+              clearPhotos()
+              stopLocationCapture()
+              router.replace('/')
             } catch (err) {
               if (cId) {
                 await updateSubmissionCache(cId, { status: 'Failed' })
@@ -181,6 +280,8 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
     cats,
     photos,
     submission,
+    cloudSubmissionId,
+    user,
     addToHistory,
     clearDraft,
     clearPhotos,

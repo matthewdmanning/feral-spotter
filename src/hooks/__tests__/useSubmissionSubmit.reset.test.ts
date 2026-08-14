@@ -49,8 +49,12 @@ jest.mock('@/src/lib/analytics/analytics', () => ({
   },
 }))
 
-jest.mock('@/src/utils/api', () => ({
-  submitObservation: jest.fn(),
+jest.mock('@/src/lib/upload/firebaseUpload', () => ({
+  uploadSubmissionMetadata: jest.fn(),
+}))
+
+jest.mock('@/src/lib/auth/useAuth', () => ({
+  useAuth: () => ({ user: { uid: 'uid-owner' } }),
 }))
 
 const cat = (id: string) => ({

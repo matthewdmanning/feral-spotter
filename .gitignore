@@ -62,7 +62,10 @@ GoogleService-Info.plist
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
 .claude/worktrees/
+.claude/skills/
 .skills/
+.agents/
+skills-lock.json
 .github/agents/*
 AGENTS.md
 CLAUDE.md

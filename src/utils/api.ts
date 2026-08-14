@@ -1,10 +1,9 @@
 /**
- * Google Cloud Run API Integration
- * Handles photo uploads and submission with password authentication
+ * Legacy shared-password device registration/verification against a Cloud
+ * Run endpoint. Submission upload itself moved to Firebase Storage — see
+ * src/lib/upload/firebaseUpload.ts.
  */
 
-// React Native's FormData.append accepts { uri, name, type } file objects
-import type { SubmissionApiPayload, SubmissionApiResponse } from '@/src/types'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as SecureStore from 'expo-secure-store'
 
@@ -86,75 +85,6 @@ export async function removePassword(): Promise<void> {
 export async function hasPassword(): Promise<boolean> {
   const password = await getPassword()
   return password !== null && password.length > 0
-}
-
-/**
- * Get authentication headers
- *
- * TODO(firebase-auth): this legacy shared-password scheme (superseded per the
- * 2026-07-12 roadmap) needs to become `Authorization: Bearer <Firebase ID
- * token>` once the API route verifies Firebase tokens server-side. Out of
- * scope for the client-side Firebase Auth migration — backend not implemented.
- */
-async function getAuthHeaders(): Promise<Record<string, string>> {
-  const password = await getPassword()
-  const deviceId = await getDeviceId()
-
-  if (!password) {
-    throw new Error('You must register first.')
-  }
-
-  return {
-    'Content-Type': 'application/json',
-    'X-Auth-Password': password,
-    'X-Device-ID': deviceId,
-  }
-}
-
-// Dev builds have no reachable backend to submit against (see
-// EXPO_PUBLIC_API_BASE_URL) — mock a successful response so the capture ->
-// cat-observations -> submission flow stays testable end-to-end during
-// manual test-drives without a live Cloud Run deployment.
-const IS_MOCK_BACKEND = __DEV__ && !process.env.EXPO_PUBLIC_API_BASE_URL
-
-/**
- * Submit observation to Google Cloud Run
- */
-export async function submitObservation(
-  payload: SubmissionApiPayload,
-): Promise<SubmissionApiResponse> {
-  if (IS_MOCK_BACKEND) {
-    return { status: 'success', id: `mock-${Date.now()}` }
-  }
-  try {
-    const headers = await getAuthHeaders()
-    const deviceId = await getDeviceId()
-
-    // Add device ID and timestamp to payload
-    const enrichedPayload = {
-      ...payload,
-      device_id: deviceId,
-      submitted_at: new Date().toISOString(),
-    }
-
-    const response = await fetch(`${API_BASE_URL}/submit-observation`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(enrichedPayload),
-    })
-
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.message || 'Submission failed')
-    }
-
-    const data: SubmissionApiResponse = await response.json()
-
-    return data
-  } catch (error) {
-    console.error('Submission error:', error)
-    throw error
-  }
 }
 
 /**

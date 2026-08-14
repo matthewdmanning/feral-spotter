@@ -1,11 +1,16 @@
 import { act, renderHook } from '@testing-library/react-native'
 import { Alert } from 'react-native'
 import { useSubmissionSubmit } from '@/src/hooks/useSubmissionSubmit'
+import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { CONSENT_VERSION, useConsentStore } from '@/src/hooks/useConsentStore'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
 import { useUIStore } from '@/src/hooks/useUIStore'
-import { submitObservation } from '@/src/utils/api'
+import {
+  finalizeSubmissionPhotoMetadata,
+  hashUid,
+  uploadSubmissionMetadata,
+} from '@/src/lib/upload/firebaseUpload'
 import type { SubmissionPhoto } from '@/src/types'
 
 jest.mock('@react-native-async-storage/async-storage', () =>
@@ -43,8 +48,14 @@ jest.mock('react-native-mmkv', () => ({
   })),
 }))
 
-jest.mock('@/src/utils/api', () => ({
-  submitObservation: jest.fn(),
+jest.mock('@/src/lib/upload/firebaseUpload', () => ({
+  uploadSubmissionMetadata: jest.fn(),
+  finalizeSubmissionPhotoMetadata: jest.fn(() => Promise.resolve()),
+  hashUid: jest.fn(() => Promise.resolve('hashed-uid-owner')),
+}))
+
+jest.mock('@/src/lib/auth/useAuth', () => ({
+  useAuth: () => ({ user: { uid: 'uid-owner' } }),
 }))
 
 const mockStopLocationCapture = jest.fn()
@@ -75,7 +86,8 @@ describe('useSubmissionSubmit submit flow', () => {
       history: [],
       currentStep: 'create',
     })
-    usePhotoStore.setState({ photos: [] })
+    usePhotoStore.setState({ photos: [], submissionId: 'sub-cloud-1' })
+    useBoundingBoxStore.setState({ boxes: {}, lastBoxes: {}, absences: {} })
     useUIStore.setState({
       isOnline: true,
       sessionPhotos: [],
@@ -106,10 +118,7 @@ describe('useSubmissionSubmit submit flow', () => {
         }),
       ],
     })
-    ;(submitObservation as jest.Mock).mockResolvedValue({
-      status: 'success',
-      id: 'submission-1',
-    })
+    ;(uploadSubmissionMetadata as jest.Mock).mockResolvedValue(undefined)
     jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
       buttons?.find((b) => b.text === 'Submit')?.onPress?.()
     })
@@ -120,20 +129,262 @@ describe('useSubmissionSubmit submit flow', () => {
       result.current.handleDone()
     })
 
-    expect(submitObservation).toHaveBeenCalledWith(
+    expect(uploadSubmissionMetadata).toHaveBeenCalledWith(
       expect.objectContaining({
         photo_paths: ['gs://bucket/uploaded.jpg'],
       }),
+      'uid-owner',
+      'sub-cloud-1',
     )
     expect(useSubmissionStore.getState().history).toEqual([
       expect.objectContaining({
-        id: 'submission-1',
+        id: 'sub-cloud-1',
         photo_urls: ['https://cdn/uploaded.jpg'],
       }),
     ])
     // The background Live-fix reacquire (src/lib/location.ts) would otherwise
     // keep re-watching every 5 minutes for the rest of the app's lifetime.
     expect(mockStopLocationCapture).toHaveBeenCalled()
+  })
+
+  // #264 amendment to ADR-0002/ADR-0003: each photo's own Storage object must
+  // carry location/time/upload-time/hashed-uid, not just metadata.json.
+  it('finalizes each uploaded photo with the hashed uid, submission location, and captured_at', async () => {
+    useSubmissionStore.setState({
+      submission: {
+        location_type: 'pin',
+        time_type: 'device',
+        latitude: 12.5,
+        longitude: -45.5,
+        captured_at: '2026-08-01T10:00:00.000Z',
+      },
+    })
+    usePhotoStore.setState({
+      photos: [
+        photo({
+          local_id: 'photo-uploaded',
+          uploaded: true,
+          cloud_storage_path: 'gs://bucket/uploaded.jpg',
+          cloud_storage_url: 'https://cdn/uploaded.jpg',
+        }),
+      ],
+    })
+    ;(uploadSubmissionMetadata as jest.Mock).mockResolvedValue(undefined)
+    jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
+      buttons?.find((b) => b.text === 'Submit')?.onPress?.()
+    })
+
+    const { result } = renderHook(() => useSubmissionSubmit())
+
+    await act(async () => {
+      result.current.handleDone()
+    })
+
+    expect(finalizeSubmissionPhotoMetadata).toHaveBeenCalledWith(
+      'gs://bucket/uploaded.jpg',
+      'hashed-uid-owner',
+      '2026-08-01T10:00:00.000Z',
+      12.5,
+      -45.5,
+    )
+    // Reuses the same hashUid() the object path itself is built from
+    // (ADR-0005) — not a separately re-derivable SHA-256(uid).
+    expect(hashUid).toHaveBeenCalledWith('uid-owner')
+  })
+
+  it("prefers a photo's own captured_at over the submission-wide fallback", async () => {
+    useSubmissionStore.setState({
+      submission: {
+        location_type: 'device',
+        time_type: 'device',
+        captured_at: '2026-08-01T10:00:00.000Z',
+      },
+    })
+    usePhotoStore.setState({
+      photos: [
+        photo({
+          local_id: 'photo-uploaded',
+          uploaded: true,
+          cloud_storage_path: 'gs://bucket/uploaded.jpg',
+          cloud_storage_url: 'https://cdn/uploaded.jpg',
+          captured_at: '2026-08-01T09:45:00.000Z',
+        }),
+      ],
+    })
+    ;(uploadSubmissionMetadata as jest.Mock).mockResolvedValue(undefined)
+    jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
+      buttons?.find((b) => b.text === 'Submit')?.onPress?.()
+    })
+
+    const { result } = renderHook(() => useSubmissionSubmit())
+
+    await act(async () => {
+      result.current.handleDone()
+    })
+
+    expect(finalizeSubmissionPhotoMetadata).toHaveBeenCalledWith(
+      'gs://bucket/uploaded.jpg',
+      'hashed-uid-owner',
+      '2026-08-01T09:45:00.000Z',
+      undefined,
+      undefined,
+    )
+  })
+
+  // ADR-0003's multi-select rule folds a Library pick batch's *earliest*
+  // EXIF time into submission.captured_at — correct at submission
+  // granularity, wrong if stamped onto every photo (every photo but the
+  // earliest gets someone else's capture time). Each photo's own EXIF must
+  // win instead.
+  it("prefers a Library pick's own parsed EXIF time over the submission-wide earliest", async () => {
+    useSubmissionStore.setState({
+      submission: {
+        location_type: 'pin',
+        time_type: 'device',
+        captured_at: '2026-08-01T09:00:00.000Z',
+      },
+    })
+    usePhotoStore.setState({
+      photos: [
+        photo({
+          local_id: 'photo-later',
+          uploaded: true,
+          cloud_storage_path: 'gs://bucket/later.jpg',
+          cloud_storage_url: 'https://cdn/later.jpg',
+          exif: { timestamp: '2026:08:01 09:30:00' },
+        }),
+      ],
+    })
+    ;(uploadSubmissionMetadata as jest.Mock).mockResolvedValue(undefined)
+    jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
+      buttons?.find((b) => b.text === 'Submit')?.onPress?.()
+    })
+
+    const { result } = renderHook(() => useSubmissionSubmit())
+
+    await act(async () => {
+      result.current.handleDone()
+    })
+
+    expect(finalizeSubmissionPhotoMetadata).toHaveBeenCalledWith(
+      'gs://bucket/later.jpg',
+      'hashed-uid-owner',
+      // EXIF DateTime has no timezone — parseExifDateTime treats it as
+      // local time, same convention as libraryPickTime.test.ts, so the
+      // expectation must be built the same way rather than a hardcoded UTC
+      // literal (which only matches on a UTC test runner).
+      new Date('2026-08-01T09:30:00').toISOString(),
+      undefined,
+      undefined,
+    )
+  })
+
+  it('still uploads metadata.json and does not fail the submission when finalizing one photo rejects', async () => {
+    usePhotoStore.setState({
+      photos: [
+        photo({
+          local_id: 'photo-a',
+          uploaded: true,
+          cloud_storage_path: 'gs://bucket/a.jpg',
+          cloud_storage_url: 'https://cdn/a.jpg',
+        }),
+        photo({
+          local_id: 'photo-b',
+          uploaded: true,
+          cloud_storage_path: 'gs://bucket/b.jpg',
+          cloud_storage_url: 'https://cdn/b.jpg',
+        }),
+      ],
+    })
+    ;(finalizeSubmissionPhotoMetadata as jest.Mock)
+      .mockRejectedValueOnce(new Error('network blip'))
+      .mockResolvedValueOnce(undefined)
+    ;(uploadSubmissionMetadata as jest.Mock).mockResolvedValue(undefined)
+    const showErrorSpy = jest.spyOn(useUIStore.getState(), 'showError')
+    jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
+      buttons?.find((b) => b.text === 'Submit')?.onPress?.()
+    })
+
+    const { result } = renderHook(() => useSubmissionSubmit())
+
+    await act(async () => {
+      result.current.handleDone()
+    })
+
+    expect(uploadSubmissionMetadata).toHaveBeenCalled()
+    expect(showErrorSpy).not.toHaveBeenCalledWith(
+      'Submission Failed',
+      expect.anything(),
+    )
+    expect(useSubmissionStore.getState().history).toHaveLength(1)
+  })
+
+  it("includes each cat's box geometry from useBoundingBoxStore in the uploaded payload", async () => {
+    useSubmissionStore.setState({
+      cats: [
+        {
+          local_id: 'cat-1',
+          age: 'adult',
+          ear_tipped: 'unsure',
+          owned_domesticated: 'unsure',
+          pattern: 'solid',
+          hair_length: 'short',
+          color: 'black',
+          sex: 'unknown',
+          health_label: 'unknown',
+          photo_local_ids: ['photo-uploaded'],
+          photos_reviewed: true,
+        },
+      ],
+    })
+    useBoundingBoxStore.getState().addBox('cat-1', 'photo-uploaded', {
+      lowerLeftX: 0.1,
+      lowerLeftY: 0.2,
+      upperRightX: 0.8,
+      upperRightY: 0.9,
+    })
+    usePhotoStore.setState({
+      photos: [
+        photo({
+          local_id: 'photo-uploaded',
+          uploaded: true,
+          cloud_storage_path: 'gs://bucket/uploaded.jpg',
+          cloud_storage_url: 'https://cdn/uploaded.jpg',
+        }),
+      ],
+    })
+    ;(uploadSubmissionMetadata as jest.Mock).mockResolvedValue(undefined)
+    jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
+      buttons?.find((b) => b.text === 'Submit')?.onPress?.()
+    })
+
+    const { result } = renderHook(() => useSubmissionSubmit())
+
+    await act(async () => {
+      result.current.handleDone()
+    })
+
+    expect(uploadSubmissionMetadata).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cats: [
+          expect.objectContaining({
+            local_id: 'cat-1',
+            boxes: [
+              {
+                photo_local_id: 'photo-uploaded',
+                cloud_storage_path: 'gs://bucket/uploaded.jpg',
+                lowerLeftX: 0.1,
+                lowerLeftY: 0.2,
+                upperRightX: 0.8,
+                upperRightY: 0.9,
+              },
+            ],
+          }),
+        ],
+      }),
+      'uid-owner',
+      'sub-cloud-1',
+    )
   })
 
   // P0 (map #31): a submission that "succeeds" while silently missing a
@@ -160,7 +411,7 @@ describe('useSubmissionSubmit submit flow', () => {
       result.current.handleDone()
     })
 
-    expect(submitObservation).not.toHaveBeenCalled()
+    expect(uploadSubmissionMetadata).not.toHaveBeenCalled()
   })
 
   it('still submits (photos/details are not privileged) when consent has not been accepted', async () => {
@@ -175,10 +426,7 @@ describe('useSubmissionSubmit submit flow', () => {
         }),
       ],
     })
-    ;(submitObservation as jest.Mock).mockResolvedValue({
-      status: 'success',
-      id: 'submission-1',
-    })
+    ;(uploadSubmissionMetadata as jest.Mock).mockResolvedValue(undefined)
     jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
       buttons?.find((b) => b.text === 'Submit')?.onPress?.()
     })
@@ -189,8 +437,10 @@ describe('useSubmissionSubmit submit flow', () => {
       result.current.handleDone()
     })
 
-    expect(submitObservation).toHaveBeenCalledWith(
+    expect(uploadSubmissionMetadata).toHaveBeenCalledWith(
       expect.objectContaining({ photo_paths: ['gs://bucket/uploaded.jpg'] }),
+      'uid-owner',
+      'sub-cloud-1',
     )
   })
 })
