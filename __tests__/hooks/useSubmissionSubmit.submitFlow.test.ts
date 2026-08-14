@@ -75,13 +75,31 @@ function photo(overrides: Partial<SubmissionPhoto>): SubmissionPhoto {
   }
 }
 
+// #265: zero cats is now a hard block, so every test exercising a
+// successful submit needs at least one — this is the default one.
+function defaultCat() {
+  return {
+    local_id: 'cat-default',
+    age: 'adult',
+    ear_tipped: 'unsure',
+    owned_domesticated: 'unsure',
+    pattern: 'solid',
+    hair_length: 'short',
+    color: 'black',
+    sex: 'unknown',
+    health_label: 'unknown',
+    photo_local_ids: ['photo-1'],
+    photos_reviewed: true,
+  }
+}
+
 describe('useSubmissionSubmit submit flow', () => {
   beforeEach(async () => {
     jest.clearAllMocks()
     const AsyncStorage = require('@react-native-async-storage/async-storage')
     await AsyncStorage.clear()
     useSubmissionStore.setState({
-      cats: [],
+      cats: [defaultCat()],
       submission: { location_type: 'device', time_type: 'device' },
       history: [],
       currentStep: 'create',
@@ -401,6 +419,48 @@ describe('useSubmissionSubmit submit flow', () => {
         photo({ local_id: 'photo-not-uploaded', uploaded: false }),
       ],
     })
+    jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
+      buttons?.find((b) => b.text === 'Submit')?.onPress?.()
+    })
+
+    const { result } = renderHook(() => useSubmissionSubmit())
+
+    await act(async () => {
+      result.current.handleDone()
+    })
+
+    expect(uploadSubmissionMetadata).not.toHaveBeenCalled()
+  })
+
+  // #265: zero cats is a hard block.
+  it('blocks submit and shows an error when there are no cats', async () => {
+    useSubmissionStore.setState({ cats: [] })
+    usePhotoStore.setState({
+      photos: [
+        photo({
+          local_id: 'photo-uploaded',
+          uploaded: true,
+          cloud_storage_path: 'gs://bucket/uploaded.jpg',
+          cloud_storage_url: 'https://cdn/uploaded.jpg',
+        }),
+      ],
+    })
+    jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
+      buttons?.find((b) => b.text === 'Submit')?.onPress?.()
+    })
+
+    const { result } = renderHook(() => useSubmissionSubmit())
+
+    await act(async () => {
+      result.current.handleDone()
+    })
+
+    expect(uploadSubmissionMetadata).not.toHaveBeenCalled()
+  })
+
+  // #265: zero photos is a hard block.
+  it('blocks submit and shows an error when there are no photos', async () => {
+    usePhotoStore.setState({ photos: [] })
     jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
       buttons?.find((b) => b.text === 'Submit')?.onPress?.()
     })

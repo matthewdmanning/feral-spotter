@@ -6,9 +6,11 @@
  * here from useCatSubmit (#153) — it wipes the whole submission, so it
  * belongs on the whole-submission screen, not a single cat's form. Neither
  * has a per-cat form to fold in first: every cat is already saved in the
- * store by the time the user reaches Submission Details. handleDone does
- * not itself validate — the warning icon is informational, not a submit
- * gate.
+ * store by the time the user reaches Submission Details. The location/time
+ * accuracy warning icon stays informational, not a submit gate (ADR-0002/
+ * 0003) — the user can submit anyway. Zero cats and zero photos are hard
+ * blocks instead (#265 product decision), checked here alongside the
+ * existing stillUploading gate.
  */
 
 import { usePhotoStore, useSubmissionStore, useUIStore } from '@/src/hooks'
@@ -30,6 +32,7 @@ import {
 } from '@/src/lib/upload/firebaseUpload'
 import type { SubmissionApiPayload, SubmissionPhoto } from '@/src/types'
 import { parseExifDateTime } from '@/src/utils/libraryPickTime'
+import { validateCatCount, validatePhotos } from '@/src/utils/validation'
 import { router } from 'expo-router'
 import { useCallback, useState } from 'react'
 import { Alert } from 'react-native'
@@ -78,6 +81,21 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
               showError(
                 'Photos Still Uploading',
                 `${stillUploading.length} photo${stillUploading.length !== 1 ? 's are' : ' is'} still uploading. Wait a moment and try again.`,
+              )
+              return
+            }
+
+            // #265: zero cats and zero photos are hard blocks; location/
+            // time accuracy stays informational (the warning icon already
+            // covers that, and the user can submit through it).
+            const requiredErrors = [
+              ...validateCatCount(cats.length),
+              ...validatePhotos(photos.length),
+            ]
+            if (requiredErrors.length > 0) {
+              showError(
+                'Submission Incomplete',
+                requiredErrors.map((e) => e.message).join('\n'),
               )
               return
             }
