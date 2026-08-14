@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react-native'
 import { Alert } from 'react-native'
 import { updateSubmissionCache } from '@/src/lib/cache/submissionCache'
-import { submitObservation } from '@/src/utils/api'
+import { uploadSubmissionMetadata } from '@/src/lib/upload/firebaseUpload'
 import { useSubmissionSubmit } from '../useSubmissionSubmit'
 import { useSubmissionStore } from '../useSubmissionStore'
 import { usePhotoStore } from '../usePhotoStore'
@@ -50,10 +50,14 @@ jest.mock('@/src/lib/analytics/analytics', () => ({
   },
 }))
 
-jest.mock('@/src/utils/api', () => ({
-  submitObservation: jest
-    .fn()
-    .mockResolvedValue({ status: 'success', id: 'r1' }),
+jest.mock('@/src/lib/upload/firebaseUpload', () => ({
+  uploadSubmissionMetadata: jest.fn().mockResolvedValue(undefined),
+  finalizeSubmissionPhotoMetadata: jest.fn().mockResolvedValue(undefined),
+  hashUid: jest.fn().mockResolvedValue('hashed-uid-owner'),
+}))
+
+jest.mock('@/src/lib/auth/useAuth', () => ({
+  useAuth: () => ({ user: { uid: 'uid-owner' } }),
 }))
 
 const cat = (id: string) => ({
@@ -82,12 +86,9 @@ const photo = (id: string) => ({
 describe('useSubmissionSubmit — handleDone cache sync (#228)', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    jest.mocked(submitObservation).mockResolvedValue({
-      status: 'success',
-      id: 'r1',
-    })
+    jest.mocked(uploadSubmissionMetadata).mockResolvedValue(undefined)
     useSubmissionStore.getState().clearDraft()
-    usePhotoStore.setState({ photos: [], source: null })
+    usePhotoStore.setState({ photos: [], source: null, submissionId: 'sub-1' })
     useSubmissionStore.getState().addCat(cat('cat-1'))
     usePhotoStore.getState().addPhoto(photo('photo-1'))
   })
