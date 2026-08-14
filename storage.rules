@@ -14,6 +14,14 @@ service firebase.storage {
       allow read: if request.auth != null && isOwner(uidHash);
 
       allow write: if request.auth != null
+                   // #267: gate direct-Storage uploads on the tester
+                   // allowlist, same cohort upload+api.ts restricts to.
+                   // Claim is set by functions/src/index.ts's
+                   // gateTesterAllowlist blocking function on sign-in —
+                   // costs zero Firestore reads here, keeping the 2-read
+                   // budget below free for isValidPhotoWrite/
+                   // isValidMetadataWrite's own firestore.get() calls.
+                   && request.auth.token.allowedTester == true
                    && isOwner(uidHash)
                    && (
                      (fileName == 'metadata.json' && isValidMetadataWrite())
@@ -30,7 +38,19 @@ service firebase.storage {
         return request.resource.size < 256 * 1024
                // Not exact equality — native uploadString() may send
                // 'application/json; charset=utf-8', which exact match denies.
-               && request.resource.contentType.matches('application/json(;.*)?');
+               && request.resource.contentType.matches('application/json(;.*)?')
+               && (
+                 // #270: caps distinct submissions per uidHash (counted by
+                 // functions/src/index.ts's onSubmissionSubmitted at
+                 // metadata.json write, not per-photo — isValidPhotoWrite
+                 // already spends this rule evaluation's 2-Firestore-read
+                 // budget on photoCount; this write gets its own fresh
+                 // budget). MAX_SUBMISSIONS_PER_UID in
+                 // src/config/constants.ts documents the same number —
+                 // rules can't read it.
+                 !firestore.exists(/databases/(default)/documents/submissionCounts/$(uidHash))
+                 || firestore.get(/databases/(default)/documents/submissionCounts/$(uidHash)).data.count < 50
+               );
       }
 
       function isValidPhotoWrite() {
