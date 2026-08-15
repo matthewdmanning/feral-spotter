@@ -29,7 +29,18 @@ jest.mock('expo-router', () => ({
 
 jest.mock('react-native-unistyles', () => {
   const anyProp = (): unknown => new Proxy({}, { get: (_t, _k) => anyProp() })
-  const theme = new Proxy({}, { get: (_t, _k) => anyProp() })
+  // spacing/radius/typography are real numbers (matching
+  // src/config/unistyles.ts) so screens that do arithmetic on theme tokens
+  // (e.g. HomeScreen's entrypoint-circle sizing) don't hit
+  // "Cannot convert object to primitive value" from the generic anyProp stub.
+  const knownTokens = {
+    spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24, xxxl: 32 },
+    radius: { sm: 6, md: 8, lg: 12, xl: 16, xxl: 20, full: 9999 },
+    typography: { xs: 12, sm: 14, base: 16, lg: 18, xl: 20, xxl: 24, xxxl: 30 },
+  }
+  const theme = new Proxy(knownTokens, {
+    get: (t, k: string) => (k in t ? t[k as keyof typeof t] : anyProp()),
+  })
   const withVariants = (obj: object) =>
     Object.assign(obj, { useVariants: jest.fn() })
   return {
@@ -68,7 +79,10 @@ jest.mock('lucide-react-native', () => ({
 }))
 
 let capturedButtons: ColumnButton[] = []
-let capturedVisible = false
+// null (not false) until the mount effect resolves, so idleEntry's
+// `toBe(false)` assertion actually proves the effect ran rather than
+// matching the untouched default.
+let capturedVisible: boolean | null = null
 jest.mock('@/src/components/molecules/BottomButtonColumn', () => ({
   BottomButtonColumn: (props: {
     buttons: ColumnButton[]
@@ -88,6 +102,7 @@ const buttonsMachine = createMachine({
       on: {
         MOUNT_NO_DRAFT: 'idleEntry',
         MOUNT_IN_PROGRESS: 'resumeEntry',
+        MOUNT_STALE: 'idleEntry',
       },
     },
     idleEntry: {
@@ -113,13 +128,18 @@ describe('HomeScreen entrypoint buttons — model-based test', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     capturedButtons = []
-    capturedVisible = false
+    capturedVisible = null
   })
 
   const model = createTestModel(buttonsMachine)
 
-  const mount = async (caches: { status: string }[]) => {
-    jest.mocked(getAllSubmissionCaches).mockResolvedValue(caches as never)
+  const mount = async (caches: { status: string; updated_at?: string }[]) => {
+    jest.mocked(getAllSubmissionCaches).mockResolvedValue(
+      caches.map((c) => ({
+        updated_at: new Date().toISOString(),
+        ...c,
+      })) as never,
+    )
     const result = render(<HomeScreen />)
     getByLabelText = result.getByLabelText
     await waitFor(() => expect(getAllSubmissionCaches).toHaveBeenCalled())
@@ -145,14 +165,24 @@ describe('HomeScreen entrypoint buttons — model-based test', () => {
       MOUNT_IN_PROGRESS: async () => {
         await mount([{ status: 'In Progress' }])
       },
+      MOUNT_STALE: async () => {
+        await mount([
+          {
+            status: 'In Progress',
+            updated_at: new Date(
+              Date.now() - 25 * 60 * 60 * 1000,
+            ).toISOString(),
+          },
+        ])
+      },
       PRESS_CAMERA: () => {
-        fireEvent.press(getByLabelText('Take a Photo'))
+        fireEvent.press(getByLabelText('Take Photos'))
       },
       PRESS_LIBRARY: () => {
-        fireEvent.press(getByLabelText('Choose from Library'))
+        fireEvent.press(getByLabelText('Upload Photos'))
       },
       PRESS_RESUME: () => {
-        capturedButtons.find((b) => b.key === 'resume')?.onPress()
+        capturedButtons.find((b) => b.key === 'continue')?.onPress()
       },
       PRESS_NEW: () => {
         capturedButtons.find((b) => b.key === 'new')?.onPress()
@@ -172,15 +202,19 @@ describe('HomeScreen entrypoint buttons — model-based test', () => {
       events: [{ type: 'MOUNT_IN_PROGRESS' }],
     },
     {
-      name: 'Take a Photo navigates to the camera',
+      name: 'stale in-progress draft: Resume/New column stays hidden',
+      events: [{ type: 'MOUNT_STALE' }],
+    },
+    {
+      name: 'Take Photos navigates to the camera',
       events: [{ type: 'MOUNT_NO_DRAFT' }, { type: 'PRESS_CAMERA' }],
     },
     {
-      name: 'Choose from Library invokes the library picker',
+      name: 'Upload Photos invokes the library picker',
       events: [{ type: 'MOUNT_NO_DRAFT' }, { type: 'PRESS_LIBRARY' }],
     },
     {
-      name: 'Resume Submission returns to Submission Details',
+      name: 'Continue Observation returns to Cat List',
       events: [{ type: 'MOUNT_IN_PROGRESS' }, { type: 'PRESS_RESUME' }],
     },
     {
