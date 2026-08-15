@@ -60,3 +60,6 @@ export const AUTOSAVE_INSTANT_MS = 400
 
 /** Autosave status display duration after save completes (ms). */
 export const AUTOSAVE_CLEAR_MS = 2000
+
+/** An in-progress submission older than this is too stale to offer "Continue Observation" for (ms). */
+export const SUBMISSION_STALE_MS = 24 * 60 * 60 * 1000

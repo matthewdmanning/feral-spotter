@@ -68,7 +68,10 @@ jest.mock('lucide-react-native', () => ({
 }))
 
 let capturedButtons: ColumnButton[] = []
-let capturedVisible = false
+// null (not false) until the mount effect resolves, so idleEntry's
+// `toBe(false)` assertion actually proves the effect ran rather than
+// matching the untouched default.
+let capturedVisible: boolean | null = null
 jest.mock('@/src/components/molecules/BottomButtonColumn', () => ({
   BottomButtonColumn: (props: {
     buttons: ColumnButton[]
@@ -88,6 +91,7 @@ const buttonsMachine = createMachine({
       on: {
         MOUNT_NO_DRAFT: 'idleEntry',
         MOUNT_IN_PROGRESS: 'resumeEntry',
+        MOUNT_STALE: 'idleEntry',
       },
     },
     idleEntry: {
@@ -113,13 +117,18 @@ describe('HomeScreen entrypoint buttons — model-based test', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     capturedButtons = []
-    capturedVisible = false
+    capturedVisible = null
   })
 
   const model = createTestModel(buttonsMachine)
 
-  const mount = async (caches: { status: string }[]) => {
-    jest.mocked(getAllSubmissionCaches).mockResolvedValue(caches as never)
+  const mount = async (caches: { status: string; updated_at?: string }[]) => {
+    jest.mocked(getAllSubmissionCaches).mockResolvedValue(
+      caches.map((c) => ({
+        updated_at: new Date().toISOString(),
+        ...c,
+      })) as never,
+    )
     const result = render(<HomeScreen />)
     getByLabelText = result.getByLabelText
     await waitFor(() => expect(getAllSubmissionCaches).toHaveBeenCalled())
@@ -145,6 +154,16 @@ describe('HomeScreen entrypoint buttons — model-based test', () => {
       MOUNT_IN_PROGRESS: async () => {
         await mount([{ status: 'In Progress' }])
       },
+      MOUNT_STALE: async () => {
+        await mount([
+          {
+            status: 'In Progress',
+            updated_at: new Date(
+              Date.now() - 25 * 60 * 60 * 1000,
+            ).toISOString(),
+          },
+        ])
+      },
       PRESS_CAMERA: () => {
         fireEvent.press(getByLabelText('Take a Photo'))
       },
@@ -152,7 +171,7 @@ describe('HomeScreen entrypoint buttons — model-based test', () => {
         fireEvent.press(getByLabelText('Choose from Library'))
       },
       PRESS_RESUME: () => {
-        capturedButtons.find((b) => b.key === 'resume')?.onPress()
+        capturedButtons.find((b) => b.key === 'continue')?.onPress()
       },
       PRESS_NEW: () => {
         capturedButtons.find((b) => b.key === 'new')?.onPress()
@@ -172,6 +191,10 @@ describe('HomeScreen entrypoint buttons — model-based test', () => {
       events: [{ type: 'MOUNT_IN_PROGRESS' }],
     },
     {
+      name: 'stale in-progress draft: Resume/New column stays hidden',
+      events: [{ type: 'MOUNT_STALE' }],
+    },
+    {
       name: 'Take a Photo navigates to the camera',
       events: [{ type: 'MOUNT_NO_DRAFT' }, { type: 'PRESS_CAMERA' }],
     },
@@ -180,7 +203,7 @@ describe('HomeScreen entrypoint buttons — model-based test', () => {
       events: [{ type: 'MOUNT_NO_DRAFT' }, { type: 'PRESS_LIBRARY' }],
     },
     {
-      name: 'Resume Submission returns to Submission Details',
+      name: 'Continue Observation returns to Cat List',
       events: [{ type: 'MOUNT_IN_PROGRESS' }, { type: 'PRESS_RESUME' }],
     },
     {

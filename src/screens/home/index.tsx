@@ -1,5 +1,6 @@
 import { AppButton, type ColumnButton } from '@/src/components/atoms/AppButton'
 import { BottomButtonColumn } from '@/src/components/molecules/BottomButtonColumn'
+import { SUBMISSION_STALE_MS } from '@/src/config/constants'
 import { hasAcceptedConsent } from '@/src/hooks/useConsentStore'
 import { useLibraryPhotoPicker } from '@/src/hooks/useLibraryPhotoPicker'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
@@ -35,7 +36,11 @@ export default function HomeScreen() {
   const [columnVisible, setColumnVisible] = useState(false)
   useEffect(() => {
     getAllSubmissionCaches().then((caches) => {
-      setColumnVisible(caches.length > 0 && caches[0].status === 'In Progress')
+      const latest = caches[0]
+      const isStale =
+        latest &&
+        Date.now() - new Date(latest.updated_at).getTime() > SUBMISSION_STALE_MS
+      setColumnVisible(!!latest && latest.status === 'In Progress' && !isStale)
     })
   }, [])
 
@@ -50,14 +55,17 @@ export default function HomeScreen() {
 
   const handleCamera = useCallback(() => router.navigate('/camera'), [])
   const handleNew = useCallback(() => router.push('/submission/create'), [])
-  const handleResume = useCallback(() => router.push('/submission/create'), [])
+  const handleContinue = useCallback(
+    () => router.push('/submission/create'),
+    [],
+  )
 
   const buttons = useMemo<ColumnButton[]>(
     () => [
       {
-        key: 'resume',
-        label: 'Resume Submission',
-        onPress: handleResume,
+        key: 'continue',
+        label: 'Continue Observation',
+        onPress: handleContinue,
         variant: 'primary',
       },
       {
@@ -67,7 +75,7 @@ export default function HomeScreen() {
         variant: 'secondary',
       },
     ],
-    [handleResume, handleNew],
+    [handleContinue, handleNew],
   )
 
   return (
