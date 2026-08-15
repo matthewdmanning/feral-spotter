@@ -60,4 +60,10 @@ describe('usePhotoStore — photo-source tracking', () => {
     expect(usePhotoStore.getState().photos).toEqual([])
     expect(usePhotoStore.getState().source).toBeNull()
   })
+
+  it('rehydration repairs a stale source left over with no photos', async () => {
+    usePhotoStore.setState({ photos: [], source: 'camera' })
+    await usePhotoStore.persist.rehydrate()
+    expect(usePhotoStore.getState().source).toBeNull()
+  })
 })
