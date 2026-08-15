@@ -22,13 +22,16 @@ export const styles = StyleSheet.create((theme) => ({
       },
       size: {
         default: {},
-        large: {
-          flex: 1,
+        // Actual size comes from AppButton's `diameter` prop (screen-dependent,
+        // computed by the caller) — borderRadius here is a pre-diameter
+        // fallback, overridden once `diameter` is set.
+        circle: {
           flexDirection: 'column',
-          gap: theme.spacing.md,
-          borderRadius: theme.radius.xl,
-          paddingHorizontal: theme.spacing.xl,
-          paddingVertical: theme.spacing.xl,
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: theme.spacing.sm,
+          borderRadius: theme.radius.full,
+          paddingHorizontal: theme.spacing.md,
         },
       },
     },
@@ -36,6 +39,7 @@ export const styles = StyleSheet.create((theme) => ({
   label: {
     fontWeight: '600',
     fontSize: theme.typography.sm,
+    textAlign: 'center',
     variants: {
       variant: {
         primary: { color: theme.colors.accentText },
@@ -45,7 +49,7 @@ export const styles = StyleSheet.create((theme) => ({
       },
       size: {
         default: {},
-        large: { fontSize: theme.typography.xl, fontWeight: '700' },
+        circle: {},
       },
     },
   },

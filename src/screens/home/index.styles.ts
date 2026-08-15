@@ -4,7 +4,15 @@ export const styles = StyleSheet.create((theme) => ({
   root: {
     flex: 1,
     backgroundColor: theme.colors.background,
-    paddingHorizontal: theme.spacing.lg,
   },
-  entrypointArea: { flex: 1, justifyContent: 'center', gap: 30 },
+  // No horizontal padding — the buffer around the circular entrypoint
+  // buttons is computed from the screen edge (see HomeScreen's
+  // entrypointBuffer), not a fixed inset.
+  entrypointArea: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  bottomArea: { paddingHorizontal: theme.spacing.lg },
 }))

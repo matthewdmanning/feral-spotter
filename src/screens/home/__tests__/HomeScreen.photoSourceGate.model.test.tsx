@@ -106,10 +106,10 @@ describe('HomeScreen photo-source-exclusivity gate — model-based test', () => 
   const expectDisabled = async (camera: boolean, library: boolean) => {
     await waitFor(() => {
       expect(
-        getByLabelText('Take a Photo').props.accessibilityState.disabled,
+        getByLabelText('Take Photos').props.accessibilityState.disabled,
       ).toBe(camera)
       expect(
-        getByLabelText('Choose from Library').props.accessibilityState.disabled,
+        getByLabelText('Upload Photos').props.accessibilityState.disabled,
       ).toBe(library)
     })
   }

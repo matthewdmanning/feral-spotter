@@ -4,7 +4,7 @@ import type { ReactNode } from 'react'
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
 
-export type ButtonSize = 'large'
+export type ButtonSize = 'circle'
 
 export interface ColumnButton {
   key: string
@@ -26,6 +26,8 @@ interface AppButtonProps {
   iconAfter?: ReactNode
   accessibilityLabel?: string
   flex1?: boolean
+  /** Fixed diameter (dp) for size="circle" — screen-dependent, so it's computed by the caller, not a style variant. */
+  diameter?: number
 }
 
 export function AppButton({
@@ -39,6 +41,7 @@ export function AppButton({
   iconAfter,
   accessibilityLabel,
   flex1 = false,
+  diameter,
 }: AppButtonProps) {
   styles.useVariants({ variant, size })
   const isDisabled = disabled || loading
@@ -54,6 +57,11 @@ export function AppButton({
         styles.base,
         flex1 && styles.flex1,
         isDisabled && styles.disabled,
+        diameter != null && {
+          width: diameter,
+          height: diameter,
+          borderRadius: diameter / 2,
+        },
       ]}
     >
       {loading ? (

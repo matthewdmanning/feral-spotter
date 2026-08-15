@@ -165,10 +165,10 @@ describe('HomeScreen entrypoint buttons — model-based test', () => {
         ])
       },
       PRESS_CAMERA: () => {
-        fireEvent.press(getByLabelText('Take a Photo'))
+        fireEvent.press(getByLabelText('Take Photos'))
       },
       PRESS_LIBRARY: () => {
-        fireEvent.press(getByLabelText('Choose from Library'))
+        fireEvent.press(getByLabelText('Upload Photos'))
       },
       PRESS_RESUME: () => {
         capturedButtons.find((b) => b.key === 'continue')?.onPress()
@@ -195,11 +195,11 @@ describe('HomeScreen entrypoint buttons — model-based test', () => {
       events: [{ type: 'MOUNT_STALE' }],
     },
     {
-      name: 'Take a Photo navigates to the camera',
+      name: 'Take Photos navigates to the camera',
       events: [{ type: 'MOUNT_NO_DRAFT' }, { type: 'PRESS_CAMERA' }],
     },
     {
-      name: 'Choose from Library invokes the library picker',
+      name: 'Upload Photos invokes the library picker',
       events: [{ type: 'MOUNT_NO_DRAFT' }, { type: 'PRESS_LIBRARY' }],
     },
     {

@@ -1,21 +1,35 @@
 import { AppButton, type ColumnButton } from '@/src/components/atoms/AppButton'
 import { BottomButtonColumn } from '@/src/components/molecules/BottomButtonColumn'
-import { SUBMISSION_STALE_MS } from '@/src/config/constants'
+import {
+  ENTRYPOINT_BUFFER_PERCENT,
+  ENTRYPOINT_GAP_DP,
+  SUBMISSION_STALE_MS,
+} from '@/src/config/constants'
 import { hasAcceptedConsent } from '@/src/hooks/useConsentStore'
 import { useLibraryPhotoPicker } from '@/src/hooks/useLibraryPhotoPicker'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useAuth } from '@/src/lib/auth/useAuth'
 import { getAllSubmissionCaches } from '@/src/lib/cache/submissionCache'
+import { computeEntrypointDiameter } from '@/src/lib/home/entrypointDiameter'
 import { Stack, router } from 'expo-router'
 import { Camera, ImagePlus } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { View } from 'react-native'
+import { useWindowDimensions, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
 
 export default function HomeScreen() {
   const { theme } = useUnistyles()
   const { isAuthenticated, isReady } = useAuth()
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions()
+  const entrypointBuffer =
+    Math.min(screenWidth, screenHeight) * ENTRYPOINT_BUFFER_PERCENT
+  const entrypointDiameter = computeEntrypointDiameter(
+    screenWidth,
+    screenHeight,
+    ENTRYPOINT_BUFFER_PERCENT,
+    ENTRYPOINT_GAP_DP,
+  )
 
   // App-wide gate: no device consent yet → intro flow (onboarding leads into
   // consent); consent already accepted but not signed in → sign-in; otherwise
@@ -92,35 +106,42 @@ export default function HomeScreen() {
       />
 
       <View style={styles.root}>
-        <View style={styles.entrypointArea}>
+        <View
+          style={[
+            styles.entrypointArea,
+            { paddingHorizontal: entrypointBuffer },
+          ]}
+        >
           <AppButton
             onPress={handleCamera}
             variant="primary"
-            size="large"
+            size="circle"
+            diameter={entrypointDiameter}
             disabled={cameraDisabled}
             icon={<Camera size={48} color={theme.colors.accentText} />}
-            accessibilityLabel="Take a Photo"
           >
-            Take a Photo
+            Take Photos
           </AppButton>
           <AppButton
             onPress={pickFromLibrary}
             variant="secondary"
-            size="large"
+            size="circle"
+            diameter={entrypointDiameter}
             disabled={libraryDisabled}
             icon={<ImagePlus size={48} color={theme.colors.text} />}
-            accessibilityLabel="Choose from Library"
           >
-            Choose from Library
+            Upload Photos
           </AppButton>
         </View>
 
-        <BottomButtonColumn
-          buttons={buttons}
-          visible={columnVisible}
-          spacing={12}
-          paddingBottom={16}
-        />
+        <View style={styles.bottomArea}>
+          <BottomButtonColumn
+            buttons={buttons}
+            visible={columnVisible}
+            spacing={12}
+            paddingBottom={16}
+          />
+        </View>
       </View>
     </>
   )
