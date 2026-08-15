@@ -13,18 +13,15 @@
  *   "extra": { "isPrerelease": true }
  */
 
+import { IS_PRERELEASE } from '@/src/config/constants'
 import {
   hasAcceptedAnalytics,
   hasAcceptedConsent,
 } from '@/src/hooks/useConsentStore'
 import type { SubmissionCacheFile } from '@/src/lib/cache/submissionCache'
-import Constants from 'expo-constants'
 import type { PostHogEventProperties } from '@posthog/core'
 
-// ─── Flag ─────────────────────────────────────────────────────────────────────
-
-export const IS_PRERELEASE: boolean =
-  Boolean(Constants.expoConfig?.extra?.isPrerelease) || __DEV__
+export { IS_PRERELEASE }
 
 // ─── Event names ──────────────────────────────────────────────────────────────
 
@@ -88,15 +85,7 @@ export function fireAnalyticsEvent(
   cache: SubmissionCacheFile,
   extra?: Record<string, unknown>,
 ): void {
-  if (!shouldCapture()) return
-  if (!_capture) {
-    console.warn(
-      '[analytics] capturer not registered — call registerCapture() in a PostHog-wrapped component',
-    )
-    return
-  }
-
-  _capture(event, {
+  captureEvent(event, {
     cache_id: cache.id,
     cache_status: cache.status,
     created_at: cache.created_at,
