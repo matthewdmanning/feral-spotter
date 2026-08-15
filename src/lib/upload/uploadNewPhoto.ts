@@ -13,6 +13,12 @@
  */
 import { uploadSubmissionPhoto } from '@/src/lib/upload/firebaseUpload'
 import type { SubmissionPhoto } from '@/src/types'
+import { LogBox } from 'react-native'
+
+// Keeps the failure in Metro's console for debugging without popping an
+// on-screen LogBox notification for every failed background upload — the
+// photo's own `uploaded: false` status already surfaces the failure in the UI.
+LogBox.ignoreLogs(['[uploadNewPhoto]'])
 
 export function uploadNewPhoto(
   photo: SubmissionPhoto,
