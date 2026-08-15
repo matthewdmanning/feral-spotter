@@ -1,12 +1,12 @@
 import { computeEntrypointDiameter } from '../entrypointDiameter'
 
 describe('computeEntrypointDiameter', () => {
-  it('derives the buffer from the shorter side, in portrait', () => {
-    // 360x800, 7.5% buffer, 24 gap: buffer = 27, diameter = (360-54-24)/2 = 141
-    expect(computeEntrypointDiameter(360, 800, 0.075, 24)).toBe(141)
+  it('splits diameter along the long axis (height), in portrait', () => {
+    // 360x800, 7.5% buffer, 24 gap: buffer = 27, diameter = (800-54-24)/2 = 361
+    expect(computeEntrypointDiameter(360, 800, 0.075, 24)).toBe(361)
   })
 
-  it('derives the buffer from the shorter side, in landscape', () => {
+  it('splits diameter along the long axis (width), in landscape', () => {
     // width is now the longer side (800); shorter side is still 360, so
     // the buffer (27) is identical to the portrait case above.
     expect(computeEntrypointDiameter(800, 360, 0.075, 24)).toBe(
@@ -21,6 +21,7 @@ describe('computeEntrypointDiameter', () => {
   })
 
   it('never drops below the 48dp touch-target minimum on a narrow screen', () => {
-    expect(computeEntrypointDiameter(200, 400, 0.3, 24)).toBe(48)
+    // longAxis=400, buffer=200*0.75=150, raw=(400-300-24)/2=38 -> floored to 48
+    expect(computeEntrypointDiameter(200, 400, 0.75, 24)).toBe(48)
   })
 })
