@@ -49,7 +49,6 @@ export const styles = StyleSheet.create((theme) => ({
       },
       size: {
         default: {},
-        circle: {},
       },
     },
   },

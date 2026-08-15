@@ -2,7 +2,6 @@ import { AppButton, type ColumnButton } from '@/src/components/atoms/AppButton'
 import { BottomButtonColumn } from '@/src/components/molecules/BottomButtonColumn'
 import {
   ENTRYPOINT_BUFFER_PERCENT,
-  ENTRYPOINT_GAP_DP,
   SUBMISSION_STALE_MS,
 } from '@/src/config/constants'
 import { hasAcceptedConsent } from '@/src/hooks/useConsentStore'
@@ -10,7 +9,10 @@ import { useLibraryPhotoPicker } from '@/src/hooks/useLibraryPhotoPicker'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useAuth } from '@/src/lib/auth/useAuth'
 import { getAllSubmissionCaches } from '@/src/lib/cache/submissionCache'
-import { computeEntrypointDiameter } from '@/src/lib/home/entrypointDiameter'
+import {
+  computeEntrypointBuffer,
+  computeEntrypointDiameter,
+} from '@/src/lib/home/entrypointDiameter'
 import { Stack, router } from 'expo-router'
 import { Camera, ImagePlus } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -22,13 +24,16 @@ export default function HomeScreen() {
   const { theme } = useUnistyles()
   const { isAuthenticated, isReady } = useAuth()
   const { width: screenWidth, height: screenHeight } = useWindowDimensions()
-  const entrypointBuffer =
-    Math.min(screenWidth, screenHeight) * ENTRYPOINT_BUFFER_PERCENT
+  const entrypointBuffer = computeEntrypointBuffer(
+    screenWidth,
+    screenHeight,
+    ENTRYPOINT_BUFFER_PERCENT,
+  )
   const entrypointDiameter = computeEntrypointDiameter(
     screenWidth,
     screenHeight,
     ENTRYPOINT_BUFFER_PERCENT,
-    ENTRYPOINT_GAP_DP,
+    theme.spacing.xxl,
   )
 
   // App-wide gate: no device consent yet → intro flow (onboarding leads into
