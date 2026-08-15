@@ -1,8 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/react-native'
 import React from 'react'
+import { Linking } from 'react-native'
+import { useCameraPermission } from 'react-native-vision-camera'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
-import { useCameraAccess } from '@/src/hooks/useCameraAccess'
 import { useCameraCapture } from '@/src/hooks/useCameraCapture'
 import CameraScreen from '../index'
 
@@ -38,7 +39,10 @@ jest.mock('react-native-reanimated', () => ({
   Easing: { out: jest.fn(), quad: {}, back: jest.fn() },
 }))
 
-jest.mock('react-native-vision-camera', () => ({ Camera: 'Camera' }))
+jest.mock('react-native-vision-camera', () => ({
+  Camera: 'Camera',
+  useCameraPermission: jest.fn(),
+}))
 jest.mock('@shopify/flash-list', () => ({ FlashList: 'FlashList' }))
 jest.mock('lucide-react-native', () => ({
   SwitchCamera: () => null,
@@ -47,15 +51,11 @@ jest.mock('lucide-react-native', () => ({
   ZapOff: () => null,
 }))
 
-jest.mock('@/src/hooks/useCameraAccess', () => ({
-  useCameraAccess: jest.fn(),
-}))
 jest.mock('@/src/hooks/useCameraCapture', () => ({
   useCameraCapture: jest.fn(),
 }))
 
 const requestPermission = jest.fn()
-const openSettings = jest.fn()
 const handleClose = jest.fn()
 
 const gateMachine = createMachine({
@@ -98,15 +98,17 @@ const baseCaptureResult: ReturnType<typeof useCameraCapture> = {
 describe('CameraScreen permission/device gates — model-based test', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    jest.spyOn(Linking, 'openSettings').mockResolvedValue()
   })
 
   const model = createTestModel(gateMachine)
 
   const mount = (hasPermission: boolean, device: object | null) => {
-    jest.mocked(useCameraAccess).mockReturnValue({
+    jest.mocked(useCameraPermission).mockReturnValue({
       hasPermission,
       requestPermission,
-      openSettings,
+      status: hasPermission ? 'granted' : 'not-determined',
+      canRequestPermission: !hasPermission,
     })
     jest.mocked(useCameraCapture).mockReturnValue({
       ...baseCaptureResult,
@@ -172,7 +174,7 @@ describe('CameraScreen permission/device gates — model-based test', () => {
         expect(requestPermission).toHaveBeenCalledTimes(1)
       }
       if (events.some((e) => e.type === 'PRESS_OPEN_SETTINGS')) {
-        expect(openSettings).toHaveBeenCalledTimes(1)
+        expect(Linking.openSettings).toHaveBeenCalledTimes(1)
       }
       if (events.some((e) => e.type === 'PRESS_GO_BACK')) {
         expect(handleClose).toHaveBeenCalledTimes(1)

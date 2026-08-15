@@ -1,10 +1,15 @@
 import { useCameraCapture } from '@/src/hooks/useCameraCapture'
-import { useCameraAccess } from '@/src/hooks/useCameraAccess'
 import { FlashList } from '@shopify/flash-list'
 import { Stack } from 'expo-router'
 import { SwitchCamera, X, Zap, ZapOff } from 'lucide-react-native'
 import { useCallback } from 'react'
-import { Pressable, StyleSheet as RNStyleSheet, Text, View } from 'react-native'
+import {
+  Linking,
+  Pressable,
+  StyleSheet as RNStyleSheet,
+  Text,
+  View,
+} from 'react-native'
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -12,12 +17,12 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import { useUnistyles } from 'react-native-unistyles'
-import { Camera } from 'react-native-vision-camera'
+import { Camera, useCameraPermission } from 'react-native-vision-camera'
 import { styles } from './index.styles'
 
 export default function CameraScreen() {
   const { theme } = useUnistyles()
-  const { hasPermission, requestPermission, openSettings } = useCameraAccess()
+  const { hasPermission, requestPermission } = useCameraPermission()
   const {
     device,
     cameraRef,
@@ -70,7 +75,7 @@ export default function CameraScreen() {
           <Text style={styles.gatePrimaryText}>Allow Camera</Text>
         </Pressable>
         <Pressable
-          onPress={() => openSettings()}
+          onPress={() => Linking.openSettings()}
           style={styles.gateSecondary}
           accessibilityRole="button"
         >
