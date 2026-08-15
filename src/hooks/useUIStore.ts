@@ -17,8 +17,6 @@ interface UIState {
   isSubmitting: boolean
 
   setOnlineStatus: (isOnline: boolean) => void
-  showError: (title: string, message: string) => void
-  showSuccess: (title: string, message: string) => void
   setSubmitting: (isSubmitting: boolean) => void
 }
 
@@ -31,10 +29,6 @@ export const useUIStore = create<UIState>()(
       isSubmitting: false,
 
       setOnlineStatus: (isOnline) => set({ isOnline }),
-
-      showError: (title, message) => Alert.alert(title, message),
-      showSuccess: (title, message) => Alert.alert(title, message),
-
       setSubmitting: (isSubmitting) => set({ isSubmitting }),
     }),
     {
@@ -43,3 +37,11 @@ export const useUIStore = create<UIState>()(
     },
   ),
 )
+
+export function showError(title: string, message: string): void {
+  Alert.alert(title, message)
+}
+
+export function showSuccess(title: string, message: string): void {
+  Alert.alert(title, message)
+}

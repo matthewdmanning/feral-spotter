@@ -101,7 +101,6 @@ describe('useSubmissionSubmit submit flow', () => {
     useSubmissionStore.setState({
       cats: [defaultCat()],
       submission: { location_type: 'device', time_type: 'device' },
-      history: [],
       currentStep: 'create',
     })
     usePhotoStore.setState({ photos: [], submissionId: 'sub-cloud-1' })
@@ -154,12 +153,6 @@ describe('useSubmissionSubmit submit flow', () => {
       'uid-owner',
       'sub-cloud-1',
     )
-    expect(useSubmissionStore.getState().history).toEqual([
-      expect.objectContaining({
-        id: 'sub-cloud-1',
-        photo_urls: ['https://cdn/uploaded.jpg'],
-      }),
-    ])
     // The background Live-fix reacquire (src/lib/location.ts) would otherwise
     // keep re-watching every 5 minutes for the rest of the app's lifetime.
     expect(mockStopLocationCapture).toHaveBeenCalled()
@@ -318,10 +311,11 @@ describe('useSubmissionSubmit submit flow', () => {
       .mockRejectedValueOnce(new Error('network blip'))
       .mockResolvedValueOnce(undefined)
     ;(uploadSubmissionMetadata as jest.Mock).mockResolvedValue(undefined)
-    const showErrorSpy = jest.spyOn(useUIStore.getState(), 'showError')
-    jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
-      buttons?.find((b) => b.text === 'Submit')?.onPress?.()
-    })
+    const alertSpy = jest
+      .spyOn(Alert, 'alert')
+      .mockImplementation((_title, _msg, buttons) => {
+        buttons?.find((b) => b.text === 'Submit')?.onPress?.()
+      })
 
     const { result } = renderHook(() => useSubmissionSubmit())
 
@@ -330,11 +324,10 @@ describe('useSubmissionSubmit submit flow', () => {
     })
 
     expect(uploadSubmissionMetadata).toHaveBeenCalled()
-    expect(showErrorSpy).not.toHaveBeenCalledWith(
+    expect(alertSpy).not.toHaveBeenCalledWith(
       'Submission Failed',
       expect.anything(),
     )
-    expect(useSubmissionStore.getState().history).toHaveLength(1)
   })
 
   it("includes each cat's box geometry from useBoundingBoxStore in the uploaded payload", async () => {

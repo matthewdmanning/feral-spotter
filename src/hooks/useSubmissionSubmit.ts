@@ -13,7 +13,12 @@
  * existing stillUploading gate.
  */
 
-import { usePhotoStore, useSubmissionStore, useUIStore } from '@/src/hooks'
+import {
+  showError,
+  usePhotoStore,
+  useSubmissionStore,
+  useUIStore,
+} from '@/src/hooks'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { EVENTS, fireAnalyticsEvent } from '@/src/lib/analytics/analytics'
 import { useAuth } from '@/src/lib/auth/useAuth'
@@ -46,7 +51,6 @@ export interface SubmissionSubmitResult {
 export function useSubmissionSubmit(): SubmissionSubmitResult {
   const cats = useSubmissionStore((s) => s.cats)
   const submission = useSubmissionStore((s) => s.submission)
-  const addToHistory = useSubmissionStore((s) => s.addToHistory)
   const clearDraft = useSubmissionStore((s) => s.clearDraft)
 
   const photos = usePhotoStore((s) => s.photos)
@@ -55,7 +59,6 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
 
   const { user } = useAuth()
 
-  const showError = useUIStore((s) => s.showError)
   const setSubmitting = useUIStore((s) => s.setSubmitting)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -151,7 +154,7 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
 
               // #264: box geometry lived only in useBoundingBoxStore's local
               // AsyncStorage — never left the device. Fold it in per cat here
-              // so it's shared by both the upload payload and the history entry.
+              // so it's part of the upload payload.
               // cloud_storage_path is attached per box, not just left to the
               // uploadSubmissionPhoto naming convention (photo_local_id.ext)
               // — a box is worthless downstream without a recoverable link to
@@ -263,15 +266,6 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
                 // truthy current ID and never creates its own cache row.
                 await clearCurrentCacheId()
               }
-              addToHistory({
-                id: cloudSubmissionId,
-                ...submission,
-                cats: catsWithBoxes,
-                photo_urls: uploadedPhotos.map((p) => p.cloud_storage_url),
-                created_at: new Date(),
-                submitted_at: new Date(),
-                status: 'submitted',
-              })
               clearDraft()
               clearPhotos()
               stopLocationCapture()
@@ -300,10 +294,8 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
     submission,
     cloudSubmissionId,
     user,
-    addToHistory,
     clearDraft,
     clearPhotos,
-    showError,
     setSubmitting,
   ])
 

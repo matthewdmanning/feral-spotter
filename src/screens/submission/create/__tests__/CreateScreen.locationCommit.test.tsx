@@ -75,7 +75,6 @@ describe('Create screen — location-commit invariant', () => {
     useSubmissionStore.setState({
       cats: [],
       submission: { location_type: 'device', time_type: 'device' },
-      history: [],
       currentStep: 'create',
     })
   })
