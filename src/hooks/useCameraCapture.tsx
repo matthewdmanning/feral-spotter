@@ -155,8 +155,8 @@ export function useCameraCapture(): CameraCaptureResult {
       setCapturedPhotos((prev) => [...prev, submission])
       captureEvent(EVENTS.PHOTO_CAPTURED, {
         flash_mode: flashMode,
-        photo_width: photo.width,
-        photo_height: photo.height,
+        photo_width: submission.width,
+        photo_height: submission.height,
       })
 
       // Upload starts immediately, in the background — not gated on this
