@@ -24,6 +24,7 @@ export default function HomeScreen() {
   const { theme } = useUnistyles()
   const { isAuthenticated, isReady } = useAuth()
   const { width: screenWidth, height: screenHeight } = useWindowDimensions()
+  const isLandscape = screenWidth >= screenHeight
   const entrypointBuffer = computeEntrypointBuffer(
     screenWidth,
     screenHeight,
@@ -114,7 +115,12 @@ export default function HomeScreen() {
         <View
           style={[
             styles.entrypointArea,
-            { paddingHorizontal: entrypointBuffer },
+            {
+              flexDirection: isLandscape ? 'row' : 'column',
+              ...(isLandscape
+                ? { paddingHorizontal: entrypointBuffer }
+                : { paddingVertical: entrypointBuffer }),
+            },
           ]}
         >
           <AppButton

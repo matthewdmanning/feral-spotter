@@ -1,35 +1,32 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // submissions/{uidHash}/{submissionId}/{fileName} — uidHash is
-    // sha256(salt + auth uid), recomputed here rather than trusted from the
-    // path segment. Salt literal must match USER_ID_HASH_SALT in
-    // src/config/constants.ts exactly (see docs/adr/0005). Confirmed to
-    // compile via firebase_validate_security_rules; hashing.sha256(...)
-    // .toHexString()'s exact byte-for-byte agreement with expo-crypto's
-    // digestStringAsync(SHA256, ...) output can't be confirmed further —
-    // this rules suite can't run against the emulator locally (JDK 17 vs
-    // firebase-tools' JDK 21 requirement).
-    match /submissions/{uidHash}/{submissionId}/{fileName} {
-      allow read: if request.auth != null && isOwner(uidHash);
+    // submissions/{uid}/{submissionId}/{fileName} — uid is the requester's
+    // own Firebase Auth uid, checked directly against the path segment
+    // (was a salted SHA-256 of it, dropped 2026-08-16 — product decision,
+    // not a bug fix: a Firebase Auth uid is already opaque/third-party-
+    // issued, so hashing added no privacy benefit, and the raw uid is
+    // useful for locating a user's objects later. Separately, real-device
+    // `storage/unauthorized` denials were confirmed caused by the tester-
+    // allowlist Cloud Function never being deployed, not by the hash;
+    // whether the hash's rules-side `hashing.sha256()` actually matched
+    // the client's SHA-256 byte-for-byte was never confirmed either way —
+    // this local emulator's implementation of that function was found to
+    // diverge from the standard algorithm, so it couldn't settle the
+    // question — but a plain uid has no such cross-language agreement to
+    // get wrong regardless).
+    match /submissions/{uid}/{submissionId}/{fileName} {
+      allow read: if request.auth != null && isOwner(uid);
 
       allow write: if request.auth != null
-                   // #267: gate direct-Storage uploads on the tester
-                   // allowlist, same cohort upload+api.ts restricts to.
-                   // Claim is set by functions/src/index.ts's
-                   // gateTesterAllowlist blocking function on sign-in —
-                   // costs zero Firestore reads here, keeping the 2-read
-                   // budget below free for isValidPhotoWrite/
-                   // isValidMetadataWrite's own firestore.get() calls.
-                   && request.auth.token.allowedTester == true
-                   && isOwner(uidHash)
+                   && isOwner(uid)
                    && (
                      (fileName == 'metadata.json' && isValidMetadataWrite())
                      || (fileName != 'metadata.json' && isValidPhotoWrite())
                    );
 
-      function isOwner(hash) {
-        return hash == hashing.sha256('feralspotter-photo-metadata-uid-v1' + request.auth.uid).toHexString();
+      function isOwner(uid) {
+        return uid == request.auth.uid;
       }
 
       // Final submission (cats + submission metadata), one small JSON blob
@@ -40,7 +37,7 @@ service firebase.storage {
                // 'application/json; charset=utf-8', which exact match denies.
                && request.resource.contentType.matches('application/json(;.*)?')
                && (
-                 // #270: caps distinct submissions per uidHash (counted by
+                 // #270: caps distinct submissions per uid (counted by
                  // functions/src/index.ts's onSubmissionSubmitted at
                  // metadata.json write, not per-photo — isValidPhotoWrite
                  // already spends this rule evaluation's 2-Firestore-read
@@ -48,8 +45,8 @@ service firebase.storage {
                  // budget). MAX_SUBMISSIONS_PER_UID in
                  // src/config/constants.ts documents the same number —
                  // rules can't read it.
-                 !firestore.exists(/databases/(default)/documents/submissionCounts/$(uidHash))
-                 || firestore.get(/databases/(default)/documents/submissionCounts/$(uidHash)).data.count < 250
+                 !firestore.exists(/databases/(default)/documents/submissionCounts/$(uid))
+                 || firestore.get(/databases/(default)/documents/submissionCounts/$(uid)).data.count < 250
                );
       }
 
@@ -59,16 +56,19 @@ service firebase.storage {
         return (
                  // #264: finalizeSubmissionPhotoMetadata patches an already-
                  // uploaded, already-counted photo's customMetadata at Submit
-                 // (location/time/upload-time/user-id-hash) — same bytes, not
+                 // (location/time/upload-time/user id) — same bytes, not
                  // a new photo. Short-circuits ahead of the size/contentType
                  // checks below, not nested inside them — those describe a
                  // fresh image upload and shouldn't gate a metadata-only
                  // patch even if it doesn't echo them back identically.
                  // size-only check, not md5Hash — that field's exact casing
                  // in the rules resource schema (vs the client SDK's
-                 // FullMetadata.md5Hash) is unverified and this rules suite
-                 // can't run locally (JDK 17 vs firebase-tools' JDK 21
-                 // requirement) to confirm it.
+                 // FullMetadata.md5Hash) is unverified. The rules suite CAN
+                 // run locally (`npm run test:rules` — needs JDK 21+; this
+                 // machine's default is 17, override JAVA_HOME to a newer
+                 // JDK if present rather than assuming it's blocked), it
+                 // just hasn't been used to confirm this specific field
+                 // yet.
                  (resource != null && resource.size == request.resource.size)
                )
                || (
@@ -88,13 +88,13 @@ service firebase.storage {
                    !docExists
                    // #268: submissionId is client-generated, so two
                    // different uids can collide on the same id. Once a
-                   // counter doc exists, only the uidHash it belongs to may
+                   // counter doc exists, only the uid it belongs to may
                    // keep writing photos against it — a collision must fail
                    // closed (denied write) rather than merge into someone
                    // else's submission.
                    // 10 must match MAX_PHOTOS: src/config/constants.ts (client) and
                    // the duplicate in src/app/upload+api.ts (server) — rules can't read it.
-                   || (doc.data.ownerUidHash == uidHash && doc.data.photoCount < 10)
+                   || (doc.data.ownerUid == uid && doc.data.photoCount < 10)
                  )
                );
       }

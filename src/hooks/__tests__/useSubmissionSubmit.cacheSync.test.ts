@@ -53,7 +53,6 @@ jest.mock('@/src/lib/analytics/analytics', () => ({
 jest.mock('@/src/lib/upload/firebaseUpload', () => ({
   uploadSubmissionMetadata: jest.fn().mockResolvedValue(undefined),
   finalizeSubmissionPhotoMetadata: jest.fn().mockResolvedValue(undefined),
-  hashUid: jest.fn().mockResolvedValue('hashed-uid-owner'),
 }))
 
 jest.mock('@/src/lib/auth/useAuth', () => ({

@@ -4,8 +4,9 @@
  * objects directly — see docs/adr/0005-firebase-storage-for-uploads.md),
  * and gates sign-in on the tester allowlist via a custom claim (#267).
  *
- * Object path convention: submissions/{uidHash}/{submissionId}/{fileName} —
- * uidHash is sha256(salt + auth uid), never the raw uid (ADR-0005).
+ * Object path convention: submissions/{uid}/{submissionId}/{fileName} —
+ * uid is the signed-in Firebase Auth uid directly (previously a salted
+ * hash; dropped 2026-08-15, see storage.rules).
  */
 import { getAuth } from 'firebase-admin/auth'
 import { initializeApp } from 'firebase-admin/app'
@@ -25,17 +26,17 @@ const METADATA_PATH_PATTERN = /^submissions\/([^/]+)\/([^/]+)\/metadata\.json$/
 
 // metadata.json (the final-submission JSON blob — see storage.rules and
 // src/lib/upload/firebaseUpload.ts) lives under the same
-// submissions/{uidHash}/{submissionId}/{fileName} prefix as photos but isn't
+// submissions/{uid}/{submissionId}/{fileName} prefix as photos but isn't
 // one — it must not move the photoCount counter these triggers maintain.
 const METADATA_FILE_NAME = 'metadata.json'
 
 function parseSubmissionPath(
   objectName: string,
-): { uidHash: string; submissionId: string } | null {
+): { uid: string; submissionId: string } | null {
   const match = OBJECT_PATH_PATTERN.exec(objectName)
   if (!match) return null
   if (match[3] === METADATA_FILE_NAME) return null
-  return { uidHash: match[1], submissionId: match[2] }
+  return { uid: match[1], submissionId: match[2] }
 }
 
 // Mirrors src/lib/upload/allowlist.ts's parseAllowlist — duplicated rather
@@ -63,18 +64,18 @@ export const onSubmissionPhotoUploaded = onObjectFinalized(
     // #268: submissionId is client-generated, so two different uids can
     // collide on the same id. The Storage write already landed by the time
     // this trigger runs — it can't retroactively deny it — but it must not
-    // flip ownerUidHash or inflate another uid's photoCount. Transaction
-    // guards against a same-id race between two first-writers; the loser
-    // simply doesn't get counted.
+    // flip ownerUid or inflate another uid's photoCount. Transaction guards
+    // against a same-id race between two first-writers; the loser simply
+    // doesn't get counted.
     await firestore.runTransaction(async (tx) => {
       const snapshot = await tx.get(doc)
-      const existingOwner = snapshot.get('ownerUidHash') as string | undefined
+      const existingOwner = snapshot.get('ownerUid') as string | undefined
 
-      if (existingOwner != null && existingOwner !== parsed.uidHash) return
+      if (existingOwner != null && existingOwner !== parsed.uid) return
 
       tx.set(
         doc,
-        { ownerUidHash: parsed.uidHash, photoCount: FieldValue.increment(1) },
+        { ownerUid: parsed.uid, photoCount: FieldValue.increment(1) },
         { merge: true },
       )
     })
@@ -96,7 +97,7 @@ export const onSubmissionPhotoDeleted = onObjectDeleted(
   },
 )
 
-// #270: counts distinct submissions per uidHash so storage.rules can cap
+// #270: counts distinct submissions per uid so storage.rules can cap
 // them (isValidMetadataWrite — checked at metadata.json write, not per
 // photo, because isValidPhotoWrite already spends the rules' 2-Firestore-
 // read budget on the photoCount check; metadata.json's own rule evaluation
@@ -108,10 +109,10 @@ export const onSubmissionSubmitted = onObjectFinalized(
   async (event) => {
     const match = METADATA_PATH_PATTERN.exec(event.data.name)
     if (!match) return
-    const [, uidHash, submissionId] = match
+    const [, uid, submissionId] = match
 
     const firestore = getFirestore()
-    const counterDoc = firestore.collection('submissionCounts').doc(uidHash)
+    const counterDoc = firestore.collection('submissionCounts').doc(uid)
     const marker = counterDoc.collection('items').doc(submissionId)
 
     // metadata.json can be re-uploaded on retry (isValidMetadataWrite has

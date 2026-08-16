@@ -1,7 +1,7 @@
 /**
  * hooks/useSubmissionStore.ts
- * Persisted Zustand store for the in-progress submission draft, its
- * observed cats, and the history of previously submitted submissions.
+ * Persisted Zustand store for the in-progress submission draft and its
+ * observed cats.
  */
 
 import { asyncStorage } from '@/src/lib/cache/storage'
@@ -61,19 +61,9 @@ export interface SubmissionLocation {
   accuracy?: number | null
 }
 
-export interface SubmissionHistoryEntry extends SubmissionDraft {
-  id: string
-  cats: ObservedCat[]
-  photo_urls: string[]
-  created_at: Date
-  submitted_at: Date
-  status: string
-}
-
 interface SubmissionState {
   cats: ObservedCat[]
   submission: SubmissionDraft
-  history: SubmissionHistoryEntry[]
   currentStep: string
 
   addCat: (cat: ObservedCat) => void
@@ -87,7 +77,6 @@ interface SubmissionState {
   setCapturedAt: (v: string | undefined) => void
   saveDraft: () => void
   setCurrentStep: (step: string) => void
-  addToHistory: (entry: SubmissionHistoryEntry) => void
   clearDraft: () => void
 }
 
@@ -103,7 +92,6 @@ export const useSubmissionStore = create<SubmissionState>()(
     (set) => ({
       cats: [],
       submission: { ...DEFAULT_SUBMISSION },
-      history: [],
       currentStep: 'create',
 
       addCat: (cat) => set((s) => ({ cats: [...s.cats, cat] })),
@@ -162,8 +150,6 @@ export const useSubmissionStore = create<SubmissionState>()(
       saveDraft: () => {},
 
       setCurrentStep: (step) => set({ currentStep: step }),
-
-      addToHistory: (entry) => set((s) => ({ history: [...s.history, entry] })),
 
       clearDraft: () =>
         set({

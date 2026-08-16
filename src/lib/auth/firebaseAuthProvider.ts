@@ -15,7 +15,7 @@ import {
   assertFederatedProviderReleased,
   type FederatedProviderId,
 } from './authProviders'
-import { getGoogleIdToken, googleSignOut } from './GoogleSignIn'
+import { getGoogleTokens, googleSignOut } from './GoogleSignIn'
 import { getAppleCredentialInput } from './AppleSignIn'
 import { getFacebookAccessToken, facebookSignOut } from './FacebookSignIn'
 
@@ -31,9 +31,9 @@ async function credentialForProvider(providerId: FederatedProviderId) {
 
   switch (providerId) {
     case 'google': {
-      const idToken = await getGoogleIdToken()
-      if (!idToken) throw new Error('NO_GOOGLE_ID_TOKEN')
-      return GoogleAuthProvider.credential(idToken)
+      const tokens = await getGoogleTokens()
+      if (!tokens) throw new Error('NO_GOOGLE_ID_TOKEN')
+      return GoogleAuthProvider.credential(tokens.idToken, tokens.accessToken)
     }
     case 'apple': {
       const { identityToken, rawNonce } = await getAppleCredentialInput()

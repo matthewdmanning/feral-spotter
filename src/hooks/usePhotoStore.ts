@@ -75,6 +75,15 @@ export const usePhotoStore = create<PhotoState>()(
     {
       name: 'photo-store',
       storage: createJSONStorage(() => asyncStorage),
+      // Repairs a persisted `source` left set with no photos to back it (e.g.
+      // process death between an add and a clear finishing its async write) —
+      // otherwise the lock survives restart and disables the other entrypoint
+      // for good, with no photos visible to explain why.
+      onRehydrateStorage: () => (state) => {
+        if (state && state.photos.length === 0 && state.source !== null) {
+          usePhotoStore.setState({ source: null })
+        }
+      },
     },
   ),
 )

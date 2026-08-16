@@ -8,7 +8,6 @@ import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
 import { useUIStore } from '@/src/hooks/useUIStore'
 import {
   finalizeSubmissionPhotoMetadata,
-  hashUid,
   uploadSubmissionMetadata,
 } from '@/src/lib/upload/firebaseUpload'
 import type { SubmissionPhoto } from '@/src/types'
@@ -51,7 +50,6 @@ jest.mock('react-native-mmkv', () => ({
 jest.mock('@/src/lib/upload/firebaseUpload', () => ({
   uploadSubmissionMetadata: jest.fn(),
   finalizeSubmissionPhotoMetadata: jest.fn(() => Promise.resolve()),
-  hashUid: jest.fn(() => Promise.resolve('hashed-uid-owner')),
 }))
 
 jest.mock('@/src/lib/auth/useAuth', () => ({
@@ -101,7 +99,6 @@ describe('useSubmissionSubmit submit flow', () => {
     useSubmissionStore.setState({
       cats: [defaultCat()],
       submission: { location_type: 'device', time_type: 'device' },
-      history: [],
       currentStep: 'create',
     })
     usePhotoStore.setState({ photos: [], submissionId: 'sub-cloud-1' })
@@ -154,12 +151,6 @@ describe('useSubmissionSubmit submit flow', () => {
       'uid-owner',
       'sub-cloud-1',
     )
-    expect(useSubmissionStore.getState().history).toEqual([
-      expect.objectContaining({
-        id: 'sub-cloud-1',
-        photo_urls: ['https://cdn/uploaded.jpg'],
-      }),
-    ])
     // The background Live-fix reacquire (src/lib/location.ts) would otherwise
     // keep re-watching every 5 minutes for the rest of the app's lifetime.
     expect(mockStopLocationCapture).toHaveBeenCalled()
@@ -200,14 +191,11 @@ describe('useSubmissionSubmit submit flow', () => {
 
     expect(finalizeSubmissionPhotoMetadata).toHaveBeenCalledWith(
       'gs://bucket/uploaded.jpg',
-      'hashed-uid-owner',
+      'uid-owner',
       '2026-08-01T10:00:00.000Z',
       12.5,
       -45.5,
     )
-    // Reuses the same hashUid() the object path itself is built from
-    // (ADR-0005) — not a separately re-derivable SHA-256(uid).
-    expect(hashUid).toHaveBeenCalledWith('uid-owner')
   })
 
   it("prefers a photo's own captured_at over the submission-wide fallback", async () => {
@@ -242,7 +230,7 @@ describe('useSubmissionSubmit submit flow', () => {
 
     expect(finalizeSubmissionPhotoMetadata).toHaveBeenCalledWith(
       'gs://bucket/uploaded.jpg',
-      'hashed-uid-owner',
+      'uid-owner',
       '2026-08-01T09:45:00.000Z',
       undefined,
       undefined,
@@ -286,7 +274,7 @@ describe('useSubmissionSubmit submit flow', () => {
 
     expect(finalizeSubmissionPhotoMetadata).toHaveBeenCalledWith(
       'gs://bucket/later.jpg',
-      'hashed-uid-owner',
+      'uid-owner',
       // EXIF DateTime has no timezone — parseExifDateTime treats it as
       // local time, same convention as libraryPickTime.test.ts, so the
       // expectation must be built the same way rather than a hardcoded UTC
@@ -318,10 +306,11 @@ describe('useSubmissionSubmit submit flow', () => {
       .mockRejectedValueOnce(new Error('network blip'))
       .mockResolvedValueOnce(undefined)
     ;(uploadSubmissionMetadata as jest.Mock).mockResolvedValue(undefined)
-    const showErrorSpy = jest.spyOn(useUIStore.getState(), 'showError')
-    jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
-      buttons?.find((b) => b.text === 'Submit')?.onPress?.()
-    })
+    const alertSpy = jest
+      .spyOn(Alert, 'alert')
+      .mockImplementation((_title, _msg, buttons) => {
+        buttons?.find((b) => b.text === 'Submit')?.onPress?.()
+      })
 
     const { result } = renderHook(() => useSubmissionSubmit())
 
@@ -330,11 +319,10 @@ describe('useSubmissionSubmit submit flow', () => {
     })
 
     expect(uploadSubmissionMetadata).toHaveBeenCalled()
-    expect(showErrorSpy).not.toHaveBeenCalledWith(
+    expect(alertSpy).not.toHaveBeenCalledWith(
       'Submission Failed',
       expect.anything(),
     )
-    expect(useSubmissionStore.getState().history).toHaveLength(1)
   })
 
   it("includes each cat's box geometry from useBoundingBoxStore in the uploaded payload", async () => {

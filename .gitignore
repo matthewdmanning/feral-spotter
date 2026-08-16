@@ -1,5 +1,12 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
+# Local-only agent notes — never pushed, may hold sensitive detail
+.agents/
+
+# Local build/debug artifacts
+.claude-build-logs/
+window_dump.xml
+
 # Dependencies
 node_modules/
 

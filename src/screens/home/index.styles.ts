@@ -10,7 +10,6 @@ export const styles = StyleSheet.create((theme) => ({
   // entrypointBuffer), not a fixed inset.
   entrypointArea: {
     flex: 1,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
