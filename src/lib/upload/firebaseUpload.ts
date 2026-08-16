@@ -3,9 +3,15 @@
  * @react-native-firebase/storage's putFile (resumable, survives spotty field
  * network — see docs/adr/0005-firebase-storage-for-uploads.md).
  *
- * Object path: submissions/{uidHash}/{submissionId}/{fileName} — uidHash is
- * hashUid(uid) below, must match storage.rules and firestore.rules, which
- * recompute the same hash rather than trusting a path segment as identity.
+ * Object path: submissions/{uid}/{submissionId}/{fileName} — uid is the
+ * signed-in Firebase Auth uid directly. storage.rules/firestore.rules check
+ * ownership by comparing this segment against request.auth.uid, so there's
+ * no cross-language hash computation that the two sides need to agree on
+ * (previously a salted SHA-256, dropped 2026-08-16 — product decision: a
+ * Firebase Auth uid is already opaque/third-party-issued, hashing it added
+ * no privacy benefit, and the raw uid helps locate a user's objects later.
+ * See storage.rules for the full reasoning, including why the hash's
+ * cross-language byte-for-byte match was never actually confirmed).
  */
 import { getApp } from '@react-native-firebase/app'
 import {
@@ -17,44 +23,18 @@ import {
   updateMetadata,
   uploadString,
 } from '@react-native-firebase/storage'
-import { USER_ID_HASH_SALT, UPLOADS_MOCK } from '@/src/config/constants'
+import { UPLOADS_MOCK } from '@/src/config/constants'
 import type {
   PhotoUploadResponse,
   SubmissionApiPayload,
   SubmissionPhoto,
 } from '@/src/types'
-import {
-  CryptoDigestAlgorithm,
-  CryptoEncoding,
-  digestStringAsync,
-} from 'expo-crypto'
 
 const BUCKET_URL = 'gs://feral-spotter-image-uploads'
 
 function extensionFromUri(uri: string): string {
   const match = /\.([a-zA-Z0-9]+)$/.exec(uri)
   return match ? match[1].toLowerCase() : 'jpg'
-}
-
-/**
- * Salted SHA-256 of a Firebase Auth uid — the single source of truth for
- * both the Storage object path's owner segment and the `user_id_hash`
- * customMetadata field, so the two are identical by construction rather
- * than by two call sites happening to agree. storage.rules/firestore.rules
- * recompute this same value from request.auth.uid via the rules language's
- * own hashing.sha256(), so the raw uid never has to be trusted from a path
- * segment or a client-supplied field.
- */
-export async function hashUid(uid: string): Promise<string> {
-  return digestStringAsync(
-    CryptoDigestAlgorithm.SHA256,
-    USER_ID_HASH_SALT + uid,
-    // Pinned rather than relying on the documented HEX default — rules
-    // recompute this value independently via hashing.sha256().toHexString(),
-    // so a version bump silently flipping the default would 403 every
-    // upload without a client-side error to point at.
-    { encoding: CryptoEncoding.HEX },
-  )
 }
 
 export async function uploadSubmissionPhoto(
@@ -64,8 +44,7 @@ export async function uploadSubmissionPhoto(
   onProgress?: (percent: number) => void,
 ): Promise<PhotoUploadResponse> {
   const storage = getStorage(getApp(), BUCKET_URL)
-  const uidHash = await hashUid(uid)
-  const objectPath = `submissions/${uidHash}/${submissionId}/${photo.local_id}.${extensionFromUri(photo.uri)}`
+  const objectPath = `submissions/${uid}/${submissionId}/${photo.local_id}.${extensionFromUri(photo.uri)}`
   const reference = ref(storage, objectPath)
 
   const task = putFile(reference, photo.uri)
@@ -99,8 +78,7 @@ export async function uploadSubmissionMetadata(
   if (UPLOADS_MOCK) return
 
   const storage = getStorage(getApp(), BUCKET_URL)
-  const uidHash = await hashUid(uid)
-  const objectPath = `submissions/${uidHash}/${submissionId}/metadata.json`
+  const objectPath = `submissions/${uid}/${submissionId}/metadata.json`
   const reference = ref(storage, objectPath)
 
   await uploadString(reference, JSON.stringify(payload), 'raw', {
@@ -110,10 +88,10 @@ export async function uploadSubmissionMetadata(
 
 /**
  * Backfills a photo's Storage object with the submission's finalized
- * location/time, its own upload time, and a hashed user id — set at Submit,
- * once those values are settled, not at initial upload. Images are consumed
- * separately from metadata.json downstream (ML pipeline export), so each
- * object must be self-describing on its own (#264 amendment to
+ * location/time, its own upload time, and the owning user id — set at
+ * Submit, once those values are settled, not at initial upload. Images are
+ * consumed separately from metadata.json downstream (ML pipeline export),
+ * so each object must be self-describing on its own (#264 amendment to
  * ADR-0002/ADR-0003).
  *
  * upload_time is read back from the object's own `timeCreated` (the actual
@@ -122,7 +100,7 @@ export async function uploadSubmissionMetadata(
  */
 export async function finalizeSubmissionPhotoMetadata(
   objectPath: string,
-  userIdHash: string,
+  userId: string,
   photoTime: string,
   latitude?: number,
   longitude?: number,
@@ -139,7 +117,7 @@ export async function finalizeSubmissionPhotoMetadata(
       ...existing.customMetadata,
       photo_time: photoTime,
       upload_time: existing.timeCreated,
-      user_id_hash: userIdHash,
+      user_id: userId,
       ...(latitude != null &&
         longitude != null && {
           location_lat: String(latitude),

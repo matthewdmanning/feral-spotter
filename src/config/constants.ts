@@ -17,9 +17,9 @@ export const APP_VERSION: string = Constants.expoConfig?.version ?? '1.0.0'
 export const MAX_PHOTOS = Number(process.env.EXPO_PUBLIC_MAX_PHOTOS) || 10
 
 /**
- * Maximum distinct submissions per uidHash (#270), enforced by
+ * Maximum distinct submissions per uid (#270), enforced by
  * storage.rules' isValidMetadataWrite against the
- * submissionCounts/{uidHash} doc functions/src/index.ts maintains.
+ * submissionCounts/{uid} doc functions/src/index.ts maintains.
  * Documentation only — rules can't read this constant, so the literal in
  * storage.rules must be kept in sync by hand.
  */
@@ -38,19 +38,6 @@ export const MAX_SUBMISSIONS_PER_UID = 250
  */
 export const UPLOADS_MOCK: boolean =
   process.env.EXPO_PUBLIC_UPLOADS_MOCK === 'true'
-
-/**
- * Salt folded into the per-photo user-id hash (#264 amendment to
- * ADR-0002/ADR-0003) before hashing, so the hash isn't a plain re-derivable
- * SHA-256(uid) that anyone with the Firebase Auth user list could recompute
- * and match. Used for both the `user_id_hash` customMetadata field and the
- * Storage object path's owner segment (`hashUid()` in firebaseUpload.ts,
- * ADR-0005) — the raw uid never appears in either place. Deliberately not a
- * secret: storage.rules/firestore.rules recompute the same hash from
- * request.auth.uid via the rules language's own hashing.sha256(), so this
- * value must match what's embedded in those two files.
- */
-export const USER_ID_HASH_SALT = 'feralspotter-photo-metadata-uid-v1'
 
 /** Autosave debounce for text inputs (ms). */
 export const AUTOSAVE_TEXT_MS = 800

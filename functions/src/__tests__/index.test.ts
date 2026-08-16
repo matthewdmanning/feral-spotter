@@ -77,11 +77,11 @@ function authEvent(
 describe('onSubmissionPhotoUploaded', () => {
   beforeEach(() => jest.clearAllMocks())
 
-  it('increments photoCount and sets ownerUidHash for a well-formed path', async () => {
+  it('increments photoCount and sets ownerUid for a well-formed path', async () => {
     mockTxGet.mockResolvedValueOnce({ get: () => undefined })
 
     await onSubmissionPhotoUploaded.run(
-      event('submissions/a1b2c3d4e5f6hash/sub-1/photo.jpg'),
+      event('submissions/uid-owner/sub-1/photo.jpg'),
     )
 
     expect(mockCollection).toHaveBeenCalledWith('submissions')
@@ -89,58 +89,54 @@ describe('onSubmissionPhotoUploaded', () => {
     expect(mockIncrement).toHaveBeenCalledWith(1)
     expect(mockTxSet).toHaveBeenCalledWith(
       expect.anything(),
-      { ownerUidHash: 'a1b2c3d4e5f6hash', photoCount: { __increment: 1 } },
+      { ownerUid: 'uid-owner', photoCount: { __increment: 1 } },
       { merge: true },
     )
   })
 
-  it('increments when the existing doc is owned by the same uidHash', async () => {
+  it('increments when the existing doc is owned by the same uid', async () => {
     mockTxGet.mockResolvedValueOnce({
-      get: (field: string) =>
-        field === 'ownerUidHash' ? 'a1b2c3d4e5f6hash' : undefined,
+      get: (field: string) => (field === 'ownerUid' ? 'uid-owner' : undefined),
     })
 
     await onSubmissionPhotoUploaded.run(
-      event('submissions/a1b2c3d4e5f6hash/sub-1/photo.jpg'),
+      event('submissions/uid-owner/sub-1/photo.jpg'),
     )
 
     expect(mockTxSet).toHaveBeenCalledWith(
       expect.anything(),
-      { ownerUidHash: 'a1b2c3d4e5f6hash', photoCount: { __increment: 1 } },
+      { ownerUid: 'uid-owner', photoCount: { __increment: 1 } },
       { merge: true },
     )
   })
 
   it('#268: does not increment or flip ownership when submissionId collides with a different uid', async () => {
     mockTxGet.mockResolvedValueOnce({
-      get: (field: string) =>
-        field === 'ownerUidHash' ? 'some-other-hash' : undefined,
+      get: (field: string) => (field === 'ownerUid' ? 'uid-other' : undefined),
     })
 
     await onSubmissionPhotoUploaded.run(
-      event('submissions/a1b2c3d4e5f6hash/sub-1/photo.jpg'),
+      event('submissions/uid-owner/sub-1/photo.jpg'),
     )
 
     expect(mockTxSet).not.toHaveBeenCalled()
   })
 
-  it('no-ops on a malformed path (no uidHash/submissionId segments)', async () => {
+  it('no-ops on a malformed path (no uid/submissionId segments)', async () => {
     await onSubmissionPhotoUploaded.run(event('not-a-submission-path.jpg'))
 
     expect(mockCollection).not.toHaveBeenCalled()
   })
 
   it('no-ops on a path missing the fileName segment', async () => {
-    await onSubmissionPhotoUploaded.run(
-      event('submissions/a1b2c3d4e5f6hash/sub-1'),
-    )
+    await onSubmissionPhotoUploaded.run(event('submissions/uid-owner/sub-1'))
 
     expect(mockCollection).not.toHaveBeenCalled()
   })
 
   it('no-ops on metadata.json — not a photo, must not move the counter', async () => {
     await onSubmissionPhotoUploaded.run(
-      event('submissions/a1b2c3d4e5f6hash/sub-1/metadata.json'),
+      event('submissions/uid-owner/sub-1/metadata.json'),
     )
 
     expect(mockCollection).not.toHaveBeenCalled()
@@ -152,7 +148,7 @@ describe('onSubmissionPhotoDeleted', () => {
 
   it('decrements photoCount for a well-formed path', async () => {
     await onSubmissionPhotoDeleted.run(
-      event('submissions/a1b2c3d4e5f6hash/sub-1/photo.jpg'),
+      event('submissions/uid-owner/sub-1/photo.jpg'),
     )
 
     expect(mockDoc).toHaveBeenCalledWith('sub-1')
@@ -171,7 +167,7 @@ describe('onSubmissionPhotoDeleted', () => {
 
   it('no-ops on metadata.json deletion', async () => {
     await onSubmissionPhotoDeleted.run(
-      event('submissions/a1b2c3d4e5f6hash/sub-1/metadata.json'),
+      event('submissions/uid-owner/sub-1/metadata.json'),
     )
 
     expect(mockCollection).not.toHaveBeenCalled()
@@ -185,11 +181,11 @@ describe('onSubmissionSubmitted', () => {
     mockTxGet.mockResolvedValueOnce({ exists: false })
 
     await onSubmissionSubmitted.run(
-      event('submissions/a1b2c3d4e5f6hash/sub-1/metadata.json'),
+      event('submissions/uid-owner/sub-1/metadata.json'),
     )
 
     expect(mockCollection).toHaveBeenCalledWith('submissionCounts')
-    expect(mockDoc).toHaveBeenCalledWith('a1b2c3d4e5f6hash')
+    expect(mockDoc).toHaveBeenCalledWith('uid-owner')
     expect(mockCollection).toHaveBeenCalledWith('items')
     expect(mockDoc).toHaveBeenCalledWith('sub-1')
     expect(mockTxSet).toHaveBeenCalledWith(expect.anything(), {})
@@ -204,7 +200,7 @@ describe('onSubmissionSubmitted', () => {
     mockTxGet.mockResolvedValueOnce({ exists: true })
 
     await onSubmissionSubmitted.run(
-      event('submissions/a1b2c3d4e5f6hash/sub-1/metadata.json'),
+      event('submissions/uid-owner/sub-1/metadata.json'),
     )
 
     expect(mockTxSet).not.toHaveBeenCalled()
@@ -212,7 +208,7 @@ describe('onSubmissionSubmitted', () => {
 
   it('no-ops on a photo upload (not metadata.json)', async () => {
     await onSubmissionSubmitted.run(
-      event('submissions/a1b2c3d4e5f6hash/sub-1/photo.jpg'),
+      event('submissions/uid-owner/sub-1/photo.jpg'),
     )
 
     expect(mockRunTransaction).not.toHaveBeenCalled()
