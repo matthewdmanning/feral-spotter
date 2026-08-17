@@ -11,8 +11,15 @@ module.exports = {
   // package.json/node_modules (functions/ has its own jest.config.js — run
   // via `npm run test:functions`, not swept into this root config).
   // Crawling them makes jest-haste-map see duplicate package.json files,
-  // which produces naming collisions.
-  modulePathIgnorePatterns: ['<rootDir>/ts-ailiot/', '<rootDir>/functions/'],
+  // which produces naming collisions. .claude/worktrees/ holds full
+  // checked-out copies of this repo (each with its own __mocks__/,
+  // node_modules) from Claude Code's worktree feature — same duplicate-mock
+  // problem, so it's excluded for the same reason.
+  modulePathIgnorePatterns: [
+    '<rootDir>/ts-ailiot/',
+    '<rootDir>/functions/',
+    '<rootDir>/.claude/worktrees/',
+  ],
   // Rules tests need plain Node + @firebase/rules-unit-testing, not the RN
   // preset — run separately via jest.rules.config.js / npm run test:rules.
   // (Jest's own node_modules default is dropped if this array isn't repeated.)

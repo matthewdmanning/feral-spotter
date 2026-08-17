@@ -15,6 +15,7 @@
  */
 import { getApp } from '@react-native-firebase/app'
 import {
+  connectStorageEmulator,
   getDownloadURL,
   getMetadata,
   getStorage,
@@ -22,15 +23,52 @@ import {
   ref,
   updateMetadata,
   uploadString,
+  type FirebaseStorage,
+  type StorageReference,
 } from '@react-native-firebase/storage'
-import { UPLOADS_MOCK } from '@/src/config/constants'
+import {
+  FIREBASE_EMULATOR_HOST,
+  STORAGE_EMULATOR_PORT,
+  UPLOADS_MOCK,
+  USE_FIREBASE_EMULATOR,
+} from '@/src/config/constants'
 import type {
   PhotoUploadResponse,
   SubmissionApiPayload,
   SubmissionPhoto,
 } from '@/src/types'
 
-const BUCKET_URL = 'gs://feral-spotter-image-uploads'
+const BUCKET_URL = 'gs://project-e3d5659d-bc4f-438f-88c.firebasestorage.app'
+
+let storageInstance: FirebaseStorage | null = null
+
+// One lazily-created, memoized Storage instance so the emulator connection
+// (which errors if called more than once per instance) only ever happens
+// once, regardless of how many of this file's functions run.
+function getSubmissionRef(path: string): StorageReference {
+  if (!storageInstance) {
+    storageInstance = getStorage(getApp(), BUCKET_URL)
+    if (USE_FIREBASE_EMULATOR) {
+      connectStorageEmulator(
+        storageInstance,
+        FIREBASE_EMULATOR_HOST,
+        STORAGE_EMULATOR_PORT,
+      )
+      // connectStorageEmulator never fails on its own — it just points the
+      // SDK at this URL. If nothing's actually listening there, an upload
+      // would only fail later with a generic network error. Ping it now so
+      // a forgotten `firebase emulators:start` is loud and immediate
+      // instead.
+      const emulatorUrl = `http://${FIREBASE_EMULATOR_HOST}:${STORAGE_EMULATOR_PORT}`
+      fetch(emulatorUrl).catch(() => {
+        console.error(
+          `[firebaseUpload] EXPO_PUBLIC_USE_FIREBASE_EMULATOR is set but the Storage emulator at ${FIREBASE_EMULATOR_HOST}:${STORAGE_EMULATOR_PORT} is unreachable. Run \`firebase emulators:start\` before test-driving in emulator mode.`,
+        )
+      })
+    }
+  }
+  return ref(storageInstance, path)
+}
 
 function extensionFromUri(uri: string): string {
   const match = /\.([a-zA-Z0-9]+)$/.exec(uri)
@@ -43,9 +81,8 @@ export async function uploadSubmissionPhoto(
   submissionId: string,
   onProgress?: (percent: number) => void,
 ): Promise<PhotoUploadResponse> {
-  const storage = getStorage(getApp(), BUCKET_URL)
   const objectPath = `submissions/${uid}/${submissionId}/${photo.local_id}.${extensionFromUri(photo.uri)}`
-  const reference = ref(storage, objectPath)
+  const reference = getSubmissionRef(objectPath)
 
   const task = putFile(reference, photo.uri)
   if (onProgress) {
@@ -77,9 +114,8 @@ export async function uploadSubmissionMetadata(
 ): Promise<void> {
   if (UPLOADS_MOCK) return
 
-  const storage = getStorage(getApp(), BUCKET_URL)
   const objectPath = `submissions/${uid}/${submissionId}/metadata.json`
-  const reference = ref(storage, objectPath)
+  const reference = getSubmissionRef(objectPath)
 
   await uploadString(reference, JSON.stringify(payload), 'raw', {
     contentType: 'application/json',
@@ -107,8 +143,7 @@ export async function finalizeSubmissionPhotoMetadata(
 ): Promise<void> {
   if (UPLOADS_MOCK) return
 
-  const storage = getStorage(getApp(), BUCKET_URL)
-  const reference = ref(storage, objectPath)
+  const reference = getSubmissionRef(objectPath)
 
   const existing = await getMetadata(reference)
 

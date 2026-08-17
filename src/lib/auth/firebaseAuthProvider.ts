@@ -1,5 +1,6 @@
 import {
   getAuth,
+  connectAuthEmulator,
   signInWithCredential,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -18,6 +19,11 @@ import {
 import { getGoogleTokens, googleSignOut } from './GoogleSignIn'
 import { getAppleCredentialInput } from './AppleSignIn'
 import { getFacebookAccessToken, facebookSignOut } from './FacebookSignIn'
+import {
+  AUTH_EMULATOR_PORT,
+  USE_FIREBASE_EMULATOR,
+  FIREBASE_EMULATOR_HOST,
+} from '@/src/config/constants'
 
 function toAuthUser(user: User | null): AuthUser | null {
   if (!user) return null
@@ -54,6 +60,20 @@ async function credentialForProvider(providerId: FederatedProviderId) {
 
 export function createFirebaseAuthProvider(): IAuthProvider {
   const auth = getAuth()
+
+  if (USE_FIREBASE_EMULATOR) {
+    const emulatorUrl = `http://${FIREBASE_EMULATOR_HOST}:${AUTH_EMULATOR_PORT}`
+    connectAuthEmulator(auth, emulatorUrl)
+    // connectAuthEmulator never fails on its own — it just points the SDK at
+    // this URL. If nothing's actually listening there, sign-in would only
+    // fail later with a generic network error. Ping it now so a forgotten
+    // `firebase emulators:start` is loud and immediate instead.
+    fetch(emulatorUrl).catch(() => {
+      console.error(
+        `[firebaseAuthProvider] EXPO_PUBLIC_USE_FIREBASE_EMULATOR is set but the Auth emulator at ${FIREBASE_EMULATOR_HOST}:${AUTH_EMULATOR_PORT} is unreachable. Run \`firebase emulators:start\` before test-driving in emulator mode.`,
+      )
+    })
+  }
 
   return {
     getToken: async () => {

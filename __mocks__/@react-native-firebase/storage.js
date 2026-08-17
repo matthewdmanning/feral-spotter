@@ -4,6 +4,7 @@
 // tests.
 module.exports = {
   getStorage: jest.fn(() => ({})),
+  connectStorageEmulator: jest.fn(),
   ref: jest.fn(() => ({})),
   putFile: jest.fn(() => {
     const task = Promise.resolve()

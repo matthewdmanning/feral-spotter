@@ -39,6 +39,30 @@ export const MAX_SUBMISSIONS_PER_UID = 250
 export const UPLOADS_MOCK: boolean =
   process.env.EXPO_PUBLIC_UPLOADS_MOCK === 'true'
 
+/**
+ * Opt-in tag to connect the real Firebase Auth + Storage instances to the
+ * Local Emulator Suite (`firebase emulators:start`) instead of the live
+ * project, for test-drives. Same <AREA>_MOCK convention as
+ * EXPO_PUBLIC_AUTH_MOCK/EXPO_PUBLIC_UPLOADS_MOCK, but suite-wide rather than
+ * per-area — Auth and Storage emulators are meant to be exercised together,
+ * not independently. Never on by default.
+ */
+export const USE_FIREBASE_EMULATOR: boolean =
+  process.env.EXPO_PUBLIC_USE_FIREBASE_EMULATOR === 'true'
+
+/**
+ * Local Emulator Suite host, used only when USE_FIREBASE_EMULATOR is set.
+ * Defaults to localhost (physical device via `adb reverse`, this project's
+ * existing live-run convention). Override to 10.0.2.2 for the Android
+ * Studio emulator, which can't resolve the host machine as localhost.
+ */
+export const FIREBASE_EMULATOR_HOST: string =
+  process.env.EXPO_PUBLIC_FIREBASE_EMULATOR_HOST ?? 'localhost'
+
+/** Local Emulator Suite ports — must match firebase.json's `emulators` block. */
+export const AUTH_EMULATOR_PORT = 9099
+export const STORAGE_EMULATOR_PORT = 9199
+
 /** Autosave debounce for text inputs (ms). */
 export const AUTOSAVE_TEXT_MS = 800
 

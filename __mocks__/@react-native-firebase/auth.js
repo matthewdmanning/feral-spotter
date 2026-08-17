@@ -4,6 +4,7 @@
 // statically imported by that module, so the real package must never load.
 module.exports = {
   getAuth: jest.fn(() => ({ currentUser: null })),
+  connectAuthEmulator: jest.fn(),
   signInWithCredential: jest.fn(),
   signInWithEmailAndPassword: jest.fn(),
   createUserWithEmailAndPassword: jest.fn(),
