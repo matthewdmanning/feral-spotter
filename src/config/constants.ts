@@ -59,6 +59,10 @@ export const USE_FIREBASE_EMULATOR: boolean =
 export const FIREBASE_EMULATOR_HOST: string =
   process.env.EXPO_PUBLIC_FIREBASE_EMULATOR_HOST ?? 'localhost'
 
+/** Local Emulator Suite ports — must match firebase.json's `emulators` block. */
+export const AUTH_EMULATOR_PORT = 9099
+export const STORAGE_EMULATOR_PORT = 9199
+
 /** Autosave debounce for text inputs (ms). */
 export const AUTOSAVE_TEXT_MS = 800
 

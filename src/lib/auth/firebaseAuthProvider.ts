@@ -20,6 +20,7 @@ import { getGoogleTokens, googleSignOut } from './GoogleSignIn'
 import { getAppleCredentialInput } from './AppleSignIn'
 import { getFacebookAccessToken, facebookSignOut } from './FacebookSignIn'
 import {
+  AUTH_EMULATOR_PORT,
   USE_FIREBASE_EMULATOR,
   FIREBASE_EMULATOR_HOST,
 } from '@/src/config/constants'
@@ -61,7 +62,7 @@ export function createFirebaseAuthProvider(): IAuthProvider {
   const auth = getAuth()
 
   if (USE_FIREBASE_EMULATOR) {
-    const emulatorUrl = `http://${FIREBASE_EMULATOR_HOST}:9099`
+    const emulatorUrl = `http://${FIREBASE_EMULATOR_HOST}:${AUTH_EMULATOR_PORT}`
     connectAuthEmulator(auth, emulatorUrl)
     // connectAuthEmulator never fails on its own — it just points the SDK at
     // this URL. If nothing's actually listening there, sign-in would only
@@ -69,7 +70,7 @@ export function createFirebaseAuthProvider(): IAuthProvider {
     // `firebase emulators:start` is loud and immediate instead.
     fetch(emulatorUrl).catch(() => {
       console.error(
-        `[firebaseAuthProvider] EXPO_PUBLIC_USE_FIREBASE_EMULATOR is set but the Auth emulator at ${FIREBASE_EMULATOR_HOST}:9099 is unreachable. Run \`firebase emulators:start\` before test-driving in emulator mode.`,
+        `[firebaseAuthProvider] EXPO_PUBLIC_USE_FIREBASE_EMULATOR is set but the Auth emulator at ${FIREBASE_EMULATOR_HOST}:${AUTH_EMULATOR_PORT} is unreachable. Run \`firebase emulators:start\` before test-driving in emulator mode.`,
       )
     })
   }

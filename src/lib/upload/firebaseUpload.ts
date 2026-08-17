@@ -28,6 +28,7 @@ import {
 } from '@react-native-firebase/storage'
 import {
   FIREBASE_EMULATOR_HOST,
+  STORAGE_EMULATOR_PORT,
   UPLOADS_MOCK,
   USE_FIREBASE_EMULATOR,
 } from '@/src/config/constants'
@@ -48,16 +49,20 @@ function getSubmissionRef(path: string): StorageReference {
   if (!storageInstance) {
     storageInstance = getStorage(getApp(), BUCKET_URL)
     if (USE_FIREBASE_EMULATOR) {
-      connectStorageEmulator(storageInstance, FIREBASE_EMULATOR_HOST, 9199)
+      connectStorageEmulator(
+        storageInstance,
+        FIREBASE_EMULATOR_HOST,
+        STORAGE_EMULATOR_PORT,
+      )
       // connectStorageEmulator never fails on its own — it just points the
       // SDK at this URL. If nothing's actually listening there, an upload
       // would only fail later with a generic network error. Ping it now so
       // a forgotten `firebase emulators:start` is loud and immediate
       // instead.
-      const emulatorUrl = `http://${FIREBASE_EMULATOR_HOST}:9199`
+      const emulatorUrl = `http://${FIREBASE_EMULATOR_HOST}:${STORAGE_EMULATOR_PORT}`
       fetch(emulatorUrl).catch(() => {
         console.error(
-          `[firebaseUpload] EXPO_PUBLIC_USE_FIREBASE_EMULATOR is set but the Storage emulator at ${FIREBASE_EMULATOR_HOST}:9199 is unreachable. Run \`firebase emulators:start\` before test-driving in emulator mode.`,
+          `[firebaseUpload] EXPO_PUBLIC_USE_FIREBASE_EMULATOR is set but the Storage emulator at ${FIREBASE_EMULATOR_HOST}:${STORAGE_EMULATOR_PORT} is unreachable. Run \`firebase emulators:start\` before test-driving in emulator mode.`,
         )
       })
     }
