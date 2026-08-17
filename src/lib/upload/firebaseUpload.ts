@@ -49,9 +49,17 @@ function getSubmissionRef(path: string): StorageReference {
     storageInstance = getStorage(getApp(), BUCKET_URL)
     if (USE_FIREBASE_EMULATOR) {
       connectStorageEmulator(storageInstance, FIREBASE_EMULATOR_HOST, 9199)
-      console.log(
-        `[firebaseUpload] emulator mode: Storage connected to ${FIREBASE_EMULATOR_HOST}:9199`,
-      )
+      // connectStorageEmulator never fails on its own — it just points the
+      // SDK at this URL. If nothing's actually listening there, an upload
+      // would only fail later with a generic network error. Ping it now so
+      // a forgotten `firebase emulators:start` is loud and immediate
+      // instead.
+      const emulatorUrl = `http://${FIREBASE_EMULATOR_HOST}:9199`
+      fetch(emulatorUrl).catch(() => {
+        console.error(
+          `[firebaseUpload] EXPO_PUBLIC_USE_FIREBASE_EMULATOR is set but the Storage emulator at ${FIREBASE_EMULATOR_HOST}:9199 is unreachable. Run \`firebase emulators:start\` before test-driving in emulator mode.`,
+        )
+      })
     }
   }
   return ref(storageInstance, path)

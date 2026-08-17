@@ -61,7 +61,17 @@ export function createFirebaseAuthProvider(): IAuthProvider {
   const auth = getAuth()
 
   if (USE_FIREBASE_EMULATOR) {
-    connectAuthEmulator(auth, `http://${FIREBASE_EMULATOR_HOST}:9099`)
+    const emulatorUrl = `http://${FIREBASE_EMULATOR_HOST}:9099`
+    connectAuthEmulator(auth, emulatorUrl)
+    // connectAuthEmulator never fails on its own — it just points the SDK at
+    // this URL. If nothing's actually listening there, sign-in would only
+    // fail later with a generic network error. Ping it now so a forgotten
+    // `firebase emulators:start` is loud and immediate instead.
+    fetch(emulatorUrl).catch(() => {
+      console.error(
+        `[firebaseAuthProvider] EXPO_PUBLIC_USE_FIREBASE_EMULATOR is set but the Auth emulator at ${FIREBASE_EMULATOR_HOST}:9099 is unreachable. Run \`firebase emulators:start\` before test-driving in emulator mode.`,
+      )
+    })
   }
 
   return {
