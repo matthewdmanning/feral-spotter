@@ -1,5 +1,6 @@
 import {
   getAuth,
+  connectAuthEmulator,
   signInWithCredential,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -18,6 +19,10 @@ import {
 import { getGoogleTokens, googleSignOut } from './GoogleSignIn'
 import { getAppleCredentialInput } from './AppleSignIn'
 import { getFacebookAccessToken, facebookSignOut } from './FacebookSignIn'
+import {
+  USE_FIREBASE_EMULATOR,
+  FIREBASE_EMULATOR_HOST,
+} from '@/src/config/constants'
 
 function toAuthUser(user: User | null): AuthUser | null {
   if (!user) return null
@@ -54,6 +59,10 @@ async function credentialForProvider(providerId: FederatedProviderId) {
 
 export function createFirebaseAuthProvider(): IAuthProvider {
   const auth = getAuth()
+
+  if (USE_FIREBASE_EMULATOR) {
+    connectAuthEmulator(auth, `http://${FIREBASE_EMULATOR_HOST}:9099`)
+  }
 
   return {
     getToken: async () => {

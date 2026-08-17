@@ -1,5 +1,6 @@
 import type { AuthUser, IAuthProvider } from './IAuthProvider'
 import { createFirebaseAuthProvider } from './firebaseAuthProvider'
+import { USE_FIREBASE_EMULATOR } from '@/src/config/constants'
 
 // Firebase Auth's native module isn't available under Jest, so tests get a
 // stub. Everything else — dev and prod, device and emulator — gets real
@@ -51,6 +52,15 @@ const isJest = process.env.JEST_WORKER_ID !== undefined
 // account. Double-guarded — `__DEV__` means a release build can never enable it
 // even if the env var leaks in, and the flag is opt-in via gitignored .env.local.
 const useMockAuth = __DEV__ && process.env.EXPO_PUBLIC_AUTH_MOCK === 'true'
+
+if (!isJest) {
+  const mode = useMockAuth
+    ? 'mock'
+    : USE_FIREBASE_EMULATOR
+      ? 'emulator'
+      : 'live'
+  console.log(`[firebase] mode: ${mode}`)
+}
 
 export const authProvider: IAuthProvider =
   isJest || useMockAuth ? createDevAuthProvider() : createFirebaseAuthProvider()
