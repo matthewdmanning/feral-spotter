@@ -11,7 +11,7 @@
     "rules": "firestore.rules"
   },
   "storage": {
-    "bucket": "feral-spotter-image-uploads",
+    "target": "feral-uploads",
     "rules": "storage.rules"
   },
   "functions": [
