@@ -137,7 +137,16 @@ export function AppProviders({ children }: AppProvidersProps) {
               // Capture unhandled JS exceptions globally. The root ErrorBoundary
               // reports render failures separately, so exclude console capture to
               // avoid React's console logging generating duplicate exceptions.
-              errorTracking: { autocapture: { console: [] } },
+              // uncaughtExceptions/unhandledRejections are opt-in per-key, not
+              // deep-merged with defaults — omitting either silently disables
+              // it (confirmed against installed posthog-react-native source).
+              errorTracking: {
+                autocapture: {
+                  uncaughtExceptions: true,
+                  unhandledRejections: true,
+                  console: [],
+                },
+              },
             }}
             debug={__DEV__}
           >
