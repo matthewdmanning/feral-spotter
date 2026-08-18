@@ -14,8 +14,12 @@ export const styles = StyleSheet.create((theme) => ({
         primary: { backgroundColor: theme.colors.accent },
         secondary: {
           backgroundColor: theme.colors.surfaceAlt,
-          borderWidth: 1,
-          borderColor: theme.colors.border,
+          // surfaceAlt sits at ~1.2:1 contrast against the root background —
+          // effectively invisible as a fill alone. theme.colors.border is
+          // similarly low-contrast (~1.4:1); muted reads at ~7:1, giving the
+          // outline enough definition to read as a button.
+          borderWidth: 1.5,
+          borderColor: theme.colors.muted,
         },
         ghost: { backgroundColor: 'transparent' },
         danger: { backgroundColor: 'transparent' },
@@ -37,8 +41,8 @@ export const styles = StyleSheet.create((theme) => ({
     },
   },
   label: {
-    fontWeight: '600',
-    fontSize: theme.typography.sm,
+    fontWeight: '700',
+    fontSize: theme.typography.base,
     textAlign: 'center',
     variants: {
       variant: {
@@ -53,5 +57,7 @@ export const styles = StyleSheet.create((theme) => ({
     },
   },
   flex1: { flex: 1 },
-  disabled: { opacity: 0.5 },
+  // 0.5 tanked label contrast on the accent-blue background (ux_principles.md
+  // contrast minimums) — 0.7 still reads as disabled, stays legible.
+  disabled: { opacity: 0.7 },
 }))

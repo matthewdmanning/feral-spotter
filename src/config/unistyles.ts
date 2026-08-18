@@ -8,8 +8,8 @@
  * v3 API: StyleSheet.configure (replaces UnistylesRegistry)
  */
 
-import { mmkvInstance } from "@/src/lib/cache/storage";
-import { StyleSheet } from "react-native-unistyles";
+import { mmkvInstance } from '@/src/lib/cache/storage'
+import { StyleSheet } from 'react-native-unistyles'
 
 // ─── Tokens (shared across themes) ───────────────────────────────────────────
 
@@ -21,7 +21,7 @@ const spacing = {
   xl: 20,
   xxl: 24,
   xxxl: 32,
-} as const;
+} as const
 
 const radius = {
   sm: 6,
@@ -30,7 +30,7 @@ const radius = {
   xl: 16,
   xxl: 20,
   full: 9999,
-} as const;
+} as const
 
 const typography = {
   xs: 12,
@@ -40,61 +40,63 @@ const typography = {
   xl: 20,
   xxl: 24,
   xxxl: 30,
-} as const;
+} as const
 
 // ─── Themes ───────────────────────────────────────────────────────────────────
 
 export const darkTheme = {
   colors: {
-    background: "#0B0B0C",
-    surface: "#151518",
-    surfaceAlt: "#1D1D22",
-    text: "#F5F5F7",
-    textInverse: "#0B0B0C",
-    muted: "#9B9BA1",
-    accent: "#6EA8FE",
-    accentText: "#0B0B0C",
-    success: "#58C27D",
-    danger: "#FF6B6B",
-    warning: "#FFD93D",
-    border: "#2C2C2E",
-    overlay: "rgba(0,0,0,0.5)",
-    cameraOverlay: "rgba(0,0,0,0.40)",
+    background: '#121212',
+    surface: '#1A1A1A',
+    surfaceAlt: '#242424',
+    text: '#E5E7EB',
+    textInverse: '#121212',
+    muted: '#94A3B8',
+    accent: '#0F766E',
+    accentAlt: '#64748B',
+    accentText: '#FFFFFF',
+    success: '#22A06B',
+    danger: '#E5484D',
+    warning: '#D97706',
+    border: '#2A2A2A',
+    overlay: 'rgba(0,0,0,0.5)',
+    cameraOverlay: 'rgba(0,0,0,0.40)',
   },
   spacing,
   radius,
   typography,
-} as const;
+} as const
 
 export const lightTheme = {
   colors: {
-    background: "#F5F5F7",
-    surface: "#FFFFFF",
-    surfaceAlt: "#F0F0F2",
-    text: "#0B0B0C",
-    textInverse: "#F5F5F7",
-    muted: "#6B6B71",
-    accent: "#2563EB",
-    accentText: "#FFFFFF",
-    success: "#16A34A",
-    danger: "#DC2626",
-    warning: "#D97706",
-    border: "#D1D1D6",
-    overlay: "rgba(0,0,0,0.3)",
-    cameraOverlay: "rgba(0,0,0,0.30)",
+    background: '#F8FAFC',
+    surface: '#FFFFFF',
+    surfaceAlt: '#F1F5F9',
+    text: '#0F172A',
+    textInverse: '#F8FAFC',
+    muted: '#64748B',
+    accent: '#0F766E',
+    accentAlt: '#475569',
+    accentText: '#FFFFFF',
+    success: '#15803D',
+    danger: '#C4342C',
+    warning: '#B45309',
+    border: '#E2E8F0',
+    overlay: 'rgba(0,0,0,0.3)',
+    cameraOverlay: 'rgba(0,0,0,0.30)',
   },
   spacing,
   radius,
   typography,
-} as const;
+} as const
 
 // ─── TypeScript augmentation ──────────────────────────────────────────────────
 
-const appThemes = { dark: darkTheme, light: lightTheme };
-export type AppTheme = typeof darkTheme;
+const appThemes = { dark: darkTheme, light: lightTheme }
+export type AppTheme = typeof darkTheme
 
-type AppThemes = typeof appThemes;
-declare module "react-native-unistyles" {
+type AppThemes = typeof appThemes
+declare module 'react-native-unistyles' {
   export interface UnistylesThemes extends AppThemes {} // eslint-disable-line @typescript-eslint/no-empty-object-type
 }
 
@@ -106,7 +108,7 @@ StyleSheet.configure({
     // Read persisted preference; fall back to dark.
     // Must be synchronous — MMKV satisfies this.
     initialTheme: () =>
-      (mmkvInstance.getString("preferredTheme") as "dark" | "light") ?? "dark",
+      (mmkvInstance.getString('preferredTheme') as 'dark' | 'light') ?? 'dark',
     adaptiveThemes: false, // user-controlled; toggle via UnistylesRuntime.setAdaptiveThemes
   },
-});
+})

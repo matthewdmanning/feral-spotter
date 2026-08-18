@@ -27,12 +27,7 @@ export function computeEntrypointDiameter(
   bufferPercent: number,
   gap: number,
 ): number {
-  const buffer = computeEntrypointBuffer(
-    screenWidth,
-    screenHeight,
-    bufferPercent,
-  )
-  const longAxis = Math.max(screenWidth, screenHeight)
-  const raw = (longAxis - 2 * buffer - gap) / 2
+  const shortAxis = Math.min(screenWidth, screenHeight)
+  const raw = shortAxis * (1 - 2 * bufferPercent) - gap
   return Math.max(raw, MIN_TOUCH_TARGET_DP)
 }
