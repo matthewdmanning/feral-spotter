@@ -62,6 +62,9 @@ export function useAnnotatePass(): AnnotatePass {
     handleAbandonPass,
   } = useActiveCatFlow()
 
+  // TODO(Beta): add a popup confirming the user is done annotating before
+  // leaving the pass (#282) — shared with the last-photo Confirm/Not-in-Photo
+  // paths below, which currently reuse this handler directly.
   const handleBoxingComplete = useCallback(() => {
     captureEvent(EVENTS.CAT_BOXING_COMPLETED, {
       photo_count: photos.length,
@@ -83,7 +86,10 @@ export function useAnnotatePass(): AnnotatePass {
   }
 
   // ── Confirm a box — persist via the flow hook, advance unless on the last
-  //    photo (Boxing Complete, not auto-advance, ends the pass) ─────────────
+  //    photo (last photo ends the pass, same as Boxing Complete) ───────────
+  // TODO(Beta): silently reusing handleBoxingComplete here gives no feedback
+  // that the confirm landed before leaving (#282) — add a popup confirming
+  // the user is done annotating. handleNotInPhoto below shares this gap.
   const handleConfirmBox = useCallback(
     (box: BoxInput) => {
       const photo = photos[currentIndex]
@@ -94,13 +100,15 @@ export function useAnnotatePass(): AnnotatePass {
         const next = currentIndex + 1
         carouselRef.current?.scrollTo({ index: next, animated: true })
         setCurrentIndex(next)
+      } else {
+        handleBoxingComplete()
       }
     },
-    [currentIndex, photos, handleBoxConfirmed],
+    [currentIndex, photos, handleBoxConfirmed, handleBoxingComplete],
   )
 
   // ── "Not in this photo" — record explicit absence, advance same as a
-  //    confirmed box does ─────────────────────────────────────────────────
+  //    confirmed box does (including last-photo -> Boxing Complete) ────────
   const handleNotInPhoto = useCallback(() => {
     const photo = photos[currentIndex]
     if (!photo) return
@@ -110,8 +118,10 @@ export function useAnnotatePass(): AnnotatePass {
       const next = currentIndex + 1
       carouselRef.current?.scrollTo({ index: next, animated: true })
       setCurrentIndex(next)
+    } else {
+      handleBoxingComplete()
     }
-  }, [currentIndex, photos, markNotInPhoto])
+  }, [currentIndex, photos, markNotInPhoto, handleBoxingComplete])
 
   // ── Prev — go to previous photo ───────────────────────────────────────────
   const handlePrevPhoto = useCallback(() => {
