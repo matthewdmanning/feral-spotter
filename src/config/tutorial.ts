@@ -17,7 +17,7 @@ export const TUTORIAL_RELEASED_IN_VERSION = '1.0.0'
 export function isTutorialReleased(
   appVersion: string = getAppVersion(),
 ): boolean {
-  return isVersionReleased(TUTORIAL_RELEASED_IN_VERSION, appVersion)
+  return __DEV__ || isVersionReleased(TUTORIAL_RELEASED_IN_VERSION, appVersion)
 }
 
 export const ANNOTATION_TUTORIAL_STEPS: TutorialStep[] = [
