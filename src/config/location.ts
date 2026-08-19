@@ -11,5 +11,7 @@
 export const LOCATION_ACCURACY_THRESHOLD_M = 50
 
 // Milliseconds. How long a single acquisition attempt watches before settling
-// for its best fix so far and becoming eligible to retry.
+// for its best fix so far and becoming eligible to retry. Also the delay
+// before that retry fires — so an unresolved fix rechecks roughly every
+// 2x this value.
 export const LOCATION_STALE_THRESHOLD_MS = 5 * 60 * 1000

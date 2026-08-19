@@ -26,7 +26,7 @@ jest.mock('expo-location', () => ({
     mockGetForegroundPermissionsAsync(...args),
   watchPositionAsync: (...args: unknown[]) => mockWatchPositionAsync(...args),
   PermissionStatus: { GRANTED: 'granted' },
-  Accuracy: { Balanced: 3 },
+  Accuracy: { Balanced: 3, High: 4 },
 }))
 
 describe('startLocationCapture', () => {
