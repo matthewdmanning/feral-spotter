@@ -133,7 +133,7 @@ export async function startLocationCapture(): Promise<void> {
 
   try {
     watchSubscription = await Location.watchPositionAsync(
-      { accuracy: Location.Accuracy.Balanced, timeInterval: 1000 },
+      { accuracy: Location.Accuracy.High, timeInterval: 1000 },
       (fix) => {
         const candidate: CapturedLocation = {
           latitude: fix.coords.latitude,
