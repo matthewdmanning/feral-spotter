@@ -9,27 +9,78 @@ import { useLibraryPhotoPicker } from '@/src/hooks/useLibraryPhotoPicker'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useAuth } from '@/src/lib/auth/useAuth'
 import { getAllSubmissionCaches } from '@/src/lib/cache/submissionCache'
-import {
-  computeEntrypointBuffer,
-  computeEntrypointDiameter,
-} from '@/src/lib/home/entrypointDiameter'
+import { computeEntrypointDiameter } from '@/src/lib/home/entrypointDiameter'
 import { Stack, router } from 'expo-router'
 import { Camera, ImagePlus } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useWindowDimensions, View } from 'react-native'
+import { StyleSheet, useWindowDimensions, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
+
+/**
+ * Camera-viewfinder corner reticle, inset within a circular entrypoint
+ * button — the "spotting" motif. Decorative only (pointerEvents="none").
+ */
+function ViewfinderCorners({
+  diameter,
+  color,
+}: {
+  diameter: number
+  color: string
+}) {
+  const inset = diameter * 0.16
+  const size = diameter * 0.12
+  const thickness = 2
+  const corners = [
+    {
+      top: inset,
+      left: inset,
+      borderTopWidth: thickness,
+      borderLeftWidth: thickness,
+    },
+    {
+      top: inset,
+      right: inset,
+      borderTopWidth: thickness,
+      borderRightWidth: thickness,
+    },
+    {
+      bottom: inset,
+      left: inset,
+      borderBottomWidth: thickness,
+      borderLeftWidth: thickness,
+    },
+    {
+      bottom: inset,
+      right: inset,
+      borderBottomWidth: thickness,
+      borderRightWidth: thickness,
+    },
+  ] as const
+
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      {corners.map((corner, i) => (
+        <View
+          key={i}
+          style={{
+            position: 'absolute',
+            width: size,
+            height: size,
+            borderColor: color,
+            ...corner,
+          }}
+        />
+      ))}
+    </View>
+  )
+}
 
 export default function HomeScreen() {
   const { theme } = useUnistyles()
   const { isAuthenticated, isReady } = useAuth()
   const { width: screenWidth, height: screenHeight } = useWindowDimensions()
   const isLandscape = screenWidth >= screenHeight
-  const entrypointBuffer = computeEntrypointBuffer(
-    screenWidth,
-    screenHeight,
-    ENTRYPOINT_BUFFER_PERCENT,
-  )
   const entrypointDiameter = computeEntrypointDiameter(
     screenWidth,
     screenHeight,
@@ -92,7 +143,7 @@ export default function HomeScreen() {
         key: 'new',
         label: 'New Sighting',
         onPress: handleNew,
-        variant: 'secondary',
+        variant: 'primary',
       },
     ],
     [handleContinue, handleNew],
@@ -106,7 +157,7 @@ export default function HomeScreen() {
           title: 'FeralSpotter',
           headerStyle: { backgroundColor: theme.colors.background },
           headerTintColor: theme.colors.text,
-          headerTitleStyle: { fontWeight: '700', color: theme.colors.text },
+          headerTitleStyle: { fontWeight: '800', color: theme.colors.text },
           headerShadowVisible: false,
         }}
       />
@@ -115,34 +166,45 @@ export default function HomeScreen() {
         <View
           style={[
             styles.entrypointArea,
-            {
-              flexDirection: isLandscape ? 'row' : 'column',
-              ...(isLandscape
-                ? { paddingHorizontal: entrypointBuffer }
-                : { paddingVertical: entrypointBuffer }),
-            },
+            { flexDirection: isLandscape ? 'row' : 'column' },
           ]}
         >
-          <AppButton
-            onPress={handleCamera}
-            variant="primary"
-            size="circle"
-            diameter={entrypointDiameter}
-            disabled={cameraDisabled}
-            icon={<Camera size={48} color={theme.colors.accentText} />}
+          <View
+            style={{ width: entrypointDiameter, height: entrypointDiameter }}
           >
-            Take Photos
-          </AppButton>
-          <AppButton
-            onPress={pickFromLibrary}
-            variant="secondary"
-            size="circle"
-            diameter={entrypointDiameter}
-            disabled={libraryDisabled}
-            icon={<ImagePlus size={48} color={theme.colors.text} />}
+            <AppButton
+              onPress={handleCamera}
+              variant="primary"
+              size="circle"
+              diameter={entrypointDiameter}
+              disabled={cameraDisabled}
+              icon={<Camera size={48} color={theme.colors.accentText} />}
+            >
+              Take Photos
+            </AppButton>
+            <ViewfinderCorners
+              diameter={entrypointDiameter}
+              color={theme.colors.accentAlt}
+            />
+          </View>
+          <View
+            style={{ width: entrypointDiameter, height: entrypointDiameter }}
           >
-            Upload Photos
-          </AppButton>
+            <AppButton
+              onPress={pickFromLibrary}
+              variant="primary"
+              size="circle"
+              diameter={entrypointDiameter}
+              disabled={libraryDisabled}
+              icon={<ImagePlus size={48} color={theme.colors.accentText} />}
+            >
+              Upload Photos
+            </AppButton>
+            <ViewfinderCorners
+              diameter={entrypointDiameter}
+              color={theme.colors.accentAlt}
+            />
+          </View>
         </View>
 
         <View style={styles.bottomArea}>

@@ -16,9 +16,11 @@ export const styles = StyleSheet.create((theme, rt) => ({
   },
   topBarRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   iconBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    // 48x48dp — Android Material touch-target minimum (ux_principles.md #1);
+    // 44 (iOS HIG minimum) was under it on Android.
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: theme.colors.surface,
     borderWidth: 1,
     borderColor: theme.colors.border,
@@ -46,7 +48,15 @@ export const styles = StyleSheet.create((theme, rt) => ({
     fontSize: 10,
     fontWeight: '800',
   },
-  bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 20 },
+  bottomBar: {
+    position: 'absolute',
+    // Mirrors topBar's `rt.insets.top + 12` — the shutter row was flush
+    // against the raw screen edge with no safe-area/gesture-nav clearance.
+    bottom: rt.insets.bottom + theme.spacing.lg,
+    left: 0,
+    right: 0,
+    zIndex: 20,
+  },
   strip: { height: 64 + 16, marginBottom: 20 },
   shutterRow: {
     flexDirection: 'row',
