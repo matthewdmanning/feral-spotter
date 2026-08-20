@@ -11,7 +11,7 @@ export const styles = StyleSheet.create((theme) => ({
   entrypointArea: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'space-evenly',
   },
   bottomArea: { paddingHorizontal: theme.spacing.lg },
 }))
