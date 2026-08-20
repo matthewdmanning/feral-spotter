@@ -129,6 +129,11 @@ export async function startLocationCapture(): Promise<void> {
 
   settleTimer = setTimeout(resolve, LOCATION_STALE_THRESHOLD_MS)
 
+  if (__DEV__) {
+    const servicesEnabled = await Location.hasServicesEnabledAsync()
+    console.log('[location] OS location services enabled:', servicesEnabled)
+  }
+
   if (__DEV__) console.log('[location] starting watchPositionAsync')
 
   try {
@@ -154,6 +159,8 @@ export async function startLocationCapture(): Promise<void> {
         }
       },
     )
+    if (__DEV__)
+      console.log('[location] watchPositionAsync resolved, subscription live')
   } catch (err) {
     if (__DEV__) console.log('[location] watchPositionAsync threw:', err)
     resolve()
