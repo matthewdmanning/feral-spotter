@@ -148,11 +148,11 @@ describe('AnnotateScreen buttons', () => {
     expect(handleNotInPhoto).toHaveBeenCalledTimes(1)
   })
 
-  it('Boxing Complete calls handleBoxingComplete', () => {
+  it('Done With This Cat calls handleBoxingComplete', () => {
     jest.mocked(useAnnotatePass).mockReturnValue(baseAnnotatePass)
     render(<AnnotateScreen />)
 
-    fireEvent.press(screen.getByText('Boxing Complete'))
+    fireEvent.press(screen.getByText('Done With This Cat'))
 
     expect(handleBoxingComplete).toHaveBeenCalledTimes(1)
   })

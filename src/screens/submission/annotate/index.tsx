@@ -37,7 +37,6 @@ export default function AnnotateScreen() {
     handleLongPressRemove,
   } = useAnnotatePass()
   const [carouselHeight, setCarouselHeight] = useState(0)
-  const [zoomedIn, setZoomedIn] = useState(false)
 
   // Hardware back is the only way to leave mid-pass (annotate is a
   // fullScreenModal with gestureEnabled/headerShown off). Swallow the event
@@ -150,7 +149,7 @@ export default function AnnotateScreen() {
             defaultIndex={0}
             onSnapToItem={setCurrentIndex}
             scrollAnimationDuration={200}
-            enabled={!zoomedIn}
+            enabled={false}
             renderItem={({ item }) => (
               <AnnotateCarouselItem
                 photo={item}
@@ -158,7 +157,6 @@ export default function AnnotateScreen() {
                 width={SCREEN_W}
                 height={carouselHeight}
                 onConfirm={handleConfirmBox}
-                onZoomChange={setZoomedIn}
                 onNotInPhoto={handleNotInPhoto}
               />
             )}
@@ -204,7 +202,7 @@ export default function AnnotateScreen() {
           style={[styles.navBtn, styles.navBtnPrimary]}
           accessibilityRole="button"
         >
-          <Text style={styles.navBtnPrimaryText}>Boxing Complete</Text>
+          <Text style={styles.navBtnPrimaryText}>Done With This Cat</Text>
         </Pressable>
       </View>
 

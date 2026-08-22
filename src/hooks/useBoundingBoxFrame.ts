@@ -1,16 +1,25 @@
 /**
  * hooks/useBoundingBoxFrame.ts
  *
- * Fixed-square crop frame: the square crosshair stays centered and fixed on
- * screen; the user pinches/pans/double-taps the photo underneath it to frame
- * the cat, then long-presses the center dot (or calls confirmNow() from a
- * button) to confirm. Confirming computes the square's projection onto the
- * original image as a normalised BoundingBox and hands it to onConfirm.
+ * Center-anchored, resizable crop frame: the box crosshair stays centered on
+ * screen while the user pinches/pans/double-taps the photo underneath it to
+ * position and zoom (unchanged), and independently drags one of the four
+ * edge handles to reshape the box's aspect ratio (#286) — each handle only
+ * moves its own axis, mirrored around the center, so the opposite edge
+ * follows automatically. Long-pressing the center dot (or calling
+ * confirmNow() from a button) confirms. Confirming computes the box's
+ * projection onto the original image as a normalised BoundingBox and hands
+ * it to onConfirm.
  *
  * Requires react-native-gesture-handler + react-native-reanimated v4
  * (Reanimated SharedValues, worklet gestures).
  */
 
+import {
+  clampAspectRatio,
+  clampHalfExtent,
+  maxHalfExtentForBox,
+} from '@/src/lib/annotate/boxResize'
 import {
   clampTranslate,
   halfExtentOnScreen,
@@ -34,6 +43,16 @@ const SNAP_THRESHOLD = 0.08 // zoom-out snap-to-1 band
 const DOUBLE_TAP_SCALE = 2.5
 const HOLD_DURATION_MS = 650 // push time length
 const DOT_HITBOX_RADIUS = 24 // button hitbox radius
+const HANDLE_HITBOX_RADIUS = 36 // edge-handle hitbox radius (+50%, punchlist 2026-08-19)
+// How far inward from the box edge the handles sit, on the crosshairs
+// instead of straddling the border (#286 follow-up).
+const HANDLE_INSET = 20
+// Must clear the dot's own hitbox at minimum box size, or handle-drag and
+// confirm-hold compete for the same pixels at dead center. HANDLE_INSET
+// shifts handles toward center, so the margin has to grow with it.
+const MIN_HALF_EXTENT = DOT_HITBOX_RADIUS + HANDLE_HITBOX_RADIUS + HANDLE_INSET
+const MAX_ASPECT_RATIO = 3 // widest/tallest the box can go, either axis
+const DEFAULT_BOX_FRACTION = 0.85 // initial box size, as a fraction of the shorter canvas axis
 const ZOOM_REACTIVE_THRESHOLD = 1.02 // above this, treat as "zoomed in"
 // #204: swipe-up-to-"Not in Photo". Needs on-device tuning — this is a
 // starting point, not a measured value. Gated on not-zoomed-in (below) so a
@@ -48,6 +67,11 @@ export const BOUNDING_BOX_FRAME_TUNABLES = {
   DOUBLE_TAP_SCALE,
   HOLD_DURATION_MS,
   DOT_HITBOX_RADIUS,
+  HANDLE_HITBOX_RADIUS,
+  HANDLE_INSET,
+  MIN_HALF_EXTENT,
+  MAX_ASPECT_RATIO,
+  DEFAULT_BOX_FRACTION,
   ZOOM_REACTIVE_THRESHOLD,
   NOT_IN_PHOTO_SWIPE_VELOCITY,
 }
@@ -76,9 +100,17 @@ export interface BoundingBoxFrameResult {
   photoGesture: ReturnType<typeof Gesture.Simultaneous>
   /** Attach to the small centered dot's own GestureDetector — render it on top */
   dotGesture: ReturnType<typeof Gesture.LongPress>
+  /** Attach one each to the left/right/top/bottom edge-handle GestureDetectors */
+  leftHandleGesture: ReturnType<typeof Gesture.Pan>
+  rightHandleGesture: ReturnType<typeof Gesture.Pan>
+  topHandleGesture: ReturnType<typeof Gesture.Pan>
+  bottomHandleGesture: ReturnType<typeof Gesture.Pan>
   userScale: ReturnType<typeof useSharedValue<number>>
   userTranslateX: ReturnType<typeof useSharedValue<number>>
   userTranslateY: ReturnType<typeof useSharedValue<number>>
+  /** Half the box's on-screen width/height — box spans center +/- these */
+  boxHalfWidth: ReturnType<typeof useSharedValue<number>>
+  boxHalfHeight: ReturnType<typeof useSharedValue<number>>
   /** 0->1 while the dot is held, for motion-only feedback (scale/opacity) */
   holdProgress: ReturnType<typeof useSharedValue<number>>
   /** Same effect as a successful long-press — call from a Confirm button */
@@ -104,6 +136,13 @@ export function useBoundingBoxFrame({
   const savedTranslateX = useSharedValue(0)
   const savedTranslateY = useSharedValue(0)
 
+  const defaultHalfExtent =
+    (Math.min(canvasWidth, canvasHeight) * DEFAULT_BOX_FRACTION) / 2
+  const boxHalfWidth = useSharedValue(defaultHalfExtent)
+  const boxHalfHeight = useSharedValue(defaultHalfExtent)
+  const savedBoxHalfWidth = useSharedValue(defaultHalfExtent)
+  const savedBoxHalfHeight = useSharedValue(defaultHalfExtent)
+
   // ── Resume a previously-confirmed photo: reconstruct the transform that
   // produced the saved box, instead of resetting to identity. ────────────────
   useEffect(() => {
@@ -117,7 +156,6 @@ export function useBoundingBoxFrame({
     const baseOffsetY = (canvasHeight - imgNaturalHeight * baseScale) / 2
     const canvasCenterX = canvasWidth / 2
     const canvasCenterY = canvasHeight / 2
-    const squareSize = Math.min(canvasWidth, canvasHeight)
 
     const cx1 =
       baseOffsetX + initialBox.lowerLeftX * imgNaturalWidth * baseScale
@@ -128,10 +166,19 @@ export function useBoundingBoxFrame({
     const cy2 =
       baseOffsetY + initialBox.lowerLeftY * imgNaturalHeight * baseScale
 
-    const boxScreenSize = cx2 - cx1
-    if (boxScreenSize <= 0) return
+    const boxScreenWidth = cx2 - cx1
+    const boxScreenHeight = cy2 - cy1
+    if (boxScreenWidth <= 0 || boxScreenHeight <= 0) return
 
-    const scale = squareSize / boxScreenSize
+    // Re-derive the box's on-screen size (bounded by the same default
+    // fraction fresh boxes start at) from the saved aspect ratio, then solve
+    // the single photo scale that reproduces the saved crop through it.
+    const maxBoxDim = Math.min(canvasWidth, canvasHeight) * DEFAULT_BOX_FRACTION
+    const aspect = boxScreenWidth / boxScreenHeight
+    const boxWidth = aspect >= 1 ? maxBoxDim : maxBoxDim * aspect
+    const boxHeight = aspect >= 1 ? maxBoxDim / aspect : maxBoxDim
+
+    const scale = boxWidth / boxScreenWidth
     const translateX = (canvasCenterX - (cx1 + cx2) / 2) * scale
     const translateY = (canvasCenterY - (cy1 + cy2) / 2) * scale
 
@@ -141,6 +188,10 @@ export function useBoundingBoxFrame({
     savedScale.value = scale
     savedTranslateX.value = translateX
     savedTranslateY.value = translateY
+    boxHalfWidth.value = boxWidth / 2
+    boxHalfHeight.value = boxHeight / 2
+    savedBoxHalfWidth.value = boxWidth / 2
+    savedBoxHalfHeight.value = boxHeight / 2
     // Only re-derive when the photo (and its saved box) actually changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -175,9 +226,10 @@ export function useBoundingBoxFrame({
     const baseOffsetY = (canvasHeight - imgNaturalHeight * baseScale) / 2
     const canvasCenterX = canvasWidth / 2
     const canvasCenterY = canvasHeight / 2
-    const squareSize = Math.min(canvasWidth, canvasHeight)
-    const squareX = (canvasWidth - squareSize) / 2
-    const squareY = (canvasHeight - squareSize) / 2
+    const boxWidth = boxHalfWidth.value * 2
+    const boxHeight = boxHalfHeight.value * 2
+    const boxX = (canvasWidth - boxWidth) / 2
+    const boxY = (canvasHeight - boxHeight) / 2
 
     const toImagePx = (cx: number, cy: number) => [
       ((cx - canvasCenterX - translateX) / scale +
@@ -190,8 +242,8 @@ export function useBoundingBoxFrame({
         baseScale,
     ]
 
-    const [x1, y1] = toImagePx(squareX, squareY)
-    const [x2, y2] = toImagePx(squareX + squareSize, squareY + squareSize)
+    const [x1, y1] = toImagePx(boxX, boxY)
+    const [x2, y2] = toImagePx(boxX + boxWidth, boxY + boxHeight)
 
     const clampX = (v: number) => Math.min(Math.max(v, 0), imgNaturalWidth)
     const clampY = (v: number) => Math.min(Math.max(v, 0), imgNaturalHeight)
@@ -211,6 +263,8 @@ export function useBoundingBoxFrame({
     userScale,
     userTranslateX,
     userTranslateY,
+    boxHalfWidth,
+    boxHalfHeight,
   ])
 
   // ── Pinch + pan + double-tap on the photo ───────────────────────────────────
@@ -246,6 +300,18 @@ export function useBoundingBoxFrame({
         userTranslateY.value = clampTranslate(
           userTranslateY.value,
           maxTranslateForScale(halfExtentY, nextScale),
+        )
+        // Zooming out also shrinks how big the box can be without
+        // overhanging the photo — re-clamp it the same way (#286).
+        boxHalfWidth.value = clampHalfExtent(
+          boxHalfWidth.value,
+          MIN_HALF_EXTENT,
+          maxHalfExtentForBox(canvasWidth / 2, halfExtentX, nextScale),
+        )
+        boxHalfHeight.value = clampHalfExtent(
+          boxHalfHeight.value,
+          MIN_HALF_EXTENT,
+          maxHalfExtentForBox(canvasHeight / 2, halfExtentY, nextScale),
         )
       }
     })
@@ -310,6 +376,109 @@ export function useBoundingBoxFrame({
       userTranslateY.value = withTiming(0)
     })
 
+  // ── Edge handles: single-finger drag reshapes the box (#286) ───────────────
+  // Each handle only ever touches its own axis; the opposite edge mirrors
+  // automatically since both are drawn from the same half-extent.
+  const leftHandle = Gesture.Pan()
+    .onStart(() => {
+      'worklet'
+      savedBoxHalfWidth.value = boxHalfWidth.value
+    })
+    .onUpdate((e) => {
+      'worklet'
+      const maxHalf = maxHalfExtentForBox(
+        canvasWidth / 2,
+        halfExtentX,
+        userScale.value,
+      )
+      const next = clampHalfExtent(
+        savedBoxHalfWidth.value - e.translationX,
+        MIN_HALF_EXTENT,
+        maxHalf,
+      )
+      boxHalfWidth.value = clampAspectRatio(
+        next,
+        boxHalfHeight.value,
+        MAX_ASPECT_RATIO,
+      )
+    })
+
+  const rightHandle = Gesture.Pan()
+    .onStart(() => {
+      'worklet'
+      savedBoxHalfWidth.value = boxHalfWidth.value
+    })
+    .onUpdate((e) => {
+      'worklet'
+      const maxHalf = maxHalfExtentForBox(
+        canvasWidth / 2,
+        halfExtentX,
+        userScale.value,
+      )
+      const next = clampHalfExtent(
+        savedBoxHalfWidth.value + e.translationX,
+        MIN_HALF_EXTENT,
+        maxHalf,
+      )
+      boxHalfWidth.value = clampAspectRatio(
+        next,
+        boxHalfHeight.value,
+        MAX_ASPECT_RATIO,
+      )
+    })
+
+  const topHandle = Gesture.Pan()
+    .onStart(() => {
+      'worklet'
+      savedBoxHalfHeight.value = boxHalfHeight.value
+    })
+    .onUpdate((e) => {
+      'worklet'
+      const maxHalf = maxHalfExtentForBox(
+        canvasHeight / 2,
+        halfExtentY,
+        userScale.value,
+      )
+      const next = clampHalfExtent(
+        savedBoxHalfHeight.value - e.translationY,
+        MIN_HALF_EXTENT,
+        maxHalf,
+      )
+      boxHalfHeight.value = clampAspectRatio(
+        next,
+        boxHalfWidth.value,
+        MAX_ASPECT_RATIO,
+      )
+    })
+
+  const bottomHandle = Gesture.Pan()
+    .onStart(() => {
+      'worklet'
+      savedBoxHalfHeight.value = boxHalfHeight.value
+    })
+    .onUpdate((e) => {
+      'worklet'
+      const maxHalf = maxHalfExtentForBox(
+        canvasHeight / 2,
+        halfExtentY,
+        userScale.value,
+      )
+      const next = clampHalfExtent(
+        savedBoxHalfHeight.value + e.translationY,
+        MIN_HALF_EXTENT,
+        maxHalf,
+      )
+      boxHalfHeight.value = clampAspectRatio(
+        next,
+        boxHalfWidth.value,
+        MAX_ASPECT_RATIO,
+      )
+    })
+
+  // A handle drag must win over the photo's own pan — otherwise the photo
+  // slides underneath the finger at the same time the box reshapes.
+  pan.blocksExternalGesture(leftHandle, rightHandle, topHandle, bottomHandle)
+
   const photoGesture = Gesture.Simultaneous(pinch, pan, doubleTap)
 
   // ── Long-press the center dot to confirm ────────────────────────────────────
@@ -331,12 +500,20 @@ export function useBoundingBoxFrame({
   return {
     photoGesture,
     dotGesture,
+    leftHandleGesture: leftHandle,
+    rightHandleGesture: rightHandle,
+    topHandleGesture: topHandle,
+    bottomHandleGesture: bottomHandle,
     userScale,
     userTranslateX,
     userTranslateY,
+    boxHalfWidth,
+    boxHalfHeight,
     holdProgress,
     confirmNow: handleConfirm,
   }
 }
 
 export const DOT_HITBOX_SIZE = DOT_HITBOX_RADIUS * 2
+export const HANDLE_HITBOX_SIZE = HANDLE_HITBOX_RADIUS * 2
+export { HANDLE_INSET }

@@ -3,11 +3,11 @@
  *
  * Single slide in the annotation carousel.
  *
- * The crop target is a fixed, centered square crosshair (side = shortest
- * screen dimension). The user pinches/pans/double-taps the photo underneath
- * it to frame the cat, then long-presses the center dot (or taps Confirm) to
- * save the framing and advance — see useBoundingBoxFrame for the gesture +
- * coordinate-transform logic.
+ * The crop target is a center-anchored crosshair the user can reshape: pinch/
+ * pan/double-tap the photo underneath it to position and zoom (unchanged),
+ * or drag one of the four edge handles to change its aspect ratio (#286).
+ * Long-press the center dot (or tap Confirm) to save the framing and advance
+ * — see useBoundingBoxFrame for the gesture + coordinate-transform logic.
  *
  * Persisting the confirmed box is the caller's job (useActiveCatFlow), not
  * this component's — under the annotate-first flow the first confirmed box
@@ -16,6 +16,8 @@
 
 import {
   DOT_HITBOX_SIZE,
+  HANDLE_HITBOX_SIZE,
+  HANDLE_INSET,
   useBoundingBoxFrame,
 } from '@/src/hooks/useBoundingBoxFrame'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
@@ -68,9 +70,15 @@ export function AnnotateCarouselItem({
   const {
     photoGesture,
     dotGesture,
+    leftHandleGesture,
+    rightHandleGesture,
+    topHandleGesture,
+    bottomHandleGesture,
     userScale,
     userTranslateX,
     userTranslateY,
+    boxHalfWidth,
+    boxHalfHeight,
     holdProgress,
     confirmNow,
   } = useBoundingBoxFrame({
@@ -100,9 +108,47 @@ export function AnnotateCarouselItem({
     opacity: interpolate(holdProgress.value, [0, 1], [1, 0.6]),
   }))
 
-  const squareSize = Math.min(width, height)
-  const squareX = (width - squareSize) / 2
-  const squareY = (height - squareSize) / 2
+  // Box is center-anchored: its screen rect and crosshair both track the
+  // live boxHalfWidth/boxHalfHeight shared values as handles are dragged.
+  const boxStyle = useAnimatedStyle(() => ({
+    left: width / 2 - boxHalfWidth.value,
+    top: height / 2 - boxHalfHeight.value,
+    width: boxHalfWidth.value * 2,
+    height: boxHalfHeight.value * 2,
+  }))
+
+  const crosshairHStyle = useAnimatedStyle(() => ({
+    left: width / 2 - boxHalfWidth.value,
+    top: height / 2 - 0.5,
+    width: boxHalfWidth.value * 2,
+  }))
+
+  const crosshairVStyle = useAnimatedStyle(() => ({
+    left: width / 2 - 0.5,
+    top: height / 2 - boxHalfHeight.value,
+    height: boxHalfHeight.value * 2,
+  }))
+
+  const leftHandleStyle = useAnimatedStyle(() => ({
+    left:
+      width / 2 - boxHalfWidth.value + HANDLE_INSET - HANDLE_HITBOX_SIZE / 2,
+    top: height / 2 - HANDLE_HITBOX_SIZE / 2,
+  }))
+  const rightHandleStyle = useAnimatedStyle(() => ({
+    left:
+      width / 2 + boxHalfWidth.value - HANDLE_INSET - HANDLE_HITBOX_SIZE / 2,
+    top: height / 2 - HANDLE_HITBOX_SIZE / 2,
+  }))
+  const topHandleStyle = useAnimatedStyle(() => ({
+    left: width / 2 - HANDLE_HITBOX_SIZE / 2,
+    top:
+      height / 2 - boxHalfHeight.value + HANDLE_INSET - HANDLE_HITBOX_SIZE / 2,
+  }))
+  const bottomHandleStyle = useAnimatedStyle(() => ({
+    left: width / 2 - HANDLE_HITBOX_SIZE / 2,
+    top:
+      height / 2 + boxHalfHeight.value - HANDLE_INSET - HANDLE_HITBOX_SIZE / 2,
+  }))
 
   // width/height are runtime props — cannot be static stylesheet values
   return (
@@ -125,42 +171,66 @@ export function AnnotateCarouselItem({
         </View>
       </GestureDetector>
 
-      {/* Fixed centered square crosshair — crosshair lines drawn inside the square */}
-      <View
+      {/* Center-anchored box crosshair — resizes as handles are dragged */}
+      <Animated.View pointerEvents="none" style={[styles.box, boxStyle]} />
+      <Animated.View
         pointerEvents="none"
-        style={[
-          styles.square,
-          {
-            left: squareX,
-            top: squareY,
-            width: squareSize,
-            height: squareSize,
-          },
-        ]}
-      >
-        <View
+        style={[styles.crosshairLine, { height: 1 }, crosshairHStyle]}
+      />
+      <Animated.View
+        pointerEvents="none"
+        style={[styles.crosshairLine, { width: 1 }, crosshairVStyle]}
+      />
+
+      {/* Edge handles — single-finger drag reshapes the box's aspect ratio (#286) */}
+      <GestureDetector gesture={leftHandleGesture}>
+        <Animated.View
           style={[
-            styles.crosshairLine,
-            {
-              left: 0,
-              top: squareSize / 2 - 0.5,
-              width: squareSize,
-              height: 1,
-            },
+            styles.handleTouchArea,
+            { width: HANDLE_HITBOX_SIZE, height: HANDLE_HITBOX_SIZE },
+            leftHandleStyle,
           ]}
-        />
-        <View
+          accessibilityLabel="Resize box width, left edge"
+        >
+          <View style={[styles.handleBar, styles.handleBarVertical]} />
+        </Animated.View>
+      </GestureDetector>
+      <GestureDetector gesture={rightHandleGesture}>
+        <Animated.View
           style={[
-            styles.crosshairLine,
-            {
-              left: squareSize / 2 - 0.5,
-              top: 0,
-              width: 1,
-              height: squareSize,
-            },
+            styles.handleTouchArea,
+            { width: HANDLE_HITBOX_SIZE, height: HANDLE_HITBOX_SIZE },
+            rightHandleStyle,
           ]}
-        />
-      </View>
+          accessibilityLabel="Resize box width, right edge"
+        >
+          <View style={[styles.handleBar, styles.handleBarVertical]} />
+        </Animated.View>
+      </GestureDetector>
+      <GestureDetector gesture={topHandleGesture}>
+        <Animated.View
+          style={[
+            styles.handleTouchArea,
+            { width: HANDLE_HITBOX_SIZE, height: HANDLE_HITBOX_SIZE },
+            topHandleStyle,
+          ]}
+          accessibilityLabel="Resize box height, top edge"
+        >
+          <View style={[styles.handleBar, styles.handleBarHorizontal]} />
+        </Animated.View>
+      </GestureDetector>
+      <GestureDetector gesture={bottomHandleGesture}>
+        <Animated.View
+          style={[
+            styles.handleTouchArea,
+            { width: HANDLE_HITBOX_SIZE, height: HANDLE_HITBOX_SIZE },
+            bottomHandleStyle,
+          ]}
+          accessibilityLabel="Resize box height, bottom edge"
+        >
+          <View style={[styles.handleBar, styles.handleBarHorizontal]} />
+        </Animated.View>
+      </GestureDetector>
 
       {/* Center dot — long-press to confirm */}
       <GestureDetector gesture={dotGesture}>
