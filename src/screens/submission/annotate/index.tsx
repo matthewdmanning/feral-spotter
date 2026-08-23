@@ -32,22 +32,18 @@ export default function AnnotateScreen() {
     handleNotInPhoto,
     handleBoxingComplete,
     clearActiveCat,
-    handleAbandonPass,
     handlePrevPhoto,
     handleLongPressRemove,
   } = useAnnotatePass()
   const [carouselHeight, setCarouselHeight] = useState(0)
-  const [zoomedIn, setZoomedIn] = useState(false)
 
-  // Hardware back is the only way to leave mid-pass (annotate is a
-  // fullScreenModal with gestureEnabled/headerShown off). Swallow the event
-  // (return true) — handleAbandonPass (useActiveCatFlow) owns the actual
-  // navigation decision, alongside this flow's other navigation calls; see
-  // its doc comment for why that's Home and not a default pop or Cat List.
-  useBackHandler(() => {
-    handleAbandonPass()
-    return true
-  })
+  // Buttons only, no swipe/back exit mid-pass (annotate is a fullScreenModal
+  // with gestureEnabled/headerShown off). BackHandler can't distinguish an
+  // edge-swipe from a physical back-press — they're the same JS event — so
+  // swallowing it here blocks both. "Done With This Cat" already covers
+  // every exit case: it falls back to handleAbandonPass itself whenever
+  // there's no active cat or no confirmed boxes yet (useActiveCatFlow).
+  useBackHandler(() => true)
 
   // ── Tutorial (first annotation entry only; replay resets status to 'unseen')
   const tutorialStatus = useTutorialStore((s) => s.annotation_tutorial_status)
@@ -150,7 +146,7 @@ export default function AnnotateScreen() {
             defaultIndex={0}
             onSnapToItem={setCurrentIndex}
             scrollAnimationDuration={200}
-            enabled={!zoomedIn}
+            enabled={false}
             renderItem={({ item }) => (
               <AnnotateCarouselItem
                 photo={item}
@@ -158,7 +154,6 @@ export default function AnnotateScreen() {
                 width={SCREEN_W}
                 height={carouselHeight}
                 onConfirm={handleConfirmBox}
-                onZoomChange={setZoomedIn}
                 onNotInPhoto={handleNotInPhoto}
               />
             )}
@@ -204,7 +199,7 @@ export default function AnnotateScreen() {
           style={[styles.navBtn, styles.navBtnPrimary]}
           accessibilityRole="button"
         >
-          <Text style={styles.navBtnPrimaryText}>Boxing Complete</Text>
+          <Text style={styles.navBtnPrimaryText}>Done With This Cat</Text>
         </Pressable>
       </View>
 
