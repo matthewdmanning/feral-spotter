@@ -17,6 +17,7 @@ import { useSettingsStore } from '@/src/hooks/useSettingsStore'
 import { useAuth } from '@/src/lib/auth/useAuth'
 import { captureEvent, EVENTS } from '@/src/lib/analytics/analytics'
 import { startLocationCapture } from '@/src/lib/location'
+import { useConsentStore } from '@/src/hooks/useConsentStore'
 import { uploadNewPhoto } from '@/src/lib/upload/uploadNewPhoto'
 import type { SubmissionPhoto } from '@/src/types'
 import { type FlashListRef } from '@shopify/flash-list'
@@ -260,6 +261,11 @@ export function useCameraCapture(): CameraCaptureResult {
     // GPS-timing follow-up (#128): the Live fix starts here, not on
     // Submission Details — it runs in the background independent of this
     // screen's lifecycle (src/lib/location.ts).
+    if (__DEV__)
+      console.log(
+        '[location] consent hydrated:',
+        useConsentStore.persist.hasHydrated(),
+      )
     void startLocationCapture()
   }, [])
 
