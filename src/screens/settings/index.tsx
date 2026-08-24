@@ -124,8 +124,9 @@ export default function SettingsScreen() {
               </Text>
             </Pressable>
             <Text style={styles.hint}>
-              Clears the in-progress submission — cats, photos and location.
-              Photos saved to this device are not deleted.
+              Clears the in-progress submission — cats, photos and location —
+              and returns you to the home screen. Photos saved to this device
+              are not deleted.
             </Text>
           </View>
 

@@ -88,10 +88,16 @@ export function useSettingsDraft(): SettingsDraftResult {
 
   // Third caller of the draft teardown seam (#292). The old handler called
   // clearCache(), which removed a key nothing ever wrote — a no-op button.
+  //
+  // This is an escape pod: it is reachable while a draft is live, and the
+  // screens behind Settings (Cat List, annotate, the create screen) are all
+  // mounted against state it just emptied — the create screen's mount effect
+  // won't re-run to notice. So it routes Home rather than popping back into
+  // them, same as Submit and Reset do.
   const handleClearDraft = () => {
     Alert.alert(
       'Clear Draft',
-      'This permanently clears the in-progress submission — its cats, photos and location. Photos already saved to this device are not deleted.',
+      'This permanently clears the in-progress submission — its cats, photos and location, and returns you to the home screen. Photos already saved to this device are not deleted.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -99,6 +105,7 @@ export function useSettingsDraft(): SettingsDraftResult {
           style: 'destructive',
           onPress: async () => {
             await discardDraft()
+            router.replace('/')
             showSuccess('Cleared', 'Submission cleared')
           },
         },
