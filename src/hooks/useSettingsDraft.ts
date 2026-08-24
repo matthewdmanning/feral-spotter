@@ -1,6 +1,6 @@
 /**
  * hooks/useSettingsDraft.ts
- * Manages the settings screen draft pattern, password flow, and Clear History.
+ * Manages the settings screen draft pattern, password flow, and Clear Draft.
  * Screen receives everything via this hook — no business logic in the component.
  */
 
@@ -23,7 +23,7 @@ export interface SettingsDraftResult {
   setConfirmPassword: (v: string) => void
   handleSave: () => Promise<void>
   handleDiscard: () => void
-  handleClearHistory: () => void
+  handleClearDraft: () => void
   handleRemovePassword: () => Promise<void>
 }
 
@@ -88,9 +88,9 @@ export function useSettingsDraft(): SettingsDraftResult {
 
   // Third caller of the draft teardown seam (#292). The old handler called
   // clearCache(), which removed a key nothing ever wrote — a no-op button.
-  const handleClearHistory = () => {
+  const handleClearDraft = () => {
     Alert.alert(
-      'Clear History',
+      'Clear Draft',
       'This permanently clears the in-progress submission — its cats, photos and location. Photos already saved to this device are not deleted.',
       [
         { text: 'Cancel', style: 'cancel' },
@@ -122,7 +122,7 @@ export function useSettingsDraft(): SettingsDraftResult {
     setConfirmPassword,
     handleSave,
     handleDiscard,
-    handleClearHistory,
+    handleClearDraft,
     handleRemovePassword,
   }
 }

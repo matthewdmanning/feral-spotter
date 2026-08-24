@@ -50,7 +50,7 @@ export default function SettingsScreen() {
     setConfirmPassword,
     handleSave,
     handleDiscard,
-    handleClearHistory,
+    handleClearDraft,
     handleRemovePassword,
   } = useSettingsDraft()
 
@@ -110,17 +110,17 @@ export default function SettingsScreen() {
             )}
           </View>
 
-          {/* History */}
+          {/* Draft */}
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>History</Text>
+            <Text style={styles.cardTitle}>Draft</Text>
             <Pressable
-              onPress={handleClearHistory}
+              onPress={handleClearDraft}
               style={styles.linkRow}
               accessibilityRole="button"
             >
               <Trash2 size={16} color={theme.colors.danger} />
               <Text style={[styles.linkText, { color: theme.colors.danger }]}>
-                Clear History
+                Clear Draft
               </Text>
             </Pressable>
             <Text style={styles.hint}>
