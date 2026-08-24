@@ -50,7 +50,7 @@ export default function SettingsScreen() {
     setConfirmPassword,
     handleSave,
     handleDiscard,
-    handleClearCache,
+    handleClearHistory,
     handleRemovePassword,
   } = useSettingsDraft()
 
@@ -110,35 +110,22 @@ export default function SettingsScreen() {
             )}
           </View>
 
-          {/* Cache */}
+          {/* History */}
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Cache</Text>
-            <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>Keep cache for (days)</Text>
-              <TextInput
-                keyboardType="numeric"
-                placeholderTextColor={theme.colors.muted}
-                value={String(draft.cache_ttl_days)}
-                onChangeText={(v) =>
-                  patch('cache_ttl_days', Math.max(1, parseInt(v) || 1))
-                }
-                style={styles.input}
-              />
-            </View>
-            <View style={styles.divider} />
+            <Text style={styles.cardTitle}>History</Text>
             <Pressable
-              onPress={handleClearCache}
+              onPress={handleClearHistory}
               style={styles.linkRow}
               accessibilityRole="button"
             >
               <Trash2 size={16} color={theme.colors.danger} />
               <Text style={[styles.linkText, { color: theme.colors.danger }]}>
-                Clear Cache
+                Clear History
               </Text>
             </Pressable>
             <Text style={styles.hint}>
-              Removes expired and all cached submissions. Does not delete
-              photos.
+              Clears the in-progress submission — cats, photos and location.
+              Photos saved to this device are not deleted.
             </Text>
           </View>
 

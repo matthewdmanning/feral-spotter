@@ -18,35 +18,15 @@
  *   )
  */
 
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import AsyncStorage from '@react-native-async-storage/async-storage'
 // react-native-mmkv stays installed solely for src/config/unistyles.ts's
 // synchronous theme read (that file is being migrated away from separately).
-import { createMMKV } from "react-native-mmkv";
+import { createMMKV } from 'react-native-mmkv'
 
-export const mmkvInstance = createMMKV({ id: "feralspotter" });
+export const mmkvInstance = createMMKV({ id: 'feralspotter' })
 
 export const asyncStorage = {
   getItem: (key: string) => AsyncStorage.getItem(key),
   setItem: (key: string, value: string) => AsyncStorage.setItem(key, value),
   removeItem: (key: string) => AsyncStorage.removeItem(key),
-};
-
-// consent-store intentionally excluded — disclosure acceptance and OS permission
-// grants aren't "cache," and wiping it here would force re-consent on a routine
-// cache clear without actually revoking the underlying OS permissions.
-const PERSISTED_STORE_KEYS = [
-  "ui-store",
-  "annotation-store",
-  "submission-store",
-  "bounding-box-store",
-  "settings-store",
-  "photo-store",
-];
-
-/**
- * Clears all persisted Zustand store data.
- * Call from settings "Clear Cache" handler instead of (or alongside) clearCache().
- */
-export async function clearAllStores(): Promise<void> {
-  await AsyncStorage.multiRemove(PERSISTED_STORE_KEYS);
 }
