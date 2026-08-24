@@ -20,7 +20,7 @@
     "lint": "npx expo customize tsconfig.json && expo lint",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.server.json",
     "test": "jest",
-    "test:rules": "firebase emulators:exec --project project-e3d5659d-bc4f-438f-88c --only firestore,storage,auth \"jest -c jest.rules.config.js --runInBand\"",
+    "test:rules": "node scripts/run-rules-tests.mjs",
     "test:functions": "cd functions && npm test",
     "format": "node scripts/format-changed.mjs",
     "format:check": "node scripts/format-changed.mjs --check",
