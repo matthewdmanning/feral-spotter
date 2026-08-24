@@ -4,7 +4,7 @@ import { useAnnotatePass } from '../useAnnotatePass'
 
 /**
  * handleLongPressRemove's confirmation branching (src/hooks/useAnnotatePass.ts)
- * is a pure decision on inputs (skip-setting × other-annotations), not a
+ * is a pure decision on one input (the skip-confirm setting), not a
  * stateful flow — plain cases here, not an xstate model, matching this
  * repo's convention for non-stateful branching (see libraryPickTime.test.ts).
  * Carousel-position logic is modeled separately in
@@ -44,28 +44,14 @@ const PHOTO = {
 }
 
 const mockRemovePhoto = jest.fn()
-const mockRemoveAnnotationSet = jest.fn()
 const mockRemoveBoxesForPhoto = jest.fn()
 const mockUpdateSetting = jest.fn()
 
-let mockAnnotationSets: Record<
-  string,
-  { annotations: { entity_id?: string }[] }
->
 let mockSkipConfirm: boolean
 
 jest.mock('@/src/hooks', () => ({
   usePhotoStore: (sel: (s: object) => unknown) =>
     sel({ photos: [PHOTO], removePhoto: mockRemovePhoto }),
-}))
-jest.mock('@/src/hooks/useAnnotationStore', () => ({
-  useAnnotationStore: (sel: (s: object) => unknown) =>
-    sel({
-      get annotationSets() {
-        return mockAnnotationSets
-      },
-      removeAnnotationSet: mockRemoveAnnotationSet,
-    }),
 }))
 jest.mock('@/src/hooks/useBoundingBoxStore', () => ({
   useBoundingBoxStore: (sel: (s: object) => unknown) =>
@@ -84,11 +70,10 @@ jest.mock('@/src/hooks/useSettingsStore', () => ({
 describe('useAnnotatePass — handleLongPressRemove confirmation branching', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    mockAnnotationSets = {}
     mockSkipConfirm = false
   })
 
-  it('skip-confirm on, no other annotations: removes immediately without an Alert', () => {
+  it('skip-confirm on: removes immediately without an Alert', () => {
     mockSkipConfirm = true
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
     const { result } = renderHook(() => useAnnotatePass())
@@ -97,11 +82,10 @@ describe('useAnnotatePass — handleLongPressRemove confirmation branching', () 
 
     expect(alertSpy).not.toHaveBeenCalled()
     expect(mockRemovePhoto).toHaveBeenCalledWith('photo-1')
-    expect(mockRemoveAnnotationSet).toHaveBeenCalledWith('photo-1')
     expect(mockRemoveBoxesForPhoto).toHaveBeenCalledWith('photo-1')
   })
 
-  it('skip-confirm off, no other annotations: Alert offers a 3rd "don\'t ask again" option', () => {
+  it('skip-confirm off: Alert offers a 3rd "don\'t ask again" option', () => {
     mockSkipConfirm = false
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
     const { result } = renderHook(() => useAnnotatePass())
@@ -111,28 +95,12 @@ describe('useAnnotatePass — handleLongPressRemove confirmation branching', () 
     expect(alertSpy).toHaveBeenCalledTimes(1)
     const [title, message, buttons] = alertSpy.mock.calls[0]
     expect(title).toBe('Remove photo from submission?')
-    expect(message).not.toContain('another cat')
+    expect(message).toBe('This cannot be undone.')
     expect(buttons?.map((b) => b.text)).toEqual([
       'Cancel',
       "Remove, don't ask again",
       'Remove',
     ])
-  })
-
-  it('has other-cat annotations: Alert warns and omits the "don\'t ask again" option, even with skip-confirm on', () => {
-    mockSkipConfirm = true
-    mockAnnotationSets = {
-      'photo-1': { annotations: [{ entity_id: 'some-other-cat' }] },
-    }
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
-    const { result } = renderHook(() => useAnnotatePass())
-
-    act(() => result.current.handleLongPressRemove())
-
-    expect(alertSpy).toHaveBeenCalledTimes(1)
-    const [, message, buttons] = alertSpy.mock.calls[0]
-    expect(message).toContain('another cat')
-    expect(buttons?.map((b) => b.text)).toEqual(['Cancel', 'Remove'])
   })
 
   it('pressing "Remove, don\'t ask again" persists the setting and removes', () => {

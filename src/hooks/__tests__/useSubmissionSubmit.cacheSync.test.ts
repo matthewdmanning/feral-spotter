@@ -35,6 +35,7 @@ jest.mock('@/src/lib/cache/submissionCache', () => ({
   deleteSubmissionCache: jest.fn().mockResolvedValue(undefined),
   updateSubmissionCache: jest.fn().mockResolvedValue(undefined),
   getSubmissionCache: jest.fn().mockResolvedValue(null),
+  clearCurrentCacheId: jest.fn().mockResolvedValue(undefined),
 }))
 
 jest.mock('@/src/lib/location', () => ({

@@ -4,7 +4,6 @@
  * stores from `@/src/hooks` in one statement.
  */
 
-export * from './useAnnotationStore'
 export * from './usePhotoStore'
 export * from './useSettingsStore'
 export * from './useSubmissionStore'

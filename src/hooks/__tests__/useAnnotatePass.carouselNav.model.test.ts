@@ -71,10 +71,6 @@ jest.mock('@/src/hooks', () => ({
   usePhotoStore: (sel: (s: object) => unknown) =>
     sel({ photos: THREE_PHOTOS, removePhoto: jest.fn() }),
 }))
-jest.mock('@/src/hooks/useAnnotationStore', () => ({
-  useAnnotationStore: (sel: (s: object) => unknown) =>
-    sel({ annotationSets: {}, removeAnnotationSet: jest.fn() }),
-}))
 jest.mock('@/src/hooks/useBoundingBoxStore', () => ({
   useBoundingBoxStore: (sel: (s: object) => unknown) =>
     sel({ removeBoxesForPhoto: jest.fn() }),
