@@ -52,7 +52,8 @@ export interface ApiError {
   code?: string
 }
 
-/** A submission persisted to the post-submission cache (utils/cache.ts). */
+/** A submitted submission's post-submission shape. Currently unreferenced — the
+ * TTL cache that consumed it was removed in #292. */
 export interface SubmittedSubmission {
   id: string
   location_type: string
