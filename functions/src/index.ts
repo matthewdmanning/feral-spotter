@@ -39,9 +39,8 @@ function parseSubmissionPath(
   return { uid: match[1], submissionId: match[2] }
 }
 
-// Mirrors src/lib/upload/allowlist.ts's parseAllowlist — duplicated rather
-// than shared across the app/functions package boundary for one two-line
-// function. Keep the two in sync if the format ever changes.
+// Sole parser for the tester allowlist. The client-side twin it used to
+// mirror (src/lib/upload/allowlist.ts) was deleted in ed2cdb4.
 function parseTesterAllowlist(raw: string | undefined): Set<string> {
   if (!raw) return new Set()
   return new Set(

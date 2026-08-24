@@ -92,8 +92,8 @@ service firebase.storage {
                    // keep writing photos against it — a collision must fail
                    // closed (denied write) rather than merge into someone
                    // else's submission.
-                   // 10 must match MAX_PHOTOS: src/config/constants.ts (client) and
-                   // the duplicate in src/app/upload+api.ts (server) — rules can't read it.
+                   // 10 must match MAX_PHOTOS in src/config/constants.ts —
+                   // rules can't read it, so keep the two in sync by hand.
                    || (doc.data.ownerUid == uid && doc.data.photoCount < 10)
                  )
                );

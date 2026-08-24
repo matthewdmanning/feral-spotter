@@ -1,6 +1,6 @@
 /**
  * hooks/useSettingsDraft.ts
- * Manages the settings screen draft pattern, password flow, and cache actions.
+ * Manages the settings screen draft pattern, password flow, and Clear Draft.
  * Screen receives everything via this hook — no business logic in the component.
  */
 
@@ -9,7 +9,7 @@ import { Alert } from 'react-native'
 import { router } from 'expo-router'
 import { showError, showSuccess, useSettingsStore } from '@/src/hooks'
 import { hasPassword, removePassword, verifyPassword } from '@/src/utils/api'
-import { clearCache } from '@/src/utils/cache'
+import { discardDraft } from '@/src/lib/submission/draft'
 import type { AppSettings } from '@/src/hooks/useSettingsStore'
 
 export interface SettingsDraftResult {
@@ -23,7 +23,7 @@ export interface SettingsDraftResult {
   setConfirmPassword: (v: string) => void
   handleSave: () => Promise<void>
   handleDiscard: () => void
-  handleClearCache: () => void
+  handleClearDraft: () => void
   handleRemovePassword: () => Promise<void>
 }
 
@@ -86,18 +86,27 @@ export function useSettingsDraft(): SettingsDraftResult {
     ])
   }
 
-  const handleClearCache = () => {
+  // Third caller of the draft teardown seam (#292). The old handler called
+  // clearCache(), which removed a key nothing ever wrote — a no-op button.
+  //
+  // This is an escape pod: it is reachable while a draft is live, and the
+  // screens behind Settings (Cat List, annotate, the create screen) are all
+  // mounted against state it just emptied — the create screen's mount effect
+  // won't re-run to notice. So it routes Home rather than popping back into
+  // them, same as Submit and Reset do.
+  const handleClearDraft = () => {
     Alert.alert(
-      'Clear Cache',
-      'Remove all cached submission data? Photos are not affected.',
+      'Clear Draft',
+      'This permanently clears the in-progress submission — its cats, photos and location, and returns you to the home screen. Photos already saved to this device are not deleted.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Clear',
           style: 'destructive',
           onPress: async () => {
-            await clearCache()
-            showSuccess('Cleared', 'Cache cleared')
+            await discardDraft()
+            router.replace('/')
+            showSuccess('Cleared', 'Submission cleared')
           },
         },
       ],
@@ -120,7 +129,7 @@ export function useSettingsDraft(): SettingsDraftResult {
     setConfirmPassword,
     handleSave,
     handleDiscard,
-    handleClearCache,
+    handleClearDraft,
     handleRemovePassword,
   }
 }

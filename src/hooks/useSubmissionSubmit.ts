@@ -24,13 +24,11 @@ import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { EVENTS, fireAnalyticsEvent } from '@/src/lib/analytics/analytics'
 import { useAuth } from '@/src/lib/auth/useAuth'
 import {
-  clearCurrentCacheId,
-  deleteSubmissionCache,
   getCurrentCacheId,
   getSubmissionCache,
   updateSubmissionCache,
 } from '@/src/lib/cache/submissionCache'
-import { stopLocationCapture } from '@/src/lib/location'
+import { completeDraft, discardDraft } from '@/src/lib/submission/draft'
 import {
   finalizeSubmissionPhotoMetadata,
   uploadSubmissionMetadata,
@@ -74,10 +72,8 @@ async function waitForUploads(): Promise<void> {
 export function useSubmissionSubmit(): SubmissionSubmitResult {
   const cats = useSubmissionStore((s) => s.cats)
   const submission = useSubmissionStore((s) => s.submission)
-  const clearDraft = useSubmissionStore((s) => s.clearDraft)
 
   const photos = usePhotoStore((s) => s.photos)
-  const clearPhotos = usePhotoStore((s) => s.clearPhotos)
   const cloudSubmissionId = usePhotoStore((s) => s.submissionId)
 
   const { user } = useAuth()
@@ -285,19 +281,15 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
                 cloudSubmissionId,
               )
 
-              if (cId) {
-                await updateSubmissionCache(cId, { status: 'Submitted' })
-                const snap = await getSubmissionCache(cId)
-                if (snap) fireAnalyticsEvent(EVENTS.SUBMISSION_SUBMITTED, snap)
-                // Without this, submission_cache_current keeps pointing at
-                // this now-Submitted entry forever — every later draft's
-                // createSubmissionCache() guard in create/index.tsx sees a
-                // truthy current ID and never creates its own cache row.
-                await clearCurrentCacheId()
-              }
-              clearDraft()
-              clearPhotos()
-              stopLocationCapture()
+              // Flips the history row to 'Submitted', releases the current
+              // pointer (otherwise every later draft's createSubmissionCache()
+              // guard sees a truthy current ID and never creates its own row)
+              // and wipes all four draft stores — see lib/submission/draft.ts.
+              const snap = await completeDraft()
+              if (snap) fireAnalyticsEvent(EVENTS.SUBMISSION_SUBMITTED, snap)
+              // Navigation deliberately stays in the caller: its ordering
+              // against the create screen's auto-skip effect is load-bearing
+              // (#189 — see src/screens/submission/create/index.tsx).
               router.replace('/')
             } catch (err) {
               if (cId) {
@@ -317,16 +309,7 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
         },
       ],
     )
-  }, [
-    cats,
-    photos,
-    submission,
-    cloudSubmissionId,
-    user,
-    clearDraft,
-    clearPhotos,
-    setSubmitting,
-  ])
+  }, [cats, photos, submission, cloudSubmissionId, user, setSubmitting])
 
   // ── Reset → confirm → clear all (#153) ─────────────────────────────────────
 
@@ -340,17 +323,13 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
           text: 'Reset',
           style: 'destructive',
           onPress: async () => {
-            const cId = await getCurrentCacheId()
-            if (cId) await deleteSubmissionCache(cId)
-            clearDraft()
-            clearPhotos()
-            stopLocationCapture()
+            await discardDraft()
             router.replace('/')
           },
         },
       ],
     )
-  }, [clearDraft, clearPhotos])
+  }, [])
 
   return { handleDone, handleReset, isSubmitting }
 }

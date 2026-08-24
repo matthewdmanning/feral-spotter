@@ -16,7 +16,6 @@ import { Alert } from 'react-native'
 import type { ICarouselInstance } from 'react-native-reanimated-carousel'
 import { usePhotoStore } from '@/src/hooks'
 import { useActiveCatFlow } from '@/src/hooks/useActiveCatFlow'
-import { useAnnotationStore } from '@/src/hooks/useAnnotationStore'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'
 import { EVENTS, captureEvent } from '@/src/lib/analytics/analytics'
@@ -46,8 +45,6 @@ export interface AnnotatePass {
 export function useAnnotatePass(): AnnotatePass {
   const photos = usePhotoStore((s) => s.photos)
   const removePhoto = usePhotoStore((s) => s.removePhoto)
-  const annotationSets = useAnnotationStore((s) => s.annotationSets)
-  const removeAnnotationSet = useAnnotationStore((s) => s.removeAnnotationSet)
   const removeBoxesForPhoto = useBoundingBoxStore((s) => s.removeBoxesForPhoto)
   const settings = useSettingsStore((s) => s.settings)
   const updateSetting = useSettingsStore((s) => s.updateSetting)
@@ -136,53 +133,33 @@ export function useAnnotatePass(): AnnotatePass {
     const photo = photos[currentIndex]
     if (!photo) return
 
-    const hasOtherAnnotations = (
-      annotationSets[photo.local_id]?.annotations ?? []
-    ).some((a) => a.entity_id !== undefined && a.entity_id !== activeCatId)
-    const canSkip = !hasOtherAnnotations && settings.skip_photo_remove_confirm
-
     const doRemove = () => {
       removePhoto(photo.local_id)
-      removeAnnotationSet(photo.local_id)
       removeBoxesForPhoto(photo.local_id)
     }
 
-    if (canSkip) {
+    if (settings.skip_photo_remove_confirm) {
       doRemove()
       return
     }
 
-    const warning = hasOtherAnnotations
-      ? '\n\nThis photo has annotations for another cat — those will also be deleted.'
-      : ''
-
-    const buttons: Parameters<typeof Alert.alert>[2] = [
+    Alert.alert('Remove photo from submission?', 'This cannot be undone.', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: doRemove },
-    ]
-    if (!hasOtherAnnotations) {
-      buttons.splice(1, 0, {
+      {
         text: "Remove, don't ask again",
         style: 'destructive',
         onPress: () => {
           updateSetting('skip_photo_remove_confirm', true)
           doRemove()
         },
-      })
-    }
-    Alert.alert(
-      'Remove photo from submission?',
-      `This cannot be undone.${warning}`,
-      buttons,
-    )
+      },
+      { text: 'Remove', style: 'destructive', onPress: doRemove },
+    ])
   }, [
     currentIndex,
     photos,
-    activeCatId,
-    annotationSets,
     settings.skip_photo_remove_confirm,
     removePhoto,
-    removeAnnotationSet,
     removeBoxesForPhoto,
     updateSetting,
   ])
