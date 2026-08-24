@@ -4,9 +4,6 @@
  * Persisted Zustand store for bounding-box annotations.
  * Keyed by `${cat_id}:${photo_local_id}` so data survives
  * navigation and app restarts.
- *
- * Separate from useAnnotationStore to avoid touching
- * the unmigrated store file.
  */
 
 import { asyncStorage } from '@/src/lib/cache/storage'
@@ -32,6 +29,8 @@ interface BoundingBoxState {
   markAbsent: (catId: string, photoId: string) => void
   getBoxes: (catId: string, photoId: string) => BoundingBox[]
   clearForCat: (catId: string) => void
+  /** Store-wide wipe — draft teardown only, see lib/submission/draft.ts (#292) */
+  clearAll: () => void
   /** Returns every box for a photo across all cats — for display-only views */
   getBoxesForPhoto: (photoId: string) => BoundingBox[]
   /** Sweeps boxes/absences/lastBoxes for a removed photo, across every cat (#177) */
@@ -108,6 +107,8 @@ export const useBoundingBoxStore = create<BoundingBoxState>()(
         const key = `${catId}:${photoId}`
         return get().boxes[key] ?? []
       },
+
+      clearAll: () => set({ boxes: {}, lastBoxes: {}, absences: {} }),
 
       clearForCat: (catId) => {
         set((s) => {
