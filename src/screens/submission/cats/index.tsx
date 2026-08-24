@@ -5,6 +5,7 @@ import {
   InsetCropBubble,
 } from '@/src/components/organisms/InsetCropBubble'
 import { useSubmissionStore } from '@/src/hooks'
+import { useAbandonCatGuard } from '@/src/hooks/useAbandonCatGuard'
 import { useActiveCatFlow } from '@/src/hooks/useActiveCatFlow'
 import { useCatForm } from '@/src/hooks/useCatForm'
 import { useCatSubmit } from '@/src/hooks/useCatSubmit'
@@ -31,6 +32,10 @@ export default function CatObservationScreen() {
   const form = useCatForm(existingCat)
   const submit = useCatSubmit({ form, existingCat, annotationEnabled })
   const catId = existingCat?.local_id ?? activeCatId
+
+  // Backing out of an unsaved cat would otherwise leave it in progress, and
+  // the next "Add a Cat" would silently resume it (#304).
+  useAbandonCatGuard(Boolean(existingCat))
 
   // Header-zone reserves height = the bubble's own computed diameter
   // (#174) so the bubble is structurally confined to the title row and

@@ -110,17 +110,25 @@ export const useBoundingBoxStore = create<BoundingBoxState>()(
 
       clearAll: () => set({ boxes: {}, lastBoxes: {}, absences: {} }),
 
+      // Sweeps all three maps, like removeBoxesForPhoto does in the other
+      // direction — leaving lastBoxes behind would keep a removed cat's
+      // geometry alive under its own key (#304).
       clearForCat: (catId) => {
         set((s) => {
-          const nextBoxes = { ...s.boxes }
-          const nextAbsences = { ...s.absences }
-          for (const key of Object.keys(nextBoxes)) {
-            if (key.startsWith(`${catId}:`)) delete nextBoxes[key]
+          const prefix = `${catId}:`
+          const boxes = { ...s.boxes }
+          const absences = { ...s.absences }
+          const lastBoxes = { ...s.lastBoxes }
+          for (const key of Object.keys(boxes)) {
+            if (key.startsWith(prefix)) delete boxes[key]
           }
-          for (const key of Object.keys(nextAbsences)) {
-            if (key.startsWith(`${catId}:`)) delete nextAbsences[key]
+          for (const key of Object.keys(absences)) {
+            if (key.startsWith(prefix)) delete absences[key]
           }
-          return { boxes: nextBoxes, absences: nextAbsences }
+          for (const key of Object.keys(lastBoxes)) {
+            if (key.startsWith(prefix)) delete lastBoxes[key]
+          }
+          return { boxes, absences, lastBoxes }
         })
       },
 

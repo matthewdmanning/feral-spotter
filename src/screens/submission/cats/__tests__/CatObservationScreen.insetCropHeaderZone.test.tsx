@@ -30,6 +30,13 @@ jest.mock('@/src/hooks/useActiveCatFlow', () => ({
   useActiveCatFlow: () => ({ activeCatId: 'cat-1' }),
 }))
 
+// This model covers header-zone layout only. The leave-confirm guard (#304)
+// reaches the persisted stores and the navigation object, neither of which
+// this test stands up — it has its own suite.
+jest.mock('@/src/hooks/useAbandonCatGuard', () => ({
+  useAbandonCatGuard: jest.fn(),
+}))
+
 jest.mock('@/src/hooks/useCatSubmit', () => ({
   useCatSubmit: () => ({
     handleSave: jest.fn(),
