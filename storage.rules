@@ -18,12 +18,30 @@ service firebase.storage {
     match /submissions/{uid}/{submissionId}/{fileName} {
       allow read: if request.auth != null && isOwner(uid);
 
-      allow write: if request.auth != null
+      // Deliberately `create, update` rather than `write` (#293): `write`
+      // also covers delete, and on a delete `request.resource` is null, so
+      // both validators below dereference a null and error out — which
+      // fails closed. Every client delete was therefore denied, including
+      // the best-effort cleanup discardDraft() now attempts.
+      allow create, update: if request.auth != null
                    && isOwner(uid)
                    && (
                      (fileName == 'metadata.json' && isValidMetadataWrite())
                      || (fileName != 'metadata.json' && isValidPhotoWrite())
                    );
+
+      // #293 ("no metadata ⇒ no photo"): owners may delete their own
+      // objects. No validator call here on purpose — the write validators
+      // describe an incoming `request.resource` that a delete does not
+      // have. Ownership is the whole check; the path segment already scopes
+      // it to this user's own prefix.
+      //
+      // This is the client's best-effort half only. The scheduled sweep in
+      // functions/ runs under the Admin SDK and bypasses rules entirely, so
+      // it is unaffected by this branch — it exists because the client
+      // cannot honor the policy alone (offline Reset, force-quit, or a user
+      // who simply walks away never issues a delete).
+      allow delete: if request.auth != null && isOwner(uid);
 
       function isOwner(uid) {
         return uid == request.auth.uid;

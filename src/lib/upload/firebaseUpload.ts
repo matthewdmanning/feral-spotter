@@ -16,9 +16,11 @@
 import { getApp } from '@react-native-firebase/app'
 import {
   connectStorageEmulator,
+  deleteObject,
   getDownloadURL,
   getMetadata,
   getStorage,
+  listAll,
   putFile,
   ref,
   updateMetadata,
@@ -160,4 +162,46 @@ export async function finalizeSubmissionPhotoMetadata(
         }),
     },
   })
+}
+
+/**
+ * #293, client half of "no metadata ⇒ no photo": best-effort delete of a
+ * discarded draft's uploaded objects.
+ *
+ * Deliberately best-effort and non-throwing. This runs from
+ * `discardDraft()`, and Reset must never fail or block on network I/O — a
+ * user resetting on a train is the common case, not the edge one. Anything
+ * this misses (offline, force-quit, or a user who simply walks away without
+ * resetting at all) is caught by the `sweepPhotosWithoutMetadata` scheduled
+ * function after its retention window.
+ *
+ * Only ever called for a draft being thrown away, never for a submitted
+ * one — `completeDraft()` does not call it, because a submitted
+ * submission's objects are exactly what we are keeping.
+ */
+export async function deleteSubmissionUploads(
+  uid: string,
+  submissionId: string,
+): Promise<void> {
+  try {
+    const prefix = getSubmissionRef(`submissions/${uid}/${submissionId}`)
+    const listing = await listAll(prefix)
+    await Promise.all(
+      listing.items.map((item) =>
+        deleteObject(item).catch((error) => {
+          console.warn(
+            `[firebaseUpload] best-effort delete failed for ${item.fullPath}`,
+            error,
+          )
+        }),
+      ),
+    )
+  } catch (error) {
+    // Listing itself failed (offline, permissions, emulator down). The
+    // scheduled sweep is the backstop; Reset carries on regardless.
+    console.warn(
+      `[firebaseUpload] best-effort cleanup skipped for submissions/${uid}/${submissionId}`,
+      error,
+    )
+  }
 }

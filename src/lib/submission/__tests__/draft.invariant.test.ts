@@ -33,6 +33,16 @@ jest.mock('@/src/lib/location', () => ({
   stopLocationCapture: () => mockStopLocationCapture(),
 }))
 
+const mockDeleteSubmissionUploads = jest.fn()
+jest.mock('@/src/lib/upload/firebaseUpload', () => ({
+  deleteSubmissionUploads: (uid: string, submissionId: string) =>
+    mockDeleteSubmissionUploads(uid, submissionId),
+}))
+
+jest.mock('@/src/lib/auth', () => ({
+  authProvider: { getCurrentUser: () => ({ uid: 'uid-test' }) },
+}))
+
 /** Not draft-owned: history rows and their index/pointer, plus stores outside the boundary. */
 const NOT_DRAFT_OWNED = [
   /^submission_cache/,
@@ -130,4 +140,32 @@ describe('draft teardown — survival invariant (#292)', () => {
       expect(mockStopLocationCapture).toHaveBeenCalled()
     },
   )
+
+  // ── #293: "no metadata ⇒ no photo", client best-effort half ─────────────
+
+  it("discardDraft asks Storage to delete the abandoned draft's uploads", async () => {
+    buildFullDraft()
+    // Set explicitly rather than relying on addPhoto's randomUUID mint —
+    // the id's provenance isn't what's under test here, the fact that
+    // discardDraft reads it and asks Storage to clean up is.
+    usePhotoStore.setState({ submissionId: 'sub-test' })
+    await flushPersist()
+
+    await discardDraft()
+
+    expect(mockDeleteSubmissionUploads).toHaveBeenCalledWith(
+      'uid-test',
+      'sub-test',
+    )
+  })
+
+  it('completeDraft does NOT delete uploads — a submitted submission keeps its photos', async () => {
+    buildFullDraft()
+    usePhotoStore.setState({ submissionId: 'sub-test' })
+    await flushPersist()
+
+    await completeDraft()
+
+    expect(mockDeleteSubmissionUploads).not.toHaveBeenCalled()
+  })
 })

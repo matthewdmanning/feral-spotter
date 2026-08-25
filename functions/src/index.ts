@@ -11,6 +11,8 @@
 import { getAuth } from 'firebase-admin/auth'
 import { initializeApp } from 'firebase-admin/app'
 import { FieldValue, getFirestore } from 'firebase-admin/firestore'
+import { getStorage } from 'firebase-admin/storage'
+import { onSchedule } from 'firebase-functions/v2/scheduler'
 import type { AuthBlockingEvent } from 'firebase-functions/v2/identity'
 import { beforeUserSignedIn } from 'firebase-functions/v2/identity'
 import {
@@ -29,6 +31,16 @@ const METADATA_PATH_PATTERN = /^submissions\/([^/]+)\/([^/]+)\/metadata\.json$/
 // submissions/{uid}/{submissionId}/{fileName} prefix as photos but isn't
 // one — it must not move the photoCount counter these triggers maintain.
 const METADATA_FILE_NAME = 'metadata.json'
+
+// #293 ("no metadata ⇒ no photo"). A photo with no location, time or
+// annotation is useless to the wider project, so if the metadata never
+// arrived the image must go too.
+//
+// Retention window before an unsubmitted prefix is swept. 7 days: long
+// enough that a user who abandons a draft on Monday and resumes midweek
+// keeps their photos, short enough that abandoned uploads don't accumulate
+// indefinitely. Product decision, 2026-08-24.
+const SWEEP_RETENTION_DAYS = 7
 
 function parseSubmissionPath(
   objectName: string,
@@ -158,3 +170,82 @@ export async function resolveTesterClaim(
 }
 
 export const gateTesterAllowlist = beforeUserSignedIn(resolveTesterClaim)
+
+// #293: the server half of "no metadata ⇒ no photo".
+//
+// Photos upload fire-and-forget at capture (uploadNewPhoto → putFile), not
+// at Submit, so every uploaded photo is already in
+// submissions/{uid}/{submissionId}/ whether or not the user ever submits.
+// Only Submit writes metadata.json. An abandoned or Reset draft therefore
+// strands bare images with no location, time or per-image customMetadata.
+//
+// discardDraft() makes a best-effort client delete, but it cannot honor the
+// policy alone: Reset while offline, a force-quit mid-draft, or a user who
+// simply walks away never issues the delete — and those are exactly the
+// drafts that strand photos. This sweep is the backstop.
+//
+// Runs under the Admin SDK, which bypasses Security Rules entirely, so it
+// is unaffected by storage.rules' delete branch.
+//
+// Deleting each object individually (rather than a bulk prefix delete) is
+// deliberate: it fires onSubmissionPhotoDeleted per object, which keeps
+// photoCount consistent instead of stranding a counter doc at a count the
+// bucket no longer backs.
+export const sweepPhotosWithoutMetadata = onSchedule(
+  { schedule: 'every 24 hours', timeZone: 'Etc/UTC' },
+  async () => {
+    const bucket = getStorage().bucket(BUCKET_NAME)
+    const cutoff = Date.now() - SWEEP_RETENTION_DAYS * 24 * 60 * 60 * 1000
+
+    const [files] = await bucket.getFiles({ prefix: 'submissions/' })
+
+    // Group by submissions/{uid}/{submissionId}/ prefix. A prefix is swept
+    // only when it has no metadata.json AND every object in it predates the
+    // cutoff — a prefix still being actively uploaded into must survive.
+    const prefixes = new Map<
+      string,
+      { hasMetadata: boolean; newestMs: number; names: string[] }
+    >()
+
+    for (const file of files) {
+      const match = OBJECT_PATH_PATTERN.exec(file.name)
+      if (!match) continue
+      const prefix = `submissions/${match[1]}/${match[2]}/`
+
+      const entry = prefixes.get(prefix) ?? {
+        hasMetadata: false,
+        newestMs: 0,
+        names: [],
+      }
+      if (match[3] === METADATA_FILE_NAME) entry.hasMetadata = true
+      // updated/timeCreated are ISO strings on the metadata payload; a
+      // missing value must not read as "ancient" and trigger a delete, so
+      // it falls back to now.
+      const updated = file.metadata?.updated ?? file.metadata?.timeCreated
+      const updatedMs = updated ? Date.parse(String(updated)) : Date.now()
+      entry.newestMs = Math.max(
+        entry.newestMs,
+        Number.isNaN(updatedMs) ? Date.now() : updatedMs,
+      )
+      entry.names.push(file.name)
+      prefixes.set(prefix, entry)
+    }
+
+    for (const [prefix, entry] of prefixes) {
+      if (entry.hasMetadata) continue
+      if (entry.newestMs >= cutoff) continue
+
+      for (const name of entry.names) {
+        // One failure must not abandon the rest of the sweep.
+        try {
+          await bucket.file(name).delete()
+        } catch (error) {
+          console.error(`[sweep] failed to delete ${name}`, error)
+        }
+      }
+      console.log(
+        `[sweep] deleted ${entry.names.length} object(s) under ${prefix} (no metadata.json, older than ${SWEEP_RETENTION_DAYS}d)`,
+      )
+    }
+  },
+)
