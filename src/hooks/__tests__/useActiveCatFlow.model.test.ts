@@ -273,6 +273,21 @@ describe('useActiveCatFlow — model-based test', () => {
     expect(hook.result.current.getPhotoStatus('photo-1')).toBe('not-in-photo')
   })
 
+  it('a first box minted and completed in one tick opens Cat Form, not Home (#316)', () => {
+    // useAnnotatePass.handleConfirmBox does exactly this on a one-photo
+    // submission: mint the cat, then complete the pass, with no render in
+    // between. Reading the subscribed activeCatId saw the pre-mint null and
+    // abandoned to Home, stranding the draft with no sign anything failed.
+    // Two photos hid it — advancing the carousel let the state settle.
+    act(() => {
+      hook.result.current.handleBoxConfirmed('photo-1', box)
+      hook.result.current.handleBoxingComplete()
+    })
+
+    expect(router.replace).toHaveBeenCalledWith('/submission/cats')
+    expect(router.replace).not.toHaveBeenCalledWith('/')
+  })
+
   it('abandoning with cats already recorded lands on Cat List, not Home (#203)', () => {
     const { useSubmissionStore } = require('../useSubmissionStore')
     act(() => {

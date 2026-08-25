@@ -131,13 +131,23 @@ export function useActiveCatFlow(): ActiveCatFlow {
   // than router.back() for a photo-evidence-free pass — same Camera-leak
   // risk on the first cat of a submission as the hardware-back case, since
   // it's the identical Camera -> Annotate replace-chain stack.
+  //
+  // Reads activeCatId fresh rather than using the subscribed value: the
+  // pass's first box mints the cat and lands here in the same tick, so the
+  // closure still holds the pre-mint `null`. On a one-photo submission that
+  // is the only tick there is — confirming the single box abandoned the pass
+  // to Home instead of opening Cat Form, leaving the draft behind with no
+  // sign anything went wrong. Two photos hid it, since advancing the carousel
+  // let the state settle across a render. getBoxedPhotoIds already reads
+  // through get(), so only this one value was stale.
   const handleBoxingComplete = useCallback(() => {
-    if (!activeCatId || getBoxedPhotoIds(activeCatId).length === 0) {
+    const catId = useActiveCatFlowStore.getState().activeCatId
+    if (!catId || getBoxedPhotoIds(catId).length === 0) {
       handleAbandonPass()
       return
     }
     router.replace('/submission/cats')
-  }, [activeCatId, getBoxedPhotoIds, handleAbandonPass])
+  }, [getBoxedPhotoIds, handleAbandonPass])
 
   return {
     activeCatId,
