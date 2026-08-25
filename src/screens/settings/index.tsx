@@ -19,17 +19,12 @@ const UniSwitch = withUnistyles(Switch, (theme) => ({
   thumbColor: theme.colors.text,
 }))
 
+// "Delete Unused Photos" / "Delete All Photos" used to sit here. Both wrote
+// to useSettingsStore and were read nowhere — no photo was ever deleted on
+// any path, so the toggles promised post-submission cleanup that did not
+// exist (#296). Removed rather than implemented: building the deletion path
+// is #294's scope, and shipping an honest UI does not have to wait on it.
 const PHOTO_TOGGLES = [
-  {
-    key: 'delete_unused_photos',
-    label: 'Delete Unused Photos',
-    desc: 'Remove unchecked session photos after submission',
-  },
-  {
-    key: 'delete_all_photos',
-    label: 'Delete All Photos',
-    desc: 'Remove all session photos after submission',
-  },
   {
     key: 'keep_photos_on_device',
     label: 'Keep Photos on Device',

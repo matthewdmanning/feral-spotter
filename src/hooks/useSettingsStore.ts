@@ -10,8 +10,6 @@ import { createJSONStorage, persist } from 'zustand/middleware'
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface AppSettings {
-  delete_unused_photos: boolean
-  delete_all_photos: boolean
   keep_photos_on_device: boolean
   annotation_enabled: boolean
   skip_photo_remove_confirm: boolean
@@ -28,8 +26,6 @@ interface SettingsState {
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
-  delete_unused_photos: false,
-  delete_all_photos: false,
   keep_photos_on_device: true,
   annotation_enabled: true,
   skip_photo_remove_confirm: false,
