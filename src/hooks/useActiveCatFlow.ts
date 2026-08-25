@@ -34,6 +34,22 @@ export interface ActiveCatFlow {
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
+/**
+ * Clears the in-progress cat, but only if it is the one named.
+ *
+ * Not a hook, and deliberately non-reactive: the caller fires this from an
+ * Alert's confirm handler, where a value subscribed at render time may
+ * already be stale by the time the user taps.
+ *
+ * Lives here rather than in the caller so `activeCatId` keeps one owner
+ * (#292's rule) — reaching into `useActiveCatFlowStore` from elsewhere makes
+ * that caller a second owner of the same state.
+ */
+export function clearActiveCatIfMatches(catId: string): void {
+  const { activeCatId, setActiveCatId } = useActiveCatFlowStore.getState()
+  if (activeCatId === catId) setActiveCatId(null)
+}
+
 export function useActiveCatFlow(): ActiveCatFlow {
   const activeCatId = useActiveCatFlowStore((s) => s.activeCatId)
   const setActiveCatId = useActiveCatFlowStore((s) => s.setActiveCatId)

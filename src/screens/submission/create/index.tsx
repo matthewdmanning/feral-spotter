@@ -4,15 +4,16 @@ import { useSubmissionStore } from '@/src/hooks'
 import { useSubmissionSubmit } from '@/src/hooks/useSubmissionSubmit'
 import { useLibraryPhotoPicker } from '@/src/hooks/useLibraryPhotoPicker'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
+import { useRemoveCat } from '@/src/hooks/useRemoveCat'
 import { useLocationCapture } from '@/src/lib/location'
 import {
   createSubmissionCache,
   getCurrentCacheId,
 } from '@/src/lib/cache/submissionCache'
-import { router, type Href } from 'expo-router'
+import { router, useLocalSearchParams, type Href } from 'expo-router'
 import { randomUUID } from 'expo-crypto'
-import { AlertCircle, CheckCircle } from 'lucide-react-native'
-import { useCallback, useEffect, useRef } from 'react'
+import { AlertCircle, CheckCircle, Trash2 } from 'lucide-react-native'
+import { useCallback, useEffect, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
@@ -25,6 +26,11 @@ const LOCATION_PICKER_ROUTE = '/submission/location-picker' as Href
 
 export default function CreateSubmissionScreen() {
   const { theme } = useUnistyles()
+  const removeCatWithConfirm = useRemoveCat()
+  // #299: set by the Cat Form's remove, which lands back here. Distinguishes
+  // "emptied by removing the last cat" from "arrived with nothing recorded",
+  // which the auto-skip below treats very differently.
+  const { removed } = useLocalSearchParams<{ removed?: string }>()
 
   const submission = useSubmissionStore((s) => s.submission)
   const setSubmissionLocation = useSubmissionStore(
@@ -88,10 +94,22 @@ export default function CreateSubmissionScreen() {
   // triggering synchronous callback finishes, so reordering handleReset's
   // own clearDraft()/router.replace() calls can't fix that race -- only not
   // re-running this effect on every cats.length change can.
-  const wasEmptyOnMountRef = useRef(cats.length === 0)
+  //
+  // #299: removing the last cat must NOT auto-skip. Landing here with nothing
+  // recorded means a first pass, where the user has to see the photos to pick
+  // a cat out of them. Arriving because they just deleted their last cat is
+  // the opposite situation — they may want to re-annotate, or they may want
+  // to describe a cat they saw but can't pick out of a photo. That is their
+  // call, so the empty state offers both instead of forcing annotate.
+  // Lazy useState, not useRef: same mount-time snapshot, but the render below
+  // has to read it to decide between "redirect in flight" and "empty state,"
+  // and reading a ref during render is a React Compiler violation.
+  const [autoSkipPending] = useState(() => cats.length === 0 && removed !== '1')
   useEffect(() => {
-    if (wasEmptyOnMountRef.current) router.replace('/submission/annotate')
-  }, [])
+    if (autoSkipPending) router.replace('/submission/annotate')
+    // autoSkipPending is frozen at mount, so listing it changes nothing at
+    // runtime and keeps exhaustive-deps quiet.
+  }, [autoSkipPending])
 
   // Commit the background Live fix into the Submission draft only once it
   // resolves — never mid-watch, so a reacquire's early (worse) candidates
@@ -140,8 +158,10 @@ export default function CreateSubmissionScreen() {
     router.push('/submission/annotate')
   }, [])
 
-  // Auto-skip in flight (#173) — nothing to show this frame.
-  if (cats.length === 0) return null
+  // Auto-skip in flight (#173) — nothing to show this frame. Only while the
+  // redirect is actually pending: once cats hits 0 by removal instead, the
+  // empty state below renders (#299).
+  if (cats.length === 0 && autoSkipPending) return null
 
   return (
     <View style={styles.root}>
@@ -191,30 +211,64 @@ export default function CreateSubmissionScreen() {
 
       <View style={styles.catList}>
         <Text style={styles.catListTitle}>Cats Recorded</Text>
-        {cats.map((cat) => (
-          <Pressable
-            key={cat.local_id}
-            onPress={() =>
-              router.push({
-                pathname: '/submission/cats',
-                params: { edit: cat.local_id },
-              })
-            }
-            style={styles.catRow}
-          >
-            <Text style={styles.catRowText}>
-              {cat.age.charAt(0).toUpperCase() + cat.age.slice(1)} ·{' '}
-              {cat.pattern} · {cat.hair_length} hair
-            </Text>
-          </Pressable>
-        ))}
+        {cats.map((cat) => {
+          const label = `${cat.age.charAt(0).toUpperCase() + cat.age.slice(1)} · ${cat.pattern} · ${cat.hair_length} hair`
+          return (
+            <Pressable
+              key={cat.local_id}
+              onPress={() =>
+                router.push({
+                  pathname: '/submission/cats',
+                  params: { edit: cat.local_id },
+                })
+              }
+              style={styles.catRow}
+            >
+              <Text style={styles.catRowText}>{label}</Text>
+              {/* #299: nested Pressable so tapping the trash removes the cat
+                  rather than opening it for edit. */}
+              <Pressable
+                onPress={() => removeCatWithConfirm(cat.local_id)}
+                style={styles.catRowRemoveBtn}
+                accessibilityRole="button"
+                accessibilityLabel={`Remove cat: ${label}`}
+              >
+                <Trash2 size={18} color={theme.colors.danger} />
+              </Pressable>
+            </Pressable>
+          )
+        })}
+        {/* #299: no cats left. Two ways back in, neither forced — the user
+            may want another look at the photos, or may want to describe a
+            cat they saw but cannot pick out of one. The annotate button is
+            the same control either way, so only its label switches. */}
+        {cats.length === 0 && (
+          <Text style={styles.emptyCatsText}>
+            No cats recorded. Pick one out of your photos, or describe a cat you
+            saw. Your photos are still here either way.
+          </Text>
+        )}
         <Pressable
           onPress={handleAddCat}
           style={styles.addCatBtn}
           accessibilityRole="button"
         >
-          <Text style={styles.addCatBtnText}>Add a Cat</Text>
+          <Text style={styles.addCatBtnText}>
+            {cats.length === 0 ? 'Annotate Photos' : 'Add a Cat'}
+          </Text>
         </Pressable>
+        {cats.length === 0 && (
+          // Describing a cat without annotating it first: it saves with an
+          // empty photo_local_ids (useCatSubmit derives that from boxes) — a
+          // record of a cat that was seen but can't be picked out of a photo.
+          <Pressable
+            onPress={() => router.push('/submission/cats')}
+            style={styles.describeCatBtn}
+            accessibilityRole="button"
+          >
+            <Text style={styles.describeCatBtnText}>Describe a Cat</Text>
+          </Pressable>
+        )}
       </View>
 
       <Pressable

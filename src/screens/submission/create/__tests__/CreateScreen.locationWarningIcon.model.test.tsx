@@ -26,6 +26,7 @@ jest.mock('react-native-mmkv', () => ({
 }))
 
 jest.mock('expo-router', () => ({
+  useLocalSearchParams: () => ({}),
   router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() },
 }))
 
@@ -69,6 +70,7 @@ jest.mock('../index.styles', () => ({
 jest.mock('lucide-react-native', () => ({
   AlertCircle: () => null,
   CheckCircle: () => null,
+  Trash2: () => null,
 }))
 
 interface MockSubmission {

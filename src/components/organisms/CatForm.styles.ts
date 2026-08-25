@@ -23,4 +23,22 @@ export const styles = StyleSheet.create((theme) => ({
     fontSize: theme.typography.sm,
     fontWeight: '600',
   },
+  // #299: destructive, so it is visually subordinate to Save — outlined
+  // rather than filled, and placed after it so it is never the button a
+  // user reaches for by muscle memory when saving.
+  removeBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 48,
+    paddingVertical: 14,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.danger,
+    backgroundColor: 'transparent',
+  },
+  removeBtnText: {
+    color: theme.colors.danger,
+    fontSize: theme.typography.sm,
+    fontWeight: '600',
+  },
 }))
