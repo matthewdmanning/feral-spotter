@@ -10,7 +10,7 @@ module.exports = ({ config }) => ({
     config: {
       ...config.android?.config,
       googleMaps: {
-        apiKey: process.env.MAPS_API,
+        apiKey: process.env.ANDROID_GEOLOCATOR,
       },
     },
   },
