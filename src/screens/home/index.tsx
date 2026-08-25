@@ -10,7 +10,7 @@ import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useAuth } from '@/src/lib/auth/useAuth'
 import { getAllSubmissionCaches } from '@/src/lib/cache/submissionCache'
 import { computeEntrypointDiameter } from '@/src/lib/home/entrypointDiameter'
-import { Stack, router } from 'expo-router'
+import { Stack, router, useIsFocused } from 'expo-router'
 import { Camera, ImagePlus } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { StyleSheet, useWindowDimensions, View } from 'react-native'
@@ -104,16 +104,32 @@ export default function HomeScreen() {
     }
   }, [isReady, isAuthenticated])
 
+  // Re-read on every focus, not once on mount (#314). Home stays mounted
+  // while Settings sits on top of it, so a mount-once check went stale the
+  // moment anything else changed the draft: Clear Draft deleted the cache row
+  // and returned here, but this still offered Continue Observation, which
+  // then dead-ended on an empty annotate screen. The same staleness ran the
+  // other way too — a draft started and returned from left the entry hidden.
+  // Reset only escaped it because its path unmounts Home.
+  const isFocused = useIsFocused()
   const [columnVisible, setColumnVisible] = useState(false)
   useEffect(() => {
+    if (!isFocused) return
+    let cancelled = false
     getAllSubmissionCaches().then((caches) => {
+      if (cancelled) return
       const latest = caches[0]
       const isStale =
         latest &&
         Date.now() - new Date(latest.updated_at).getTime() > SUBMISSION_STALE_MS
       setColumnVisible(!!latest && latest.status === 'In Progress' && !isStale)
     })
-  }, [])
+    // The read is async, so a blur mid-flight would otherwise land a stale
+    // answer on a screen the user has already left.
+    return () => {
+      cancelled = true
+    }
+  }, [isFocused])
 
   // A draft is single-source by construction (ADR 0002 amendment): once the
   // shared pool holds a photo, the entrypoint for the *other* source is

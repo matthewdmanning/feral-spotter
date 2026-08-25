@@ -15,14 +15,15 @@ import HomeScreen from '../index'
  * bottom column's visibility gate. Auth/consent held ready+granted and photo
  * source held empty throughout — both orthogonal, already covered elsewhere.
  *
- * The Resume/New column's visibility is decided once, from
- * `getAllSubmissionCaches()` resolving inside a mount-only effect (empty dep
- * array) — not a live transition a rerender can drive, unlike the photo-source
- * gate. Modeled as two separate mount scenarios (MOUNT_NO_DRAFT /
- * MOUNT_IN_PROGRESS) rather than a mid-session transition, since that's what
- * the real component actually does.
+ * The Resume/New column's visibility comes from `getAllSubmissionCaches()`
+ * resolving inside an effect. Modeled here as two separate mount scenarios
+ * (MOUNT_NO_DRAFT / MOUNT_IN_PROGRESS) because this suite is about what each
+ * button does, not about when the gate re-reads. Since #314 that effect keys
+ * on focus rather than mount, so it *can* now change mid-session —
+ * HomeScreen.resumeEntry.test.tsx owns that behavior.
  */
 jest.mock('expo-router', () => ({
+  useIsFocused: () => true,
   router: { replace: jest.fn(), navigate: jest.fn(), push: jest.fn() },
   Stack: { Screen: () => null },
 }))
