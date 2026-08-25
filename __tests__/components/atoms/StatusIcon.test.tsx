@@ -18,9 +18,13 @@ jest.mock('react-native-unistyles', () => {
 
 jest.mock('lucide-react-native', () => {
   const { Text: RNText } = require('react-native')
-  const iconStub =
-    (name: string) =>
-    ({ testID = name }: { testID?: string }) => <RNText testID={testID} />
+  const iconStub = (name: string) => {
+    const Icon = ({ testID = name }: { testID?: string }) => (
+      <RNText testID={testID} />
+    )
+    Icon.displayName = name
+    return Icon
+  }
   return {
     CheckCircle: iconStub('CheckCircle'),
     Clock: iconStub('Clock'),
