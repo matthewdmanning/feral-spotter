@@ -38,6 +38,8 @@ import {
   type SubmissionCacheFile,
 } from '@/src/lib/cache/submissionCache'
 import { stopLocationCapture } from '@/src/lib/location'
+import { authProvider } from '@/src/lib/auth'
+import { deleteSubmissionUploads } from '@/src/lib/upload/firebaseUpload'
 
 /** Wipes the four draft-owned stores and stops the draft-scoped GPS watch. */
 function tearDownDraftState(): void {
@@ -51,10 +53,24 @@ function tearDownDraftState(): void {
 /**
  * Reset semantics: the draft is thrown away, so its history row goes with it.
  * `deleteSubmissionCache` already clears the current pointer when it matches.
+ *
+ * Also fires the #293 best-effort delete of anything already uploaded for
+ * this draft. Photos upload fire-and-forget at capture, so a draft being
+ * discarded has usually already put objects in the bucket — and without
+ * `metadata.json` they are useless to the project ("no metadata ⇒ no
+ * photo"). Read the submission id *before* teardown clears the photo store,
+ * and deliberately not awaited: Reset must not block or fail on network
+ * I/O. The `sweepPhotosWithoutMetadata` scheduled function is the backstop
+ * for every case this misses.
  */
 export async function discardDraft(): Promise<void> {
   const cacheId = await getCurrentCacheId()
   if (cacheId) await deleteSubmissionCache(cacheId)
+
+  const submissionId = usePhotoStore.getState().submissionId
+  const uid = authProvider.getCurrentUser()?.uid
+  if (submissionId && uid) void deleteSubmissionUploads(uid, submissionId)
+
   tearDownDraftState()
 }
 

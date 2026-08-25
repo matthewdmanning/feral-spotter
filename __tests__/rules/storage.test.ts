@@ -7,7 +7,12 @@ import {
   type RulesTestEnvironment,
 } from '@firebase/rules-unit-testing'
 import { doc, setDoc } from 'firebase/firestore'
-import { ref, updateMetadata, uploadBytes } from 'firebase/storage'
+import {
+  deleteObject,
+  ref,
+  updateMetadata,
+  uploadBytes,
+} from 'firebase/storage'
 
 const PROJECT_ID = 'project-e3d5659d-bc4f-438f-88c'
 const BUCKET_URL = 'gs://feral-spotter-image-uploads'
@@ -261,6 +266,87 @@ describe('storage.rules — submissions/{uid}/{submissionId}/{fileName}', () => 
     )
     await assertFails(
       uploadBytes(objectRef, SMALL_IMAGE, { contentType: 'image/jpeg' }),
+    )
+  })
+
+  // ── #293: delete branch ──────────────────────────────────────────────────
+
+  it('#293: owner can delete their own photo', async () => {
+    const owner = testEnv.authenticatedContext(OWNER_UID)
+    const objectRef = ref(
+      owner.storage(BUCKET_URL),
+      `submissions/${OWNER_UID}/sub-del/photo.jpg`,
+    )
+    await assertSucceeds(
+      uploadBytes(objectRef, SMALL_IMAGE, { contentType: 'image/jpeg' }),
+    )
+    await assertSucceeds(deleteObject(objectRef))
+  })
+
+  it('#293: owner can delete their own metadata.json', async () => {
+    const owner = testEnv.authenticatedContext(OWNER_UID)
+    const objectRef = ref(
+      owner.storage(BUCKET_URL),
+      `submissions/${OWNER_UID}/sub-del/metadata.json`,
+    )
+    await assertSucceeds(
+      uploadBytes(objectRef, SMALL_JSON, { contentType: 'application/json' }),
+    )
+    await assertSucceeds(deleteObject(objectRef))
+  })
+
+  it("#293: a different authenticated user cannot delete someone else's photo", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await uploadBytes(
+        ref(
+          context.storage(BUCKET_URL),
+          `submissions/${OWNER_UID}/sub-del/photo.jpg`,
+        ),
+        SMALL_IMAGE,
+        { contentType: 'image/jpeg' },
+      )
+    })
+    const other = testEnv.authenticatedContext('uid-other')
+    await assertFails(
+      deleteObject(
+        ref(
+          other.storage(BUCKET_URL),
+          `submissions/${OWNER_UID}/sub-del/photo.jpg`,
+        ),
+      ),
+    )
+  })
+
+  it('#293: unauthenticated delete is denied', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await uploadBytes(
+        ref(
+          context.storage(BUCKET_URL),
+          `submissions/${OWNER_UID}/sub-del/photo.jpg`,
+        ),
+        SMALL_IMAGE,
+        { contentType: 'image/jpeg' },
+      )
+    })
+    const anon = testEnv.unauthenticatedContext()
+    await assertFails(
+      deleteObject(
+        ref(
+          anon.storage(BUCKET_URL),
+          `submissions/${OWNER_UID}/sub-del/photo.jpg`,
+        ),
+      ),
+    )
+  })
+
+  it('#293: splitting write into create/update did not loosen the upload validators — oversized image still denied', async () => {
+    const owner = testEnv.authenticatedContext(OWNER_UID)
+    const objectRef = ref(
+      owner.storage(BUCKET_URL),
+      `submissions/${OWNER_UID}/sub-big/photo.jpg`,
+    )
+    await assertFails(
+      uploadBytes(objectRef, OVERSIZED_IMAGE, { contentType: 'image/jpeg' }),
     )
   })
 })
