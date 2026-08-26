@@ -8,7 +8,7 @@ export const styles = StyleSheet.create((theme) => ({
   subtitle:    { color: theme.colors.muted, fontSize: theme.typography.base },
   errorList:   { gap: 10 },
   errorCard:   { borderRadius: theme.radius.lg, borderWidth: 1, padding: 14 },
-  cardError:   { backgroundColor: '#2A1515', borderColor: theme.colors.danger },
-  cardWarn:    { backgroundColor: '#2A2510', borderColor: theme.colors.warning },
+  cardError:   { backgroundColor: theme.colors.dangerSurface, borderColor: theme.colors.danger },
+  cardWarn:    { backgroundColor: theme.colors.warningSurface, borderColor: theme.colors.warning },
   errorText:   { color: theme.colors.text, fontSize: theme.typography.base },
 }))
