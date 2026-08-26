@@ -103,6 +103,7 @@ export default function CatObservationScreen() {
               <Pressable
                 onPress={form.handleClear}
                 style={styles.headerBtn}
+                hitSlop={12}
                 accessibilityRole="button"
               >
                 <Text

@@ -73,6 +73,7 @@ export function TutorialOverlay({
         <Pressable
           onPress={() => onSkip(index + 1)}
           style={styles.skipBtn}
+          hitSlop={12}
           accessibilityRole="button"
         >
           <Text style={styles.skipText}>Skip</Text>

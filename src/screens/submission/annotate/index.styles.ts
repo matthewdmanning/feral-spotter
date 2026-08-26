@@ -50,6 +50,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     zIndex: 2,
   },
   navBtn: {
+    minHeight: 48,
     flex: 1,
     paddingVertical: 14,
     borderRadius: theme.radius.lg,

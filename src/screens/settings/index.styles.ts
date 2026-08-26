@@ -52,6 +52,7 @@ export const styles = StyleSheet.create((theme) => ({
     fontWeight: '600',
   },
   linkRow: {
+    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing.sm,
@@ -91,6 +92,8 @@ export const styles = StyleSheet.create((theme) => ({
     paddingTop: theme.spacing.lg,
   },
   footerBtn: {
+    minHeight: 48,
+    justifyContent: 'center',
     flex: 1,
     alignItems: 'center',
     paddingVertical: 12,

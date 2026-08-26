@@ -89,6 +89,8 @@ export const styles = StyleSheet.create((theme) => ({
     fontWeight: '600',
   },
   addCatBtn: {
+    minHeight: 48,
+    justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 14,
     borderRadius: theme.radius.xl,
@@ -102,6 +104,8 @@ export const styles = StyleSheet.create((theme) => ({
     fontWeight: '600',
   },
   addPhotosBtn: {
+    minHeight: 48,
+    justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 14,
     borderRadius: theme.radius.md,
@@ -114,6 +118,8 @@ export const styles = StyleSheet.create((theme) => ({
     fontWeight: '600',
   },
   doneBtn: {
+    minHeight: 48,
+    justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 14,
     borderRadius: theme.radius.md,

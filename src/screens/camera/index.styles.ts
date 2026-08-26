@@ -29,11 +29,12 @@ export const styles = StyleSheet.create((theme, rt) => ({
     zIndex: 25,
   },
   pill: {
+    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 22,
+    borderRadius: 24,
     backgroundColor: theme.colors.surface,
     borderWidth: 1,
     borderColor: theme.colors.border,
