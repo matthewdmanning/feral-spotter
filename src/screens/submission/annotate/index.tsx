@@ -100,6 +100,9 @@ export default function AnnotateScreen() {
             onLongPress={handleLongPressRemove}
             delayLongPress={500}
             style={styles.removeBtn}
+            // 36dp bordered box; hitSlop reaches the 48dp floor without
+            // resizing the visible chrome.
+            hitSlop={6}
             accessibilityRole="button"
             accessibilityLabel="Remove photo"
           >

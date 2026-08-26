@@ -23,6 +23,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
   input:                { backgroundColor: theme.colors.surfaceAlt, borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.radius.md, paddingHorizontal: 12, paddingVertical: 8, color: theme.colors.text, fontSize: theme.typography.sm },
   divider:              { height: 1, backgroundColor: theme.colors.border },
   toggleRow:            { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  switchTarget:         { minWidth: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center' },
   toggleTextGroup:      { flex: 1, gap: 2, paddingRight: theme.spacing.lg },
   toggleLabel:          { color: theme.colors.text, fontSize: theme.typography.base },
   footer:               { flexDirection: 'row', gap: theme.spacing.sm, borderTopWidth: 1, borderTopColor: theme.colors.border, paddingTop: theme.spacing.lg },

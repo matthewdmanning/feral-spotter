@@ -169,25 +169,39 @@ export default function SettingsScreen() {
           {/* Photos */}
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Photos</Text>
-            {PHOTO_TOGGLES.map(({ key, label, desc }, i) => (
-              <View key={key}>
-                {i > 0 && <View style={styles.divider} />}
-                <View style={styles.toggleRow}>
-                  <View style={styles.toggleTextGroup}>
-                    <Text style={styles.toggleLabel}>{label}</Text>
-                    <Text style={styles.hint}>{desc}</Text>
+            {PHOTO_TOGGLES.map(({ key, label, desc }, i) => {
+              const on =
+                key === 'keep_photos_on_device'
+                  ? draft[key] !== false
+                  : Boolean(draft[key])
+              return (
+                <View key={key}>
+                  {i > 0 && <View style={styles.divider} />}
+                  <View style={styles.toggleRow}>
+                    <View style={styles.toggleTextGroup}>
+                      <Text style={styles.toggleLabel}>{label}</Text>
+                      <Text style={styles.hint}>{desc}</Text>
+                    </View>
+                    {/* The native Switch renders ~47x30dp and handles its own
+                        touches, so hitSlop on it is unreliable. Wrapping it in
+                        a 48dp pressable target is what actually reaches the
+                        floor. */}
+                    <Pressable
+                      onPress={() => patch(key, !on)}
+                      style={styles.switchTarget}
+                      accessibilityRole="switch"
+                      accessibilityLabel={label}
+                      accessibilityState={{ checked: on }}
+                    >
+                      <UniSwitch
+                        value={on}
+                        onValueChange={(v) => patch(key, v)}
+                      />
+                    </Pressable>
                   </View>
-                  <UniSwitch
-                    value={
-                      key === 'keep_photos_on_device'
-                        ? draft[key] !== false
-                        : Boolean(draft[key])
-                    }
-                    onValueChange={(v) => patch(key, v)}
-                  />
                 </View>
-              </View>
-            ))}
+              )
+            })}
           </View>
 
           {/* App info */}
