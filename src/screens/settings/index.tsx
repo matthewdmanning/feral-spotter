@@ -1,6 +1,13 @@
+import {
+  getThemeMode,
+  setThemeMode,
+  type ThemeMode,
+} from '@/src/config/unistyles'
+import { SegmentedControl } from '@/src/components/atoms/SegmentedControl'
 import { useSettingsDraft } from '@/src/hooks/useSettingsDraft'
 import { router } from 'expo-router'
 import { Check, FileText, Key, Trash2 } from 'lucide-react-native'
+import { useState } from 'react'
 import {
   Pressable,
   ScrollView,
@@ -24,6 +31,15 @@ const UniSwitch = withUnistyles(Switch, (theme) => ({
 // any path, so the toggles promised post-submission cleanup that did not
 // exist (#296). Removed rather than implemented: building the deletion path
 // is #294's scope, and shipping an honest UI does not have to wait on it.
+
+// System first because it is the default: someone who has never chosen sees
+// the app follow their OS appearance setting.
+const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
+  { value: 'system', label: 'System' },
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' },
+]
+
 const PHOTO_TOGGLES = [
   {
     key: 'keep_photos_on_device',
@@ -34,6 +50,9 @@ const PHOTO_TOGGLES = [
 
 export default function SettingsScreen() {
   const { theme } = useUnistyles()
+  // Mirrors the persisted mode so the control re-renders on selection. The
+  // runtime drives the actual styling; this is only which segment reads active.
+  const [themeMode, setSelectedThemeMode] = useState<ThemeMode>(getThemeMode)
   const {
     draft,
     patch,
@@ -56,7 +75,29 @@ export default function SettingsScreen() {
           <View style={styles.header}>
             <Text style={styles.title}>Settings</Text>
             <Text style={styles.subtitle}>
-              Configure authentication and storage
+              Configure appearance, authentication and storage
+            </Text>
+          </View>
+
+          {/* Appearance */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Appearance</Text>
+            <SegmentedControl
+              label="Theme"
+              options={THEME_OPTIONS}
+              value={themeMode}
+              onChange={(next) => {
+                // SegmentedControl clears the selection when the active option
+                // is tapped again. There is no unthemed state, so re-tapping
+                // the current mode is a no-op rather than a deselection.
+                if (!next) return
+                setThemeMode(next)
+                setSelectedThemeMode(next)
+              }}
+              accessibilityLabel="Theme"
+            />
+            <Text style={styles.hint}>
+              System follows your device&apos;s appearance setting.
             </Text>
           </View>
 
