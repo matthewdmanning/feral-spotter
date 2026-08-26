@@ -1,5 +1,6 @@
+import { AppButton } from './AppButton'
 import React, { Component, type ReactNode } from 'react'
-import { View, Text, Pressable } from 'react-native'
+import { View, Text } from 'react-native'
 import { AlertCircle } from 'lucide-react-native'
 import { captureException } from '@/src/lib/analytics/analytics'
 import { styles } from './ErrorBoundary.styles'
@@ -68,13 +69,7 @@ function ErrorFallback({
           </View>
         </View>
       </View>
-      <Pressable
-        onPress={onReset}
-        style={styles.btn}
-        accessibilityRole="button"
-      >
-        <Text style={styles.btnText}>Try Again</Text>
-      </Pressable>
+      <AppButton onPress={onReset}>Try Again</AppButton>
     </View>
   )
 }

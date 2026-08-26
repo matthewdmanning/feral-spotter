@@ -10,6 +10,4 @@ export const styles = StyleSheet.create((theme) => ({
   errorLabel:{ color: theme.colors.text, fontSize: theme.typography.sm, fontWeight: '600' },
   errorBox:  { backgroundColor: theme.colors.surfaceAlt, borderRadius: theme.radius.md, padding: 12 },
   errorText: { color: theme.colors.muted, fontSize: theme.typography.xs },
-  btn:       { minHeight: 48, justifyContent: 'center', backgroundColor: theme.colors.accent, borderRadius: theme.radius.md, paddingHorizontal: theme.spacing.xxl, paddingVertical: 12 },
-  btnText:   { color: theme.colors.accentText, fontSize: theme.typography.sm, fontWeight: '600' },
 }))

@@ -6,9 +6,4 @@ export const styles = StyleSheet.create((theme) => ({
   title:        { color: theme.colors.text, fontSize: theme.typography.xl, fontWeight: '700' },
   body:         { color: theme.colors.muted, fontSize: theme.typography.base, lineHeight: 22 },
   buttons:      { flexDirection: 'row', gap: theme.spacing.md, marginTop: theme.spacing.xs },
-  btn:          { minHeight: 48, justifyContent: 'center', flex: 1, borderRadius: theme.radius.lg, paddingVertical: 13, alignItems: 'center' },
-  primary:      { backgroundColor: theme.colors.accent },
-  primaryText:  { color: theme.colors.accentText, fontSize: theme.typography.sm, fontWeight: '600' },
-  secondary:    { backgroundColor: theme.colors.surfaceAlt, borderWidth: 1, borderColor: theme.colors.border },
-  secondaryText:{ color: theme.colors.text, fontSize: theme.typography.sm, fontWeight: '600' },
 }))

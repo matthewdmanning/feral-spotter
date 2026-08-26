@@ -11,6 +11,4 @@ export const styles = StyleSheet.create((theme) => ({
   cardError:   { backgroundColor: '#2A1515', borderColor: theme.colors.danger },
   cardWarn:    { backgroundColor: '#2A2510', borderColor: theme.colors.warning },
   errorText:   { color: theme.colors.text, fontSize: theme.typography.base },
-  closeBtn:    { minHeight: 48, justifyContent: 'center', backgroundColor: theme.colors.surfaceAlt, borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.radius.lg, paddingVertical: 14, alignItems: 'center', marginTop: theme.spacing.xs },
-  closeBtnText:{ color: theme.colors.text, fontSize: theme.typography.sm, fontWeight: '600' },
 }))

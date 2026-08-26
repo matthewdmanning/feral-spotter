@@ -15,9 +15,4 @@ export const styles = StyleSheet.create((theme) => ({
   stepTextActive:       { color: theme.colors.accentText, fontSize: theme.typography.sm, fontWeight: '500' },
   stepTextIdle:         { color: theme.colors.muted, fontSize: theme.typography.sm, fontWeight: '500' },
   actionRow:            { flexDirection: 'row', gap: theme.spacing.sm },
-  actionBtn:            { minHeight: 48, justifyContent: 'center', flex: 1, borderRadius: theme.radius.md, paddingVertical: 12, alignItems: 'center' },
-  actionBtnPrimary:     { backgroundColor: theme.colors.accent },
-  actionBtnPrimaryText: { color: theme.colors.accentText, fontSize: theme.typography.sm, fontWeight: '600' },
-  actionBtnSecondary:   { backgroundColor: theme.colors.surfaceAlt, borderWidth: 1, borderColor: theme.colors.border },
-  actionBtnSecondaryText:{ color: theme.colors.text, fontSize: theme.typography.sm, fontWeight: '600' },
 }))

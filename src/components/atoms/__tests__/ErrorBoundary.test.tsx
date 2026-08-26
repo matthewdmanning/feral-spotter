@@ -33,7 +33,13 @@ jest.mock('react-native-unistyles', () => {
   }
   return {
     StyleSheet: {
-      create: (fn: unknown) => (typeof fn === 'function' ? fn(theme) : fn),
+      // AppButton declares variants and calls styles.useVariants when it
+      // renders, so the created object has to carry it — same shape as the
+      // withVariants helper the other suites use.
+      create: (fn: unknown) =>
+        Object.assign((typeof fn === 'function' ? fn(theme) : fn) as object, {
+          useVariants: jest.fn(),
+        }),
     },
   }
 })

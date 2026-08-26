@@ -1,3 +1,4 @@
+import { AppButton } from '@/src/components/atoms/AppButton'
 /**
  * components/organisms/DateTimePicker.tsx
  * All state logic in useDateTimePicker.
@@ -85,14 +86,8 @@ export function DateTimePickerButton({
               )}
 
               <View style={styles.actionRow}>
-                <Pressable onPress={handleCancel} style={[styles.actionBtn, styles.actionBtnSecondary]}
-                  accessibilityRole="button" accessibilityLabel="Cancel">
-                  <Text style={styles.actionBtnSecondaryText}>Cancel</Text>
-                </Pressable>
-                <Pressable onPress={handleConfirm} style={[styles.actionBtn, styles.actionBtnPrimary]}
-                  accessibilityRole="button" accessibilityLabel="Confirm">
-                  <Text style={styles.actionBtnPrimaryText}>Confirm</Text>
-                </Pressable>
+                <AppButton onPress={handleCancel} variant="secondary" flex1>Cancel</AppButton>
+                <AppButton onPress={handleConfirm} flex1>Confirm</AppButton>
               </View>
             </View>
           </View>

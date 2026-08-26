@@ -1,5 +1,6 @@
+import { AppButton } from '@/src/components/atoms/AppButton'
 import { useRef, useEffect, useCallback, useMemo } from 'react'
-import { View, Text, Pressable } from 'react-native'
+import { View, Text } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop, type BottomSheetBackdropProps } from '@gorhom/bottom-sheet'
 import { AlertCircle } from 'lucide-react-native'
@@ -41,9 +42,7 @@ export function ValidationSheet({ open, errors, onClose }: ValidationSheetProps)
             </View>
           ))}
         </View>
-        <Pressable onPress={onClose} style={styles.closeBtn} accessibilityRole="button">
-          <Text style={styles.closeBtnText}>Continue Editing</Text>
-        </Pressable>
+        <AppButton onPress={onClose} variant="secondary">Continue Editing</AppButton>
       </BottomSheetScrollView>
     </BottomSheet>
   )
