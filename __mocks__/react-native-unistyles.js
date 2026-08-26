@@ -48,9 +48,17 @@ const theme = new Proxy(knownTokens, {
 /**
  * Runtime values a stylesheet may read as its second argument — insets, screen
  * size, font scale. Real numbers, for the same reason the tokens are.
+ *
+ * Insets are deliberately NON-ZERO. They were all 0, which made a style that
+ * forgot its inset indistinguishable from one that applied it — every #324
+ * safe-area regression passed silently, including the status-bar overlap on
+ * Settings and Feral Reports and the gesture-bar overlap on annotate, all
+ * three of which shipped and were only caught on a device. These are a Pixel 7
+ * in portrait with gesture navigation: 24dp status bar, 24dp gesture inset,
+ * and genuinely 0 at the sides.
  */
 const rt = {
-  insets: { top: 0, bottom: 0, left: 0, right: 0 },
+  insets: { top: 24, bottom: 24, left: 0, right: 0 },
   screen: { width: 390, height: 844 },
   statusBar: { height: 24 },
   navigationBar: { height: 48 },
