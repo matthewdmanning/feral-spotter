@@ -9,8 +9,9 @@ import { useAbandonCatGuard } from '@/src/hooks/useAbandonCatGuard'
 import { useActiveCatFlow } from '@/src/hooks/useActiveCatFlow'
 import { useCatForm } from '@/src/hooks/useCatForm'
 import { useCatSubmit } from '@/src/hooks/useCatSubmit'
+import { useRemoveCat } from '@/src/hooks/useRemoveCat'
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'
-import { useLocalSearchParams } from 'expo-router'
+import { router, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
@@ -36,6 +37,25 @@ export default function CatObservationScreen() {
   // Backing out of an unsaved cat would otherwise leave it in progress, and
   // the next "Add a Cat" would silently resume it (#304).
   useAbandonCatGuard(Boolean(existingCat))
+
+  // #299: only a saved cat can be removed. Navigates explicitly rather than
+  // router.back() — this screen is editing a cat that no longer exists once
+  // the removal lands, and for the first cat of a submission Cat Form was
+  // reached through a chain of `replace`s that strips Cat List off the stack
+  // entirely (the same trap #203 hit).
+  const removeCatWithConfirm = useRemoveCat()
+  const handleRemove = existingCat
+    ? () =>
+        removeCatWithConfirm(existingCat.local_id, () =>
+          // `removed` tells Cat List this emptiness came from a removal, so it
+          // offers the annotate-or-describe choice instead of auto-skipping
+          // straight back to annotate (#299).
+          router.replace({
+            pathname: '/submission/create',
+            params: { removed: '1' },
+          }),
+        )
+    : undefined
 
   // Header-zone reserves height = the bubble's own computed diameter
   // (#174) so the bubble is structurally confined to the title row and
@@ -103,7 +123,7 @@ export default function CatObservationScreen() {
             />
           )}
         </View>
-        <CatForm form={form} submit={submit} />
+        <CatForm form={form} submit={submit} onRemove={handleRemove} />
       </View>
     </ScrollView>
   )

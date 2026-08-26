@@ -29,6 +29,7 @@ jest.mock('react-native-mmkv', () => ({
 const mockPickFromLibrary = jest.fn()
 
 jest.mock('expo-router', () => ({
+  useLocalSearchParams: () => ({}),
   router: {
     push: jest.fn(),
     back: jest.fn(),
@@ -81,6 +82,7 @@ jest.mock('../index.styles', () => ({
 jest.mock('lucide-react-native', () => ({
   AlertCircle: () => null,
   CheckCircle: () => null,
+  Trash2: () => null,
 }))
 
 let mockSource: PhotoSource = 'camera'

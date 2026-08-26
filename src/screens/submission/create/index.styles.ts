@@ -40,13 +40,54 @@ export const styles = StyleSheet.create((theme) => ({
     textAlign: 'center',
   },
   catRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderRadius: theme.radius.xl,
     borderWidth: 1,
     borderColor: theme.colors.border,
     backgroundColor: theme.colors.surface,
     padding: theme.spacing.lg,
   },
-  catRowText: { color: theme.colors.text, fontSize: theme.typography.base },
+  catRowText: {
+    flex: 1,
+    color: theme.colors.text,
+    fontSize: theme.typography.base,
+  },
+  // #299: 48x48 hit area, meeting the Material minimum touch target
+  // (docs/references/ux_principles.md) even though the glyph is 18px. Negative
+  // vertical margin keeps the taller target from growing the row itself.
+  catRowRemoveBtn: {
+    width: 48,
+    height: 48,
+    marginVertical: -12,
+    marginRight: -theme.spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // #299: the zero-cats state. Both routes back in are offered here — the
+  // secondary one is outlined rather than filled so Annotate still reads as
+  // the expected path on a first pass, without blocking the other. No
+  // container of its own: catList above already supplies the same gap.
+  emptyCatsText: {
+    color: theme.colors.muted,
+    fontSize: theme.typography.sm,
+    textAlign: 'center',
+    paddingVertical: theme.spacing.sm,
+  },
+  describeCatBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 48,
+    paddingVertical: 14,
+    borderRadius: theme.radius.xl,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  describeCatBtnText: {
+    color: theme.colors.text,
+    fontSize: theme.typography.base,
+    fontWeight: '600',
+  },
   addCatBtn: {
     alignItems: 'center',
     paddingVertical: 14,

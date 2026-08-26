@@ -17,9 +17,16 @@ import { styles } from './CatForm.styles'
 interface CatFormProps {
   form: CatFormValues
   submit: CatSubmitResult
+  /**
+   * #299: present only when editing an already-saved cat. A cat that has
+   * never been saved has nothing to remove — backing out of it is already
+   * handled by useAbandonCatGuard (#304), which is a different action with
+   * different copy.
+   */
+  onRemove?: () => void
 }
 
-export function CatForm({ form, submit }: CatFormProps) {
+export function CatForm({ form, submit, onRemove }: CatFormProps) {
   return (
     <View style={styles.card}>
       <View style={styles.inner}>
@@ -89,6 +96,16 @@ export function CatForm({ form, submit }: CatFormProps) {
           >
             <Text style={styles.saveBtnText}>{submit.saveLabel}</Text>
           </Pressable>
+          {onRemove && (
+            <Pressable
+              onPress={onRemove}
+              style={styles.removeBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Remove this cat"
+            >
+              <Text style={styles.removeBtnText}>Remove this Cat</Text>
+            </Pressable>
+          )}
         </View>
       </View>
     </View>

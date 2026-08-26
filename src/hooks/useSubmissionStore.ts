@@ -68,6 +68,7 @@ interface SubmissionState {
 
   addCat: (cat: ObservedCat) => void
   updateCat: (localId: string, patch: Partial<ObservedCat>) => void
+  removeCat: (localId: string) => void
   setSubmission: (patch: Partial<SubmissionDraft>) => void
   setLocationType: (v: LocationMethod) => void
   setSubmissionLocation: (loc: SubmissionLocation) => void
@@ -95,6 +96,14 @@ export const useSubmissionStore = create<SubmissionState>()(
       currentStep: 'create',
 
       addCat: (cat) => set((s) => ({ cats: [...s.cats, cat] })),
+
+      // #299. Removes only the ObservedCat row — the cat's boxes and any
+      // stale activeCatId are swept by useRemoveCat, which owns the whole
+      // removal so both call sites (Cat List row, Cat Form) cannot drift.
+      // Photos are deliberately untouched: the pool is submission-scoped,
+      // not cat-scoped (ADR-0004), and one photo can show several cats.
+      removeCat: (localId) =>
+        set((s) => ({ cats: s.cats.filter((c) => c.local_id !== localId) })),
 
       updateCat: (localId, patch) =>
         set((s) => ({
