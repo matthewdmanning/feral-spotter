@@ -8,6 +8,7 @@ import { hasAcceptedConsent } from '@/src/hooks/useConsentStore'
 import HomeScreen from '../index'
 
 jest.mock('expo-router', () => ({
+  useIsFocused: () => true,
   router: { replace: jest.fn(), navigate: jest.fn(), push: jest.fn() },
   Stack: { Screen: () => null },
 }))

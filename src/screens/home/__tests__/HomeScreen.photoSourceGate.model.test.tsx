@@ -22,6 +22,7 @@ import HomeScreen from '../index'
  * involved, so it isn't exposed to that renderer bug).
  */
 jest.mock('expo-router', () => ({
+  useIsFocused: () => true,
   router: { replace: jest.fn(), navigate: jest.fn(), push: jest.fn() },
   Stack: { Screen: () => null },
 }))
