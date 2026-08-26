@@ -55,27 +55,6 @@ jest.mock('@/src/components/atoms/AppButton', () => {
   }
 })
 
-jest.mock('react-native-unistyles', () => {
-  const theme = {
-    colors: {
-      background: '#fff',
-      text: '#000',
-      muted: '#888',
-      surface: '#eee',
-      border: '#ccc',
-    },
-    spacing: { xs: 2, sm: 4, md: 8, lg: 12, xl: 16, xxl: 32, xxxl: 40 },
-    radius: { sm: 6, md: 8, lg: 12 },
-    typography: { xs: 10, sm: 12, base: 16, xxl: 24 },
-  }
-  return {
-    useUnistyles: () => ({ theme }),
-    StyleSheet: {
-      create: (fn: unknown) => (typeof fn === 'function' ? fn(theme) : fn),
-    },
-  }
-})
-
 describe('SignInScreen', () => {
   beforeEach(() => jest.clearAllMocks())
 

@@ -46,28 +46,6 @@ jest.mock('@/src/components/atoms/AppButton', () => {
   }
 })
 
-jest.mock('react-native-unistyles', () => {
-  const theme = {
-    colors: {
-      background: '#fff',
-      text: '#000',
-      muted: '#888',
-      border: '#ccc',
-      accent: '#00f',
-    },
-    spacing: { sm: 4, md: 8, lg: 16, xl: 24, xxxl: 40 },
-    typography: { sm: 12, base: 16, xxxl: 32 },
-    radius: { full: 999 },
-  }
-  const rt = { insets: { top: 0, bottom: 0 } }
-  return {
-    useUnistyles: () => ({ theme }),
-    StyleSheet: {
-      create: (fn: unknown) => (typeof fn === 'function' ? fn(theme, rt) : fn),
-    },
-  }
-})
-
 describe('IntroFlowScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks()

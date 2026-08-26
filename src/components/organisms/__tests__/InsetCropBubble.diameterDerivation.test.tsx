@@ -23,17 +23,6 @@ jest.mock('expo-image', () => ({
   Image: () => null,
 }))
 
-jest.mock('react-native-unistyles', () => {
-  const anyProp = (): unknown => new Proxy({}, { get: () => anyProp() })
-  const theme = new Proxy({}, { get: () => anyProp() })
-  return {
-    useUnistyles: () => ({ theme }),
-    StyleSheet: {
-      create: (fn: unknown) => (typeof fn === 'function' ? fn(theme) : fn),
-    },
-  }
-})
-
 // A box whose width and height fractions are equal (0.2 of the photo on
 // both axes) — under isotropic scaling this must produce a diameter equal
 // to computeBubbleDiameter(78, 78), not some other value that depends on

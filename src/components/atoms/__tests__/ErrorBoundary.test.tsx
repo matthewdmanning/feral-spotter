@@ -15,35 +15,6 @@ jest.mock('lucide-react-native', () => {
   return { AlertCircle: () => <View /> }
 })
 
-jest.mock('react-native-unistyles', () => {
-  const theme = {
-    colors: {
-      background: '#fff',
-      text: '#000',
-      muted: '#888',
-      border: '#ccc',
-      accent: '#00f',
-      accentText: '#fff',
-      surface: '#fff',
-      surfaceAlt: '#eee',
-    },
-    spacing: { xs: 2, sm: 4, md: 8, lg: 16, xl: 24, xxl: 32, xxxl: 40 },
-    typography: { xs: 10, sm: 12, base: 16, xl: 20, xxl: 24 },
-    radius: { sm: 4, md: 8, lg: 12, xl: 16 },
-  }
-  return {
-    StyleSheet: {
-      // AppButton declares variants and calls styles.useVariants when it
-      // renders, so the created object has to carry it — same shape as the
-      // withVariants helper the other suites use.
-      create: (fn: unknown) =>
-        Object.assign((typeof fn === 'function' ? fn(theme) : fn) as object, {
-          useVariants: jest.fn(),
-        }),
-    },
-  }
-})
-
 function Boom(): null {
   throw new Error('kaboom')
 }

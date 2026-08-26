@@ -58,17 +58,6 @@ jest.mock('expo-location', () => ({
   getLastKnownPositionAsync: jest.fn().mockResolvedValue(null),
 }))
 
-jest.mock('react-native-unistyles', () => {
-  const anyProp = (): unknown => new Proxy({}, { get: () => anyProp() })
-  const theme = new Proxy({}, { get: () => anyProp() })
-  return {
-    useUnistyles: () => ({ theme }),
-    StyleSheet: {
-      create: (fn: unknown) => (typeof fn === 'function' ? fn(theme) : fn),
-    },
-  }
-})
-
 jest.mock('../index.styles', () => ({
   styles: new Proxy({}, { get: () => ({}) }),
 }))
