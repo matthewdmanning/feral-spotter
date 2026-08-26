@@ -44,6 +44,10 @@ export const styles = StyleSheet.create((theme, rt) => ({
     gap: theme.spacing.md,
     paddingHorizontal: theme.spacing.lg,
     paddingTop: 12,
+    // Mirrors topBar above: with no bottom inset the gesture-navigation bar
+    // was drawn over the nav buttons, so touches near the bottom edge hit
+    // the system bar instead of the button.
+    paddingBottom: rt.insets.bottom + 12,
     backgroundColor: theme.colors.surface,
     borderTopWidth: 0.5,
     borderTopColor: theme.colors.surfaceAlt,

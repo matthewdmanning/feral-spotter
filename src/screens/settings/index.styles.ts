@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native-unistyles'
 
-export const styles = StyleSheet.create((theme) => ({
-  root:                 { flex: 1, backgroundColor: theme.colors.background, paddingHorizontal: theme.spacing.lg },
+export const styles = StyleSheet.create((theme, rt) => ({
+  root:                 { flex: 1, backgroundColor: theme.colors.background, paddingHorizontal: theme.spacing.lg, paddingTop: rt.insets.top },
   scroll:               { flex: 1 },
   // maxWidth keeps line length readable once there is room to stretch: past the
   // md breakpoint the cards stop widening and centre instead. Tracer for the
