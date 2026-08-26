@@ -11,7 +11,7 @@ submit, then check the submission cache (`databases/RKStorage`,
 `metadata.time_type: "manual"` and the entered `metadata.manual_time`.
 
 Usage:
-    python emulator/push_no_exif_fixture.py
+    python emulator_tools/push_no_exif_fixture.py
 """
 import subprocess
 import sys
