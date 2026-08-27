@@ -10,6 +10,7 @@ import RNDateTimePicker from '@react-native-community/datetimepicker'
 import { Calendar, Clock } from 'lucide-react-native'
 import { Modal, Platform, Pressable, Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
+import { dialogShell } from './dialogShell.styles'
 import { styles } from './DateTimePicker.styles'
 
 type PickerMode = 'date' | 'time' | 'datetime'
@@ -57,9 +58,9 @@ export function DateTimePickerButton({
       {Platform.OS === 'ios' && show && (
         <Modal visible transparent animationType="fade"
           onRequestClose={handleCancel} statusBarTranslucent>
-          <View style={styles.backdrop}>
-            <View style={styles.sheet}>
-              <Text style={styles.sheetTitle}>{MODAL_TITLE[mode]}</Text>
+          <View style={dialogShell.backdrop}>
+            <View style={dialogShell.sheet}>
+              <Text style={dialogShell.title}>{MODAL_TITLE[mode]}</Text>
 
               {currentMode === 'date' && (
                 <RNDateTimePicker value={tempDate} mode="date" display="spinner"

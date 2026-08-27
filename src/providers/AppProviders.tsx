@@ -20,11 +20,15 @@
  *     SDK does its own automatic capture (sessions, app lifecycle) as soon
  *     as it mounts, independent of fireAnalyticsEvent call sites, so gating
  *     only on general consent would let it run without the analytics opt-in.
+ *   AlertHost       — draws every app-raised dialog (see useUIStore's
+ *     showAlert). Mounted once, above every screen, so the app owns its
+ *     confirmations instead of the OS drawing them un-themed.
  *   ErrorBoundary   — catches render errors at the root; reports them via
  *     captureException (see AnalyticsBridge below) once consent + analytics
  *     opt-in allow it.
  */
 
+import { AlertHost } from '@/src/components/organisms/AlertHost'
 import { ErrorBoundary } from '@/src/components/atoms/ErrorBoundary'
 import { CONSENT_VERSION, useConsentStore } from '@/src/hooks/useConsentStore'
 import { useAuthStore } from '@/src/lib/auth/authStore'
@@ -124,6 +128,9 @@ export function AppProviders({ children }: AppProvidersProps) {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       {__DEV__ && <ScreenTransitionLogger />}
+      {/* Outside ErrorBoundary's children so a caught render error still
+          leaves the app able to raise a dialog. */}
+      <AlertHost />
       <ErrorBoundary>
         {IS_PRERELEASE &&
         POSTHOG_KEY &&
