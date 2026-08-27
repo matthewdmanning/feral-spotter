@@ -88,9 +88,11 @@ export const darkTheme = {
     success: '#22A06B',
     danger: '#E5484D',
     warning: '#D97706',
-    // Tinted card fills behind danger/warning content. These are the values
-    // ValidationSheet previously hardcoded, so dark is unchanged by their move
-    // into the theme — light is what was broken.
+    // Tinted card fills behind danger/warning content.
+    // ponytail: no consumer since ValidationSheet was deleted — AlertHost
+    // tints its destructive action via AppButton's `danger` variant, not a
+    // surface. Kept for #327's hardcoded-colour conversion; drop both if
+    // #327 lands without needing them.
     dangerSurface: '#2A1515',
     warningSurface: '#2A2510',
     border: '#2A2A2A',
