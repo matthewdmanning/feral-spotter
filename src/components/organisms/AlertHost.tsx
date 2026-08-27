@@ -12,6 +12,7 @@
 import { AppButton } from '@/src/components/atoms/AppButton'
 import { useUIStore, type AlertButton } from '@/src/hooks/useUIStore'
 import { Modal, Text, View } from 'react-native'
+import { useUnistyles } from 'react-native-unistyles'
 import { dialogShell } from './dialogShell.styles'
 import { styles } from './AlertHost.styles'
 
@@ -23,6 +24,13 @@ function variantFor(style: AlertButton['style']) {
 }
 
 export function AlertHost() {
+  // Subscribes this component to theme changes. Required, not decorative:
+  // AlertHost mounts once at the app root and never re-mounts, so without it
+  // its Text styles stay at whatever the theme was at first mount — a Dark
+  // switch left near-black title and message on the dark card (found on
+  // device 2026-08-27). The buttons hid it, since AppButton re-resolves
+  // through styles.useVariants() on every render.
+  useUnistyles()
   const dialog = useUIStore((s) => s.dialog)
   const dismissDialog = useUIStore((s) => s.dismissDialog)
 
