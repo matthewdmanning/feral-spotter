@@ -1,5 +1,6 @@
+import * as ui from '@/src/hooks/useUIStore'
 import { act, renderHook } from '@testing-library/react-native'
-import { Alert } from 'react-native'
+
 import { useAbandonCatGuard } from '../useAbandonCatGuard'
 import { useActiveCatFlowStore } from '../useActiveCatFlowStore'
 import { useBoundingBoxStore } from '../useBoundingBoxStore'
@@ -57,7 +58,7 @@ const attemptLeave = () => {
 }
 
 const pressRemove = () => {
-  const buttons = jest.mocked(Alert.alert).mock.calls[0][2]
+  const buttons = jest.mocked(ui.showAlert).mock.calls[0][2]
   act(() => {
     buttons?.find((b) => b.text === 'Remove progress on this cat')?.onPress?.()
   })
@@ -67,7 +68,7 @@ describe('useAbandonCatGuard (#304)', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     beforeRemoveListener = null
-    jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
     useBoundingBoxStore.setState({ boxes: {}, lastBoxes: {}, absences: {} })
     useActiveCatFlowStore.getState().setActiveCatId(null)
   })
@@ -79,7 +80,7 @@ describe('useAbandonCatGuard (#304)', () => {
     const { preventDefault } = attemptLeave()
 
     expect(preventDefault).toHaveBeenCalled()
-    expect(Alert.alert).toHaveBeenCalledTimes(1)
+    expect(ui.showAlert).toHaveBeenCalledTimes(1)
   })
 
   it('lets the exit through after a save has cleared the active cat', () => {
@@ -94,7 +95,7 @@ describe('useAbandonCatGuard (#304)', () => {
     const { preventDefault } = attemptLeave()
 
     expect(preventDefault).not.toHaveBeenCalled()
-    expect(Alert.alert).not.toHaveBeenCalled()
+    expect(ui.showAlert).not.toHaveBeenCalled()
   })
 
   it('lets the exit through when editing an already-saved cat', () => {
@@ -104,7 +105,7 @@ describe('useAbandonCatGuard (#304)', () => {
     const { preventDefault } = attemptLeave()
 
     expect(preventDefault).not.toHaveBeenCalled()
-    expect(Alert.alert).not.toHaveBeenCalled()
+    expect(ui.showAlert).not.toHaveBeenCalled()
   })
 
   it('removing clears the abandoned cat’s boxes, absences and id — and nothing else', () => {

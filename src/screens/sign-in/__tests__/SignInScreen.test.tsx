@@ -1,3 +1,4 @@
+import * as ui from '@/src/hooks/useUIStore'
 import {
   fireEvent,
   render,
@@ -5,7 +6,7 @@ import {
   waitFor,
 } from '@testing-library/react-native'
 import { router } from 'expo-router'
-import { Alert } from 'react-native'
+
 import React from 'react'
 import SignInScreen from '../index'
 
@@ -73,7 +74,7 @@ describe('SignInScreen', () => {
   })
 
   it('blocks email sign-in and warns when fields are empty', () => {
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    const alertSpy = jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
 
     render(<SignInScreen />)
     fireEvent.press(screen.getByLabelText('Sign in'))
@@ -107,7 +108,7 @@ describe('SignInScreen', () => {
   it('stays on screen and alerts when a sign-in rejects', async () => {
     mockSignInWithProvider.mockRejectedValueOnce(new Error('sign-in failed'))
     const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    const alertSpy = jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
 
     render(<SignInScreen />)
     fireEvent.press(screen.getByLabelText('Continue with Google'))

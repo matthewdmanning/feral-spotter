@@ -1,16 +1,6 @@
+import { showAlert } from '@/src/hooks/useUIStore'
 import { useCallback, useEffect, useState } from 'react'
-import {
-  Alert,
-  AppState,
-  BackHandler,
-  Linking,
-  Platform,
-  View,
-  Text,
-  Pressable,
-  ScrollView,
-  ActivityIndicator,
-} from 'react-native'
+import { AppState, BackHandler, Linking, Platform, View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native'
 import { router } from 'expo-router'
 import * as Location from 'expo-location'
 import {
@@ -91,7 +81,7 @@ export default function ConsentScreen() {
       // chose...") rather than claiming to know which one the user picked
       // (#225).
       if (Platform.OS === 'android' && locationResponse.granted) {
-        Alert.alert(
+        showAlert(
           consentCopy.locationOnceWarningTitle,
           consentCopy.locationOnceWarningBody,
         )
@@ -100,7 +90,7 @@ export default function ConsentScreen() {
       router.replace('/sign-in')
     } catch (err) {
       console.error('[consent] permission request failed:', err)
-      Alert.alert(
+      showAlert(
         'Something went wrong',
         'Could not process permissions. Please try again.',
       )
@@ -132,7 +122,7 @@ export default function ConsentScreen() {
   }, [blocked, markAccepted])
 
   const handleDecline = useCallback(() => {
-    Alert.alert(
+    showAlert(
       consentCopy.declineWarningTitle,
       consentCopy.declineWarningBody,
       [

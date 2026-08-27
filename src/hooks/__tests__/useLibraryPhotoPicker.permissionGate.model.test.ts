@@ -1,5 +1,6 @@
+import * as ui from '@/src/hooks/useUIStore'
 import { act, renderHook } from '@testing-library/react-native'
-import { Alert, Linking } from 'react-native'
+import { Linking } from 'react-native'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import { useLibraryPhotoPicker } from '../useLibraryPhotoPicker'
@@ -57,7 +58,7 @@ describe('useLibraryPhotoPicker permission gate — model-based test', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
     result = renderHook(() => useLibraryPhotoPicker())
   })
 
@@ -89,15 +90,15 @@ describe('useLibraryPhotoPicker permission gate — model-based test', () => {
     states: {
       idle: () => {
         expect(mockLaunchImageLibraryAsync).not.toHaveBeenCalled()
-        expect(Alert.alert).not.toHaveBeenCalled()
+        expect(ui.showAlert).not.toHaveBeenCalled()
       },
       opened: () => {
         expect(mockLaunchImageLibraryAsync).toHaveBeenCalledTimes(1)
-        expect(Alert.alert).not.toHaveBeenCalled()
+        expect(ui.showAlert).not.toHaveBeenCalled()
       },
       blocked: () => {
         expect(mockLaunchImageLibraryAsync).not.toHaveBeenCalled()
-        expect(Alert.alert).toHaveBeenCalledTimes(1)
+        expect(ui.showAlert).toHaveBeenCalledTimes(1)
       },
     },
     events: {
@@ -167,7 +168,7 @@ describe('useLibraryPhotoPicker permission gate — model-based test', () => {
     })
     await tap()
 
-    const [, , buttons] = (Alert.alert as jest.Mock).mock.calls[0]
+    const [, , buttons] = (ui.showAlert as jest.Mock).mock.calls[0]
     const openSettingsButton = buttons.find(
       (b: { text: string }) => b.text === 'Open Settings',
     )

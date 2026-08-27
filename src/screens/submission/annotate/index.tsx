@@ -1,3 +1,4 @@
+import { showAlert } from '@/src/hooks/useUIStore'
 import { AnnotateCarouselItem } from '@/src/components/organisms/AnnotateCarouselItem'
 import { InsetCropBubble } from '@/src/components/organisms/InsetCropBubble'
 import { TutorialOverlay } from '@/src/components/organisms/TutorialOverlay'
@@ -12,7 +13,7 @@ import { EVENTS, captureEvent } from '@/src/lib/analytics/analytics'
 import { router } from 'expo-router'
 import { Trash2 } from 'lucide-react-native'
 import { useState } from 'react'
-import { Alert, Dimensions, Pressable, Text, View } from 'react-native'
+import { Dimensions, Pressable, Text, View } from 'react-native'
 import Carousel from 'react-native-reanimated-carousel'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
@@ -96,7 +97,7 @@ export default function AnnotateScreen() {
             {currentIndex + 1} / {photos.length}
           </Text>
           <Pressable
-            onPress={() => Alert.alert('Remove photo', 'Long press to remove.')}
+            onPress={() => showAlert('Remove photo', 'Long press to remove.')}
             onLongPress={handleLongPressRemove}
             delayLongPress={500}
             style={styles.removeBtn}

@@ -4,6 +4,7 @@
  * No store, API, or navigation dependencies — pure form state.
  */
 
+import { showAlert } from '@/src/hooks/useUIStore'
 import type { ObservedCat } from '@/src/hooks/useSubmissionStore'
 import type {
   CatAge,
@@ -16,7 +17,6 @@ import type {
   Owned,
 } from '@/src/types'
 import { useCallback, useState } from 'react'
-import { Alert } from 'react-native'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -76,7 +76,7 @@ export function useCatForm(existingCat?: ObservedCat): CatForm {
     existingCat?.health_label as HealthLabel | undefined,
   )
   const handleClear = useCallback(() => {
-    Alert.alert(
+    showAlert(
       'Clear form?',
       'All fields will be cleared. This cannot be undone.',
       [

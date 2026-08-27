@@ -7,6 +7,7 @@
  * EXIF `DateTime` when every picked photo has it, else falls back to manual.
  */
 
+import { showAlert } from '@/src/hooks/useUIStore'
 import { usePhotoStore, useSubmissionStore } from '@/src/hooks'
 import { useAuth } from '@/src/lib/auth/useAuth'
 import { EVENTS, captureEvent } from '@/src/lib/analytics/analytics'
@@ -19,7 +20,7 @@ import {
 import * as ImagePicker from 'expo-image-picker'
 import { router } from 'expo-router'
 import { useCallback } from 'react'
-import { Alert, Linking } from 'react-native'
+import { Linking } from 'react-native'
 
 export interface LibraryPhotoPickerResult {
   pickFromLibrary: () => Promise<void>
@@ -59,7 +60,7 @@ export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
       usable = isLibraryPermissionUsable(requested)
     }
     if (!usable) {
-      Alert.alert(
+      showAlert(
         'Photo library access needed',
         'Choose from Library needs access to your photos. Enable it in Settings, then try again.',
         [

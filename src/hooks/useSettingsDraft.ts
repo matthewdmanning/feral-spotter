@@ -4,8 +4,9 @@
  * Screen receives everything via this hook — no business logic in the component.
  */
 
+import { showAlert } from '@/src/hooks/useUIStore'
 import { useState, useEffect } from 'react'
-import { Alert } from 'react-native'
+
 import { router } from 'expo-router'
 import { showError, showSuccess, useSettingsStore } from '@/src/hooks'
 import { hasPassword, removePassword, verifyPassword } from '@/src/utils/api'
@@ -71,7 +72,7 @@ export function useSettingsDraft(): SettingsDraftResult {
   }
 
   const handleDiscard = () => {
-    Alert.alert('Discard Changes', 'Discard all unsaved changes?', [
+    showAlert('Discard Changes', 'Discard all unsaved changes?', [
       { text: 'No', style: 'cancel' },
       {
         text: 'Yes',
@@ -95,7 +96,7 @@ export function useSettingsDraft(): SettingsDraftResult {
   // won't re-run to notice. So it routes Home rather than popping back into
   // them, same as Submit and Reset do.
   const handleClearDraft = () => {
-    Alert.alert(
+    showAlert(
       'Clear Draft',
       'This permanently clears the in-progress submission — its cats, photos and location, and returns you to the home screen. Photos already saved to this device are not deleted.',
       [

@@ -1,5 +1,6 @@
+import { showAlert } from '@/src/hooks/useUIStore'
 import { useCallback, useState } from 'react'
-import { View, Text, TextInput, Alert } from 'react-native'
+import { View, Text, TextInput } from 'react-native'
 import { router } from 'expo-router'
 import { AppButton } from '@/src/components/atoms/AppButton'
 import { useAuth } from '@/src/lib/auth/useAuth'
@@ -16,18 +17,18 @@ export default function RegisterScreen() {
 
   const handleRegister = useCallback(async () => {
     if (!email.trim()) {
-      Alert.alert('Missing email', 'Enter an email address.')
+      showAlert('Missing email', 'Enter an email address.')
       return
     }
     if (password.length < MIN_PASSWORD_LENGTH) {
-      Alert.alert(
+      showAlert(
         'Weak password',
         `Use at least ${MIN_PASSWORD_LENGTH} characters.`,
       )
       return
     }
     if (password !== confirm) {
-      Alert.alert(
+      showAlert(
         'Passwords do not match',
         'Re-enter the same password in both fields.',
       )
@@ -40,7 +41,7 @@ export default function RegisterScreen() {
     } catch (err) {
       console.error('[register] failed:', err)
       setBusy(false)
-      Alert.alert(
+      showAlert(
         'Registration failed',
         'Could not create the account. Try a different email.',
       )

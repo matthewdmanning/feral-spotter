@@ -11,6 +11,7 @@
  * cat is no longer "in-progress."
  */
 
+import { showAlert } from '@/src/hooks/useUIStore'
 import { useSubmissionStore } from '@/src/hooks'
 import { useActiveCatFlow } from '@/src/hooks/useActiveCatFlow'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
@@ -21,7 +22,6 @@ import { CAT_DEFAULTS } from '@/src/screens/submission/cats/constants'
 import { router } from 'expo-router'
 import { randomUUID } from 'expo-crypto'
 import { useCallback } from 'react'
-import { Alert } from 'react-native'
 
 // ─── Missing-field warning (#152) ──────────────────────────────────────────
 
@@ -132,7 +132,7 @@ export function useCatSubmit({
       .map((field) => FIELD_LABELS[field])
 
     if (unsetFields.length > 0) {
-      Alert.alert(
+      showAlert(
         `${unsetFields.length} field${unsetFields.length !== 1 ? 's' : ''} not set`,
         unsetFields.map((field) => `• ${field}`).join('\n'),
         [

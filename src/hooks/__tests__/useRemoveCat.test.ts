@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react-native'
-import { Alert } from 'react-native'
+import * as ui from '../useUIStore'
 import { useActiveCatFlowStore } from '../useActiveCatFlowStore'
 import { useBoundingBoxStore } from '../useBoundingBoxStore'
 import { usePhotoStore } from '../usePhotoStore'
@@ -49,7 +49,7 @@ const buildCat = (localId: string) => ({
 })
 
 const pressRemove = () => {
-  const buttons = jest.mocked(Alert.alert).mock.calls[0][2]
+  const buttons = jest.mocked(ui.showAlert).mock.calls[0][2]
   act(() => {
     buttons?.find((b) => b.text === 'Remove')?.onPress?.()
   })
@@ -58,7 +58,7 @@ const pressRemove = () => {
 describe('useRemoveCat (#299)', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
     useBoundingBoxStore.setState({ boxes: {}, lastBoxes: {}, absences: {} })
     useActiveCatFlowStore.getState().setActiveCatId(null)
     useSubmissionStore.setState({ cats: [] })
@@ -82,7 +82,7 @@ describe('useRemoveCat (#299)', () => {
     const { result } = renderHook(() => useRemoveCat())
     act(() => result.current(CAT_ID))
 
-    expect(Alert.alert).toHaveBeenCalled()
+    expect(ui.showAlert).toHaveBeenCalled()
     // Nothing gone until the destructive button is actually pressed.
     expect(useSubmissionStore.getState().cats).toHaveLength(2)
   })
@@ -91,7 +91,7 @@ describe('useRemoveCat (#299)', () => {
     const { result } = renderHook(() => useRemoveCat())
     act(() => result.current(CAT_ID))
 
-    const buttons = jest.mocked(Alert.alert).mock.calls[0][2]
+    const buttons = jest.mocked(ui.showAlert).mock.calls[0][2]
     act(() => {
       buttons?.find((b) => b.text === 'Cancel')?.onPress?.()
     })

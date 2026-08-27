@@ -26,12 +26,12 @@
  * state to clean up is the boxes and the id.
  */
 
+import { showAlert } from '@/src/hooks/useUIStore'
 import { useActiveCatFlow } from '@/src/hooks/useActiveCatFlow'
 import { useActiveCatFlowStore } from '@/src/hooks/useActiveCatFlowStore'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { useNavigation } from 'expo-router'
 import { useEffect } from 'react'
-import { Alert } from 'react-native'
 
 /**
  * @param isEditingSavedCat true when the screen was opened to edit an
@@ -53,7 +53,7 @@ export function useAbandonCatGuard(isEditingSavedCat: boolean): void {
         if (isEditingSavedCat || !activeCatId) return
 
         e.preventDefault()
-        Alert.alert(
+        showAlert(
           'Remove this cat?',
           "You haven't saved this cat. Leaving now removes the boxes you drew for it and anything you filled in here. Your photos and any other cats are not affected.",
           [

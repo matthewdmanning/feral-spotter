@@ -1,5 +1,6 @@
+import * as ui from '@/src/hooks/useUIStore'
 import { renderHook } from '@testing-library/react-native'
-import { Alert } from 'react-native'
+
 import { useCatSubmit } from '../useCatSubmit'
 import type { CatFormValues } from '../useCatForm'
 
@@ -60,7 +61,7 @@ const deliberatelyUnknownForm: CatFormValues = {
 
 describe('useCatSubmit — missing-field warning (#205)', () => {
   it('warns about every field left untouched (undefined)', () => {
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    const alertSpy = jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
     const { result } = renderHook(() =>
       useCatSubmit({ form: untouchedForm, annotationEnabled: false }),
     )
@@ -77,7 +78,7 @@ describe('useCatSubmit — missing-field warning (#205)', () => {
   })
 
   it('does not warn when Unknown/Unsure was deliberately chosen for every field', () => {
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    const alertSpy = jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
     const { result } = renderHook(() =>
       useCatSubmit({
         form: deliberatelyUnknownForm,
