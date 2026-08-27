@@ -88,13 +88,6 @@ export const darkTheme = {
     success: '#22A06B',
     danger: '#E5484D',
     warning: '#D97706',
-    // Tinted card fills behind danger/warning content.
-    // ponytail: no consumer since ValidationSheet was deleted — AlertHost
-    // tints its destructive action via AppButton's `danger` variant, not a
-    // surface. Kept for #327's hardcoded-colour conversion; drop both if
-    // #327 lands without needing them.
-    dangerSurface: '#2A1515',
-    warningSurface: '#2A2510',
     border: '#2A2A2A',
     overlay: 'rgba(0,0,0,0.5)',
     cameraOverlay: 'rgba(0,0,0,0.40)',
@@ -118,9 +111,6 @@ export const lightTheme = {
     success: '#15803D',
     danger: '#C4342C',
     warning: '#B45309',
-    // Pale washes, so the near-black light-theme text stays legible on them.
-    dangerSurface: '#FEF2F2',
-    warningSurface: '#FFFBEB',
     border: '#E2E8F0',
     overlay: 'rgba(0,0,0,0.3)',
     cameraOverlay: 'rgba(0,0,0,0.30)',
