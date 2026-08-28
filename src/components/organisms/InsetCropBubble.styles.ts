@@ -28,10 +28,7 @@ export const styles = StyleSheet.create((theme) => ({
     borderWidth: 2,
     borderColor: theme.colors.accent,
     backgroundColor: theme.colors.surface,
-    // Drop shadows read as black regardless of theme (RN's shadow color is a
-    // rendering primitive, not a themed surface) — same convention as the
-    // camera screen's flash/preview backgrounds.
-    shadowColor: '#000',
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 8,

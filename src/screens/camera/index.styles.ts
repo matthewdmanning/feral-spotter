@@ -1,12 +1,8 @@
 import { StyleSheet } from 'react-native-unistyles'
 
 export const styles = StyleSheet.create((theme, rt) => ({
-  // Camera preview fills the screen behind the live feed and the white
-  // flash frame — both are theme-independent by design (the camera's own
-  // black background and the flash effect's own white), not a themed
-  // surface, so no theme.colors token applies here.
-  root: { flex: 1, backgroundColor: '#000' },
-  flashOverlay: { backgroundColor: '#fff', zIndex: 10 },
+  root: { flex: 1, backgroundColor: theme.colors.cameraBackground },
+  flashOverlay: { backgroundColor: theme.colors.flashEffect, zIndex: 10 },
   topBar: {
     position: 'absolute',
     top: rt.insets.top + 12,

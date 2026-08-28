@@ -91,6 +91,13 @@ export const darkTheme = {
     border: '#2A2A2A',
     overlay: 'rgba(0,0,0,0.5)',
     cameraOverlay: 'rgba(0,0,0,0.40)',
+    // Rendering primitives, not surfaces — a drop shadow, the camera preview's
+    // own backdrop, and the capture-flash flash effect are the same color in
+    // both themes by design. Named here rather than left as inline hex so
+    // every color a component touches still resolves through the theme.
+    shadow: '#000000',
+    cameraBackground: '#000000',
+    flashEffect: '#FFFFFF',
   },
   spacing,
   radius,
@@ -114,6 +121,9 @@ export const lightTheme = {
     border: '#E2E8F0',
     overlay: 'rgba(0,0,0,0.3)',
     cameraOverlay: 'rgba(0,0,0,0.30)',
+    shadow: '#000000',
+    cameraBackground: '#000000',
+    flashEffect: '#FFFFFF',
   },
   spacing,
   radius,
