@@ -10,6 +10,7 @@
 
 import { Modal, Pressable, Text, View } from 'react-native'
 import { useState } from 'react'
+import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './TutorialOverlay.styles'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -45,6 +46,12 @@ export function TutorialOverlay({
   onSkip,
   onComplete,
 }: TutorialOverlayProps) {
+  // Subscribes this component to theme changes. Required: content inside RN's
+  // Modal renders on a separate native surface that Unistyles' direct
+  // ShadowTree patching doesn't reach (same class as AlertHost, fixed in
+  // f197051) — without this, a theme switch while the tutorial is open
+  // leaves it in the theme active when it was last (re)mounted.
+  useUnistyles()
   const [index, setIndex] = useState(0)
 
   if (steps.length === 0) return null
