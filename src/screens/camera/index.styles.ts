@@ -1,6 +1,10 @@
 import { StyleSheet } from 'react-native-unistyles'
 
 export const styles = StyleSheet.create((theme, rt) => ({
+  // Camera preview fills the screen behind the live feed and the white
+  // flash frame — both are theme-independent by design (the camera's own
+  // black background and the flash effect's own white), not a themed
+  // surface, so no theme.colors token applies here.
   root: { flex: 1, backgroundColor: '#000' },
   flashOverlay: { backgroundColor: '#fff', zIndex: 10 },
   topBar: {
@@ -12,7 +16,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: theme.spacing.xl,
   },
   topBarRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   iconBtn: {
@@ -20,7 +24,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     // 44 (iOS HIG minimum) was under it on Android.
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: theme.radius.full,
     backgroundColor: theme.colors.surface,
     borderWidth: 1,
     borderColor: theme.colors.border,
@@ -32,7 +36,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: theme.spacing.lg,
     paddingVertical: 10,
     borderRadius: 24,
     backgroundColor: theme.colors.surface,
@@ -58,7 +62,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     right: 0,
     zIndex: 20,
   },
-  strip: { height: 64 + 16, marginBottom: 20 },
+  strip: { height: 64 + 16, marginBottom: theme.spacing.xl },
   shutterRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -72,7 +76,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     justifyContent: 'center',
   },
   sideBtnFilled: {
-    borderRadius: 26,
+    borderRadius: theme.radius.full,
     backgroundColor: theme.colors.surface,
     borderWidth: 1,
     borderColor: theme.colors.border,
@@ -81,7 +85,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
   shutter: {
     width: 78,
     height: 78,
-    borderRadius: 39,
+    borderRadius: theme.radius.full,
     borderWidth: 3,
     borderColor: theme.colors.text,
     backgroundColor: theme.colors.surface,
@@ -93,7 +97,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
   shutterInner: {
     width: 64,
     height: 64,
-    borderRadius: 32,
+    borderRadius: theme.radius.full,
     backgroundColor: theme.colors.text,
   },
   gate: {
@@ -101,12 +105,12 @@ export const styles = StyleSheet.create((theme, rt) => ({
     backgroundColor: theme.colors.background,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 32,
-    gap: 16,
+    padding: theme.spacing.xxxl,
+    gap: theme.spacing.lg,
   },
   gateTitle: {
     color: theme.colors.text,
-    fontSize: 20,
+    fontSize: theme.typography.xl,
     fontWeight: '700',
     textAlign: 'center',
   },
@@ -120,10 +124,10 @@ export const styles = StyleSheet.create((theme, rt) => ({
     backgroundColor: theme.colors.accent,
     borderRadius: 10,
     paddingVertical: 14,
-    paddingHorizontal: 32,
+    paddingHorizontal: theme.spacing.xxxl,
     width: '100%',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: theme.spacing.sm,
   },
   gatePrimaryText: {
     color: theme.colors.accentText,
@@ -136,7 +140,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     borderWidth: 1,
     borderColor: theme.colors.border,
     paddingVertical: 14,
-    paddingHorizontal: 32,
+    paddingHorizontal: theme.spacing.xxxl,
     width: '100%',
     alignItems: 'center',
   },

@@ -9,7 +9,7 @@ export const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing.sm,
     borderRadius: theme.radius.lg,
     paddingHorizontal: theme.spacing.lg,
-    paddingVertical: 12,
+    paddingVertical: theme.spacing.md,
     variants: {
       variant: {
         primary: { backgroundColor: theme.colors.accent },

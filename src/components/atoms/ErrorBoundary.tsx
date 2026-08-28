@@ -1,6 +1,7 @@
 import { AppButton } from './AppButton'
 import React, { Component, type ReactNode } from 'react'
 import { View, Text } from 'react-native'
+import { useUnistyles } from 'react-native-unistyles'
 import { AlertCircle } from 'lucide-react-native'
 import { captureException } from '@/src/lib/analytics/analytics'
 import { styles } from './ErrorBoundary.styles'
@@ -52,9 +53,10 @@ function ErrorFallback({
   error: Error
   onReset: () => void
 }) {
+  const { theme } = useUnistyles()
   return (
     <View style={styles.container}>
-      <AlertCircle size={64} color="#FF6B6B" />
+      <AlertCircle size={64} color={theme.colors.danger} />
       <View style={styles.textGroup}>
         <Text style={styles.title}>Something went wrong</Text>
         <Text style={styles.subtitle}>

@@ -36,10 +36,10 @@ export const styles = StyleSheet.create((theme) => ({
   handleBarHorizontal: { width: 20, height: 4 },
   confirmBtn: {
     position: 'absolute',
-    bottom: 24,
+    bottom: theme.spacing.xxl,
     alignSelf: 'center',
     paddingVertical: 10,
-    paddingHorizontal: 20,
+    paddingHorizontal: theme.spacing.xl,
     borderRadius: theme.radius.md,
     backgroundColor: theme.colors.accent,
   },
