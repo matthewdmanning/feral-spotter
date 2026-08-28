@@ -9,36 +9,28 @@
  * Each assertion here exists for a failure that is likely in this specific
  * code, not to demonstrate the code was tested:
  *
- *   1. setTheme called while adaptive themes are still on. Unistyles throws.
- *      The fake runtime below reproduces that rule, so getting the order wrong
- *      fails here instead of crashing the first time someone picks a theme.
- *   2. A chosen mode not written to storage, and therefore lost on the next
+ *   1. A chosen mode not written to storage, and therefore lost on the next
  *      cold start. This is the bug that was already live: the previous config
  *      read a key that nothing in the repo ever wrote.
- *   3. Returning to System not re-enabling adaptive themes, leaving the app
- *      pinned to whichever theme was chosen last.
- *   4. Startup ignoring the persisted mode, or handing Unistyles both
- *      adaptiveThemes and initialTheme, which are mutually exclusive.
- *   5. A breakpoint set that does not start at 0, which silently leaves the
+ *   2. 'system' resolving to the wrong Unistyles theme name — it must read
+ *      the OS scheme, not just fall back to a fixed default, or the initial
+ *      paint is wrong whenever the OS is actually in light mode.
+ *   3. Startup ignoring the persisted mode.
+ *   4. A breakpoint set that does not start at 0, which silently leaves the
  *      narrowest screens with no matching value.
+ *
+ * #338 found Unistyles' own adaptiveThemes does not track a live OS change on
+ * a device — this module no longer uses it at all (see resolveSystemTheme),
+ * so there is nothing here about adaptiveThemes/hasAdaptiveThemes any more.
+ * The live-tracking half now lives in AppProviders' SystemThemeSync, which
+ * this file does not cover.
  */
 
 const mockStore = new Map<string, string>()
 
 const mockRuntime = {
-  hasAdaptiveThemes: false,
   themeName: 'dark' as 'dark' | 'light',
-  setAdaptiveThemes(enabled: boolean) {
-    this.hasAdaptiveThemes = enabled
-  },
   setTheme(name: 'dark' | 'light') {
-    // The real Unistyles runtime rejects this outright. Reproduced so that a
-    // wrong call order is a test failure rather than a device-only crash.
-    if (this.hasAdaptiveThemes) {
-      throw new Error(
-        'setTheme is not allowed while adaptive themes are enabled',
-      )
-    }
     this.themeName = name
   },
 }
@@ -59,6 +51,11 @@ jest.mock('@/src/lib/cache/storage', () => ({
   },
 }))
 
+let mockColorScheme: 'light' | 'dark' | null = 'dark'
+jest.mock('@/src/lib/appearance', () => ({
+  getSystemColorScheme: () => mockColorScheme,
+}))
+
 type ConfigModule = typeof import('../unistyles')
 
 /** Import the config fresh, re-running its startup StyleSheet.configure call. */
@@ -73,28 +70,31 @@ const lastConfigureCall = () =>
 beforeEach(() => {
   mockStore.clear()
   mockConfigure.mockClear()
-  // Start from the default the app ships with, so the first manual selection
-  // in a journey has to disable adaptive themes to succeed.
-  mockRuntime.hasAdaptiveThemes = true
   mockRuntime.themeName = 'dark'
+  mockColorScheme = 'dark'
 })
 
 describe('setThemeMode', () => {
   it('persists and applies every mode across a full selection journey', () => {
     const { setThemeMode, getThemeMode } = loadConfig()
 
-    // A real sequence: leave System, switch between the pinned themes, return
-    // to System, then leave it again. Returning is the step that regressed in
-    // the original implementation.
     for (const mode of ['dark', 'light', 'system', 'dark'] as const) {
       setThemeMode(mode)
 
       expect(getThemeMode()).toBe(mode)
-      expect(mockRuntime.hasAdaptiveThemes).toBe(mode === 'system')
       if (mode !== 'system') {
         expect(mockRuntime.themeName).toBe(mode)
       }
     }
+  })
+
+  it('resolves system mode to the OS color scheme, not a fixed default', () => {
+    const { setThemeMode } = loadConfig()
+    mockColorScheme = 'light'
+
+    setThemeMode('system')
+
+    expect(mockRuntime.themeName).toBe('light')
   })
 
   it('survives a cold start on the mode that was chosen', () => {
@@ -108,12 +108,42 @@ describe('setThemeMode', () => {
   })
 })
 
+describe('resolveThemeForAppearanceChange', () => {
+  it('ignores an OS change while an explicit theme is pinned', () => {
+    const { resolveThemeForAppearanceChange } = loadConfig()
+
+    expect(resolveThemeForAppearanceChange('light', 'dark')).toBeNull()
+    expect(resolveThemeForAppearanceChange('dark', 'light')).toBeNull()
+  })
+
+  it('follows the OS scheme while System is selected', () => {
+    const { resolveThemeForAppearanceChange } = loadConfig()
+
+    expect(resolveThemeForAppearanceChange('light', 'system')).toBe('light')
+    expect(resolveThemeForAppearanceChange('dark', 'system')).toBe('dark')
+  })
+
+  it('falls back to dark for an unreported OS scheme while System is selected', () => {
+    const { resolveThemeForAppearanceChange } = loadConfig()
+
+    expect(resolveThemeForAppearanceChange(null, 'system')).toBe('dark')
+    expect(resolveThemeForAppearanceChange(undefined, 'system')).toBe('dark')
+  })
+})
+
 describe('startup configuration', () => {
   it('defaults to System when nobody has chosen', () => {
     const { getThemeMode } = loadConfig()
 
     expect(getThemeMode()).toBe('system')
-    expect(lastConfigureCall().settings).toEqual({ adaptiveThemes: true })
+  })
+
+  it('resolves System at startup to the OS color scheme', () => {
+    mockColorScheme = 'light'
+
+    loadConfig()
+
+    expect(lastConfigureCall().settings).toEqual({ initialTheme: 'light' })
   })
 
   it('ignores a stored value that is not a theme mode', () => {
@@ -129,8 +159,6 @@ describe('startup configuration', () => {
 
       loadConfig()
 
-      // Passing both settings is a Unistyles error, so this asserts the exact
-      // object rather than just the presence of initialTheme.
       expect(lastConfigureCall().settings).toEqual({ initialTheme: mode })
     },
   )

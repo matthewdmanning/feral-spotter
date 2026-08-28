@@ -8,6 +8,7 @@
  * v3 API: StyleSheet.configure (replaces UnistylesRegistry)
  */
 
+import { getSystemColorScheme } from '@/src/lib/appearance'
 import { mmkvInstance } from '@/src/lib/cache/storage'
 import { StyleSheet, UnistylesRuntime } from 'react-native-unistyles'
 
@@ -159,24 +160,37 @@ export function getThemeMode(): ThemeMode {
 }
 
 /**
- * Persist a theme mode and apply it immediately.
- *
- * Order matters and is the reason this is a function rather than two calls at
- * the call site: UnistylesRuntime.setTheme throws while adaptive themes are
- * enabled, so adaptive must be turned off before a manual theme is applied.
+ * 'system' resolves through React Native's own Appearance API rather than
+ * Unistyles' adaptiveThemes setting. #338 found adaptiveThemes does not
+ * track a live OS change in this app (confirmed on-device, not just
+ * theoretical) — Appearance.addChangeListener does, in every environment,
+ * so system mode is driven from there end to end (see resolveSystemTheme's
+ * caller in AppProviders for the live half; this is just the initial read).
  */
+export function resolveSystemTheme(): 'light' | 'dark' {
+  return getSystemColorScheme() === 'light' ? 'light' : 'dark'
+}
+
+/** Persist a theme mode and apply it immediately. */
 export function setThemeMode(mode: ThemeMode): void {
   mmkvInstance.set(THEME_MODE_KEY, mode)
+  UnistylesRuntime.setTheme(mode === 'system' ? resolveSystemTheme() : mode)
+}
 
-  if (mode === 'system') {
-    UnistylesRuntime.setAdaptiveThemes(true)
-    return
-  }
-
-  if (UnistylesRuntime.hasAdaptiveThemes) {
-    UnistylesRuntime.setAdaptiveThemes(false)
-  }
-  UnistylesRuntime.setTheme(mode)
+/**
+ * Pure decision behind AppProviders' SystemThemeSync (the live half of
+ * #338): given what Appearance just reported and the currently persisted
+ * mode, what should the runtime theme become — or null to leave it alone.
+ * An explicit Light/Dark choice must never be overridden by an OS change,
+ * which is why this takes the mode as an argument rather than assuming
+ * 'system' the way resolveSystemTheme does.
+ */
+export function resolveThemeForAppearanceChange(
+  colorScheme: string | null | undefined,
+  mode: ThemeMode,
+): 'light' | 'dark' | null {
+  if (mode !== 'system') return null
+  return colorScheme === 'light' ? 'light' : 'dark'
 }
 
 // ─── TypeScript augmentation ──────────────────────────────────────────────────
@@ -193,16 +207,15 @@ declare module 'react-native-unistyles' {
 
 // ─── Configure ───────────────────────────────────────────────────────────────
 
-// adaptiveThemes and initialTheme are mutually exclusive in Unistyles: the
-// first hands theme selection to the OS, the second pins it. Which one is
-// passed is exactly the persisted mode.
+// Always initialTheme, never adaptiveThemes — see resolveSystemTheme's
+// comment above for why 'system' mode is driven from Appearance instead.
 const initialMode = getThemeMode()
 
 StyleSheet.configure({
   themes: appThemes,
   breakpoints,
-  settings:
-    initialMode === 'system'
-      ? { adaptiveThemes: true }
-      : { initialTheme: initialMode },
+  settings: {
+    initialTheme:
+      initialMode === 'system' ? resolveSystemTheme() : initialMode,
+  },
 })
