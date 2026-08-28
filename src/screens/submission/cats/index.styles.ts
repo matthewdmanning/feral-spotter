@@ -11,7 +11,7 @@ export const styles = StyleSheet.create((theme) => ({
   },
   title: {
     color: theme.colors.text,
-    fontSize: theme.typography.xxxl,
+    fontSize: theme.typography.xxl,
     fontWeight: '700',
   },
   // The inset-crop bubble is centered over this title (#186) — fade it

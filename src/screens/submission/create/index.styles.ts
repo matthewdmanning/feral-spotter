@@ -9,7 +9,7 @@ export const styles = StyleSheet.create((theme) => ({
   },
   title: {
     color: theme.colors.text,
-    fontSize: theme.typography.xxxl,
+    fontSize: theme.typography.xxl,
     fontWeight: '700',
   },
   statusRow: {
