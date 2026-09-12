@@ -23,7 +23,13 @@ export const styles = StyleSheet.create((theme) => ({
           borderColor: theme.colors.muted,
         },
         ghost: { backgroundColor: 'transparent' },
-        danger: { backgroundColor: 'transparent' },
+        // Transparent + colored text alone read as a link next to an outlined
+        // Cancel. The border makes it read as a subordinate destructive button.
+        danger: {
+          backgroundColor: 'transparent',
+          borderWidth: 1,
+          borderColor: theme.colors.danger,
+        },
       },
       size: {
         default: {},
