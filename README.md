@@ -22,17 +22,17 @@ A React Native mobile app for reporting and tracking feral animal sightings. Use
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Framework | Expo SDK 56 (New Architecture) |
-| Language | TypeScript |
-| Navigation | Expo Router (file-based) |
-| State | Zustand |
-| Styling | react-native-unistyles v3 |
-| Auth | Firebase |
-| Image | expo-image |
-| Animation | react-native-reanimated v4 |
-| Analytics | PostHog |
+| Layer      | Technology                     |
+| ---------- | ------------------------------ |
+| Framework  | Expo SDK 56 (New Architecture) |
+| Language   | TypeScript                     |
+| Navigation | Expo Router (file-based)       |
+| State      | Zustand                        |
+| Styling    | react-native-unistyles v3      |
+| Auth       | Firebase                       |
+| Image      | expo-image                     |
+| Animation  | react-native-reanimated v4     |
+| Analytics  | PostHog                        |
 
 ## Project Suite
 
@@ -92,6 +92,7 @@ Dependency direction is strictly one-way: `app/` → `screens/` → `hooks/compo
 See [CHANGELOG.md](CHANGELOG.md) for completed work.
 
 **Upcoming:**
+
 - Cloud upload API (frontend + backend)
 - UI styling pass
 - Tutorial flow

@@ -1,1 +1,1 @@
-export { default } from '@/src/screens/intro-flow';
+export { default } from '@/src/screens/intro-flow'

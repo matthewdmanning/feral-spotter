@@ -7,31 +7,31 @@ import { useState } from 'react'
 import { Platform } from 'react-native'
 
 type PickerMode = 'date' | 'time' | 'datetime'
-type StepMode   = 'date' | 'time'
+type StepMode = 'date' | 'time'
 
 export interface DateTimePickerState {
-  show:        boolean
-  tempDate:    Date
+  show: boolean
+  tempDate: Date
   currentMode: StepMode
-  open:        () => void
-  setStep:     (m: StepMode) => void
-  handleChange:(event: unknown, selectedDate?: Date) => void
+  open: () => void
+  setStep: (m: StepMode) => void
+  handleChange: (event: unknown, selectedDate?: Date) => void
   handleConfirm: () => void
-  handleCancel:  () => void
+  handleCancel: () => void
 }
 
 export function useDateTimePicker(
-  value:    Date,
-  mode:     PickerMode,
+  value: Date,
+  mode: PickerMode,
   onChange: (date: Date) => void,
 ): DateTimePickerState {
-  const [show,        setShow]        = useState(false)
-  const [tempDate,    setTempDate]    = useState(value)
+  const [show, setShow] = useState(false)
+  const [tempDate, setTempDate] = useState(value)
   const [currentMode, setCurrentMode] = useState<StepMode>(
     mode === 'datetime' ? 'date' : mode,
   )
 
-  const open    = () => setShow(true)
+  const open = () => setShow(true)
   const setStep = (m: StepMode) => setCurrentMode(m)
 
   const handleChange = (_event: unknown, selectedDate?: Date) => {
@@ -62,8 +62,13 @@ export function useDateTimePicker(
   }
 
   return {
-    show, tempDate, currentMode,
-    open, setStep,
-    handleChange, handleConfirm, handleCancel,
+    show,
+    tempDate,
+    currentMode,
+    open,
+    setStep,
+    handleChange,
+    handleConfirm,
+    handleCancel,
   }
 }

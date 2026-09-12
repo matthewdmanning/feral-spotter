@@ -22,8 +22,8 @@ Closes #
 
 ## Key changes
 
-- 
-- 
+-
+-
 
 ---
 
@@ -67,8 +67,8 @@ What did you run?
 
 Steps to manually verify:
 
-1. 
-2. 
+1.
+2.
 
 ---
 

@@ -4,8 +4,8 @@
  * (the format native JS Date already produces via toISOString()).
  */
 
-export type TimeType = string;
+export type TimeType = string
 
 export function toTimeType(date: Date): TimeType {
-  return date.toISOString();
+  return date.toISOString()
 }

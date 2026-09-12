@@ -9,7 +9,7 @@ export const styles = StyleSheet.create((theme) => ({
 
 export const STATUS_COLOR_KEY = {
   'In Progress': 'accent',
-  'Sending':     'warning',
-  'Submitted':   'success',
-  'Failed':      'danger',
+  Sending: 'warning',
+  Submitted: 'success',
+  Failed: 'danger',
 } as const

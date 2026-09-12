@@ -47,7 +47,9 @@ let base = ''
 try {
   base = sh(`git merge-base HEAD ${process.env.PRETTIER_BASE}`)
 } catch {
-  console.log(`prettier: no merge-base with ${process.env.PRETTIER_BASE}, skipping`)
+  console.log(
+    `prettier: no merge-base with ${process.env.PRETTIER_BASE}, skipping`,
+  )
   process.exit(0)
 }
 

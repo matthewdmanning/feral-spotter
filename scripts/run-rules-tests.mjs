@@ -16,7 +16,10 @@ import { spawnSync } from 'node:child_process'
 import { existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
-const JAVA_ROOTS = ['C:/Program Files/Java', 'C:/Program Files/Eclipse Adoptium']
+const JAVA_ROOTS = [
+  'C:/Program Files/Java',
+  'C:/Program Files/Eclipse Adoptium',
+]
 const MIN_MAJOR = 21
 
 /** Highest installed JDK at or above MIN_MAJOR, or null. */
@@ -26,8 +29,14 @@ function findJavaHome() {
 
   const candidates = JAVA_ROOTS.filter(existsSync).flatMap((root) =>
     readdirSync(root)
-      .map((name) => ({ path: join(root, name), major: Number(/(\d+)/.exec(name)?.[1]) }))
-      .filter(({ path, major }) => major >= MIN_MAJOR && existsSync(join(path, 'bin', 'java.exe'))),
+      .map((name) => ({
+        path: join(root, name),
+        major: Number(/(\d+)/.exec(name)?.[1]),
+      }))
+      .filter(
+        ({ path, major }) =>
+          major >= MIN_MAJOR && existsSync(join(path, 'bin', 'java.exe')),
+      ),
   )
   return candidates.sort((a, b) => b.major - a.major)[0]?.path ?? null
 }

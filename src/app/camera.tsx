@@ -1,2 +1,1 @@
-export { default } from '@/src/screens/camera';
-
+export { default } from '@/src/screens/camera'

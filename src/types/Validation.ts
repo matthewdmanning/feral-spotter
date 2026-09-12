@@ -4,13 +4,13 @@
  */
 
 export interface ValidationError {
-  field: string;
-  message: string;
-  severity: "error" | "warning";
+  field: string
+  message: string
+  severity: 'error' | 'warning'
 }
 
 export interface ValidationResult {
-  valid: boolean;
-  errors: ValidationError[];
-  warnings: ValidationError[];
+  valid: boolean
+  errors: ValidationError[]
+  warnings: ValidationError[]
 }

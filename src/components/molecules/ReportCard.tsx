@@ -16,17 +16,26 @@ export function ReportCard({ cache }: { cache: SubmissionCacheFile }) {
       <View style={styles.row}>
         <View style={styles.left}>
           <StatusIcon status={cache.status} />
-          <Text style={styles.catCount}>{catCount === 0 ? 'None' : `Cats: ${catCount}`}</Text>
+          <Text style={styles.catCount}>
+            {catCount === 0 ? 'None' : `Cats: ${catCount}`}
+          </Text>
         </View>
         <View style={styles.centre}>
-          <Text style={styles.datetime} numberOfLines={1}>{formatDateTime(cache.created_at)}</Text>
+          <Text style={styles.datetime} numberOfLines={1}>
+            {formatDateTime(cache.created_at)}
+          </Text>
         </View>
         <View style={styles.right}>
-          {photoCount > 0 && <Text style={styles.photoCount}>{photoCount} photo{photoCount !== 1 ? 's' : ''}</Text>}
-          <Text style={[styles.status, { color: theme.colors[colorKey] }]}>{cache.status}</Text>
+          {photoCount > 0 && (
+            <Text style={styles.photoCount}>
+              {photoCount} photo{photoCount !== 1 ? 's' : ''}
+            </Text>
+          )}
+          <Text style={[styles.status, { color: theme.colors[colorKey] }]}>
+            {cache.status}
+          </Text>
         </View>
       </View>
     </View>
   )
 }
-
