@@ -6,6 +6,8 @@
 # Local build/debug artifacts
 .claude-build-logs/
 window_dump.xml
+.codex/config.toml
+emulator_tools/screenshots/
 
 # Dependencies
 node_modules/
