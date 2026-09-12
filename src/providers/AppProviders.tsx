@@ -133,10 +133,7 @@ function ScreenTransitionLogger() {
 function SystemThemeSync() {
   useEffect(() => {
     const subscription = Appearance.addChangeListener(({ colorScheme }) => {
-      const next = resolveThemeForAppearanceChange(
-        colorScheme,
-        getThemeMode(),
-      )
+      const next = resolveThemeForAppearanceChange(colorScheme, getThemeMode())
       if (next) UnistylesRuntime.setTheme(next)
     })
     return () => subscription.remove()

@@ -19,6 +19,23 @@ import { execSync } from 'node:child_process'
 const check = process.argv.includes('--check')
 const SUPPORTED = /\.(tsx?|jsx?|json|md|ya?ml)$/
 
+// Deliberately still in the older column-aligned layout — see commit 80bf6cf
+// and docs/implementations/2026-08-26-issue-325-touch-targets.md. Reformatting
+// them buries real edits in formatting noise; the whole-repo reformat is its
+// own branch. Drop an entry once that branch lands and the file converts.
+const COLUMN_ALIGNED = new Set([
+  'src/components/atoms/ErrorBoundary.styles.ts',
+  'src/components/atoms/SegmentedControl.styles.ts',
+  'src/components/molecules/AddAnotherCatDialog.styles.ts',
+  'src/components/molecules/BottomButtonColumn.styles.ts',
+  'src/components/molecules/PhotoPreviewModal.styles.ts',
+  'src/components/molecules/ReportCard.styles.ts',
+  'src/components/organisms/DateTimePicker.styles.ts',
+  'src/components/organisms/ValidationSheet.styles.ts',
+  'src/screens/analytics-consent/index.styles.ts',
+  'src/screens/settings/index.styles.ts',
+])
+
 const sh = (cmd) => execSync(cmd, { encoding: 'utf8' }).trim()
 
 if (!process.env.PRETTIER_BASE) {
@@ -36,7 +53,7 @@ try {
 
 const files = sh(`git diff --name-only --diff-filter=ACMR ${base} HEAD`)
   .split('\n')
-  .filter((f) => f && SUPPORTED.test(f))
+  .filter((f) => f && SUPPORTED.test(f) && !COLUMN_ALIGNED.has(f))
 
 if (files.length === 0) {
   console.log('prettier: no changed files to format')

@@ -23,6 +23,9 @@ export const styles = StyleSheet.create((theme) => ({
     alignItems: 'center',
     gap: theme.spacing.sm,
   },
-  headerBtn: { paddingVertical: theme.spacing.xs, paddingHorizontal: theme.spacing.sm },
+  headerBtn: {
+    paddingVertical: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.sm,
+  },
   headerBtnText: { fontSize: theme.typography.sm, fontWeight: '500' },
 }))

@@ -16,9 +16,12 @@ import { styles } from './DateTimePicker.styles'
 type PickerMode = 'date' | 'time' | 'datetime'
 
 interface DateTimePickerProps {
-  value: Date; onChange: (date: Date) => void
-  mode?: PickerMode; label?: string
-  minimumDate?: Date; maximumDate?: Date
+  value: Date
+  onChange: (date: Date) => void
+  mode?: PickerMode
+  label?: string
+  minimumDate?: Date
+  maximumDate?: Date
 }
 
 const MODAL_TITLE: Record<PickerMode, string> = {
@@ -29,18 +32,30 @@ const MODAL_TITLE: Record<PickerMode, string> = {
 
 const formatValue = (date: Date, mode: PickerMode) => {
   if (mode === 'date') return date.toLocaleDateString()
-  if (mode === 'time') return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  if (mode === 'time')
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
 }
 
 export function DateTimePickerButton({
-  value, onChange, mode = 'datetime',
+  value,
+  onChange,
+  mode = 'datetime',
   label = 'Select Date & Time',
-  minimumDate, maximumDate,
+  minimumDate,
+  maximumDate,
 }: DateTimePickerProps) {
   const { theme } = useUnistyles()
-  const { show, tempDate, currentMode, open, setStep, handleChange, handleConfirm, handleCancel } =
-    useDateTimePicker(value, mode, onChange)
+  const {
+    show,
+    tempDate,
+    currentMode,
+    open,
+    setStep,
+    handleChange,
+    handleConfirm,
+    handleCancel,
+  } = useDateTimePicker(value, mode, onChange)
 
   const Icon = mode === 'time' ? Clock : Calendar
 
@@ -48,26 +63,46 @@ export function DateTimePickerButton({
     <View style={styles.container}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
 
-      <Pressable onPress={open} style={styles.trigger}
-        accessibilityLabel={label} accessibilityRole="button">
+      <Pressable
+        onPress={open}
+        style={styles.trigger}
+        accessibilityLabel={label}
+        accessibilityRole="button"
+      >
         <Icon size={16} color={theme.colors.muted} />
         <Text style={styles.triggerText}>{formatValue(value, mode)}</Text>
       </Pressable>
 
       {/* iOS modal */}
       {Platform.OS === 'ios' && show && (
-        <Modal visible transparent animationType="fade"
-          onRequestClose={handleCancel} statusBarTranslucent>
+        <Modal
+          visible
+          transparent
+          animationType="fade"
+          onRequestClose={handleCancel}
+          statusBarTranslucent
+        >
           <View style={dialogShell.backdrop}>
             <View style={dialogShell.sheet}>
               <Text style={dialogShell.title}>{MODAL_TITLE[mode]}</Text>
 
               {currentMode === 'date' && (
-                <RNDateTimePicker value={tempDate} mode="date" display="spinner"
-                  onChange={handleChange} minimumDate={minimumDate} maximumDate={maximumDate} />
+                <RNDateTimePicker
+                  value={tempDate}
+                  mode="date"
+                  display="spinner"
+                  onChange={handleChange}
+                  minimumDate={minimumDate}
+                  maximumDate={maximumDate}
+                />
               )}
               {currentMode === 'time' && (
-                <RNDateTimePicker value={tempDate} mode="time" display="spinner" onChange={handleChange} />
+                <RNDateTimePicker
+                  value={tempDate}
+                  mode="time"
+                  display="spinner"
+                  onChange={handleChange}
+                />
               )}
 
               {mode === 'datetime' && (
@@ -75,9 +110,19 @@ export function DateTimePickerButton({
                   {(['date', 'time'] as const).map((step) => {
                     const active = currentMode === step
                     return (
-                      <Pressable key={step} onPress={() => setStep(step)}
-                        style={[styles.stepBtn, active ? styles.stepBtnActive : styles.stepBtnIdle]}>
-                        <Text style={active ? styles.stepTextActive : styles.stepTextIdle}>
+                      <Pressable
+                        key={step}
+                        onPress={() => setStep(step)}
+                        style={[
+                          styles.stepBtn,
+                          active ? styles.stepBtnActive : styles.stepBtnIdle,
+                        ]}
+                      >
+                        <Text
+                          style={
+                            active ? styles.stepTextActive : styles.stepTextIdle
+                          }
+                        >
                           {step.charAt(0).toUpperCase() + step.slice(1)}
                         </Text>
                       </Pressable>
@@ -87,8 +132,12 @@ export function DateTimePickerButton({
               )}
 
               <View style={styles.actionRow}>
-                <AppButton onPress={handleCancel} variant="secondary" flex1>Cancel</AppButton>
-                <AppButton onPress={handleConfirm} flex1>Confirm</AppButton>
+                <AppButton onPress={handleCancel} variant="secondary" flex1>
+                  Cancel
+                </AppButton>
+                <AppButton onPress={handleConfirm} flex1>
+                  Confirm
+                </AppButton>
               </View>
             </View>
           </View>
@@ -97,11 +146,15 @@ export function DateTimePickerButton({
 
       {/* Android native picker */}
       {Platform.OS === 'android' && show && (
-        <RNDateTimePicker value={tempDate} mode={currentMode} display="default"
-          onChange={handleChange} minimumDate={minimumDate} maximumDate={maximumDate} />
+        <RNDateTimePicker
+          value={tempDate}
+          mode={currentMode}
+          display="default"
+          onChange={handleChange}
+          minimumDate={minimumDate}
+          maximumDate={maximumDate}
+        />
       )}
     </View>
   )
 }
-
-

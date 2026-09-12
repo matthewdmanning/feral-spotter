@@ -215,7 +215,6 @@ StyleSheet.configure({
   themes: appThemes,
   breakpoints,
   settings: {
-    initialTheme:
-      initialMode === 'system' ? resolveSystemTheme() : initialMode,
+    initialTheme: initialMode === 'system' ? resolveSystemTheme() : initialMode,
   },
 })

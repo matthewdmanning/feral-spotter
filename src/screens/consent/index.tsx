@@ -1,6 +1,16 @@
 import { showAlert } from '@/src/hooks/useUIStore'
 import { useCallback, useEffect, useState } from 'react'
-import { AppState, BackHandler, Linking, Platform, View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native'
+import {
+  AppState,
+  BackHandler,
+  Linking,
+  Platform,
+  View,
+  Text,
+  Pressable,
+  ScrollView,
+  ActivityIndicator,
+} from 'react-native'
 import { router } from 'expo-router'
 import * as Location from 'expo-location'
 import {
@@ -122,22 +132,18 @@ export default function ConsentScreen() {
   }, [blocked, markAccepted])
 
   const handleDecline = useCallback(() => {
-    showAlert(
-      consentCopy.declineWarningTitle,
-      consentCopy.declineWarningBody,
-      [
-        { text: 'Back', style: 'cancel' },
-        {
-          text: 'Exit',
-          style: 'destructive',
-          onPress: () => {
-            // iOS has no supported way to self-terminate — Back is the only
-            // option there; Exit only does anything on Android.
-            if (Platform.OS === 'android') BackHandler.exitApp()
-          },
+    showAlert(consentCopy.declineWarningTitle, consentCopy.declineWarningBody, [
+      { text: 'Back', style: 'cancel' },
+      {
+        text: 'Exit',
+        style: 'destructive',
+        onPress: () => {
+          // iOS has no supported way to self-terminate — Back is the only
+          // option there; Exit only does anything on Android.
+          if (Platform.OS === 'android') BackHandler.exitApp()
         },
-      ],
-    )
+      },
+    ])
   }, [])
 
   if (blocked) {
