@@ -15,6 +15,7 @@
  */
 
 import {
+  showAlert,
   showError,
   usePhotoStore,
   useSubmissionStore,
@@ -38,7 +39,6 @@ import { parseExifDateTime } from '@/src/utils/libraryPickTime'
 import { validateCatCount, validatePhotos } from '@/src/utils/validation'
 import { router } from 'expo-router'
 import { useCallback, useState } from 'react'
-import { Alert } from 'react-native'
 
 export interface SubmissionSubmitResult {
   handleDone: () => void
@@ -86,7 +86,7 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
     const catCount = cats.length
     const photoCount = photos.length
 
-    Alert.alert(
+    showAlert(
       'Submit Submission',
       `Submit ${catCount} cat${catCount !== 1 ? 's' : ''} and ${photoCount} photo${photoCount !== 1 ? 's' : ''}?`,
       [
@@ -314,7 +314,7 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
   // ── Reset → confirm → clear all (#153) ─────────────────────────────────────
 
   const handleReset = useCallback(() => {
-    Alert.alert(
+    showAlert(
       'Reset Submission',
       'This will permanently clear all cats, photos and submission data.',
       [

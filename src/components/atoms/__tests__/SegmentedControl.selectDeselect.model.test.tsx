@@ -4,20 +4,6 @@ import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import { SegmentedControl } from '../SegmentedControl'
 
-jest.mock('react-native-unistyles', () => {
-  const anyProp = (): unknown => new Proxy({}, { get: (_t, _k) => anyProp() })
-  const theme = new Proxy({}, { get: (_t, _k) => anyProp() })
-  const withVariants = (obj: object) =>
-    Object.assign(obj, { useVariants: jest.fn() })
-  return {
-    useUnistyles: () => ({ theme }),
-    StyleSheet: {
-      create: (fn: unknown) =>
-        withVariants(typeof fn === 'function' ? fn(theme) : fn),
-    },
-  }
-})
-
 jest.mock('../SegmentedControl.styles', () => ({
   styles: new Proxy({}, { get: () => ({}) }),
 }))

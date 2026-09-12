@@ -1,3 +1,4 @@
+import * as ui from '@/src/hooks/useUIStore'
 import {
   act,
   fireEvent,
@@ -5,7 +6,7 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react-native'
-import { Alert, AppState, BackHandler, Platform } from 'react-native'
+import { AppState, BackHandler, Platform } from 'react-native'
 import React from 'react'
 import ConsentScreen from '../index'
 import consentCopy from '@/src/content/consentDisclosure.json'
@@ -52,30 +53,6 @@ jest.mock('@/src/hooks/useBackHandler', () => ({
   useBackHandler: jest.fn(),
 }))
 
-jest.mock('react-native-unistyles', () => {
-  const theme = {
-    colors: {
-      background: '#fff',
-      text: '#000',
-      muted: '#888',
-      border: '#ccc',
-      accent: '#00f',
-      accentText: '#fff',
-      surfaceAlt: '#eee',
-      danger: '#f00',
-    },
-    spacing: { xs: 2, sm: 4, md: 8, lg: 16, xl: 24, xxl: 32, xxxl: 40 },
-    typography: { sm: 12, base: 16, xl: 20, xxl: 24 },
-    radius: { sm: 4, md: 8, lg: 12 },
-  }
-  return {
-    useUnistyles: () => ({ theme }),
-    StyleSheet: {
-      create: (fn: unknown) => (typeof fn === 'function' ? fn(theme) : fn),
-    },
-  }
-})
-
 describe('ConsentScreen decline flow', () => {
   beforeEach(() => {
     jest.clearAllMocks()
@@ -91,7 +68,7 @@ describe('ConsentScreen decline flow', () => {
   })
 
   it('warns before exiting instead of declining silently', () => {
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    const alertSpy = jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
     render(<ConsentScreen />)
 
     fireEvent.press(screen.getByLabelText(consentCopy.declineLabel))
@@ -110,7 +87,7 @@ describe('ConsentScreen decline flow', () => {
     const exitSpy = jest
       .spyOn(BackHandler, 'exitApp')
       .mockImplementation(() => {})
-    jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
+    jest.spyOn(ui, 'showAlert').mockImplementation((_title, _msg, buttons) => {
       buttons?.find((b) => b.text === 'Exit')?.onPress?.()
     })
     render(<ConsentScreen />)
@@ -124,7 +101,7 @@ describe('ConsentScreen decline flow', () => {
     const exitSpy = jest
       .spyOn(BackHandler, 'exitApp')
       .mockImplementation(() => {})
-    jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
+    jest.spyOn(ui, 'showAlert').mockImplementation((_title, _msg, buttons) => {
       buttons?.find((b) => b.text === 'Back')?.onPress?.()
     })
     render(<ConsentScreen />)
@@ -191,7 +168,7 @@ describe('ConsentScreen location one-time-grant notice (#225)', () => {
   })
 
   it('surfaces the convenience-tradeoff notice on a fresh location grant', async () => {
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    const alertSpy = jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
     mockRequestForegroundPermissionsAsync.mockResolvedValue(grantedLocation)
     render(<ConsentScreen />)
 
@@ -210,7 +187,7 @@ describe('ConsentScreen location one-time-grant notice (#225)', () => {
   })
 
   it('does not show the notice when access is granted via Settings recovery', async () => {
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    const alertSpy = jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
     mockCameraPermissionStatus = 'denied'
     mockRequestForegroundPermissionsAsync.mockResolvedValue(grantedLocation)
 

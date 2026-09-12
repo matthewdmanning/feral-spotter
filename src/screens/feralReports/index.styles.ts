@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native-unistyles'
 
-export const styles = StyleSheet.create((theme) => ({
-  root: { backgroundColor: theme.colors.background },
+export const styles = StyleSheet.create((theme, rt) => ({
+  root: { backgroundColor: theme.colors.background, paddingTop: rt.insets.top },
   inner: { paddingHorizontal: theme.spacing.lg, gap: theme.spacing.sm },
   headerRow: {
     flexDirection: 'row',
@@ -20,7 +20,7 @@ export const styles = StyleSheet.create((theme) => ({
     borderWidth: 1,
     borderColor: theme.colors.border,
     backgroundColor: theme.colors.surface,
-    padding: 32,
+    padding: theme.spacing.xxxl,
     alignItems: 'center',
     gap: theme.spacing.sm,
   },
@@ -40,10 +40,15 @@ export const styles = StyleSheet.create((theme) => ({
     alignItems: 'center',
     flexShrink: 0,
     marginRight: theme.spacing.lg,
-    marginBottom: 4,
+    marginBottom: theme.spacing.xs,
   },
-  legendDot: { width: 8, height: 8, borderRadius: 4, marginRight: 6 },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: theme.radius.full,
+    marginRight: 6,
+  },
   legendLabel: { color: theme.colors.muted, fontSize: theme.typography.xs },
-  scrollContent: { paddingBottom: 32 },
-  headerIcon: { marginRight: 4 },
+  scrollContent: { paddingBottom: theme.spacing.xxxl },
+  headerIcon: { marginRight: theme.spacing.xs },
 }))

@@ -1,5 +1,6 @@
+import * as ui from '@/src/hooks/useUIStore'
 import { act, renderHook } from '@testing-library/react-native'
-import { Alert } from 'react-native'
+
 import { useSubmissionSubmit } from '@/src/hooks/useSubmissionSubmit'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { CONSENT_VERSION, useConsentStore } from '@/src/hooks/useConsentStore'
@@ -134,7 +135,7 @@ describe('useSubmissionSubmit submit flow', () => {
       ],
     })
     ;(uploadSubmissionMetadata as jest.Mock).mockResolvedValue(undefined)
-    jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
+    jest.spyOn(ui, 'showAlert').mockImplementation((_title, _msg, buttons) => {
       buttons?.find((b) => b.text === 'Submit')?.onPress?.()
     })
 
@@ -179,7 +180,7 @@ describe('useSubmissionSubmit submit flow', () => {
       ],
     })
     ;(uploadSubmissionMetadata as jest.Mock).mockResolvedValue(undefined)
-    jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
+    jest.spyOn(ui, 'showAlert').mockImplementation((_title, _msg, buttons) => {
       buttons?.find((b) => b.text === 'Submit')?.onPress?.()
     })
 
@@ -218,7 +219,7 @@ describe('useSubmissionSubmit submit flow', () => {
       ],
     })
     ;(uploadSubmissionMetadata as jest.Mock).mockResolvedValue(undefined)
-    jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
+    jest.spyOn(ui, 'showAlert').mockImplementation((_title, _msg, buttons) => {
       buttons?.find((b) => b.text === 'Submit')?.onPress?.()
     })
 
@@ -262,7 +263,7 @@ describe('useSubmissionSubmit submit flow', () => {
       ],
     })
     ;(uploadSubmissionMetadata as jest.Mock).mockResolvedValue(undefined)
-    jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
+    jest.spyOn(ui, 'showAlert').mockImplementation((_title, _msg, buttons) => {
       buttons?.find((b) => b.text === 'Submit')?.onPress?.()
     })
 
@@ -307,7 +308,7 @@ describe('useSubmissionSubmit submit flow', () => {
       .mockResolvedValueOnce(undefined)
     ;(uploadSubmissionMetadata as jest.Mock).mockResolvedValue(undefined)
     const alertSpy = jest
-      .spyOn(Alert, 'alert')
+      .spyOn(ui, 'showAlert')
       .mockImplementation((_title, _msg, buttons) => {
         buttons?.find((b) => b.text === 'Submit')?.onPress?.()
       })
@@ -360,7 +361,7 @@ describe('useSubmissionSubmit submit flow', () => {
       ],
     })
     ;(uploadSubmissionMetadata as jest.Mock).mockResolvedValue(undefined)
-    jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
+    jest.spyOn(ui, 'showAlert').mockImplementation((_title, _msg, buttons) => {
       buttons?.find((b) => b.text === 'Submit')?.onPress?.()
     })
 
@@ -407,7 +408,7 @@ describe('useSubmissionSubmit submit flow', () => {
         photo({ local_id: 'photo-not-uploaded', uploaded: false }),
       ],
     })
-    jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
+    jest.spyOn(ui, 'showAlert').mockImplementation((_title, _msg, buttons) => {
       buttons?.find((b) => b.text === 'Submit')?.onPress?.()
     })
 
@@ -433,7 +434,7 @@ describe('useSubmissionSubmit submit flow', () => {
         }),
       ],
     })
-    jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
+    jest.spyOn(ui, 'showAlert').mockImplementation((_title, _msg, buttons) => {
       buttons?.find((b) => b.text === 'Submit')?.onPress?.()
     })
 
@@ -449,7 +450,7 @@ describe('useSubmissionSubmit submit flow', () => {
   // #265: zero photos is a hard block.
   it('blocks submit and shows an error when there are no photos', async () => {
     usePhotoStore.setState({ photos: [] })
-    jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
+    jest.spyOn(ui, 'showAlert').mockImplementation((_title, _msg, buttons) => {
       buttons?.find((b) => b.text === 'Submit')?.onPress?.()
     })
 
@@ -475,7 +476,7 @@ describe('useSubmissionSubmit submit flow', () => {
       ],
     })
     ;(uploadSubmissionMetadata as jest.Mock).mockResolvedValue(undefined)
-    jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
+    jest.spyOn(ui, 'showAlert').mockImplementation((_title, _msg, buttons) => {
       buttons?.find((b) => b.text === 'Submit')?.onPress?.()
     })
 

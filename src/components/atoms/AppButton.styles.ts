@@ -2,13 +2,14 @@ import { StyleSheet } from 'react-native-unistyles'
 
 export const styles = StyleSheet.create((theme) => ({
   base: {
+    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: theme.spacing.sm,
     borderRadius: theme.radius.lg,
     paddingHorizontal: theme.spacing.lg,
-    paddingVertical: 12,
+    paddingVertical: theme.spacing.md,
     variants: {
       variant: {
         primary: { backgroundColor: theme.colors.accent },
@@ -22,7 +23,13 @@ export const styles = StyleSheet.create((theme) => ({
           borderColor: theme.colors.muted,
         },
         ghost: { backgroundColor: 'transparent' },
-        danger: { backgroundColor: 'transparent' },
+        // Transparent + colored text alone read as a link next to an outlined
+        // Cancel. The border makes it read as a subordinate destructive button.
+        danger: {
+          backgroundColor: 'transparent',
+          borderWidth: 1,
+          borderColor: theme.colors.danger,
+        },
       },
       size: {
         default: {},

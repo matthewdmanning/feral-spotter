@@ -24,11 +24,11 @@
  * reasoning `removeBoxesForPhoto` follows in the other direction.
  */
 
+import { showAlert } from '@/src/hooks/useUIStore'
 import { clearActiveCatIfMatches } from '@/src/hooks/useActiveCatFlow'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
 import { useCallback } from 'react'
-import { Alert } from 'react-native'
 
 export function useRemoveCat(): (
   catId: string,
@@ -39,7 +39,7 @@ export function useRemoveCat(): (
 
   return useCallback(
     (catId: string, onRemoved?: () => void) => {
-      Alert.alert(
+      showAlert(
         'Remove this cat?',
         'This removes the cat and the boxes you drew for it. Your photos are not deleted, and your other cats are not affected.',
         [

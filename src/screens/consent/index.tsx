@@ -1,6 +1,6 @@
+import { showAlert } from '@/src/hooks/useUIStore'
 import { useCallback, useEffect, useState } from 'react'
 import {
-  Alert,
   AppState,
   BackHandler,
   Linking,
@@ -91,7 +91,7 @@ export default function ConsentScreen() {
       // chose...") rather than claiming to know which one the user picked
       // (#225).
       if (Platform.OS === 'android' && locationResponse.granted) {
-        Alert.alert(
+        showAlert(
           consentCopy.locationOnceWarningTitle,
           consentCopy.locationOnceWarningBody,
         )
@@ -100,7 +100,7 @@ export default function ConsentScreen() {
       router.replace('/sign-in')
     } catch (err) {
       console.error('[consent] permission request failed:', err)
-      Alert.alert(
+      showAlert(
         'Something went wrong',
         'Could not process permissions. Please try again.',
       )
@@ -132,22 +132,18 @@ export default function ConsentScreen() {
   }, [blocked, markAccepted])
 
   const handleDecline = useCallback(() => {
-    Alert.alert(
-      consentCopy.declineWarningTitle,
-      consentCopy.declineWarningBody,
-      [
-        { text: 'Back', style: 'cancel' },
-        {
-          text: 'Exit',
-          style: 'destructive',
-          onPress: () => {
-            // iOS has no supported way to self-terminate — Back is the only
-            // option there; Exit only does anything on Android.
-            if (Platform.OS === 'android') BackHandler.exitApp()
-          },
+    showAlert(consentCopy.declineWarningTitle, consentCopy.declineWarningBody, [
+      { text: 'Back', style: 'cancel' },
+      {
+        text: 'Exit',
+        style: 'destructive',
+        onPress: () => {
+          // iOS has no supported way to self-terminate — Back is the only
+          // option there; Exit only does anything on Android.
+          if (Platform.OS === 'android') BackHandler.exitApp()
         },
-      ],
-    )
+      },
+    ])
   }, [])
 
   if (blocked) {

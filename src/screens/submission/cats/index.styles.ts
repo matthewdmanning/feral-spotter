@@ -11,7 +11,7 @@ export const styles = StyleSheet.create((theme) => ({
   },
   title: {
     color: theme.colors.text,
-    fontSize: theme.typography.xxxl,
+    fontSize: theme.typography.xxl,
     fontWeight: '700',
   },
   // The inset-crop bubble is centered over this title (#186) — fade it
@@ -23,6 +23,9 @@ export const styles = StyleSheet.create((theme) => ({
     alignItems: 'center',
     gap: theme.spacing.sm,
   },
-  headerBtn: { paddingVertical: 4, paddingHorizontal: 8 },
+  headerBtn: {
+    paddingVertical: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.sm,
+  },
   headerBtnText: { fontSize: theme.typography.sm, fontWeight: '500' },
 }))

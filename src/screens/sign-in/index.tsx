@@ -1,5 +1,6 @@
+import { showAlert } from '@/src/hooks/useUIStore'
 import { useCallback, useState } from 'react'
-import { View, Text, TextInput, Pressable, Alert } from 'react-native'
+import { View, Text, TextInput, Pressable } from 'react-native'
 import { router } from 'expo-router'
 import { AppButton } from '@/src/components/atoms/AppButton'
 import { useAuth } from '@/src/lib/auth/useAuth'
@@ -24,7 +25,7 @@ export default function SignInScreen() {
 
   const handleEmailSignIn = useCallback(async () => {
     if (!email.trim() || !password) {
-      Alert.alert('Missing details', 'Enter your email and password.')
+      showAlert('Missing details', 'Enter your email and password.')
       return
     }
     setBusy(true)
@@ -33,7 +34,7 @@ export default function SignInScreen() {
       advance()
     } catch (err) {
       console.error('[sign-in] email failed:', err)
-      Alert.alert(
+      showAlert(
         'Sign-in failed',
         'Check your email and password, then try again.',
       )
@@ -51,7 +52,7 @@ export default function SignInScreen() {
       } catch (err) {
         if (isCancellation(err)) return
         console.error(`[sign-in] ${providerId} failed:`, err)
-        Alert.alert(
+        showAlert(
           'Sign-in failed',
           'Something went wrong signing in. Please try again.',
         )

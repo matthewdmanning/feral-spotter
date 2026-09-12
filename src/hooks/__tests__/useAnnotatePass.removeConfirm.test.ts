@@ -1,5 +1,6 @@
+import * as ui from '@/src/hooks/useUIStore'
 import { act, renderHook } from '@testing-library/react-native'
-import { Alert } from 'react-native'
+
 import { useAnnotatePass } from '../useAnnotatePass'
 
 /**
@@ -75,7 +76,7 @@ describe('useAnnotatePass — handleLongPressRemove confirmation branching', () 
 
   it('skip-confirm on: removes immediately without an Alert', () => {
     mockSkipConfirm = true
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    const alertSpy = jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
     const { result } = renderHook(() => useAnnotatePass())
 
     act(() => result.current.handleLongPressRemove())
@@ -87,7 +88,7 @@ describe('useAnnotatePass — handleLongPressRemove confirmation branching', () 
 
   it('skip-confirm off: Alert offers a 3rd "don\'t ask again" option', () => {
     mockSkipConfirm = false
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    const alertSpy = jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
     const { result } = renderHook(() => useAnnotatePass())
 
     act(() => result.current.handleLongPressRemove())
@@ -105,7 +106,7 @@ describe('useAnnotatePass — handleLongPressRemove confirmation branching', () 
 
   it('pressing "Remove, don\'t ask again" persists the setting and removes', () => {
     mockSkipConfirm = false
-    jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => {
+    jest.spyOn(ui, 'showAlert').mockImplementation((_t, _m, buttons) => {
       buttons?.find((b) => b.text === "Remove, don't ask again")?.onPress?.()
     })
     const { result } = renderHook(() => useAnnotatePass())
@@ -121,7 +122,7 @@ describe('useAnnotatePass — handleLongPressRemove confirmation branching', () 
 
   it('pressing Cancel removes nothing', () => {
     mockSkipConfirm = false
-    jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => {
+    jest.spyOn(ui, 'showAlert').mockImplementation((_t, _m, buttons) => {
       buttons?.find((b) => b.text === 'Cancel')?.onPress?.()
     })
     const { result } = renderHook(() => useAnnotatePass())

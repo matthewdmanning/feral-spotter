@@ -1,4 +1,5 @@
 import { Pressable, Text, View, ActivityIndicator } from 'react-native'
+import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './AppButton.styles'
 import type { ReactNode } from 'react'
 
@@ -44,7 +45,19 @@ export function AppButton({
   diameter,
 }: AppButtonProps) {
   styles.useVariants({ variant, size })
+  const { theme } = useUnistyles()
   const isDisabled = disabled || loading
+  // Mirrors styles.label's per-variant color so the spinner reads as the
+  // same "text" the button would otherwise show, rather than the OS's
+  // theme-blind ActivityIndicator default (green on Android, gray on iOS).
+  const spinnerColor =
+    variant === 'primary'
+      ? theme.colors.accentText
+      : variant === 'danger'
+        ? theme.colors.danger
+        : variant === 'ghost'
+          ? theme.colors.muted
+          : theme.colors.text
 
   return (
     <Pressable
@@ -65,7 +78,7 @@ export function AppButton({
       ]}
     >
       {loading ? (
-        <ActivityIndicator size="small" />
+        <ActivityIndicator size="small" color={spinnerColor} />
       ) : (
         <>
           {icon && <View>{icon}</View>}

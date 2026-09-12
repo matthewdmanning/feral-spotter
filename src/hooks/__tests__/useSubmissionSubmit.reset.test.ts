@@ -1,5 +1,6 @@
+import * as ui from '@/src/hooks/useUIStore'
 import { act, renderHook } from '@testing-library/react-native'
-import { Alert } from 'react-native'
+
 import { stopLocationCapture } from '@/src/lib/location'
 import { useSubmissionSubmit } from '../useSubmissionSubmit'
 import { useSubmissionStore } from '../useSubmissionStore'
@@ -93,7 +94,7 @@ describe('useSubmissionSubmit — handleReset (#189)', () => {
     expect(usePhotoStore.getState().photos).toHaveLength(1)
 
     const alertSpy = jest
-      .spyOn(Alert, 'alert')
+      .spyOn(ui, 'showAlert')
       .mockImplementation((_title, _msg, buttons) => {
         const resetButton = buttons?.find((b) => b.text === 'Reset')
         void resetButton?.onPress?.()

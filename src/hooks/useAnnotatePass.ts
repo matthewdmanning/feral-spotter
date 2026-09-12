@@ -11,8 +11,9 @@
  * when a pass starts.
  */
 
+import { showAlert } from '@/src/hooks/useUIStore'
 import { useState, useCallback, useRef } from 'react'
-import { Alert } from 'react-native'
+
 import type { ICarouselInstance } from 'react-native-reanimated-carousel'
 import { usePhotoStore } from '@/src/hooks'
 import { useActiveCatFlow } from '@/src/hooks/useActiveCatFlow'
@@ -143,7 +144,7 @@ export function useAnnotatePass(): AnnotatePass {
       return
     }
 
-    Alert.alert('Remove photo from submission?', 'This cannot be undone.', [
+    showAlert('Remove photo from submission?', 'This cannot be undone.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: "Remove, don't ask again",

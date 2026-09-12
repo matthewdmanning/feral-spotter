@@ -34,12 +34,6 @@ jest.mock('expo-router', () => ({
   router: { back: jest.fn() },
 }))
 
-jest.mock('react-native-unistyles', () => {
-  const anyProp = (): unknown => new Proxy({}, { get: (_t, _k) => anyProp() })
-  const theme = new Proxy({}, { get: (_t, _k) => anyProp() })
-  return { useUnistyles: () => ({ theme }) }
-})
-
 jest.mock('../index.styles', () => ({
   styles: new Proxy({}, { get: () => ({}) }),
 }))

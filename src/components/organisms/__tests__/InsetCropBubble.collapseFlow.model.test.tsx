@@ -15,17 +15,6 @@ jest.mock('expo-image', () => ({
   Image: () => null,
 }))
 
-jest.mock('react-native-unistyles', () => {
-  const anyProp = (): unknown => new Proxy({}, { get: () => anyProp() })
-  const theme = new Proxy({}, { get: () => anyProp() })
-  return {
-    useUnistyles: () => ({ theme }),
-    StyleSheet: {
-      create: (fn: unknown) => (typeof fn === 'function' ? fn(theme) : fn),
-    },
-  }
-})
-
 const BOX = {
   id: 'box-1',
   cat_id: 'cat-1',

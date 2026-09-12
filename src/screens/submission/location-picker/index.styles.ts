@@ -30,6 +30,8 @@ export const styles = StyleSheet.create((theme) => ({
   },
   buttonRow: { flexDirection: 'row', gap: theme.spacing.sm },
   button: {
+    minHeight: 48,
+    justifyContent: 'center',
     flex: 1,
     alignItems: 'center',
     paddingVertical: 12,

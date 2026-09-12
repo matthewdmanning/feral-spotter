@@ -13,33 +13,6 @@ jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
 }))
 
-jest.mock('react-native-unistyles', () => {
-  const anyProp = (): unknown => new Proxy({}, { get: (_t, _k) => anyProp() })
-  // spacing/radius/typography are real numbers (matching
-  // src/config/unistyles.ts) so screens that do arithmetic on theme tokens
-  // (e.g. HomeScreen's entrypoint-circle sizing) don't hit
-  // "Cannot convert object to primitive value" from the generic anyProp stub.
-  const knownTokens = {
-    spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24, xxxl: 32 },
-    radius: { sm: 6, md: 8, lg: 12, xl: 16, xxl: 20, full: 9999 },
-    typography: { xs: 12, sm: 14, base: 16, lg: 18, xl: 20, xxl: 24, xxxl: 30 },
-  }
-  const theme = new Proxy(knownTokens, {
-    get: (t, k: string) => (k in t ? t[k as keyof typeof t] : anyProp()),
-  })
-  const withVariants = (obj: object) =>
-    Object.assign(obj, { useVariants: jest.fn() })
-  return {
-    useUnistyles: () => ({ theme }),
-    createStyleSheet: (fn: unknown) =>
-      typeof fn === 'function' ? fn(theme) : fn,
-    StyleSheet: {
-      create: (fn: unknown) =>
-        withVariants(typeof fn === 'function' ? fn(theme) : fn),
-    },
-  }
-})
-
 jest.mock('@/src/lib/auth/useAuth', () => ({ useAuth: jest.fn() }))
 jest.mock('@/src/hooks/useConsentStore', () => ({
   hasAcceptedConsent: jest.fn(),

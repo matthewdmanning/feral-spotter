@@ -5,6 +5,7 @@
  * there, before sign-in — this screen is informational only.
  */
 
+import { showAlert } from '@/src/hooks/useUIStore'
 import {
   AGREEMENT_SLIDE_INDEX,
   DATA_AGREEMENT_LINK_LABEL,
@@ -16,14 +17,7 @@ import { AppButton } from '@/src/components/atoms/AppButton'
 import { useBackHandler } from '@/src/hooks/useBackHandler'
 import { router } from 'expo-router'
 import { useCallback, useState } from 'react'
-import {
-  Alert,
-  BackHandler,
-  Platform,
-  Pressable,
-  Text,
-  View,
-} from 'react-native'
+import { BackHandler, Platform, Pressable, Text, View } from 'react-native'
 import { styles } from './index.styles'
 
 export default function IntroFlowScreen() {
@@ -36,7 +30,7 @@ export default function IntroFlowScreen() {
   useBackHandler(
     useCallback(() => {
       if (step !== 0) return false
-      Alert.alert(EXIT_WARNING_TITLE, EXIT_WARNING_BODY, [
+      showAlert(EXIT_WARNING_TITLE, EXIT_WARNING_BODY, [
         { text: 'Back', style: 'cancel' },
         {
           text: 'Exit',

@@ -20,12 +20,20 @@
  *     SDK does its own automatic capture (sessions, app lifecycle) as soon
  *     as it mounts, independent of fireAnalyticsEvent call sites, so gating
  *     only on general consent would let it run without the analytics opt-in.
+ *   AlertHost       — draws every app-raised dialog (see useUIStore's
+ *     showAlert). Mounted once, above every screen, so the app owns its
+ *     confirmations instead of the OS drawing them un-themed.
  *   ErrorBoundary   — catches render errors at the root; reports them via
  *     captureException (see AnalyticsBridge below) once consent + analytics
  *     opt-in allow it.
  */
 
+import { AlertHost } from '@/src/components/organisms/AlertHost'
 import { ErrorBoundary } from '@/src/components/atoms/ErrorBoundary'
+import {
+  getThemeMode,
+  resolveThemeForAppearanceChange,
+} from '@/src/config/unistyles'
 import { CONSENT_VERSION, useConsentStore } from '@/src/hooks/useConsentStore'
 import { useAuthStore } from '@/src/lib/auth/authStore'
 import {
@@ -37,7 +45,9 @@ import Constants from 'expo-constants'
 import { usePathname } from 'expo-router'
 import { PostHogProvider, usePostHog } from 'posthog-react-native'
 import { useEffect, useRef, type ReactNode } from 'react'
+import { Appearance } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { UnistylesRuntime } from 'react-native-unistyles'
 
 // Expo embeds values from app.config.js extras into native builds.
 const POSTHOG_KEY = Constants.expoConfig?.extra?.posthogProjectToken as
@@ -115,6 +125,22 @@ function ScreenTransitionLogger() {
   return null
 }
 
+// #338: Unistyles' own adaptiveThemes setting does not track a live OS
+// appearance change in this app (confirmed on-device, not just theoretical —
+// see docs/implementations for the finding). Appearance.addChangeListener
+// does, in every environment, so 'system' mode is driven from here instead —
+// mounted once at the root, same lifetime as AlertHost above it.
+function SystemThemeSync() {
+  useEffect(() => {
+    const subscription = Appearance.addChangeListener(({ colorScheme }) => {
+      const next = resolveThemeForAppearanceChange(colorScheme, getThemeMode())
+      if (next) UnistylesRuntime.setTheme(next)
+    })
+    return () => subscription.remove()
+  }, [])
+  return null
+}
+
 export function AppProviders({ children }: AppProvidersProps) {
   const hasAcceptedConsent = useConsentStore(
     (s) => s.accepted && s.acceptedVersion === CONSENT_VERSION,
@@ -124,6 +150,10 @@ export function AppProviders({ children }: AppProvidersProps) {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       {__DEV__ && <ScreenTransitionLogger />}
+      <SystemThemeSync />
+      {/* Outside ErrorBoundary's children so a caught render error still
+          leaves the app able to raise a dialog. */}
+      <AlertHost />
       <ErrorBoundary>
         {IS_PRERELEASE &&
         POSTHOG_KEY &&

@@ -1,10 +1,11 @@
+import * as ui from '@/src/hooks/useUIStore'
 import {
   fireEvent,
   render,
   screen,
   waitFor,
 } from '@testing-library/react-native'
-import { Alert, BackHandler, Platform } from 'react-native'
+import { BackHandler, Platform } from 'react-native'
 import { router } from 'expo-router'
 import React from 'react'
 import {
@@ -46,28 +47,6 @@ jest.mock('@/src/components/atoms/AppButton', () => {
   }
 })
 
-jest.mock('react-native-unistyles', () => {
-  const theme = {
-    colors: {
-      background: '#fff',
-      text: '#000',
-      muted: '#888',
-      border: '#ccc',
-      accent: '#00f',
-    },
-    spacing: { sm: 4, md: 8, lg: 16, xl: 24, xxxl: 40 },
-    typography: { sm: 12, base: 16, xxxl: 32 },
-    radius: { full: 999 },
-  }
-  const rt = { insets: { top: 0, bottom: 0 } }
-  return {
-    useUnistyles: () => ({ theme }),
-    StyleSheet: {
-      create: (fn: unknown) => (typeof fn === 'function' ? fn(theme, rt) : fn),
-    },
-  }
-})
-
 describe('IntroFlowScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks()
@@ -97,7 +76,7 @@ describe('IntroFlowScreen', () => {
   })
 
   it('warns before exiting on hardware back at T1', () => {
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    const alertSpy = jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
     render(<IntroFlowScreen />)
 
     const swallowed = backHandler?.()
@@ -117,7 +96,7 @@ describe('IntroFlowScreen', () => {
     const exitSpy = jest
       .spyOn(BackHandler, 'exitApp')
       .mockImplementation(() => {})
-    jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
+    jest.spyOn(ui, 'showAlert').mockImplementation((_title, _msg, buttons) => {
       buttons?.find((b) => b.text === 'Exit')?.onPress?.()
     })
     render(<IntroFlowScreen />)
@@ -128,7 +107,7 @@ describe('IntroFlowScreen', () => {
   })
 
   it('does not intercept hardware back past T1', () => {
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    const alertSpy = jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
     render(<IntroFlowScreen />)
     fireEvent.press(screen.getByText(ONBOARDING_SLIDES[0].button))
 

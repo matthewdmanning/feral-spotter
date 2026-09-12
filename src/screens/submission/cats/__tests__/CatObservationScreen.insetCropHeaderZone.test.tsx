@@ -65,17 +65,6 @@ jest.mock('@/src/hooks/useSettingsStore', () => ({
   ) => sel({ settings: { annotation_enabled: true } }),
 }))
 
-jest.mock('react-native-unistyles', () => {
-  const anyProp = (): unknown => new Proxy({}, { get: () => anyProp() })
-  const theme = new Proxy({}, { get: () => anyProp() })
-  return {
-    useUnistyles: () => ({ theme }),
-    StyleSheet: {
-      create: (fn: unknown) => (typeof fn === 'function' ? fn(theme) : fn),
-    },
-  }
-})
-
 const REPORTED_DIAMETER = 150
 const DEFAULT_DIAMETER = 68
 const COLLAPSED_DIAMETER = 68

@@ -15,29 +15,6 @@ jest.mock('lucide-react-native', () => {
   return { AlertCircle: () => <View /> }
 })
 
-jest.mock('react-native-unistyles', () => {
-  const theme = {
-    colors: {
-      background: '#fff',
-      text: '#000',
-      muted: '#888',
-      border: '#ccc',
-      accent: '#00f',
-      accentText: '#fff',
-      surface: '#fff',
-      surfaceAlt: '#eee',
-    },
-    spacing: { xs: 2, sm: 4, md: 8, lg: 16, xl: 24, xxl: 32, xxxl: 40 },
-    typography: { xs: 10, sm: 12, base: 16, xl: 20, xxl: 24 },
-    radius: { sm: 4, md: 8, lg: 12, xl: 16 },
-  }
-  return {
-    StyleSheet: {
-      create: (fn: unknown) => (typeof fn === 'function' ? fn(theme) : fn),
-    },
-  }
-})
-
 function Boom(): null {
   throw new Error('kaboom')
 }

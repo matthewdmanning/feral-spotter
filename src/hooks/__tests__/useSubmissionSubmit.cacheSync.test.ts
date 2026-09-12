@@ -1,5 +1,6 @@
+import * as ui from '@/src/hooks/useUIStore'
 import { act, renderHook } from '@testing-library/react-native'
-import { Alert } from 'react-native'
+
 import { updateSubmissionCache } from '@/src/lib/cache/submissionCache'
 import { uploadSubmissionMetadata } from '@/src/lib/upload/firebaseUpload'
 import { useSubmissionSubmit } from '../useSubmissionSubmit'
@@ -98,7 +99,7 @@ describe('useSubmissionSubmit — handleDone cache sync (#228)', () => {
     useSubmissionStore.getState().setManualTime('2026-08-01T12:00:00.000Z')
 
     const alertSpy = jest
-      .spyOn(Alert, 'alert')
+      .spyOn(ui, 'showAlert')
       .mockImplementation((_title, _msg, buttons) => {
         const submitButton = buttons?.find((b) => b.text === 'Submit')
         void submitButton?.onPress?.()

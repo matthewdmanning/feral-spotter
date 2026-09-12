@@ -20,7 +20,11 @@ export const styles = StyleSheet.create((theme, rt) => ({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  counter: { color: theme.colors.text, fontSize: 15, fontWeight: '600' },
+  counter: {
+    color: theme.colors.text,
+    fontSize: theme.typography.base,
+    fontWeight: '600',
+  },
   removeBtn: {
     width: 36,
     height: 36,
@@ -34,8 +38,8 @@ export const styles = StyleSheet.create((theme, rt) => ({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 4,
-    marginTop: 8,
+    gap: theme.spacing.xs,
+    marginTop: theme.spacing.sm,
   },
   dot: { height: 7, borderRadius: 4 },
   carousel: { flex: 1, backgroundColor: theme.colors.background },
@@ -43,13 +47,18 @@ export const styles = StyleSheet.create((theme, rt) => ({
     flexDirection: 'row',
     gap: theme.spacing.md,
     paddingHorizontal: theme.spacing.lg,
-    paddingTop: 12,
+    paddingTop: theme.spacing.md,
+    // Mirrors topBar above: with no bottom inset the gesture-navigation bar
+    // was drawn over the nav buttons, so touches near the bottom edge hit
+    // the system bar instead of the button.
+    paddingBottom: rt.insets.bottom + theme.spacing.md,
     backgroundColor: theme.colors.surface,
     borderTopWidth: 0.5,
     borderTopColor: theme.colors.surfaceAlt,
     zIndex: 2,
   },
   navBtn: {
+    minHeight: 48,
     flex: 1,
     paddingVertical: 14,
     borderRadius: theme.radius.lg,
@@ -59,7 +68,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
   navBtnPrimary: { backgroundColor: theme.colors.accent },
   navBtnPrimaryText: {
     color: theme.colors.accentText,
-    fontSize: 15,
+    fontSize: theme.typography.base,
     fontWeight: '700',
     textAlign: 'center',
   },
@@ -70,7 +79,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
   },
   navBtnSecondaryText: {
     color: theme.colors.text,
-    fontSize: 15,
+    fontSize: theme.typography.base,
     fontWeight: '600',
   },
   navBtnDisabled: { opacity: 0.35 },
@@ -86,7 +95,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
   },
   pillBtnText: {
     color: theme.colors.text,
-    fontSize: 13,
+    fontSize: theme.typography.sm,
     fontWeight: '600',
   },
   empty: {
@@ -94,17 +103,21 @@ export const styles = StyleSheet.create((theme, rt) => ({
     backgroundColor: theme.colors.background,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 16,
-    padding: 24,
+    gap: theme.spacing.lg,
+    padding: theme.spacing.xxl,
   },
-  emptyText: { color: theme.colors.muted, fontSize: 16 },
+  emptyText: { color: theme.colors.muted, fontSize: theme.typography.base },
   emptyBtn: {
     backgroundColor: theme.colors.surfaceAlt,
     borderWidth: 1,
     borderColor: theme.colors.border,
     borderRadius: theme.radius.lg,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.xxl,
   },
-  emptyBtnText: { color: theme.colors.text, fontSize: 14, fontWeight: '600' },
+  emptyBtnText: {
+    color: theme.colors.text,
+    fontSize: theme.typography.sm,
+    fontWeight: '600',
+  },
 }))

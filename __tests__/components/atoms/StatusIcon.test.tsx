@@ -3,19 +3,6 @@ import React from 'react'
 import { StatusIcon } from '@/src/components/atoms/StatusIcon'
 import type { CacheStatus } from '@/src/lib/cache/submissionCache'
 
-jest.mock('react-native-unistyles', () => {
-  const anyProp = (): unknown => new Proxy({}, { get: (_t, _k) => anyProp() })
-  const theme = new Proxy({}, { get: (_t, _k) => anyProp() })
-  return {
-    useUnistyles: () => ({ theme }),
-    createStyleSheet: (fn: unknown) =>
-      typeof fn === 'function' ? fn(theme) : fn,
-    StyleSheet: {
-      create: (fn: unknown) => (typeof fn === 'function' ? fn(theme) : fn),
-    },
-  }
-})
-
 jest.mock('lucide-react-native', () => {
   const { Text: RNText } = require('react-native')
   const iconStub = (name: string) => {
