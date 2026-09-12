@@ -1,4 +1,4 @@
-import { StyleSheet } from "react-native-unistyles";
+import { StyleSheet } from 'react-native-unistyles'
 
 export const styles = StyleSheet.create((theme, rt) => ({
   root: {
@@ -8,11 +8,11 @@ export const styles = StyleSheet.create((theme, rt) => ({
     paddingTop: rt.insets.top + theme.spacing.xxxl,
     paddingBottom: rt.insets.bottom + theme.spacing.lg,
   },
-  slideContent: { flex: 1, justifyContent: "center" },
+  slideContent: { flex: 1, justifyContent: 'center' },
   header: {
     color: theme.colors.text,
     fontSize: theme.typography.xxxl,
-    fontWeight: "700",
+    fontWeight: '700',
     lineHeight: theme.typography.xxxl * 1.2,
     marginBottom: theme.spacing.xl,
   },
@@ -25,14 +25,14 @@ export const styles = StyleSheet.create((theme, rt) => ({
   link: {
     color: theme.colors.text,
     fontSize: theme.typography.sm,
-    textDecorationLine: "underline",
+    textDecorationLine: 'underline',
     marginTop: theme.spacing.sm,
   },
   footer: { gap: theme.spacing.md },
-  buttonRow: { flexDirection: "row", gap: theme.spacing.md },
+  buttonRow: { flexDirection: 'row', gap: theme.spacing.md },
   dots: {
-    flexDirection: "row",
-    justifyContent: "center",
+    flexDirection: 'row',
+    justifyContent: 'center',
     gap: theme.spacing.sm,
   },
   dot: {

@@ -1,2 +1,1 @@
-export { default } from '@/src/screens/submission/cats';
-
+export { default } from '@/src/screens/submission/cats'

@@ -22,7 +22,9 @@ export default function DataAgreementScreen() {
           </Text>
         ))}
         {agreementCopy.body.map((paragraph) => (
-          <Text key={paragraph} style={styles.body}>{paragraph}</Text>
+          <Text key={paragraph} style={styles.body}>
+            {paragraph}
+          </Text>
         ))}
       </ScrollView>
     </View>

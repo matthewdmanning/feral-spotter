@@ -7,12 +7,12 @@
  */
 
 export interface BoundingBox {
-  id:             string   // expo-crypto randomUUID
-  cat_id:         string
+  id: string // expo-crypto randomUUID
+  cat_id: string
   photo_local_id: string
   /** Bottom-left corner, normalised 0-1 */
-  lowerLeftX:  number
-  lowerLeftY:  number
+  lowerLeftX: number
+  lowerLeftY: number
   /** Top-right corner, normalised 0-1 */
   upperRightX: number
   upperRightY: number

@@ -22,33 +22,39 @@ export default function HomeTabsLayout() {
         headerShown: false,
         tabBarStyle: {
           backgroundColor: theme.colors.background,
-          borderTopColor:  theme.colors.border,
-          borderTopWidth:  1,
+          borderTopColor: theme.colors.border,
+          borderTopWidth: 1,
         },
-        tabBarActiveTintColor:   theme.colors.accent,
+        tabBarActiveTintColor: theme.colors.accent,
         tabBarInactiveTintColor: theme.colors.muted,
-        tabBarLabelStyle:        { fontSize: 11, fontWeight: '600' },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <Camera size={TAB_ICON_SIZE} color={color} />,
+          tabBarIcon: ({ color }) => (
+            <Camera size={TAB_ICON_SIZE} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="feral-reports"
         options={{
           title: 'Reports',
-          tabBarIcon: ({ color }) => <ClipboardList size={TAB_ICON_SIZE} color={color} />,
+          tabBarIcon: ({ color }) => (
+            <ClipboardList size={TAB_ICON_SIZE} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
           title: 'Settings',
-          tabBarIcon: ({ color }) => <Settings size={TAB_ICON_SIZE} color={color} />,
+          tabBarIcon: ({ color }) => (
+            <Settings size={TAB_ICON_SIZE} color={color} />
+          ),
         }}
       />
     </Tabs>

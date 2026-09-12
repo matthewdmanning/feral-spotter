@@ -1,1 +1,1 @@
-export { default } from '@/src/screens/dataAgreement';
+export { default } from '@/src/screens/dataAgreement'

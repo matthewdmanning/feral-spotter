@@ -1,6 +1,6 @@
-name: "Task"
-description: "Track work items that are not bugs or feature requests."
-title: "[Task]: "
+name: 'Task'
+description: 'Track work items that are not bugs or feature requests.'
+title: '[Task]: '
 labels:
   - chore
 
