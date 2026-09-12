@@ -71,7 +71,7 @@ export const styles = StyleSheet.create((theme) => ({
   },
   gateBody: {
     color: theme.colors.muted,
-    fontSize: 15,
+    fontSize: theme.typography.base,
     textAlign: 'center',
     lineHeight: 22,
   },
@@ -86,7 +86,7 @@ export const styles = StyleSheet.create((theme) => ({
   },
   gatePrimaryText: {
     color: theme.colors.accentText,
-    fontSize: 15,
+    fontSize: theme.typography.base,
     fontWeight: '600',
   },
 }))

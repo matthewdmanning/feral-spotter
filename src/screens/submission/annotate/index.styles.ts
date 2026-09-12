@@ -20,7 +20,11 @@ export const styles = StyleSheet.create((theme, rt) => ({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  counter: { color: theme.colors.text, fontSize: 15, fontWeight: '600' },
+  counter: {
+    color: theme.colors.text,
+    fontSize: theme.typography.base,
+    fontWeight: '600',
+  },
   removeBtn: {
     width: 36,
     height: 36,
@@ -64,7 +68,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
   navBtnPrimary: { backgroundColor: theme.colors.accent },
   navBtnPrimaryText: {
     color: theme.colors.accentText,
-    fontSize: 15,
+    fontSize: theme.typography.base,
     fontWeight: '700',
     textAlign: 'center',
   },
@@ -75,7 +79,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
   },
   navBtnSecondaryText: {
     color: theme.colors.text,
-    fontSize: 15,
+    fontSize: theme.typography.base,
     fontWeight: '600',
   },
   navBtnDisabled: { opacity: 0.35 },
@@ -91,7 +95,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
   },
   pillBtnText: {
     color: theme.colors.text,
-    fontSize: 13,
+    fontSize: theme.typography.sm,
     fontWeight: '600',
   },
   empty: {

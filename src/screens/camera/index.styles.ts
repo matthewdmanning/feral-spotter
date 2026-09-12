@@ -40,13 +40,17 @@ export const styles = StyleSheet.create((theme, rt) => ({
     borderColor: theme.colors.border,
     zIndex: 25,
   },
-  pillText: { color: theme.colors.text, fontSize: 15, fontWeight: '600' },
+  pillText: {
+    color: theme.colors.text,
+    fontSize: theme.typography.base,
+    fontWeight: '600',
+  },
   autoA: {
     position: 'absolute',
     bottom: 8,
     right: 8,
     color: theme.colors.text,
-    fontSize: 10,
+    fontSize: theme.typography.xs,
     fontWeight: '800',
   },
   bottomBar: {
@@ -112,7 +116,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
   },
   gateBody: {
     color: theme.colors.muted,
-    fontSize: 15,
+    fontSize: theme.typography.base,
     textAlign: 'center',
     lineHeight: 22,
   },
@@ -127,7 +131,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
   },
   gatePrimaryText: {
     color: theme.colors.accentText,
-    fontSize: 15,
+    fontSize: theme.typography.base,
     fontWeight: '600',
   },
   gateSecondary: {
@@ -142,7 +146,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
   },
   gateSecondaryText: {
     color: theme.colors.text,
-    fontSize: 15,
+    fontSize: theme.typography.base,
     fontWeight: '600',
   },
 }))
