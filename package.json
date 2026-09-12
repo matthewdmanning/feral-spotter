@@ -11,6 +11,7 @@
     "node": "24.x"
   },
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks",
     "start": "expo start",
     "preandroid": "adb kill-server && adb start-server && (adb shell pm clear com.mmanning.feralspotter || true)",
     "android": "expo run:android",
