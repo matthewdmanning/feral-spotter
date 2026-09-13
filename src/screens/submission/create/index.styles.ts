@@ -1,10 +1,13 @@
 import { StyleSheet } from 'react-native-unistyles'
 
-export const styles = StyleSheet.create((theme) => ({
+export const styles = StyleSheet.create((theme, rt) => ({
+  // Header handles the top inset; this screen isn't scrollable, so the last
+  // button (Reset) needs the bottom inset itself to clear the gesture bar.
   root: {
     flex: 1,
     backgroundColor: theme.colors.background,
     paddingHorizontal: theme.spacing.lg,
+    paddingBottom: rt.insets.bottom,
     gap: theme.spacing.lg,
   },
   title: {

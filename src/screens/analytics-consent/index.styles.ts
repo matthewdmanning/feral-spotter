@@ -1,12 +1,16 @@
 import { StyleSheet } from 'react-native-unistyles'
 
-export const styles = StyleSheet.create((theme) => ({
+export const styles = StyleSheet.create((theme, rt) => ({
   root: { flex: 1, backgroundColor: theme.colors.background },
+  // Headerless screen (app/_layout.tsx: headerShown: false) — scrollable, so
+  // this isn't a hard clip, but insets keep the content off the status bar
+  // and gesture bar rather than relying on the fixed xxxl padding alone.
   scroll: {
     flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: theme.spacing.xxl,
-    paddingVertical: theme.spacing.xxxl,
+    paddingTop: rt.insets.top + theme.spacing.xxxl,
+    paddingBottom: rt.insets.bottom + theme.spacing.xxxl,
   },
   title: {
     color: theme.colors.text,
