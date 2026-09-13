@@ -30,7 +30,13 @@ export function AlertHost() {
   // switch left near-black title and message on the dark card (found on
   // device 2026-08-27). The buttons hid it, since AppButton re-resolves
   // through styles.useVariants() on every render.
-  useUnistyles()
+  //
+  // `theme` must be destructured, not just called for its side effect
+  // (#342) — Unistyles only registers the subscription when `theme` is
+  // read from the hook's return value; calling useUnistyles() bare
+  // subscribes to nothing, which is why f197051's original fix here didn't
+  // actually hold.
+  const { theme } = useUnistyles()
   const dialog = useUIStore((s) => s.dialog)
   const dismissDialog = useUIStore((s) => s.dismissDialog)
 
