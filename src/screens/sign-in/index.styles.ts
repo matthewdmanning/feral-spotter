@@ -1,7 +1,14 @@
 import { StyleSheet } from 'react-native-unistyles'
 
-export const styles = StyleSheet.create((theme) => ({
-  root: { flex: 1, backgroundColor: theme.colors.background },
+export const styles = StyleSheet.create((theme, rt) => ({
+  // Headerless screen (app/_layout.tsx: headerShown: false) — content sits
+  // directly under the status bar and above the gesture bar without these.
+  root: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    paddingTop: rt.insets.top,
+    paddingBottom: rt.insets.bottom,
+  },
   content: {
     flex: 1,
     justifyContent: 'center',

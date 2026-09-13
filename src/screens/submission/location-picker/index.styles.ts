@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native-unistyles'
 
-export const styles = StyleSheet.create((theme) => ({
+export const styles = StyleSheet.create((theme, rt) => ({
   root: { flex: 1, backgroundColor: theme.colors.background },
   map: { flex: 1 },
   // Non-interactive overlay filling the map; centres the pin over the map's
@@ -16,8 +16,10 @@ export const styles = StyleSheet.create((theme) => ({
   },
   // Shift the pin up by half its height so its tip (not centre) marks the spot.
   pin: { transform: [{ translateY: -20 }] },
+  // Not scrollable, no header below it — pinned above the gesture bar.
   footer: {
     padding: theme.spacing.lg,
+    paddingBottom: rt.insets.bottom + theme.spacing.lg,
     gap: theme.spacing.sm,
     backgroundColor: theme.colors.surface,
     borderTopWidth: 1,

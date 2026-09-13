@@ -1,17 +1,20 @@
 import { StyleSheet } from 'react-native-unistyles'
 
-export const styles = StyleSheet.create((theme) => ({
+export const styles = StyleSheet.create((theme, rt) => ({
+  // Rendered inside RN's Modal, full-bleed over the annotate screen — the
+  // fixed top: 56 / paddingBottom: 100 below used to happen to clear the
+  // status bar and gesture bar rather than actually accounting for them.
   backdrop: {
     flex: 1,
     backgroundColor: theme.colors.overlay,
     alignItems: 'center',
     justifyContent: 'flex-end',
     paddingHorizontal: theme.spacing.xxl,
-    paddingBottom: 100,
+    paddingBottom: rt.insets.bottom + 100,
   },
   skipBtn: {
     position: 'absolute',
-    top: 56,
+    top: rt.insets.top + 12,
     right: theme.spacing.xxl,
     paddingVertical: theme.spacing.xs,
     paddingHorizontal: theme.spacing.md,
