@@ -1,10 +1,10 @@
 import { StyleSheet } from 'react-native-unistyles'
 
-export const styles = StyleSheet.create((theme) => ({
-  // No top inset here: this screen renders its own Stack.Screen header
-  // (headerShown, see index.tsx), which already reserves the status-bar
-  // space — an rt.insets.top on top of that double-pads the content.
-  root: { backgroundColor: theme.colors.background },
+export const styles = StyleSheet.create((theme, rt) => ({
+  // headerShown is forced false for this screen on every path (see
+  // index.tsx) — there is no native header to reserve the status-bar
+  // space, so the in-body title row needs the inset itself.
+  root: { backgroundColor: theme.colors.background, paddingTop: rt.insets.top },
   inner: { paddingHorizontal: theme.spacing.lg, gap: theme.spacing.sm },
   headerRow: {
     flexDirection: 'row',
@@ -53,5 +53,4 @@ export const styles = StyleSheet.create((theme) => ({
   },
   legendLabel: { color: theme.colors.muted, fontSize: theme.typography.xs },
   scrollContent: { paddingBottom: theme.spacing.xxxl },
-  headerIcon: { marginRight: theme.spacing.xs },
 }))

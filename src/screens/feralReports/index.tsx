@@ -3,8 +3,8 @@ import { ReportCard } from '@/src/components/molecules/ReportCard'
 import { useFeralReports } from '@/src/hooks/useFeralReports'
 import type { CacheStatus } from '@/src/lib/cache/submissionCache'
 import { Stack } from 'expo-router'
-import { Clock, RefreshCw } from 'lucide-react-native'
-import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
+import { Clock } from 'lucide-react-native'
+import { RefreshControl, ScrollView, Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
 
@@ -17,28 +17,20 @@ const STATUSES: CacheStatus[] = [
 
 export default function FeralReportsScreen() {
   const { theme } = useUnistyles()
-  const { caches, refreshing, load, onRefresh } = useFeralReports()
+  const { caches, refreshing, onRefresh } = useFeralReports()
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          title: 'Feral Reports',
-          headerStyle: { backgroundColor: theme.colors.background },
-          headerTintColor: theme.colors.text,
-          headerTitleStyle: { fontWeight: '700', color: theme.colors.text },
-          headerShadowVisible: false,
-          headerRight: () => (
-            <Pressable
-              onPress={load}
-              style={styles.headerIcon}
-              accessibilityRole="button"
-            >
-              <RefreshCw size={20} color={theme.colors.text} />
-            </Pressable>
-          ),
-        }}
-      />
+      {/*
+        This screen is reachable both as a tab ((home-tabs)/feral-reports,
+        headerShown false at the Tabs level — see (home-tabs)/_layout.tsx)
+        and, in principle, as a plain stack push (app/feral-reports.tsx),
+        where the root Stack's default headerShown: true would otherwise
+        apply. Forcing it off here keeps this screen's own in-body title
+        row (below) as the only header on every path — one rendering to
+        keep in sync with the safe-area inset, instead of two.
+      */}
+      <Stack.Screen options={{ title: 'Feral Reports', headerShown: false }} />
       <ScrollView
         style={styles.root}
         showsVerticalScrollIndicator={false}
