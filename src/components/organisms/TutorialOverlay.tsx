@@ -51,7 +51,13 @@ export function TutorialOverlay({
   // ShadowTree patching doesn't reach (same class as AlertHost, fixed in
   // f197051) — without this, a theme switch while the tutorial is open
   // leaves it in the theme active when it was last (re)mounted.
-  useUnistyles()
+  //
+  // `theme` must be destructured/read, not just called for its side effect
+  // (#342) — Unistyles only subscribes when `theme` is read from the hook's
+  // return value; a bare useUnistyles() call subscribes to nothing, which is
+  // why this fix (added alongside AlertHost's, in the same sweep) didn't
+  // actually hold either.
+  const { theme } = useUnistyles()
   const [index, setIndex] = useState(0)
 
   if (steps.length === 0) return null
