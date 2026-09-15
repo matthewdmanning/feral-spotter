@@ -18,28 +18,21 @@ import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { EVENTS, captureEvent } from '@/src/lib/analytics/analytics'
 import type { CatFormValues } from '@/src/hooks/useCatForm'
 import type { ObservedCat } from '@/src/hooks/useSubmissionStore'
+import {
+  CAT_ATTRIBUTES,
+  FIELD_LABELS,
+} from '@/src/screens/submission/cats/attributes'
 import { CAT_DEFAULTS } from '@/src/screens/submission/cats/constants'
 import { router } from 'expo-router'
 import { randomUUID } from 'expo-crypto'
 import { useCallback } from 'react'
 
 // ─── Missing-field warning (#152) ──────────────────────────────────────────
-
 // "Unknown"/"Unsure" is a real value (docs/agents/domain.md), so this warns
 // rather than blocks. Category selectors start unselected and a chosen
 // "Unknown"/"Unsure" is a distinct state from never-touched (#205) — the
 // warning fires only on fields still `undefined`, not on a deliberate
-// Unknown/Unsure pick.
-const FIELD_LABELS: Record<keyof typeof CAT_DEFAULTS, string> = {
-  age: 'Age',
-  earTipped: 'Ear Tipped',
-  owned: 'Owned / Domesticated',
-  pattern: 'Pattern',
-  hairLength: 'Hair Length',
-  color: 'Color',
-  sex: 'Sex',
-  healthLabel: 'Health',
-}
+// Unknown/Unsure pick. FIELD_LABELS itself now comes from attributes.ts.
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -76,16 +69,12 @@ export function useCatSubmit({
   const buildCat = useCallback(
     (localId: string): ObservedCat => {
       const boxedPhotoIds = getBoxedPhotoIds(localId)
+      const fields = Object.fromEntries(
+        CAT_ATTRIBUTES.map((a) => [a.backendKey, form[a.key] ?? a.default]),
+      ) as Pick<ObservedCat, (typeof CAT_ATTRIBUTES)[number]['backendKey']>
       return {
         local_id: localId,
-        age: form.age ?? CAT_DEFAULTS.age,
-        ear_tipped: form.earTipped ?? CAT_DEFAULTS.earTipped,
-        health_label: form.healthLabel ?? CAT_DEFAULTS.healthLabel,
-        owned_domesticated: form.owned ?? CAT_DEFAULTS.owned,
-        pattern: form.pattern ?? CAT_DEFAULTS.pattern,
-        hair_length: form.hairLength ?? CAT_DEFAULTS.hairLength,
-        color: form.color ?? CAT_DEFAULTS.color,
-        sex: form.sex ?? CAT_DEFAULTS.sex,
+        ...fields,
         photo_local_ids:
           boxedPhotoIds.length > 0
             ? boxedPhotoIds
