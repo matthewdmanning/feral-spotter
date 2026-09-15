@@ -1,4 +1,5 @@
 import { LOCATION_ACCURACY_THRESHOLD_M } from '@/src/config/location'
+import { AppButton } from '@/src/components/atoms/AppButton'
 import { DateTimePickerButton } from '@/src/components/organisms/DateTimePicker'
 import { useSubmissionStore } from '@/src/hooks'
 import { useSubmissionSubmit } from '@/src/hooks/useSubmissionSubmit'
@@ -257,13 +258,12 @@ export default function CreateSubmissionScreen() {
           // Describing a cat without annotating it first: it saves with an
           // empty photo_local_ids (useCatSubmit derives that from boxes) — a
           // record of a cat that was seen but can't be picked out of a photo.
-          <Pressable
+          <AppButton
             onPress={() => router.push('/submission/cats')}
-            style={styles.describeCatBtn}
-            accessibilityRole="button"
+            variant="secondary"
           >
-            <Text style={styles.describeCatBtnText}>Describe a Cat</Text>
-          </Pressable>
+            Describe a Cat
+          </AppButton>
         )}
       </View>
 

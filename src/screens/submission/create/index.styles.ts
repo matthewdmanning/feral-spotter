@@ -77,20 +77,6 @@ export const styles = StyleSheet.create((theme, rt) => ({
     textAlign: 'center',
     paddingVertical: theme.spacing.sm,
   },
-  describeCatBtn: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 48,
-    paddingVertical: 14,
-    borderRadius: theme.radius.xl,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  describeCatBtnText: {
-    color: theme.colors.text,
-    fontSize: theme.typography.base,
-    fontWeight: '600',
-  },
   addCatBtn: {
     minHeight: 48,
     justifyContent: 'center',
