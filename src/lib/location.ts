@@ -19,6 +19,7 @@ import {
   LOCATION_ACCURACY_THRESHOLD_M,
   LOCATION_STALE_THRESHOLD_MS,
 } from '@/src/config/location'
+import { locationPermission } from '@/src/lib/permissions/locationPermission'
 import * as Device from 'expo-device'
 import * as Location from 'expo-location'
 import { useSyncExternalStore } from 'react'
@@ -104,12 +105,8 @@ export async function startLocationCapture(): Promise<void> {
     return
   }
 
-  const { status } = await Location.getForegroundPermissionsAsync()
-  if (status !== Location.PermissionStatus.GRANTED) {
-    if (__DEV__)
-      console.log(
-        `[location] permission not granted (${status}) — not starting`,
-      )
+  if (!(await locationPermission.check())) {
+    if (__DEV__) console.log('[location] permission not usable — not starting')
     return
   }
 

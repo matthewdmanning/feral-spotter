@@ -52,7 +52,7 @@ describe('startLocationCapture', () => {
 
   it("stays idle when permission isn't granted", async () => {
     useConsentStore.getState().markAccepted()
-    mockGetForegroundPermissionsAsync.mockResolvedValue({ status: 'denied' })
+    mockGetForegroundPermissionsAsync.mockResolvedValue({ granted: false })
 
     await startLocationCapture()
 
@@ -62,7 +62,10 @@ describe('startLocationCapture', () => {
 
   it('resolves to a stubbed fix in dev without watching for a real one', async () => {
     useConsentStore.getState().markAccepted()
-    mockGetForegroundPermissionsAsync.mockResolvedValue({ status: 'granted' })
+    mockGetForegroundPermissionsAsync.mockResolvedValue({
+      granted: true,
+      android: { accuracy: 'fine' },
+    })
 
     await startLocationCapture()
 
@@ -77,7 +80,10 @@ describe('startLocationCapture', () => {
 
   it('is a no-op while a fetch is already in flight (cannot restart while ongoing)', async () => {
     useConsentStore.getState().markAccepted()
-    mockGetForegroundPermissionsAsync.mockResolvedValue({ status: 'granted' })
+    mockGetForegroundPermissionsAsync.mockResolvedValue({
+      granted: true,
+      android: { accuracy: 'fine' },
+    })
     // Never resolves on its own — stays "pending" until we drive it manually.
     let watchCallback: ((fix: unknown) => void) | undefined
     mockWatchPositionAsync.mockImplementation((_opts, cb) => {
