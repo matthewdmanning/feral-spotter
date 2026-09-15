@@ -10,6 +10,7 @@ import {
   createSubmissionCache,
   getCurrentCacheId,
 } from '@/src/lib/cache/submissionCache'
+import { buildCacheMetadata } from '@/src/lib/submission/payload'
 import { router, useLocalSearchParams, type Href } from 'expo-router'
 import { randomUUID } from 'expo-crypto'
 import { AlertCircle, CheckCircle, Trash2 } from 'lucide-react-native'
@@ -67,13 +68,10 @@ export default function CreateSubmissionScreen() {
     setCurrentStep('create')
     ;(async () => {
       if (!(await getCurrentCacheId())) {
-        await createSubmissionCache(randomUUID(), {
-          location_method: submission.location_type,
-          time_method: submission.time_type,
-          address: submission.address,
-          manual_time: submission.manual_time,
-          captured_at: submission.captured_at,
-        })
+        await createSubmissionCache(
+          randomUUID(),
+          buildCacheMetadata(submission),
+        )
       }
     })()
     // eslint-disable-next-line react-hooks/exhaustive-deps

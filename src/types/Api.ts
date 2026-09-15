@@ -13,6 +13,14 @@ export interface SubmissionApiPayload {
     address?: string
     /** ISO — set only for a Library pick with trusted EXIF DateTime (ADR 0003). */
     captured_at?: string
+    /** ISO — set when time_type === 'manual'. */
+    manual_time?: string
+    /** The one Submission-wide GPS fix (ADR 0002) — also carried per-photo
+     * in `photo_locations` below; present here too since the whole draft is
+     * passed through rather than picked field-by-field. */
+    latitude?: number
+    longitude?: number
+    accuracy?: number | null
   }
   cats: {
     local_id: string

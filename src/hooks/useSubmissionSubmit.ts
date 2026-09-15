@@ -31,11 +31,16 @@ import {
 } from '@/src/lib/cache/submissionCache'
 import { completeDraft, discardDraft } from '@/src/lib/submission/draft'
 import {
+  buildCacheMetadata,
+  buildSubmissionPayload,
+  foldBoxesIntoCat,
+  resolvePhotoTime,
+} from '@/src/lib/submission/payload'
+import {
   finalizeSubmissionPhotoMetadata,
   uploadSubmissionMetadata,
 } from '@/src/lib/upload/firebaseUpload'
-import type { SubmissionApiPayload, SubmissionPhoto } from '@/src/types'
-import { parseExifDateTime } from '@/src/utils/libraryPickTime'
+import type { SubmissionPhoto } from '@/src/types'
 import { validateCatCount, validatePhotos } from '@/src/utils/validation'
 import { router } from 'expo-router'
 import { useCallback, useState } from 'react'
@@ -145,13 +150,7 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
                 status: 'Sending',
                 cats,
                 photo_links: freshPhotos.map((p) => p.uri),
-                metadata: {
-                  location_method: submission.location_type,
-                  time_method: submission.time_type,
-                  address: submission.address,
-                  manual_time: submission.manual_time,
-                  captured_at: submission.captured_at,
-                },
+                metadata: buildCacheMetadata(submission),
               })
               const snap = await getSubmissionCache(cId)
               if (snap) fireAnalyticsEvent(EVENTS.SUBMISSION_SENDING, snap)
@@ -169,59 +168,25 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
                   p.cloud_storage_path != null &&
                   p.cloud_storage_url != null,
               )
-              // One Submission location, shared by every photo (ADR 0002).
-              const { latitude, longitude } = submission
-              const photoLocations =
-                latitude != null && longitude != null
-                  ? uploadedPhotos.map((p) => ({
-                      path: p.cloud_storage_path,
-                      latitude,
-                      longitude,
-                    }))
-                  : []
-
               // #264: box geometry lived only in useBoundingBoxStore's local
               // AsyncStorage — never left the device. Fold it in per cat here
               // so it's part of the upload payload.
-              // cloud_storage_path is attached per box, not just left to the
-              // uploadSubmissionPhoto naming convention (photo_local_id.ext)
-              // — a box is worthless downstream without a recoverable link to
-              // its image.
               const cloudPathByLocalId = new Map(
                 uploadedPhotos.map((p) => [p.local_id, p.cloud_storage_path]),
               )
-              const catsWithBoxes = cats.map((cat) => ({
-                ...cat,
-                boxes: useBoundingBoxStore
-                  .getState()
-                  .getBoxesForCat(cat.local_id)
-                  .map(
-                    ({
-                      photo_local_id,
-                      lowerLeftX,
-                      lowerLeftY,
-                      upperRightX,
-                      upperRightY,
-                    }) => ({
-                      photo_local_id,
-                      cloud_storage_path:
-                        cloudPathByLocalId.get(photo_local_id),
-                      lowerLeftX,
-                      lowerLeftY,
-                      upperRightX,
-                      upperRightY,
-                    }),
-                  ),
-              }))
+              const catsWithBoxes = cats.map((cat) =>
+                foldBoxesIntoCat(
+                  cat,
+                  useBoundingBoxStore.getState().getBoxesForCat(cat.local_id),
+                  cloudPathByLocalId,
+                ),
+              )
 
-              const payload: SubmissionApiPayload = {
+              const payload = buildSubmissionPayload({
                 submission,
-                cats: catsWithBoxes,
-                photo_paths: uploadedPhotos.map((p) => p.cloud_storage_path),
-                ...(photoLocations.length > 0 && {
-                  photo_locations: photoLocations,
-                }),
-              }
+                catsWithBoxes,
+                uploadedPhotos,
+              })
 
               if (!user?.uid || !cloudSubmissionId) {
                 throw new Error('Missing uid/submissionId for submission')
@@ -232,23 +197,13 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
               // separately from metadata.json downstream (ML pipeline), so a
               // fetch back to the submission record can't be assumed.
               const userId = user.uid
-              // Prefers each photo's own capture moment over the submission-
-              // wide value — submission.captured_at is the *earliest* EXIF
-              // time across a multi-select Library pick (ADR-0003's interim
-              // MVP rule), which is only correct as a submission-level
-              // approximation; stamped per image it would misdate every
-              // photo but the earliest one. Camera captures set captured_at
-              // at shutter press (no EXIF exists to read); Library picks
-              // parse their own exif.timestamp the same way buildSubmissionPhoto
-              // does. Only a genuinely timeless photo (parse failure, no
-              // EXIF, no manual/captured_at) falls back to Submit time.
+              // One Submission location, shared by every photo (ADR 0002).
+              const { latitude, longitude } = submission
+              // ADR-0003's per-photo time fallback chain — see
+              // lib/submission/payload.ts's resolvePhotoTime for the why.
               const submitFallbackTime = new Date().toISOString()
               const photoTimeFor = (p: SubmissionPhoto) =>
-                p.captured_at ??
-                parseExifDateTime(p.exif?.timestamp) ??
-                submission.captured_at ??
-                submission.manual_time ??
-                submitFallbackTime
+                resolvePhotoTime(p, submission, submitFallbackTime)
 
               // Best-effort: the P0 this app guards hard against is silently
               // missing photos (blocked above), not a metadata patch on an
