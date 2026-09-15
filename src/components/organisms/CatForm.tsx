@@ -1,4 +1,5 @@
 import { View, Text, Pressable } from 'react-native'
+import { AppButton } from '@/src/components/atoms/AppButton'
 import { SegmentedControl } from '@/src/components/atoms/SegmentedControl'
 import type { CatForm as CatFormValues } from '@/src/hooks/useCatForm'
 import type { CatSubmitResult } from '@/src/hooks/useCatSubmit'
@@ -97,14 +98,9 @@ export function CatForm({ form, submit, onRemove }: CatFormProps) {
             <Text style={styles.saveBtnText}>{submit.saveLabel}</Text>
           </Pressable>
           {onRemove && (
-            <Pressable
-              onPress={onRemove}
-              style={styles.removeBtn}
-              accessibilityRole="button"
-              accessibilityLabel="Remove this cat"
-            >
-              <Text style={styles.removeBtnText}>Remove this Cat</Text>
-            </Pressable>
+            <AppButton onPress={onRemove} variant="danger">
+              Remove this Cat
+            </AppButton>
           )}
         </View>
       </View>
