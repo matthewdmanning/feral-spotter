@@ -21,6 +21,10 @@ import {
   maxHalfExtentForBox,
 } from '@/src/lib/annotate/boxResize'
 import {
+  boxForTransform,
+  transformForBox,
+} from '@/src/lib/annotate/cropProjection'
+import {
   clampTranslate,
   halfExtentOnScreen,
   maxTranslateForScale,
@@ -148,50 +152,24 @@ export function useBoundingBoxFrame({
   useEffect(() => {
     if (!initialBox || !imgNaturalWidth || !imgNaturalHeight) return
 
-    const baseScale = Math.min(
-      canvasWidth / imgNaturalWidth,
-      canvasHeight / imgNaturalHeight,
-    )
-    const baseOffsetX = (canvasWidth - imgNaturalWidth * baseScale) / 2
-    const baseOffsetY = (canvasHeight - imgNaturalHeight * baseScale) / 2
-    const canvasCenterX = canvasWidth / 2
-    const canvasCenterY = canvasHeight / 2
-
-    const cx1 =
-      baseOffsetX + initialBox.lowerLeftX * imgNaturalWidth * baseScale
-    const cx2 =
-      baseOffsetX + initialBox.upperRightX * imgNaturalWidth * baseScale
-    const cy1 =
-      baseOffsetY + initialBox.upperRightY * imgNaturalHeight * baseScale
-    const cy2 =
-      baseOffsetY + initialBox.lowerLeftY * imgNaturalHeight * baseScale
-
-    const boxScreenWidth = cx2 - cx1
-    const boxScreenHeight = cy2 - cy1
-    if (boxScreenWidth <= 0 || boxScreenHeight <= 0) return
-
-    // Re-derive the box's on-screen size (bounded by the same default
-    // fraction fresh boxes start at) from the saved aspect ratio, then solve
-    // the single photo scale that reproduces the saved crop through it.
     const maxBoxDim = Math.min(canvasWidth, canvasHeight) * DEFAULT_BOX_FRACTION
-    const aspect = boxScreenWidth / boxScreenHeight
-    const boxWidth = aspect >= 1 ? maxBoxDim : maxBoxDim * aspect
-    const boxHeight = aspect >= 1 ? maxBoxDim / aspect : maxBoxDim
+    const transform = transformForBox(
+      initialBox,
+      { canvasWidth, canvasHeight, imgNaturalWidth, imgNaturalHeight },
+      maxBoxDim,
+    )
+    if (!transform) return
 
-    const scale = boxWidth / boxScreenWidth
-    const translateX = (canvasCenterX - (cx1 + cx2) / 2) * scale
-    const translateY = (canvasCenterY - (cy1 + cy2) / 2) * scale
-
-    userScale.value = scale
-    userTranslateX.value = translateX
-    userTranslateY.value = translateY
-    savedScale.value = scale
-    savedTranslateX.value = translateX
-    savedTranslateY.value = translateY
-    boxHalfWidth.value = boxWidth / 2
-    boxHalfHeight.value = boxHeight / 2
-    savedBoxHalfWidth.value = boxWidth / 2
-    savedBoxHalfHeight.value = boxHeight / 2
+    userScale.value = transform.scale
+    userTranslateX.value = transform.translateX
+    userTranslateY.value = transform.translateY
+    savedScale.value = transform.scale
+    savedTranslateX.value = transform.translateX
+    savedTranslateY.value = transform.translateY
+    boxHalfWidth.value = transform.boxHalfWidth
+    boxHalfHeight.value = transform.boxHalfHeight
+    savedBoxHalfWidth.value = transform.boxHalfWidth
+    savedBoxHalfHeight.value = transform.boxHalfHeight
     // Only re-derive when the photo (and its saved box) actually changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -214,46 +192,18 @@ export function useBoundingBoxFrame({
   const handleConfirm = useCallback(() => {
     if (!imgNaturalWidth || !imgNaturalHeight) return
 
-    const scale = userScale.value
-    const translateX = userTranslateX.value
-    const translateY = userTranslateY.value
-
-    const baseScale = Math.min(
-      canvasWidth / imgNaturalWidth,
-      canvasHeight / imgNaturalHeight,
+    onConfirm(
+      boxForTransform(
+        {
+          scale: userScale.value,
+          translateX: userTranslateX.value,
+          translateY: userTranslateY.value,
+          boxHalfWidth: boxHalfWidth.value,
+          boxHalfHeight: boxHalfHeight.value,
+        },
+        { canvasWidth, canvasHeight, imgNaturalWidth, imgNaturalHeight },
+      ),
     )
-    const baseOffsetX = (canvasWidth - imgNaturalWidth * baseScale) / 2
-    const baseOffsetY = (canvasHeight - imgNaturalHeight * baseScale) / 2
-    const canvasCenterX = canvasWidth / 2
-    const canvasCenterY = canvasHeight / 2
-    const boxWidth = boxHalfWidth.value * 2
-    const boxHeight = boxHalfHeight.value * 2
-    const boxX = (canvasWidth - boxWidth) / 2
-    const boxY = (canvasHeight - boxHeight) / 2
-
-    const toImagePx = (cx: number, cy: number) => [
-      ((cx - canvasCenterX - translateX) / scale +
-        canvasCenterX -
-        baseOffsetX) /
-        baseScale,
-      ((cy - canvasCenterY - translateY) / scale +
-        canvasCenterY -
-        baseOffsetY) /
-        baseScale,
-    ]
-
-    const [x1, y1] = toImagePx(boxX, boxY)
-    const [x2, y2] = toImagePx(boxX + boxWidth, boxY + boxHeight)
-
-    const clampX = (v: number) => Math.min(Math.max(v, 0), imgNaturalWidth)
-    const clampY = (v: number) => Math.min(Math.max(v, 0), imgNaturalHeight)
-
-    onConfirm({
-      lowerLeftX: clampX(x1) / imgNaturalWidth,
-      lowerLeftY: clampY(y2) / imgNaturalHeight,
-      upperRightX: clampX(x2) / imgNaturalWidth,
-      upperRightY: clampY(y1) / imgNaturalHeight,
-    })
   }, [
     canvasWidth,
     canvasHeight,
