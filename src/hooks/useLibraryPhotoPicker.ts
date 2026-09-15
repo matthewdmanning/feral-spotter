@@ -32,8 +32,7 @@ export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
   const addPhotos = usePhotoStore((s) => s.addPhotos)
   const updatePhoto = usePhotoStore((s) => s.updatePhoto)
   const setLocationType = useSubmissionStore((s) => s.setLocationType)
-  const setTimeType = useSubmissionStore((s) => s.setTimeType)
-  const setCapturedAt = useSubmissionStore((s) => s.setCapturedAt)
+  const setSubmission = useSubmissionStore((s) => s.setSubmission)
   const { user } = useAuth()
 
   const pickFromLibrary = useCallback(async () => {
@@ -90,8 +89,7 @@ export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
       parseExifDateTime(asset.exif?.DateTime),
     )
     const { time_type, captured_at } = classifyLibraryPickTime(capturedAts)
-    setTimeType(time_type)
-    setCapturedAt(captured_at)
+    setSubmission({ time_type, captured_at })
 
     router.navigate('/submission/create')
   }, [
@@ -99,8 +97,7 @@ export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
     addPhotos,
     updatePhoto,
     setLocationType,
-    setTimeType,
-    setCapturedAt,
+    setSubmission,
     user,
   ])
 

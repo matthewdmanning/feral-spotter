@@ -38,7 +38,6 @@ export default function CreateSubmissionScreen() {
     (s) => s.setSubmissionLocation,
   )
   const setManualTime = useSubmissionStore((s) => s.setManualTime)
-  const setCurrentStep = useSubmissionStore((s) => s.setCurrentStep)
   const cats = useSubmissionStore((s) => s.cats)
 
   const capture = useLocationCapture()
@@ -65,7 +64,6 @@ export default function CreateSubmissionScreen() {
   // clearCurrentCacheId(), so getCurrentCacheId() came back null and this
   // created a stray empty cache row for the already-submitted draft.
   useEffect(() => {
-    setCurrentStep('create')
     ;(async () => {
       if (!(await getCurrentCacheId())) {
         await createSubmissionCache(

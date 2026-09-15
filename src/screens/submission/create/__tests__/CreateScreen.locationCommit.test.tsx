@@ -65,7 +65,6 @@ describe('Create screen — location-commit invariant', () => {
     useSubmissionStore.setState({
       cats: [],
       submission: { location_type: 'device', time_type: 'device' },
-      currentStep: 'create',
     })
   })
 
@@ -126,7 +125,6 @@ describe('Create screen — location-commit invariant', () => {
         longitude: 6,
       },
       history: [],
-      currentStep: 'create',
     })
     mockCapture = {
       status: 'resolved',

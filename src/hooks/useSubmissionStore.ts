@@ -64,7 +64,6 @@ export interface SubmissionLocation {
 interface SubmissionState {
   cats: ObservedCat[]
   submission: SubmissionDraft
-  currentStep: string
 
   addCat: (cat: ObservedCat) => void
   updateCat: (localId: string, patch: Partial<ObservedCat>) => void
@@ -72,12 +71,7 @@ interface SubmissionState {
   setSubmission: (patch: Partial<SubmissionDraft>) => void
   setLocationType: (v: LocationMethod) => void
   setSubmissionLocation: (loc: SubmissionLocation) => void
-  setTimeType: (v: TimeMethod) => void
-  setAddress: (v: string) => void
   setManualTime: (v: string) => void
-  setCapturedAt: (v: string | undefined) => void
-  saveDraft: () => void
-  setCurrentStep: (step: string) => void
   clearDraft: () => void
 }
 
@@ -93,7 +87,6 @@ export const useSubmissionStore = create<SubmissionState>()(
     (set) => ({
       cats: [],
       submission: { ...DEFAULT_SUBMISSION },
-      currentStep: 'create',
 
       addCat: (cat) => set((s) => ({ cats: [...s.cats, cat] })),
 
@@ -143,28 +136,13 @@ export const useSubmissionStore = create<SubmissionState>()(
           },
         })),
 
-      setTimeType: (v) =>
-        set((s) => ({ submission: { ...s.submission, time_type: v } })),
-
-      setAddress: (v) =>
-        set((s) => ({ submission: { ...s.submission, address: v } })),
-
       setManualTime: (v) =>
         set((s) => ({ submission: { ...s.submission, manual_time: v } })),
-
-      setCapturedAt: (v) =>
-        set((s) => ({ submission: { ...s.submission, captured_at: v } })),
-
-      // Draft fields already live in persisted state; nothing further to flush.
-      saveDraft: () => {},
-
-      setCurrentStep: (step) => set({ currentStep: step }),
 
       clearDraft: () =>
         set({
           cats: [],
           submission: { ...DEFAULT_SUBMISSION },
-          currentStep: 'create',
         }),
     }),
     {
