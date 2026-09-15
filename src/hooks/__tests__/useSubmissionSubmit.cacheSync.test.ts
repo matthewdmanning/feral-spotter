@@ -95,7 +95,7 @@ describe('useSubmissionSubmit — handleDone cache sync (#228)', () => {
   })
 
   it('includes the current manual_time/time_type in the cache update on submit', async () => {
-    useSubmissionStore.getState().setTimeType('manual')
+    useSubmissionStore.getState().setSubmission({ time_type: 'manual' })
     useSubmissionStore.getState().setManualTime('2026-08-01T12:00:00.000Z')
 
     const alertSpy = jest

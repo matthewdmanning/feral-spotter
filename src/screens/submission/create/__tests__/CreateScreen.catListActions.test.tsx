@@ -91,7 +91,6 @@ jest.mock('@/src/hooks/useSubmissionStore', () => ({
       cats: typeof mockCats
       setSubmissionLocation: jest.Mock
       setManualTime: jest.Mock
-      setCurrentStep: jest.Mock
     }) => unknown,
   ) =>
     sel({
@@ -99,7 +98,6 @@ jest.mock('@/src/hooks/useSubmissionStore', () => ({
       cats: mockCats,
       setSubmissionLocation: jest.fn(),
       setManualTime: jest.fn(),
-      setCurrentStep: jest.fn(),
     }),
 }))
 

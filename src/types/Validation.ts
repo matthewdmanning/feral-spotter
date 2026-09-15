@@ -8,9 +8,3 @@ export interface ValidationError {
   message: string
   severity: 'error' | 'warning'
 }
-
-export interface ValidationResult {
-  valid: boolean
-  errors: ValidationError[]
-  warnings: ValidationError[]
-}

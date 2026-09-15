@@ -41,8 +41,7 @@ jest.mock('@/src/hooks', () => ({
   useSubmissionStore: (sel: (s: object) => unknown) =>
     sel({
       setLocationType: jest.fn(),
-      setTimeType: jest.fn(),
-      setCapturedAt: jest.fn(),
+      setSubmission: jest.fn(),
     }),
 }))
 
