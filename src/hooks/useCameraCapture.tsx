@@ -18,15 +18,11 @@ import { useAuth } from '@/src/lib/auth/useAuth'
 import { captureEvent, EVENTS } from '@/src/lib/analytics/analytics'
 import { startLocationCapture } from '@/src/lib/location'
 import { useConsentStore } from '@/src/hooks/useConsentStore'
+import { gallerySavePermission } from '@/src/lib/permissions/gallerySavePermission'
 import { uploadNewPhoto } from '@/src/lib/upload/uploadNewPhoto'
 import type { SubmissionPhoto } from '@/src/types'
 import { type FlashListRef } from '@shopify/flash-list'
-import {
-  Asset,
-  getPermissionsAsync,
-  PermissionStatus,
-  requestPermissionsAsync,
-} from 'expo-media-library'
+import { Asset } from 'expo-media-library'
 import { router, useIsFocused } from 'expo-router'
 import { randomUUID } from 'expo-crypto'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -176,12 +172,8 @@ export function useCameraCapture(): CameraCaptureResult {
 
       if (keepOnDevice) {
         // #145/#146: check() only, never request() — see the mount effect
-        // below for why. writeOnly (true) requests add-only access, which
-        // matches app.json's savePhotosPermission config; unlike a full
-        // read request, it has no Android 14+ "Select photos" partial-access
-        // flow to surface (#140), since this path never reads the library.
-        const { status } = await getPermissionsAsync(true)
-        if (status === PermissionStatus.GRANTED) {
+        // below for why.
+        if (await gallerySavePermission.check()) {
           try {
             await Asset.create(uri)
           } catch (err) {
@@ -278,12 +270,7 @@ export function useCameraCapture(): CameraCaptureResult {
   // library, so it never needed read access in the first place.
   useEffect(() => {
     if (!keepOnDevice) return
-    void (async () => {
-      const { status } = await getPermissionsAsync(true)
-      if (status !== PermissionStatus.GRANTED) {
-        await requestPermissionsAsync(true)
-      }
-    })()
+    void gallerySavePermission.request()
   }, [keepOnDevice])
 
   return {

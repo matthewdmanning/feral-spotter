@@ -11,6 +11,7 @@ import { showAlert } from '@/src/hooks/useUIStore'
 import { usePhotoStore, useSubmissionStore } from '@/src/hooks'
 import { useAuth } from '@/src/lib/auth/useAuth'
 import { EVENTS, captureEvent } from '@/src/lib/analytics/analytics'
+import { libraryPermission } from '@/src/lib/permissions/libraryPermission'
 import { uploadNewPhoto } from '@/src/lib/upload/uploadNewPhoto'
 import { buildSubmissionPhoto } from '@/src/utils/buildSubmissionPhoto'
 import {
@@ -26,20 +27,6 @@ export interface LibraryPhotoPickerResult {
   pickFromLibrary: () => Promise<void>
 }
 
-// Yes means yes, not merely absence of no (#249, extending the camera/location
-// pattern from #66/#237/#243): a decline inside launchImageLibraryAsync() and
-// backing out of the picker without choosing anything both resolve as
-// `{ canceled: true }` — indistinguishable unless permission is checked
-// explicitly first. `limited` (iOS "Select Photos") counts as a valid yes.
-function isLibraryPermissionUsable(
-  response: ImagePicker.MediaLibraryPermissionResponse,
-) {
-  return (
-    response.status === ImagePicker.PermissionStatus.GRANTED ||
-    response.accessPrivileges === 'limited'
-  )
-}
-
 export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
   const photos = usePhotoStore((s) => s.photos)
   const addPhotos = usePhotoStore((s) => s.addPhotos)
@@ -52,13 +39,9 @@ export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
   const pickFromLibrary = useCallback(async () => {
     // Check-then-request, mirroring useCameraCapture's write-only gallery-save
     // check (#145/#146): a granted/limited check short-circuits every repeat
-    // tap, so request() only ever fires once, on the first undetermined pick.
-    const current = await ImagePicker.getMediaLibraryPermissionsAsync()
-    let usable = isLibraryPermissionUsable(current)
-    if (!usable) {
-      const requested = await ImagePicker.requestMediaLibraryPermissionsAsync()
-      usable = isLibraryPermissionUsable(requested)
-    }
+    // tap, so the native request only ever fires once, on the first
+    // undetermined pick.
+    const usable = await libraryPermission.request()
     if (!usable) {
       showAlert(
         'Photo library access needed',

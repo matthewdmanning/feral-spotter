@@ -92,7 +92,10 @@ describe('Location capture — reacquire flow (model-based)', () => {
       accepted: true,
       acceptedVersion: CONSENT_VERSION,
     })
-    mockGetForegroundPermissionsAsync.mockResolvedValue({ status: 'granted' })
+    mockGetForegroundPermissionsAsync.mockResolvedValue({
+      granted: true,
+      android: { accuracy: 'fine' },
+    })
     mockWatchPositionAsync.mockImplementation((_opts, cb) => {
       watchCallback = cb
       return Promise.resolve({ remove: removeMock })
