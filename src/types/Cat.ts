@@ -8,7 +8,7 @@ export type EarTipped = 'yes' | 'no' | 'unsure'
 export type Owned = 'yes' | 'no' | 'unsure'
 export type CatPattern =
   'solid' | 'tabby' | 'calico' | 'bicolor' | 'tortoiseshell' | 'unknown'
-export type HairLength = 'short' | 'medium' | 'long' | 'unknown'
+export type HairLength = 'short' | 'long' | 'unknown'
 export type CatColor =
   | 'black'
   | 'white'
