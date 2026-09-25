@@ -23,8 +23,8 @@
 | Phase | Skill | Status | Artifact | Date |
 |---|---|---|---|---|
 | 1 | jobs-to-be-done | done | CUSTOMER.md | 2026-09-25 |
-| 1b | continuous-discovery (optional) | pending | CUSTOMER.md | |
-| 2 | ux-heuristics | pending | DESIGN.md, EXPERIMENTS.md | |
+| 1b | continuous-discovery (optional) | deferred: no beta cohort exists yet; revisit once Task #7 ships | CUSTOMER.md | 2026-09-25 |
+| 2 | ux-heuristics | done | DESIGN.md, EXPERIMENTS.md | 2026-09-25 |
 | 3 | design-everyday-things | pending | DESIGN.md, EXPERIMENTS.md | |
 | 3b | improve-retention (optional) | pending | PRODUCT.md | |
 | 4 | refactoring-ui | pending | DESIGN.md, EXPERIMENTS.md | |
@@ -49,15 +49,25 @@ Statuses: pending · in-progress · awaiting-evidence · done · deferred: <reas
 | 2026-09-25 | 1 | Widen the job circumstance to cover both the deliberate seeker and the incidental encounter | Colony caretakers and TNR volunteers go out looking. The incidental encounter has no time budget and is the harder case the flow must survive. |
 | 2026-09-25 | 1 | Name the emotional dimension the worst gap, marked awaiting-evidence | Submit ends the story, so nothing tells the user the Submission mattered. Maintainer judgment, not user evidence — Phase 1b or a beta cohort must confirm it. |
 | 2026-09-25 | 1 | Leave the Big Hire / Little Hire split unresolved | No usage data exists. Guessing would aim every later fix at possibly the wrong moment. Phase 2 and Phase 1b decide it. |
+| 2026-09-25 | 1b | Defer continuous-discovery | No beta cohort exists to talk to. Task #7 (Play beta) is 60 days past due and blocked. Revisit once a cohort exists. |
+| 2026-09-25 | 2 | Fix the three severity-4 findings plus the cheap severity-3s now | U1, U2, U3, U4, U5, U11, U13. Everything else goes to the backlog. |
+| 2026-09-25 | 2 | Order the backlog by severity × frequency, not ICE | Catastrophes must outrank cosmetics, and ease must not let a small fix jump a frequent one. |
+| 2026-09-25 | 2 | Defer the vocabulary decision to Phase 6 | Four user-facing words name one concept. Choosing the word is the maintainer's call, made with the full copy inventory in front of them. |
+| 2026-09-25 | 2 | Little Hire is the primary leak | The severity-4 findings cluster at the submit moment (no reason to return) with a completion risk at annotate. Resolves the Phase 1 open question. |
 
 ## Next Actions
 
 - [x] Run Phase 1 (jobs-to-be-done). Job stated without the product name, three dimensions carry an
       underdelivery note, alternatives logged including non-consumption. Phases 2-9 unlocked. (2026-09-25)
-- [ ] Decide whether Phase 1b (continuous-discovery) runs now or is deferred until a beta cohort exists
-      (owner: user)
-- [ ] Resolve the Big Hire / Little Hire split during Phase 2 — fixes aimed at the wrong moment waste the
-      effort (owner: agent)
+- [x] Phase 1b deferred — no beta cohort exists to talk to (2026-09-25)
+- [x] Big Hire / Little Hire split resolved in Phase 2: Little Hire is the primary leak, with a Big Hire
+      completion risk at annotate (2026-09-25)
+- [x] Run Phase 2 (ux-heuristics). 25 findings, every one severity-rated, Trunk Test run on six screens,
+      backlog ordered by severity × frequency. Interface scores 4/10. (2026-09-25)
+- [ ] File a child issue for each of the seven fix-now findings — U1, U2, U3, U4, U5, U11, U13 — before
+      any code changes (owner: user to approve, agent to file)
+- [ ] Capture a second-Submission baseline in PostHog before EXP-001's fix reaches a cohort, or the
+      experiment cannot be read (owner: user)
 - [ ] Carry two Phase 1 observations into their own phases, not into code yet (owner: agent):
   - "Feral Reports" presents a personal list, but users do not hire the app to track sightings for
     themselves — a Phase 9 cut candidate.
