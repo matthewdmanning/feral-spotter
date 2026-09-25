@@ -97,10 +97,18 @@ export function useCameraCapture(): CameraCaptureResult {
   const cameraRef = useRef<CameraRef>(null)
   const listRef = useRef<FlashListRef<SubmissionPhoto>>(null)
   // Keep the legacy output byte-for-byte equivalent unless the user opts in.
-  // In improved mode, prefer VisionCamera's processed high-quality path so
-  // OEM multi-frame/HDR/noise processing remains available to post-denoising.
+  // The improved path uses VisionCamera's own capability flag: zero-shutter-lag
+  // when the device supports it, balanced otherwise. That favors recoverable
+  // sharpness for moving cats while preserving the OEM processed-photo pipeline.
+  const qualityPrioritization = improvedCapture
+    ? device?.supportsSpeedQualityPrioritization
+      ? 'speed'
+      : 'balanced'
+    : undefined
+  const enableLowLightBoost =
+    improvedCapture && Boolean(device?.supportsLowLightBoost)
   const photoOutput = usePhotoOutput(
-    improvedCapture ? { qualityPrioritization: 'quality' } : undefined,
+    qualityPrioritization ? { qualityPrioritization } : undefined,
   )
 
   // #253: Android reclaims the camera hardware whenever the app is
@@ -135,34 +143,50 @@ export function useCameraCapture(): CameraCaptureResult {
       },
     )
 
+    const captureStartedAt = Date.now()
     try {
       const photo = await photoOutput.capturePhoto(
         { flashMode, enableShutterSound: true },
         {},
       )
-      const filePath = await photo.saveToTemporaryFileAsync()
-      const uri = `file://${filePath}`
+      const capturedAt = Date.now()
 
-      const submission: SubmissionPhoto = {
-        local_id: randomUUID(),
-        uri,
-        uploaded: false,
-        upload_progress: 0,
-        width: photo.width,
-        height: photo.height,
-        // No EXIF to read a capture time from (camera captures never set
-        // `exif`, unlike a Library pick) — the shutter-press moment is the
-        // only source of truth, and it's only available here, right now.
-        captured_at: new Date().toISOString(),
+      let submission: SubmissionPhoto
+      try {
+        const filePath = await photo.saveToTemporaryFileAsync()
+        const uri = `file://${filePath}`
+
+        submission = {
+          local_id: randomUUID(),
+          uri,
+          uploaded: false,
+          upload_progress: 0,
+          width: photo.width,
+          height: photo.height,
+          // No EXIF to read a capture time from (camera captures never set
+          // `exif`, unlike a Library pick) — the shutter-press moment is the
+          // only source of truth, and it's only available here, right now.
+          captured_at: new Date().toISOString(),
+        }
+      } finally {
+        // Photo owns native camera buffers. Release them even if filesystem
+        // persistence fails, otherwise repeated failures can increase memory use.
+        photo.dispose()
       }
-      photo.dispose()
 
+      const persistedAt = Date.now()
       addPhoto(submission)
       setCapturedPhotos((prev) => [...prev, submission])
       captureEvent(EVENTS.PHOTO_CAPTURED, {
         flash_mode: flashMode,
         photo_width: submission.width,
         photo_height: submission.height,
+        capture_pipeline: improvedCapture ? 'improved' : 'legacy',
+        quality_prioritization: qualityPrioritization ?? 'default',
+        low_light_boost: enableLowLightBoost,
+        capture_duration_ms: capturedAt - captureStartedAt,
+        temporary_file_save_duration_ms: persistedAt - capturedAt,
+        capture_pipeline_duration_ms: persistedAt - captureStartedAt,
       })
 
       // Upload starts immediately, in the background — not gated on this
@@ -194,6 +218,10 @@ export function useCameraCapture(): CameraCaptureResult {
       console.error('[useCameraCapture] takePhoto:', err)
       captureEvent(EVENTS.PHOTO_CAPTURE_FAILED, {
         error: err instanceof Error ? err.message : String(err),
+        capture_pipeline: improvedCapture ? 'improved' : 'legacy',
+        quality_prioritization: qualityPrioritization ?? 'default',
+        low_light_boost: enableLowLightBoost,
+        elapsed_ms: Date.now() - captureStartedAt,
       })
     } finally {
       setIsTakingPhoto(false)
@@ -207,6 +235,9 @@ export function useCameraCapture(): CameraCaptureResult {
     updatePhoto,
     keepOnDevice,
     user,
+    improvedCapture,
+    qualityPrioritization,
+    enableLowLightBoost,
   ])
 
   // ── Discard ───────────────────────────────────────────────────────────────
@@ -255,10 +286,33 @@ export function useCameraCapture(): CameraCaptureResult {
     }
   }, [capturedPhotos.length])
 
+  const cameraOpenedAt = useRef(Date.now())
+  const hasReportedInitialDevice = useRef(false)
+
+  useEffect(() => {
+    if (!device || hasReportedInitialDevice.current) return
+    hasReportedInitialDevice.current = true
+    captureEvent(EVENTS.CAMERA_DEVICE_READY, {
+      ready_duration_ms: Date.now() - cameraOpenedAt.current,
+      camera_position: cameraPosition,
+      physical_devices: device.physicalDevices,
+      supports_low_light_boost: device.supportsLowLightBoost,
+      supports_photo_hdr: device.supportsPhotoHDR,
+      supports_speed_quality_prioritization:
+        device.supportsSpeedQualityPrioritization,
+      min_zoom: device.minZoom,
+      max_zoom: device.maxZoom,
+      capture_pipeline: improvedCapture ? 'improved' : 'legacy',
+      quality_prioritization: qualityPrioritization ?? 'default',
+    })
+  }, [cameraPosition, device, improvedCapture, qualityPrioritization])
+
   // Funnel entry point — nothing else fires between opening the camera and
   // hitting submit besides this and PHOTO_CAPTURE_FAILED above.
   useEffect(() => {
-    captureEvent(EVENTS.CAMERA_OPENED)
+    captureEvent(EVENTS.CAMERA_OPENED, {
+      capture_pipeline: improvedCapture ? 'improved' : 'legacy',
+    })
     // GPS-timing follow-up (#128): the Live fix starts here, not on
     // Submission Details — it runs in the background independent of this
     // screen's lifecycle (src/lib/location.ts).
@@ -287,8 +341,7 @@ export function useCameraCapture(): CameraCaptureResult {
     cameraRef,
     photoOutput,
     isActive,
-    enableLowLightBoost:
-      improvedCapture && Boolean(device?.supportsLowLightBoost),
+    enableLowLightBoost,
     capturedPhotos,
     flashMode,
     isTakingPhoto,
