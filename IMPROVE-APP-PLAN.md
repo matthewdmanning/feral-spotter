@@ -53,6 +53,7 @@ Statuses: pending · in-progress · awaiting-evidence · done · deferred: <reas
 | 2026-09-25 | 2 | Fix the three severity-4 findings plus the cheap severity-3s now | U1, U2, U3, U4, U5, U11, U13. Everything else goes to the backlog. |
 | 2026-09-25 | 2 | Order the backlog by severity × frequency, not ICE | Catastrophes must outrank cosmetics, and ease must not let a small fix jump a frequent one. |
 | 2026-09-25 | 2 | Defer the vocabulary decision to Phase 6 | Four user-facing words name one concept. Choosing the word is the maintainer's call, made with the full copy inventory in front of them. |
+| 2026-09-25 | 3 | Do not file an issue per error-design finding | N1, N2, N4, N5 and the three undo builds are atomic edits. Issues are for work that carries a decision, needs device verification, or spans more than one module. The EXPERIMENTS.md rows track them. |
 | 2026-09-25 | 3 | Undo replaces the confirmation for clearing the Cat Form | Nothing records that dialog as deliberate, and the attributes are ordinary component state, so restoring them is cheap. |
 | 2026-09-25 | 3 | Removing a cat keeps its confirmation and gains an Undo as well | The confirmation was a deliberate earlier choice and its message already says what survives, so Undo is added on top rather than replacing it. |
 | 2026-09-25 | 3 | Resetting the whole Submission keeps its confirmation | It is rare, large, and spans four stores and a cache row. A deliberate pause is honest here. |
@@ -75,8 +76,8 @@ Statuses: pending · in-progress · awaiting-evidence · done · deferred: <reas
 - [x] Ran the error-design pass (design-everyday-things). Ten findings against the two gulfs, every
       destructive action decided one by one, and every error message checked against what/how/no-blame/
       work-preserved. (2026-09-25)
-- [ ] File issues for the error-design findings that are not cross-references: N1, N2, N4, N5, and the
-      three undo builds (owner: user to approve, agent to file)
+- [x] No issues filed for the error-design findings. N1, N2, N4, N5 and the three undo builds are
+      atomic edits and ride along as ordinary work, tracked as rows 23-29 in EXPERIMENTS.md. (2026-09-25)
 - [ ] Capture a second-Submission baseline in PostHog before EXP-001's fix reaches a cohort, or the
       experiment cannot be read (owner: user)
 - [ ] Carry two Phase 1 observations into their own phases, not into code yet (owner: agent):
