@@ -96,7 +96,16 @@ export function useCameraCapture(): CameraCaptureResult {
   const device = useCameraDevice(cameraPosition)
   const cameraRef = useRef<CameraRef>(null)
   const listRef = useRef<FlashListRef<SubmissionPhoto>>(null)
-  const photoOutput = usePhotoOutput()
+  const qualityPrioritization =
+    captureMode === 'burst'
+      ? device?.supportsSpeedQualityPrioritization
+        ? 'speed'
+        : 'balanced'
+      : undefined
+  const photoOutput = usePhotoOutput(
+    qualityPrioritization ? { qualityPrioritization } : undefined,
+  )
+  const burstStopRequested = useRef(false)
 
   // #253: Android reclaims the camera hardware whenever the app is
   // backgrounded for long enough (e.g. screen lock), regardless of this
@@ -119,8 +128,16 @@ export function useCameraCapture(): CameraCaptureResult {
 
   // ── Capture ───────────────────────────────────────────────────────────────
   const handleTakePhoto = useCallback(async () => {
+    // Burst is user-bounded rather than count-bounded: a tap starts it and
+    // another tap requests a stop after the in-flight photo finishes.
+    if (captureMode === 'burst' && isTakingPhoto) {
+      burstStopRequested.current = true
+      return
+    }
     if (isTakingPhoto) return
+
     setIsTakingPhoto(true)
+    burstStopRequested.current = false
 
     flashOpacity.value = withTiming(
       1,
@@ -130,29 +147,45 @@ export function useCameraCapture(): CameraCaptureResult {
       },
     )
 
+    const sequenceStartedAt = Date.now()
+    let completedPhotoCount = 0
+
     try {
-      // Burst is deliberately sequential. VisionCamera/OEM owns the camera
-      // session, so this works with both the legacy and improved capture
-      // pipelines and avoids overlapping capture requests on slower devices.
-      const count = captureMode === 'burst' ? 8 : 1
-      for (let i = 0; i < count; i += 1) {
+      // Permission cannot change meaningfully during one capture sequence.
+      // Checking it once avoids repeated native bridge calls during bursts.
+      const canSaveToGallery =
+        keepOnDevice && (await gallerySavePermission.check())
+
+      do {
+        const captureStartedAt = Date.now()
         const photo = await photoOutput.capturePhoto(
-          { flashMode, enableShutterSound: i === 0 },
+          { flashMode, enableShutterSound: true },
           {},
         )
-        const filePath = await photo.saveToTemporaryFileAsync()
-        const uri = `file://${filePath}`
+        const capturedAt = Date.now()
 
-        const submission: SubmissionPhoto = {
-          local_id: randomUUID(),
-          uri,
-          uploaded: false,
-          upload_progress: 0,
-          width: photo.width,
-          height: photo.height,
-          captured_at: new Date().toISOString(),
+        let submission: SubmissionPhoto
+        try {
+          const filePath = await photo.saveToTemporaryFileAsync()
+          const uri = `file://${filePath}`
+
+          submission = {
+            local_id: randomUUID(),
+            uri,
+            uploaded: false,
+            upload_progress: 0,
+            width: photo.width,
+            height: photo.height,
+            captured_at: new Date().toISOString(),
+          }
+        } finally {
+          // Photo owns native camera buffers. Always release them, including
+          // filesystem failures, or a long burst can accumulate native memory.
+          photo.dispose()
         }
-        photo.dispose()
+
+        const persistedAt = Date.now()
+        completedPhotoCount += 1
 
         addPhoto(submission)
         setCapturedPhotos((prev) => [...prev, submission])
@@ -160,6 +193,11 @@ export function useCameraCapture(): CameraCaptureResult {
           flash_mode: flashMode,
           photo_width: submission.width,
           photo_height: submission.height,
+          capture_mode: captureMode,
+          quality_prioritization: qualityPrioritization ?? 'default',
+          capture_duration_ms: capturedAt - captureStartedAt,
+          temporary_file_save_duration_ms: persistedAt - capturedAt,
+          capture_pipeline_duration_ms: persistedAt - captureStartedAt,
         })
 
         const uid = user?.uid
@@ -170,20 +208,33 @@ export function useCameraCapture(): CameraCaptureResult {
           console.error('[useCameraCapture] missing uid/submissionId for upload')
         }
 
-        if (keepOnDevice && (await gallerySavePermission.check())) {
+        if (canSaveToGallery) {
           try {
-            await Asset.create(uri)
+            await Asset.create(submission.uri)
           } catch (err) {
             console.error('[useCameraCapture] Asset.create:', err)
           }
         }
+      } while (captureMode === 'burst' && !burstStopRequested.current)
+
+      if (captureMode === 'burst') {
+        captureEvent(EVENTS.CAMERA_CAPTURE_SEQUENCE_COMPLETED, {
+          capture_mode: captureMode,
+          photo_count: completedPhotoCount,
+          duration_ms: Date.now() - sequenceStartedAt,
+          quality_prioritization: qualityPrioritization ?? 'default',
+        })
       }
     } catch (err) {
       console.error('[useCameraCapture] takePhoto:', err)
       captureEvent(EVENTS.PHOTO_CAPTURE_FAILED, {
         error: err instanceof Error ? err.message : String(err),
+        capture_mode: captureMode,
+        completed_photo_count: completedPhotoCount,
+        elapsed_ms: Date.now() - sequenceStartedAt,
       })
     } finally {
+      burstStopRequested.current = true
       setIsTakingPhoto(false)
     }
   }, [
@@ -196,7 +247,12 @@ export function useCameraCapture(): CameraCaptureResult {
     updatePhoto,
     keepOnDevice,
     user,
+    qualityPrioritization,
   ])
+
+  useEffect(() => {
+    if (!isActive) burstStopRequested.current = true
+  }, [isActive])
 
   // ── Discard ───────────────────────────────────────────────────────────────
   const handleDiscardPhoto = useCallback(
@@ -243,6 +299,25 @@ export function useCameraCapture(): CameraCaptureResult {
       listRef.current?.scrollToEnd({ animated: true })
     }
   }, [capturedPhotos.length])
+
+  const cameraOpenedAt = useRef(Date.now())
+  const hasReportedInitialDevice = useRef(false)
+
+  useEffect(() => {
+    if (!device || hasReportedInitialDevice.current) return
+    hasReportedInitialDevice.current = true
+    captureEvent(EVENTS.CAMERA_DEVICE_READY, {
+      ready_duration_ms: Date.now() - cameraOpenedAt.current,
+      camera_position: cameraPosition,
+      physical_devices: device.physicalDevices,
+      supports_low_light_boost: device.supportsLowLightBoost,
+      supports_photo_hdr: device.supportsPhotoHDR,
+      supports_speed_quality_prioritization:
+        device.supportsSpeedQualityPrioritization,
+      min_zoom: device.minZoom,
+      max_zoom: device.maxZoom,
+    })
+  }, [cameraPosition, device])
 
   // Funnel entry point — nothing else fires between opening the camera and
   // hitting submit besides this and PHOTO_CAPTURE_FAILED above.
