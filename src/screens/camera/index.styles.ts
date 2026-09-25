@@ -62,6 +62,13 @@ export const styles = StyleSheet.create((theme, rt) => ({
     right: 0,
     zIndex: 20,
   },
+  captureModeControl: {
+    marginHorizontal: 44,
+    marginBottom: theme.spacing.md,
+    padding: theme.spacing.sm,
+    borderRadius: theme.radius.lg,
+    backgroundColor: theme.colors.surface,
+  },
   strip: { height: 64 + 16, marginBottom: theme.spacing.xl },
   shutterRow: {
     flexDirection: 'row',
