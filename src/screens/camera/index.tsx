@@ -1,4 +1,7 @@
-import { useCameraCapture, type CaptureMode } from '@/src/hooks/useCameraCapture'
+import {
+  useCameraCapture,
+  type CaptureMode,
+} from '@/src/hooks/useCameraCapture'
 import { SegmentedControl } from '@/src/components/atoms/SegmentedControl'
 import { FlashList } from '@shopify/flash-list'
 import { Stack } from 'expo-router'
