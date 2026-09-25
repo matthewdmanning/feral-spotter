@@ -26,7 +26,12 @@ import { Asset } from 'expo-media-library'
 import { router, useIsFocused } from 'expo-router'
 import { randomUUID } from 'expo-crypto'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { AppState, type AppStateStatus, type ViewStyle } from 'react-native'
+import {
+  AppState,
+  Platform,
+  type AppStateStatus,
+  type ViewStyle,
+} from 'react-native'
 import {
   Easing,
   useAnimatedStyle,
@@ -80,9 +85,11 @@ export function useCameraCapture(): CameraCaptureResult {
   const keepOnDevice = useSettingsStore(
     (s) => s.settings.keep_photos_on_device !== false,
   )
-  const improvedCapture = useSettingsStore(
+  const improvedCaptureSetting = useSettingsStore(
     (s) => s.settings.improved_camera_capture === true,
   )
+  const improvedCapture =
+    Platform.OS === 'android' && improvedCaptureSetting
   const addPhoto = usePhotoStore((s) => s.addPhoto)
   const removePhoto = usePhotoStore((s) => s.removePhoto)
   const updatePhoto = usePhotoStore((s) => s.updatePhoto)
