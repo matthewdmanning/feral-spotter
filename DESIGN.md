@@ -11,7 +11,9 @@ This file records decisions and findings, not hex values.
 Phase 4 source audit completed. The existing light/dark theme and component variants provide the
 starting system. A [current Pixel 7 Home capture](test-drives/screen-captures/issue-371-home-2026-09-25-pixel7.png)
 confirms that Take Photos and Upload Photos have equal size, color, and weight. The maintainer chose Take
-Photos as the visual primary. Submission's action grouping still needs a rendered check.
+Photos as the visual primary. A [current Pixel 7 empty-list capture](test-drives/screen-captures/2026-09-25_sightings-empty-state.png)
+confirms the Reports surface displays “Feral Reports,” “No reports yet,” and “Submissions appear here as you
+create them.” Submission's action grouping still needs a rendered check.
 
 The Phase 2 pass recorded U1–U25. U26 was added during the Phase 6 copy audit.
 
