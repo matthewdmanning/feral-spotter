@@ -52,3 +52,18 @@ column is recorded but does not reorder the list.
 | 20 | Add a visible cancel to Cat Form | U23 | 5 / 8 / 8 | backlog |
 | 21 | Show "Open Settings" only after a permission denial | U24 | 3 / 8 / 9 | backlog |
 | 22 | Use one label shape in the status row | U25 | 2 / 8 / 9 | backlog |
+
+### Added by the error-design pass (design-everyday-things), 2026-09-25
+
+Ordered by severity × frequency, continuing the list above. Rows that only cross-reference a
+usability-pass finding are not repeated here.
+
+| # | Idea | Finding | ICE (impact/confidence/ease) | Status |
+|---|---|---|---|---|
+| 23 | Show each Cat Form attribute's standing value in the form, so the save-time "N fields not set" dialog is not needed | N1 | 8 / 7 / 5 | open |
+| 24 | Show photo upload state where the photos are, not only when it stalls a submit | N4 | 7 / 8 / 5 | open |
+| 25 | Give the two "Remove this cat?" dialogs one title each | N2 | 6 / 9 / 9 | open |
+| 26 | Clear the Cat Form at once with an Undo, and drop the dialog that claims it cannot be undone | N3 | 6 / 8 / 8 | decided |
+| 27 | Add an Undo after a cat is removed, keeping the confirmation in front of it | N3, N10 | 6 / 7 / 6 | decided |
+| 28 | Make the annotate trash remove the photo, with an Undo, instead of opening a dialog that teaches a gesture | N10, U19 | 5 / 8 / 7 | decided |
+| 29 | Make the good and the poor location states look different in kind, so a tick does not read as a dead control | N5 | 4 / 7 / 8 | open |

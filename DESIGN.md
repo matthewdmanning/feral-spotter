@@ -77,6 +77,50 @@ The severity-4 findings cluster at two moments. U3 threatens completion of the f
 Hire risk. U1 and U2 remove any reason to come back — a Little Hire failure. **Little Hire is the primary
 leak**, with a real Big Hire completion risk at annotate.
 
+### Error-Design Findings
+
+The error-design pass (design-everyday-things), 2026-09-25. Heuristic column names the Norman gulf.
+Findings already filed from the usability pass are cross-referenced, not repeated.
+
+| # | Issue | Gulf | Severity | Fix | Owner | Status |
+|---|---|---|---|---|---|---|
+| N1 | A Cat Form attribute left alone and one deliberately set to Unknown are the same value once saved, but the form hides that. The user only learns which fields they skipped from a dialog at save time listing them as bullets, with "Save anyway" as the way out. An error message stands where a signifier belongs | Execution | 3 | Show each attribute's standing value in the form, so nothing is a surprise at save and the dialog is not needed | agent | open |
+| N2 | Two different dialogs share the title "Remove this cat?". One deletes a saved cat. The other discards an unsaved cat's boxes on the way out of the form. Same words, different loss | Execution | 3 | One title per outcome | agent | open |
+| N3 | "Clear form?" claims "This cannot be undone". It is true only because the undo was never built — the 8 attributes live in ordinary component state and can be snapshotted in a few lines | Evaluation | 2 | Clear at once, offer Undo, drop the dialog | agent | decided — build undo |
+| N4 | Photo upload runs in the background from the moment each photo is taken, and no screen shows it. The state first becomes visible when it stalls a submit for 30 seconds | Evaluation | 3 | Show upload state where the photos are, not only when it blocks something | agent | open |
+| N5 | When the location fix is good, the status control shows a tick and is disabled. It looks like the warning state, which is tappable, so the tick reads as a control that does nothing | Execution | 2 | Make the two states look different in kind, not only in colour | agent | open |
+| N6 | The box-drawing canvas affords drawing and says nothing about it | Execution | 4 | Cross-reference — filed as #374 | agent | issue filed |
+| N7 | A disabled control is an anti-affordance with no signifier, in four places | Execution | 3 | Cross-reference — filed as #375 | agent | issue filed |
+| N8 | Submitting gives no feedback during, and none on success | Evaluation | 4 | Cross-reference — filed as #372 and #373 | agent | issue filed |
+| N9 | The submit failure message does not say what happened, why, or that the work survived | Evaluation | 3 | Cross-reference — filed as #377 | agent | issue filed |
+| N10 | Tapping the annotate trash opens a dialog that teaches a gesture rather than doing anything | Execution | 2 | Make the control remove the photo, with Undo | agent | decided — build undo |
+
+### Destructive Actions — confirm or undo
+
+Decided 2026-09-25 with the maintainer, case by case.
+
+| Action | Today | Decision | Reason |
+|---|---|---|---|
+| Remove a cat | Confirms first. The message states that photos and other cats survive | **Keep the confirmation and add Undo after it** | The confirmation was a deliberate choice, and its message already says what survives. Undo is added on top rather than replacing it |
+| Clear the Cat Form | Confirms first, and claims the action cannot be undone | **Replace with Undo** | Nothing records the dialog as deliberate, and the 8 attributes are ordinary component state, so restoring them is cheap |
+| Remove a photo while annotating | Tap opens a dialog saying "Long press to remove" | **Act on the control, with Undo** | A dialog that teaches a gesture is an instruction nobody reads |
+| Reset the whole Submission | Confirms first, warning that everything clears | **Keep the confirmation** | It is rare, it is genuinely large, and it spans four stores and a cache row. A deliberate pause here is honest rather than annoying |
+
+### Error-message checklist
+
+Norman's four requirements: say what happened, say how to fix it, do not blame the user, preserve the
+user's work.
+
+| Message | What | How | No blame | Work preserved | Verdict |
+|---|---|---|---|---|---|
+| "Remove this cat?" (saved cat) | yes | yes | yes | states what survives | passes |
+| "Remove this cat?" (unsaved cat) | yes | yes | yes | states what survives | passes, but shares its title with the one above (N2) |
+| "N fields not set" | yes | no — offers only Cancel or Save anyway | yes | yes | fails: an error message doing a signifier's job (N1) |
+| "Clear form?" | yes | no | yes | **no** — and says so | fails (N3) |
+| "Submission Failed" | no | no | yes | yes, but never says so | fails (#377) |
+| "Camera Access Required" | yes | yes | yes | n/a | passes |
+| "Submission Incomplete" | yes | partly | yes | yes | passes |
+
 ## Microinteraction Inventory
 
 | Interaction | Trigger/Rules/Feedback/Loops | Fix | Status |
