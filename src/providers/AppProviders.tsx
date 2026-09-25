@@ -42,6 +42,7 @@ import {
   registerCaptureException,
 } from '@/src/lib/analytics/analytics'
 import Constants from 'expo-constants'
+import * as Device from 'expo-device'
 import { usePathname } from 'expo-router'
 import { PostHogProvider, usePostHog } from 'posthog-react-native'
 import { useEffect, useRef, type ReactNode } from 'react'
@@ -88,6 +89,13 @@ function AnalyticsBridge() {
     if (!posthog) return
     registerCapture(posthog.capture.bind(posthog))
     registerCaptureException(posthog.captureException.bind(posthog))
+    // PostHog already supplies OS/app metadata. Add only hardware context
+    // needed for performance comparisons, without creating a custom device ID.
+    posthog.register({
+      device_model: Device.modelName,
+      device_manufacturer: Device.manufacturer,
+      is_physical_device: Device.isDevice,
+    })
   }, [posthog])
 
   // Firebase's UID is the stable app identifier. This bridge mounts only after
@@ -105,7 +113,9 @@ function AnalyticsBridge() {
     if (identifiedUserId.current === user.uid) return
     if (identifiedUserId.current) posthog.reset()
 
-    posthog.identify(user.uid, user.email ? { email: user.email } : undefined)
+    // UID is enough for event correlation; crash/performance diagnostics do
+    // not need an email address.
+    posthog.identify(user.uid)
     identifiedUserId.current = user.uid
   }, [isAuthReady, posthog, user])
 
