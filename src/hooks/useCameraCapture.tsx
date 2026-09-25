@@ -314,7 +314,8 @@ export function useCameraCapture(): CameraCaptureResult {
     const openedAt = cameraOpenedAt.current
     hasReportedInitialDevice.current = true
     captureEvent(EVENTS.CAMERA_DEVICE_READY, {
-      ready_duration_ms: openedAt === null ? undefined : Date.now() - openedAt,
+      ready_duration_ms:
+        openedAt === null ? undefined : Date.now() - openedAt,
       camera_position: cameraPosition,
       physical_devices: device.physicalDevices,
       supports_low_light_boost: device.supportsLowLightBoost,
