@@ -52,6 +52,7 @@ export interface CameraCaptureResult {
   cameraRef: React.RefObject<CameraRef | null>
   photoOutput: CameraPhotoOutput
   isActive: boolean
+  enableLowLightBoost: boolean
   // State
   capturedPhotos: SubmissionPhoto[]
   flashMode: FlashMode
@@ -79,6 +80,9 @@ export function useCameraCapture(): CameraCaptureResult {
   const keepOnDevice = useSettingsStore(
     (s) => s.settings.keep_photos_on_device !== false,
   )
+  const improvedCapture = useSettingsStore(
+    (s) => s.settings.improved_camera_capture === true,
+  )
   const addPhoto = usePhotoStore((s) => s.addPhoto)
   const removePhoto = usePhotoStore((s) => s.removePhoto)
   const updatePhoto = usePhotoStore((s) => s.updatePhoto)
@@ -92,7 +96,12 @@ export function useCameraCapture(): CameraCaptureResult {
   const device = useCameraDevice(cameraPosition)
   const cameraRef = useRef<CameraRef>(null)
   const listRef = useRef<FlashListRef<SubmissionPhoto>>(null)
-  const photoOutput = usePhotoOutput()
+  // Keep the legacy output byte-for-byte equivalent unless the user opts in.
+  // In improved mode, prefer VisionCamera's processed high-quality path so
+  // OEM multi-frame/HDR/noise processing remains available to post-denoising.
+  const photoOutput = usePhotoOutput(
+    improvedCapture ? { qualityPrioritization: 'quality' } : undefined,
+  )
 
   // #253: Android reclaims the camera hardware whenever the app is
   // backgrounded for long enough (e.g. screen lock), regardless of this
@@ -278,6 +287,8 @@ export function useCameraCapture(): CameraCaptureResult {
     cameraRef,
     photoOutput,
     isActive,
+    enableLowLightBoost:
+      improvedCapture && Boolean(device?.supportsLowLightBoost),
     capturedPhotos,
     flashMode,
     isTakingPhoto,
