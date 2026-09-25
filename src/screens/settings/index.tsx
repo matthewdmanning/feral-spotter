@@ -9,6 +9,7 @@ import { router } from 'expo-router'
 import { Check, FileText, Key, Trash2 } from 'lucide-react-native'
 import { useState } from 'react'
 import {
+  Platform,
   Pressable,
   ScrollView,
   Switch,
@@ -41,17 +42,21 @@ const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
 ]
 
 const PHOTO_TOGGLES = [
-  {
-    key: 'improved_camera_capture',
-    label: 'Improved Camera Capture',
-    desc: 'Use device-aware high-quality capture and low-light boost when supported',
-  },
+  ...(Platform.OS === 'android'
+    ? [
+        {
+          key: 'improved_camera_capture',
+          label: 'Improved Camera Capture',
+          desc: 'Use device-aware high-quality capture and low-light boost when supported',
+        } as const,
+      ]
+    : []),
   {
     key: 'keep_photos_on_device',
     label: 'Keep Photos on Device',
     desc: 'Save captured photos to your camera roll',
-  },
-] as const
+  } as const,
+]
 
 export default function SettingsScreen() {
   const { theme } = useUnistyles()
