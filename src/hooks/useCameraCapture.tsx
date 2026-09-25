@@ -44,6 +44,7 @@ import {
 
 type FlashMode = 'off' | 'on' | 'auto'
 
+export type CaptureMode = 'single' | 'burst'
 export type { FlashMode }
 
 export interface CameraCaptureResult {
@@ -56,6 +57,7 @@ export interface CameraCaptureResult {
   capturedPhotos: SubmissionPhoto[]
   flashMode: FlashMode
   isTakingPhoto: boolean
+  captureMode: CaptureMode
   // Flash overlay (Reanimated — UI thread)
   flashOverlayStyle: ReturnType<typeof useAnimatedStyle<ViewStyle>>
   // FlashList
@@ -67,6 +69,7 @@ export interface CameraCaptureResult {
   keyExtractor: (item: SubmissionPhoto) => string
   // Handlers
   handleTakePhoto: () => Promise<void>
+  setCaptureMode: (mode: CaptureMode) => void
   cycleFlash: () => void
   flipCamera: () => void
   handleDone: () => void
@@ -88,6 +91,7 @@ export function useCameraCapture(): CameraCaptureResult {
   const [capturedPhotos, setCapturedPhotos] = useState<SubmissionPhoto[]>([])
   const [flashMode, setFlashMode] = useState<FlashMode>('auto')
   const [isTakingPhoto, setIsTakingPhoto] = useState(false)
+  const [captureMode, setCaptureMode] = useState<CaptureMode>('single')
 
   const device = useCameraDevice(cameraPosition)
   const cameraRef = useRef<CameraRef>(null)
@@ -127,53 +131,46 @@ export function useCameraCapture(): CameraCaptureResult {
     )
 
     try {
-      const photo = await photoOutput.capturePhoto(
-        { flashMode, enableShutterSound: true },
-        {},
-      )
-      const filePath = await photo.saveToTemporaryFileAsync()
-      const uri = `file://${filePath}`
+      // Burst is deliberately sequential. VisionCamera/OEM owns the camera
+      // session, so this works with both the legacy and improved capture
+      // pipelines and avoids overlapping capture requests on slower devices.
+      const count = captureMode === 'burst' ? 8 : 1
+      for (let i = 0; i < count; i += 1) {
+        const photo = await photoOutput.capturePhoto(
+          { flashMode, enableShutterSound: i === 0 },
+          {},
+        )
+        const filePath = await photo.saveToTemporaryFileAsync()
+        const uri = `file://${filePath}`
 
-      const submission: SubmissionPhoto = {
-        local_id: randomUUID(),
-        uri,
-        uploaded: false,
-        upload_progress: 0,
-        width: photo.width,
-        height: photo.height,
-        // No EXIF to read a capture time from (camera captures never set
-        // `exif`, unlike a Library pick) — the shutter-press moment is the
-        // only source of truth, and it's only available here, right now.
-        captured_at: new Date().toISOString(),
-      }
-      photo.dispose()
+        const submission: SubmissionPhoto = {
+          local_id: randomUUID(),
+          uri,
+          uploaded: false,
+          upload_progress: 0,
+          width: photo.width,
+          height: photo.height,
+          captured_at: new Date().toISOString(),
+        }
+        photo.dispose()
 
-      addPhoto(submission)
-      setCapturedPhotos((prev) => [...prev, submission])
-      captureEvent(EVENTS.PHOTO_CAPTURED, {
-        flash_mode: flashMode,
-        photo_width: submission.width,
-        photo_height: submission.height,
-      })
+        addPhoto(submission)
+        setCapturedPhotos((prev) => [...prev, submission])
+        captureEvent(EVENTS.PHOTO_CAPTURED, {
+          flash_mode: flashMode,
+          photo_width: submission.width,
+          photo_height: submission.height,
+        })
 
-      // Upload starts immediately, in the background — not gated on this
-      // screen's lifecycle — so a slow/spotty connection doesn't block
-      // capturing more photos.
-      const uid = user?.uid
-      const submissionId = usePhotoStore.getState().submissionId
-      if (uid && submissionId) {
-        uploadNewPhoto(submission, uid, submissionId, updatePhoto)
-      } else {
-        console.error('[useCameraCapture] missing uid/submissionId for upload')
-      }
+        const uid = user?.uid
+        const submissionId = usePhotoStore.getState().submissionId
+        if (uid && submissionId) {
+          uploadNewPhoto(submission, uid, submissionId, updatePhoto)
+        } else {
+          console.error('[useCameraCapture] missing uid/submissionId for upload')
+        }
 
-      // Location is set once per submission on the create screen (ADR 0002),
-      // not per photo — no GPS call on the shutter path.
-
-      if (keepOnDevice) {
-        // #145/#146: check() only, never request() — see the mount effect
-        // below for why.
-        if (await gallerySavePermission.check()) {
+        if (keepOnDevice && (await gallerySavePermission.check())) {
           try {
             await Asset.create(uri)
           } catch (err) {
@@ -191,6 +188,7 @@ export function useCameraCapture(): CameraCaptureResult {
     }
   }, [
     isTakingPhoto,
+    captureMode,
     flashMode,
     flashOpacity,
     photoOutput,
@@ -281,11 +279,13 @@ export function useCameraCapture(): CameraCaptureResult {
     capturedPhotos,
     flashMode,
     isTakingPhoto,
+    captureMode,
     flashOverlayStyle,
     listRef,
     renderItem,
     keyExtractor,
     handleTakePhoto,
+    setCaptureMode,
     cycleFlash,
     flipCamera,
     handleDone,
