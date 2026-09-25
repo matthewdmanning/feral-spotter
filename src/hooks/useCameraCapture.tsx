@@ -26,7 +26,12 @@ import { Asset } from 'expo-media-library'
 import { router, useIsFocused } from 'expo-router'
 import { randomUUID } from 'expo-crypto'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { AppState, type AppStateStatus, type ViewStyle } from 'react-native'
+import {
+  AppState,
+  Platform,
+  type AppStateStatus,
+  type ViewStyle,
+} from 'react-native'
 import {
   Easing,
   useAnimatedStyle,
@@ -106,6 +111,20 @@ export function useCameraCapture(): CameraCaptureResult {
     qualityPrioritization ? { qualityPrioritization } : undefined,
   )
   const burstStopRequested = useRef(false)
+
+  // VisionCamera recommends preparing known photo settings ahead of capture on
+  // iOS. This warms AVFoundation's capture path without introducing a parallel
+  // native implementation; Android's equivalent is documented as a no-op.
+  useEffect(() => {
+    if (Platform.OS !== 'ios') return
+
+    void photoOutput
+      .prepareSettings([{ flashMode, enableShutterSound: true }])
+      .catch((err) => {
+        if (__DEV__)
+          console.warn('[useCameraCapture] prepareSettings:', err)
+      })
+  }, [flashMode, photoOutput])
 
   // #253: Android reclaims the camera hardware whenever the app is
   // backgrounded for long enough (e.g. screen lock), regardless of this
