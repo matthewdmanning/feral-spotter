@@ -300,14 +300,21 @@ export function useCameraCapture(): CameraCaptureResult {
     }
   }, [capturedPhotos.length])
 
-  const cameraOpenedAt = useRef(Date.now())
+  const cameraOpenedAt = useRef<number | null>(null)
   const hasReportedInitialDevice = useRef(false)
+
+  // Record the start from an effect rather than render; Date.now() is impure
+  // and React Compiler correctly rejects reading it during render.
+  useEffect(() => {
+    cameraOpenedAt.current = Date.now()
+  }, [])
 
   useEffect(() => {
     if (!device || hasReportedInitialDevice.current) return
+    const openedAt = cameraOpenedAt.current
     hasReportedInitialDevice.current = true
     captureEvent(EVENTS.CAMERA_DEVICE_READY, {
-      ready_duration_ms: Date.now() - cameraOpenedAt.current,
+      ready_duration_ms: openedAt === null ? undefined : Date.now() - openedAt,
       camera_position: cameraPosition,
       physical_devices: device.physicalDevices,
       supports_low_light_boost: device.supportsLowLightBoost,
