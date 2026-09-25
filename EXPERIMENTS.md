@@ -11,15 +11,14 @@ today. Each row carries a pre-committed metric to be read once the beta cohort e
 
 ### EXP-001 — Make the submit moment answer "did it work?"
 
-- Hypothesis: We believe first-time submitters will make a second Submission if the app confirms the
-  first one landed and says where it went, because today success and silent failure look identical.
-- Type: A-B once a cohort exists; device test drive until then
-- Primary metric and threshold (pre-committed): share of users who make a second Submission within 14
-  days of their first, measured in PostHog off `SUBMISSION_SUBMITTED`. Threshold: beats the pre-fix
-  baseline. The baseline does not exist yet and must be captured before the fix ships to the cohort.
-- Guardrail metric: no drop in submissions completed per session
-- Decision rule: if the second-Submission rate does not move, the emotional gap named in CUSTOMER.md is
-  wrong and Phase 1b must run before any more work is aimed at it
+- Hypothesis: First-time submitters will understand that their Sighting was sent if the app confirms
+  the completed upload and names the destination, because today success returns silently to Home.
+- Type: moderated task-comprehension check once a beta cohort exists; device test drive until then
+- Primary metric and threshold (pre-committed): share of participants who can correctly say whether
+  the Sighting was submitted and where it went, without a hint immediately after the task. Threshold:
+  improvement over a pre-fix comprehension baseline, to be captured before this fix reaches beta users.
+- Guardrail metric: no increase in failed or abandoned submit attempts during the task
+- Decision rule: if users still cannot tell what happened, revise the receipt and test it again.
 - Result and verdict: not started
 - Covers: U1, U2
 
@@ -46,8 +45,8 @@ column is recorded but does not reorder the list.
 | 14 | Replace Cat Form's "Clear" confirmation with undo | U10 | 6 / 7 / 6 | Phase 3 |
 | 15 | Make the annotate trash act, with undo, instead of teaching a gesture by dialog | U19 | 5 / 8 / 7 | Phase 3 |
 | 16 | Separate the attributes the dataset needs from the nice-to-have ones | U22 | 8 / 5 / 4 | Phase 3 |
-| 17 | Settle one user-facing word for a Submission and apply it to all four surfaces | U15, U16, U17, U21 | 6 / 6 / 7 | Phase 6 — human decision |
-| 18 | Give Home and Submission one primary action each | U18 | 6 / 7 / 6 | Phase 4 |
+| 17 | Apply “Sighting” across Home, final action, and list; choose one ownership-field label separately | U15–U17 (#380), U21 | 6 / 6 / 7 | issue filed; field label pending |
+| 18 | Make Take Photos the Home primary action; check whether Submission's full-width action stack needs clearer grouping | U18 (#379) | 6 / 7 / 6 | issue filed for Home; Submission check pending |
 | 19 | Label annotate's dot states | U20 | 4 / 8 / 8 | backlog |
 | 20 | Add a visible cancel to Cat Form | U23 | 5 / 8 / 8 | backlog |
 | 21 | Show "Open Settings" only after a permission denial | U24 | 3 / 8 / 9 | backlog |
@@ -67,3 +66,9 @@ usability-pass finding are not repeated here.
 | 27 | Add an Undo after a cat is removed, keeping the confirmation in front of it | N3, N10 | 6 / 7 / 6 | decided |
 | 28 | Make the annotate trash remove the photo, with an Undo, instead of opening a dialog that teaches a gesture | N10, U19 | 5 / 8 / 7 | decided |
 | 29 | Make the good and the poor location states look different in kind, so a tick does not read as a dead control | N5 | 4 / 7 / 8 | open |
+
+### Added by the in-app copy pass (made-to-stick), 2026-09-25
+
+| # | Idea | Finding | Pre-committed check | Status |
+|---|---|---|---|---|
+| 30 | Correct Onboarding's setup and data-use claims; remove the unmeasured “About a minute” promise | U26 (#381) | In a first-run comprehension test, participants can name the next sign-in choice and what is sent, without being led | issue filed; claim verification pending |

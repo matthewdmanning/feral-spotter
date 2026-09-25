@@ -8,20 +8,46 @@ This file records decisions and findings, not hex values.
 
 ## Design Direction
 
-Not yet defined. Phase 4 (refactoring-ui) fills this.
+Phase 4 source audit completed. The existing light/dark theme and component variants provide the
+starting system. A [current Pixel 7 Home capture](test-drives/screen-captures/issue-371-home-2026-09-25-pixel7.png)
+confirms that Take Photos and Upload Photos have equal size, color, and weight. The maintainer chose Take
+Photos as the visual primary. Submission's action grouping still needs a rendered check.
+
+The Phase 2 pass recorded U1–U25. U26 was added during the Phase 6 copy audit.
 
 ## Typography
 
-Not yet defined. Phase 4 fills this.
+`src/config/themes.ts` defines a shared 12/14/16/18/20/24/30 type scale. Its use on the key screens
+still needs a rendered grayscale check.
 
 ## Tokens
 
-Not yet audited. Phase 4 fills this.
+Source audit, 2026-09-25:
+
+- Shared spacing is 4/8/12/16/20/24/32 dp; radius is 6/8/12/16/20/full. Keep these existing mobile
+  scales for Phase 4 unless a rendered screen shows a specific gap.
+- Light and dark themes use semantic color tokens. Calculated text contrast is 17.06:1 (light text on
+  background), 4.55:1 (light muted on background), 15.13:1 (dark text on background), 7.31:1 (dark muted
+  on background), and 5.47:1 (button text on accent). These are token-pair checks, not rendered-screen
+  or accessibility-device verification.
+- `shadow` is a shared rendering primitive; no new elevation scale is justified by the source audit.
 
 ## Components
 
-| Component | Decision | Status |
-|---|---|---|
+| Component | Decision | Owner | Priority | Status |
+|---|---|---|---|---|
+| Home entrypoints | U18: Camera and Library are equally sized `primary` circles in the current Pixel 7 capture. Make Take Photos the clear lead and Upload Photos secondary using existing variants and spacing tokens; check the proposed layout before implementation. | agent | P2 | #379 filed; layout pending |
+| Submission actions | U18: `Finished!` is filled; Add More and Reset are outlined, but all three occupy full-width bottom rows. Check grouping and spacing on device before changing the hierarchy. | agent | P2 | awaiting visual check |
+
+## iOS conventions
+
+Phase 4b source check, 2026-09-25. **2/10 diagnostic points confirmed from source**, not an iOS usability score: the app uses semantic light/dark theme colors and stack/tab navigation. It declares iOS support and uses a 48 dp target convention in several controls, but safe areas across device sizes, all touch targets, Dynamic Type, VoiceOver completion, actual dark rendering, and native modal behavior remain unverified without an iOS build and device. The other eight diagnostic points are unverified, not failed.
+
+| Convention | Source finding | Action | Owner | Priority | Status |
+|---|---|---|---|---|---|
+| Modal dismissal | Box Annotation is a full-screen modal with swipe dismissal disabled and no visible close control; “Done With This Cat” can also abandon the pass (U6, U7). [Apple asks for an obvious modal dismissal](https://developer.apple.com/design/human-interface-guidelines/modality). | Resolve U6/U7 with a clear exit that preserves the draft; reconcile with the active crop-frame design decision before changing gestures. | user | P1 | decision pending |
+| State color | Annotation dots encode current, located, not-in-photo, and untouched using color and width without labels (U20). [Apple asks for alternatives to color](https://developer.apple.com/design/human-interface-guidelines/color). | Label or otherwise distinguish the states, then check with VoiceOver. | agent | P2 | backlog |
+| Layout and text scaling | Home's circles use a computed diameter, while screens use shared fixed type tokens; no iPhone safe-area or large-text render was available. [Apple calls for adaptive layout](https://developer.apple.com/design/human-interface-guidelines/layout) and [text scaling](https://developer.apple.com/design/human-interface-guidelines/typography). | Check a small and large iPhone, large text, and dark mode before calling the iOS pass complete. | agent | P1 | awaiting iOS device |
 
 ## UX Audit Findings
 
@@ -46,10 +72,10 @@ Interface score: **4/10**. Ordered by severity × frequency, not by ease.
 | U12 | A stale draft silently hides "Continue Observation". In-progress work disappears with no notice | 1 | 3 | Say the draft went stale rather than removing the entry | agent | backlog |
 | U13 (#378) | Cat rows render raw enum values. A cat saved at defaults reads "Unknown · unknown · unknown hair" | 2 | 3 | Render a human label, and a distinct one for an all-unknown cat | agent | issue filed |
 | U14 | The camera screen shows no location state while the Live fix is acquiring, so a poor fix is a surprise two screens later | 1 | 3 | Surface the fix state where it is being acquired | agent | backlog |
-| U15 | Four user-facing words for one concept: "Continue **Observation**", "New **Sighting**", screen title "**Submission**", tab "Feral **Reports**" | 4 | 2 | Naming is a human decision — deferred to Phase 6 with the full copy inventory | user | backlog — Phase 6 |
+| U15 (#380) | Four user-facing words for one concept: "Continue **Observation**", "New **Sighting**", screen title "**Submission**", tab "Feral **Reports**" | 4 | 2 | Use “Sighting” throughout user-facing copy; retain “Submission” for the data model | agent | issue filed |
 | U16 | "Submit Submission" dialog title | 1, 4 | 2 | Rewrite | agent | backlog — Phase 6 |
 | U17 | "Finished!" never says what happens when pressed | 1 | 2 | Name the action | agent | backlog — Phase 6 |
-| U18 | No single primary action. Home shows two identical circles; Submission shows three equal-weight bottom buttons | 8 | 2 | One primary per screen | agent | backlog — Phase 4 |
+| U18 (#379) | Home shows two equally prominent primary circles. Submission has one filled primary plus two outlined actions, but all three occupy full-width bottom rows | 8 | 2 | Make Take Photos the Home visual primary, as chosen after a current Pixel 7 capture; check Submission grouping and spacing on device | agent | issue filed for Home; Submission check pending |
 | U19 | Tapping the annotate trash opens an alert that says "Long press to remove" — a dialog used to teach a gesture | 5, 10 | 2 | Make the control do the thing, with undo | agent | backlog — Phase 3 |
 | U20 | Annotate's dot colours (current, located, not-in-photo) have no legend | 6 | 2 | Label the states | agent | backlog |
 | U21 | "Owned / Domesticated" puts two terms on one field | 2 | 2 | One term | user | backlog — Phase 6 |
@@ -57,6 +83,7 @@ Interface score: **4/10**. Ordered by severity × frequency, not by ease.
 | U23 | Cat Form has no visible cancel | 3 | 2 | Add one | agent | backlog |
 | U24 | "Open Settings" is offered on the camera gate before the user has denied anything | 8 | 1 | Show it after a denial | agent | backlog |
 | U25 | Status row mixes label shapes: "Location" against "Date & Time Recorded" | 4 | 1 | One shape | agent | backlog |
+| U26 (#381) | Onboarding promises “About a minute,” names Google as the next sign-in though email is offered, and makes downstream-use claims this audit has not verified | 2 match between system and real world | 2 | Remove the time promise until measured; name the actual sign-in choices and verify downstream-use claims | agent | issue filed |
 
 ### Trunk Test
 
@@ -71,11 +98,12 @@ Interface score: **4/10**. Ordered by severity × frequency, not by ease.
 
 Search is absent everywhere and is not applicable — the app has no search surface.
 
-### Hire-moment resolution (feeds back to CUSTOMER.md)
+### Hire-moment evidence boundary (feeds back to CUSTOMER.md)
 
-The severity-4 findings cluster at two moments. U3 threatens completion of the first Submission — a Big
-Hire risk. U1 and U2 remove any reason to come back — a Little Hire failure. **Little Hire is the primary
-leak**, with a real Big Hire completion risk at annotate.
+The severity-4 findings cluster at two moments. U3 threatens completion of the first Submission.
+U1 and U2 leave the submit result unclear. These source findings justify usability fixes but do not
+show which moment loses more users, or whether anyone returns. The maintainer deferred retention
+assessment entirely; no Big Hire / Little Hire ranking is claimed here.
 
 ### Error-Design Findings
 
@@ -123,7 +151,21 @@ user's work.
 
 ## Microinteraction Inventory
 
-| Interaction | Trigger/Rules/Feedback/Loops | Fix | Status |
-|---|---|---|---|
+Phase 5 source inventory, 2026-09-25. Direct-touch timing and rendered states still need a device pass.
 
-Phase 5 fills this.
+| Interaction | Trigger / rules / feedback / loops | Fix | Owner | Priority | Status |
+|---|---|---|---|---|---|
+| Camera shutter | Tap captures; disabled while taking a photo; the shutter scales on press in 70 ms and returns in 140 ms, then the photo strip updates; repeats for each photo. | Preserve this immediate response as the baseline for other controls. | agent | P3 | source-audited; device pending |
+| Submit | `Finished!` opens confirmation; at least one cat and photo are required. After confirmation, uploads may block for 30 s with no rendered submitting state; success routes Home silently, failure raises an alert; repeats for the next Submission. | Render progress/disabled state (#372), a truthful success receipt (#373), and work-preserving failure copy (#377). | agent | P0 | issues filed; device pending |
+| Box Annotation | Frame and buttons trigger box confirmation or photo skipping; the Tutorial is release-gated, and dots encode several states by color; the pass repeats across photos and cats. Confirm or Not in Photo advances automatically, and the last photo ends the pass without a separate completion cue. | Give the first pass visible guidance (#374); settle forward navigation (#376) against the active crop-frame design decision before changing it; label dot states (U20). The last-photo feedback gap is already tracked by #282. | user | P1 | product decision and device check pending |
+| Clear or remove a cat | Clear and Remove trigger confirmation; Clear resets eight transient fields, while Remove deletes one saved cat and its boxes but keeps photos; both can recur in one draft. | Follow Phase 3 decisions: replace Clear's dialog with Undo, and add Undo after confirmed cat removal. | agent | P2 | decided; not shipped |
+
+Submit state map from source: no cats → disabled; ready → confirmation; confirmed → photo-upload wait (up to 30 s, no rendered state) → metadata upload → Home on success or an alert on failure. A failed attempt retains the draft in the ordinary error path. The current `Finished!` control does not show the waiting state. A simple success receipt is the proposed signature moment for #373: removing it would again leave users unable to distinguish a completed Submission from an unexplained return to Home. It should acknowledge only the verified upload outcome, without an animation or a claim that a person has acted on the data.
+
+Other source state maps:
+
+- Camera: permission gate → live preview → shutter pressed → capture busy (button disabled) → photo in strip; capture failure remains a device-check item.
+- Box Annotation: no photos → empty state; photo unmarked → box confirmed or Not in Photo → next photo; last photo → pass ends. Previous is disabled on the first photo. Photo removal is a hidden long press, with a confirmation unless “don't ask again” was chosen; there is no Undo.
+- Cat Form: unset or edited fields → Clear confirmation → all eight fields unset, with no Undo. A saved cat → Remove confirmation → cat and its boxes removed, photos retained, with no Undo.
+
+Provisional source-only diagnostic: Camera shutter **6/10** (clear trigger and immediate press feedback; direct-touch timing unverified); Submit **2/10** (no visible loading or success state; fix #372/#373); Box Annotation **3/10** (hidden gesture and mode, guidance gated; fix #374 and resolve #376); Clear/remove **4/10** (explicit confirmation but no Undo; Phase 3 fix). These scores are not device usability measurements.

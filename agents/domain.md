@@ -43,7 +43,7 @@ FeralSpotter: a mobile app for reporting feral-cat sightings — users spot a ca
 ### Sighting & location
 
 **Submission**:
-One reported feral-cat sighting — the unit the user builds and sends. Holds one or more photos and exactly one location.
+One reported feral-cat sighting — the data-model unit the user builds and sends. Holds one or more photos and exactly one location. Use **Sighting** for the user-facing name of this same unit, as chosen for issue #371 on 2026-09-25; keep **Submission** for code, persistence, API, and engineering discussion.
 _Avoid_: report, observation, entry
 
 **Submission location**:

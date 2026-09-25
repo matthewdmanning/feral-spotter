@@ -41,11 +41,11 @@ Both are altruistic. Users do not hire this to keep a record for themselves.
 
 | Moment | Status | Note |
 |---|---|---|
-| Big Hire — install through first completed Submission | unknown | Onboarding, Consent, and Registration all sit before the first Submission |
-| Little Hire — reaching for the app on the next sighting | unknown | No usage data exists. Phase 2 and Phase 1b must tell these apart before any fix is aimed at either |
+| Big Hire — install through first completed Submission | source-identified completion risk; unmeasured | Onboarding, Consent, and Registration precede the first Submission; first-time Box Annotation lacks guidance (U3) |
+| Little Hire — reaching for the app on the next sighting | deferred | No repeat-use evidence or beta cohort exists; the maintainer deferred retention assessment entirely |
 
 ## Open Evidence Gaps
 
 - The emotional dimension is named as the worst gap on maintainer judgment, not on user evidence. Phase 1b
   (continuous-discovery) or a real beta cohort must confirm or replace it.
-- The Big Hire / Little Hire split is unknown. Fixes aimed at the wrong one waste the effort.
+- Phase 2 found completion and submit-feedback defects in source, but cannot rank Big Hire against Little Hire without user behavior. Retention assessment is outside this journey by maintainer decision.
