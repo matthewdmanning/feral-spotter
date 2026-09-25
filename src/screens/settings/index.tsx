@@ -42,6 +42,11 @@ const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
 
 const PHOTO_TOGGLES = [
   {
+    key: 'improved_camera_capture',
+    label: 'Improved Camera Capture',
+    desc: 'Use device-aware high-quality capture and low-light boost when supported',
+  },
+  {
     key: 'keep_photos_on_device',
     label: 'Keep Photos on Device',
     desc: 'Save captured photos to your camera roll',
@@ -170,10 +175,7 @@ export default function SettingsScreen() {
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Photos</Text>
             {PHOTO_TOGGLES.map(({ key, label, desc }, i) => {
-              const on =
-                key === 'keep_photos_on_device'
-                  ? draft[key] !== false
-                  : Boolean(draft[key])
+              const on = Boolean(draft[key])
               return (
                 <View key={key}>
                   {i > 0 && <View style={styles.divider} />}
