@@ -63,11 +63,17 @@ export const styles = StyleSheet.create((theme, rt) => ({
     zIndex: 20,
   },
   captureModeControl: {
-    marginHorizontal: 44,
+    marginHorizontal: theme.spacing.xxxl,
     marginBottom: theme.spacing.md,
     padding: theme.spacing.sm,
     borderRadius: theme.radius.lg,
     backgroundColor: theme.colors.surface,
+  },
+  captureModeHint: {
+    color: theme.colors.muted,
+    fontSize: theme.typography.sm,
+    marginTop: theme.spacing.sm,
+    textAlign: 'center',
   },
   strip: { height: 64 + 16, marginBottom: theme.spacing.xl },
   shutterRow: {
