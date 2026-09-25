@@ -32,7 +32,15 @@ jest.mock('expo-router', () => ({
 
 const mockCapturePhoto = jest.fn()
 jest.mock('react-native-vision-camera', () => ({
-  useCameraDevice: jest.fn(() => ({ id: 'back' })),
+  useCameraDevice: jest.fn(() => ({
+    id: 'back',
+    physicalDevices: ['wide-angle-camera'],
+    supportsLowLightBoost: true,
+    supportsPhotoHDR: true,
+    supportsSpeedQualityPrioritization: true,
+    minZoom: 1,
+    maxZoom: 8,
+  })),
   usePhotoOutput: jest.fn(() => ({ capturePhoto: mockCapturePhoto })),
   Camera: 'Camera',
 }))
@@ -80,6 +88,8 @@ jest.mock('@/src/lib/analytics/analytics', () => ({
   captureEvent: (...args: unknown[]) => mockCaptureEvent(...args),
   EVENTS: {
     CAMERA_OPENED: 'camera_opened',
+    CAMERA_DEVICE_READY: 'camera_device_ready',
+    PHOTO_CAPTURED: 'photo_captured',
     PHOTO_CAPTURE_FAILED: 'photo_capture_failed',
   },
 }))
@@ -148,9 +158,31 @@ describe('useCameraCapture handleTakePhoto', () => {
       await result.current.handleTakePhoto()
     })
 
-    expect(mockCaptureEvent).toHaveBeenCalledWith('photo_capture_failed', {
-      error: 'device busy',
+    expect(mockCaptureEvent).toHaveBeenCalledWith(
+      'photo_capture_failed',
+      expect.objectContaining({ error: 'device busy' }),
+    )
+    expect(result.current.capturedPhotos).toHaveLength(0)
+  })
+
+  it('disposes native photo buffers when temporary-file persistence fails', async () => {
+    const dispose = jest.fn()
+    mockCapturePhoto.mockResolvedValueOnce({
+      width: 100,
+      height: 100,
+      saveToTemporaryFileAsync: jest.fn(async () => {
+        throw new Error('disk full')
+      }),
+      dispose,
     })
+
+    const { result } = renderHook(() => useCameraCapture())
+
+    await act(async () => {
+      await result.current.handleTakePhoto()
+    })
+
+    expect(dispose).toHaveBeenCalledTimes(1)
     expect(result.current.capturedPhotos).toHaveLength(0)
   })
 
