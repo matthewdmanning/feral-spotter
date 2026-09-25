@@ -64,8 +64,10 @@ Statuses: pending · in-progress · awaiting-evidence · done · deferred: <reas
       completion risk at annotate (2026-09-25)
 - [x] Run Phase 2 (ux-heuristics). 25 findings, every one severity-rated, Trunk Test run on six screens,
       backlog ordered by severity × frequency. Interface scores 4/10. (2026-09-25)
-- [ ] File a child issue for each of the seven fix-now findings — U1, U2, U3, U4, U5, U11, U13 — before
-      any code changes (owner: user to approve, agent to file)
+- [x] Filed a child issue for each of the seven fix-now findings, all linked as sub-issues of #371
+      (2026-09-25): U1 #372, U2 #373, U3 #374, U4 #375, U5 #376, U11 #377, U13 #378. Four are
+      `ready-for-agent`; #373, #374 and #376 are `ready-for-human` because each carries a product or
+      flow decision, not just an implementation.
 - [ ] Capture a second-Submission baseline in PostHog before EXP-001's fix reaches a cohort, or the
       experiment cannot be read (owner: user)
 - [ ] Carry two Phase 1 observations into their own phases, not into code yet (owner: agent):

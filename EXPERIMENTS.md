@@ -30,13 +30,13 @@ column is recorded but does not reorder the list.
 
 | # | Idea | Finding | ICE (impact/confidence/ease) | Status |
 |---|---|---|---|---|
-| 1 | Render the submit state — disable the button, change the label, show progress. The flag already exists and is unused | U1 | 9 / 9 / 9 | fix now |
-| 2 | Confirm the Submission landed and say what happens to it next | U2 | 9 / 7 / 7 | fix now |
-| 3 | Give the first annotate entry an instruction that does not wait on the gated tutorial | U3 | 9 / 8 / 6 | fix now |
-| 4 | State the reason beside every disabled control (4 sites) | U4 | 7 / 9 / 8 | fix now |
-| 5 | Give the annotate pass an explicit forward control | U5 | 8 / 8 / 7 | fix now |
-| 6 | Rewrite the submit failure message to what/why/how, and say the draft is safe | U11 | 7 / 9 / 9 | fix now |
-| 7 | Render a human label on cat rows, with a distinct one for an all-unknown cat | U13 | 6 / 9 / 9 | fix now |
+| 1 | Render the submit state — disable the button, change the label, show progress. The flag already exists and is unused | U1 (#372) | 9 / 9 / 9 | issue filed |
+| 2 | Confirm the Submission landed and say what happens to it next | U2 (#373) | 9 / 7 / 7 | issue filed |
+| 3 | Give the first annotate entry an instruction that does not wait on the gated tutorial | U3 (#374) | 9 / 8 / 6 | issue filed |
+| 4 | State the reason beside every disabled control (4 sites) | U4 (#375) | 7 / 9 / 8 | issue filed |
+| 5 | Give the annotate pass an explicit forward control | U5 (#376) | 8 / 8 / 7 | issue filed |
+| 6 | Rewrite the submit failure message to what/why/how, and say the draft is safe | U11 (#377) | 7 / 9 / 9 | issue filed |
+| 7 | Render a human label on cat rows, with a distinct one for an all-unknown cat | U13 (#378) | 6 / 9 / 9 | issue filed |
 | 8 | Answer the Android back press in annotate instead of swallowing it | U6 | 7 / 8 / 6 | backlog |
 | 9 | Split "Done With This Cat" into one label per outcome | U7 | 7 / 8 / 7 | backlog |
 | 10 | Give a draft a non-destructive way out that keeps the work | U8 | 8 / 7 / 5 | backlog |
