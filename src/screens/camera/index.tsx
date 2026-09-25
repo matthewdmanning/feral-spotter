@@ -3,7 +3,7 @@ import { SegmentedControl } from '@/src/components/atoms/SegmentedControl'
 import { FlashList } from '@shopify/flash-list'
 import { Stack } from 'expo-router'
 import { SwitchCamera, X, Zap, ZapOff } from 'lucide-react-native'
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import {
   Linking,
   Pressable,
@@ -17,6 +17,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated'
+import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { useUnistyles } from 'react-native-unistyles'
 import { Camera, useCameraPermission } from 'react-native-vision-camera'
 import { styles } from './index.styles'
@@ -66,6 +67,16 @@ export default function CameraScreen() {
       easing: Easing.out(Easing.back(1.5)),
     })
   }, [shutterScale])
+
+  const cameraTapGesture = useMemo(() => {
+    const nativeGesture = Gesture.Native()
+    const tapGesture = Gesture.Tap()
+      .runOnJS(true)
+      .onEnd(() => {
+        void handleTakePhoto()
+      })
+    return Gesture.Simultaneous(nativeGesture, tapGesture)
+  }, [handleTakePhoto])
 
   if (!hasPermission)
     return (
@@ -118,21 +129,16 @@ export default function CameraScreen() {
   return (
     <View style={styles.root}>
       <Stack.Screen options={{ headerShown: false }} />
-      <Camera
-        ref={cameraRef}
-        style={RNStyleSheet.absoluteFill}
-        device={device}
-        isActive={isActive}
-        outputs={[photoOutput]}
-        enableNativeZoomGesture
-      />
-      <Pressable
-        style={RNStyleSheet.absoluteFill}
-        onPress={handleTakePhoto}
-        disabled={isTakingPhoto}
-        accessibilityRole="button"
-        accessibilityLabel={captureMode === 'burst' ? 'Capture burst' : 'Capture photo'}
-      />
+      <GestureDetector gesture={cameraTapGesture}>
+        <Camera
+          ref={cameraRef}
+          style={RNStyleSheet.absoluteFill}
+          device={device}
+          isActive={isActive}
+          outputs={[photoOutput]}
+          enableNativeZoomGesture
+        />
+      </GestureDetector>
       <Animated.View
         style={[
           RNStyleSheet.absoluteFill,
@@ -174,7 +180,10 @@ export default function CameraScreen() {
       </View>
 
       <View style={styles.bottomBar}>
-        <View style={styles.captureModeControl}>
+        <View
+          style={styles.captureModeControl}
+          pointerEvents={isTakingPhoto ? 'none' : 'auto'}
+        >
           <SegmentedControl
             label="Capture"
             options={CAPTURE_MODES}
@@ -182,6 +191,13 @@ export default function CameraScreen() {
             onChange={(mode) => mode && setCaptureMode(mode)}
             accessibilityLabel="Capture mode"
           />
+          {captureMode === 'burst' && (
+            <Text style={styles.captureModeHint}>
+              {isTakingPhoto
+                ? 'Tap preview or shutter to stop'
+                : 'Tap preview or shutter to start'}
+            </Text>
+          )}
         </View>
         {hasPhotos && (
           <FlashList
@@ -208,9 +224,16 @@ export default function CameraScreen() {
               onPress={handleTakePhoto}
               onPressIn={onPressIn}
               onPressOut={onPressOut}
-              disabled={isTakingPhoto}
+              disabled={captureMode === 'single' && isTakingPhoto}
               style={[styles.shutter, isTakingPhoto && styles.shutterBusy]}
               accessibilityRole="button"
+              accessibilityLabel={
+                captureMode === 'burst' && isTakingPhoto
+                  ? 'Stop burst'
+                  : captureMode === 'burst'
+                    ? 'Start burst'
+                    : 'Capture photo'
+              }
             >
               <View style={styles.shutterInner} />
             </Pressable>
