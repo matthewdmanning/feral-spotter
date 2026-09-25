@@ -208,7 +208,7 @@ export function useCameraCapture(): CameraCaptureResult {
         // below for why.
         if (await gallerySavePermission.check()) {
           try {
-            await Asset.create(uri)
+            await Asset.create(submission.uri)
           } catch (err) {
             console.error('[useCameraCapture] Asset.create:', err)
           }
@@ -300,9 +300,11 @@ export function useCameraCapture(): CameraCaptureResult {
     const openedAt = cameraOpenedAt.current
     hasReportedInitialDevice.current = true
     captureEvent(EVENTS.CAMERA_DEVICE_READY, {
-      ready_duration_ms: openedAt === null ? undefined : Date.now() - openedAt,
+      ...(openedAt === null
+        ? {}
+        : { ready_duration_ms: Date.now() - openedAt }),
       camera_position: cameraPosition,
-      physical_devices: device.physicalDevices,
+      physical_device_count: device.physicalDevices.length,
       supports_low_light_boost: device.supportsLowLightBoost,
       supports_photo_hdr: device.supportsPhotoHDR,
       supports_speed_quality_prioritization:
