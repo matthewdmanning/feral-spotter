@@ -1,4 +1,5 @@
-import { useCameraCapture } from '@/src/hooks/useCameraCapture'
+import { useCameraCapture, type CaptureMode } from '@/src/hooks/useCameraCapture'
+import { SegmentedControl } from '@/src/components/atoms/SegmentedControl'
 import { FlashList } from '@shopify/flash-list'
 import { Stack } from 'expo-router'
 import { SwitchCamera, X, Zap, ZapOff } from 'lucide-react-native'
@@ -20,6 +21,11 @@ import { useUnistyles } from 'react-native-unistyles'
 import { Camera, useCameraPermission } from 'react-native-vision-camera'
 import { styles } from './index.styles'
 
+const CAPTURE_MODES: { value: CaptureMode; label: string }[] = [
+  { value: 'single', label: 'Single' },
+  { value: 'burst', label: 'Burst' },
+]
+
 export default function CameraScreen() {
   const { theme } = useUnistyles()
   const { hasPermission, requestPermission } = useCameraPermission()
@@ -31,11 +37,13 @@ export default function CameraScreen() {
     capturedPhotos,
     flashMode,
     isTakingPhoto,
+    captureMode,
     flashOverlayStyle,
     listRef,
     renderItem,
     keyExtractor,
     handleTakePhoto,
+    setCaptureMode,
     cycleFlash,
     flipCamera,
     handleDone,
@@ -118,6 +126,13 @@ export default function CameraScreen() {
         outputs={[photoOutput]}
         enableNativeZoomGesture
       />
+      <Pressable
+        style={RNStyleSheet.absoluteFill}
+        onPress={handleTakePhoto}
+        disabled={isTakingPhoto}
+        accessibilityRole="button"
+        accessibilityLabel={captureMode === 'burst' ? 'Capture burst' : 'Capture photo'}
+      />
       <Animated.View
         style={[
           RNStyleSheet.absoluteFill,
@@ -159,6 +174,15 @@ export default function CameraScreen() {
       </View>
 
       <View style={styles.bottomBar}>
+        <View style={styles.captureModeControl}>
+          <SegmentedControl
+            label="Capture"
+            options={CAPTURE_MODES}
+            value={captureMode}
+            onChange={(mode) => mode && setCaptureMode(mode)}
+            accessibilityLabel="Capture mode"
+          />
+        </View>
         {hasPhotos && (
           <FlashList
             ref={listRef}
