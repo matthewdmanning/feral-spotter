@@ -88,6 +88,9 @@ export function useCameraCapture(): CameraCaptureResult {
   const improvedCaptureSetting = useSettingsStore(
     (s) => s.settings.improved_camera_capture === true,
   )
+  const performanceChecks = useSettingsStore(
+    (s) => s.settings.camera_performance_checks === true,
+  )
   const improvedCapture =
     Platform.OS === 'android' && improvedCaptureSetting
   const addPhoto = usePhotoStore((s) => s.addPhoto)
@@ -150,13 +153,13 @@ export function useCameraCapture(): CameraCaptureResult {
       },
     )
 
-    const captureStartedAt = Date.now()
+    const captureStartedAt = performanceChecks ? Date.now() : null
     try {
       const photo = await photoOutput.capturePhoto(
         { flashMode, enableShutterSound: true },
         {},
       )
-      const capturedAt = Date.now()
+      const capturedAt = performanceChecks ? Date.now() : null
 
       let submission: SubmissionPhoto
       try {
@@ -181,7 +184,7 @@ export function useCameraCapture(): CameraCaptureResult {
         photo.dispose()
       }
 
-      const persistedAt = Date.now()
+      const persistedAt = performanceChecks ? Date.now() : null
       addPhoto(submission)
       setCapturedPhotos((prev) => [...prev, submission])
       captureEvent(EVENTS.PHOTO_CAPTURED, {
@@ -191,9 +194,20 @@ export function useCameraCapture(): CameraCaptureResult {
         capture_pipeline: improvedCapture ? 'improved' : 'legacy',
         quality_prioritization: qualityPrioritization ?? 'default',
         low_light_boost: enableLowLightBoost,
-        capture_duration_ms: capturedAt - captureStartedAt,
-        temporary_file_save_duration_ms: persistedAt - capturedAt,
-        capture_pipeline_duration_ms: persistedAt - captureStartedAt,
+        ...(performanceChecks &&
+        captureStartedAt !== null &&
+        capturedAt !== null &&
+        persistedAt !== null
+          ? {
+              camera_performance_checks: true,
+              camera_backend: 'visioncamera',
+              camera_variant: improvedCapture ? 'device_aware' : 'baseline',
+              camera_platform: Platform.OS,
+              capture_duration_ms: capturedAt - captureStartedAt,
+              temporary_file_save_duration_ms: persistedAt - capturedAt,
+              capture_pipeline_duration_ms: persistedAt - captureStartedAt,
+            }
+          : {}),
       })
 
       // Upload starts immediately, in the background — not gated on this
@@ -228,7 +242,15 @@ export function useCameraCapture(): CameraCaptureResult {
         capture_pipeline: improvedCapture ? 'improved' : 'legacy',
         quality_prioritization: qualityPrioritization ?? 'default',
         low_light_boost: enableLowLightBoost,
-        elapsed_ms: Date.now() - captureStartedAt,
+        ...(performanceChecks && captureStartedAt !== null
+          ? {
+              camera_performance_checks: true,
+              camera_backend: 'visioncamera',
+              camera_variant: improvedCapture ? 'device_aware' : 'baseline',
+              camera_platform: Platform.OS,
+              elapsed_ms: Date.now() - captureStartedAt,
+            }
+          : {}),
       })
     } finally {
       setIsTakingPhoto(false)
@@ -245,6 +267,7 @@ export function useCameraCapture(): CameraCaptureResult {
     improvedCapture,
     qualityPrioritization,
     enableLowLightBoost,
+    performanceChecks,
   ])
 
   // ── Discard ───────────────────────────────────────────────────────────────
@@ -299,17 +322,23 @@ export function useCameraCapture(): CameraCaptureResult {
   // Record the start from an effect rather than render; Date.now() is impure
   // and React Compiler correctly rejects reading it during render.
   useEffect(() => {
-    cameraOpenedAt.current = Date.now()
-  }, [])
+    cameraOpenedAt.current = performanceChecks ? Date.now() : null
+  }, [performanceChecks])
 
   useEffect(() => {
     if (!device || hasReportedInitialDevice.current) return
     const openedAt = cameraOpenedAt.current
     hasReportedInitialDevice.current = true
     captureEvent(EVENTS.CAMERA_DEVICE_READY, {
-      ...(openedAt === null
-        ? {}
-        : { ready_duration_ms: Date.now() - openedAt }),
+      ...(performanceChecks && openedAt !== null
+        ? {
+            camera_performance_checks: true,
+            camera_backend: 'visioncamera',
+            camera_variant: improvedCapture ? 'device_aware' : 'baseline',
+            camera_platform: Platform.OS,
+            ready_duration_ms: Date.now() - openedAt,
+          }
+        : {}),
       camera_position: cameraPosition,
       physical_device_count: device.physicalDevices.length,
       supports_low_light_boost: device.supportsLowLightBoost,
@@ -321,7 +350,13 @@ export function useCameraCapture(): CameraCaptureResult {
       capture_pipeline: improvedCapture ? 'improved' : 'legacy',
       quality_prioritization: qualityPrioritization ?? 'default',
     })
-  }, [cameraPosition, device, improvedCapture, qualityPrioritization])
+  }, [
+    cameraPosition,
+    device,
+    improvedCapture,
+    performanceChecks,
+    qualityPrioritization,
+  ])
 
   // Funnel entry point — nothing else fires between opening the camera and
   // hitting submit besides this and PHOTO_CAPTURE_FAILED above.
