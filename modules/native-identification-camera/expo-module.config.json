@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": {
+    "modules": ["NativeIdentificationCameraModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.nativeidentificationcamera.NativeIdentificationCameraModule"]
+  }
+}
