@@ -87,6 +87,9 @@ export function useCameraCapture(): CameraCaptureResult {
   const keepOnDevice = useSettingsStore(
     (s) => s.settings.keep_photos_on_device !== false,
   )
+  const performanceChecks = useSettingsStore(
+    (s) => s.settings.camera_performance_checks === true,
+  )
   const addPhoto = usePhotoStore((s) => s.addPhoto)
   const removePhoto = usePhotoStore((s) => s.removePhoto)
   const updatePhoto = usePhotoStore((s) => s.updatePhoto)
@@ -166,7 +169,7 @@ export function useCameraCapture(): CameraCaptureResult {
       },
     )
 
-    const sequenceStartedAt = Date.now()
+    const sequenceStartedAt = performanceChecks ? Date.now() : null
     let completedPhotoCount = 0
 
     try {
@@ -176,12 +179,12 @@ export function useCameraCapture(): CameraCaptureResult {
         keepOnDevice && (await gallerySavePermission.check())
 
       do {
-        const captureStartedAt = Date.now()
+        const captureStartedAt = performanceChecks ? Date.now() : null
         const photo = await photoOutput.capturePhoto(
           { flashMode, enableShutterSound: true },
           {},
         )
-        const capturedAt = Date.now()
+        const capturedAt = performanceChecks ? Date.now() : null
 
         let submission: SubmissionPhoto
         try {
@@ -203,7 +206,7 @@ export function useCameraCapture(): CameraCaptureResult {
           photo.dispose()
         }
 
-        const persistedAt = Date.now()
+        const persistedAt = performanceChecks ? Date.now() : null
         completedPhotoCount += 1
 
         addPhoto(submission)
@@ -214,9 +217,20 @@ export function useCameraCapture(): CameraCaptureResult {
           photo_height: submission.height,
           capture_mode: captureMode,
           quality_prioritization: qualityPrioritization ?? 'default',
-          capture_duration_ms: capturedAt - captureStartedAt,
-          temporary_file_save_duration_ms: persistedAt - capturedAt,
-          capture_pipeline_duration_ms: persistedAt - captureStartedAt,
+          ...(performanceChecks &&
+          captureStartedAt !== null &&
+          capturedAt !== null &&
+          persistedAt !== null
+            ? {
+                camera_performance_checks: true,
+                camera_backend: 'visioncamera',
+                camera_variant: `tap_${captureMode}`,
+                camera_platform: Platform.OS,
+                capture_duration_ms: capturedAt - captureStartedAt,
+                temporary_file_save_duration_ms: persistedAt - capturedAt,
+                capture_pipeline_duration_ms: persistedAt - captureStartedAt,
+              }
+            : {}),
         })
 
         const uid = user?.uid
@@ -240,8 +254,16 @@ export function useCameraCapture(): CameraCaptureResult {
         captureEvent(EVENTS.CAMERA_CAPTURE_SEQUENCE_COMPLETED, {
           capture_mode: captureMode,
           photo_count: completedPhotoCount,
-          duration_ms: Date.now() - sequenceStartedAt,
           quality_prioritization: qualityPrioritization ?? 'default',
+          ...(performanceChecks && sequenceStartedAt !== null
+            ? {
+                camera_performance_checks: true,
+                camera_backend: 'visioncamera',
+                camera_variant: 'tap_burst',
+                camera_platform: Platform.OS,
+                duration_ms: Date.now() - sequenceStartedAt,
+              }
+            : {}),
         })
       }
     } catch (err) {
@@ -250,7 +272,15 @@ export function useCameraCapture(): CameraCaptureResult {
         error: err instanceof Error ? err.message : String(err),
         capture_mode: captureMode,
         completed_photo_count: completedPhotoCount,
-        elapsed_ms: Date.now() - sequenceStartedAt,
+        ...(performanceChecks && sequenceStartedAt !== null
+          ? {
+              camera_performance_checks: true,
+              camera_backend: 'visioncamera',
+              camera_variant: `tap_${captureMode}`,
+              camera_platform: Platform.OS,
+              elapsed_ms: Date.now() - sequenceStartedAt,
+            }
+          : {}),
       })
     } finally {
       burstStopRequested.current = true
@@ -267,6 +297,7 @@ export function useCameraCapture(): CameraCaptureResult {
     keepOnDevice,
     user,
     qualityPrioritization,
+    performanceChecks,
   ])
 
   useEffect(() => {
@@ -325,17 +356,23 @@ export function useCameraCapture(): CameraCaptureResult {
   // Record the start from an effect rather than render; Date.now() is impure
   // and React Compiler correctly rejects reading it during render.
   useEffect(() => {
-    cameraOpenedAt.current = Date.now()
-  }, [])
+    cameraOpenedAt.current = performanceChecks ? Date.now() : null
+  }, [performanceChecks])
 
   useEffect(() => {
     if (!device || hasReportedInitialDevice.current) return
     const openedAt = cameraOpenedAt.current
     hasReportedInitialDevice.current = true
     captureEvent(EVENTS.CAMERA_DEVICE_READY, {
-      ...(openedAt === null
-        ? {}
-        : { ready_duration_ms: Date.now() - openedAt }),
+      ...(performanceChecks && openedAt !== null
+        ? {
+            camera_performance_checks: true,
+            camera_backend: 'visioncamera',
+            camera_variant: `tap_${captureMode}`,
+            camera_platform: Platform.OS,
+            ready_duration_ms: Date.now() - openedAt,
+          }
+        : {}),
       camera_position: cameraPosition,
       physical_device_count: device.physicalDevices.length,
       supports_low_light_boost: device.supportsLowLightBoost,
@@ -345,7 +382,7 @@ export function useCameraCapture(): CameraCaptureResult {
       min_zoom: device.minZoom,
       max_zoom: device.maxZoom,
     })
-  }, [cameraPosition, device])
+  }, [cameraPosition, captureMode, device, performanceChecks])
 
   // Funnel entry point — nothing else fires between opening the camera and
   // hitting submit besides this and PHOTO_CAPTURE_FAILED above.
