@@ -14,6 +14,7 @@ export interface AppSettings {
   annotation_enabled: boolean
   skip_photo_remove_confirm: boolean
   improved_camera_capture: boolean
+  camera_performance_checks: boolean
 }
 
 interface SettingsState {
@@ -31,6 +32,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   annotation_enabled: true,
   skip_photo_remove_confirm: false,
   improved_camera_capture: false,
+  camera_performance_checks: false,
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
