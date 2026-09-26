@@ -124,8 +124,7 @@ export function useCameraCapture(): CameraCaptureResult {
     void photoOutput
       .prepareSettings([{ flashMode, enableShutterSound: true }])
       .catch((err) => {
-        if (__DEV__)
-          console.warn('[useCameraCapture] prepareSettings:', err)
+        if (__DEV__) console.warn('[useCameraCapture] prepareSettings:', err)
       })
   }, [flashMode, photoOutput])
 
@@ -238,7 +237,9 @@ export function useCameraCapture(): CameraCaptureResult {
         if (uid && submissionId) {
           uploadNewPhoto(submission, uid, submissionId, updatePhoto)
         } else {
-          console.error('[useCameraCapture] missing uid/submissionId for upload')
+          console.error(
+            '[useCameraCapture] missing uid/submissionId for upload',
+          )
         }
 
         if (canSaveToGallery) {
