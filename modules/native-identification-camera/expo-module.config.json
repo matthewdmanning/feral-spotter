@@ -5,6 +5,8 @@
     "podspecPath": ["ios/NativeIdentificationCamera.podspec"]
   },
   "android": {
-    "modules": ["expo.modules.nativeidentificationcamera.NativeIdentificationCameraModule"]
+    "modules": [
+      "expo.modules.nativeidentificationcamera.NativeIdentificationCameraModule"
+    ]
   }
 }
