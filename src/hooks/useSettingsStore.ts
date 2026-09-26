@@ -58,13 +58,14 @@ export const useSettingsStore = create<SettingsState>()(
       name: 'settings-store',
       storage: createJSONStorage(() => asyncStorage),
       merge: (persisted, current) => {
-        const persistedState = persisted as Partial<SettingsState> | undefined
+        const persistedSettings = (
+          persisted as Partial<SettingsState> | undefined
+        )?.settings
         return {
           ...current,
-          ...persistedState,
           settings: {
             ...DEFAULT_SETTINGS,
-            ...persistedState?.settings,
+            ...persistedSettings,
           },
         }
       },
