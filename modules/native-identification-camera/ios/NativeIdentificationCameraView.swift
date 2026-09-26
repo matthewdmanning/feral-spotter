@@ -74,6 +74,10 @@ public final class NativeIdentificationCameraView: ExpoView {
   private var currentDevice: AVCaptureDevice?
   private var captureDelegates: [Int64: NativePhotoCaptureDelegate] = [:]
   private var defaultPhotoDimensions: [String: CMVideoDimensions] = [:]
+  private var defaultLowLightBoost: [String: Bool] = [:]
+  private var rotationCoordinator: Any?
+  private var previewRotationObservation: NSKeyValueObservation?
+  private var captureRotationObservation: NSKeyValueObservation?
 
   var isActive = false {
     didSet { updateRunningState() }
@@ -129,8 +133,10 @@ public final class NativeIdentificationCameraView: ExpoView {
   private func reconfigurePolicy() {
     sessionQueue.async { [weak self] in
       guard let self, let device = self.currentDevice else { return }
+      self.session.beginConfiguration()
       self.configureOutput(for: device)
       self.configureDevicePolicy(device)
+      self.session.commitConfiguration()
     }
   }
 
@@ -187,13 +193,19 @@ public final class NativeIdentificationCameraView: ExpoView {
       if defaultPhotoDimensions[device.uniqueID] == nil {
         defaultPhotoDimensions[device.uniqueID] = photoOutput.maxPhotoDimensions
       }
+      if device.isLowLightBoostSupported && defaultLowLightBoost[device.uniqueID] == nil {
+        defaultLowLightBoost[device.uniqueID] =
+          device.automaticallyEnablesLowLightBoostWhenAvailable
+      }
 
       configureOutput(for: device)
       configureDevicePolicy(device)
       session.commitConfiguration()
 
       DispatchQueue.main.async { [weak self] in
-        self?.onCameraReady([:])
+        guard let self else { return }
+        self.configureOrientation(for: device)
+        self.onCameraReady([:])
       }
       updateRunningState()
     } catch {
@@ -205,16 +217,6 @@ public final class NativeIdentificationCameraView: ExpoView {
   }
 
   private func configureOutput(for device: AVCaptureDevice) {
-    let priority = qualityPrioritization
-    photoOutput.maxPhotoQualityPrioritization = priority
-
-    if #available(iOS 17.0, *) {
-      photoOutput.isZeroShutterLagEnabled =
-        motionPriority && photoOutput.isZeroShutterLagSupported
-      photoOutput.isFastCapturePrioritizationEnabled =
-        motionPriority && photoOutput.isFastCapturePrioritizationSupported
-    }
-
     if maxDetail,
        let largest = device.activeFormat.supportedMaxPhotoDimensions.max(by: {
          Int64($0.width) * Int64($0.height) < Int64($1.width) * Int64($1.height)
@@ -224,6 +226,15 @@ public final class NativeIdentificationCameraView: ExpoView {
               original.width > 0,
               original.height > 0 {
       photoOutput.maxPhotoDimensions = original
+    }
+
+    photoOutput.maxPhotoQualityPrioritization = qualityPrioritization
+
+    if #available(iOS 17.0, *) {
+      photoOutput.isZeroShutterLagEnabled =
+        motionPriority && photoOutput.isZeroShutterLagSupported
+      photoOutput.isFastCapturePrioritizationEnabled =
+        motionPriority && photoOutput.isFastCapturePrioritizationSupported
     }
   }
 
@@ -252,8 +263,12 @@ public final class NativeIdentificationCameraView: ExpoView {
         device.exposureMode = .continuousAutoExposure
       }
 
-      if device.isLowLightBoostSupported && disableLowLightBoost {
-        device.automaticallyEnablesLowLightBoostWhenAvailable = false
+      if device.isLowLightBoostSupported {
+        if disableLowLightBoost {
+          device.automaticallyEnablesLowLightBoostWhenAvailable = false
+        } else if let defaultValue = defaultLowLightBoost[device.uniqueID] {
+          device.automaticallyEnablesLowLightBoostWhenAvailable = defaultValue
+        }
       }
 
       if motionPriority, let cap = motionPreservingExposureCap(for: device) {
@@ -297,6 +312,47 @@ public final class NativeIdentificationCameraView: ExpoView {
     duration.isValid &&
       !duration.isIndefinite &&
       CMTimeCompare(duration, .zero) > 0
+  }
+
+  private func configureOrientation(for device: AVCaptureDevice) {
+    previewRotationObservation = nil
+    captureRotationObservation = nil
+    rotationCoordinator = nil
+
+    if #available(iOS 17.0, *) {
+      let coordinator = AVCaptureDevice.RotationCoordinator(
+        device: device,
+        previewLayer: previewLayer
+      )
+      rotationCoordinator = coordinator
+
+      previewRotationObservation = coordinator.observe(
+        \.videoRotationAngleForHorizonLevelPreview,
+        options: [.initial, .new]
+      ) { [weak self] coordinator, _ in
+        guard let connection = self?.previewLayer.connection else { return }
+        let angle = coordinator.videoRotationAngleForHorizonLevelPreview
+        if connection.isVideoRotationAngleSupported(angle) {
+          connection.videoRotationAngle = angle
+        }
+      }
+
+      captureRotationObservation = coordinator.observe(
+        \.videoRotationAngleForHorizonLevelCapture,
+        options: [.initial, .new]
+      ) { [weak self] coordinator, _ in
+        guard let connection = self?.photoOutput.connection(with: .video) else {
+          return
+        }
+        let angle = coordinator.videoRotationAngleForHorizonLevelCapture
+        if connection.isVideoRotationAngleSupported(angle) {
+          connection.videoRotationAngle = angle
+        }
+      }
+    } else {
+      previewLayer.connection?.videoOrientation = .portrait
+      photoOutput.connection(with: .video)?.videoOrientation = .portrait
+    }
   }
 
   private func updateRunningState() {
@@ -429,6 +485,8 @@ public final class NativeIdentificationCameraView: ExpoView {
   }
 
   deinit {
+    previewRotationObservation = nil
+    captureRotationObservation = nil
     if session.isRunning {
       session.stopRunning()
     }
