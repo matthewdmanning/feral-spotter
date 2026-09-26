@@ -61,6 +61,11 @@ const PHOTO_TOGGLES = [
     label: 'Subject Metering',
     desc: 'Allow an optional bounding-box localizer to steer focus and exposure',
   },
+  {
+    key: 'camera_performance_checks',
+    label: 'Camera Performance Checks',
+    desc: 'Attach comparable camera timing data to PostHog events for A/B testing',
+  },
 ] as const
 
 export default function SettingsScreen() {
