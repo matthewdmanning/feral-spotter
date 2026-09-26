@@ -1,8 +1,12 @@
-import { useCameraCapture } from '@/src/hooks/useCameraCapture'
+import {
+  useCameraCapture,
+  type CaptureMode,
+} from '@/src/hooks/useCameraCapture'
+import { SegmentedControl } from '@/src/components/atoms/SegmentedControl'
 import { FlashList } from '@shopify/flash-list'
 import { Stack } from 'expo-router'
 import { SwitchCamera, X, Zap, ZapOff } from 'lucide-react-native'
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import {
   Linking,
   Pressable,
@@ -16,9 +20,15 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated'
+import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { useUnistyles } from 'react-native-unistyles'
 import { Camera, useCameraPermission } from 'react-native-vision-camera'
 import { styles } from './index.styles'
+
+const CAPTURE_MODES: { value: CaptureMode; label: string }[] = [
+  { value: 'single', label: 'Single' },
+  { value: 'burst', label: 'Burst' },
+]
 
 export default function CameraScreen() {
   const { theme } = useUnistyles()
@@ -31,11 +41,13 @@ export default function CameraScreen() {
     capturedPhotos,
     flashMode,
     isTakingPhoto,
+    captureMode,
     flashOverlayStyle,
     listRef,
     renderItem,
     keyExtractor,
     handleTakePhoto,
+    setCaptureMode,
     cycleFlash,
     flipCamera,
     handleDone,
@@ -58,6 +70,16 @@ export default function CameraScreen() {
       easing: Easing.out(Easing.back(1.5)),
     })
   }, [shutterScale])
+
+  const cameraTapGesture = useMemo(() => {
+    const nativeGesture = Gesture.Native()
+    const tapGesture = Gesture.Tap()
+      .runOnJS(true)
+      .onEnd(() => {
+        void handleTakePhoto()
+      })
+    return Gesture.Simultaneous(nativeGesture, tapGesture)
+  }, [handleTakePhoto])
 
   if (!hasPermission)
     return (
@@ -110,14 +132,16 @@ export default function CameraScreen() {
   return (
     <View style={styles.root}>
       <Stack.Screen options={{ headerShown: false }} />
-      <Camera
-        ref={cameraRef}
-        style={RNStyleSheet.absoluteFill}
-        device={device}
-        isActive={isActive}
-        outputs={[photoOutput]}
-        enableNativeZoomGesture
-      />
+      <GestureDetector gesture={cameraTapGesture}>
+        <Camera
+          ref={cameraRef}
+          style={RNStyleSheet.absoluteFill}
+          device={device}
+          isActive={isActive}
+          outputs={[photoOutput]}
+          enableNativeZoomGesture
+        />
+      </GestureDetector>
       <Animated.View
         style={[
           RNStyleSheet.absoluteFill,
@@ -159,6 +183,25 @@ export default function CameraScreen() {
       </View>
 
       <View style={styles.bottomBar}>
+        <View
+          style={styles.captureModeControl}
+          pointerEvents={isTakingPhoto ? 'none' : 'auto'}
+        >
+          <SegmentedControl
+            label="Capture"
+            options={CAPTURE_MODES}
+            value={captureMode}
+            onChange={(mode) => mode && setCaptureMode(mode)}
+            accessibilityLabel="Capture mode"
+          />
+          {captureMode === 'burst' && (
+            <Text style={styles.captureModeHint}>
+              {isTakingPhoto
+                ? 'Tap preview or shutter to stop'
+                : 'Tap preview or shutter to start'}
+            </Text>
+          )}
+        </View>
         {hasPhotos && (
           <FlashList
             ref={listRef}
@@ -184,9 +227,16 @@ export default function CameraScreen() {
               onPress={handleTakePhoto}
               onPressIn={onPressIn}
               onPressOut={onPressOut}
-              disabled={isTakingPhoto}
+              disabled={captureMode === 'single' && isTakingPhoto}
               style={[styles.shutter, isTakingPhoto && styles.shutterBusy]}
               accessibilityRole="button"
+              accessibilityLabel={
+                captureMode === 'burst' && isTakingPhoto
+                  ? 'Stop burst'
+                  : captureMode === 'burst'
+                    ? 'Start burst'
+                    : 'Capture photo'
+              }
             >
               <View style={styles.shutterInner} />
             </Pressable>
