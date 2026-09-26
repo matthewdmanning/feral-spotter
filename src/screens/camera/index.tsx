@@ -36,6 +36,7 @@ export default function CameraScreen() {
     renderItem,
     keyExtractor,
     handleTakePhoto,
+    handleCameraConfigured,
     cycleFlash,
     flipCamera,
     handleDone,
@@ -116,6 +117,7 @@ export default function CameraScreen() {
         device={device}
         isActive={isActive}
         outputs={[photoOutput]}
+        onConfigured={handleCameraConfigured}
         enableNativeZoomGesture
       />
       <Animated.View
