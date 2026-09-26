@@ -176,6 +176,15 @@ export default function AnnotateScreen() {
         )}
       </View>
 
+      {/* #375: "← Previous" is dead on the first photo, and the dots alone
+          did not say so. There is no way out to name — this is the first
+          photo. */}
+      {isFirst && photos.length > 1 && (
+        <Text style={styles.disabledReason}>
+          You are on the first photo of {photos.length}.
+        </Text>
+      )}
+
       {/* Bottom buttons — below carousel, never covered by canvas */}
       <View style={styles.bottomBar}>
         <Pressable

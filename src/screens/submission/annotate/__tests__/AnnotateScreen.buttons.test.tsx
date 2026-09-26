@@ -120,6 +120,8 @@ describe('AnnotateScreen buttons', () => {
     fireEvent.press(prevButton)
 
     expect(handlePrevPhoto).not.toHaveBeenCalled()
+    // #375: the dead button must say why it is dead.
+    expect(screen.getByText(/first photo/)).toBeTruthy()
   })
 
   it('second photo: Previous is enabled and calls handlePrevPhoto', () => {
@@ -131,6 +133,8 @@ describe('AnnotateScreen buttons', () => {
     fireEvent.press(screen.getByText('← Previous'))
 
     expect(handlePrevPhoto).toHaveBeenCalledTimes(1)
+    // #375: no reason line while the button works.
+    expect(screen.queryByText(/first photo/)).toBeNull()
   })
 
   it('Not in Photo calls handleNotInPhoto', () => {
