@@ -31,6 +31,7 @@ export const EVENTS = {
   SUBMISSION_FAILED: 'submission_failed',
   REPORTS_VIEWED: 'feral_reports_viewed',
   CAMERA_OPENED: 'camera_opened',
+  CAMERA_DEVICE_READY: 'camera_device_ready',
   PHOTO_CAPTURED: 'photo_captured',
   PHOTO_CAPTURE_FAILED: 'photo_capture_failed',
   LIBRARY_PHOTOS_SELECTED: 'library_photos_selected',
