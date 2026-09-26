@@ -36,7 +36,17 @@ jest.mock('expo-router', () => ({
   useIsFocused: () => true,
 }))
 
-const mockUseCameraDevice = jest.fn((position: string) => ({ id: position }))
+// A CameraDevice carries the capability fields the readiness telemetry reads;
+// an id-only double makes the hook throw before any control is exercised.
+const mockUseCameraDevice = jest.fn((position: string) => ({
+  id: position,
+  physicalDevices: ['wide-angle-camera'],
+  supportsLowLightBoost: false,
+  supportsPhotoHDR: false,
+  supportsSpeedQualityPrioritization: false,
+  minZoom: 1,
+  maxZoom: 8,
+}))
 jest.mock('react-native-vision-camera', () => ({
   useCameraDevice: (position: string) => mockUseCameraDevice(position),
   usePhotoOutput: jest.fn(() => ({ capturePhoto: jest.fn() })),

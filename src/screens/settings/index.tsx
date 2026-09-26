@@ -9,6 +9,7 @@ import { router } from 'expo-router'
 import { Check, FileText, Key, Trash2 } from 'lucide-react-native'
 import { useState } from 'react'
 import {
+  Platform,
   Pressable,
   ScrollView,
   Switch,
@@ -41,12 +42,26 @@ const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
 ]
 
 const PHOTO_TOGGLES = [
+  ...(Platform.OS === 'android'
+    ? [
+        {
+          key: 'improved_camera_capture',
+          label: 'Improved Camera Capture',
+          desc: 'Use device-aware high-quality capture and low-light boost when supported',
+        } as const,
+      ]
+    : []),
+  {
+    key: 'camera_performance_checks',
+    label: 'Camera Performance Checks',
+    desc: 'Attach comparable camera timing data to PostHog events for A/B testing',
+  } as const,
   {
     key: 'keep_photos_on_device',
     label: 'Keep Photos on Device',
     desc: 'Save captured photos to your camera roll',
-  },
-] as const
+  } as const,
+]
 
 export default function SettingsScreen() {
   const { theme } = useUnistyles()
@@ -170,10 +185,7 @@ export default function SettingsScreen() {
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Photos</Text>
             {PHOTO_TOGGLES.map(({ key, label, desc }, i) => {
-              const on =
-                key === 'keep_photos_on_device'
-                  ? draft[key] !== false
-                  : Boolean(draft[key])
+              const on = Boolean(draft[key])
               return (
                 <View key={key}>
                   {i > 0 && <View style={styles.divider} />}

@@ -26,7 +26,12 @@ import { Asset } from 'expo-media-library'
 import { router, useIsFocused } from 'expo-router'
 import { randomUUID } from 'expo-crypto'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { AppState, type AppStateStatus, type ViewStyle } from 'react-native'
+import {
+  AppState,
+  Platform,
+  type AppStateStatus,
+  type ViewStyle,
+} from 'react-native'
 import {
   Easing,
   useAnimatedStyle,
@@ -52,6 +57,7 @@ export interface CameraCaptureResult {
   cameraRef: React.RefObject<CameraRef | null>
   photoOutput: CameraPhotoOutput
   isActive: boolean
+  enableLowLightBoost: boolean
   // State
   capturedPhotos: SubmissionPhoto[]
   flashMode: FlashMode
@@ -79,6 +85,13 @@ export function useCameraCapture(): CameraCaptureResult {
   const keepOnDevice = useSettingsStore(
     (s) => s.settings.keep_photos_on_device !== false,
   )
+  const improvedCaptureSetting = useSettingsStore(
+    (s) => s.settings.improved_camera_capture === true,
+  )
+  const performanceChecks = useSettingsStore(
+    (s) => s.settings.camera_performance_checks === true,
+  )
+  const improvedCapture = Platform.OS === 'android' && improvedCaptureSetting
   const addPhoto = usePhotoStore((s) => s.addPhoto)
   const removePhoto = usePhotoStore((s) => s.removePhoto)
   const updatePhoto = usePhotoStore((s) => s.updatePhoto)
@@ -92,7 +105,20 @@ export function useCameraCapture(): CameraCaptureResult {
   const device = useCameraDevice(cameraPosition)
   const cameraRef = useRef<CameraRef>(null)
   const listRef = useRef<FlashListRef<SubmissionPhoto>>(null)
-  const photoOutput = usePhotoOutput()
+  // Keep the legacy output byte-for-byte equivalent unless the user opts in.
+  // The improved path uses VisionCamera's own capability flag: zero-shutter-lag
+  // when the device supports it, balanced otherwise. That favors recoverable
+  // sharpness for moving cats while preserving the OEM processed-photo pipeline.
+  const qualityPrioritization = improvedCapture
+    ? device?.supportsSpeedQualityPrioritization
+      ? 'speed'
+      : 'balanced'
+    : undefined
+  const enableLowLightBoost =
+    improvedCapture && Boolean(device?.supportsLowLightBoost)
+  const photoOutput = usePhotoOutput(
+    qualityPrioritization ? { qualityPrioritization } : undefined,
+  )
 
   // #253: Android reclaims the camera hardware whenever the app is
   // backgrounded for long enough (e.g. screen lock), regardless of this
@@ -126,34 +152,61 @@ export function useCameraCapture(): CameraCaptureResult {
       },
     )
 
+    const captureStartedAt = performanceChecks ? Date.now() : null
     try {
       const photo = await photoOutput.capturePhoto(
         { flashMode, enableShutterSound: true },
         {},
       )
-      const filePath = await photo.saveToTemporaryFileAsync()
-      const uri = `file://${filePath}`
+      const capturedAt = performanceChecks ? Date.now() : null
 
-      const submission: SubmissionPhoto = {
-        local_id: randomUUID(),
-        uri,
-        uploaded: false,
-        upload_progress: 0,
-        width: photo.width,
-        height: photo.height,
-        // No EXIF to read a capture time from (camera captures never set
-        // `exif`, unlike a Library pick) — the shutter-press moment is the
-        // only source of truth, and it's only available here, right now.
-        captured_at: new Date().toISOString(),
+      let submission: SubmissionPhoto
+      try {
+        const filePath = await photo.saveToTemporaryFileAsync()
+        const uri = `file://${filePath}`
+
+        submission = {
+          local_id: randomUUID(),
+          uri,
+          uploaded: false,
+          upload_progress: 0,
+          width: photo.width,
+          height: photo.height,
+          // No EXIF to read a capture time from (camera captures never set
+          // `exif`, unlike a Library pick) — the shutter-press moment is the
+          // only source of truth, and it's only available here, right now.
+          captured_at: new Date().toISOString(),
+        }
+      } finally {
+        // Photo owns native camera buffers. Release them even if filesystem
+        // persistence fails, otherwise repeated failures can increase memory use.
+        photo.dispose()
       }
-      photo.dispose()
 
+      const persistedAt = performanceChecks ? Date.now() : null
       addPhoto(submission)
       setCapturedPhotos((prev) => [...prev, submission])
       captureEvent(EVENTS.PHOTO_CAPTURED, {
         flash_mode: flashMode,
         photo_width: submission.width,
         photo_height: submission.height,
+        capture_pipeline: improvedCapture ? 'improved' : 'legacy',
+        quality_prioritization: qualityPrioritization ?? 'default',
+        low_light_boost: enableLowLightBoost,
+        ...(performanceChecks &&
+        captureStartedAt !== null &&
+        capturedAt !== null &&
+        persistedAt !== null
+          ? {
+              camera_performance_checks: true,
+              camera_backend: 'visioncamera',
+              camera_variant: improvedCapture ? 'device_aware' : 'baseline',
+              camera_platform: Platform.OS,
+              capture_duration_ms: capturedAt - captureStartedAt,
+              temporary_file_save_duration_ms: persistedAt - capturedAt,
+              capture_pipeline_duration_ms: persistedAt - captureStartedAt,
+            }
+          : {}),
       })
 
       // Upload starts immediately, in the background — not gated on this
@@ -175,7 +228,7 @@ export function useCameraCapture(): CameraCaptureResult {
         // below for why.
         if (await gallerySavePermission.check()) {
           try {
-            await Asset.create(uri)
+            await Asset.create(submission.uri)
           } catch (err) {
             console.error('[useCameraCapture] Asset.create:', err)
           }
@@ -185,6 +238,18 @@ export function useCameraCapture(): CameraCaptureResult {
       console.error('[useCameraCapture] takePhoto:', err)
       captureEvent(EVENTS.PHOTO_CAPTURE_FAILED, {
         error: err instanceof Error ? err.message : String(err),
+        capture_pipeline: improvedCapture ? 'improved' : 'legacy',
+        quality_prioritization: qualityPrioritization ?? 'default',
+        low_light_boost: enableLowLightBoost,
+        ...(performanceChecks && captureStartedAt !== null
+          ? {
+              camera_performance_checks: true,
+              camera_backend: 'visioncamera',
+              camera_variant: improvedCapture ? 'device_aware' : 'baseline',
+              camera_platform: Platform.OS,
+              elapsed_ms: Date.now() - captureStartedAt,
+            }
+          : {}),
       })
     } finally {
       setIsTakingPhoto(false)
@@ -198,6 +263,10 @@ export function useCameraCapture(): CameraCaptureResult {
     updatePhoto,
     keepOnDevice,
     user,
+    improvedCapture,
+    qualityPrioritization,
+    enableLowLightBoost,
+    performanceChecks,
   ])
 
   // ── Discard ───────────────────────────────────────────────────────────────
@@ -246,6 +315,48 @@ export function useCameraCapture(): CameraCaptureResult {
     }
   }, [capturedPhotos.length])
 
+  const cameraOpenedAt = useRef<number | null>(null)
+  const hasReportedInitialDevice = useRef(false)
+
+  // Record the start from an effect rather than render; Date.now() is impure
+  // and React Compiler correctly rejects reading it during render.
+  useEffect(() => {
+    cameraOpenedAt.current = performanceChecks ? Date.now() : null
+  }, [performanceChecks])
+
+  useEffect(() => {
+    if (!device || hasReportedInitialDevice.current) return
+    const openedAt = cameraOpenedAt.current
+    hasReportedInitialDevice.current = true
+    captureEvent(EVENTS.CAMERA_DEVICE_READY, {
+      ...(performanceChecks && openedAt !== null
+        ? {
+            camera_performance_checks: true,
+            camera_backend: 'visioncamera',
+            camera_variant: improvedCapture ? 'device_aware' : 'baseline',
+            camera_platform: Platform.OS,
+            ready_duration_ms: Date.now() - openedAt,
+          }
+        : {}),
+      camera_position: cameraPosition,
+      physical_device_count: device.physicalDevices.length,
+      supports_low_light_boost: device.supportsLowLightBoost,
+      supports_photo_hdr: device.supportsPhotoHDR,
+      supports_speed_quality_prioritization:
+        device.supportsSpeedQualityPrioritization,
+      min_zoom: device.minZoom,
+      max_zoom: device.maxZoom,
+      capture_pipeline: improvedCapture ? 'improved' : 'legacy',
+      quality_prioritization: qualityPrioritization ?? 'default',
+    })
+  }, [
+    cameraPosition,
+    device,
+    improvedCapture,
+    performanceChecks,
+    qualityPrioritization,
+  ])
+
   // Funnel entry point — nothing else fires between opening the camera and
   // hitting submit besides this and PHOTO_CAPTURE_FAILED above.
   useEffect(() => {
@@ -278,6 +389,7 @@ export function useCameraCapture(): CameraCaptureResult {
     cameraRef,
     photoOutput,
     isActive,
+    enableLowLightBoost,
     capturedPhotos,
     flashMode,
     isTakingPhoto,
