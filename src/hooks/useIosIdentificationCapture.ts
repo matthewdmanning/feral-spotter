@@ -24,8 +24,7 @@ export function useIosIdentificationCapture(
 ): IosIdentificationCaptureResult {
   const enabled = useSettingsStore(
     (s) =>
-      Platform.OS === 'ios' &&
-      s.settings.ios_improved_camera_capture === true,
+      Platform.OS === 'ios' && s.settings.ios_improved_camera_capture === true,
   )
 
   const targetPhotoResolution = useMemo(() => {
