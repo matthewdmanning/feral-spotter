@@ -13,6 +13,7 @@ export interface AppSettings {
   keep_photos_on_device: boolean
   annotation_enabled: boolean
   skip_photo_remove_confirm: boolean
+  ios_improved_camera_capture: boolean
 }
 
 interface SettingsState {
@@ -29,6 +30,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   keep_photos_on_device: true,
   annotation_enabled: true,
   skip_photo_remove_confirm: false,
+  ios_improved_camera_capture: false,
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
