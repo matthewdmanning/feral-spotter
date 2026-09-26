@@ -80,6 +80,7 @@ export function useNativeCameraCapture(
   const handleTakePhoto = useCallback(async () => {
     if (isTakingPhoto || !isCameraReady || !cameraRef.current) return
     setIsTakingPhoto(true)
+    const shutterTime = new Date().toISOString()
 
     flashOpacity.value = withTiming(
       1,
@@ -102,7 +103,7 @@ export function useNativeCameraCapture(
         upload_progress: 0,
         width: processed.width,
         height: processed.height,
-        captured_at: processed.capturedAt,
+        captured_at: processed.capturedAt ?? captured.capturedAt ?? shutterTime,
       }
 
       addPhoto(submission)
