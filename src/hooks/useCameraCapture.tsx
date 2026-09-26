@@ -11,28 +11,20 @@
 import { CameraThumb } from '@/src/components/atoms/CameraThumb'
 import { usePhotoStore } from '@/src/hooks'
 import { useConsentStore } from '@/src/hooks/useConsentStore'
+import { useIosIdentificationCapture } from '@/src/hooks/useIosIdentificationCapture'
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'
 import { captureEvent, EVENTS } from '@/src/lib/analytics/analytics'
 import { useAuth } from '@/src/lib/auth/useAuth'
 import { startLocationCapture } from '@/src/lib/location'
 import { gallerySavePermission } from '@/src/lib/permissions/gallerySavePermission'
 import { uploadNewPhoto } from '@/src/lib/upload/uploadNewPhoto'
-import {
-  configureIosCameraForIdentification,
-  restoreIosAutomaticCapture,
-} from '@/modules/ios-camera-optimizer/src/IosCameraOptimizerModule'
 import type { SubmissionPhoto } from '@/src/types'
 import { type FlashListRef } from '@shopify/flash-list'
 import { randomUUID } from 'expo-crypto'
 import { Asset } from 'expo-media-library'
 import { router, useIsFocused } from 'expo-router'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import {
-  AppState,
-  Platform,
-  type AppStateStatus,
-  type ViewStyle,
-} from 'react-native'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { AppState, type AppStateStatus, type ViewStyle } from 'react-native'
 import {
   Easing,
   useAnimatedStyle,
@@ -41,7 +33,6 @@ import {
 } from 'react-native-reanimated'
 import {
   useCameraDevice,
-  usePhotoOutput,
   type CameraPhotoOutput,
   type CameraRef,
 } from 'react-native-vision-camera'
@@ -77,11 +68,6 @@ export function useCameraCapture(): CameraCaptureResult {
   const keepOnDevice = useSettingsStore(
     (s) => s.settings.keep_photos_on_device !== false,
   )
-  const iosImprovedCapture = useSettingsStore(
-    (s) =>
-      Platform.OS === 'ios' &&
-      s.settings.ios_improved_camera_capture === true,
-  )
   const addPhoto = usePhotoStore((s) => s.addPhoto)
   const removePhoto = usePhotoStore((s) => s.removePhoto)
   const updatePhoto = usePhotoStore((s) => s.updatePhoto)
@@ -95,64 +81,10 @@ export function useCameraCapture(): CameraCaptureResult {
   const device = useCameraDevice(cameraPosition)
   const cameraRef = useRef<CameraRef>(null)
   const listRef = useRef<FlashListRef<SubmissionPhoto>>(null)
-
-  const targetPhotoResolution = useMemo(() => {
-    if (!iosImprovedCapture || !device) return undefined
-
-    const resolutions = device.getSupportedResolutions('photo')
-    if (resolutions.length === 0) return undefined
-
-    return resolutions.reduce((largest, candidate) =>
-      candidate.width * candidate.height > largest.width * largest.height
-        ? candidate
-        : largest,
-    )
-  }, [device, iosImprovedCapture])
-
-  const qualityPrioritization = iosImprovedCapture
-    ? device?.supportsSpeedQualityPrioritization
-      ? 'speed'
-      : 'balanced'
-    : undefined
-
-  const photoOutput = usePhotoOutput(
-    iosImprovedCapture
-      ? {
-          targetResolution: targetPhotoResolution,
-          quality: 1,
-          qualityPrioritization,
-        }
-      : undefined,
+  const { photoOutput, handleCameraConfigured } = useIosIdentificationCapture(
+    device,
+    flashMode,
   )
-
-  const handleCameraConfigured = useCallback(() => {
-    if (!iosImprovedCapture || !device) return
-    void configureIosCameraForIdentification(device.id).catch((error) => {
-      console.error('[useCameraCapture] iOS camera optimization:', error)
-    })
-  }, [device, iosImprovedCapture])
-
-  useEffect(() => {
-    if (!iosImprovedCapture || !device) return
-
-    const deviceId = device.id
-    return () => {
-      void restoreIosAutomaticCapture(deviceId).catch((error) => {
-        console.error('[useCameraCapture] restore iOS camera:', error)
-      })
-    }
-  }, [device, iosImprovedCapture])
-
-  useEffect(() => {
-    if (!iosImprovedCapture) return
-
-    void photoOutput
-      .prepareSettings([{ flashMode, enableShutterSound: true }])
-      .catch((error) => {
-        if (__DEV__)
-          console.warn('[useCameraCapture] prepare photo settings:', error)
-      })
-  }, [flashMode, iosImprovedCapture, photoOutput])
 
   const isFocused = useIsFocused()
   const [appState, setAppState] = useState<AppStateStatus>('active')
