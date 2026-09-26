@@ -1,4 +1,4 @@
-import { NativeModule, requireNativeModule } from 'expo'
+import { NativeModule, requireOptionalNativeModule } from 'expo'
 import { Platform } from 'react-native'
 
 declare class IosCameraOptimizerNativeModule extends NativeModule {
@@ -8,7 +8,9 @@ declare class IosCameraOptimizerNativeModule extends NativeModule {
 
 const nativeModule =
   Platform.OS === 'ios'
-    ? requireNativeModule<IosCameraOptimizerNativeModule>('IosCameraOptimizer')
+    ? requireOptionalNativeModule<IosCameraOptimizerNativeModule>(
+        'IosCameraOptimizer',
+      )
     : null
 
 export async function configureIosCameraForIdentification(
