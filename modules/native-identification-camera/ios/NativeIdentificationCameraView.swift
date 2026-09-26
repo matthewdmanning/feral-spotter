@@ -114,6 +114,9 @@ public final class NativeIdentificationCameraView: ExpoView {
     clipsToBounds = true
     previewLayer.videoGravity = .resizeAspectFill
     previewLayer.session = session
+    addGestureRecognizer(
+      UIPinchGestureRecognizer(target: self, action: #selector(handlePinch(_:)))
+    )
     reconfigure()
   }
 
@@ -131,6 +134,27 @@ public final class NativeIdentificationCameraView: ExpoView {
     }
   }
 
+  private func selectDevice() -> AVCaptureDevice? {
+    let types: [AVCaptureDevice.DeviceType]
+    if position == .front {
+      types = [.builtInTrueDepthCamera, .builtInWideAngleCamera]
+    } else {
+      types = [
+        .builtInTripleCamera,
+        .builtInDualWideCamera,
+        .builtInDualCamera,
+        .builtInWideAngleCamera
+      ]
+    }
+
+    for type in types {
+      if let device = AVCaptureDevice.default(type, for: .video, position: position) {
+        return device
+      }
+    }
+    return nil
+  }
+
   private func configureSession() {
     session.beginConfiguration()
     session.sessionPreset = .photo
@@ -141,11 +165,7 @@ public final class NativeIdentificationCameraView: ExpoView {
     }
 
     do {
-      guard let device = AVCaptureDevice.default(
-        .builtInWideAngleCamera,
-        for: .video,
-        position: position
-      ) else {
+      guard let device = selectDevice() else {
         throw NativeCameraError.noCamera
       }
 
@@ -288,6 +308,28 @@ public final class NativeIdentificationCameraView: ExpoView {
         }
       } else if self.session.isRunning {
         self.session.stopRunning()
+      }
+    }
+  }
+
+  @objc
+  private func handlePinch(_ gesture: UIPinchGestureRecognizer) {
+    let scale = gesture.scale
+    gesture.scale = 1
+    sessionQueue.async { [weak self] in
+      guard let self, let device = self.currentDevice else { return }
+      do {
+        try device.lockForConfiguration()
+        defer { device.unlockForConfiguration() }
+        let requested = device.videoZoomFactor * scale
+        device.videoZoomFactor = min(
+          max(requested, device.minAvailableVideoZoomFactor),
+          device.maxAvailableVideoZoomFactor
+        )
+      } catch {
+        DispatchQueue.main.async {
+          self.onCameraError(["message": String(describing: error)])
+        }
       }
     }
   }
