@@ -13,6 +13,12 @@ export interface AppSettings {
   keep_photos_on_device: boolean
   annotation_enabled: boolean
   skip_photo_remove_confirm: boolean
+  native_camera_capture: boolean
+  camera_max_detail: boolean
+  camera_motion_priority: boolean
+  camera_disable_low_light_boost: boolean
+  camera_subject_metering: boolean
+  camera_performance_checks: boolean
 }
 
 interface SettingsState {
@@ -29,6 +35,12 @@ const DEFAULT_SETTINGS: AppSettings = {
   keep_photos_on_device: true,
   annotation_enabled: true,
   skip_photo_remove_confirm: false,
+  native_camera_capture: false,
+  camera_max_detail: true,
+  camera_motion_priority: true,
+  camera_disable_low_light_boost: false,
+  camera_subject_metering: false,
+  camera_performance_checks: false,
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -47,6 +59,18 @@ export const useSettingsStore = create<SettingsState>()(
     {
       name: 'settings-store',
       storage: createJSONStorage(() => asyncStorage),
+      merge: (persisted, current) => {
+        const persistedSettings = (
+          persisted as Partial<SettingsState> | undefined
+        )?.settings
+        return {
+          ...current,
+          settings: {
+            ...DEFAULT_SETTINGS,
+            ...persistedSettings,
+          },
+        }
+      },
     },
   ),
 )

@@ -1,0 +1,7 @@
+{
+  "name": "native-identification-camera",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.ts",
+  "description": "Native AVFoundation and CameraX capture surface for identification photos"
+}

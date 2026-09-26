@@ -26,7 +26,12 @@ import { Asset } from 'expo-media-library'
 import { router, useIsFocused } from 'expo-router'
 import { randomUUID } from 'expo-crypto'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { AppState, type AppStateStatus, type ViewStyle } from 'react-native'
+import {
+  AppState,
+  Platform,
+  type AppStateStatus,
+  type ViewStyle,
+} from 'react-native'
 import {
   Easing,
   useAnimatedStyle,
@@ -79,6 +84,9 @@ export function useCameraCapture(): CameraCaptureResult {
   const keepOnDevice = useSettingsStore(
     (s) => s.settings.keep_photos_on_device !== false,
   )
+  const performanceChecks = useSettingsStore(
+    (s) => s.settings.camera_performance_checks === true,
+  )
   const addPhoto = usePhotoStore((s) => s.addPhoto)
   const removePhoto = usePhotoStore((s) => s.removePhoto)
   const updatePhoto = usePhotoStore((s) => s.updatePhoto)
@@ -126,12 +134,15 @@ export function useCameraCapture(): CameraCaptureResult {
       },
     )
 
+    const captureStartedAt = performanceChecks ? Date.now() : null
     try {
       const photo = await photoOutput.capturePhoto(
         { flashMode, enableShutterSound: true },
         {},
       )
+      const capturedAt = performanceChecks ? Date.now() : null
       const filePath = await photo.saveToTemporaryFileAsync()
+      const persistedAt = performanceChecks ? Date.now() : null
       const uri = `file://${filePath}`
 
       const submission: SubmissionPhoto = {
@@ -154,6 +165,21 @@ export function useCameraCapture(): CameraCaptureResult {
         flash_mode: flashMode,
         photo_width: submission.width,
         photo_height: submission.height,
+        ...(performanceChecks &&
+        captureStartedAt !== null &&
+        capturedAt !== null &&
+        persistedAt !== null
+          ? {
+              camera_performance_checks: true,
+              capture_backend: 'legacy',
+              camera_backend: 'visioncamera',
+              camera_variant: 'legacy_fallback',
+              camera_platform: Platform.OS,
+              capture_duration_ms: capturedAt - captureStartedAt,
+              temporary_file_save_duration_ms: persistedAt - capturedAt,
+              capture_pipeline_duration_ms: persistedAt - captureStartedAt,
+            }
+          : {}),
       })
 
       // Upload starts immediately, in the background — not gated on this
@@ -185,6 +211,16 @@ export function useCameraCapture(): CameraCaptureResult {
       console.error('[useCameraCapture] takePhoto:', err)
       captureEvent(EVENTS.PHOTO_CAPTURE_FAILED, {
         error: err instanceof Error ? err.message : String(err),
+        ...(performanceChecks && captureStartedAt !== null
+          ? {
+              camera_performance_checks: true,
+              capture_backend: 'legacy',
+              camera_backend: 'visioncamera',
+              camera_variant: 'legacy_fallback',
+              camera_platform: Platform.OS,
+              elapsed_ms: Date.now() - captureStartedAt,
+            }
+          : {}),
       })
     } finally {
       setIsTakingPhoto(false)
@@ -197,6 +233,7 @@ export function useCameraCapture(): CameraCaptureResult {
     addPhoto,
     updatePhoto,
     keepOnDevice,
+    performanceChecks,
     user,
   ])
 
@@ -245,6 +282,32 @@ export function useCameraCapture(): CameraCaptureResult {
       listRef.current?.scrollToEnd({ animated: true })
     }
   }, [capturedPhotos.length])
+
+  const cameraOpenedAt = useRef<number | null>(null)
+  const hasReportedInitialDevice = useRef(false)
+
+  useEffect(() => {
+    cameraOpenedAt.current = performanceChecks ? Date.now() : null
+  }, [performanceChecks])
+
+  useEffect(() => {
+    if (!device || hasReportedInitialDevice.current) return
+    hasReportedInitialDevice.current = true
+    const openedAt = cameraOpenedAt.current
+    captureEvent(EVENTS.CAMERA_DEVICE_READY, {
+      camera_position: cameraPosition,
+      ...(performanceChecks && openedAt !== null
+        ? {
+            camera_performance_checks: true,
+            capture_backend: 'legacy',
+            camera_backend: 'visioncamera',
+            camera_variant: 'legacy_fallback',
+            camera_platform: Platform.OS,
+            ready_duration_ms: Date.now() - openedAt,
+          }
+        : {}),
+    })
+  }, [cameraPosition, device, performanceChecks])
 
   // Funnel entry point — nothing else fires between opening the camera and
   // hitting submit besides this and PHOTO_CAPTURE_FAILED above.
