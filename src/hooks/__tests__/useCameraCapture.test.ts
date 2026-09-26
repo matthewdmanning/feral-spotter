@@ -41,7 +41,11 @@ jest.mock('react-native-vision-camera', () => ({
     minZoom: 1,
     maxZoom: 8,
   })),
-  usePhotoOutput: jest.fn(() => ({ capturePhoto: mockCapturePhoto })),
+  usePhotoOutput: jest.fn(() => ({
+    capturePhoto: mockCapturePhoto,
+    // vision-camera 5.1.0 API the iOS warm-up effect calls.
+    prepareSettings: jest.fn(() => Promise.resolve()),
+  })),
   Camera: 'Camera',
 }))
 
