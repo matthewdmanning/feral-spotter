@@ -5,7 +5,7 @@ export interface NativeCapturedPhoto {
   uri: string
   width: number
   height: number
-  capturedAt: string
+  capturedAt?: string
 }
 
 export interface NativeCaptureOptions {
