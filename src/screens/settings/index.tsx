@@ -52,6 +52,11 @@ const PHOTO_TOGGLES = [
       ]
     : []),
   {
+    key: 'camera_performance_checks',
+    label: 'Camera Performance Checks',
+    desc: 'Attach comparable camera timing data to PostHog events for A/B testing',
+  } as const,
+  {
     key: 'keep_photos_on_device',
     label: 'Keep Photos on Device',
     desc: 'Save captured photos to your camera roll',
