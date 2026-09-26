@@ -73,6 +73,7 @@ public final class NativeIdentificationCameraView: ExpoView {
   private var currentInput: AVCaptureDeviceInput?
   private var currentDevice: AVCaptureDevice?
   private var captureDelegates: [Int64: NativePhotoCaptureDelegate] = [:]
+  private var defaultFormats: [String: AVCaptureDevice.Format] = [:]
   private var defaultPhotoDimensions: [String: CMVideoDimensions] = [:]
   private var defaultLowLightBoost: [String: Bool] = [:]
   private var rotationCoordinator: Any?
@@ -134,8 +135,8 @@ public final class NativeIdentificationCameraView: ExpoView {
     sessionQueue.async { [weak self] in
       guard let self, let device = self.currentDevice else { return }
       self.session.beginConfiguration()
-      self.configureOutput(for: device)
       self.configureDevicePolicy(device)
+      self.configureOutput(for: device)
       self.session.commitConfiguration()
     }
   }
@@ -190,6 +191,9 @@ public final class NativeIdentificationCameraView: ExpoView {
         session.addOutput(photoOutput)
       }
 
+      if defaultFormats[device.uniqueID] == nil {
+        defaultFormats[device.uniqueID] = device.activeFormat
+      }
       if defaultPhotoDimensions[device.uniqueID] == nil {
         defaultPhotoDimensions[device.uniqueID] = photoOutput.maxPhotoDimensions
       }
@@ -198,8 +202,8 @@ public final class NativeIdentificationCameraView: ExpoView {
           device.automaticallyEnablesLowLightBoostWhenAvailable
       }
 
-      configureOutput(for: device)
       configureDevicePolicy(device)
+      configureOutput(for: device)
       session.commitConfiguration()
 
       DispatchQueue.main.async { [weak self] in
@@ -213,6 +217,31 @@ public final class NativeIdentificationCameraView: ExpoView {
       DispatchQueue.main.async { [weak self] in
         self?.onCameraError(["message": String(describing: error)])
       }
+    }
+  }
+
+  private func photoPixelCount(_ format: AVCaptureDevice.Format) -> Int64 {
+    format.supportedMaxPhotoDimensions
+      .map { Int64($0.width) * Int64($0.height) }
+      .max() ?? 0
+  }
+
+  private func configureFormat(_ device: AVCaptureDevice) {
+    if !maxDetail {
+      if let original = defaultFormats[device.uniqueID] {
+        device.activeFormat = original
+      }
+      return
+    }
+
+    guard let bestFormat = device.formats.max(by: {
+      photoPixelCount($0) < photoPixelCount($1)
+    }) else {
+      return
+    }
+
+    if photoPixelCount(bestFormat) > photoPixelCount(device.activeFormat) {
+      device.activeFormat = bestFormat
     }
   }
 
@@ -255,6 +284,8 @@ public final class NativeIdentificationCameraView: ExpoView {
     do {
       try device.lockForConfiguration()
       defer { device.unlockForConfiguration() }
+
+      configureFormat(device)
 
       if device.isFocusModeSupported(.continuousAutoFocus) {
         device.focusMode = .continuousAutoFocus
