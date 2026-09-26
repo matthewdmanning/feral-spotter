@@ -91,8 +91,7 @@ export function useCameraCapture(): CameraCaptureResult {
   const performanceChecks = useSettingsStore(
     (s) => s.settings.camera_performance_checks === true,
   )
-  const improvedCapture =
-    Platform.OS === 'android' && improvedCaptureSetting
+  const improvedCapture = Platform.OS === 'android' && improvedCaptureSetting
   const addPhoto = usePhotoStore((s) => s.addPhoto)
   const removePhoto = usePhotoStore((s) => s.removePhoto)
   const updatePhoto = usePhotoStore((s) => s.updatePhoto)
