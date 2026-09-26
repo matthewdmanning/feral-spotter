@@ -18,6 +18,7 @@ export interface AppSettings {
   camera_motion_priority: boolean
   camera_disable_low_light_boost: boolean
   camera_subject_metering: boolean
+  camera_performance_checks: boolean
 }
 
 interface SettingsState {
@@ -39,6 +40,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   camera_motion_priority: true,
   camera_disable_low_light_boost: false,
   camera_subject_metering: false,
+  camera_performance_checks: false,
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
