@@ -68,6 +68,12 @@ const PHOTO_TOGGLES = [
   },
 ] as const
 
+const ENABLED_BY_DEFAULT = new Set([
+  'keep_photos_on_device',
+  'camera_max_detail',
+  'camera_motion_priority',
+])
+
 export default function SettingsScreen() {
   const { theme } = useUnistyles()
   const [themeMode, setSelectedThemeMode] = useState<ThemeMode>(getThemeMode)
@@ -181,7 +187,9 @@ export default function SettingsScreen() {
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Photos</Text>
             {PHOTO_TOGGLES.map(({ key, label, desc }, i) => {
-              const on = draft[key] !== false
+              const value = draft[key]
+              const on =
+                value === undefined ? ENABLED_BY_DEFAULT.has(key) : value
               return (
                 <View key={key}>
                   {i > 0 && <View style={styles.divider} />}
