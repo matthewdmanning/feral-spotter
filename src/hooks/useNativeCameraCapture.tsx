@@ -20,7 +20,12 @@ import { randomUUID } from 'expo-crypto'
 import { Asset } from 'expo-media-library'
 import { router, useIsFocused } from 'expo-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { AppState, type AppStateStatus, type ViewStyle } from 'react-native'
+import {
+  AppState,
+  Platform,
+  type AppStateStatus,
+  type ViewStyle,
+} from 'react-native'
 import {
   Easing,
   useAnimatedStyle,
@@ -50,6 +55,9 @@ export function useNativeCameraCapture(
   const subjectMetering = useSettingsStore(
     (s) => s.settings.camera_subject_metering === true,
   )
+  const performanceChecks = useSettingsStore(
+    (s) => s.settings.camera_performance_checks === true,
+  )
 
   const addPhoto = usePhotoStore((s) => s.addPhoto)
   const removePhoto = usePhotoStore((s) => s.removePhoto)
@@ -58,6 +66,7 @@ export function useNativeCameraCapture(
 
   const cameraRef = useRef<NativeIdentificationCameraRef>(null)
   const listRef = useRef<FlashListRef<SubmissionPhoto>>(null)
+  const cameraOpenedAt = useRef<number | null>(null)
   const [position, setPosition] = useState<NativeCameraPosition>('back')
   const [capturedPhotos, setCapturedPhotos] = useState<SubmissionPhoto[]>([])
   const [flashMode, setFlashMode] = useState<NativeFlashMode>('auto')
@@ -72,15 +81,47 @@ export function useNativeCameraCapture(
   }, [])
   const isActive = isFocused && appState === 'active'
 
+  useEffect(() => {
+    cameraOpenedAt.current = performanceChecks ? Date.now() : null
+  }, [performanceChecks])
+
   const flashOpacity = useSharedValue(0)
   const flashOverlayStyle = useAnimatedStyle<ViewStyle>(() => ({
     opacity: flashOpacity.value,
   }))
 
+  const handleCameraReady = useCallback(() => {
+    setIsCameraReady(true)
+    const openedAt = cameraOpenedAt.current
+    if (!performanceChecks || openedAt === null) return
+
+    captureEvent(EVENTS.CAMERA_DEVICE_READY, {
+      camera_performance_checks: true,
+      capture_backend: 'native',
+      camera_backend: Platform.OS === 'ios' ? 'avfoundation' : 'camerax',
+      camera_variant: 'native',
+      camera_platform: Platform.OS,
+      camera_position: position,
+      max_detail: maxDetail,
+      motion_priority: motionPriority,
+      low_light_boost_disabled: disableLowLightBoost,
+      subject_metering: subjectMetering,
+      ready_duration_ms: Date.now() - openedAt,
+    })
+  }, [
+    disableLowLightBoost,
+    maxDetail,
+    motionPriority,
+    performanceChecks,
+    position,
+    subjectMetering,
+  ])
+
   const handleTakePhoto = useCallback(async () => {
     if (isTakingPhoto || !isCameraReady || !cameraRef.current) return
     setIsTakingPhoto(true)
     const shutterTime = new Date().toISOString()
+    const captureStartedAt = performanceChecks ? Date.now() : null
 
     flashOpacity.value = withTiming(
       1,
@@ -92,9 +133,11 @@ export function useNativeCameraCapture(
 
     try {
       const captured = await cameraRef.current.capture({ flashMode })
+      const capturedAt = performanceChecks ? Date.now() : null
       const processed = options.postprocessor
         ? await options.postprocessor.process(captured)
         : captured
+      const processedAt = performanceChecks ? Date.now() : null
 
       const submission: SubmissionPhoto = {
         local_id: randomUUID(),
@@ -113,6 +156,26 @@ export function useNativeCameraCapture(
         photo_width: submission.width,
         photo_height: submission.height,
         capture_backend: 'native',
+        ...(performanceChecks &&
+        captureStartedAt !== null &&
+        capturedAt !== null &&
+        processedAt !== null
+          ? {
+              camera_performance_checks: true,
+              camera_backend:
+                Platform.OS === 'ios' ? 'avfoundation' : 'camerax',
+              camera_variant: 'native',
+              camera_platform: Platform.OS,
+              camera_position: position,
+              max_detail: maxDetail,
+              motion_priority: motionPriority,
+              low_light_boost_disabled: disableLowLightBoost,
+              subject_metering: subjectMetering,
+              capture_duration_ms: capturedAt - captureStartedAt,
+              postprocess_duration_ms: processedAt - capturedAt,
+              capture_pipeline_duration_ms: processedAt - captureStartedAt,
+            }
+          : {}),
       })
 
       const uid = user?.uid
@@ -135,18 +198,39 @@ export function useNativeCameraCapture(
       captureEvent(EVENTS.PHOTO_CAPTURE_FAILED, {
         error: error instanceof Error ? error.message : String(error),
         capture_backend: 'native',
+        ...(performanceChecks && captureStartedAt !== null
+          ? {
+              camera_performance_checks: true,
+              camera_backend:
+                Platform.OS === 'ios' ? 'avfoundation' : 'camerax',
+              camera_variant: 'native',
+              camera_platform: Platform.OS,
+              camera_position: position,
+              max_detail: maxDetail,
+              motion_priority: motionPriority,
+              low_light_boost_disabled: disableLowLightBoost,
+              subject_metering: subjectMetering,
+              elapsed_ms: Date.now() - captureStartedAt,
+            }
+          : {}),
       })
     } finally {
       setIsTakingPhoto(false)
     }
   }, [
     addPhoto,
+    disableLowLightBoost,
     flashMode,
     flashOpacity,
     isCameraReady,
     isTakingPhoto,
     keepOnDevice,
+    maxDetail,
+    motionPriority,
     options.postprocessor,
+    performanceChecks,
+    position,
+    subjectMetering,
     updatePhoto,
     user,
   ])
@@ -175,8 +259,9 @@ export function useNativeCameraCapture(
 
   const flipCamera = useCallback(() => {
     setIsCameraReady(false)
+    cameraOpenedAt.current = performanceChecks ? Date.now() : null
     setPosition((current) => (current === 'back' ? 'front' : 'back'))
-  }, [])
+  }, [performanceChecks])
 
   const handleDone = useCallback(
     () => router.navigate('/submission/create'),
@@ -229,6 +314,7 @@ export function useNativeCameraCapture(
     isTakingPhoto,
     isCameraReady,
     setIsCameraReady,
+    handleCameraReady,
     isActive,
     maxDetail,
     motionPriority,
