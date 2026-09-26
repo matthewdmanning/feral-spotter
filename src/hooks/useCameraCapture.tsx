@@ -6,27 +6,33 @@
  *   - Flash mode cycling, camera flip
  *   - FlashList ref + scroll-to-end
  *   - Navigation (Done / Close)
- *
- * The screen retains only: permission gating, shutter press-feel animations,
- * and JSX layout.
  */
 
 import { CameraThumb } from '@/src/components/atoms/CameraThumb'
 import { usePhotoStore } from '@/src/hooks'
-import { useSettingsStore } from '@/src/hooks/useSettingsStore'
-import { useAuth } from '@/src/lib/auth/useAuth'
-import { captureEvent, EVENTS } from '@/src/lib/analytics/analytics'
-import { startLocationCapture } from '@/src/lib/location'
 import { useConsentStore } from '@/src/hooks/useConsentStore'
+import { useSettingsStore } from '@/src/hooks/useSettingsStore'
+import { captureEvent, EVENTS } from '@/src/lib/analytics/analytics'
+import { useAuth } from '@/src/lib/auth/useAuth'
+import { startLocationCapture } from '@/src/lib/location'
 import { gallerySavePermission } from '@/src/lib/permissions/gallerySavePermission'
 import { uploadNewPhoto } from '@/src/lib/upload/uploadNewPhoto'
+import {
+  configureIosCameraForIdentification,
+  restoreIosAutomaticCapture,
+} from '@/modules/ios-camera-optimizer/src/IosCameraOptimizerModule'
 import type { SubmissionPhoto } from '@/src/types'
 import { type FlashListRef } from '@shopify/flash-list'
+import { randomUUID } from 'expo-crypto'
 import { Asset } from 'expo-media-library'
 import { router, useIsFocused } from 'expo-router'
-import { randomUUID } from 'expo-crypto'
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { AppState, type AppStateStatus, type ViewStyle } from 'react-native'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  AppState,
+  Platform,
+  type AppStateStatus,
+  type ViewStyle,
+} from 'react-native'
 import {
   Easing,
   useAnimatedStyle,
@@ -40,44 +46,41 @@ import {
   type CameraRef,
 } from 'react-native-vision-camera'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 type FlashMode = 'off' | 'on' | 'auto'
 
 export type { FlashMode }
 
 export interface CameraCaptureResult {
-  // Device
   device: ReturnType<typeof useCameraDevice>
   cameraRef: React.RefObject<CameraRef | null>
   photoOutput: CameraPhotoOutput
   isActive: boolean
-  // State
   capturedPhotos: SubmissionPhoto[]
   flashMode: FlashMode
   isTakingPhoto: boolean
-  // Flash overlay (Reanimated — UI thread)
   flashOverlayStyle: ReturnType<typeof useAnimatedStyle<ViewStyle>>
-  // FlashList
   listRef: React.RefObject<FlashListRef<SubmissionPhoto> | null>
   renderItem: (info: {
     item: SubmissionPhoto
     index: number
   }) => React.ReactElement
   keyExtractor: (item: SubmissionPhoto) => string
-  // Handlers
   handleTakePhoto: () => Promise<void>
+  handleCameraConfigured: () => void
   cycleFlash: () => void
   flipCamera: () => void
   handleDone: () => void
   handleClose: () => void
 }
 
-// ─── Hook ─────────────────────────────────────────────────────────────────────
-
 export function useCameraCapture(): CameraCaptureResult {
   const keepOnDevice = useSettingsStore(
     (s) => s.settings.keep_photos_on_device !== false,
+  )
+  const iosImprovedCapture = useSettingsStore(
+    (s) =>
+      Platform.OS === 'ios' &&
+      s.settings.ios_improved_camera_capture === true,
   )
   const addPhoto = usePhotoStore((s) => s.addPhoto)
   const removePhoto = usePhotoStore((s) => s.removePhoto)
@@ -92,13 +95,65 @@ export function useCameraCapture(): CameraCaptureResult {
   const device = useCameraDevice(cameraPosition)
   const cameraRef = useRef<CameraRef>(null)
   const listRef = useRef<FlashListRef<SubmissionPhoto>>(null)
-  const photoOutput = usePhotoOutput()
 
-  // #253: Android reclaims the camera hardware whenever the app is
-  // backgrounded for long enough (e.g. screen lock), regardless of this
-  // prop. Without isActive tracking that, vision-camera never releases its
-  // side of the session, and reconfiguring streams on resume against a
-  // device the OS already reclaimed throws an uncaught native error.
+  const targetPhotoResolution = useMemo(() => {
+    if (!iosImprovedCapture || !device) return undefined
+
+    const resolutions = device.getSupportedResolutions('photo')
+    if (resolutions.length === 0) return undefined
+
+    return resolutions.reduce((largest, candidate) =>
+      candidate.width * candidate.height > largest.width * largest.height
+        ? candidate
+        : largest,
+    )
+  }, [device, iosImprovedCapture])
+
+  const qualityPrioritization = iosImprovedCapture
+    ? device?.supportsSpeedQualityPrioritization
+      ? 'speed'
+      : 'balanced'
+    : undefined
+
+  const photoOutput = usePhotoOutput(
+    iosImprovedCapture
+      ? {
+          targetResolution: targetPhotoResolution,
+          quality: 1,
+          qualityPrioritization,
+        }
+      : undefined,
+  )
+
+  const handleCameraConfigured = useCallback(() => {
+    if (!iosImprovedCapture || !device) return
+    void configureIosCameraForIdentification(device.id).catch((error) => {
+      console.error('[useCameraCapture] iOS camera optimization:', error)
+    })
+  }, [device, iosImprovedCapture])
+
+  useEffect(() => {
+    if (!iosImprovedCapture || !device) return
+
+    const deviceId = device.id
+    return () => {
+      void restoreIosAutomaticCapture(deviceId).catch((error) => {
+        console.error('[useCameraCapture] restore iOS camera:', error)
+      })
+    }
+  }, [device, iosImprovedCapture])
+
+  useEffect(() => {
+    if (!iosImprovedCapture) return
+
+    void photoOutput
+      .prepareSettings([{ flashMode, enableShutterSound: true }])
+      .catch((error) => {
+        if (__DEV__)
+          console.warn('[useCameraCapture] prepare photo settings:', error)
+      })
+  }, [flashMode, iosImprovedCapture, photoOutput])
+
   const isFocused = useIsFocused()
   const [appState, setAppState] = useState<AppStateStatus>('active')
   useEffect(() => {
@@ -107,13 +162,11 @@ export function useCameraCapture(): CameraCaptureResult {
   }, [])
   const isActive = isFocused && appState === 'active'
 
-  // ── Flash overlay — Reanimated SharedValue on UI thread ───────────────────
   const flashOpacity = useSharedValue(0)
   const flashOverlayStyle = useAnimatedStyle<ViewStyle>(() => ({
     opacity: flashOpacity.value,
   }))
 
-  // ── Capture ───────────────────────────────────────────────────────────────
   const handleTakePhoto = useCallback(async () => {
     if (isTakingPhoto) return
     setIsTakingPhoto(true)
@@ -141,9 +194,6 @@ export function useCameraCapture(): CameraCaptureResult {
         upload_progress: 0,
         width: photo.width,
         height: photo.height,
-        // No EXIF to read a capture time from (camera captures never set
-        // `exif`, unlike a Library pick) — the shutter-press moment is the
-        // only source of truth, and it's only available here, right now.
         captured_at: new Date().toISOString(),
       }
       photo.dispose()
@@ -156,9 +206,6 @@ export function useCameraCapture(): CameraCaptureResult {
         photo_height: submission.height,
       })
 
-      // Upload starts immediately, in the background — not gated on this
-      // screen's lifecycle — so a slow/spotty connection doesn't block
-      // capturing more photos.
       const uid = user?.uid
       const submissionId = usePhotoStore.getState().submissionId
       if (uid && submissionId) {
@@ -167,12 +214,7 @@ export function useCameraCapture(): CameraCaptureResult {
         console.error('[useCameraCapture] missing uid/submissionId for upload')
       }
 
-      // Location is set once per submission on the create screen (ADR 0002),
-      // not per photo — no GPS call on the shutter path.
-
       if (keepOnDevice) {
-        // #145/#146: check() only, never request() — see the mount effect
-        // below for why.
         if (await gallerySavePermission.check()) {
           try {
             await Asset.create(uri)
@@ -200,7 +242,6 @@ export function useCameraCapture(): CameraCaptureResult {
     user,
   ])
 
-  // ── Discard ───────────────────────────────────────────────────────────────
   const handleDiscardPhoto = useCallback(
     (localId: string) => {
       setCapturedPhotos((prev) => prev.filter((p) => p.local_id !== localId))
@@ -209,7 +250,6 @@ export function useCameraCapture(): CameraCaptureResult {
     [removePhoto],
   )
 
-  // ── Controls ──────────────────────────────────────────────────────────────
   const cycleFlash = useCallback(() => {
     setFlashMode((m) => (m === 'auto' ? 'on' : m === 'on' ? 'off' : 'auto'))
   }, [])
@@ -224,7 +264,6 @@ export function useCameraCapture(): CameraCaptureResult {
   )
   const handleClose = useCallback(() => router.back(), [])
 
-  // ── FlashList helpers ─────────────────────────────────────────────────────
   const renderItem = useCallback(
     ({ item, index }: { item: SubmissionPhoto; index: number }) => (
       <CameraThumb
@@ -246,13 +285,8 @@ export function useCameraCapture(): CameraCaptureResult {
     }
   }, [capturedPhotos.length])
 
-  // Funnel entry point — nothing else fires between opening the camera and
-  // hitting submit besides this and PHOTO_CAPTURE_FAILED above.
   useEffect(() => {
     captureEvent(EVENTS.CAMERA_OPENED)
-    // GPS-timing follow-up (#128): the Live fix starts here, not on
-    // Submission Details — it runs in the background independent of this
-    // screen's lifecycle (src/lib/location.ts).
     if (__DEV__)
       console.log(
         '[location] consent hydrated:',
@@ -261,13 +295,6 @@ export function useCameraCapture(): CameraCaptureResult {
     void startLocationCapture()
   }, [])
 
-  // #145/#146: request the gallery-save permission once, when the Camera
-  // screen opens — not per shutter press (that re-triggered the OS prompt on
-  // every press while status stayed non-terminal). writeOnly (true) requests
-  // add-only access rather than the full READ_MEDIA_IMAGES grant, which is
-  // what previously pulled in Android 14+'s "Select photos" picker UI (#140)
-  // — this path only ever writes newly captured photos, never reads the
-  // library, so it never needed read access in the first place.
   useEffect(() => {
     if (!keepOnDevice) return
     void gallerySavePermission.request()
@@ -286,6 +313,7 @@ export function useCameraCapture(): CameraCaptureResult {
     renderItem,
     keyExtractor,
     handleTakePhoto,
+    handleCameraConfigured,
     cycleFlash,
     flipCamera,
     handleDone,
