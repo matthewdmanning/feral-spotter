@@ -58,16 +58,26 @@ export interface SubmissionSubmitResult {
 // can act on (there's no "retry" for them to do — the SDK is already
 // retrying), so this waits silently instead of nagging with a popup. Only
 // a genuine stall — no upload progress landing within the timeout — is
-// worth surfacing, via the existing catch block's "Submission Failed" alert.
+// worth surfacing, via the catch block's "Photos Still Uploading" alert.
 const UPLOAD_WAIT_TIMEOUT_MS = 30_000
 const UPLOAD_WAIT_POLL_MS = 500
+
+// #377: both failure paths leave every draft store intact, so both messages
+// say so — a user who just lost 30 seconds has no other reason to believe it.
+// They read differently because the next action differs: a stalled upload
+// needs a better connection, a rejected send only needs a second attempt.
+// The underlying error text goes to the console, never to the user.
+const UPLOAD_STALLED_MESSAGE =
+  'Your photos did not finish uploading. This Submission is saved on this device. Check your connection, then tap Finished! to send it again.'
+const SUBMIT_FAILED_MESSAGE =
+  'The Submission did not reach the server. It is saved on this device. Tap Finished! to send it again.'
 
 async function waitForUploads(): Promise<void> {
   const deadline = Date.now() + UPLOAD_WAIT_TIMEOUT_MS
   while (usePhotoStore.getState().photos.some((p) => !p.uploaded)) {
     if (Date.now() >= deadline) {
       throw new Error(
-        'Photo upload is taking longer than expected. Check your connection and try again.',
+        `Upload wait timed out after ${UPLOAD_WAIT_TIMEOUT_MS} ms`,
       )
     }
     await new Promise((resolve) => setTimeout(resolve, UPLOAD_WAIT_POLL_MS))
@@ -125,10 +135,8 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
             try {
               await waitForUploads()
             } catch (err) {
-              showError(
-                'Submission Failed',
-                err instanceof Error ? err.message : 'Please try again',
-              )
+              console.error('[useSubmissionSubmit] waitForUploads', err)
+              showError('Photos Still Uploading', UPLOAD_STALLED_MESSAGE)
               setIsSubmitting(false)
               setSubmitting(false)
               return
@@ -252,10 +260,8 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
                 const snap = await getSubmissionCache(cId)
                 if (snap) fireAnalyticsEvent(EVENTS.SUBMISSION_FAILED, snap)
               }
-              showError(
-                'Submission Failed',
-                err instanceof Error ? err.message : 'Please try again',
-              )
+              console.error('[useSubmissionSubmit] submit', err)
+              showError('Submission Failed', SUBMIT_FAILED_MESSAGE)
             } finally {
               setIsSubmitting(false)
               setSubmitting(false)

@@ -13,7 +13,7 @@ import { computeEntrypointDiameter } from '@/src/lib/home/entrypointDiameter'
 import { Stack, router, useIsFocused } from 'expo-router'
 import { Camera, ImagePlus } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { StyleSheet, useWindowDimensions, View } from 'react-native'
+import { StyleSheet, Text, useWindowDimensions, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
 
@@ -221,6 +221,16 @@ export default function HomeScreen() {
               color={theme.colors.accentAlt}
             />
           </View>
+          {/* #375: one of the two circles above is dead whenever the pool has
+              a source, and nothing said why. Only ever one is disabled, so
+              one line covers both cases. */}
+          {photoSource !== null && (
+            <Text style={styles.disabledReason}>
+              {photoSource === 'camera'
+                ? 'This submission uses camera photos. Finish or reset it before you upload from your library.'
+                : 'This submission uses library photos. Finish or reset it before you take new photos.'}
+            </Text>
+          )}
         </View>
 
         <View style={styles.bottomArea}>

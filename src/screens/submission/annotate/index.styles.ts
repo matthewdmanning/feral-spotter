@@ -57,6 +57,13 @@ export const styles = StyleSheet.create((theme, rt) => ({
     borderTopColor: theme.colors.surfaceAlt,
     zIndex: 2,
   },
+  // #375: the reason "← Previous" is disabled.
+  disabledReason: {
+    color: theme.colors.muted,
+    fontSize: theme.typography.sm,
+    textAlign: 'center',
+    paddingHorizontal: theme.spacing.lg,
+  },
   navBtn: {
     minHeight: 48,
     flex: 1,

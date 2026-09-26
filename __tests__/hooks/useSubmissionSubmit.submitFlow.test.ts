@@ -492,4 +492,77 @@ describe('useSubmissionSubmit submit flow', () => {
       'sub-cloud-1',
     )
   })
+
+  // #377: both failure paths must name the next action and say the draft
+  // survived, and they must read differently — a stalled upload needs a
+  // better connection, a rejected send only needs a second attempt.
+  it('tells the user the Submission is saved and how to retry when the upload stalls', async () => {
+    usePhotoStore.setState({
+      photos: [photo({ local_id: 'photo-stalled', uploaded: false })],
+    })
+    // The wait polls until Date.now() passes its deadline; jumping the clock
+    // past it fails the wait on the first check instead of after 30 real
+    // seconds.
+    jest.spyOn(Date, 'now').mockReturnValueOnce(0).mockReturnValue(999_999)
+    jest.spyOn(console, 'error').mockImplementation(() => {})
+    const errorSpy = jest.spyOn(ui, 'showError').mockImplementation(() => {})
+    jest.spyOn(ui, 'showAlert').mockImplementation((_title, _msg, buttons) => {
+      buttons?.find((b) => b.text === 'Submit')?.onPress?.()
+    })
+
+    const { result } = renderHook(() => useSubmissionSubmit())
+
+    await act(async () => {
+      result.current.handleDone()
+    })
+
+    expect(errorSpy).toHaveBeenCalledWith(
+      'Photos Still Uploading',
+      expect.stringContaining('saved on this device'),
+    )
+    expect(errorSpy).toHaveBeenCalledWith(
+      'Photos Still Uploading',
+      expect.stringContaining('Check your connection'),
+    )
+    // Nothing was sent, and the cats survive for the next attempt.
+    expect(uploadSubmissionMetadata).not.toHaveBeenCalled()
+    expect(useSubmissionStore.getState().cats).toHaveLength(1)
+  })
+
+  it('tells the user the Submission is saved and how to retry when the send fails, without the raw error', async () => {
+    usePhotoStore.setState({
+      photos: [
+        photo({
+          local_id: 'photo-uploaded',
+          uploaded: true,
+          cloud_storage_path: 'gs://bucket/uploaded.jpg',
+          cloud_storage_url: 'https://cdn/uploaded.jpg',
+        }),
+      ],
+    })
+    ;(uploadSubmissionMetadata as jest.Mock).mockRejectedValue(
+      new Error('PERMISSION_DENIED: storage/unauthorized'),
+    )
+    jest.spyOn(console, 'error').mockImplementation(() => {})
+    const errorSpy = jest.spyOn(ui, 'showError').mockImplementation(() => {})
+    jest.spyOn(ui, 'showAlert').mockImplementation((_title, _msg, buttons) => {
+      buttons?.find((b) => b.text === 'Submit')?.onPress?.()
+    })
+
+    const { result } = renderHook(() => useSubmissionSubmit())
+
+    await act(async () => {
+      result.current.handleDone()
+    })
+
+    expect(errorSpy).toHaveBeenCalledWith(
+      'Submission Failed',
+      expect.stringContaining('saved on this device'),
+    )
+    expect(errorSpy).not.toHaveBeenCalledWith(
+      'Submission Failed',
+      expect.stringContaining('PERMISSION_DENIED'),
+    )
+    expect(useSubmissionStore.getState().cats).toHaveLength(1)
+  })
 })
