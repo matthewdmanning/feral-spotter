@@ -38,6 +38,18 @@ jest.mock('react-native-vision-camera', () => ({
   useCameraPermission: jest.fn(),
 }))
 jest.mock('@shopify/flash-list', () => ({ FlashList: 'FlashList' }))
+// This branch's NativeCameraScreen reaches expo-media-library through
+// useNativeCameraCapture -> gallerySavePermission. The real module extends a
+// native class, which fails to construct under Jest, so the whole suite could
+// not load. Same shape as the camera hook suites' mock.
+jest.mock('expo-media-library', () => ({
+  get Asset() {
+    return { create: jest.fn() }
+  },
+  getPermissionsAsync: jest.fn(async () => ({ status: 'granted' })),
+  requestPermissionsAsync: jest.fn(async () => ({ status: 'granted' })),
+  PermissionStatus: { GRANTED: 'granted', DENIED: 'denied' },
+}))
 jest.mock('lucide-react-native', () => ({
   SwitchCamera: () => null,
   X: () => null,
