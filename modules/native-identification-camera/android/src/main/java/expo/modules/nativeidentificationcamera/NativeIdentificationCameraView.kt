@@ -6,6 +6,8 @@ import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CaptureRequest
 import android.net.Uri
 import android.util.Range
+import android.view.MotionEvent
+import android.view.ScaleGestureDetector
 import android.view.ViewGroup
 import androidx.annotation.OptIn
 import androidx.camera.camera2.interop.Camera2CameraControl
@@ -30,7 +32,6 @@ import expo.modules.kotlin.Promise
 import expo.modules.kotlin.viewevent.EventDispatcher
 import expo.modules.kotlin.views.ExpoView
 import java.io.File
-import java.time.Instant
 import java.util.UUID
 
 @SuppressLint("ViewConstructor")
@@ -48,6 +49,23 @@ class NativeIdentificationCameraView(
     )
     scaleType = PreviewView.ScaleType.FILL_CENTER
   }
+
+  private val scaleGestureDetector = ScaleGestureDetector(
+    context,
+    object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+      override fun onScale(detector: ScaleGestureDetector): Boolean {
+        val boundCamera = camera ?: return false
+        val zoomState = boundCamera.cameraInfo.zoomState.value ?: return false
+        val requested = zoomState.zoomRatio * detector.scaleFactor
+        val clamped = requested.coerceIn(
+          zoomState.minZoomRatio,
+          zoomState.maxZoomRatio
+        )
+        boundCamera.cameraControl.setZoomRatio(clamped)
+        return true
+      }
+    }
+  )
 
   private var cameraProvider: ProcessCameraProvider? = null
   private var previewUseCase: Preview? = null
@@ -94,6 +112,11 @@ class NativeIdentificationCameraView(
 
   init {
     addView(previewView)
+    previewView.setOnTouchListener { _, event ->
+      scaleGestureDetector.onTouchEvent(event)
+      event.actionMasked != MotionEvent.ACTION_UP
+    }
+
     val future = ProcessCameraProvider.getInstance(context)
     future.addListener({
       try {
@@ -153,8 +176,7 @@ class NativeIdentificationCameraView(
 
   private fun bindCamera() {
     val provider = cameraProvider ?: return
-    val activity = appContext.currentActivity
-    val lifecycleOwner = activity as? LifecycleOwner ?: run {
+    val lifecycleOwner = appContext.currentActivity as? LifecycleOwner ?: run {
       onCameraError(mapOf("message" to "Camera activity is not a LifecycleOwner"))
       return
     }
@@ -259,8 +281,7 @@ class NativeIdentificationCameraView(
             mapOf(
               "uri" to Uri.fromFile(outputFile).toString(),
               "width" to (resolution?.width ?: 0),
-              "height" to (resolution?.height ?: 0),
-              "capturedAt" to Instant.now().toString()
+              "height" to (resolution?.height ?: 0)
             )
           )
         }
