@@ -33,6 +33,7 @@ export function NativeCameraScreen() {
     isTakingPhoto,
     isCameraReady,
     setIsCameraReady,
+    handleCameraReady,
     isActive,
     maxDetail,
     motionPriority,
@@ -110,7 +111,7 @@ export function NativeCameraScreen() {
         motionPriority={motionPriority}
         disableLowLightBoost={disableLowLightBoost}
         subjectMetering={subjectMetering}
-        onCameraReady={() => setIsCameraReady(true)}
+        onCameraReady={handleCameraReady}
         onCameraError={(event) => {
           setIsCameraReady(false)
           console.error(
