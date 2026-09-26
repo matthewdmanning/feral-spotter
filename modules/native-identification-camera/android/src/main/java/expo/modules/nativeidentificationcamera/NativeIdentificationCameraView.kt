@@ -2,18 +2,11 @@ package expo.modules.nativeidentificationcamera
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.hardware.camera2.CameraCharacteristics
-import android.hardware.camera2.CaptureRequest
-import android.net.Uri
 import android.util.Range
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.ViewGroup
 import androidx.annotation.OptIn
-import androidx.camera.camera2.interop.Camera2CameraControl
-import androidx.camera.camera2.interop.Camera2CameraInfo
-import androidx.camera.camera2.interop.CaptureRequestOptions
-import androidx.camera.camera2.interop.ExperimentalCamera2Interop
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalZeroShutterLag
@@ -21,6 +14,7 @@ import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
+import androidx.camera.core.SessionConfig
 import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -43,7 +37,7 @@ class NativeIdentificationCameraView(
   val onCameraError by EventDispatcher()
 
   private val previewView = PreviewView(context).apply {
-    layoutParams = LayoutParams(
+    layoutParams = ViewGroup.LayoutParams(
       ViewGroup.LayoutParams.MATCH_PARENT,
       ViewGroup.LayoutParams.MATCH_PARENT
     )
@@ -57,18 +51,16 @@ class NativeIdentificationCameraView(
         val boundCamera = camera ?: return false
         val zoomState = boundCamera.cameraInfo.zoomState.value ?: return false
         val requested = zoomState.zoomRatio * detector.scaleFactor
-        val clamped = requested.coerceIn(
-          zoomState.minZoomRatio,
-          zoomState.maxZoomRatio
+        boundCamera.cameraControl.setZoomRatio(
+          requested.coerceIn(zoomState.minZoomRatio, zoomState.maxZoomRatio)
         )
-        boundCamera.cameraControl.setZoomRatio(clamped)
         return true
       }
     }
   )
 
   private var cameraProvider: ProcessCameraProvider? = null
-  private var previewUseCase: Preview? = null
+  private var boundSessionConfig: SessionConfig? = null
   private var imageCaptureUseCase: ImageCapture? = null
   private var camera: Camera? = null
 
@@ -105,7 +97,7 @@ class NativeIdentificationCameraView(
     set(value) {
       if (field == value) return
       field = value
-      camera?.let(::applyCamera2Policy)
+      if (value) camera?.let(::disableLowLightBoostIfSupported)
     }
 
   var subjectMetering: Boolean = false
@@ -174,6 +166,28 @@ class NativeIdentificationCameraView(
     return builder.build()
   }
 
+  private fun buildSessionConfig(
+    provider: ProcessCameraProvider,
+    selector: CameraSelector,
+    preview: Preview,
+    imageCapture: ImageCapture
+  ): SessionConfig {
+    val builder = SessionConfig.Builder(preview, imageCapture)
+    if (!motionPriority) return builder.build()
+
+    val probeConfig = builder.build()
+    val supportedRanges = provider
+      .getCameraInfo(selector)
+      .getSupportedFrameRateRanges(probeConfig)
+    val preferredRange = supportedRanges.maxWithOrNull(
+      compareBy<Range<Int>> { it.lower }.thenBy { it.upper }
+    )
+    if (preferredRange != null) {
+      builder.setFrameRateRange(preferredRange)
+    }
+    return builder.build()
+  }
+
   private fun bindCamera() {
     val provider = cameraProvider ?: return
     val lifecycleOwner = appContext.currentActivity as? LifecycleOwner ?: run {
@@ -196,18 +210,25 @@ class NativeIdentificationCameraView(
         it.surfaceProvider = previewView.surfaceProvider
       }
       val imageCapture = buildImageCapture()
-
-      val boundCamera = provider.bindToLifecycle(
-        lifecycleOwner,
+      val sessionConfig = buildSessionConfig(
+        provider,
         selector,
         preview,
         imageCapture
       )
 
-      previewUseCase = preview
+      val boundCamera = provider.bindToLifecycle(
+        lifecycleOwner,
+        selector,
+        sessionConfig
+      )
+
+      boundSessionConfig = sessionConfig
       imageCaptureUseCase = imageCapture
       camera = boundCamera
-      applyCamera2Policy(boundCamera)
+      if (disableLowLightBoost) {
+        disableLowLightBoostIfSupported(boundCamera)
+      }
       onCameraReady(emptyMap<String, Any>())
     } catch (error: Throwable) {
       onCameraError(mapOf("message" to (error.message ?: error.toString())))
@@ -216,44 +237,15 @@ class NativeIdentificationCameraView(
 
   private fun unbindCamera() {
     val provider = cameraProvider ?: return
-    val useCases = listOfNotNull(previewUseCase, imageCaptureUseCase)
-    if (useCases.isNotEmpty()) {
-      provider.unbind(*useCases.toTypedArray())
-    }
-    previewUseCase = null
+    boundSessionConfig?.let { provider.unbind(it) }
+    boundSessionConfig = null
     imageCaptureUseCase = null
     camera = null
   }
 
-  @OptIn(ExperimentalCamera2Interop::class)
-  private fun applyCamera2Policy(boundCamera: Camera) {
-    val camera2Info = Camera2CameraInfo.from(boundCamera.cameraInfo)
-    val requestBuilder = CaptureRequestOptions.Builder()
-
-    if (disableLowLightBoost) {
-      requestBuilder.setCaptureRequestOption(
-        CaptureRequest.CONTROL_AE_MODE,
-        CaptureRequest.CONTROL_AE_MODE_ON
-      )
-    }
-
-    if (motionPriority) {
-      val ranges = camera2Info.getCameraCharacteristic(
-        CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES
-      )
-      val fastestStableRange = ranges?.maxWithOrNull(
-        compareBy<Range<Int>> { it.lower }.thenBy { it.upper }
-      )
-      if (fastestStableRange != null) {
-        requestBuilder.setCaptureRequestOption(
-          CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
-          fastestStableRange
-        )
-      }
-    }
-
-    Camera2CameraControl.from(boundCamera.cameraControl)
-      .setCaptureRequestOptions(requestBuilder.build())
+  private fun disableLowLightBoostIfSupported(boundCamera: Camera) {
+    if (!boundCamera.cameraInfo.isLowLightBoostSupported) return
+    boundCamera.cameraControl.enableLowLightBoostAsync(false)
   }
 
   fun capture(options: NativeCaptureOptions, promise: Promise) {
@@ -279,7 +271,7 @@ class NativeIdentificationCameraView(
         override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
           promise.resolve(
             mapOf(
-              "uri" to Uri.fromFile(outputFile).toString(),
+              "uri" to android.net.Uri.fromFile(outputFile).toString(),
               "width" to (resolution?.width ?: 0),
               "height" to (resolution?.height ?: 0)
             )
