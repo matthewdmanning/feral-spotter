@@ -38,6 +38,7 @@ export default function CameraScreen() {
     cameraRef,
     photoOutput,
     isActive,
+    enableLowLightBoost,
     capturedPhotos,
     flashMode,
     isTakingPhoto,
@@ -139,6 +140,7 @@ export default function CameraScreen() {
           device={device}
           isActive={isActive}
           outputs={[photoOutput]}
+          enableLowLightBoost={enableLowLightBoost}
           enableNativeZoomGesture
         />
       </GestureDetector>

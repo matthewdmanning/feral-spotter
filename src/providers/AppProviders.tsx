@@ -89,8 +89,8 @@ function AnalyticsBridge() {
     if (!posthog) return
     registerCapture(posthog.capture.bind(posthog))
     registerCaptureException(posthog.captureException.bind(posthog))
-    // PostHog already supplies OS/app metadata. Add only hardware context
-    // needed for performance comparisons, without creating a custom device ID.
+    // PostHog already supplies OS/app metadata. Add only the hardware fields
+    // needed to compare camera performance without creating a custom device ID.
     posthog.register({
       device_model: Device.modelName,
       device_manufacturer: Device.manufacturer,
@@ -113,8 +113,8 @@ function AnalyticsBridge() {
     if (identifiedUserId.current === user.uid) return
     if (identifiedUserId.current) posthog.reset()
 
-    // UID is enough for event correlation; crash/performance diagnostics do
-    // not need an email address.
+    // UID is sufficient for correlation. Do not send email when crash and
+    // performance analysis does not require directly identifying information.
     posthog.identify(user.uid)
     identifiedUserId.current = user.uid
   }, [isAuthReady, posthog, user])
