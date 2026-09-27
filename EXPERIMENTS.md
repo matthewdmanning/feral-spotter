@@ -41,7 +41,7 @@ column is recorded but does not reorder the list.
 | 10 | Give a draft a non-destructive way out that keeps the work | U8 | 8 / 7 / 5 | backlog |
 | 11 | Surface the location fix state on the camera screen | U14 | 7 / 7 / 6 | backlog |
 | 12 | Say a draft went stale instead of silently hiding Continue | U12 | 6 / 8 / 7 | backlog |
-| 13 | Explain "Ear Tipped" in place | U9 | 7 / 7 / 8 | Phase 6 |
+| 13 | Explain "Ear Tipped" with a drawing | U9 | 7 / 7 / 8 | drawing planned |
 | 14 | Replace Cat Form's "Clear" confirmation with undo | U10 | 6 / 7 / 6 | Phase 3 |
 | 15 | Make the annotate trash act, with undo, instead of teaching a gesture by dialog | U19 | 5 / 8 / 7 | Phase 3 |
 | 16 | Separate the attributes the dataset needs from the nice-to-have ones | U22 | 8 / 5 / 4 | Phase 3 |
@@ -71,4 +71,42 @@ usability-pass finding are not repeated here.
 
 | # | Idea | Finding | Pre-committed check | Status |
 |---|---|---|---|---|
-| 30 | Correct Onboarding's setup and data-use claims; remove the unmeasured “About a minute” promise | U26 (#381) | In a first-run comprehension test, participants can name the next sign-in choice and what is sent, without being led | issue filed; claim verification pending |
+| 30 | Correct Onboarding's setup claims; remove the unmeasured “About a minute” promise | U26 (#381) | In a first-run comprehension test, participants know the next step asks them to choose how to sign in, without being led | issue filed; claim verification pending |
+
+### Added by the microinteractions pass, 2026-09-25
+
+Ordered by severity × frequency, continuing the list above. Rows 24 and 27 already cover upload state
+and remove-Undo from the error-design pass and are not repeated.
+
+| # | Idea | Finding | Pre-committed check | Status |
+|---|---|---|---|---|
+| 31 | Give `AppButton` a pressed state, so every button in the app answers a touch before its action completes | M1 | On a device, each button visibly changes between touch-down and release on both platforms | open |
+| 32 | Wire the existing `isSubmitting` flag into the `Finished!` button's existing `loading` prop | M2, U1 (#372) | Tapping Submit shows a waiting state until the app leaves the screen, however brief, and a second tap cannot start a second submit | open |
+| 33 | Give the reports list a loading state and a read-failure state, so "No reports yet" only means no reports | M-reports | A returning user with saved Sightings never sees the empty state, and a read failure says so instead of showing an empty list | open |
+| 34 | Confirm that Reset cleared the draft, instead of returning to Home silently | M-reset | After Reset, the user can say what happened without being asked to guess | open |
+| 35 | Add one haptic at capture and one at a confirmed submit, and nowhere else | M4 | Both fire once per event on a device, and the app is fully usable with system haptics off | open |
+
+### Added by the visual pass (refactoring-ui), 2026-09-25
+
+No new tokens. Every row corrects a misuse of an existing primitive.
+
+| # | Idea | Finding | Pre-committed check | Status |
+|---|---|---|---|---|
+| 36 | Make Take Photos the visual lead on Home: full diameter and filled `primary`, with Upload Photos at about 70% diameter and outlined `secondary` | H1 (#379) | On a render, a blurred and a grayscale screenshot both show one clear primary | open |
+| 37 | Rebuild the Submission action block — Reset to the header row, `Finished!` filled `primary` at `typography.base` and last, Add More Photos outlined `secondary`, Add a Cat unchanged | S1, S4, S6 | A blurred screenshot shows one dominant action, and the primary is no longer smaller than a cat row | open |
+| 38 | Route all four Submission actions through `AppButton` instead of hand-rolled `Pressable`s | S5 | No bespoke button styles remain in `submission/create/index.styles.ts` | open |
+| 39 | Split the uniform root gap: `spacing.xxxl` between groups, `spacing.md` inside the action stack | S2 | Measured gaps between groups exceed gaps inside them on a render | open |
+| 40 | Put the three off-scale values back on the scale, and pass tokens rather than numbers at the `BottomButtonColumn` call site | S3, H2 | No raw spacing number remains in either screen | open |
+| 41 | Make New Sighting `secondary` so Continue Observation leads the resume pair | H3 | A blurred screenshot of the resume column shows one lead | open |
+
+### Added by the copy pass (made-to-stick), 2026-09-26
+
+Every row is a copy change except row 46, which is a decision the maintainer owns. No row alters the data
+model: row 44 relabels a field and leaves `owned_domesticated` and its three values untouched.
+
+| # | Idea | Finding | Pre-committed check | Status |
+|---|---|---|---|---|
+| 43 | Cut the unmeasured "About a minute" from slide 2 | Onboarding steps | No onboarding sentence asserts a duration the project cannot show | open |
+| 44 | Relabel the Cat Form field `Owned / Domesticated` — label undecided | Cat Form | The label names one judgment the observer can make from the animal in front of them; the persisted key and values are unchanged | blocked: behavior and appearance labels both rejected 2026-09-26 — a dumped pet can be too scared to approach, and grooming or a collar does not separate feral from abandoned (owner: user) |
+| 45 | Explain ear tipping with a drawing of a clipped ear tip beside the Ear Tipped field | Cat Form | A first-time user answers Ear Tipped without leaving the form to look the term up | drawing planned (owner: user) |
+| 47 | Name no sign-in provider anywhere in Onboarding — say "choose how to sign in" | Onboarding setup | No screen names a provider, so no copy can promise a choice the release does not have | open |

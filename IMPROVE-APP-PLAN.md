@@ -27,10 +27,10 @@
 | 2 | ux-heuristics | done | DESIGN.md, EXPERIMENTS.md | 2026-09-25 |
 | 3 | design-everyday-things | done | DESIGN.md, EXPERIMENTS.md | 2026-09-25 |
 | 3b | improve-retention (optional) | deferred: no beta cohort; user chose to defer this pass entirely | PRODUCT.md | 2026-09-25 |
-| 4 | refactoring-ui | awaiting-evidence: Home captured and primary chosen; Submission render and grayscale check pending | DESIGN.md, EXPERIMENTS.md | 2026-09-25 |
+| 4 | refactoring-ui | done | DESIGN.md, EXPERIMENTS.md, POSITIONING.md | 2026-09-25 |
 | 4b | ios-hig-design (optional) | awaiting-evidence: source check recorded; no iOS build or device | DESIGN.md | 2026-09-25 |
-| 5 | microinteractions | awaiting-evidence: source inventory done; direct-touch states not tested | DESIGN.md, EXPERIMENTS.md | 2026-09-25 |
-| 6 | made-to-stick | awaiting-evidence: copy inventory and issues done; ownership-field meaning and downstream claims pending | POSITIONING.md, EXPERIMENTS.md | 2026-09-25 |
+| 5 | microinteractions | done | DESIGN.md, EXPERIMENTS.md | 2026-09-25 |
+| 6 | made-to-stick | done | POSITIONING.md, EXPERIMENTS.md, PRODUCT.md | 2026-09-26 |
 | 7 | influence-psychology | skipped: no upsell or sales surface in the app | POSITIONING.md, EXPERIMENTS.md | 2026-09-25 |
 | 8 | high-perf-browser | skipped: native app, no browser surface | DESIGN.md, EXPERIMENTS.md | 2026-09-25 |
 | 9 | steve-jobs-design-review | awaiting-evidence: source pre-review done; cold flow and cut decision pending | PRODUCT.md, DESIGN.md, EXPERIMENTS.md | 2026-09-25 |
@@ -62,7 +62,20 @@ Statuses: pending · in-progress · awaiting-evidence · done · deferred: <reas
 | 2026-09-25 | 3b | Defer retention entirely | No beta cohort can test repeat use; the maintainer chose not to make a source-based retention diagnosis. EXP-001 measures immediate understanding of the submit result only. |
 | 2026-09-25 | 4 | Take Photos leads on Home | The current Pixel 7 capture shows equal visual weight; the maintainer selected the camera action as the primary. Keep the existing theme tokens. |
 | 2026-09-25 | 6 | Use “Sighting” in user-facing copy | The maintainer chose this term after reviewing the current Home, Submission, and Feral Reports labels. Keep “Submission” for the existing data model. |
-| 2026-09-25 | 6 | Describe sign-in choices by release | Current alpha offers Google and email; the maintainer confirmed Facebook and Apple on iOS for full version 1.0. Do not promise those unreleased choices in current Onboarding. |
+| 2026-09-26 | 6 | Name no sign-in provider in Onboarding | The maintainer chose generic wording over listing providers by release. Copy that names none cannot promise a choice the release does not have, and it needs no edit when the provider list changes. |
+| 2026-09-25 | 5 | Run the microinteractions pass without maintainer input, on source evidence only | The maintainer had no capacity for a decision round and asked for the pass plus a report. Every score below is a source score; the device check stays an open action. |
+| 2026-09-25 | 5 | Fix the shared button press state before any individual interaction | One change in `AppButton` answers touch on every button in the app. Polishing one screen's feedback while every button stays inert would read as an accident. |
+| 2026-09-25 | 5 | Keep the camera shutter as the app's only existing signature moment | It passes the removal test already. A second competing moment would dilute it. |
+| 2026-09-25 | 5 | Make the submit receipt the one new moment worth extra craft | It closes the story the shutter opens and is the only moment that can address the Phase 1 emotional gap. It must state only the verified upload outcome and must not block the next action. |
+| 2026-09-25 | 4 | Introduce no new tokens | All nine findings are misuses of existing variants and scales. Three off-scale values get corrected to the existing scale instead. |
+| 2026-09-25 | 4 | Reset moves to the Submission header row | The maintainer chose the header over keeping it with the cat list. It puts the largest destructive action as far from `Finished!` as the screen allows, and it stays visible rather than hiding in a menu. |
+| 2026-09-25 | 4 | `Finished!` is last, filled, and at `typography.base` | The maintainer's constraint. The primary action was previously 14 px while a cat row was 16 px. |
+| 2026-09-25 | 4 | Add a Cat keeps its dashed no-fill treatment | The maintainer asked for the original prototype look. It also keeps the cat-list group visually distinct from the action block below the gap. |
+| 2026-09-25 | 4 | One label, “Add More Photos”, for both photo sources | The maintainer's decision. A draft has one source by construction (ADR 0002), so two labels describe one action. Recorded in POSITIONING.md as well, so Phase 6 does not re-open it. |
+| 2026-09-25 | 4 | Report Phase 4's 10/10 as a projection, not a result | The only rendered evidence is one Pixel 7 Home capture. The Submission render is still outstanding. |
+| 2026-09-26 | 6 | Reject "Friendly to People" as the `owned_domesticated` label; the wording stays undecided | A dumped pet is domesticated and can still be too scared to approach, so friendliness and origin are different questions. One stored yes/no/unsure value can carry only one of them. The label waits on the maintainer; the persisted key and values do not change either way. |
+| 2026-09-26 | 6 | Propose no appearance-based label for this field | The maintainer rejected that whole family: many feral cats are better groomed and fed than abandoned house cats, and most cats of either kind wear no collar. Grooming, body condition, and collars do not separate origin, so no label may ask the observer to read origin off the animal. |
+| 2026-09-26 | 6 | Explain ear tipping with a drawing, not a sentence | The maintainer has a drawing of a clipped ear tip planned. A picture of the ear answers the question faster than TNR wording and needs no translation. |
 
 ## Next Actions
 
@@ -95,13 +108,28 @@ Statuses: pending · in-progress · awaiting-evidence · done · deferred: <reas
 - [ ] Decide in Phase 9 whether the personal Sighting list earns a place in the MVP; users do not
       hire the app to track sightings for themselves. The source review recommends keeping its
       persistent status view while #373 is unshipped (owner: user).
+- [x] Ran Phase 4 (refactoring-ui). Nine findings, both screens 5/10, no new tokens, every decision
+      recorded, backlog rows 36-41 added. The 10/10 projection is unconfirmed. (2026-09-25)
 - [ ] Check Submission's action grouping and grayscale hierarchy on a current device with safe test
       data; do not submit fabricated data to the live backend (owner: agent).
 - [ ] Complete the iOS safe-area, large-text, dark-mode, and VoiceOver checks when an iOS build/device
       is available (owner: agent).
 - [ ] Run direct-touch checks for the camera, Box Annotation, Submit, and Undo flows after their child
       fixes can be exercised with safe test data (owner: agent).
+- [x] Ran Phase 5 (microinteractions) on source with no maintainer input. Seven interactions scored
+      against the eight-row diagnostic, four new findings (M1-M4) recorded, backlog rows 31-35 added,
+      signature moment settled. (2026-09-25)
 - [ ] Resolve the single `owned_domesticated` field's intended meaning before choosing its user-facing
       question; source only shows one yes/no/unsure value (owner: user).
 - [ ] Resolve #376 against the active crop-frame design decision before any forward-navigation change
       (owner: user).
+- [ ] Choose the question the `owned_domesticated` field asks, then its label. Two families are
+      already ruled out: behavior ("Friendly to People" — a dumped pet can be domesticated and too
+      scared to approach) and appearance ("Looks Like a Pet" — grooming, body condition, and collars
+      do not separate feral from abandoned). The code carries no definition: one label, three values,
+      no help text (`src/screens/submission/cats/attributes.ts:70`). The stored key and values do not
+      change whichever label wins (owner: user).
+- [x] Settled the ear-tipping explanation as a planned drawing of a clipped ear tip beside the field,
+      not a sentence of copy (owner: user). (2026-09-26)
+- [x] Ran Phase 6 (made-to-stick). Eight surfaces scored, backlog rows 43-45 and 47 added.
+      (2026-09-26)
