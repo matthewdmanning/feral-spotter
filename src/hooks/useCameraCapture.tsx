@@ -224,7 +224,9 @@ export function useCameraCapture(): CameraCaptureResult {
         if (uid && submissionId) {
           uploadNewPhoto(submission, uid, submissionId, updatePhoto)
         } else {
-          console.error('[useCameraCapture] missing uid/submissionId for upload')
+          console.error(
+            '[useCameraCapture] missing uid/submissionId for upload',
+          )
         }
 
         if (canSaveToGallery) {
