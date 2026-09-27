@@ -7,18 +7,18 @@ import { asyncStorage } from '@/src/lib/cache/storage'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 export interface AppSettings {
   keep_photos_on_device: boolean
   annotation_enabled: boolean
   skip_photo_remove_confirm: boolean
+  improved_camera_capture: boolean
+  ios_improved_camera_capture: boolean
+  camera_performance_checks: boolean
   native_camera_capture: boolean
   camera_max_detail: boolean
   camera_motion_priority: boolean
   camera_disable_low_light_boost: boolean
   camera_subject_metering: boolean
-  camera_performance_checks: boolean
 }
 
 interface SettingsState {
@@ -35,15 +35,15 @@ const DEFAULT_SETTINGS: AppSettings = {
   keep_photos_on_device: true,
   annotation_enabled: true,
   skip_photo_remove_confirm: false,
+  improved_camera_capture: false,
+  ios_improved_camera_capture: false,
+  camera_performance_checks: false,
   native_camera_capture: false,
   camera_max_detail: true,
   camera_motion_priority: true,
   camera_disable_low_light_boost: false,
   camera_subject_metering: false,
-  camera_performance_checks: false,
 }
-
-// ─── Store ────────────────────────────────────────────────────────────────────
 
 export const useSettingsStore = create<SettingsState>()(
   persist(

@@ -9,6 +9,7 @@ import { router } from 'expo-router'
 import { Check, FileText, Key, Trash2 } from 'lucide-react-native'
 import { useState } from 'react'
 import {
+  Platform,
   Pressable,
   ScrollView,
   Switch,
@@ -35,36 +36,55 @@ const PHOTO_TOGGLES = [
     key: 'keep_photos_on_device',
     label: 'Keep Photos on Device',
     desc: 'Save captured photos to your camera roll',
+    platform: null,
+  },
+  {
+    key: 'improved_camera_capture',
+    label: 'Improved Camera Capture',
+    desc: 'Use device-aware VisionCamera capture on Android',
+    platform: 'android',
+  },
+  {
+    key: 'ios_improved_camera_capture',
+    label: 'Improved iPhone Capture',
+    desc: 'Use the optimized VisionCamera + AVFoundation fallback on iOS',
+    platform: 'ios',
   },
   {
     key: 'native_camera_capture',
     label: 'Native Camera Capture',
-    desc: 'Use AVFoundation on iOS or CameraX on Android; legacy capture remains available',
+    desc: 'Use AVFoundation on iOS or CameraX on Android; the VisionCamera path remains available',
+    platform: null,
   },
   {
     key: 'camera_max_detail',
     label: 'Maximum Detail',
-    desc: 'Prefer the highest still-photo resolution exposed by this camera',
+    desc: 'Prefer the highest still-photo resolution exposed by the native camera',
+    platform: null,
   },
   {
     key: 'camera_motion_priority',
     label: 'Motion Priority',
     desc: 'Favor device-supported low-latency capture and shorter exposure behavior',
+    platform: null,
   },
   {
     key: 'camera_disable_low_light_boost',
     label: 'Disable Low-Light Boost',
     desc: 'Avoid platform low-light modes that may trade motion detail for brightness',
+    platform: null,
   },
   {
     key: 'camera_subject_metering',
     label: 'Subject Metering',
-    desc: 'Allow an optional bounding-box localizer to steer focus and exposure',
+    desc: 'Allow a bounding-box localizer to steer native focus and exposure',
+    platform: null,
   },
   {
     key: 'camera_performance_checks',
     label: 'Camera Performance Checks',
     desc: 'Attach comparable camera timing data to PostHog events for A/B testing',
+    platform: null,
   },
 ] as const
 
@@ -91,6 +111,10 @@ export default function SettingsScreen() {
     handleClearDraft,
     handleRemovePassword,
   } = useSettingsDraft()
+
+  const photoToggles = PHOTO_TOGGLES.filter(
+    ({ platform }) => platform === null || platform === Platform.OS,
+  )
 
   return (
     <View style={styles.root}>
@@ -186,7 +210,7 @@ export default function SettingsScreen() {
 
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Photos</Text>
-            {PHOTO_TOGGLES.map(({ key, label, desc }, i) => {
+            {photoToggles.map(({ key, label, desc }, i) => {
               const value = draft[key]
               const on =
                 value === undefined ? ENABLED_BY_DEFAULT.has(key) : value
