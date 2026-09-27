@@ -14,6 +14,11 @@ export interface AppSettings {
   improved_camera_capture: boolean
   ios_improved_camera_capture: boolean
   camera_performance_checks: boolean
+  native_camera_capture: boolean
+  camera_max_detail: boolean
+  camera_motion_priority: boolean
+  camera_disable_low_light_boost: boolean
+  camera_subject_metering: boolean
 }
 
 interface SettingsState {
@@ -33,6 +38,11 @@ const DEFAULT_SETTINGS: AppSettings = {
   improved_camera_capture: false,
   ios_improved_camera_capture: false,
   camera_performance_checks: false,
+  native_camera_capture: false,
+  camera_max_detail: true,
+  camera_motion_priority: true,
+  camera_disable_low_light_boost: false,
+  camera_subject_metering: false,
 }
 
 export const useSettingsStore = create<SettingsState>()(

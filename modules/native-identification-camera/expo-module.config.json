@@ -1,0 +1,12 @@
+{
+  "platforms": ["ios", "android"],
+  "apple": {
+    "modules": ["NativeIdentificationCameraModule"],
+    "podspecPath": "ios/NativeIdentificationCamera.podspec"
+  },
+  "android": {
+    "modules": [
+      "expo.modules.nativeidentificationcamera.NativeIdentificationCameraModule"
+    ]
+  }
+}

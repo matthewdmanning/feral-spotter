@@ -41,14 +41,44 @@ const PHOTO_TOGGLES = [
   {
     key: 'improved_camera_capture',
     label: 'Improved Camera Capture',
-    desc: 'Use device-aware high-quality capture and low-light boost when supported',
+    desc: 'Use device-aware VisionCamera capture on Android',
     platform: 'android',
   },
   {
     key: 'ios_improved_camera_capture',
     label: 'Improved iPhone Capture',
-    desc: 'Favor fine coat detail and motion preservation using this camera’s capabilities',
+    desc: 'Use the optimized VisionCamera + AVFoundation fallback on iOS',
     platform: 'ios',
+  },
+  {
+    key: 'native_camera_capture',
+    label: 'Native Camera Capture',
+    desc: 'Use AVFoundation on iOS or CameraX on Android; the VisionCamera path remains available',
+    platform: null,
+  },
+  {
+    key: 'camera_max_detail',
+    label: 'Maximum Detail',
+    desc: 'Prefer the highest still-photo resolution exposed by the native camera',
+    platform: null,
+  },
+  {
+    key: 'camera_motion_priority',
+    label: 'Motion Priority',
+    desc: 'Favor device-supported low-latency capture and shorter exposure behavior',
+    platform: null,
+  },
+  {
+    key: 'camera_disable_low_light_boost',
+    label: 'Disable Low-Light Boost',
+    desc: 'Avoid platform low-light modes that may trade motion detail for brightness',
+    platform: null,
+  },
+  {
+    key: 'camera_subject_metering',
+    label: 'Subject Metering',
+    desc: 'Allow a bounding-box localizer to steer native focus and exposure',
+    platform: null,
   },
   {
     key: 'camera_performance_checks',
@@ -57,6 +87,12 @@ const PHOTO_TOGGLES = [
     platform: null,
   },
 ] as const
+
+const ENABLED_BY_DEFAULT = new Set([
+  'keep_photos_on_device',
+  'camera_max_detail',
+  'camera_motion_priority',
+])
 
 export default function SettingsScreen() {
   const { theme } = useUnistyles()
@@ -175,10 +211,9 @@ export default function SettingsScreen() {
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Photos</Text>
             {photoToggles.map(({ key, label, desc }, i) => {
+              const value = draft[key]
               const on =
-                key === 'keep_photos_on_device'
-                  ? draft[key] !== false
-                  : Boolean(draft[key])
+                value === undefined ? ENABLED_BY_DEFAULT.has(key) : value
               return (
                 <View key={key}>
                   {i > 0 && <View style={styles.divider} />}
@@ -196,7 +231,7 @@ export default function SettingsScreen() {
                     >
                       <UniSwitch
                         value={on}
-                        onValueChange={(v) => patch(key, v)}
+                        onValueChange={(value) => patch(key, value)}
                       />
                     </Pressable>
                   </View>
