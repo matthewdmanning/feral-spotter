@@ -20,21 +20,11 @@ import {
 import { useUnistyles, withUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
 
-// trackColor/thumbColor are component props, not style props —
-// withUnistyles is the documented pattern for mapping theme to such props.
 const UniSwitch = withUnistyles(Switch, (theme) => ({
   trackColor: { false: theme.colors.border, true: theme.colors.accent },
   thumbColor: theme.colors.text,
 }))
 
-// "Delete Unused Photos" / "Delete All Photos" used to sit here. Both wrote
-// to useSettingsStore and were read nowhere — no photo was ever deleted on
-// any path, so the toggles promised post-submission cleanup that did not
-// exist (#296). Removed rather than implemented: building the deletion path
-// is #294's scope, and shipping an honest UI does not have to wait on it.
-
-// System first because it is the default: someone who has never chosen sees
-// the app follow their OS appearance setting.
 const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
   { value: 'system', label: 'System' },
   { value: 'light', label: 'Light' },
@@ -42,31 +32,34 @@ const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
 ]
 
 const PHOTO_TOGGLES = [
-  ...(Platform.OS === 'android'
-    ? [
-        {
-          key: 'improved_camera_capture',
-          label: 'Improved Camera Capture',
-          desc: 'Use device-aware high-quality capture and low-light boost when supported',
-        } as const,
-      ]
-    : []),
-  {
-    key: 'camera_performance_checks',
-    label: 'Camera Performance Checks',
-    desc: 'Attach comparable camera timing data to PostHog events for A/B testing',
-  } as const,
   {
     key: 'keep_photos_on_device',
     label: 'Keep Photos on Device',
     desc: 'Save captured photos to your camera roll',
-  } as const,
-]
+    platform: null,
+  },
+  {
+    key: 'improved_camera_capture',
+    label: 'Improved Camera Capture',
+    desc: 'Use device-aware high-quality capture and low-light boost when supported',
+    platform: 'android',
+  },
+  {
+    key: 'ios_improved_camera_capture',
+    label: 'Improved iPhone Capture',
+    desc: 'Favor fine coat detail and motion preservation using this camera’s capabilities',
+    platform: 'ios',
+  },
+  {
+    key: 'camera_performance_checks',
+    label: 'Camera Performance Checks',
+    desc: 'Attach comparable camera timing data to PostHog events for A/B testing',
+    platform: null,
+  },
+] as const
 
 export default function SettingsScreen() {
   const { theme } = useUnistyles()
-  // Mirrors the persisted mode so the control re-renders on selection. The
-  // runtime drives the actual styling; this is only which segment reads active.
   const [themeMode, setSelectedThemeMode] = useState<ThemeMode>(getThemeMode)
   const {
     draft,
@@ -83,6 +76,10 @@ export default function SettingsScreen() {
     handleRemovePassword,
   } = useSettingsDraft()
 
+  const photoToggles = PHOTO_TOGGLES.filter(
+    ({ platform }) => platform === null || platform === Platform.OS,
+  )
+
   return (
     <View style={styles.root}>
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -94,7 +91,6 @@ export default function SettingsScreen() {
             </Text>
           </View>
 
-          {/* Appearance */}
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Appearance</Text>
             <SegmentedControl
@@ -102,9 +98,6 @@ export default function SettingsScreen() {
               options={THEME_OPTIONS}
               value={themeMode}
               onChange={(next) => {
-                // SegmentedControl clears the selection when the active option
-                // is tapped again. There is no unthemed state, so re-tapping
-                // the current mode is a no-op rather than a deselection.
                 if (!next) return
                 setThemeMode(next)
                 setSelectedThemeMode(next)
@@ -116,7 +109,6 @@ export default function SettingsScreen() {
             </Text>
           </View>
 
-          {/* Auth */}
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Authentication</Text>
             {passwordConfigured ? (
@@ -161,7 +153,6 @@ export default function SettingsScreen() {
             )}
           </View>
 
-          {/* Draft */}
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Draft</Text>
             <Pressable
@@ -181,11 +172,13 @@ export default function SettingsScreen() {
             </Text>
           </View>
 
-          {/* Photos */}
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Photos</Text>
-            {PHOTO_TOGGLES.map(({ key, label, desc }, i) => {
-              const on = Boolean(draft[key])
+            {photoToggles.map(({ key, label, desc }, i) => {
+              const on =
+                key === 'keep_photos_on_device'
+                  ? draft[key] !== false
+                  : Boolean(draft[key])
               return (
                 <View key={key}>
                   {i > 0 && <View style={styles.divider} />}
@@ -194,10 +187,6 @@ export default function SettingsScreen() {
                       <Text style={styles.toggleLabel}>{label}</Text>
                       <Text style={styles.hint}>{desc}</Text>
                     </View>
-                    {/* The native Switch renders ~47x30dp and handles its own
-                        touches, so hitSlop on it is unreliable. Wrapping it in
-                        a 48dp pressable target is what actually reaches the
-                        floor. */}
                     <Pressable
                       onPress={() => patch(key, !on)}
                       style={styles.switchTarget}
@@ -216,7 +205,6 @@ export default function SettingsScreen() {
             })}
           </View>
 
-          {/* App info */}
           <View style={styles.card}>
             <Text style={styles.cardTitle}>FeralSpotter</Text>
             <Text style={styles.subtitle}>Version 1.0.0</Text>

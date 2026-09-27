@@ -48,6 +48,7 @@ export default function CameraScreen() {
     renderItem,
     keyExtractor,
     handleTakePhoto,
+    handleCameraConfigured,
     setCaptureMode,
     cycleFlash,
     flipCamera,
@@ -140,6 +141,7 @@ export default function CameraScreen() {
           device={device}
           isActive={isActive}
           outputs={[photoOutput]}
+          onConfigured={handleCameraConfigured}
           enableLowLightBoost={enableLowLightBoost}
           enableNativeZoomGesture
         />

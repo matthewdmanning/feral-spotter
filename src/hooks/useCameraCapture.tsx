@@ -1,30 +1,22 @@
 /**
- * hooks/useCameraCapture.ts
- * Owns all camera business logic:
- *   - Photo capture + store writes + MediaLibrary save
- *   - Flash overlay animation (Reanimated SharedValue)
- *   - Flash mode cycling, camera flip
- *   - FlashList ref + scroll-to-end
- *   - Navigation (Done / Close)
- *
- * The screen retains only: permission gating, shutter press-feel animations,
- * and JSX layout.
+ * Camera capture orchestration shared by the VisionCamera-backed camera paths.
  */
 
 import { CameraThumb } from '@/src/components/atoms/CameraThumb'
 import { usePhotoStore } from '@/src/hooks'
+import { useIosIdentificationCapture } from '@/src/hooks/useIosIdentificationCapture'
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'
-import { useAuth } from '@/src/lib/auth/useAuth'
-import { captureEvent, EVENTS } from '@/src/lib/analytics/analytics'
-import { startLocationCapture } from '@/src/lib/location'
 import { useConsentStore } from '@/src/hooks/useConsentStore'
+import { captureEvent, EVENTS } from '@/src/lib/analytics/analytics'
+import { useAuth } from '@/src/lib/auth/useAuth'
+import { startLocationCapture } from '@/src/lib/location'
 import { gallerySavePermission } from '@/src/lib/permissions/gallerySavePermission'
 import { uploadNewPhoto } from '@/src/lib/upload/uploadNewPhoto'
 import type { SubmissionPhoto } from '@/src/types'
 import { type FlashListRef } from '@shopify/flash-list'
+import { randomUUID } from 'expo-crypto'
 import { Asset } from 'expo-media-library'
 import { router, useIsFocused } from 'expo-router'
-import { randomUUID } from 'expo-crypto'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   AppState,
@@ -40,7 +32,6 @@ import {
 } from 'react-native-reanimated'
 import {
   useCameraDevice,
-  usePhotoOutput,
   type CameraPhotoOutput,
   type CameraRef,
 } from 'react-native-vision-camera'
@@ -68,6 +59,7 @@ export interface CameraCaptureResult {
   }) => React.ReactElement
   keyExtractor: (item: SubmissionPhoto) => string
   handleTakePhoto: () => Promise<void>
+  handleCameraConfigured: () => void
   setCaptureMode: (mode: CaptureMode) => void
   cycleFlash: () => void
   flipCamera: () => void
@@ -102,28 +94,27 @@ export function useCameraCapture(): CameraCaptureResult {
   const cameraRef = useRef<CameraRef>(null)
   const listRef = useRef<FlashListRef<SubmissionPhoto>>(null)
 
-  const qualityPrioritization =
+  const fallbackQualityPrioritization =
     captureMode === 'burst' || improvedCapture
       ? device?.supportsSpeedQualityPrioritization
         ? 'speed'
         : 'balanced'
       : undefined
+
+  const {
+    photoOutput,
+    handleCameraConfigured,
+    iosIdentificationEnabled,
+    effectiveQualityPrioritization,
+  } = useIosIdentificationCapture(
+    device,
+    flashMode,
+    fallbackQualityPrioritization,
+  )
+
   const enableLowLightBoost =
     improvedCapture && Boolean(device?.supportsLowLightBoost)
-  const photoOutput = usePhotoOutput(
-    qualityPrioritization ? { qualityPrioritization } : undefined,
-  )
   const burstStopRequested = useRef(false)
-
-  useEffect(() => {
-    if (Platform.OS !== 'ios') return
-
-    void photoOutput
-      .prepareSettings([{ flashMode, enableShutterSound: true }])
-      .catch((err) => {
-        if (__DEV__) console.warn('[useCameraCapture] prepareSettings:', err)
-      })
-  }, [flashMode, photoOutput])
 
   const isFocused = useIsFocused()
   const [appState, setAppState] = useState<AppStateStatus>('active')
@@ -138,9 +129,16 @@ export function useCameraCapture(): CameraCaptureResult {
     opacity: flashOpacity.value,
   }))
 
-  const cameraVariant = improvedCapture
-    ? `device_aware_${captureMode}`
-    : `tap_${captureMode}`
+  const capturePipeline = iosIdentificationEnabled
+    ? 'ios_identification'
+    : improvedCapture
+      ? 'improved'
+      : 'legacy'
+  const cameraVariant = iosIdentificationEnabled
+    ? `ios_identification_${captureMode}`
+    : improvedCapture
+      ? `device_aware_${captureMode}`
+      : `tap_${captureMode}`
 
   const handleTakePhoto = useCallback(async () => {
     if (captureMode === 'burst' && isTakingPhoto) {
@@ -179,7 +177,6 @@ export function useCameraCapture(): CameraCaptureResult {
         try {
           const filePath = await photo.saveToTemporaryFileAsync()
           const uri = `file://${filePath}`
-
           submission = {
             local_id: randomUUID(),
             uri,
@@ -195,16 +192,16 @@ export function useCameraCapture(): CameraCaptureResult {
 
         const persistedAt = performanceChecks ? Date.now() : null
         completedPhotoCount += 1
-
         addPhoto(submission)
         setCapturedPhotos((prev) => [...prev, submission])
+
         captureEvent(EVENTS.PHOTO_CAPTURED, {
           flash_mode: flashMode,
           photo_width: submission.width,
           photo_height: submission.height,
           capture_mode: captureMode,
-          capture_pipeline: improvedCapture ? 'improved' : 'legacy',
-          quality_prioritization: qualityPrioritization ?? 'default',
+          capture_pipeline: capturePipeline,
+          quality_prioritization: effectiveQualityPrioritization ?? 'default',
           low_light_boost: enableLowLightBoost,
           ...(performanceChecks &&
           captureStartedAt !== null &&
@@ -245,8 +242,8 @@ export function useCameraCapture(): CameraCaptureResult {
         captureEvent(EVENTS.CAMERA_CAPTURE_SEQUENCE_COMPLETED, {
           capture_mode: captureMode,
           photo_count: completedPhotoCount,
-          capture_pipeline: improvedCapture ? 'improved' : 'legacy',
-          quality_prioritization: qualityPrioritization ?? 'default',
+          capture_pipeline: capturePipeline,
+          quality_prioritization: effectiveQualityPrioritization ?? 'default',
           low_light_boost: enableLowLightBoost,
           ...(performanceChecks && sequenceStartedAt !== null
             ? {
@@ -265,8 +262,8 @@ export function useCameraCapture(): CameraCaptureResult {
         error: err instanceof Error ? err.message : String(err),
         capture_mode: captureMode,
         completed_photo_count: completedPhotoCount,
-        capture_pipeline: improvedCapture ? 'improved' : 'legacy',
-        quality_prioritization: qualityPrioritization ?? 'default',
+        capture_pipeline: capturePipeline,
+        quality_prioritization: effectiveQualityPrioritization ?? 'default',
         low_light_boost: enableLowLightBoost,
         ...(performanceChecks && sequenceStartedAt !== null
           ? {
@@ -283,20 +280,20 @@ export function useCameraCapture(): CameraCaptureResult {
       setIsTakingPhoto(false)
     }
   }, [
-    isTakingPhoto,
+    addPhoto,
+    cameraVariant,
     captureMode,
+    capturePipeline,
+    effectiveQualityPrioritization,
+    enableLowLightBoost,
     flashMode,
     flashOpacity,
-    photoOutput,
-    addPhoto,
-    updatePhoto,
+    isTakingPhoto,
     keepOnDevice,
-    user,
-    improvedCapture,
-    qualityPrioritization,
-    enableLowLightBoost,
     performanceChecks,
-    cameraVariant,
+    photoOutput,
+    updatePhoto,
+    user,
   ])
 
   useEffect(() => {
@@ -375,18 +372,18 @@ export function useCameraCapture(): CameraCaptureResult {
         device.supportsSpeedQualityPrioritization,
       min_zoom: device.minZoom,
       max_zoom: device.maxZoom,
-      capture_pipeline: improvedCapture ? 'improved' : 'legacy',
-      quality_prioritization: qualityPrioritization ?? 'default',
+      capture_pipeline: capturePipeline,
+      quality_prioritization: effectiveQualityPrioritization ?? 'default',
       low_light_boost: enableLowLightBoost,
     })
   }, [
     cameraPosition,
     cameraVariant,
+    capturePipeline,
     device,
+    effectiveQualityPrioritization,
     enableLowLightBoost,
-    improvedCapture,
     performanceChecks,
-    qualityPrioritization,
   ])
 
   useEffect(() => {
@@ -419,6 +416,7 @@ export function useCameraCapture(): CameraCaptureResult {
     renderItem,
     keyExtractor,
     handleTakePhoto,
+    handleCameraConfigured,
     setCaptureMode,
     cycleFlash,
     flipCamera,
