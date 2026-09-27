@@ -39,10 +39,22 @@ const PHOTO_TOGGLES = [
     platform: null,
   },
   {
+    key: 'improved_camera_capture',
+    label: 'Improved Camera Capture',
+    desc: 'Use device-aware high-quality capture and low-light boost when supported',
+    platform: 'android',
+  },
+  {
     key: 'ios_improved_camera_capture',
     label: 'Improved iPhone Capture',
     desc: 'Favor fine coat detail and motion preservation using this camera’s capabilities',
     platform: 'ios',
+  },
+  {
+    key: 'camera_performance_checks',
+    label: 'Camera Performance Checks',
+    desc: 'Attach comparable camera timing data to PostHog events for A/B testing',
+    platform: null,
   },
 ] as const
 

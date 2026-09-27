@@ -1,6 +1,7 @@
 {
-  "platforms": ["apple"],
+  "platforms": ["ios"],
   "apple": {
-    "modules": ["IosCameraOptimizerModule"]
+    "modules": ["IosCameraOptimizerModule"],
+    "podspecPath": "ios/IosCameraOptimizer.podspec"
   }
 }

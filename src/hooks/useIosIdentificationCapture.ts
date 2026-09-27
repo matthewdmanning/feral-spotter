@@ -12,15 +12,19 @@ import {
 } from 'react-native-vision-camera'
 
 type FlashMode = 'off' | 'on' | 'auto'
+type QualityPrioritization = 'speed' | 'balanced' | undefined
 
 interface IosIdentificationCaptureResult {
   photoOutput: CameraPhotoOutput
   handleCameraConfigured: () => void
+  iosIdentificationEnabled: boolean
+  effectiveQualityPrioritization: QualityPrioritization
 }
 
 export function useIosIdentificationCapture(
   device: CameraDevice | undefined,
   flashMode: FlashMode,
+  fallbackQualityPrioritization: QualityPrioritization,
 ): IosIdentificationCaptureResult {
   const enabled = useSettingsStore(
     (s) =>
@@ -40,20 +44,24 @@ export function useIosIdentificationCapture(
     )
   }, [device, enabled])
 
-  const qualityPrioritization = enabled
+  const iosQualityPrioritization: QualityPrioritization = enabled
     ? device?.supportsSpeedQualityPrioritization
       ? 'speed'
       : 'balanced'
     : undefined
+  const effectiveQualityPrioritization =
+    iosQualityPrioritization ?? fallbackQualityPrioritization
 
   const photoOutput = usePhotoOutput(
     enabled
       ? {
           targetResolution: targetPhotoResolution,
           quality: 1,
-          qualityPrioritization,
+          qualityPrioritization: effectiveQualityPrioritization,
         }
-      : undefined,
+      : effectiveQualityPrioritization
+        ? { qualityPrioritization: effectiveQualityPrioritization }
+        : undefined,
   )
 
   const handleCameraConfigured = useCallback(() => {
@@ -75,7 +83,7 @@ export function useIosIdentificationCapture(
   }, [device, enabled])
 
   useEffect(() => {
-    if (!enabled) return
+    if (Platform.OS !== 'ios') return
 
     void photoOutput
       .prepareSettings([{ flashMode, enableShutterSound: true }])
@@ -83,7 +91,12 @@ export function useIosIdentificationCapture(
         if (__DEV__)
           console.warn('[useIosIdentificationCapture] prepare:', error)
       })
-  }, [enabled, flashMode, photoOutput])
+  }, [flashMode, photoOutput])
 
-  return { photoOutput, handleCameraConfigured }
+  return {
+    photoOutput,
+    handleCameraConfigured,
+    iosIdentificationEnabled: enabled,
+    effectiveQualityPrioritization,
+  }
 }
