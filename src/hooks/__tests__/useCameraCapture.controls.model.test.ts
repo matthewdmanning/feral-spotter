@@ -49,7 +49,10 @@ const mockUseCameraDevice = jest.fn((position: string) => ({
 }))
 jest.mock('react-native-vision-camera', () => ({
   useCameraDevice: (position: string) => mockUseCameraDevice(position),
-  usePhotoOutput: jest.fn(() => ({ capturePhoto: jest.fn() })),
+  usePhotoOutput: jest.fn(() => ({
+    capturePhoto: jest.fn(),
+    prepareSettings: jest.fn(() => Promise.resolve()),
+  })),
   Camera: 'Camera',
 }))
 

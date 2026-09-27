@@ -41,7 +41,11 @@ jest.mock('react-native-vision-camera', () => ({
     minZoom: 1,
     maxZoom: 8,
   })),
-  usePhotoOutput: jest.fn(() => ({ capturePhoto: mockCapturePhoto })),
+  usePhotoOutput: jest.fn(() => ({
+    capturePhoto: mockCapturePhoto,
+    // vision-camera 5.1.0 API the iOS warm-up effect calls.
+    prepareSettings: jest.fn(() => Promise.resolve()),
+  })),
   Camera: 'Camera',
 }))
 
@@ -89,6 +93,7 @@ jest.mock('@/src/lib/analytics/analytics', () => ({
   EVENTS: {
     CAMERA_OPENED: 'camera_opened',
     CAMERA_DEVICE_READY: 'camera_device_ready',
+    CAMERA_CAPTURE_SEQUENCE_COMPLETED: 'camera_capture_sequence_completed',
     PHOTO_CAPTURED: 'photo_captured',
     PHOTO_CAPTURE_FAILED: 'photo_capture_failed',
   },
@@ -184,6 +189,43 @@ describe('useCameraCapture handleTakePhoto', () => {
 
     expect(dispose).toHaveBeenCalledTimes(1)
     expect(result.current.capturedPhotos).toHaveLength(0)
+  })
+
+  it('stops a burst after the in-flight capture when capture is tapped again', async () => {
+    let resolveCapture: ((photo: object) => void) | undefined
+    mockCapturePhoto.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveCapture = resolve
+        }),
+    )
+
+    const { result } = renderHook(() => useCameraCapture())
+    act(() => result.current.setCaptureMode('burst'))
+
+    let burstPromise: Promise<void>
+    act(() => {
+      burstPromise = result.current.handleTakePhoto()
+    })
+
+    expect(result.current.isTakingPhoto).toBe(true)
+
+    await act(async () => {
+      await result.current.handleTakePhoto()
+    })
+
+    await act(async () => {
+      resolveCapture?.({
+        width: 100,
+        height: 100,
+        saveToTemporaryFileAsync: jest.fn(async () => '/tmp/fake.jpg'),
+        dispose: jest.fn(),
+      })
+      await burstPromise!
+    })
+
+    expect(mockCapturePhoto).toHaveBeenCalledTimes(1)
+    expect(result.current.isTakingPhoto).toBe(false)
   })
 
   it('keeps the captured photo in review state even if the gallery save fails', async () => {
