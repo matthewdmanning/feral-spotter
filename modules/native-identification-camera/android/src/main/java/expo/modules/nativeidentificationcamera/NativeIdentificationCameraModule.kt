@@ -38,7 +38,7 @@ class NativeIdentificationCameraModule : Module() {
     Name("NativeIdentificationCamera")
 
     View(NativeIdentificationCameraView::class) {
-      Events("onCameraReady", "onCameraError")
+      Events("onCameraReady", "onCameraError", "onCameraDiagnostic")
 
       // Expo calls this once after a whole prop batch. The prop setters only
       // record that a rebind is needed, so two settings changed together cost
@@ -69,6 +69,10 @@ class NativeIdentificationCameraModule : Module() {
 
       Prop("subjectMetering") { view: NativeIdentificationCameraView, value: Boolean ->
         view.subjectMetering = value
+      }
+
+      Prop("diagnostics") { view: NativeIdentificationCameraView, value: Boolean ->
+        view.diagnostics = value
       }
 
       AsyncFunction("capture") {

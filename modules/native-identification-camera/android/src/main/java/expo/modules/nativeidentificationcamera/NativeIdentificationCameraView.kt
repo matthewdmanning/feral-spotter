@@ -56,6 +56,14 @@ class NativeIdentificationCameraView(
   val onCameraReady by EventDispatcher()
   val onCameraError by EventDispatcher()
 
+  /**
+   * Session diagnostics for a profiling or test-drive run. The view does not
+   * talk to an analytics SDK: it reports what the session did and the React
+   * Native layer decides whether that reaches PostHog, so there is one consent
+   * gate and one distinct id rather than a second, native set of both.
+   */
+  val onCameraDiagnostic by EventDispatcher()
+
   private val previewView = PreviewView(context).apply {
     layoutParams = ViewGroup.LayoutParams(
       ViewGroup.LayoutParams.MATCH_PARENT,
@@ -75,6 +83,21 @@ class NativeIdentificationCameraView(
           requested.coerceIn(zoomState.minZoomRatio, zoomState.maxZoomRatio)
         )
         return true
+      }
+
+      // One event per pinch, not one per frame of it. A run that shows both
+      // pinch_ended and focus_requested is the evidence that the touch listener
+      // lets tap and pinch coexist.
+      override fun onScaleEnd(detector: ScaleGestureDetector) {
+        diagnostic(
+          "pinch_ended",
+          mapOf(
+            // -1 means the session went away before the pinch ended.
+            "zoom_ratio" to
+              (camera?.cameraInfo?.zoomState?.value?.zoomRatio?.toDouble() ?: -1.0),
+            "camera_position" to position
+          )
+        )
       }
     }
   )
@@ -138,8 +161,26 @@ class NativeIdentificationCameraView(
 
   var subjectMetering: Boolean = false
 
+  /**
+   * Driven by the `camera_performance_checks` setting. Off by default, so a
+   * normal install reports nothing from here.
+   */
+  var diagnostics: Boolean = false
+
   private val tuning: CaptureTuning
     get() = CaptureTuning.of(maxDetail, motionPriority)
+
+  /**
+   * How many times this view has bound a session. A cold mount should report 1,
+   * and a prop batch that changes several tuning settings at once should add
+   * exactly 1 more — which is the whole point of the deferred rebind.
+   */
+  private var bindCount = 0
+
+  private fun diagnostic(event: String, fields: Map<String, Any> = emptyMap()) {
+    if (!diagnostics) return
+    onCameraDiagnostic(mapOf("event" to event) + fields)
+  }
 
   init {
     addView(previewView)
@@ -244,6 +285,7 @@ class NativeIdentificationCameraView(
       return
     }
 
+    val startedAt = System.currentTimeMillis()
     try {
       val activeTuning = tuning
       val selector = CameraSelector.Builder()
@@ -288,17 +330,45 @@ class NativeIdentificationCameraView(
           "captureMode" to activeTuning.captureMode()
         )
       )
+
+      bindCount += 1
+      diagnostic(
+        "session_bound",
+        mapOf(
+          "bind_count" to bindCount,
+          "capture_tuning" to activeTuning.telemetryName,
+          "capture_mode" to activeTuning.captureMode(),
+          "camera_position" to position,
+          "max_detail" to maxDetail,
+          "motion_priority" to motionPriority,
+          "low_light_boost_disabled" to disableLowLightBoost,
+          "low_light_boost_supported" to boundCamera.cameraInfo.isLowLightBoostSupported,
+          "bind_duration_ms" to (System.currentTimeMillis() - startedAt)
+        )
+      )
     } catch (error: Throwable) {
       onCameraError(mapOf("message" to (error.message ?: error.toString())))
+      diagnostic(
+        "session_bind_failed",
+        mapOf(
+          "message" to (error.message ?: error.toString()),
+          "camera_position" to position,
+          "bind_duration_ms" to (System.currentTimeMillis() - startedAt)
+        )
+      )
     }
   }
 
   private fun unbindCamera() {
     val provider = cameraProvider ?: return
+    val wasBound = boundSessionConfig != null
     boundSessionConfig?.let { provider.unbind(it) }
     boundSessionConfig = null
     imageCaptureUseCase = null
     camera = null
+    if (wasBound) {
+      diagnostic("session_unbound", mapOf("bind_count" to bindCount))
+    }
   }
 
   /**
@@ -328,17 +398,26 @@ class NativeIdentificationCameraView(
 
       val outputFile = File(context.cacheDir, "${UUID.randomUUID()}.jpg")
       val outputOptions = ImageCapture.OutputFileOptions.Builder(outputFile).build()
+      val requestedAt = System.currentTimeMillis()
 
       imageCapture.takePicture(
         outputOptions,
         ContextCompat.getMainExecutor(context),
         object : ImageCapture.OnImageSavedCallback {
           override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-            resolveWithFileDimensions(outputFile, promise)
+            resolveWithFileDimensions(outputFile, promise, requestedAt)
           }
 
           override fun onError(exception: ImageCaptureException) {
             promise.reject("ERR_CAPTURE_FAILED", exception.message, exception)
+            diagnostic(
+              "capture_failed",
+              mapOf(
+                "message" to (exception.message ?: exception.toString()),
+                "image_capture_error_code" to exception.imageCaptureError,
+                "elapsed_ms" to (System.currentTimeMillis() - requestedAt)
+              )
+            )
           }
         }
       )
@@ -354,7 +433,11 @@ class NativeIdentificationCameraView(
    * The stored pixels are unrotated, so the EXIF orientation decides whether
    * the axes are swapped for a consumer that honours it.
    */
-  private fun resolveWithFileDimensions(outputFile: File, promise: Promise) {
+  private fun resolveWithFileDimensions(
+    outputFile: File,
+    promise: Promise,
+    requestedAt: Long
+  ) {
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
     BitmapFactory.decodeFile(outputFile.absolutePath, bounds)
 
@@ -364,16 +447,20 @@ class NativeIdentificationCameraView(
         "Saved capture reported no dimensions",
         null
       )
+      diagnostic(
+        "capture_no_dimensions",
+        mapOf("elapsed_ms" to (System.currentTimeMillis() - requestedAt))
+      )
       return
     }
 
+    var exifOrientation = ExifInterface.ORIENTATION_UNDEFINED
     val quarterTurned = try {
-      when (
-        ExifInterface(outputFile.absolutePath).getAttributeInt(
-          ExifInterface.TAG_ORIENTATION,
-          ExifInterface.ORIENTATION_NORMAL
-        )
-      ) {
+      exifOrientation = ExifInterface(outputFile.absolutePath).getAttributeInt(
+        ExifInterface.TAG_ORIENTATION,
+        ExifInterface.ORIENTATION_NORMAL
+      )
+      when (exifOrientation) {
         ExifInterface.ORIENTATION_ROTATE_90, ExifInterface.ORIENTATION_ROTATE_270 -> true
         ExifInterface.ORIENTATION_TRANSPOSE, ExifInterface.ORIENTATION_TRANSVERSE -> true
         else -> false
@@ -384,19 +471,65 @@ class NativeIdentificationCameraView(
       false
     }
 
+    val reportedWidth = if (quarterTurned) bounds.outHeight else bounds.outWidth
+    val reportedHeight = if (quarterTurned) bounds.outWidth else bounds.outHeight
+
     promise.resolve(
       mapOf(
         "uri" to android.net.Uri.fromFile(outputFile).toString(),
-        "width" to if (quarterTurned) bounds.outHeight else bounds.outWidth,
-        "height" to if (quarterTurned) bounds.outWidth else bounds.outHeight
+        "width" to reportedWidth,
+        "height" to reportedHeight
+      )
+    )
+
+    // Both the stored and the reported axes, so the EXIF swap can be checked
+    // against a real portrait capture instead of inferred from the photo.
+    diagnostic(
+      "capture_saved",
+      mapOf(
+        "stored_width" to bounds.outWidth,
+        "stored_height" to bounds.outHeight,
+        "reported_width" to reportedWidth,
+        "reported_height" to reportedHeight,
+        "exif_orientation" to exifOrientation,
+        "axes_swapped" to quarterTurned,
+        "file_bytes" to outputFile.length(),
+        "camera_position" to position,
+        "capture_tuning" to tuning.telemetryName,
+        "elapsed_ms" to (System.currentTimeMillis() - requestedAt)
       )
     )
   }
 
   fun focus(normalizedX: Double, normalizedY: Double): Boolean {
-    if (normalizedX !in 0.0..1.0 || normalizedY !in 0.0..1.0) return false
-    val boundCamera = camera ?: return false
-    if (previewView.width <= 0 || previewView.height <= 0) return false
+    // Reported whether or not it is applied: a tap that arrives but is refused
+    // looks identical on screen to a tap that never arrived.
+    fun report(accepted: Boolean, reason: String) {
+      diagnostic(
+        "focus_requested",
+        mapOf(
+          "accepted" to accepted,
+          "reason" to reason,
+          "normalized_x" to normalizedX,
+          "normalized_y" to normalizedY,
+          "subject_metering" to subjectMetering,
+          "camera_position" to position
+        )
+      )
+    }
+
+    if (normalizedX !in 0.0..1.0 || normalizedY !in 0.0..1.0) {
+      report(false, "out_of_bounds")
+      return false
+    }
+    val boundCamera = camera ?: run {
+      report(false, "no_bound_camera")
+      return false
+    }
+    if (previewView.width <= 0 || previewView.height <= 0) {
+      report(false, "preview_not_measured")
+      return false
+    }
 
     val point = previewView.meteringPointFactory.createPoint(
       (normalizedX * previewView.width).toFloat(),
@@ -407,11 +540,23 @@ class NativeIdentificationCameraView(
       FocusMeteringAction.FLAG_AF or FocusMeteringAction.FLAG_AE
     ).build()
     boundCamera.cameraControl.startFocusAndMetering(action)
+    report(true, "started")
     return true
   }
 
   fun setSubjectRegion(region: NativeSubjectRegion?): Boolean {
-    if (!subjectMetering || region == null) return false
+    if (!subjectMetering || region == null) {
+      // Without this, a run with camera_subject_metering off is silent and
+      // looks the same as a tap that never reached the view at all.
+      diagnostic(
+        "subject_region_ignored",
+        mapOf(
+          "subject_metering" to subjectMetering,
+          "region_present" to (region != null)
+        )
+      )
+      return false
+    }
     return focus(
       region.x + region.width / 2.0,
       region.y + region.height / 2.0

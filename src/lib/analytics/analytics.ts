@@ -32,6 +32,7 @@ export const EVENTS = {
   REPORTS_VIEWED: 'feral_reports_viewed',
   CAMERA_OPENED: 'camera_opened',
   CAMERA_DEVICE_READY: 'camera_device_ready',
+  CAMERA_NATIVE_DIAGNOSTIC: 'camera_native_diagnostic',
   CAMERA_CAPTURE_SEQUENCE_COMPLETED: 'camera_capture_sequence_completed',
   PHOTO_CAPTURED: 'photo_captured',
   PHOTO_CAPTURE_FAILED: 'photo_capture_failed',

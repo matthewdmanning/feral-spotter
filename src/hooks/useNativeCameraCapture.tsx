@@ -15,6 +15,7 @@ import { useAuth } from '@/src/lib/auth/useAuth'
 import type { ImagePostprocessor } from '@/src/lib/camera/pipeline'
 import { startLocationCapture } from '@/src/lib/location'
 import type {
+  NativeCameraDiagnosticEvent,
   NativeCameraReadyEvent,
   NativeIdentificationCameraRef,
   NormalizedSubjectRegion,
@@ -121,6 +122,28 @@ export function useNativeCameraCapture(
       position,
       subjectMetering,
     ],
+  )
+
+  /**
+   * Forwards one native session diagnostic to PostHog. The native views do not
+   * link an analytics SDK of their own, so this is the single consent gate and
+   * the single distinct id for everything the camera session reports.
+   */
+  const handleCameraDiagnostic = useCallback(
+    (event?: { nativeEvent?: NativeCameraDiagnosticEvent }) => {
+      const payload = event?.nativeEvent
+      if (!performanceChecks || !payload) return
+      const { event: name, ...fields } = payload
+      captureEvent(EVENTS.CAMERA_NATIVE_DIAGNOSTIC, {
+        camera_performance_checks: true,
+        capture_backend: 'native',
+        camera_backend: Platform.OS === 'ios' ? 'avfoundation' : 'camerax',
+        camera_platform: Platform.OS,
+        native_event: name,
+        ...fields,
+      })
+    },
+    [performanceChecks],
   )
 
   const handleTakePhoto = useCallback(async () => {
@@ -243,6 +266,8 @@ export function useNativeCameraCapture(
     isCameraReady,
     setIsCameraReady,
     handleCameraReady,
+    handleCameraDiagnostic,
+    diagnostics: performanceChecks,
     isActive,
     maxDetail,
     motionPriority,

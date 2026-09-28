@@ -2,6 +2,7 @@ import { requireOptionalNativeModule } from 'expo'
 
 export { NativeIdentificationCameraView } from './src/NativeIdentificationCameraView'
 export type {
+  NativeCameraDiagnosticEvent,
   NativeCameraReadyEvent,
   NativeCapturedPhoto,
   NativeCameraPosition,
