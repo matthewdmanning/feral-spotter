@@ -1,10 +1,5 @@
 import { requireNativeViewManager } from 'expo-modules-core'
-import {
-  forwardRef,
-  useMemo,
-  type ComponentType,
-  type ForwardedRef,
-} from 'react'
+import { forwardRef, type ComponentType, type ForwardedRef } from 'react'
 import type {
   NativeIdentificationCameraProps,
   NativeIdentificationCameraRef,
@@ -31,7 +26,9 @@ export const NativeIdentificationCameraView = forwardRef<
   NativeIdentificationCameraRef,
   NativeIdentificationCameraProps
 >((props, ref) => {
-  const NativeView = useMemo(getNativeView, [])
+  // getNativeView already caches in cachedView, so a useMemo around it would be
+  // a second cache for the same value.
+  const NativeView = getNativeView()
   return <NativeView {...props} ref={ref} />
 })
 
