@@ -92,6 +92,31 @@ Drawing a bounding box around each cat in a photo. The app's one genuinely compl
 **Camera screen**:
 The live photo-capture screen (`src/screens/camera/`). Distinct from Box Annotation (`src/screens/submission/annotate/`) — a common colloquial mix-up since both deal with a just-taken photo.
 
+**Camera seam**:
+The boundary between the React Native layer and the Expo native camera views in `modules/native-identification-camera/`. The native side owns the camera session, focus and metering, zoom and capture. The React Native side owns the screen, permissions, settings, captured-photo state, upload and save, and analytics — including anything the native side reports, so there is one analytics-consent gate and one distinct id rather than a second native set of both. `modules/native-identification-camera/src/types.ts` is the contract, and both platforms implement it.
+_Avoid_: bridge (this is the Expo Modules API, not the legacy React Native bridge), native camera module (there are two modules under `modules/`).
+
+**Capture backend**:
+Which implementation is serving the Camera screen. `visioncamera` is the default and the fallback; `native` is the Camera seam, chosen by the `native_camera_capture` setting. A backend change needs an explicit product decision plus evidence that supported devices and release builds include it — it is not a refactoring side effect.
+_Avoid_: capture pipeline, camera variant (both exist as telemetry field names today and mean narrower things; see the note below).
+
+**Capture tuning**:
+The named mapping from the `camera_max_detail` and `camera_motion_priority` settings onto one platform capture mode. One table per platform — `CaptureTuning.kt` and `CaptureTuning.swift` — deliberately not one shared policy: the two platforms disagree about what `(true, true)` should mean, and that disagreement is an open product decision, not a defect. The resolved name travels in telemetry as `capture_tuning`, so a profiling run can tell which mode actually ran rather than inferring it from the settings that asked for it.
+_Avoid_: quality preset, capture profile.
+
+> **This vocabulary is under review — do not extend it yet.** The camera
+> telemetry field names and the camera settings booleans are known to be
+> inconsistent: `capture_pipeline` versus `capture_backend` for one concept,
+> `camera_variant` carrying real values on one path and the constant `native` on
+> the other, `camera_backend` mixing a JavaScript library name with native
+> framework names, mixed default polarity across eight booleans, and
+> `camera_disable_low_light_boost` naming the negative where the legacy path's
+> `enableLowLightBoost` names the positive. The sweep is an open decision because
+> renaming settings keys needs a migration decision for values already persisted
+> on devices, and renaming telemetry fields has to be one commit or queries break
+> mid-series. Until that is decided, use the names the code uses and do not coin
+> replacements.
+
 **Consent**:
 The user's explicit acceptance of the data-collection disclosure, and the granting of OS permissions (location, camera, photos). This is where acceptance is recorded and permissions are requested — unlike Onboarding, which only explains. Eager priming happens on "I Agree"; contextual re-priming happens at point of use (issue #41).
 _Avoid_: onboarding (Consent is the gate, not the explanation).
