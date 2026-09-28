@@ -3,26 +3,19 @@ import {
   type CaptureMode,
 } from '@/src/hooks/useCameraCapture'
 import { SegmentedControl } from '@/src/components/atoms/SegmentedControl'
-import { FlashList } from '@shopify/flash-list'
 import { Stack } from 'expo-router'
-import { SwitchCamera, X, Zap, ZapOff } from 'lucide-react-native'
-import { useCallback, useMemo } from 'react'
-import {
-  Linking,
-  Pressable,
-  StyleSheet as RNStyleSheet,
-  Text,
-  View,
-} from 'react-native'
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated'
+import { useMemo } from 'react'
+import { StyleSheet as RNStyleSheet, Text, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
-import { useUnistyles } from 'react-native-unistyles'
 import { Camera, useCameraPermission } from 'react-native-vision-camera'
+import {
+  CameraFlashOverlay,
+  CameraGate,
+  CameraPermissionGate,
+  CameraShutterRow,
+  CameraThumbnailStrip,
+  CameraTopBar,
+} from './CameraChrome'
 import { styles } from './index.styles'
 
 const CAPTURE_MODES: { value: CaptureMode; label: string }[] = [
@@ -30,8 +23,12 @@ const CAPTURE_MODES: { value: CaptureMode; label: string }[] = [
   { value: 'burst', label: 'Burst' },
 ]
 
+function shutterLabelFor(captureMode: CaptureMode, isTakingPhoto: boolean) {
+  if (captureMode !== 'burst') return 'Capture photo'
+  return isTakingPhoto ? 'Stop burst' : 'Start burst'
+}
+
 export function LegacyCameraScreen() {
-  const { theme } = useUnistyles()
   const { hasPermission, requestPermission } = useCameraPermission()
   const {
     device,
@@ -56,23 +53,8 @@ export function LegacyCameraScreen() {
     handleClose,
   } = useCameraCapture()
 
-  const shutterScale = useSharedValue(1)
-  const shutterStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: shutterScale.value }],
-  }))
-  const onPressIn = useCallback(() => {
-    shutterScale.value = withTiming(0.88, {
-      duration: 70,
-      easing: Easing.out(Easing.quad),
-    })
-  }, [shutterScale])
-  const onPressOut = useCallback(() => {
-    shutterScale.value = withTiming(1, {
-      duration: 140,
-      easing: Easing.out(Easing.back(1.5)),
-    })
-  }, [shutterScale])
-
+  // A tap on the preview captures, and the native gesture still has to reach
+  // VisionCamera's own zoom handling, so the two run simultaneously.
   const cameraTapGesture = useMemo(() => {
     const nativeGesture = Gesture.Native()
     const tapGesture = Gesture.Tap()
@@ -85,50 +67,22 @@ export function LegacyCameraScreen() {
 
   if (!hasPermission)
     return (
-      <View style={styles.gate}>
+      <>
         <Stack.Screen options={{ headerShown: false }} />
-        <Text style={styles.gateTitle}>Camera Access Required</Text>
-        <Text style={styles.gateBody}>
-          FeralSpotter needs camera access to capture cat observations.
-        </Text>
-        <Pressable
-          onPress={requestPermission}
-          style={styles.gatePrimary}
-          accessibilityRole="button"
-        >
-          <Text style={styles.gatePrimaryText}>Allow Camera</Text>
-        </Pressable>
-        <Pressable
-          onPress={() => Linking.openSettings()}
-          style={styles.gateSecondary}
-          accessibilityRole="button"
-        >
-          <Text style={styles.gateSecondaryText}>Open Settings</Text>
-        </Pressable>
-      </View>
+        <CameraPermissionGate onRequestPermission={requestPermission} />
+      </>
     )
 
   if (!device)
     return (
-      <View style={styles.gate}>
+      <>
         <Stack.Screen options={{ headerShown: false }} />
-        <Text style={styles.gateTitle}>No Camera Found</Text>
-        <Pressable
-          onPress={handleClose}
-          style={styles.gatePrimary}
-          accessibilityRole="button"
-        >
-          <Text style={styles.gatePrimaryText}>Go Back</Text>
-        </Pressable>
-      </View>
-    )
-
-  const hasPhotos = capturedPhotos.length > 0
-  const FlashIcon =
-    flashMode === 'on' ? (
-      <Zap size={22} color={theme.colors.warning} />
-    ) : (
-      <ZapOff size={22} color={theme.colors.text} />
+        <CameraGate
+          title="No Camera Found"
+          primaryLabel="Go Back"
+          onPrimary={handleClose}
+        />
+      </>
     )
 
   return (
@@ -146,45 +100,15 @@ export function LegacyCameraScreen() {
           enableNativeZoomGesture
         />
       </GestureDetector>
-      <Animated.View
-        style={[
-          RNStyleSheet.absoluteFill,
-          styles.flashOverlay,
-          flashOverlayStyle,
-        ]}
-        pointerEvents="none"
-      />
+      <CameraFlashOverlay style={flashOverlayStyle} />
 
-      <View style={styles.topBar}>
-        <Pressable
-          onPress={handleClose}
-          style={styles.iconBtn}
-          accessibilityRole="button"
-        >
-          <X size={24} color={theme.colors.text} />
-        </Pressable>
-        <View style={styles.topBarRight}>
-          {hasPhotos && (
-            <Pressable
-              onPress={handleDone}
-              style={styles.pill}
-              accessibilityRole="button"
-            >
-              <Text style={styles.pillText}>
-                Done ({capturedPhotos.length})
-              </Text>
-            </Pressable>
-          )}
-          <Pressable
-            onPress={cycleFlash}
-            style={styles.iconBtn}
-            accessibilityRole="button"
-          >
-            {FlashIcon}
-            {flashMode === 'auto' && <Text style={styles.autoA}>A</Text>}
-          </Pressable>
-        </View>
-      </View>
+      <CameraTopBar
+        photoCount={capturedPhotos.length}
+        flashMode={flashMode}
+        onClose={handleClose}
+        onDone={handleDone}
+        onCycleFlash={cycleFlash}
+      />
 
       <View style={styles.bottomBar}>
         <View
@@ -206,47 +130,19 @@ export function LegacyCameraScreen() {
             </Text>
           )}
         </View>
-        {hasPhotos && (
-          <FlashList
-            ref={listRef}
-            data={capturedPhotos}
-            keyExtractor={keyExtractor}
-            renderItem={renderItem}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 20, gap: 6 }}
-            style={styles.strip}
-          />
-        )}
-        <View style={styles.shutterRow}>
-          <Pressable
-            onPress={flipCamera}
-            style={[styles.sideBtn, styles.sideBtnFilled]}
-            accessibilityRole="button"
-          >
-            <SwitchCamera size={30} color={theme.colors.text} />
-          </Pressable>
-          <Animated.View style={shutterStyle}>
-            <Pressable
-              onPress={handleTakePhoto}
-              onPressIn={onPressIn}
-              onPressOut={onPressOut}
-              disabled={captureMode === 'single' && isTakingPhoto}
-              style={[styles.shutter, isTakingPhoto && styles.shutterBusy]}
-              accessibilityRole="button"
-              accessibilityLabel={
-                captureMode === 'burst' && isTakingPhoto
-                  ? 'Stop burst'
-                  : captureMode === 'burst'
-                    ? 'Start burst'
-                    : 'Capture photo'
-              }
-            >
-              <View style={styles.shutterInner} />
-            </Pressable>
-          </Animated.View>
-          <View style={styles.sideBtn} />
-        </View>
+        <CameraThumbnailStrip
+          listRef={listRef}
+          photos={capturedPhotos}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+        />
+        <CameraShutterRow
+          onFlip={flipCamera}
+          onCapture={handleTakePhoto}
+          busy={isTakingPhoto}
+          disabled={captureMode === 'single' && isTakingPhoto}
+          shutterLabel={shutterLabelFor(captureMode, isTakingPhoto)}
+        />
       </View>
     </View>
   )

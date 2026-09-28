@@ -100,9 +100,7 @@ module.exports = defineConfig([
     files: [
       'src/hooks/useBoundingBoxFrame.ts',
       'src/hooks/useCapturedPhotoWorkflow.tsx',
-      'src/screens/camera/index.tsx',
-      'src/screens/camera/LegacyCameraScreen.tsx',
-      'src/screens/camera/NativeCameraScreen.tsx',
+      'src/screens/camera/CameraChrome.tsx',
     ],
     rules: {
       'react-hooks/immutability': 'off',
