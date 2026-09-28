@@ -57,14 +57,34 @@ jest.mock('react-native-reanimated', () => ({
   Easing: { out: jest.fn(), quad: {}, back: jest.fn() },
 }))
 
+// getState must be present: the capture workflow reads submissionId from it
+// before starting an upload. Without it the upload threw and every capture
+// test landed in the failure branch while still passing its assertions.
+const mockPhotoStoreState = {
+  addPhoto: jest.fn(),
+  removePhoto: jest.fn(),
+  updatePhoto: jest.fn(),
+  photos: [],
+  submissionId: 'test-submission',
+}
 jest.mock('@/src/hooks', () => ({
-  usePhotoStore: (sel: (s: object) => unknown) =>
-    sel({ addPhoto: jest.fn(), photos: [] }),
+  usePhotoStore: Object.assign(
+    (sel: (s: object) => unknown) => sel(mockPhotoStoreState),
+    { getState: () => mockPhotoStoreState },
+  ),
 }))
 
 jest.mock('@/src/hooks/useSettingsStore', () => ({
   useSettingsStore: (sel: (s: object) => unknown) =>
     sel({ settings: { keep_photos_on_device: true } }),
+}))
+
+const mockUploadNewPhoto = jest.fn()
+jest.mock('@/src/lib/upload/uploadNewPhoto', () => ({
+  uploadNewPhoto: (...args: unknown[]) => mockUploadNewPhoto(...args),
+}))
+jest.mock('@/src/lib/auth/useAuth', () => ({
+  useAuth: () => ({ user: { uid: 'test-uid' } }),
 }))
 
 jest.mock('@shopify/flash-list', () => ({ FlashList: 'FlashList' }))
@@ -276,5 +296,30 @@ describe('useCameraCapture handleTakePhoto', () => {
     expect(mockRequestPermissionsAsync).toHaveBeenCalledTimes(1)
     expect(mockRequestPermissionsAsync).toHaveBeenCalledWith(true)
     expect(mockAssetCreate).not.toHaveBeenCalled()
+  })
+  it('hands each captured photo to the uploader', async () => {
+    mockCapturePhoto.mockResolvedValueOnce({
+      width: 4032,
+      height: 3024,
+      saveToTemporaryFileAsync: jest.fn(async () => '/tmp/fake.jpg'),
+      dispose: jest.fn(),
+    })
+
+    const { result } = renderHook(() => useCameraCapture())
+    await act(async () => {
+      await result.current.handleTakePhoto()
+    })
+
+    expect(mockUploadNewPhoto).toHaveBeenCalledWith(
+      expect.objectContaining({
+        uri: 'file:///tmp/fake.jpg',
+        width: 4032,
+        height: 3024,
+        uploaded: false,
+      }),
+      'test-uid',
+      'test-submission',
+      expect.any(Function),
+    )
   })
 })

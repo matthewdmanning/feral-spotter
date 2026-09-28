@@ -1,11 +1,17 @@
+import type { StyleProp, ViewStyle } from 'react-native'
+
 export type NativeCameraPosition = 'back' | 'front'
 export type NativeFlashMode = 'off' | 'on' | 'auto'
 
+/**
+ * A capture result. The view reports what it produced and nothing more: the
+ * capture instant is stamped in JS at the shutter, because a native stamp
+ * meant a different instant on each platform.
+ */
 export interface NativeCapturedPhoto {
   uri: string
   width: number
   height: number
-  capturedAt?: string
 }
 
 export interface NativeCaptureOptions {
@@ -34,5 +40,5 @@ export interface NativeIdentificationCameraProps {
   subjectMetering: boolean
   onCameraReady?: () => void
   onCameraError?: (event: { nativeEvent?: { message?: string } }) => void
-  style?: unknown
+  style?: StyleProp<ViewStyle>
 }
