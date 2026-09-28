@@ -4,6 +4,8 @@
  * deleting it would destroy the user's own photo.
  */
 
+import { deleteCapturedPhotoFile } from '@/src/lib/camera/capturedPhotoFiles'
+
 const mockDelete = jest.fn()
 const mockExists = jest.fn(() => true)
 
@@ -22,8 +24,6 @@ jest.mock('expo-file-system', () => ({
     }
   },
 }))
-
-import { deleteCapturedPhotoFile } from '@/src/lib/camera/capturedPhotoFiles'
 
 beforeEach(() => {
   mockDelete.mockClear()
