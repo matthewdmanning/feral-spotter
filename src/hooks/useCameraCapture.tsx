@@ -13,8 +13,8 @@ import { startLocationCapture } from '@/src/lib/location'
 import { gallerySavePermission } from '@/src/lib/permissions/gallerySavePermission'
 import { uploadNewPhoto } from '@/src/lib/upload/uploadNewPhoto'
 import type { SubmissionPhoto } from '@/src/types'
+import { buildSubmissionPhotoFromCapture } from '@/src/utils/buildSubmissionPhoto'
 import { type FlashListRef } from '@shopify/flash-list'
-import { randomUUID } from 'expo-crypto'
 import { Asset } from 'expo-media-library'
 import { router, useIsFocused } from 'expo-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -166,6 +166,7 @@ export function useCameraCapture(): CameraCaptureResult {
         keepOnDevice && (await gallerySavePermission.check())
 
       do {
+        const shutterTime = new Date().toISOString()
         const captureStartedAt = performanceChecks ? Date.now() : null
         const photo = await photoOutput.capturePhoto(
           { flashMode, enableShutterSound: true },
@@ -176,16 +177,14 @@ export function useCameraCapture(): CameraCaptureResult {
         let submission: SubmissionPhoto
         try {
           const filePath = await photo.saveToTemporaryFileAsync()
-          const uri = `file://${filePath}`
-          submission = {
-            local_id: randomUUID(),
-            uri,
-            uploaded: false,
-            upload_progress: 0,
-            width: photo.width,
-            height: photo.height,
-            captured_at: new Date().toISOString(),
-          }
+          submission = buildSubmissionPhotoFromCapture(
+            {
+              uri: `file://${filePath}`,
+              width: photo.width,
+              height: photo.height,
+            },
+            shutterTime,
+          )
         } finally {
           photo.dispose()
         }

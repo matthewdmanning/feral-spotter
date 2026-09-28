@@ -9,6 +9,7 @@ import { startLocationCapture } from '@/src/lib/location'
 import { gallerySavePermission } from '@/src/lib/permissions/gallerySavePermission'
 import { uploadNewPhoto } from '@/src/lib/upload/uploadNewPhoto'
 import type { SubmissionPhoto } from '@/src/types'
+import { buildSubmissionPhotoFromCapture } from '@/src/utils/buildSubmissionPhoto'
 import type {
   NativeCameraPosition,
   NativeFlashMode,
@@ -16,7 +17,6 @@ import type {
   NormalizedSubjectRegion,
 } from '@/modules/native-identification-camera'
 import { type FlashListRef } from '@shopify/flash-list'
-import { randomUUID } from 'expo-crypto'
 import { Asset } from 'expo-media-library'
 import { router, useIsFocused } from 'expo-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -139,15 +139,7 @@ export function useNativeCameraCapture(
         : captured
       const processedAt = performanceChecks ? Date.now() : null
 
-      const submission: SubmissionPhoto = {
-        local_id: randomUUID(),
-        uri: processed.uri,
-        uploaded: false,
-        upload_progress: 0,
-        width: processed.width,
-        height: processed.height,
-        captured_at: processed.capturedAt ?? captured.capturedAt ?? shutterTime,
-      }
+      const submission = buildSubmissionPhotoFromCapture(processed, shutterTime)
 
       addPhoto(submission)
       setCapturedPhotos((prev) => [...prev, submission])
