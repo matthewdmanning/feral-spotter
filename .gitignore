@@ -9,3 +9,6 @@
 
 # Logs
 *.log
+
+# Session handoffs and reference notes — working files, not history
+scratchpad/
