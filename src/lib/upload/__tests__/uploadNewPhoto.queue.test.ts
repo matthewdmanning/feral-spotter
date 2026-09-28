@@ -4,6 +4,7 @@
  */
 
 import type { SubmissionPhoto } from '@/src/types'
+import { uploadNewPhoto } from '@/src/lib/upload/uploadNewPhoto'
 
 const mockResolvers: ((value: {
   cloud_storage_path: string
@@ -25,8 +26,6 @@ jest.mock('@/src/lib/upload/firebaseUpload', () => ({
       }),
   ),
 }))
-
-import { uploadNewPhoto } from '@/src/lib/upload/uploadNewPhoto'
 
 const photo = (n: number): SubmissionPhoto => ({
   local_id: `photo-${n}`,
