@@ -2,7 +2,13 @@ import { NativeIdentificationCameraView } from '@/modules/native-identification-
 import { useNativeCameraCapture } from '@/src/hooks/useNativeCameraCapture'
 import * as ImagePicker from 'expo-image-picker'
 import { Stack } from 'expo-router'
-import { StyleSheet as RNStyleSheet, View } from 'react-native'
+import { useCallback, useMemo, useState } from 'react'
+import {
+  StyleSheet as RNStyleSheet,
+  View,
+  type LayoutChangeEvent,
+} from 'react-native'
+import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import {
   CameraFlashOverlay,
   CameraPermissionGate,
@@ -33,11 +39,51 @@ export function NativeCameraScreen() {
     renderItem,
     keyExtractor,
     handleTakePhoto,
+    applySubjectRegion,
     cycleFlash,
     flipCamera,
     handleDone,
     handleClose,
   } = useNativeCameraCapture()
+
+  // The preview fills the screen, so its measured size converts a tap into the
+  // normalized coordinates the native view expects. Layout changes are rare, so
+  // this is state rather than a ref.
+  const [previewSize, setPreviewSize] = useState({ width: 0, height: 0 })
+  const handlePreviewLayout = useCallback((event: LayoutChangeEvent) => {
+    const { width, height } = event.nativeEvent.layout
+    setPreviewSize((current) =>
+      current.width === width && current.height === height
+        ? current
+        : { width, height },
+    )
+  }, [])
+
+  // Tap to focus. The native view's pinch-to-zoom handling must keep working,
+  // so the two gestures run simultaneously — the same arrangement
+  // LegacyCameraScreen uses for tap-to-capture alongside VisionCamera's own
+  // zoom gesture.
+  const focusTapGesture = useMemo(
+    () =>
+      Gesture.Simultaneous(
+        Gesture.Native(),
+        Gesture.Tap()
+          .runOnJS(true)
+          .onEnd((event) => {
+            const { width, height } = previewSize
+            if (width <= 0 || height <= 0) return
+            // A zero-size region at the tap point: setSubjectRegion focuses on
+            // the region's centre, which is the tap itself.
+            void applySubjectRegion({
+              x: event.x / width,
+              y: event.y / height,
+              width: 0,
+              height: 0,
+            })
+          }),
+      ),
+    [applySubjectRegion, previewSize],
+  )
 
   if (!permission?.granted)
     return (
@@ -48,26 +94,28 @@ export function NativeCameraScreen() {
     )
 
   return (
-    <View style={styles.root}>
+    <View style={styles.root} onLayout={handlePreviewLayout}>
       <Stack.Screen options={{ headerShown: false }} />
-      <NativeIdentificationCameraView
-        ref={cameraRef}
-        style={RNStyleSheet.absoluteFill}
-        isActive={isActive}
-        position={position}
-        maxDetail={maxDetail}
-        motionPriority={motionPriority}
-        disableLowLightBoost={disableLowLightBoost}
-        subjectMetering={subjectMetering}
-        onCameraReady={handleCameraReady}
-        onCameraError={(event) => {
-          setIsCameraReady(false)
-          console.error(
-            '[NativeCameraScreen]',
-            event.nativeEvent?.message ?? 'Native camera error',
-          )
-        }}
-      />
+      <GestureDetector gesture={focusTapGesture}>
+        <NativeIdentificationCameraView
+          ref={cameraRef}
+          style={RNStyleSheet.absoluteFill}
+          isActive={isActive}
+          position={position}
+          maxDetail={maxDetail}
+          motionPriority={motionPriority}
+          disableLowLightBoost={disableLowLightBoost}
+          subjectMetering={subjectMetering}
+          onCameraReady={handleCameraReady}
+          onCameraError={(event) => {
+            setIsCameraReady(false)
+            console.error(
+              '[NativeCameraScreen]',
+              event.nativeEvent?.message ?? 'Native camera error',
+            )
+          }}
+        />
+      </GestureDetector>
       <CameraFlashOverlay style={flashOverlayStyle} />
 
       <CameraTopBar

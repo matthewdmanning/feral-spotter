@@ -40,6 +40,13 @@ class NativeIdentificationCameraModule : Module() {
     View(NativeIdentificationCameraView::class) {
       Events("onCameraReady", "onCameraError")
 
+      // Expo calls this once after a whole prop batch. The prop setters only
+      // record that a rebind is needed, so two settings changed together cost
+      // one camera session teardown instead of one each.
+      OnViewDidUpdateProps { view: NativeIdentificationCameraView ->
+        view.applyPendingConfiguration()
+      }
+
       Prop("isActive") { view: NativeIdentificationCameraView, value: Boolean ->
         view.isActive = value
       }

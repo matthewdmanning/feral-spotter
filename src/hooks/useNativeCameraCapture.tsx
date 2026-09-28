@@ -15,6 +15,7 @@ import { useAuth } from '@/src/lib/auth/useAuth'
 import type { ImagePostprocessor } from '@/src/lib/camera/pipeline'
 import { startLocationCapture } from '@/src/lib/location'
 import type {
+  NativeCameraReadyEvent,
   NativeIdentificationCameraRef,
   NormalizedSubjectRegion,
 } from '@/modules/native-identification-camera'
@@ -81,36 +82,46 @@ export function useNativeCameraCapture(
   // itself, which recreated the callback twice per capture.
   const isTakingPhotoRef = useRef(false)
 
+  // The tuning the view actually resolved, reported once per bind. Held in a
+  // ref so every capture event can carry it without re-creating the capture
+  // callback each time the camera rebinds.
+  const resolvedCaptureTuning = useRef<string | null>(null)
+
   useEffect(() => {
     cameraOpenedAt.current = performanceChecks ? Date.now() : null
   }, [performanceChecks])
 
-  const handleCameraReady = useCallback(() => {
-    setIsCameraReady(true)
-    const openedAt = cameraOpenedAt.current
-    if (!performanceChecks || openedAt === null) return
+  const handleCameraReady = useCallback(
+    (event?: { nativeEvent?: NativeCameraReadyEvent }) => {
+      setIsCameraReady(true)
+      resolvedCaptureTuning.current = event?.nativeEvent?.captureTuning ?? null
+      const openedAt = cameraOpenedAt.current
+      if (!performanceChecks || openedAt === null) return
 
-    captureEvent(EVENTS.CAMERA_DEVICE_READY, {
-      camera_performance_checks: true,
-      capture_backend: 'native',
-      camera_backend: Platform.OS === 'ios' ? 'avfoundation' : 'camerax',
-      camera_variant: 'native',
-      camera_platform: Platform.OS,
-      camera_position: position,
-      max_detail: maxDetail,
-      motion_priority: motionPriority,
-      low_light_boost_disabled: disableLowLightBoost,
-      subject_metering: subjectMetering,
-      ready_duration_ms: Date.now() - openedAt,
-    })
-  }, [
-    disableLowLightBoost,
-    maxDetail,
-    motionPriority,
-    performanceChecks,
-    position,
-    subjectMetering,
-  ])
+      captureEvent(EVENTS.CAMERA_DEVICE_READY, {
+        camera_performance_checks: true,
+        capture_backend: 'native',
+        camera_backend: Platform.OS === 'ios' ? 'avfoundation' : 'camerax',
+        camera_variant: 'native',
+        camera_platform: Platform.OS,
+        camera_position: position,
+        max_detail: maxDetail,
+        motion_priority: motionPriority,
+        low_light_boost_disabled: disableLowLightBoost,
+        subject_metering: subjectMetering,
+        capture_tuning: resolvedCaptureTuning.current ?? 'unreported',
+        ready_duration_ms: Date.now() - openedAt,
+      })
+    },
+    [
+      disableLowLightBoost,
+      maxDetail,
+      motionPriority,
+      performanceChecks,
+      position,
+      subjectMetering,
+    ],
+  )
 
   const handleTakePhoto = useCallback(async () => {
     if (isTakingPhotoRef.current || !isCameraReady || !cameraRef.current) return
@@ -151,6 +162,7 @@ export function useNativeCameraCapture(
               motion_priority: motionPriority,
               low_light_boost_disabled: disableLowLightBoost,
               subject_metering: subjectMetering,
+              capture_tuning: resolvedCaptureTuning.current ?? 'unreported',
               capture_duration_ms: capturedAt - captureStartedAt,
               postprocess_duration_ms: processedAt - capturedAt,
               capture_pipeline_duration_ms: processedAt - captureStartedAt,
@@ -176,6 +188,7 @@ export function useNativeCameraCapture(
               motion_priority: motionPriority,
               low_light_boost_disabled: disableLowLightBoost,
               subject_metering: subjectMetering,
+              capture_tuning: resolvedCaptureTuning.current ?? 'unreported',
               elapsed_ms: Date.now() - captureStartedAt,
             }
           : {}),

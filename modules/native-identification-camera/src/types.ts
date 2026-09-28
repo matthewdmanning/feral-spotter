@@ -14,6 +14,17 @@ export interface NativeCapturedPhoto {
   height: number
 }
 
+/**
+ * What the view reports once a session is bound. captureTuning names the
+ * resolved tuning combination and captureMode is the platform's own capture
+ * mode constant, so a profiling run can tell which mode actually ran instead of
+ * inferring it from the settings that asked for it.
+ */
+export interface NativeCameraReadyEvent {
+  captureTuning?: string
+  captureMode?: number
+}
+
 export interface NativeCaptureOptions {
   flashMode: NativeFlashMode
 }
@@ -38,7 +49,7 @@ export interface NativeIdentificationCameraProps {
   motionPriority: boolean
   disableLowLightBoost: boolean
   subjectMetering: boolean
-  onCameraReady?: () => void
+  onCameraReady?: (event: { nativeEvent?: NativeCameraReadyEvent }) => void
   onCameraError?: (event: { nativeEvent?: { message?: string } }) => void
   style?: StyleProp<ViewStyle>
 }
