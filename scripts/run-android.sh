@@ -7,9 +7,8 @@
 # every other command; only this script reads it.
 #
 # Expo skips any variable that is already present in the environment
-# (node_modules/@expo/env/build/index.js:402). So EXPO_PUBLIC_USE_FIREBASE_EMULATOR
-# exported here wins over EXPO_PUBLIC_USE_FIREBASE_EMULATOR in .env.local, and
-# the same holds for any other key this file overrides.
+# (node_modules/@expo/env/build/index.js:402), so a key exported here wins over
+# the same key in .env.local.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -19,7 +18,13 @@ if [ -f .env.android.local ]; then
   . ./.env.android.local
   set +a
   echo "[run-android] loaded .env.android.local"
-  echo "[run-android] EXPO_PUBLIC_USE_FIREBASE_EMULATOR=${EXPO_PUBLIC_USE_FIREBASE_EMULATOR:-unset}"
+  # Echo whatever the file defines, so a drive log records the settings the
+  # build actually got. The key names come from the file, so adding one needs
+  # no change here.
+  sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p' .env.android.local |
+    while read -r key; do
+      echo "[run-android] $key=${!key:-unset}"
+    done
 else
   echo "[run-android] no .env.android.local; using .env.local only"
 fi
