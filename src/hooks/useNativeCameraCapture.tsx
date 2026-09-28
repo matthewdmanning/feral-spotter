@@ -42,6 +42,9 @@ export function useNativeCameraCapture(
   const subjectMetering = useSettingsStore(
     (s) => s.settings.camera_subject_metering === true,
   )
+  const pinchZoom = useSettingsStore(
+    (s) => s.settings.camera_pinch_zoom === true,
+  )
   const performanceChecks = useSettingsStore(
     (s) => s.settings.camera_performance_checks === true,
   )
@@ -273,6 +276,7 @@ export function useNativeCameraCapture(
     motionPriority,
     disableLowLightBoost,
     subjectMetering,
+    pinchZoom,
     flashOverlayStyle,
     renderItem,
     keyExtractor,

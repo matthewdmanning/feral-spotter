@@ -71,6 +71,10 @@ class NativeIdentificationCameraModule : Module() {
         view.subjectMetering = value
       }
 
+      Prop("pinchZoom") { view: NativeIdentificationCameraView, value: Boolean ->
+        view.pinchZoom = value
+      }
+
       Prop("diagnostics") { view: NativeIdentificationCameraView, value: Boolean ->
         view.diagnostics = value
       }

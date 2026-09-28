@@ -114,14 +114,28 @@ public final class NativeIdentificationCameraView: ExpoView {
 
   var subjectMetering = false
 
+  /**
+   Pinch to zoom. Off by default, matching Android: a zoomed capture is a
+   cropped capture, and an identification photograph is worth more at full
+   sensor width. The recognizer stays installed and is enabled or disabled,
+   because adding and removing it would race the gesture it is recognizing.
+   */
+  var pinchZoom = false {
+    didSet { pinchRecognizer.isEnabled = pinchZoom }
+  }
+
+  private lazy var pinchRecognizer = UIPinchGestureRecognizer(
+    target: self,
+    action: #selector(handlePinch(_:))
+  )
+
   public required init(appContext: AppContext? = nil) {
     super.init(appContext: appContext)
     clipsToBounds = true
     previewLayer.videoGravity = .resizeAspectFill
     previewLayer.session = session
-    addGestureRecognizer(
-      UIPinchGestureRecognizer(target: self, action: #selector(handlePinch(_:)))
-    )
+    pinchRecognizer.isEnabled = pinchZoom
+    addGestureRecognizer(pinchRecognizer)
     reconfigure()
   }
 

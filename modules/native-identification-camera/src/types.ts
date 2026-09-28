@@ -59,6 +59,11 @@ export interface NativeIdentificationCameraProps {
   motionPriority: boolean
   disableLowLightBoost: boolean
   subjectMetering: boolean
+  /**
+   * Pinch to zoom. Off by default: a zoomed capture is a cropped capture, and
+   * an identification photograph is worth more at full sensor width.
+   */
+  pinchZoom: boolean
   /** Driven by the camera_performance_checks setting. Off means the view reports nothing. */
   diagnostics: boolean
   onCameraReady?: (event: { nativeEvent?: NativeCameraReadyEvent }) => void

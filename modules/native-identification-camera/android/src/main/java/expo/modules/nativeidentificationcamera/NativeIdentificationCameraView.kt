@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.BitmapFactory
 import android.media.ExifInterface
 import android.util.Range
+import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.ViewGroup
 import androidx.camera.core.Camera
@@ -123,6 +124,10 @@ class NativeIdentificationCameraView(
   // settings changed together now cost one session teardown instead of two.
   private var needsRebind = false
 
+  // A rebind is posted rather than run inline, so a second caller arriving
+  // before the post runs must not queue a second teardown and bind.
+  private var rebindScheduled = false
+
   var isActive: Boolean = false
     set(value) {
       if (field == value) return
@@ -162,6 +167,12 @@ class NativeIdentificationCameraView(
   var subjectMetering: Boolean = false
 
   /**
+   * Pinch to zoom. Off by default, so the view claims no touch of its own and
+   * the whole gesture stays with the JavaScript tap-to-focus recognizer.
+   */
+  var pinchZoom: Boolean = false
+
+  /**
    * Driven by the `camera_performance_checks` setting. Off by default, so a
    * normal install reports nothing from here.
    */
@@ -184,25 +195,67 @@ class NativeIdentificationCameraView(
 
   init {
     addView(previewView)
-    previewView.setOnTouchListener { _, event ->
-      scaleGestureDetector.onTouchEvent(event)
-      // Consume the gesture only while a pinch is actually in progress.
-      // Returning true for everything except ACTION_UP swallowed ACTION_DOWN,
-      // so React Native's responder system never saw the gesture start and no
-      // JS touch handler on the preview could fire — which is what tap to
-      // focus needs.
-      scaleGestureDetector.isInProgress
-    }
 
     val future = ProcessCameraProvider.getInstance(context)
     future.addListener({
       try {
         cameraProvider = future.get()
-        if (isActive) bindCamera()
+        // The provider arrives on its own schedule, so it may land before or
+        // after the first prop batch. Raise the pending rebind and go through
+        // applyPendingConfiguration rather than binding here: binding directly
+        // was a second path to the first session, and a cold mount bound twice
+        // -- bind 1 lived 3 ms before the prop path tore it down and bound
+        // again.
+        needsRebind = true
+        applyPendingConfiguration()
       } catch (error: Throwable) {
         onCameraError(mapOf("message" to (error.message ?: error.toString())))
       }
     }, ContextCompat.getMainExecutor(context))
+  }
+
+  /**
+   * React Native does not run Android's measure pass over children added with
+   * addView, and it swallows the requestLayout that PreviewView raises when its
+   * own surface child appears (React Native issue #17968). Both halves of that
+   * have to be answered or the preview stays blank:
+   *
+   * - this flag makes expo-modules-core re-measure and re-lay-out the subtree
+   *   after a requestLayout, inside the bounds Yoga gave this view;
+   * - onLayout below measures the child before laying it out, so PreviewView's
+   *   own SurfaceView gets a size on the very first pass.
+   *
+   * The blank preview on 2026-09-28 was a React Native layout fault, not this:
+   * the view itself arrived 0 dp high. These two lines are still required,
+   * because a child that is laid out but never measured has no size of its own
+   * to give its SurfaceView.
+   */
+  override val shouldUseAndroidLayout: Boolean = true
+
+  /**
+   * Pinch to zoom. The detector has to be fed from this view, and this view has
+   * to claim the gesture, because of how react-native-gesture-handler delivers
+   * touches to a native view.
+   *
+   * Gesture.Native() drives RNGH's NativeViewGestureHandler, which sends events
+   * with `view.onTouchEvent` and only once it has activated. It activates when
+   * `onInterceptTouchEvent` returns true, or when the view reports isPressed.
+   * ExpoView is a LinearLayout, so both were false: the handler stayed in BEGAN
+   * and forwarded nothing. The detector used to sit on an OnTouchListener on
+   * the child PreviewView, which that path cannot reach twice over, because
+   * `onTouchEvent` neither descends to children nor invokes an OnTouchListener.
+   * A pinch never reached the detector at all.
+   *
+   * Claiming from the first event gives the detector the whole stream.
+   * Gesture.Simultaneous keeps the JavaScript tap-to-focus recognizer alive
+   * beside it.
+   */
+  override fun onInterceptTouchEvent(event: MotionEvent): Boolean = pinchZoom
+
+  override fun onTouchEvent(event: MotionEvent): Boolean {
+    if (!pinchZoom) return false
+    scaleGestureDetector.onTouchEvent(event)
+    return true
   }
 
   override fun onLayout(
@@ -212,13 +265,20 @@ class NativeIdentificationCameraView(
     right: Int,
     bottom: Int
   ) {
-    super.onLayout(changed, left, top, right, bottom)
-    previewView.layout(0, 0, right - left, bottom - top)
+    val width = right - left
+    val height = bottom - top
+    previewView.measure(
+      MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
+      MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY)
+    )
+    previewView.layout(0, 0, width, height)
   }
 
   /**
    * Applies whatever the last prop batch changed, as one session operation.
-   * Called from the module's OnViewDidUpdateProps.
+   * Called from the module's OnViewDidUpdateProps and from the camera-provider
+   * listener, which is why the rebind is scheduled at most once: both callers
+   * can arrive in either order, and each one alone must still bind.
    */
   fun applyPendingConfiguration() {
     if (!needsRebind) return
@@ -227,7 +287,10 @@ class NativeIdentificationCameraView(
       unbindCamera()
       return
     }
+    if (rebindScheduled) return
+    rebindScheduled = true
     post {
+      rebindScheduled = false
       unbindCamera()
       bindCamera()
     }

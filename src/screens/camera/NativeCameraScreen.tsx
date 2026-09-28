@@ -3,11 +3,7 @@ import { useNativeCameraCapture } from '@/src/hooks/useNativeCameraCapture'
 import * as ImagePicker from 'expo-image-picker'
 import { Stack } from 'expo-router'
 import { useCallback, useMemo, useState } from 'react'
-import {
-  StyleSheet as RNStyleSheet,
-  View,
-  type LayoutChangeEvent,
-} from 'react-native'
+import { View, type LayoutChangeEvent } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import {
   CameraFlashOverlay,
@@ -37,6 +33,7 @@ export function NativeCameraScreen() {
     motionPriority,
     disableLowLightBoost,
     subjectMetering,
+    pinchZoom,
     flashOverlayStyle,
     renderItem,
     keyExtractor,
@@ -101,13 +98,14 @@ export function NativeCameraScreen() {
       <GestureDetector gesture={focusTapGesture}>
         <NativeIdentificationCameraView
           ref={cameraRef}
-          style={RNStyleSheet.absoluteFill}
+          style={styles.cameraFill}
           isActive={isActive}
           position={position}
           maxDetail={maxDetail}
           motionPriority={motionPriority}
           disableLowLightBoost={disableLowLightBoost}
           subjectMetering={subjectMetering}
+          pinchZoom={pinchZoom}
           diagnostics={diagnostics}
           onCameraReady={handleCameraReady}
           onCameraDiagnostic={handleCameraDiagnostic}
