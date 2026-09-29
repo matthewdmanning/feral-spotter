@@ -39,6 +39,10 @@ Check that PostHog analytics only fires with consent (unchecking analytics-conse
   had to reopen it).
 - (Established 2026-08-09, Pixel 7 physical device, branch `main` @
   `780da4606c396fbdb5fbe7752c189a72aedbfe1a`.)
+- Take a screenshot when the success criteria is itself visual appearance
+  (not just "does this element exist / not crash"). Save to
+  `docs/test-drives/screen-captures/`, filename
+  `YYYY-MM-DD_appeareance-question.png`.
 - `expo run:android` builds only the ABI(s) of whatever device is connected
   _when the build starts_ (e.g. `x86_64` for an emulator), then fails to
   install with `INSTALL_FAILED_NO_MATCHING_ABIS` on a different-ABI target
