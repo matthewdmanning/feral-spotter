@@ -1,6 +1,6 @@
 # Emulators and On-Device Testing
 
-This is the authoritative document for **test drives** -- tesing app functionality using emulators or physical devices. This document does not address testing code, such as jest.
+This is the authoritative document for **test drives** — testing app functionality using emulators or physical devices. This document does not address testing code, such as Jest.
 
 ## Documenting Test Drives
 
@@ -9,6 +9,19 @@ Reports must be filed under `docs/test-drives`. Any screen captures must be save
 ## Every emulator run
 
 Check that PostHog analytics only fires with consent (unchecking analytics-consent must prevent `PostHogProvider` from mounting — no `posthog`/`[analytics]`/`captureEvent(`/`captureException(`/`fireAnalyticsEvent`). **Note the channel:** these calls surface in Metro's JSONL log (`.expo/dev/logs/start.log`, `metro:client_log` entries), not in `adb logcat` — `logcat` will show nothing even when the check is failing. Also check that GPS/location capture is actually firing (`startLocationCapture`/`[location]`/`FusedLocationProvider`/`GnssLocationProvider`/`LocationManagerService`/`watchPositionAsync`) — this one genuinely is in `logcat`, unfiltered (not pid-scoped — the location provider logs come from system processes, not the app's own pid). Write findings to a dated file in `docs/test-drives/run-notes/` (create the folder on first use). Every file written or updated during an emulator run — run-notes, punchlists, any other working doc — must record the git state it was tested against (`git rev-parse HEAD` + `git branch --show-current`) near the top.
+
+## Before every physical-device/emulator run: enable Firebase debug logging
+
+Native Firebase SDK logs (Storage, Auth) are silent by default — a failed
+`putFile` can produce zero logcat output even when it never reached the
+network. Set these before driving (resets on device reboot, not
+persistent):
+
+```
+adb shell setprop log.tag.FirebaseStorage DEBUG
+adb shell setprop log.tag.FirebaseAuth DEBUG
+adb shell setprop log.tag.FirebaseApp DEBUG
+```
 
 ## Device/environment notes (accumulated from test-drive sessions)
 

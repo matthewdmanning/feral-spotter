@@ -1,6 +1,6 @@
 # Using design-decisions/
 
-Rules for any agent changing or reviewing code, on how to weigh `docs/design-decisions/` against other sources. You may read any file in docs/design-decisions that is relevant to your task -- including if it may be impacted by your task. See `docs/design-decisions/design-decision-template.md` for proper formatting.
+Rules for any agent changing or reviewing code, on how to weigh `docs/design-decisions/` against other sources. You may read any file in docs/design-decisions that is relevant to your task -- including if it may be impacted by your task. See `../templates/design-decision-template.md` for proper formatting.
 
 ## Priority order
 
@@ -24,7 +24,7 @@ Only the **current state** of the design — what the UI/UX is supposed to look 
 
 ## Metadata
 
-- Design metadata lives in `docs/design-decisions/design-metadata`. Those files are meant only for in-depth debugging. Do not read when writing, modifying, or reviewing code.-
+- Design metadata lives in `docs/design-decisions/design-metadata`. Those files are meant only for in-depth debugging. Do not read when writing, modifying, or reviewing code.
 - No change history, no dates, no "supersedes X" narrative, no decision log.
 - No issue tracking. A design-decisions file records the target state, not open bugs or TODOs against it.
 
