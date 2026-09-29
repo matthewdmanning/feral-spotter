@@ -83,7 +83,7 @@ The first-run flow that explains the app's purpose and why each permission will 
 _Avoid_: tutorial, walkthrough.
 
 **Tutorial**:
-In-feature guidance that shows the user how to operate a _complex_ part of the app. In FeralSpotter the tutorial teaches the Box Annotation operation. Distinct from Onboarding. Implemented, version-gated (see `src/config/tutorial.ts`'s `isTutorialReleased()`).
+In-feature guidance that shows the user how to operate a _complex_ part of the app. In FeralSpotter the tutorial teaches the Box Annotation operation. Distinct from Onboarding. Implemented, version-gated (see `src/config/tutorial.ts`'s `isTutorialReleased()`). Status is stored per device in `useTutorialStore` as `annotation_tutorial_status`: `unseen` opens the tutorial on the first Box Annotation entry; `skipped` and `completed` keep it closed. No replay path exists yet (matthewdmanning/feral-spotter#386).
 _Avoid_: using this word for anything in the Onboarding flow.
 
 **Box Annotation** ("Box the Cat"):
@@ -139,5 +139,5 @@ _Avoid_: treating these as separate screens/flows when reasoning about the code 
 
 **Unknown / Unsure**:
 The value recorded for a cat attribute (age, sex, ear tipped, owned/domesticated, pattern, hair length, color, health) that the observer cannot determine — a real, first-class value, not the absence of one. It is the default for every attribute. "Unknown" and "Unsure" name the same concept, surfaced under two labels depending on the attribute. This describes the persisted value — what's saved on `ObservedCat` and sent to the backend, converted from the app's frontend form state at save time.
-_Avoid_: unanswered, not-yet-selected, undefined, Touched — there is no separate "left blank" versus "confirmed unknown" *at the persisted layer*; leaving an attribute at its default and explicitly choosing Unknown/Unsure are the same thing.
+_Avoid_: unanswered, not-yet-selected, undefined, Touched — there is no separate "left blank" versus "confirmed unknown" _at the persisted layer_; leaving an attribute at its default and explicitly choosing Unknown/Unsure are the same thing.
 The frontend form state that produces this value is a separate, transient layer: it starts every attribute unset (`undefined`) and only 4 of the 8 (sex, ear tipped, owned/domesticated, pattern) offer an explicit Unknown/Unsure button — so only those 4 can distinguish "left blank" from "deliberately confirmed Unknown" before save, for the missing-field warning. The other 4 (age, hair length, color, health) have no such button, so their frontend state collapses to this entry's persisted meaning by construction. Those same frontend values also drive what's shown selected when reopening an already-saved cat's form.
