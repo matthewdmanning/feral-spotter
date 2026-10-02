@@ -47,7 +47,7 @@ screenHeight) * ENTRYPOINT_BUFFER_PERCENT`, `diameter = (screenWidth -
   or icon-only. Not visually verified on device/emulator; Android large
   font-scale settings could get tight at smaller diameters (flagged, not
   fixed).
-- Design decision recorded in `agents/ux_decisions.md` under "Home
+- Design decision recorded in `agents/ui-ux/reference/ux_decisions.md` under "Home
   entrypoint buttons".
 
 Found via `/ponytail-review` after initial implementation: `entrypointBuffer`

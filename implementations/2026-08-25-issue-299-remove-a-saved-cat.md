@@ -29,8 +29,8 @@ removed cat.
 
 Removing the *last* cat no longer leaves a blank screen. The Cat List's
 zero-cats state now offers annotate-or-describe rather than forcing either —
-see [[2026-08-06-cats-173-cat-list-auto-skip]] for how that interacts with the
-first-pass auto-skip, and `docs/design-decisions/cat-list-empty-state.md` for
+see [2026-08-06-cats-173-cat-list-auto-skip](2026-08-06-cats-173-cat-list-auto-skip.md) for how that interacts with the
+first-pass auto-skip, and `docs/agents/ui-ux/decision-records/cat-list-empty-state.md` for
 the decision itself.
 
 `useRemoveCat` is the intended consumer of `useBoundingBoxStore.clearForCat`,

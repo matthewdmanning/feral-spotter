@@ -39,21 +39,21 @@ tags:
 - **Decision:** each edge handle only changes its own half-extent (half-width for left/right, half-height for top/bottom); the opposite edge mirrors automatically since the frame is always drawn from the same center.
 - **Reason:** keeps the frame's center fixed on the crosshair the user is already aligning with the subject — a non-mirrored resize would drift the frame off-target with every drag.
 - **Affected journey/state:** Box Annotation crop step, before Confirm.
-- **Related decision:** [[box-annotation-crop-frame]]
+- **Related decision:** [box-annotation-crop-frame](../agents/ui-ux/current-state/box-annotation-crop-frame.md)
 
 ### Handles inset on the crosshairs
 
 - **Decision:** handles sit `HANDLE_INSET` inward from the box edge, on the crosshair line, rather than straddling the border.
 - **Reason:** at the edge, handles were easy to trigger by accident alongside the carousel's swipe gesture, and harder to grab precisely; the crosshair is a fixed, predictable landmark regardless of box size.
 - **Affected journey/state:** Box Annotation crop step.
-- **Related decision:** [[box-annotation-crop-frame]]
+- **Related decision:** [box-annotation-crop-frame](../agents/ui-ux/current-state/box-annotation-crop-frame.md)
 
 ### Disable carousel swipe
 
 - **Decision:** the annotate screen's carousel no longer responds to horizontal swipe; navigation is the Previous button plus automatic advance on Confirm/Not in Photo only.
 - **Reason:** swipe competed with handle-drag and pinch-zoom for the same touch input, causing accidental photo changes mid-resize.
 - **Affected journey/state:** Box Annotation, moving between photos in a pass.
-- **Related decision:** [[box-annotation-crop-frame]]
+- **Related decision:** [box-annotation-crop-frame](../agents/ui-ux/current-state/box-annotation-crop-frame.md)
 
 ## What shipped
 

@@ -1,22 +1,22 @@
 # Using design-decisions/
 
-Rules for any agent changing or reviewing code, on how to weigh `docs/design-decisions/` against other sources. You may read any file in docs/design-decisions that is relevant to your task -- including if it may be impacted by your task. See `../templates/design-decision-template.md` for proper formatting.
+Rules for any agent changing or reviewing code, on how to weigh `docs/agents/ui-ux/current-state/` against other sources. You may read any file in docs/agents/ui-ux/current-state that is relevant to your task -- including if it may be impacted by your task. See `design-decision-template.md` for proper formatting.
 
 ## Priority order
 
 1. **What you were explicitly handed this session** — the user's prompts, and any file the user pointed you at directly (e.g. a test-drive run-note). Always wins.
-2. **`docs/design-decisions/`** — authoritative over every other doc in the repo.
+2. **`docs/agents/ui-ux/current-state/`** — authoritative over every other doc in the repo.
 3. Everything else.
 
 A design-decisions file does not override a live user report or a test-drive finding you were handed directly. If the two conflict, surface the tension and let the user decide — don't use the design-decision to silently dismiss, close, or reframe the report.
 
 ## Never edit without confirmation
 
-Never change a `design-decisions/` file unless the user has explicitly confirmed the change first. These files are the current source of truth for UI/UX state for every future agent — an unconfirmed edit corrupts that record.
+Never change a `agents/ui-ux/current-state/` file unless the user has explicitly confirmed the change first. These files are the current source of truth for UI/UX state for every future agent — an unconfirmed edit corrupts that record.
 
 ## Before writing or editing a file here
 
-Read [[templates/design-decision-template|design-decision-template.md]] first, if you haven't already this session. Every design-decisions file follows that structure (Context / Design Specifications / Reason) — no dates, change history, implementation detail, filenames, commit/PR references, or analysis.
+Read [design-decision-template.md](design-decision-template.md) first, if you haven't already this session. Every design-decisions file follows that structure (Context / Design Specifications / Reason) — no dates, change history, implementation detail, filenames, commit/PR references, or analysis.
 
 ## What belongs in a design-decisions file
 
@@ -24,7 +24,7 @@ Only the **current state** of the design — what the UI/UX is supposed to look 
 
 ## Metadata
 
-- Design metadata lives in `docs/design-decisions/design-metadata`. Those files are meant only for in-depth debugging. Do not read when writing, modifying, or reviewing code.
+- Design metadata lives in `docs/agents/ui-ux/current-state/design-metadata`. Those files are meant only for in-depth debugging. Do not read when writing, modifying, or reviewing code.
 - No change history, no dates, no "supersedes X" narrative, no decision log.
 - No issue tracking. A design-decisions file records the target state, not open bugs or TODOs against it.
 
