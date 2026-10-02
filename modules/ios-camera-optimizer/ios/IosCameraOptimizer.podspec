@@ -12,6 +12,8 @@ Pod::Spec.new do |s|
 
   s.source_files = '**/*.{h,m,swift}'
   s.dependency 'ExpoModulesCore'
+  # For CameraExposurePolicy: both capture paths must cap exposure the same way.
+  s.dependency 'NativeIdentificationCamera'
 
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',

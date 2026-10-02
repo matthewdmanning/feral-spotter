@@ -1,6 +1,6 @@
 import AVFoundation
-import CoreMedia
 import ExpoModulesCore
+import NativeIdentificationCamera
 
 private struct SavedCameraState {
   let exposureMode: AVCaptureDevice.ExposureMode
@@ -32,7 +32,8 @@ public final class IosCameraOptimizerModule: Module {
         device.automaticallyEnablesLowLightBoostWhenAvailable = false
       }
 
-      guard let exposureCap = self.motionPreservingExposureCap(for: device) else {
+      guard let exposureCap = CameraExposurePolicy
+        .motionPreservingExposureCap(for: device) else {
         return false
       }
 
@@ -87,44 +88,5 @@ public final class IosCameraOptimizerModule: Module {
     stateLock.lock()
     defer { stateLock.unlock() }
     return savedStates.removeValue(forKey: deviceId)
-  }
-
-  private func motionPreservingExposureCap(for device: AVCaptureDevice) -> CMTime? {
-    let format = device.activeFormat
-    let systemCap = device.activeMaxExposureDuration
-    let frameDuration = device.activeVideoMinFrameDuration
-
-    var candidate: CMTime?
-
-    if isUsableDuration(systemCap) {
-      candidate = systemCap
-    }
-
-    if isUsableDuration(frameDuration) {
-      if let current = candidate {
-        if CMTimeCompare(frameDuration, current) < 0 {
-          candidate = frameDuration
-        }
-      } else {
-        candidate = frameDuration
-      }
-    }
-
-    guard var cap = candidate else { return nil }
-
-    if CMTimeCompare(cap, format.minExposureDuration) < 0 {
-      cap = format.minExposureDuration
-    }
-    if CMTimeCompare(cap, format.maxExposureDuration) > 0 {
-      cap = format.maxExposureDuration
-    }
-
-    return cap
-  }
-
-  private func isUsableDuration(_ duration: CMTime) -> Bool {
-    duration.isValid &&
-      !duration.isIndefinite &&
-      CMTimeCompare(duration, .zero) > 0
   }
 }

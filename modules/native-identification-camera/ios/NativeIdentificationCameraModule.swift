@@ -35,6 +35,13 @@ public final class NativeIdentificationCameraModule: Module {
     View(NativeIdentificationCameraView.self) {
       Events("onCameraReady", "onCameraError")
 
+      // Expo calls this once after a whole batch of props is applied. The prop
+      // setters only record what changed; this is where the one session or
+      // policy reconfiguration happens.
+      OnViewDidUpdateProps { (view: NativeIdentificationCameraView) in
+        view.applyPendingConfiguration()
+      }
+
       Prop("isActive") { (view: NativeIdentificationCameraView, value: Bool) in
         view.isActive = value
       }
