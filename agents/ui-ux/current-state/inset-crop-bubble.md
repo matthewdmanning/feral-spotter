@@ -1,3 +1,16 @@
+---
+topic: inset-crop-bubble
+status: active
+last_reviewed: 2026-08-08
+governs:
+  - src/components/organisms/InsetCropBubble.tsx
+  - src/components/organisms/InsetCropBubble.styles.ts
+  - src/screens/submission/cats/index.tsx
+  - src/screens/submission/cats/index.styles.ts
+  - src/screens/submission/annotate/index.tsx
+derives_from: ['#168', '#174', '#186']
+---
+
 # Inset-Crop Bubble Design Decision
 
 ## Context

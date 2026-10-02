@@ -1,3 +1,12 @@
+---
+topic: photo-library-consent
+status: active
+last_reviewed: 2026-08-10
+governs:
+  - src/hooks/useLibraryPhotoPicker.ts
+derives_from: ['#249']
+---
+
 # Photo Library Consent Design Decision
 
 ## Context
