@@ -99,8 +99,8 @@ module.exports = defineConfig([
   {
     files: [
       'src/hooks/useBoundingBoxFrame.ts',
-      'src/hooks/useCameraCapture.tsx',
-      'src/screens/camera/index.tsx',
+      'src/hooks/useCapturedPhotoWorkflow.tsx',
+      'src/screens/camera/CameraChrome.tsx',
     ],
     rules: {
       'react-hooks/immutability': 'off',

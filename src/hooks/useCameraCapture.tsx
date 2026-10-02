@@ -1,258 +1,315 @@
 /**
- * hooks/useCameraCapture.ts
- * Owns all camera business logic:
- *   - Photo capture + store writes + MediaLibrary save
- *   - Flash overlay animation (Reanimated SharedValue)
- *   - Flash mode cycling, camera flip
- *   - FlashList ref + scroll-to-end
- *   - Navigation (Done / Close)
+ * Camera capture orchestration for the VisionCamera-backed paths.
  *
- * The screen retains only: permission gating, shutter press-feel animations,
- * and JSX layout.
+ * Owns only what is specific to VisionCamera: device selection, the photo
+ * output, capture modes including burst, and this path's telemetry. Everything
+ * around a capture — captured photo state, upload, gallery save, screen chrome
+ * state, navigation — comes from useCapturedPhotoWorkflow.
  */
 
-import { CameraThumb } from '@/src/components/atoms/CameraThumb'
-import { usePhotoStore } from '@/src/hooks'
+import { useCapturedPhotoWorkflow } from '@/src/hooks/useCapturedPhotoWorkflow'
+import { useIosIdentificationCapture } from '@/src/hooks/useIosIdentificationCapture'
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'
-import { useAuth } from '@/src/lib/auth/useAuth'
-import { captureEvent, EVENTS } from '@/src/lib/analytics/analytics'
-import { startLocationCapture } from '@/src/lib/location'
 import { useConsentStore } from '@/src/hooks/useConsentStore'
-import { gallerySavePermission } from '@/src/lib/permissions/gallerySavePermission'
-import { uploadNewPhoto } from '@/src/lib/upload/uploadNewPhoto'
+import { captureEvent, EVENTS } from '@/src/lib/analytics/analytics'
+import { useAuth } from '@/src/lib/auth/useAuth'
+import { startLocationCapture } from '@/src/lib/location'
 import type { SubmissionPhoto } from '@/src/types'
 import { type FlashListRef } from '@shopify/flash-list'
-import { Asset } from 'expo-media-library'
-import { router, useIsFocused } from 'expo-router'
-import { randomUUID } from 'expo-crypto'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { AppState, type AppStateStatus, type ViewStyle } from 'react-native'
-import {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated'
+import { Platform, type ViewStyle } from 'react-native'
+import type { useAnimatedStyle } from 'react-native-reanimated'
 import {
   useCameraDevice,
-  usePhotoOutput,
   type CameraPhotoOutput,
   type CameraRef,
 } from 'react-native-vision-camera'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 type FlashMode = 'off' | 'on' | 'auto'
 
+export type CaptureMode = 'single' | 'burst'
 export type { FlashMode }
 
 export interface CameraCaptureResult {
-  // Device
   device: ReturnType<typeof useCameraDevice>
   cameraRef: React.RefObject<CameraRef | null>
   photoOutput: CameraPhotoOutput
   isActive: boolean
-  // State
+  enableLowLightBoost: boolean
   capturedPhotos: SubmissionPhoto[]
   flashMode: FlashMode
   isTakingPhoto: boolean
-  // Flash overlay (Reanimated — UI thread)
+  captureMode: CaptureMode
   flashOverlayStyle: ReturnType<typeof useAnimatedStyle<ViewStyle>>
-  // FlashList
   listRef: React.RefObject<FlashListRef<SubmissionPhoto> | null>
   renderItem: (info: {
     item: SubmissionPhoto
     index: number
   }) => React.ReactElement
   keyExtractor: (item: SubmissionPhoto) => string
-  // Handlers
   handleTakePhoto: () => Promise<void>
+  handleCameraConfigured: () => void
+  setCaptureMode: (mode: CaptureMode) => void
   cycleFlash: () => void
   flipCamera: () => void
   handleDone: () => void
   handleClose: () => void
 }
 
-// ─── Hook ─────────────────────────────────────────────────────────────────────
-
 export function useCameraCapture(): CameraCaptureResult {
-  const keepOnDevice = useSettingsStore(
-    (s) => s.settings.keep_photos_on_device !== false,
+  const improvedCaptureSetting = useSettingsStore(
+    (s) => s.settings.improved_camera_capture === true,
   )
-  const addPhoto = usePhotoStore((s) => s.addPhoto)
-  const removePhoto = usePhotoStore((s) => s.removePhoto)
-  const updatePhoto = usePhotoStore((s) => s.updatePhoto)
+  const performanceChecks = useSettingsStore(
+    (s) => s.settings.camera_performance_checks === true,
+  )
+  const improvedCapture = Platform.OS === 'android' && improvedCaptureSetting
+
   const { user } = useAuth()
 
-  const [cameraPosition, setCameraPosition] = useState<'back' | 'front'>('back')
-  const [capturedPhotos, setCapturedPhotos] = useState<SubmissionPhoto[]>([])
-  const [flashMode, setFlashMode] = useState<FlashMode>('auto')
+  const {
+    isActive,
+    capturedPhotos,
+    listRef,
+    renderItem,
+    keyExtractor,
+    flashMode,
+    cycleFlash,
+    position: cameraPosition,
+    flipCamera,
+    flashOverlayStyle,
+    triggerFlash,
+    persistCapturedPhoto,
+    startPhotoUpload,
+    flushGallerySaves,
+    handleDone,
+    handleClose,
+  } = useCapturedPhotoWorkflow()
+
   const [isTakingPhoto, setIsTakingPhoto] = useState(false)
+  const [captureMode, setCaptureMode] = useState<CaptureMode>('single')
 
   const device = useCameraDevice(cameraPosition)
   const cameraRef = useRef<CameraRef>(null)
-  const listRef = useRef<FlashListRef<SubmissionPhoto>>(null)
-  const photoOutput = usePhotoOutput()
 
-  // #253: Android reclaims the camera hardware whenever the app is
-  // backgrounded for long enough (e.g. screen lock), regardless of this
-  // prop. Without isActive tracking that, vision-camera never releases its
-  // side of the session, and reconfiguring streams on resume against a
-  // device the OS already reclaimed throws an uncaught native error.
-  const isFocused = useIsFocused()
-  const [appState, setAppState] = useState<AppStateStatus>('active')
-  useEffect(() => {
-    const sub = AppState.addEventListener('change', setAppState)
-    return () => sub.remove()
-  }, [])
-  const isActive = isFocused && appState === 'active'
+  const fallbackQualityPrioritization =
+    captureMode === 'burst' || improvedCapture
+      ? device?.supportsSpeedQualityPrioritization
+        ? 'speed'
+        : 'balanced'
+      : undefined
 
-  // ── Flash overlay — Reanimated SharedValue on UI thread ───────────────────
-  const flashOpacity = useSharedValue(0)
-  const flashOverlayStyle = useAnimatedStyle<ViewStyle>(() => ({
-    opacity: flashOpacity.value,
-  }))
+  const {
+    photoOutput,
+    handleCameraConfigured,
+    iosIdentificationEnabled,
+    effectiveQualityPrioritization,
+  } = useIosIdentificationCapture(
+    device,
+    flashMode,
+    fallbackQualityPrioritization,
+  )
 
-  // ── Capture ───────────────────────────────────────────────────────────────
+  const enableLowLightBoost =
+    improvedCapture && Boolean(device?.supportsLowLightBoost)
+  const burstStopRequested = useRef(false)
+  // Mirrors isTakingPhoto so handleTakePhoto can read it without listing state
+  // it sets itself as a dependency, which recreated the callback twice per
+  // capture and re-rendered the shutter.
+  const isTakingPhotoRef = useRef(false)
+
+  const capturePipeline = iosIdentificationEnabled
+    ? 'ios_identification'
+    : improvedCapture
+      ? 'improved'
+      : 'legacy'
+  const cameraVariant = iosIdentificationEnabled
+    ? `ios_identification_${captureMode}`
+    : improvedCapture
+      ? `device_aware_${captureMode}`
+      : `tap_${captureMode}`
+
   const handleTakePhoto = useCallback(async () => {
-    if (isTakingPhoto) return
-    setIsTakingPhoto(true)
+    if (captureMode === 'burst' && isTakingPhotoRef.current) {
+      burstStopRequested.current = true
+      return
+    }
+    if (isTakingPhotoRef.current) return
 
-    flashOpacity.value = withTiming(
-      1,
-      { duration: 25, easing: Easing.out(Easing.quad) },
-      () => {
-        flashOpacity.value = withTiming(0, { duration: 180 })
-      },
-    )
+    isTakingPhotoRef.current = true
+    setIsTakingPhoto(true)
+    burstStopRequested.current = false
+
+    triggerFlash()
+
+    const sequenceStartedAt = performanceChecks ? Date.now() : null
+    let completedPhotoCount = 0
 
     try {
-      const photo = await photoOutput.capturePhoto(
-        { flashMode, enableShutterSound: true },
-        {},
-      )
-      const filePath = await photo.saveToTemporaryFileAsync()
-      const uri = `file://${filePath}`
+      do {
+        const shutterTime = new Date().toISOString()
+        const captureStartedAt = performanceChecks ? Date.now() : null
+        const photo = await photoOutput.capturePhoto(
+          { flashMode, enableShutterSound: true },
+          {},
+        )
+        const capturedAt = performanceChecks ? Date.now() : null
 
-      const submission: SubmissionPhoto = {
-        local_id: randomUUID(),
-        uri,
-        uploaded: false,
-        upload_progress: 0,
-        width: photo.width,
-        height: photo.height,
-        // No EXIF to read a capture time from (camera captures never set
-        // `exif`, unlike a Library pick) — the shutter-press moment is the
-        // only source of truth, and it's only available here, right now.
-        captured_at: new Date().toISOString(),
-      }
-      photo.dispose()
-
-      addPhoto(submission)
-      setCapturedPhotos((prev) => [...prev, submission])
-      captureEvent(EVENTS.PHOTO_CAPTURED, {
-        flash_mode: flashMode,
-        photo_width: submission.width,
-        photo_height: submission.height,
-      })
-
-      // Upload starts immediately, in the background — not gated on this
-      // screen's lifecycle — so a slow/spotty connection doesn't block
-      // capturing more photos.
-      const uid = user?.uid
-      const submissionId = usePhotoStore.getState().submissionId
-      if (uid && submissionId) {
-        uploadNewPhoto(submission, uid, submissionId, updatePhoto)
-      } else {
-        console.error('[useCameraCapture] missing uid/submissionId for upload')
-      }
-
-      // Location is set once per submission on the create screen (ADR 0002),
-      // not per photo — no GPS call on the shutter path.
-
-      if (keepOnDevice) {
-        // #145/#146: check() only, never request() — see the mount effect
-        // below for why.
-        if (await gallerySavePermission.check()) {
-          try {
-            await Asset.create(uri)
-          } catch (err) {
-            console.error('[useCameraCapture] Asset.create:', err)
-          }
+        let submission: SubmissionPhoto
+        try {
+          const filePath = await photo.saveToTemporaryFileAsync()
+          submission = persistCapturedPhoto(
+            {
+              uri: `file://${filePath}`,
+              width: photo.width,
+              height: photo.height,
+            },
+            shutterTime,
+          )
+        } finally {
+          photo.dispose()
         }
+
+        const persistedAt = performanceChecks ? Date.now() : null
+        completedPhotoCount += 1
+
+        captureEvent(EVENTS.PHOTO_CAPTURED, {
+          flash_mode: flashMode,
+          photo_width: submission.width,
+          photo_height: submission.height,
+          capture_mode: captureMode,
+          capture_pipeline: capturePipeline,
+          quality_prioritization: effectiveQualityPrioritization ?? 'default',
+          low_light_boost: enableLowLightBoost,
+          ...(performanceChecks &&
+          captureStartedAt !== null &&
+          capturedAt !== null &&
+          persistedAt !== null
+            ? {
+                camera_performance_checks: true,
+                camera_backend: 'visioncamera',
+                camera_variant: cameraVariant,
+                camera_platform: Platform.OS,
+                capture_duration_ms: capturedAt - captureStartedAt,
+                temporary_file_save_duration_ms: persistedAt - capturedAt,
+                capture_pipeline_duration_ms: persistedAt - captureStartedAt,
+              }
+            : {}),
+        })
+
+        startPhotoUpload(submission, user?.uid)
+      } while (captureMode === 'burst' && !burstStopRequested.current)
+
+      if (captureMode === 'burst') {
+        captureEvent(EVENTS.CAMERA_CAPTURE_SEQUENCE_COMPLETED, {
+          capture_mode: captureMode,
+          photo_count: completedPhotoCount,
+          capture_pipeline: capturePipeline,
+          quality_prioritization: effectiveQualityPrioritization ?? 'default',
+          low_light_boost: enableLowLightBoost,
+          ...(performanceChecks && sequenceStartedAt !== null
+            ? {
+                camera_performance_checks: true,
+                camera_backend: 'visioncamera',
+                camera_variant: cameraVariant,
+                camera_platform: Platform.OS,
+                duration_ms: Date.now() - sequenceStartedAt,
+              }
+            : {}),
+        })
       }
     } catch (err) {
       console.error('[useCameraCapture] takePhoto:', err)
       captureEvent(EVENTS.PHOTO_CAPTURE_FAILED, {
         error: err instanceof Error ? err.message : String(err),
+        capture_mode: captureMode,
+        completed_photo_count: completedPhotoCount,
+        capture_pipeline: capturePipeline,
+        quality_prioritization: effectiveQualityPrioritization ?? 'default',
+        low_light_boost: enableLowLightBoost,
+        ...(performanceChecks && sequenceStartedAt !== null
+          ? {
+              camera_performance_checks: true,
+              camera_backend: 'visioncamera',
+              camera_variant: cameraVariant,
+              camera_platform: Platform.OS,
+              elapsed_ms: Date.now() - sequenceStartedAt,
+            }
+          : {}),
       })
     } finally {
+      burstStopRequested.current = true
+      isTakingPhotoRef.current = false
       setIsTakingPhoto(false)
+      // Gallery writes happen here, after the sequence, not inside the loop:
+      // awaiting MediaLibrary per frame bounded the burst rate by gallery I/O.
+      void flushGallerySaves()
     }
   }, [
-    isTakingPhoto,
+    cameraVariant,
+    captureMode,
+    capturePipeline,
+    effectiveQualityPrioritization,
+    enableLowLightBoost,
     flashMode,
-    flashOpacity,
+    flushGallerySaves,
+    performanceChecks,
+    persistCapturedPhoto,
     photoOutput,
-    addPhoto,
-    updatePhoto,
-    keepOnDevice,
+    startPhotoUpload,
+    triggerFlash,
     user,
   ])
 
-  // ── Discard ───────────────────────────────────────────────────────────────
-  const handleDiscardPhoto = useCallback(
-    (localId: string) => {
-      setCapturedPhotos((prev) => prev.filter((p) => p.local_id !== localId))
-      removePhoto(localId)
-    },
-    [removePhoto],
-  )
+  useEffect(() => {
+    if (!isActive) burstStopRequested.current = true
+  }, [isActive])
 
-  // ── Controls ──────────────────────────────────────────────────────────────
-  const cycleFlash = useCallback(() => {
-    setFlashMode((m) => (m === 'auto' ? 'on' : m === 'on' ? 'off' : 'auto'))
-  }, [])
-
-  const flipCamera = useCallback(() => {
-    setCameraPosition((p) => (p === 'back' ? 'front' : 'back'))
-  }, [])
-
-  const handleDone = useCallback(
-    () => router.navigate('/submission/create'),
-    [],
-  )
-  const handleClose = useCallback(() => router.back(), [])
-
-  // ── FlashList helpers ─────────────────────────────────────────────────────
-  const renderItem = useCallback(
-    ({ item, index }: { item: SubmissionPhoto; index: number }) => (
-      <CameraThumb
-        uri={item.uri}
-        badgeCount={
-          index === capturedPhotos.length - 1 ? capturedPhotos.length : 0
-        }
-        onRemove={() => handleDiscardPhoto(item.local_id)}
-      />
-    ),
-    [capturedPhotos.length, handleDiscardPhoto],
-  )
-
-  const keyExtractor = useCallback((item: SubmissionPhoto) => item.local_id, [])
+  const cameraOpenedAt = useRef<number | null>(null)
+  const hasReportedInitialDevice = useRef(false)
 
   useEffect(() => {
-    if (capturedPhotos.length > 0) {
-      listRef.current?.scrollToEnd({ animated: true })
-    }
-  }, [capturedPhotos.length])
+    cameraOpenedAt.current = performanceChecks ? Date.now() : null
+  }, [performanceChecks])
 
-  // Funnel entry point — nothing else fires between opening the camera and
-  // hitting submit besides this and PHOTO_CAPTURE_FAILED above.
+  useEffect(() => {
+    if (!device || hasReportedInitialDevice.current) return
+    const openedAt = cameraOpenedAt.current
+    hasReportedInitialDevice.current = true
+    captureEvent(EVENTS.CAMERA_DEVICE_READY, {
+      ...(performanceChecks && openedAt !== null
+        ? {
+            camera_performance_checks: true,
+            camera_backend: 'visioncamera',
+            camera_variant: cameraVariant,
+            camera_platform: Platform.OS,
+            ready_duration_ms: Date.now() - openedAt,
+          }
+        : {}),
+      camera_position: cameraPosition,
+      physical_device_count: device.physicalDevices.length,
+      supports_low_light_boost: device.supportsLowLightBoost,
+      supports_photo_hdr: device.supportsPhotoHDR,
+      supports_speed_quality_prioritization:
+        device.supportsSpeedQualityPrioritization,
+      min_zoom: device.minZoom,
+      max_zoom: device.maxZoom,
+      capture_pipeline: capturePipeline,
+      quality_prioritization: effectiveQualityPrioritization ?? 'default',
+      low_light_boost: enableLowLightBoost,
+    })
+  }, [
+    cameraPosition,
+    cameraVariant,
+    capturePipeline,
+    device,
+    effectiveQualityPrioritization,
+    enableLowLightBoost,
+    performanceChecks,
+  ])
+
   useEffect(() => {
     captureEvent(EVENTS.CAMERA_OPENED)
-    // GPS-timing follow-up (#128): the Live fix starts here, not on
-    // Submission Details — it runs in the background independent of this
-    // screen's lifecycle (src/lib/location.ts).
     if (__DEV__)
       console.log(
         '[location] consent hydrated:',
@@ -261,31 +318,23 @@ export function useCameraCapture(): CameraCaptureResult {
     void startLocationCapture()
   }, [])
 
-  // #145/#146: request the gallery-save permission once, when the Camera
-  // screen opens — not per shutter press (that re-triggered the OS prompt on
-  // every press while status stayed non-terminal). writeOnly (true) requests
-  // add-only access rather than the full READ_MEDIA_IMAGES grant, which is
-  // what previously pulled in Android 14+'s "Select photos" picker UI (#140)
-  // — this path only ever writes newly captured photos, never reads the
-  // library, so it never needed read access in the first place.
-  useEffect(() => {
-    if (!keepOnDevice) return
-    void gallerySavePermission.request()
-  }, [keepOnDevice])
-
   return {
     device,
     cameraRef,
     photoOutput,
     isActive,
+    enableLowLightBoost,
     capturedPhotos,
     flashMode,
     isTakingPhoto,
+    captureMode,
     flashOverlayStyle,
     listRef,
     renderItem,
     keyExtractor,
     handleTakePhoto,
+    handleCameraConfigured,
+    setCaptureMode,
     cycleFlash,
     flipCamera,
     handleDone,

@@ -32,8 +32,20 @@ jest.mock('expo-router', () => ({
 
 const mockCapturePhoto = jest.fn()
 jest.mock('react-native-vision-camera', () => ({
-  useCameraDevice: jest.fn(() => ({ id: 'back' })),
-  usePhotoOutput: jest.fn(() => ({ capturePhoto: mockCapturePhoto })),
+  useCameraDevice: jest.fn(() => ({
+    id: 'back',
+    physicalDevices: ['wide-angle-camera'],
+    supportsLowLightBoost: true,
+    supportsPhotoHDR: true,
+    supportsSpeedQualityPrioritization: true,
+    minZoom: 1,
+    maxZoom: 8,
+  })),
+  usePhotoOutput: jest.fn(() => ({
+    capturePhoto: mockCapturePhoto,
+    // vision-camera 5.1.0 API the iOS warm-up effect calls.
+    prepareSettings: jest.fn(() => Promise.resolve()),
+  })),
   Camera: 'Camera',
 }))
 
@@ -45,14 +57,34 @@ jest.mock('react-native-reanimated', () => ({
   Easing: { out: jest.fn(), quad: {}, back: jest.fn() },
 }))
 
+// getState must be present: the capture workflow reads submissionId from it
+// before starting an upload. Without it the upload threw and every capture
+// test landed in the failure branch while still passing its assertions.
+const mockPhotoStoreState = {
+  addPhoto: jest.fn(),
+  removePhoto: jest.fn(),
+  updatePhoto: jest.fn(),
+  photos: [],
+  submissionId: 'test-submission',
+}
 jest.mock('@/src/hooks', () => ({
-  usePhotoStore: (sel: (s: object) => unknown) =>
-    sel({ addPhoto: jest.fn(), photos: [] }),
+  usePhotoStore: Object.assign(
+    (sel: (s: object) => unknown) => sel(mockPhotoStoreState),
+    { getState: () => mockPhotoStoreState },
+  ),
 }))
 
 jest.mock('@/src/hooks/useSettingsStore', () => ({
   useSettingsStore: (sel: (s: object) => unknown) =>
     sel({ settings: { keep_photos_on_device: true } }),
+}))
+
+const mockUploadNewPhoto = jest.fn()
+jest.mock('@/src/lib/upload/uploadNewPhoto', () => ({
+  uploadNewPhoto: (...args: unknown[]) => mockUploadNewPhoto(...args),
+}))
+jest.mock('@/src/lib/auth/useAuth', () => ({
+  useAuth: () => ({ user: { uid: 'test-uid' } }),
 }))
 
 jest.mock('@shopify/flash-list', () => ({ FlashList: 'FlashList' }))
@@ -80,6 +112,9 @@ jest.mock('@/src/lib/analytics/analytics', () => ({
   captureEvent: (...args: unknown[]) => mockCaptureEvent(...args),
   EVENTS: {
     CAMERA_OPENED: 'camera_opened',
+    CAMERA_DEVICE_READY: 'camera_device_ready',
+    CAMERA_CAPTURE_SEQUENCE_COMPLETED: 'camera_capture_sequence_completed',
+    PHOTO_CAPTURED: 'photo_captured',
     PHOTO_CAPTURE_FAILED: 'photo_capture_failed',
   },
 }))
@@ -148,10 +183,69 @@ describe('useCameraCapture handleTakePhoto', () => {
       await result.current.handleTakePhoto()
     })
 
-    expect(mockCaptureEvent).toHaveBeenCalledWith('photo_capture_failed', {
-      error: 'device busy',
-    })
+    expect(mockCaptureEvent).toHaveBeenCalledWith(
+      'photo_capture_failed',
+      expect.objectContaining({ error: 'device busy' }),
+    )
     expect(result.current.capturedPhotos).toHaveLength(0)
+  })
+
+  it('disposes native photo buffers when temporary-file persistence fails', async () => {
+    const dispose = jest.fn()
+    mockCapturePhoto.mockResolvedValueOnce({
+      width: 100,
+      height: 100,
+      saveToTemporaryFileAsync: jest.fn(async () => {
+        throw new Error('disk full')
+      }),
+      dispose,
+    })
+
+    const { result } = renderHook(() => useCameraCapture())
+
+    await act(async () => {
+      await result.current.handleTakePhoto()
+    })
+
+    expect(dispose).toHaveBeenCalledTimes(1)
+    expect(result.current.capturedPhotos).toHaveLength(0)
+  })
+
+  it('stops a burst after the in-flight capture when capture is tapped again', async () => {
+    let resolveCapture: ((photo: object) => void) | undefined
+    mockCapturePhoto.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveCapture = resolve
+        }),
+    )
+
+    const { result } = renderHook(() => useCameraCapture())
+    act(() => result.current.setCaptureMode('burst'))
+
+    let burstPromise: Promise<void>
+    act(() => {
+      burstPromise = result.current.handleTakePhoto()
+    })
+
+    expect(result.current.isTakingPhoto).toBe(true)
+
+    await act(async () => {
+      await result.current.handleTakePhoto()
+    })
+
+    await act(async () => {
+      resolveCapture?.({
+        width: 100,
+        height: 100,
+        saveToTemporaryFileAsync: jest.fn(async () => '/tmp/fake.jpg'),
+        dispose: jest.fn(),
+      })
+      await burstPromise!
+    })
+
+    expect(mockCapturePhoto).toHaveBeenCalledTimes(1)
+    expect(result.current.isTakingPhoto).toBe(false)
   })
 
   it('keeps the captured photo in review state even if the gallery save fails', async () => {
@@ -202,5 +296,30 @@ describe('useCameraCapture handleTakePhoto', () => {
     expect(mockRequestPermissionsAsync).toHaveBeenCalledTimes(1)
     expect(mockRequestPermissionsAsync).toHaveBeenCalledWith(true)
     expect(mockAssetCreate).not.toHaveBeenCalled()
+  })
+  it('hands each captured photo to the uploader', async () => {
+    mockCapturePhoto.mockResolvedValueOnce({
+      width: 4032,
+      height: 3024,
+      saveToTemporaryFileAsync: jest.fn(async () => '/tmp/fake.jpg'),
+      dispose: jest.fn(),
+    })
+
+    const { result } = renderHook(() => useCameraCapture())
+    await act(async () => {
+      await result.current.handleTakePhoto()
+    })
+
+    expect(mockUploadNewPhoto).toHaveBeenCalledWith(
+      expect.objectContaining({
+        uri: 'file:///tmp/fake.jpg',
+        width: 4032,
+        height: 3024,
+        uploaded: false,
+      }),
+      'test-uid',
+      'test-submission',
+      expect.any(Function),
+    )
   })
 })

@@ -5,6 +5,7 @@
 
 import { asyncStorage } from '@/src/lib/cache/storage'
 import type { SubmissionPhoto } from '@/src/types'
+import { deleteCapturedPhotoFile } from '@/src/lib/camera/capturedPhotoFiles'
 import { randomUUID } from 'expo-crypto'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
@@ -66,11 +67,17 @@ export const usePhotoStore = create<PhotoState>()(
 
       removePhoto: (localId) =>
         set((s) => {
+          const removed = s.photos.find((p) => p.local_id === localId)
+          if (removed) deleteCapturedPhotoFile(removed.uri)
           const photos = s.photos.filter((p) => p.local_id !== localId)
           return { photos, source: photos.length === 0 ? null : s.source }
         }),
 
-      clearPhotos: () => set({ photos: [], source: null, submissionId: null }),
+      clearPhotos: () =>
+        set((s) => {
+          s.photos.forEach((p) => deleteCapturedPhotoFile(p.uri))
+          return { photos: [], source: null, submissionId: null }
+        }),
     }),
     {
       name: 'photo-store',
