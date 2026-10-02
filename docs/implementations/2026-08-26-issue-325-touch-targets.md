@@ -1,7 +1,7 @@
 # Touch-target floor across the app
 
 **Scope:** fix
-**Issues/spec:** #325, a sub-issue of #320. Rule from `docs/references/ux_principles.md` #1.
+**Issues/spec:** #325, a sub-issue of #320. Rule from `docs/agents/ui-ux/reference/ux_principles.md` #1.
 **Date:** 2026-08-26
 **Branch/PR:** `issue-320-ui-styling-pass`
 
