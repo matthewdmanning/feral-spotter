@@ -37,7 +37,7 @@ screenHeight) * ENTRYPOINT_BUFFER_PERCENT`, `diameter = (screenWidth -
 2*buffer - theme.spacing.xxl) / 2`, floored at 48dp (Material/HIG
   touch-target minimum). `ENTRYPOINT_BUFFER_PERCENT` (`src/config/constants.ts`,
   default `0.075`) is the only exposed knob; the buffer scales off the
-  *shorter* screen side so it stays proportional across orientations (app is
+  _shorter_ screen side so it stays proportional across orientations (app is
   portrait-locked, so this is currently formula-only, not exercised).
 - `entrypointArea` goes row layout (was column); `root`'s fixed
   `paddingHorizontal` moved to a new `bottomArea` wrapper around

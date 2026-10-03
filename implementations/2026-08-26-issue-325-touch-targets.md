@@ -41,7 +41,7 @@ The audit found **zero uses of `hitSlop` anywhere in the codebase**, and 57 inte
 ### Icon-only controls were the real offenders
 
 - **Decision:** No change to icon sizes.
-- **Reason:** The worst cases were not small buttons but small *padding* around small icons — the settings link rows rendered around 24dp from a 16dp icon and 4dp of padding. Visual size and touch size are separate concerns; the icons are legible as drawn and did not need to grow for their targets to.
+- **Reason:** The worst cases were not small buttons but small _padding_ around small icons — the settings link rows rendered around 24dp from a 16dp icon and 4dp of padding. Visual size and touch size are separate concerns; the icons are legible as drawn and did not need to grow for their targets to.
 
 ## What shipped
 
@@ -56,18 +56,18 @@ The audit found **zero uses of `hitSlop` anywhere in the codebase**, and 57 inte
 
 ## Tests
 
-| Test file                                        | What it verifies                                                                                                                                    |
-| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Test file                                       | What it verifies                                                                                                                                       |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `src/components/__tests__/touchTargets.test.ts` | No Pressable in `src/` resolves to a style pinning a height below 48dp unless it declares `hitSlop`; and that the scan actually inspected the codebase |
 
-The check reads the real stylesheets rather than asserting today's numbers back at itself, so it fails on the *next* undersized button rather than only on a regression in these. That follows the testing policy's preference for an invariant read from the real thing over a hand-maintained list.
+The check reads the real stylesheets rather than asserting today's numbers back at itself, so it fails on the _next_ undersized button rather than only on a regression in these. That follows the testing policy's preference for an invariant read from the real thing over a hand-maintained list.
 
 Mutation results:
 
-| Mutation                                  | Result                                     |
-| ----------------------------------------- | ------------------------------------------ |
-| `PhotoPreviewModal.closeBtn` back to 40dp | Fails, naming the file, line, and size     |
-| `AppButton.base` floor lowered to 40      | Fails, naming the file, line, and size     |
+| Mutation                                  | Result                                 |
+| ----------------------------------------- | -------------------------------------- |
+| `PhotoPreviewModal.closeBtn` back to 40dp | Fails, naming the file, line, and size |
+| `AppButton.base` floor lowered to 40      | Fails, naming the file, line, and size |
 
 **Not tested:**
 

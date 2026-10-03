@@ -6,7 +6,7 @@ governs:
   - src/screens/submission/create/index.tsx
   - src/screens/submission/cats/index.tsx
   - src/hooks/useRemoveCat.ts
-derives_from: ['#299']
+derives_from: ["#299"]
 ---
 
 # What the Cat List shows when there are no cats — current design state

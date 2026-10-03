@@ -9,7 +9,7 @@ governs:
   - src/screens/analytics-consent/index.tsx
   - src/screens/register/index.tsx
   - src/screens/home/index.tsx
-derives_from: ['#162', '#163']
+derives_from: ["#162", "#163"]
 supersedes:
   - "PR #61's order (2026-07-27 ratified): intro-flow -> sign-in -> analytics-consent -> consent -> home. That order left the data-collection disclosure and camera/location permission priming until after registration."
 ---

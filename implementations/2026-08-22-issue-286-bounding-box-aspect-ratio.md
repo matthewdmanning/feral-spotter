@@ -66,10 +66,10 @@ tags:
 
 **Model or flow covered:** N/A — pure math and component wiring, not a stateful flow.
 
-| Test file                                                              | What it verifies                                                             |
-| ------------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
-| `src/lib/annotate/__tests__/boxResize.test.ts`                           | `clampHalfExtent`, `clampAspectRatio`, `maxHalfExtentForBox` in isolation      |
-| `src/screens/submission/annotate/__tests__/AnnotateScreen.buttons.test.tsx` | Updated button-label assertion ("Done With This Cat")                       |
+| Test file                                                                   | What it verifies                                                          |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `src/lib/annotate/__tests__/boxResize.test.ts`                              | `clampHalfExtent`, `clampAspectRatio`, `maxHalfExtentForBox` in isolation |
+| `src/screens/submission/annotate/__tests__/AnnotateScreen.buttons.test.tsx` | Updated button-label assertion ("Done With This Cat")                     |
 
 **Not tested:**
 

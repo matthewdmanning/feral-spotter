@@ -8,7 +8,7 @@ governs:
   - src/screens/submission/cats/index.tsx
   - src/screens/submission/cats/index.styles.ts
   - src/screens/submission/annotate/index.tsx
-derives_from: ['#168', '#174', '#186']
+derives_from: ["#168", "#174", "#186"]
 ---
 
 # Inset-Crop Bubble Design Decision
