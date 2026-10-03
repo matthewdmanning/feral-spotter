@@ -1,0 +1,14 @@
+# Local Obsidian vault state (workspace layout, plugin bundles/plugin data)
+.obsidian/
+.claudian/
+.smart-env/
+
+# Local Files
+*local*
+.local/*
+
+# Logs
+*.log
+
+# Session handoffs and reference notes — working files, not history
+scratchpad/
