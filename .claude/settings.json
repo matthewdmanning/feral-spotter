@@ -21,6 +21,11 @@
             "if": "Bash(git *)",
             "command": "python -c \"import json,sys,re\nd=json.load(sys.stdin)\ncmd=d.get('tool_input',{}).get('command','')\nif re.search(r'git\\s+merge\\s+(origin/)?main(?:\\s|\\$)', cmd):\n    print(json.dumps({'hookSpecificOutput':{'hookEventName':'PreToolUse','permissionDecision':'deny','permissionDecisionReason':'Blocked: merging main into a feature branch creates unwanted merge commits. Use git rebase main instead, or let the PR merge handle it.'}}))\n\"",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "python -c \"import json,sys,re\nd=json.load(sys.stdin)\ncmd=d.get('tool_input',{}).get('command','')\nif 'python' in cmd and re.search(r'\\.write_text\\(|\\bopen\\([^)]*[\\x22\\x27][wa]\\+?[\\x22\\x27]', cmd):\n    print(json.dumps({'hookSpecificOutput':{'hookEventName':'PreToolUse','permissionDecision':'deny','permissionDecisionReason':'Blocked: Python text-mode writes rewrite CRLF line endings and turn a small edit into a whole-file diff. Edit files with the Edit tool. If a script is unavoidable, use read_bytes/write_bytes and keep the original line endings.'}}))\n\"",
+            "timeout": 10
           }
         ]
       }
