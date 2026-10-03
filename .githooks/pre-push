@@ -14,3 +14,10 @@
 # Enable once per clone:  git config core.hooksPath .githooks
 
 node scripts/format-changed.mjs --fail-on-change || exit 1
+
+# Lint every commit this branch adds, over the same range CI lints. The
+# commit-msg hook only sees commits made with `git commit`; subtree imports,
+# merges, reverts and commits made in another repo skip it.
+CLI=node_modules/@commitlint/cli/cli.js
+[ -f "$CLI" ] || CLI="$(git rev-parse --git-common-dir)/../node_modules/@commitlint/cli/cli.js"
+node "$CLI" --from origin/main --to HEAD || exit 1
