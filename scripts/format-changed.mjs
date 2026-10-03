@@ -18,30 +18,12 @@
  * write without the caller exporting an env var (awkward in PowerShell).
  */
 import { execSync } from 'node:child_process'
+import { createPrettierRunner, isFormattable } from './format-shared.mjs'
 
 const check = process.argv.includes('--check')
 const failOnChange = process.argv.includes('--fail-on-change')
-const SUPPORTED = /\.(tsx?|jsx?|json|md|ya?ml)$/
-
-// Deliberately still in the older column-aligned layout — see commit 80bf6cf
-// and docs/implementations/2026-08-26-issue-325-touch-targets.md. Reformatting
-// them buries real edits in formatting noise; the whole-repo reformat is its
-// own branch. Drop an entry once that branch lands and the file converts.
-const COLUMN_ALIGNED = new Set([
-  'src/components/atoms/ErrorBoundary.styles.ts',
-  'src/components/atoms/SegmentedControl.styles.ts',
-  'src/components/molecules/AddAnotherCatDialog.styles.ts',
-  'src/components/molecules/BottomButtonColumn.styles.ts',
-  'src/components/molecules/PhotoPreviewModal.styles.ts',
-  'src/components/molecules/ReportCard.styles.ts',
-  'src/components/organisms/DateTimePicker.styles.ts',
-  'src/components/organisms/ValidationSheet.styles.ts',
-  'src/screens/analytics-consent/index.styles.ts',
-  'src/screens/settings/index.styles.ts',
-])
 
 const sh = (cmd) => execSync(cmd, { encoding: 'utf8' }).trim()
-const quote = (paths) => paths.map((f) => JSON.stringify(f)).join(' ')
 
 const baseRef = process.env.PRETTIER_BASE || 'origin/main'
 
@@ -55,15 +37,21 @@ try {
 
 const files = sh(`git diff --name-only --diff-filter=ACMR ${base} HEAD`)
   .split('\n')
-  .filter((f) => f && SUPPORTED.test(f) && !COLUMN_ALIGNED.has(f))
+  .filter((f) => f && isFormattable(f))
 
 if (files.length === 0) {
   console.log('prettier: no changed files to format')
   process.exit(0)
 }
 
-const prettier = (mode, paths) =>
-  execSync(`npx prettier ${mode} ${quote(paths)}`, { stdio: 'inherit' })
+let run
+try {
+  run = createPrettierRunner()
+} catch (err) {
+  console.error(`prettier: ${err.message}`)
+  process.exit(1)
+}
+const prettier = (mode, paths) => run([mode, '--', ...paths], { stdio: 'inherit' })
 
 if (check || !failOnChange) {
   try {
@@ -84,7 +72,7 @@ if (check || !failOnChange) {
 // stdout; any other non-zero status is prettier itself failing, so surface it.
 let different = []
 try {
-  execSync(`npx prettier --list-different ${quote(files)}`, { encoding: 'utf8' })
+  run(['--list-different', '--', ...files])
 } catch (err) {
   if (err.status !== 1) {
     process.stderr.write(String(err.stderr || err.message))
