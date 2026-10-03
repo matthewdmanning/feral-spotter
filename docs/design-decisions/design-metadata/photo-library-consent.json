@@ -1,0 +1,7 @@
+{
+  "active": true,
+  "last_reviewed": "2026-08-10",
+  "effected": ["src/hooks/useLibraryPhotoPicker.ts"],
+  "assigned_to_gh_issues": [{ "target": 249 }],
+  "supersedes_gh_issues": []
+}

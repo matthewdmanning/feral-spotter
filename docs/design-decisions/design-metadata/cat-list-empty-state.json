@@ -1,0 +1,14 @@
+{
+  "active": true,
+  "last_reviewed": "2026-08-25",
+  "effected": [
+    "src/screens/submission/create/index.tsx",
+    "src/screens/submission/create/index.styles.ts",
+    "src/screens/submission/cats/index.tsx",
+    "src/components/organisms/CatForm.tsx",
+    "src/components/organisms/CatForm.styles.ts",
+    "src/hooks/useRemoveCat.ts"
+  ],
+  "assigned_to_gh_issues": [{ "target": 299 }],
+  "supersedes_gh_issues": []
+}

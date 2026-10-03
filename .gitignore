@@ -84,16 +84,8 @@ CLAUDE.md
 .tmp/
 _tmp_check_exports.py
 **/*.ignore
-# Inert: docs/ is a submodule, so this never matches. The rule that works lives
-# in docs/.gitignore.
-docs/scratchpad/*.*
-
 # Standalone python scratch project, kept on disk but not tracked here
 /feral-spotter/
 
-# Local Obsidian vault state (workspace layout, plugin bundles/plugin data)
-docs/.obsidian/
-docs/.claudian/
-docs/.smart-env/
 *.base
 *.canvas

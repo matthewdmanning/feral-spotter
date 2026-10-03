@@ -1,4 +1,0 @@
-[submodule "docs"]
-	path = docs
-	url = https://github.com/matthewdmanning/feral-spotter-docs.git
-	ignore = all

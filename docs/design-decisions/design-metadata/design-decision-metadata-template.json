@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json.schemastore.org/prettierrc",
+  "$defs": {
+    "intOrLinkArray": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string",
+                "format": "uri"
+              }
+            ]
+          }
+        },
+        "required": ["target"]
+      }
+    },
+    "euroDate": {
+      "type": "string",
+      "format": "date",
+      "pattern": "^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$"
+    },
+    "filePath": {
+      "type": "string",
+      "pattern": "^(?:[a-zA-Z]:[\\\\/])?(?:[^\\\\/:*?\"<>|\\r\\n]+[\\\\/])*[^\\\\/:*?\"<>|\\r\\n]+$"
+    }
+  },
+  "type": "object",
+  "properties": {
+    "active": {
+      "type": "boolean",
+      "description": "Whether the design decision is active or has been superseded."
+    },
+    "last_reviewed": {
+      "type": "string",
+      "pattern": "^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$"
+    },
+    "effected": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^(?:[a-zA-Z]:[\\\\/])?(?:[^\\\\/:*?\"<>|\\r\\n]+[\\\\/])*[^\\\\/:*?\"<>|\\r\\n]+$",
+        "description": "Lists which files are effected by the design decisions."
+      },
+      "assigned_to_gh_issues": {
+        "$ref": "#/$defs/intOrLinkArray",
+        "description": "Which Github issues or PRs implemented this design decision."
+      },
+
+      "supersedes_gh_issues": {
+        "$ref": "#/$defs/intOrLinkArray",
+        "description": "Which Github issues or PRs had their changes overwritten by this design decision."
+      }
+    }
+  }
+}
