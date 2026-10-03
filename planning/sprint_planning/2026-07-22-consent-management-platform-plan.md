@@ -52,18 +52,18 @@ Not yet a dependency — add `react-native-permissions`.
 Same AsyncStorage pattern as `src/lib/firstLaunch.ts`, still the only persisted consent state:
 
 ```ts
-const KEY = 'has_accepted_consent'
-const CONSENT_VERSION = 1 // bump when disclosure copy changes materially
+const KEY = "has_accepted_consent";
+const CONSENT_VERSION = 1; // bump when disclosure copy changes materially
 
 export async function hasAcceptedConsent(): Promise<boolean> {
-  const raw = await AsyncStorage.getItem(KEY)
-  if (!raw) return false
-  const { version } = JSON.parse(raw)
-  return version === CONSENT_VERSION
+  const raw = await AsyncStorage.getItem(KEY);
+  if (!raw) return false;
+  const { version } = JSON.parse(raw);
+  return version === CONSENT_VERSION;
 }
 
 export async function markConsentAccepted(): Promise<void> {
-  await AsyncStorage.setItem(KEY, JSON.stringify({ version: CONSENT_VERSION }))
+  await AsyncStorage.setItem(KEY, JSON.stringify({ version: CONSENT_VERSION }));
 }
 ```
 
@@ -87,10 +87,10 @@ The only genuinely shared logic: mapping app-level permission names to platform-
 `react-native-permissions` constants, so call sites don't each hand-roll `Platform.select`:
 
 ```ts
-import { Platform } from 'react-native'
-import { PERMISSIONS, type Permission } from 'react-native-permissions'
+import { Platform } from "react-native";
+import { PERMISSIONS, type Permission } from "react-native-permissions";
 
-export type AppPermission = 'camera' | 'mediaLibrary'
+export type AppPermission = "camera" | "mediaLibrary";
 
 export const PERMISSION_MAP: Record<AppPermission, Permission> =
   Platform.select({
@@ -103,7 +103,7 @@ export const PERMISSION_MAP: Record<AppPermission, Permission> =
       mediaLibrary: PERMISSIONS.ANDROID.READ_MEDIA_IMAGES, // API 33+; older APIs don't need a runtime
       // permission for MediaStore inserts
     },
-  })!
+  })!;
 ```
 
 Call sites import `check`/`request`/`openSettings`/`RESULTS` directly from `react-native-permissions`
