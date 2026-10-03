@@ -75,9 +75,9 @@ Reached via a `/grilling` session (see conversation) before implementation. Seve
 
 **Model or flow covered:** N/A — this is worklet gesture math with a pure-function core, not a stateful UX flow; per `docs/agents/testing.md` this doesn't warrant an XState model (same call the existing `panClamp.test.ts` precedent made).
 
-| Test file                                       | What it verifies                                                                                                                              |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/lib/annotate/__tests__/boxResize.test.ts`   | `clampHalfExtent` bounds; `clampAspectRatio` caps a too-wide/too-thin ratio scaled off the fixed axis; `maxHalfExtentForBox`'s canvas-vs-photo bound selection, including the degenerate zero-size-photo fallback. |
+| Test file                                      | What it verifies                                                                                                                                                                                                   |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/lib/annotate/__tests__/boxResize.test.ts` | `clampHalfExtent` bounds; `clampAspectRatio` caps a too-wide/too-thin ratio scaled off the fixed axis; `maxHalfExtentForBox`'s canvas-vs-photo bound selection, including the degenerate zero-size-photo fallback. |
 
 **Not tested:**
 

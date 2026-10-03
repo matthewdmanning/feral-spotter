@@ -15,16 +15,16 @@ this drive exists.
 
 ## Status: drive completed, one defect found and fixed
 
-| # | Goal | Result |
-| --- | --- | --- |
-| 1 | Destructive confirm (Clear Draft), Light | **PASS** |
-| 2 | Destructive confirm, Dark | **FAIL**, fixed in `f197051`, re-verified **PASS** |
-| 3 | Two-button confirm — Discard Changes, Remove this cat?, Submit Submission | **PASS** |
-| 4 | Dialog touch targets vs the 48dp floor | **PASS** |
-| 5 | Hardware back on an open dialog | **PASS** |
-| 6 | #338 System mode tracks the OS live | **FAIL** — expected, already filed |
-| 7 | Single-OK error shape | **NOT TESTED** — see Not covered |
-| 8 | Chained dialogs (submit flow raises two) | **NOT TESTED** — see Not covered |
+| #   | Goal                                                                      | Result                                             |
+| --- | ------------------------------------------------------------------------- | -------------------------------------------------- |
+| 1   | Destructive confirm (Clear Draft), Light                                  | **PASS**                                           |
+| 2   | Destructive confirm, Dark                                                 | **FAIL**, fixed in `f197051`, re-verified **PASS** |
+| 3   | Two-button confirm — Discard Changes, Remove this cat?, Submit Submission | **PASS**                                           |
+| 4   | Dialog touch targets vs the 48dp floor                                    | **PASS**                                           |
+| 5   | Hardware back on an open dialog                                           | **PASS**                                           |
+| 6   | #338 System mode tracks the OS live                                       | **FAIL** — expected, already filed                 |
+| 7   | Single-OK error shape                                                     | **NOT TESTED** — see Not covered                   |
+| 8   | Chained dialogs (submit flow raises two)                                  | **NOT TESTED** — see Not covered                   |
 
 ## The defect
 
@@ -61,10 +61,10 @@ no unistyles hook, and does not re-mount on navigation has this bug latent.
 - **Submit Submission** — opened and cancelled; not submitted (see Not covered).
 - **Touch targets** — every dialog button measured over the floor:
 
-  | Dialog | Buttons | Size |
-  | --- | --- | --- |
-  | Clear Draft | Cancel / Clear | 152.4 × 54.9 dp / 149.7 × 54.9 dp |
-  | Discard Changes | No / Yes | 152.4 × 54.5 dp / 149.7 × 54.5 dp |
+  | Dialog          | Buttons        | Size                              |
+  | --------------- | -------------- | --------------------------------- |
+  | Clear Draft     | Cancel / Clear | 152.4 × 54.9 dp / 149.7 × 54.9 dp |
+  | Discard Changes | No / Yes       | 152.4 × 54.5 dp / 149.7 × 54.5 dp |
 
 - **Hardware back** — dismisses the dialog, runs the cancel handler, does not
   navigate away from the screen underneath.
@@ -77,7 +77,7 @@ the OS to dark changed nothing.
 The detail the issue does not yet record: **selecting System does re-read the
 OS at that moment.** The app was in Dark, tapping System flipped it to Light
 immediately (the OS was Light then). So the read happens on selection as well
-as at startup — it is specifically the *later*, unsolicited OS change that goes
+as at startup — it is specifically the _later_, unsolicited OS change that goes
 unobserved.
 
 ## Not covered, and why
@@ -99,8 +99,8 @@ and the drive added the second photo.
 
 Nothing was submitted, removed, or cleared; every destructive dialog was
 cancelled. The added photo is still in the draft. Two things to chase
-separately: removing that photo, and *why Home showed no resume entry for a
-draft that had a cat and a photo in it* — that second one may be a real
+separately: removing that photo, and _why Home showed no resume entry for a
+draft that had a cat and a photo in it_ — that second one may be a real
 defect in the resume-entry logic (#314 / #316 territory), not just a
 misreading.
 

@@ -57,7 +57,7 @@ Root cause not yet found — the delta between the emulator suite (passing)
 and this live device run (failing) needs a live-instrumented recheck
 (temporary logging in `firebaseUpload.ts`/rules, per the technique the
 2026-08-15 continuation drive used successfully — added, verified, fully
-reverted) or a direct read of the *actually-live* ruleset via Firebase
+reverted) or a direct read of the _actually-live_ ruleset via Firebase
 Console to rule out a deploy-target subtlety this session's CLI output
 didn't surface. Flagging rather than guessing further.
 

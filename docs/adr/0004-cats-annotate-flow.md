@@ -91,7 +91,7 @@ contemplate:
   submission the device had ever made stayed in AsyncStorage forever. That is
   not "costs nothing extra"; it is unbounded growth.
 - **A stale `activeCatId` reattaching a previous draft's boxes.** Only a Cat
-  Form *save* cleared the id, so backing out of Boxing Complete left it set.
+  Form _save_ cleared the id, so backing out of Boxing Complete left it set.
   A Reset then wiped cats and photos but not that id, and the next draft's
   first box reused it — surfacing a previous draft's boxes against photos that
   no longer existed.

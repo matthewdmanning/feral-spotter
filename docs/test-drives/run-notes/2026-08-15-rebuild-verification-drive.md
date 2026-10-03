@@ -19,6 +19,7 @@ the native account chooser -> **"Sign-in failed / Something went wrong
 signing in. Please try again."**
 
 App-scoped logcat (pid 20548):
+
 ```
 E ReactNativeJS: '[sign-in] google failed:', [Error: [auth/unknown] Exception in HostFunction: accessToken cannot be empty]
 ```

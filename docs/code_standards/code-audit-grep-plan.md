@@ -21,52 +21,52 @@ Only rules with a reliable, unambiguous textual signal are included — no rule 
 
 ### Semantic rules
 
-| Rule | Grep pattern |
-|---|---|
-| Use `const`/`let`, never `var` | `\bvar\s+\w+` |
-| Do not use the `Array` constructor | `new Array\(` |
-| Iterate objects safely (no bare `for...in`) | `for\s*\(\s*(const\|let)\s+\w+\s+in\s+` |
-| Do not use function expressions | `=\s*function\s*\(\|[^\.]function\s*\(` |
-| Wrap callbacks when signatures may differ | `\.map\(parseInt\)\|\.map\(Number\)` |
-| Use stable references for removable handlers | `\.bind\(this\)` |
+| Rule                                            | Grep pattern                                              |
+| ----------------------------------------------- | --------------------------------------------------------- |
+| Use `const`/`let`, never `var`                  | `\bvar\s+\w+`                                             |
+| Do not use the `Array` constructor              | `new Array\(`                                             |
+| Iterate objects safely (no bare `for...in`)     | `for\s*\(\s*(const\|let)\s+\w+\s+in\s+`                   |
+| Do not use function expressions                 | `=\s*function\s*\(\|[^\.]function\s*\(`                   |
+| Wrap callbacks when signatures may differ       | `\.map\(parseInt\)\|\.map\(Number\)`                      |
+| Use stable references for removable handlers    | `\.bind\(this\)`                                          |
 | Prefer rest and spread over `arguments`/`apply` | `\barguments\b\|\.apply\(\|Array\.prototype\.slice\.call` |
-| Avoid redundant boolean coercion | `!!\w` |
-| Prefer `for...of` for arrays | `for\s*\(\s*(const\|let)\s+\w+\s+in\s+\w+\)` |
-| Use exceptions for exceptional conditions | `throw\s+["'\`]\|Promise\.reject\(["'\`]` |
-| Explain empty catch blocks | `catch\s*\([^)]*\)\s*\{\s*\}` |
-| Use strict equality | `[^=!<>]==[^=]\|[^!]!=[^=]` |
-| Do not instantiate primitive wrappers | `new (String\|Boolean\|Number)\(` |
-| Do not use `const enum` | `\bconst enum\b` |
-| Remove `debugger` statements | `\bdebugger\b` |
-| Do not use dynamic code evaluation | `\beval\(\|new Function\(` |
-| Do not modify built-ins | `\.prototype\.\w+\s*=` |
-| Avoid `any` | `:\s*any\b\|<any>\|\bas any\b` |
-| Avoid `{}` as a general type | `:\s*\{\}` |
+| Avoid redundant boolean coercion                | `!!\w`                                                    |
+| Prefer `for...of` for arrays                    | `for\s*\(\s*(const\|let)\s+\w+\s+in\s+\w+\)`              |
+| Use exceptions for exceptional conditions       | `throw\s+["'\`]\|Promise\.reject\(["'\`]`                 |
+| Explain empty catch blocks                      | `catch\s*\([^)]*\)\s*\{\s*\}`                             |
+| Use strict equality                             | `[^=!<>]==[^=]\|[^!]!=[^=]`                               |
+| Do not instantiate primitive wrappers           | `new (String\|Boolean\|Number)\(`                         |
+| Do not use `const enum`                         | `\bconst enum\b`                                          |
+| Remove `debugger` statements                    | `\bdebugger\b`                                            |
+| Do not use dynamic code evaluation              | `\beval\(\|new Function\(`                                |
+| Do not modify built-ins                         | `\.prototype\.\w+\s*=`                                    |
+| Avoid `any`                                     | `:\s*any\b\|<any>\|\bas any\b`                            |
+| Avoid `{}` as a general type                    | `:\s*\{\}`                                                |
 
 ### Structural rules
 
-| Rule | Grep pattern |
-|---|---|
-| Use ES modules (no `require`/namespaces) | `\brequire\(\|module\.exports\|/// <reference` |
-| Use sensible import paths | `from ["']\.\.(/\.\.){3,}` |
-| Use named exports | `export default` |
-| Do not export mutable bindings | `export let ` |
-| Prefer module-local functions over private static methods | `private static ` |
-| Omit unnecessary constructors | `constructor\s*\(\s*\)\s*\{\s*\}\|constructor\s*\(\s*\)\s*\{\s*super\(\);?\s*\}` |
-| Do not use ECMAScript `#private` fields | `#\w+` |
-| Do not manipulate prototypes | `\.prototype\.\w+\s*=` |
-| Use meaningful index signatures | `\[key:\s*string\]` |
+| Rule                                                      | Grep pattern                                                                     |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Use ES modules (no `require`/namespaces)                  | `\brequire\(\|module\.exports\|/// <reference`                                   |
+| Use sensible import paths                                 | `from ["']\.\.(/\.\.){3,}`                                                       |
+| Use named exports                                         | `export default`                                                                 |
+| Do not export mutable bindings                            | `export let `                                                                    |
+| Prefer module-local functions over private static methods | `private static `                                                                |
+| Omit unnecessary constructors                             | `constructor\s*\(\s*\)\s*\{\s*\}\|constructor\s*\(\s*\)\s*\{\s*super\(\);?\s*\}` |
+| Do not use ECMAScript `#private` fields                   | `#\w+`                                                                           |
+| Do not manipulate prototypes                              | `\.prototype\.\w+\s*=`                                                           |
+| Use meaningful index signatures                           | `\[key:\s*string\]`                                                              |
 
 ### Informational / documentation rules
 
-| Rule | Grep pattern |
-|---|---|
-| Document top-level exports | `^export (function\|class\|const)` not preceded by `/**` |
-| Document classes for use | `^export class \w+` not preceded by `/**` |
-| Do not duplicate TS types in JSDoc | `@param\s*\{` |
-| Place documentation before decorators | `@\w+\([\s\S]*?\)\s*\n\s*/\*\*` |
-| Do not suppress compiler errors broadly | `@ts-ignore\|@ts-nocheck\|@ts-expect-error` |
-| Put JSDoc tags on separate lines | `@param.*@param` on one line |
-| Treat generated code as exempt | `@generated\|DO NOT EDIT` (identifies exempt files) |
+| Rule                                    | Grep pattern                                             |
+| --------------------------------------- | -------------------------------------------------------- |
+| Document top-level exports              | `^export (function\|class\|const)` not preceded by `/**` |
+| Document classes for use                | `^export class \w+` not preceded by `/**`                |
+| Do not duplicate TS types in JSDoc      | `@param\s*\{`                                            |
+| Place documentation before decorators   | `@\w+\([\s\S]*?\)\s*\n\s*/\*\*`                          |
+| Do not suppress compiler errors broadly | `@ts-ignore\|@ts-nocheck\|@ts-expect-error`              |
+| Put JSDoc tags on separate lines        | `@param.*@param` on one line                             |
+| Treat generated code as exempt          | `@generated\|DO NOT EDIT` (identifies exempt files)      |
 
 Rules requiring judgment (design intent, code structure, semantic correctness) or lacking any reliable grep signal are excluded from this audit entirely rather than approximated.

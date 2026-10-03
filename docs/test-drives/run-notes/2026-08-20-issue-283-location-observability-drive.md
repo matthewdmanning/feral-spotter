@@ -17,6 +17,7 @@ dev-launcher manual URL entry (`exp://127.0.0.1:8081`) — the auto-discovered
 server list never populated over USB, and the "Connect" button stays
 `enabled="false"` until the URL field has text, so tapped the field, typed
 the URL, then Connect. Confirmed bundle load via `adb logcat`:
+
 ```
 ReactNativeJS: Running "main" with {"rootTag":1,"initialProps":{},"fabric":true}
 ReactNativeJS: [firebase] mode: live

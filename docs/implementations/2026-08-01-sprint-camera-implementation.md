@@ -192,21 +192,21 @@ different event vocabularies.
 
 Findings closed:
 
-| Review | Finding | Fix |
-| --- | --- | --- |
+| Review  | Finding    | Fix                                                                                                                                                                                    |
+| ------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Stage 1 | 3, JS half | `buildSubmissionPhotoFromCapture` rejects zero dimensions instead of uploading a 0x0 photo. Kotlin still reads `resolutionInfo` before `takePicture`; that fix is in the Android work. |
-| Stage 1 | 4 | `captured_at` is always the JS shutter stamp. `capturedAt` is gone from `NativeCapturedPhoto`. Swift still sends it; removing that is in the iOS work. |
-| Stage 2 | 1 | Gallery writes are collected during a capture sequence and flushed once after it, instead of awaiting MediaLibrary inside the burst loop. |
-| Stage 2 | 2 | `deleteCapturedPhotoFile`, called from the photo store's `removePhoto` and `clearPhotos`. The upload cannot own this: `photo.uri` is what the annotate carousel renders from. |
-| Stage 2 | 4 | `renderItem` no longer depends on the photo count, so it is not recreated per captured frame. Upload progress writes are throttled to one per 250ms per photo. |
-| Stage 2 | 5 | Uploads run two at a time through a queue in `uploadNewPhoto`. |
-| Stage 2 | 8 | `handleTakePhoto` reads `isTakingPhoto` from a ref in both hooks. |
-| Stage 2 | 11 | `isNativeIdentificationCameraAvailable` resolves once. |
-| Stage 2 | 12 | Dropped the `useMemo` around `getNativeView`, which already caches. |
-| Stage 3 | 1.2 | `useCapturedPhotoWorkflow`. |
-| Stage 3 | 1.3 | `CameraChrome`. |
-| Stage 3 | 4 | `pipeline.ts` records that `ImagePostprocessor` and `SubjectLocalizer` are deliberate seams. |
-| Stage 3 | 5 | `style?: StyleProp<ViewStyle>` instead of `unknown`. |
+| Stage 1 | 4          | `captured_at` is always the JS shutter stamp. `capturedAt` is gone from `NativeCapturedPhoto`. Swift still sends it; removing that is in the iOS work.                                 |
+| Stage 2 | 1          | Gallery writes are collected during a capture sequence and flushed once after it, instead of awaiting MediaLibrary inside the burst loop.                                              |
+| Stage 2 | 2          | `deleteCapturedPhotoFile`, called from the photo store's `removePhoto` and `clearPhotos`. The upload cannot own this: `photo.uri` is what the annotate carousel renders from.          |
+| Stage 2 | 4          | `renderItem` no longer depends on the photo count, so it is not recreated per captured frame. Upload progress writes are throttled to one per 250ms per photo.                         |
+| Stage 2 | 5          | Uploads run two at a time through a queue in `uploadNewPhoto`.                                                                                                                         |
+| Stage 2 | 8          | `handleTakePhoto` reads `isTakingPhoto` from a ref in both hooks.                                                                                                                      |
+| Stage 2 | 11         | `isNativeIdentificationCameraAvailable` resolves once.                                                                                                                                 |
+| Stage 2 | 12         | Dropped the `useMemo` around `getNativeView`, which already caches.                                                                                                                    |
+| Stage 3 | 1.2        | `useCapturedPhotoWorkflow`.                                                                                                                                                            |
+| Stage 3 | 1.3        | `CameraChrome`.                                                                                                                                                                        |
+| Stage 3 | 4          | `pipeline.ts` records that `ImagePostprocessor` and `SubjectLocalizer` are deliberate seams.                                                                                           |
+| Stage 3 | 5          | `style?: StyleProp<ViewStyle>` instead of `unknown`.                                                                                                                                   |
 
 Tests written:
 
@@ -253,22 +253,22 @@ No iOS device, no simulator and no macOS runner are available, and no Swift
 toolchain is installed on this machine. Nothing below was compiled. Every item
 is **needs test drive**, not fixed.
 
-| Review | Finding | Fix |
-| --- | --- | --- |
+| Review  | Finding          | Fix                                                                                                                                                                                                                                                                                                                                                                             |
+| ------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Stage 3 | 1.1, duplication | The exposure-cap heuristic had a copy in each iOS module. One copy now, `modules/native-identification-camera/ios/CameraExposurePolicy.swift`, with the comment it never had: why the cap exists, how the value is picked, and why a duration is clamped to the active format. `IosCameraOptimizer.podspec` takes a pod dependency on `NativeIdentificationCamera` to reach it. |
-| Stage 1 | 1, blocker | `AVCaptureDevice` is shared per process, so the view's format, exposure cap, low-light and zoom settings outlived the view and applied to the VisionCamera path. `SavedDeviceState` records the device as found; `restoreDeviceState` puts it back on a position flip and on view teardown. |
-| Stage 1 | 2, blocker | `photoOutput(_:didFinishCaptureFor:error:)` is implemented, and both delegate callbacks route through `settle`, which fires the promise exactly once. Stopping the session also settles anything still in flight, so an interrupted capture no longer leaves the shutter disabled. |
-| Stage 2 | 6 | Mount configured the session twice: once from `init`, once when the `position` prop arrived. `init` no longer configures. |
-| Stage 2 | 7 | Prop setters record a pending flag; `OnViewDidUpdateProps` applies one configuration per prop batch. Three settings changing together now cost one cycle, not three. |
-| Stage 2 | 9 | The per-photo `ISO8601DateFormatter` is gone, along with the field it fed. |
-| Stage 1 | 4, Swift half | `capturedAt` removed from the Swift capture result. The contract is now what `types.ts` declares. |
-| — | Telemetry parity | `CaptureTuning.swift` mirrors the Android table's shape, not its policy. `onCameraReady` carries `captureTuning` and `captureMode`, so a profiling run reads the same field on both platforms. |
-| Stage 3 | 4 | Rationale comments on every non-obvious capture setting: why `.photo`, why continuous focus and exposure, why low-light boost is refusable, why `.invalid` rather than zero, and why device types are tried widest first. |
+| Stage 1 | 1, blocker       | `AVCaptureDevice` is shared per process, so the view's format, exposure cap, low-light and zoom settings outlived the view and applied to the VisionCamera path. `SavedDeviceState` records the device as found; `restoreDeviceState` puts it back on a position flip and on view teardown.                                                                                     |
+| Stage 1 | 2, blocker       | `photoOutput(_:didFinishCaptureFor:error:)` is implemented, and both delegate callbacks route through `settle`, which fires the promise exactly once. Stopping the session also settles anything still in flight, so an interrupted capture no longer leaves the shutter disabled.                                                                                              |
+| Stage 2 | 6                | Mount configured the session twice: once from `init`, once when the `position` prop arrived. `init` no longer configures.                                                                                                                                                                                                                                                       |
+| Stage 2 | 7                | Prop setters record a pending flag; `OnViewDidUpdateProps` applies one configuration per prop batch. Three settings changing together now cost one cycle, not three.                                                                                                                                                                                                            |
+| Stage 2 | 9                | The per-photo `ISO8601DateFormatter` is gone, along with the field it fed.                                                                                                                                                                                                                                                                                                      |
+| Stage 1 | 4, Swift half    | `capturedAt` removed from the Swift capture result. The contract is now what `types.ts` declares.                                                                                                                                                                                                                                                                               |
+| —       | Telemetry parity | `CaptureTuning.swift` mirrors the Android table's shape, not its policy. `onCameraReady` carries `captureTuning` and `captureMode`, so a profiling run reads the same field on both platforms.                                                                                                                                                                                  |
+| Stage 3 | 4                | Rationale comments on every non-obvious capture setting: why `.photo`, why continuous focus and exposure, why low-light boost is refusable, why `.invalid` rather than zero, and why device types are tried widest first.                                                                                                                                                       |
 
 ### Correction to the iOS handoff
 
 The handoff said to restore device state on "the Expo view teardown hook".
-There is no Expo *lifecycle* hook for it: `ViewLifecycleMethodType` has exactly
+There is no Expo _lifecycle_ hook for it: `ViewLifecycleMethodType` has exactly
 one case, `didUpdateProps`, and `OnViewDestroys` is Android-only. `deinit` does
 not run while JavaScript still holds the ref, so it is a backstop, not the
 mechanism.

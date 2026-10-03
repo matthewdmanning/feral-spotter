@@ -6,12 +6,12 @@ status: accepted
 
 A Submission **draft** is exactly four persisted zustand stores:
 
-| Store | AsyncStorage key | Holds |
-| --- | --- | --- |
-| `useSubmissionStore` | `submission-store` | cats, location/time metadata |
-| `usePhotoStore` | `photo-store` | the photo pool and the cloud submission id |
-| `useBoundingBoxStore` | `bounding-box-store` | box geometry and absence markers |
-| `useActiveCatFlowStore` | `active-cat-flow-store` | the in-progress cat's id |
+| Store                   | AsyncStorage key        | Holds                                      |
+| ----------------------- | ----------------------- | ------------------------------------------ |
+| `useSubmissionStore`    | `submission-store`      | cats, location/time metadata               |
+| `usePhotoStore`         | `photo-store`           | the photo pool and the cloud submission id |
+| `useBoundingBoxStore`   | `bounding-box-store`    | box geometry and absence markers           |
+| `useActiveCatFlowStore` | `active-cat-flow-store` | the in-progress cat's id                   |
 
 Teardown of all four is owned by one module, `src/lib/submission/draft.ts`,
 exposing two verbs: `discardDraft()` (Reset semantics) and `completeDraft()`
@@ -70,7 +70,7 @@ the `Sending`/`Failed` transitions and their analytics events also stay: they
 are submit-flow concerns, not draft-lifetime ones.
 
 Each caller navigating for itself is what lets Settings' **Clear Draft** be an
-escape pod. It is reachable *while a draft is live*, with Cat List, `annotate`
+escape pod. It is reachable _while a draft is live_, with Cat List, `annotate`
 and the create screen all mounted behind Settings against state it just
 emptied — and the create screen's mount effect won't re-run to notice. So it
 routes Home (`router.replace('/')`) rather than popping back into them, the

@@ -28,11 +28,11 @@ defeats Unistyles' direct patching. Cross-referenced each hit for a
 
 ## Result
 
-| Component | Uses `<Modal>` | Subscribes (`useUnistyles`) | Verdict |
-| --- | --- | --- | --- |
-| `AlertHost` | Yes | Yes (`f197051`) | Fixed — reference case |
-| `DateTimePicker` | Yes | Yes (pre-existing) | Safe |
-| `TutorialOverlay` | Yes | **No** | **Fixed here** — added `useUnistyles()` |
+| Component         | Uses `<Modal>` | Subscribes (`useUnistyles`) | Verdict                                 |
+| ----------------- | -------------- | --------------------------- | --------------------------------------- |
+| `AlertHost`       | Yes            | Yes (`f197051`)             | Fixed — reference case                  |
+| `DateTimePicker`  | Yes            | Yes (pre-existing)          | Safe                                    |
+| `TutorialOverlay` | Yes            | **No**                      | **Fixed here** — added `useUnistyles()` |
 
 No other component in `src/` renders through `<Modal>`. This is a complete
 list for the identified defect class (Modal-hosted content with no theme

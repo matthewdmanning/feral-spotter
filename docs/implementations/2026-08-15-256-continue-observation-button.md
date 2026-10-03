@@ -75,8 +75,8 @@ Details.
 **Model or flow covered:** `HomeScreen`'s mount-time Resume/New column
 visibility gate (`HomeScreen.entrypointActions.model.test.tsx`).
 
-| Test file | What it verifies |
-| --- | --- |
+| Test file                                                                | What it verifies                                                                                                                                                  |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `src/screens/home/__tests__/HomeScreen.entrypointActions.model.test.tsx` | New `MOUNT_STALE` journey: a >24h-old in-progress cache keeps the column hidden; renamed-button press (`key === 'continue'`) still routes to `/submission/create` |
 
 **Not tested:**
@@ -138,12 +138,12 @@ still offered Continue Observation, and tapping it dead-ended on annotate's
   between them is a tab switch, not a mount. A mount-once effect never re-runs.
   Reset only escaped the bug because its navigation path unmounts Home.
 - **The bug ran both ways.** A draft started and returned from also left the
-  entry *hidden*. Both directions are device-verified.
+  entry _hidden_. Both directions are device-verified.
 - **The cleanup's `cancelled` flag is not decoration.** Two focus cycles can
   resolve out of order and let the older read win. Removing it reintroduces a
   race that the mount-once version could not exhibit.
 - `HomeScreen.resumeEntry.test.tsx`'s third case (`does not re-read while
-  blurred`) passes against the pre-fix code too — it guards blur cancellation,
+blurred`) passes against the pre-fix code too — it guards blur cancellation,
   not the staleness. Do not read it as regression cover for #314.
 
 **Verification:** full gates pass. Device-verified on a Pixel 7 — the issue's

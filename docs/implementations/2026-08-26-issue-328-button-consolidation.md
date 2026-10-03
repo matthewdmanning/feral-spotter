@@ -31,11 +31,11 @@ Every component was checked for a duplicate of the same concept. Two real cluste
 
 `AppButton` declares `primary`/`secondary`/`ghost`/`danger` as Unistyles variants. Three components rebuilt the same four names independently:
 
-| Component | How it duplicated |
-| --------- | ------------------ |
-| `BottomButtonColumn` | Inline `bgMap`/`tcMap`/`border` objects mapping the same four variant names to colours by hand. It already imported `ColumnButton` **from** `AppButton` without ever using `AppButton` |
-| `AddAnotherCatDialog` | Own `btn`/`primary`/`secondary` plus `primaryText`/`secondaryText` |
-| `DateTimePicker` | Own `actionBtn`/`actionBtnPrimary`/`actionBtnSecondary` plus matching text styles |
+| Component             | How it duplicated                                                                                                                                                                      |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `BottomButtonColumn`  | Inline `bgMap`/`tcMap`/`border` objects mapping the same four variant names to colours by hand. It already imported `ColumnButton` **from** `AppButton` without ever using `AppButton` |
+| `AddAnotherCatDialog` | Own `btn`/`primary`/`secondary` plus `primaryText`/`secondaryText`                                                                                                                     |
+| `DateTimePicker`      | Own `actionBtn`/`actionBtnPrimary`/`actionBtnSecondary` plus matching text styles                                                                                                      |
 
 `ValidationSheet`'s close button was a fourth partial copy — a secondary button spelled out by hand. `ErrorBoundary`'s was a fifth.
 

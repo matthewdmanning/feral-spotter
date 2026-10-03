@@ -17,28 +17,28 @@ first, so a drive starts with them on. They are defaults only: a value already
 persisted on the device wins, so check Settings if the drive follows a run that
 toggled them by hand.
 
-| Setting | Ships as | Env default | Why |
-| --- | --- | --- | --- |
-| `native_camera_capture` | false | `EXPO_PUBLIC_NATIVE_CAMERA_CAPTURE=true` | none of the code under test runs without it |
-| `camera_performance_checks` | false | `EXPO_PUBLIC_CAMERA_PERFORMANCE_CHECKS=true` | gates every diagnostic below |
-| `camera_subject_metering` | false | `EXPO_PUBLIC_CAMERA_SUBJECT_METERING=true` | check 2 |
-| `camera_max_detail` | true | — | leave, vary in check 4 |
-| `camera_motion_priority` | true | — | leave, vary in check 4 |
-| `camera_disable_low_light_boost` | false | — | leave |
+| Setting                          | Ships as | Env default                                  | Why                                         |
+| -------------------------------- | -------- | -------------------------------------------- | ------------------------------------------- |
+| `native_camera_capture`          | false    | `EXPO_PUBLIC_NATIVE_CAMERA_CAPTURE=true`     | none of the code under test runs without it |
+| `camera_performance_checks`      | false    | `EXPO_PUBLIC_CAMERA_PERFORMANCE_CHECKS=true` | gates every diagnostic below                |
+| `camera_subject_metering`        | false    | `EXPO_PUBLIC_CAMERA_SUBJECT_METERING=true`   | check 2                                     |
+| `camera_max_detail`              | true     | —                                            | leave, vary in check 4                      |
+| `camera_motion_priority`         | true     | —                                            | leave, vary in check 4                      |
+| `camera_disable_low_light_boost` | false    | —                                            | leave                                       |
 
 `npm run android` echoes each value at startup, so the drive log records what
 the build actually got.
 
 ## Checks
 
-| # | Check | Expected | Result |
-| --- | --- | --- | --- |
-| 1 | Capture reports real dimensions. Flip the camera position, then capture immediately. | `photo_captured` carries non-zero width and height. This is the window where `resolutionInfo` used to be null and the upload carried 0x0. | |
-| 2 | Tap the preview. | Focus and exposure visibly change. The tap does **not** also fire the shutter. | |
-| 3 | Pinch to zoom, then tap, in the same session. | Both work. A pinch does not leak a tap; a tap does not break the following pinch. Highest-risk item — see below. | |
-| 4 | Flip position and change two tuning settings together. | One bind, not two. Count `camera_device_ready` events, or read CameraX's own session logs. | |
-| 5 | `camera_device_ready` payload. | Carries `capture_tuning`. | |
-| 6 | Portrait capture. | Reported height is greater than reported width. Confirms the EXIF axis swap. | |
+| #   | Check                                                                                | Expected                                                                                                                                  | Result |
+| --- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| 1   | Capture reports real dimensions. Flip the camera position, then capture immediately. | `photo_captured` carries non-zero width and height. This is the window where `resolutionInfo` used to be null and the upload carried 0x0. |        |
+| 2   | Tap the preview.                                                                     | Focus and exposure visibly change. The tap does **not** also fire the shutter.                                                            |        |
+| 3   | Pinch to zoom, then tap, in the same session.                                        | Both work. A pinch does not leak a tap; a tap does not break the following pinch. Highest-risk item — see below.                          |        |
+| 4   | Flip position and change two tuning settings together.                               | One bind, not two. Count `camera_device_ready` events, or read CameraX's own session logs.                                                |        |
+| 5   | `camera_device_ready` payload.                                                       | Carries `capture_tuning`.                                                                                                                 |        |
+| 6   | Portrait capture.                                                                    | Reported height is greater than reported width. Confirms the EXIF axis swap.                                                              |        |
 
 ## Known risks going in
 
@@ -47,7 +47,7 @@ the build actually got.
   responder system. If a JS responder is then granted on the preview, React
   Native can stop delivering later events to the native view and the pinch
   detector loses the stream mid-gesture. `Gesture.Simultaneous(Gesture.Native(),
-  Gesture.Tap())` is what is supposed to prevent that.
+Gesture.Tap())` is what is supposed to prevent that.
 - **Two paths reach the first bind.** `isActive` sets `needsRebind` and
   `OnViewDidUpdateProps` applies it, while the `ProcessCameraProvider` listener
   in `init` still binds directly when `isActive` is already true. Check 4 covers
@@ -58,17 +58,17 @@ the build actually got.
 `camera_performance_checks` drives the `diagnostics` prop. With it on, the view
 emits `camera_native_diagnostic` events, distinguished by `native_event`:
 
-| `native_event` | Answers | Key fields |
-| --- | --- | --- |
-| `session_bound` | check 4, and whether a cold mount binds once | `bind_count`, `capture_tuning`, `capture_mode`, `bind_duration_ms` |
-| `session_unbound` | pairs with the above | `bind_count` |
-| `session_bind_failed` | a bind that never reported ready | `message` |
-| `capture_saved` | checks 1 and 6 | `stored_width/height`, `reported_width/height`, `exif_orientation`, `axes_swapped` |
-| `capture_failed` | a capture that errored | `image_capture_error_code` |
-| `capture_no_dimensions` | the 0x0 path, if it still happens | `elapsed_ms` |
-| `focus_requested` | checks 2 and 3 | `accepted`, `reason`, `normalized_x/y` |
-| `subject_region_ignored` | a tap arriving with metering off | `subject_metering` |
-| `pinch_ended` | check 3, one per pinch | `zoom_ratio` |
+| `native_event`           | Answers                                      | Key fields                                                                         |
+| ------------------------ | -------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `session_bound`          | check 4, and whether a cold mount binds once | `bind_count`, `capture_tuning`, `capture_mode`, `bind_duration_ms`                 |
+| `session_unbound`        | pairs with the above                         | `bind_count`                                                                       |
+| `session_bind_failed`    | a bind that never reported ready             | `message`                                                                          |
+| `capture_saved`          | checks 1 and 6                               | `stored_width/height`, `reported_width/height`, `exif_orientation`, `axes_swapped` |
+| `capture_failed`         | a capture that errored                       | `image_capture_error_code`                                                         |
+| `capture_no_dimensions`  | the 0x0 path, if it still happens            | `elapsed_ms`                                                                       |
+| `focus_requested`        | checks 2 and 3                               | `accepted`, `reason`, `normalized_x/y`                                             |
+| `subject_region_ignored` | a tap arriving with metering off             | `subject_metering`                                                                 |
+| `pinch_ended`            | check 3, one per pinch                       | `zoom_ratio`                                                                       |
 
 Read them in Metro's JSONL log, not `logcat`:
 
@@ -97,11 +97,11 @@ PATH; leave Gradle on 17.
 
 **The preview is blank. The camera is not the problem.**
 
-| Evidence | Reading |
-| --- | --- |
-| `session_bound`, `camera_device_ready`, `capture_tuning: detail_and_motion`, `ready_duration_ms: 272` | the session binds, and the tuning table resolves |
-| `StreamStateObserver: Update Preview stream state to STREAMING` | frames are flowing |
-| `W PreviewTransform: Transform not applied due to PreviewView size: 1080x0` | the preview surface has zero height, so nothing is drawn |
+| Evidence                                                                                              | Reading                                                  |
+| ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `session_bound`, `camera_device_ready`, `capture_tuning: detail_and_motion`, `ready_duration_ms: 272` | the session binds, and the tuning table resolves         |
+| `StreamStateObserver: Update Preview stream state to STREAMING`                                       | frames are flowing                                       |
+| `W PreviewTransform: Transform not applied due to PreviewView size: 1080x0`                           | the preview surface has zero height, so nothing is drawn |
 
 `NativeIdentificationCameraView.kt:216` sizes the preview from the view's own
 bounds:
@@ -121,11 +121,11 @@ ended before the camera was opened again.
 **Check 4 fails: a cold mount binds twice.** The `session_bound` and
 `session_unbound` diagnostics, first camera open:
 
-| Time (UTC) | Event | bind_count | bind_duration_ms |
-| --- | --- | --- | --- |
-| 17:33:32.555 | session_bound | 1 | 42 |
-| 17:33:32.558 | session_unbound | 1 | — |
-| 17:33:32.563 | session_bound | 2 | 31 |
+| Time (UTC)   | Event           | bind_count | bind_duration_ms |
+| ------------ | --------------- | ---------- | ---------------- |
+| 17:33:32.555 | session_bound   | 1          | 42               |
+| 17:33:32.558 | session_unbound | 1          | —                |
+| 17:33:32.563 | session_bound   | 2          | 31               |
 
 Bind 1 lives 3 ms. This is the second known risk in this note: the
 `ProcessCameraProvider` listener in `init` binds directly when `isActive` is
@@ -161,21 +161,21 @@ Two fixes went in between the runs:
    `applyPendingConfiguration()` instead of binding directly, and a
    `rebindScheduled` guard keeps the posted rebind single.
 
-| # | Check | Result |
-| --- | --- | --- |
-| 1 | Capture reports real dimensions, including straight after a flip | **pass**, both sensors |
-| 2 | Tap focuses and does not fire the shutter | **pass** |
-| 3 | Pinch and tap coexist | **withdrawn** — see below |
-| 4 | One bind per change | **pass** — cold mount 1, then 1->2, 2->3, 3->4, 4->5 |
-| 5 | `camera_device_ready` carries `capture_tuning` | **pass** (`detail_and_motion`) |
-| 6 | Portrait height exceeds width | **pass**, via EXIF |
+| #   | Check                                                            | Result                                               |
+| --- | ---------------------------------------------------------------- | ---------------------------------------------------- |
+| 1   | Capture reports real dimensions, including straight after a flip | **pass**, both sensors                               |
+| 2   | Tap focuses and does not fire the shutter                        | **pass**                                             |
+| 3   | Pinch and tap coexist                                            | **withdrawn** — see below                            |
+| 4   | One bind per change                                              | **pass** — cold mount 1, then 1->2, 2->3, 3->4, 4->5 |
+| 5   | `camera_device_ready` carries `capture_tuning`                   | **pass** (`detail_and_motion`)                       |
+| 6   | Portrait height exceeds width                                    | **pass**, via EXIF                                   |
 
 Capture payloads, one per sensor:
 
-| Sensor | stored | exif_orientation | axes_swapped | reported |
-| --- | --- | --- | --- | --- |
-| back | 4032x2268 | 6 | true | 2268x4032 |
-| front | 3264x2448 | 8 | true | 2448x3264 |
+| Sensor | stored    | exif_orientation | axes_swapped | reported  |
+| ------ | --------- | ---------------- | ------------ | --------- |
+| back   | 4032x2268 | 6                | true         | 2268x4032 |
+| front  | 3264x2448 | 8                | true         | 2448x3264 |
 
 Check 3 is withdrawn rather than failed. `pinch_ended` never fired and the zoom
 never changed, and that is acceptable: telephoto is not useful for

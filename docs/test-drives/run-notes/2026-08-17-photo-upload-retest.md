@@ -19,7 +19,7 @@ upload has ever completed past the error below, so the rules path
 session. No `storage/unauthorized` was observed, but that's consistent with
 failing earlier in the request pipeline, not with rules passing.
 
-## #277 (kill/resume) hypothesis: falsified as *necessary*, but wrong bug entirely
+## #277 (kill/resume) hypothesis: falsified as _necessary_, but wrong bug entirely
 
 Reproduced 3x this session, every time on a **fresh photo, zero app
 kill/resume**:
@@ -27,14 +27,14 @@ kill/resume**:
 1. Photo `c55dd83f-25fd-4343-aee8-a4963ef3b745` (after Reset + New Sighting)
 2. Photo `5dae91e5-b455-468f-8f82-cdf4b239960b`
 3. Photo `384b5869-557a-424f-85ea-62433ed9d876` (captured with `adb logcat
-   --pid` running for full native detail — see below)
+--pid` running for full native detail — see below)
 
 All three failed within ~3-5s of capture with the same JS-level error:
 `[storage/unknown] The server has terminated the upload session` at
 `firebaseUpload.ts:52` (inside `putFile(...).on('state_changed', ...)`).
 
 **#277's kill/resume theory does not explain this.** What's true instead:
-kill/resume is not a *necessary* precondition. The underlying bug is
+kill/resume is not a _necessary_ precondition. The underlying bug is
 different from what #277 describes — see root cause below.
 
 ## Root cause found (native logcat, not the JS-level string)
@@ -67,6 +67,7 @@ Settings' actual "Clear Cache" wires to a different function,
 Neither can produce a server-side 412 naming a missing service account.
 
 **Corroborated:**
+
 1. The verbatim 412 server message above (official Firebase-authored text).
 2. Official docs (`firebase.google.com/docs/storage/web/start`): "newly
    created [default] buckets have the default access control set to allow
@@ -75,7 +76,7 @@ Neither can produce a server-side 412 naming a missing service account.
    agent. `feral-spotter-image-uploads` is exactly the imported case — it
    was never given that manual grant.
 
-**Correction to an earlier framing in this same note:** this is *not*
+**Correction to an earlier framing in this same note:** this is _not_
 "bucket never imported/linked into Firebase" — queried
 `firebasestorage.googleapis.com/v1beta/projects/{project}/buckets` directly,
 both buckets ARE registered at the Firebase Storage registration layer.
@@ -86,6 +87,7 @@ bucket has the former without the latter.
 
 Per the docs above, the default bucket needs no manual grant — cheaper and
 lower-risk than a permissions mutation on `feral-spotter-image-uploads`. Changed:
+
 - `src/lib/upload/firebaseUpload.ts:33` — `BUCKET_URL` now
   `gs://project-e3d5659d-bc4f-438f-88c.firebasestorage.app`.
 - `.firebaserc` (gitignored, machine-local) — the `feral-uploads` storage
@@ -94,6 +96,7 @@ lower-risk than a permissions mutation on `feral-spotter-image-uploads`. Changed
 
 **Still needed from Matthew (deploy is classifier-blocked for Claude Code
 this session, same as the original storage-rules fix):**
+
 - `firebase deploy --only storage` to push `storage.rules` to the default
   bucket. Until this runs, uploads will fail on rules instead of the 412 —
   the app now points at a bucket whose live ruleset was never targeted by
@@ -111,7 +114,7 @@ Firebase emulator rather than live Firebase from here on.
 **Testing-posture note:** per project direction, Firebase Auth + Storage
 emulators are the standard for app-behavior test-driving going forward —
 this session's live-Firebase capture was a one-time exception to confirm a
-*deployed/permissions* fact the emulator can't model (it fakes Storage
+_deployed/permissions_ fact the emulator can't model (it fakes Storage
 locally and never touches real bucket permissions). Once the pending
 storage-rules deploy (see "Still needed from Matthew" above) is applied,
 don't re-drive this specific finding against live Firebase again; verify

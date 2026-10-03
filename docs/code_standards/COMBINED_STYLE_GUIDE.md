@@ -12,16 +12,16 @@ Use `const` by default. Use `let` only when reassignment is required. Never use 
 
 ```ts
 // Good
-const endpoint = "/api";
-let attempts = 0;
-attempts++;
+const endpoint = '/api'
+let attempts = 0
+attempts++
 ```
 
 ```ts
 // Bad
-var endpoint = "/api";
-value = 3;
-let value;
+var endpoint = '/api'
+value = 3
+let value
 ```
 
 ### Do not use the `Array` constructor
@@ -30,14 +30,14 @@ Use array literals or `Array.from`.
 
 ```ts
 // Good
-const values = [2, 3];
-const zeros = Array.from<number>({ length: 5 }).fill(0);
+const values = [2, 3]
+const zeros = Array.from<number>({ length: 5 }).fill(0)
 ```
 
 ```ts
 // Bad
-const values = new Array(2, 3);
-const empty = new Array(5);
+const values = new Array(2, 3)
+const empty = new Array(5)
 ```
 
 ### Do not add named properties to arrays
@@ -46,14 +46,14 @@ Use `Map` or an object.
 
 ```ts
 // Good
-const labels = new Map<number, string>();
-labels.set(0, "first");
+const labels = new Map<number, string>()
+labels.set(0, 'first')
 ```
 
 ```ts
 // Bad
-const labels: string[] = [];
-(labels as any).first = "value";
+const labels: string[] = []
+;(labels as any).first = 'value'
 ```
 
 ### Spread only compatible values
@@ -62,18 +62,18 @@ Spread iterables into arrays and objects into object literals.
 
 ```ts
 // Good
-const optionalValues = includeExtra ? [7] : [];
-const combined = [5, ...optionalValues];
+const optionalValues = includeExtra ? [7] : []
+const combined = [5, ...optionalValues]
 
-const extra = includeExtra ? { retries: 3 } : {};
-const options = { timeout: 1000, ...extra };
+const extra = includeExtra ? { retries: 3 } : {}
+const options = { timeout: 1000, ...extra }
 ```
 
 ```ts
 // Bad
-const combined = [5, ...(includeExtra && [7])];
-const options = { timeout: 1000, ...(includeExtra && { retries: 3 }) };
-const objectFromArray = { ...["a", "b"] };
+const combined = [5, ...(includeExtra && [7])]
+const options = { timeout: 1000, ...(includeExtra && { retries: 3 }) }
+const objectFromArray = { ...['a', 'b'] }
 ```
 
 ### Iterate objects safely
@@ -83,14 +83,14 @@ Prefer `Object.keys`, `Object.values`, or `Object.entries`.
 ```ts
 // Good
 for (const [key, value] of Object.entries(record)) {
-  useEntry(key, value);
+  useEntry(key, value)
 }
 ```
 
 ```ts
 // Bad
 for (const key in record) {
-  use(record[key]);
+  use(record[key])
 }
 ```
 
@@ -98,8 +98,8 @@ Filter inherited properties when `for...in` is required.
 
 ```ts
 for (const key in record) {
-  if (!record.hasOwnProperty(key)) continue;
-  use(record[key]);
+  if (!record.hasOwnProperty(key)) continue
+  use(record[key])
 }
 ```
 
@@ -113,7 +113,7 @@ class Account {
   constructor(private readonly balanceCents: number) {}
 
   get balance() {
-    return this.balanceCents / 100;
+    return this.balanceCents / 100
   }
 }
 ```
@@ -121,10 +121,10 @@ class Account {
 ```ts
 // Bad
 class Sequence {
-  private nextId = 0;
+  private nextId = 0
 
   get next() {
-    return this.nextId++;
+    return this.nextId++
   }
 }
 ```
@@ -134,14 +134,14 @@ Do not create pass-through accessors solely to hide a property.
 ```ts
 // Good
 class Label {
-  private storedValue = "";
+  private storedValue = ''
 
   get value() {
-    return this.storedValue || "untitled";
+    return this.storedValue || 'untitled'
   }
 
   set value(next: string) {
-    this.storedValue = next.trim();
+    this.storedValue = next.trim()
   }
 }
 ```
@@ -149,14 +149,14 @@ class Label {
 ```ts
 // Bad
 class Label {
-  private storedValue = "";
+  private storedValue = ''
 
   get value() {
-    return this.storedValue;
+    return this.storedValue
   }
 
   set value(next: string) {
-    this.storedValue = next;
+    this.storedValue = next
   }
 }
 ```
@@ -171,7 +171,7 @@ class User {
   constructor(private readonly name: string) {}
 
   toString() {
-    return `User(${this.name})`;
+    return `User(${this.name})`
   }
 }
 ```
@@ -180,8 +180,8 @@ class User {
 // Bad
 class User {
   toString() {
-    this.logAccess();
-    return this.loadRemoteName();
+    this.logAccess()
+    return this.loadRemoteName()
   }
 }
 ```
@@ -193,10 +193,10 @@ Call static methods on the class that defines them. Do not use `this` in static 
 ```ts
 // Good
 class Inventory {
-  private static readonly storage = new Map<string, Item>();
+  private static readonly storage = new Map<string, Item>()
 
   static has(item: Item) {
-    return Inventory.storage.has(item.id);
+    return Inventory.storage.has(item.id)
   }
 }
 ```
@@ -204,10 +204,10 @@ class Inventory {
 ```ts
 // Bad
 class Inventory {
-  private static readonly storage = new Map<string, Item>();
+  private static readonly storage = new Map<string, Item>()
 
   static has(item: Item) {
-    return this.storage.has(item.id);
+    return this.storage.has(item.id)
   }
 }
 ```
@@ -226,10 +226,10 @@ class Config {
 ```ts
 // Bad
 class Config {
-  endpoint: string;
+  endpoint: string
 
   constructor(endpoint: string) {
-    this.endpoint = endpoint;
+    this.endpoint = endpoint
   }
 }
 ```
@@ -239,18 +239,18 @@ class Config {
 ```ts
 // Good
 class Queue {
-  private readonly items: string[] = [];
-  private selected: string | undefined = undefined;
+  private readonly items: string[] = []
+  private selected: string | undefined = undefined
 }
 ```
 
 ```ts
 // Bad
 class Queue {
-  private readonly items: string[];
+  private readonly items: string[]
 
   constructor() {
-    this.items = [];
+    this.items = []
   }
 }
 ```
@@ -262,17 +262,17 @@ Do not mark externally accessed members `private`. Never bypass visibility throu
 ```ts
 // Good
 class Component {
-  protected status = "ready";
+  protected status = 'ready'
 }
 ```
 
 ```ts
 // Bad
 class Component {
-  private status = "ready";
+  private status = 'ready'
 }
 
-component["status"];
+component['status']
 ```
 
 ### Prefer function declarations for named functions
@@ -280,23 +280,23 @@ component["status"];
 ```ts
 // Good
 function calculateTotal() {
-  return 42;
+  return 42
 }
 ```
 
 ```ts
 // Bad
-const calculateTotal = () => 42;
+const calculateTotal = () => 42
 ```
 
 Use an arrow when an explicit callable type is required.
 
 ```ts
 interface SearchFunction {
-  (source: string, query: string): boolean;
+  (source: string, query: string): boolean
 }
 
-const search: SearchFunction = (source, query) => source.includes(query);
+const search: SearchFunction = (source, query) => source.includes(query)
 ```
 
 ### Do not use function expressions
@@ -306,15 +306,15 @@ Use arrow functions unless dynamic `this` rebinding or generator syntax requires
 ```ts
 // Good
 run(() => {
-  performWork();
-});
+  performWork()
+})
 ```
 
 ```ts
 // Bad
 run(function () {
-  performWork();
-});
+  performWork()
+})
 ```
 
 ### Choose arrow bodies based on return use
@@ -323,19 +323,19 @@ Use concise bodies when the return value is used. Use block bodies when it is no
 
 ```ts
 // Good
-const names = users.map((user) => user.name);
+const names = users.map((user) => user.name)
 
 promise.then((value) => {
-  log(value);
-});
+  log(value)
+})
 ```
 
 ```ts
 // Bad
-promise.then((value) => log(value));
+promise.then((value) => log(value))
 
-let callback: () => void;
-callback = () => 1;
+let callback: () => void
+callback = () => 1
 ```
 
 ### Avoid rebinding `this`
@@ -345,29 +345,29 @@ Prefer arrows or explicit parameters.
 ```ts
 // Good
 document.body.onclick = () => {
-  document.body.textContent = "hello";
-};
+  document.body.textContent = 'hello'
+}
 ```
 
 ```ts
 // Bad
 function clickHandler() {
-  this.textContent = "hello";
+  this.textContent = 'hello'
 }
 
-document.body.onclick = clickHandler;
+document.body.onclick = clickHandler
 ```
 
 ### Wrap callbacks when signatures may differ
 
 ```ts
 // Good
-const numbers = ["11", "5", "3"].map((value) => parseInt(value, 10));
+const numbers = ['11', '5', '3'].map((value) => parseInt(value, 10))
 ```
 
 ```ts
 // Bad
-const numbers = ["11", "5", "3"].map(parseInt);
+const numbers = ['11', '5', '3'].map(parseInt)
 ```
 
 ### Use stable references for removable handlers
@@ -376,16 +376,16 @@ const numbers = ["11", "5", "3"].map(parseInt);
 // Good
 class Component {
   attach() {
-    window.addEventListener("beforeunload", this.listener);
+    window.addEventListener('beforeunload', this.listener)
   }
 
   detach() {
-    window.removeEventListener("beforeunload", this.listener);
+    window.removeEventListener('beforeunload', this.listener)
   }
 
   private readonly listener = () => {
-    confirm("Do you want to exit?");
-  };
+    confirm('Do you want to exit?')
+  }
 }
 ```
 
@@ -393,11 +393,11 @@ class Component {
 // Bad
 class Component {
   attach() {
-    window.addEventListener("beforeunload", this.listener.bind(this));
+    window.addEventListener('beforeunload', this.listener.bind(this))
   }
 
   detach() {
-    window.removeEventListener("beforeunload", this.listener.bind(this));
+    window.removeEventListener('beforeunload', this.listener.bind(this))
   }
 
   private listener() {}
@@ -411,15 +411,15 @@ Avoid side effects and shared mutable state.
 ```ts
 // Good
 function process(name: string, context: string[] = []) {
-  return { name, context };
+  return { name, context }
 }
 ```
 
 ```ts
 // Bad
-let counter = 0;
+let counter = 0
 function process(name: string, id = counter++) {
-  return { name, id };
+  return { name, id }
 }
 ```
 
@@ -428,19 +428,19 @@ function process(name: string, id = counter++) {
 ```ts
 // Good
 function combine(prefix: string, ...values: number[]) {
-  return `${prefix}:${values.join(",")}`;
+  return `${prefix}:${values.join(',')}`
 }
 
-combine("values", ...numbers);
+combine('values', ...numbers)
 ```
 
 ```ts
 // Bad
 function combine(prefix: string) {
-  return Array.prototype.slice.call(arguments, 1);
+  return Array.prototype.slice.call(arguments, 1)
 }
 
-combine.apply(null, ["values", ...numbers]);
+combine.apply(null, ['values', ...numbers])
 ```
 
 ### Use explicit enum comparisons
@@ -456,14 +456,14 @@ enum SupportLevel {
 }
 
 if (level !== SupportLevel.NONE) {
-  enable();
+  enable()
 }
 ```
 
 ```ts
 // Bad
 if (level) {
-  enable();
+  enable()
 }
 ```
 
@@ -473,27 +473,27 @@ Check for invalid or non-finite results.
 
 ```ts
 // Good
-const parsed = Number(input);
+const parsed = Number(input)
 if (!Number.isFinite(parsed)) {
-  throw new Error("Expected a finite number.");
+  throw new Error('Expected a finite number.')
 }
 ```
 
 ```ts
 // Bad
-const parsed = +input;
-const integer = parseInt(input, 10);
-const decimal = parseFloat(input);
+const parsed = +input
+const integer = parseInt(input, 10)
+const decimal = parseFloat(input)
 ```
 
 Validate non-base-10 inputs before using `parseInt`.
 
 ```ts
 if (!/^[a-fA-F0-9]+$/.test(hexValue)) {
-  throw new Error("Invalid hexadecimal input.");
+  throw new Error('Invalid hexadecimal input.')
 }
 
-const parsedHex = parseInt(hexValue, 16);
+const parsedHex = parseInt(hexValue, 16)
 ```
 
 ### Avoid redundant boolean coercion
@@ -501,14 +501,14 @@ const parsedHex = parseInt(hexValue, 16);
 ```ts
 // Good
 if (value) {
-  use(value);
+  use(value)
 }
 ```
 
 ```ts
 // Bad
 if (!!value) {
-  use(value);
+  use(value)
 }
 ```
 
@@ -516,16 +516,16 @@ if (!!value) {
 
 ```ts
 // Good
-result = getResult();
+result = getResult()
 if (result) {
-  process(result);
+  process(result)
 }
 ```
 
 ```ts
 // Bad
 if ((result = getResult())) {
-  process(result);
+  process(result)
 }
 ```
 
@@ -533,7 +533,7 @@ Use extra parentheses when assignment in a condition is intentional.
 
 ```ts
 while ((result = getResult())) {
-  process(result);
+  process(result)
 }
 ```
 
@@ -542,14 +542,14 @@ while ((result = getResult())) {
 ```ts
 // Good
 for (const item of items) {
-  process(item);
+  process(item)
 }
 ```
 
 ```ts
 // Bad
 for (const index in items) {
-  process(items[index]);
+  process(items[index])
 }
 ```
 
@@ -559,25 +559,25 @@ Throw `Error` instances and instantiate them with `new`.
 
 ```ts
 // Good
-throw new Error("Invalid configuration.");
+throw new Error('Invalid configuration.')
 ```
 
 ```ts
 // Bad
-throw "Invalid configuration.";
-throw Error("Invalid configuration.");
+throw 'Invalid configuration.'
+throw Error('Invalid configuration.')
 ```
 
 Reject promises with `Error` instances.
 
 ```ts
 // Good
-Promise.reject(new Error("Request failed."));
+Promise.reject(new Error('Request failed.'))
 ```
 
 ```ts
 // Bad
-Promise.reject("Request failed.");
+Promise.reject('Request failed.')
 ```
 
 ### Narrow caught errors
@@ -586,24 +586,24 @@ Promise.reject("Request failed.");
 // Good
 function assertIsError(value: unknown): asserts value is Error {
   if (!(value instanceof Error)) {
-    throw new Error("Expected an Error instance.");
+    throw new Error('Expected an Error instance.')
   }
 }
 
 try {
-  run();
+  run()
 } catch (error: unknown) {
-  assertIsError(error);
-  display(error.message);
+  assertIsError(error)
+  display(error.message)
 }
 ```
 
 ```ts
 // Bad
 try {
-  run();
+  run()
 } catch (error) {
-  display(error.message);
+  display(error.message)
 }
 ```
 
@@ -614,18 +614,18 @@ Handle non-`Error` values only for known violating APIs, and document the source
 ```ts
 // Good
 try {
-  return parseNumber(response);
+  return parseNumber(response)
 } catch (error: unknown) {
   // The response is not numeric. Continue with text parsing.
 }
 
-return parseText(response);
+return parseText(response)
 ```
 
 ```ts
 // Bad
 try {
-  return parseNumber(response);
+  return parseNumber(response)
 } catch (error: unknown) {}
 ```
 
@@ -637,10 +637,10 @@ Include a final `default` group. Terminate non-empty cases.
 // Good
 switch (kind) {
   case Kind.ACTIVE:
-    activate();
-    break;
+    activate()
+    break
   default:
-    break;
+    break
 }
 ```
 
@@ -648,7 +648,7 @@ switch (kind) {
 // Bad
 switch (kind) {
   case Kind.ACTIVE:
-    activate();
+    activate()
 }
 ```
 
@@ -658,10 +658,10 @@ Allow fallthrough only between empty case groups.
 switch (kind) {
   case Kind.ACTIVE:
   case Kind.PENDING:
-    process();
-    break;
+    process()
+    break
   default:
-    break;
+    break
 }
 ```
 
@@ -669,15 +669,15 @@ switch (kind) {
 
 ```ts
 // Good
-if (status === "ready" || current !== expected) {
-  update();
+if (status === 'ready' || current !== expected) {
+  update()
 }
 ```
 
 ```ts
 // Bad
-if (status == "ready" || current != expected) {
-  update();
+if (status == 'ready' || current != expected) {
+  update()
 }
 ```
 
@@ -685,7 +685,7 @@ Use `== null` only when intentionally matching both `null` and `undefined`.
 
 ```ts
 if (value == null) {
-  return;
+  return
 }
 ```
 
@@ -696,42 +696,42 @@ Prefer runtime checks.
 ```ts
 // Good
 if (value instanceof Parser) {
-  value.parse();
+  value.parse()
 }
 
 if (result) {
-  result.commit();
+  result.commit()
 }
 ```
 
 ```ts
 // Bad
-(value as Parser).parse();
-result!.commit();
+;(value as Parser).parse()
+result!.commit()
 ```
 
 Use `as` syntax, not angle brackets.
 
 ```ts
 // Good
-const name = (value as User).name;
+const name = (value as User).name
 ```
 
 ```ts
 // Bad
-const name = (<User>value).name;
+const name = (<User>value).name
 ```
 
 Use `unknown` for double assertions.
 
 ```ts
 // Good
-(value as unknown as User).save();
+;(value as unknown as User).save()
 ```
 
 ```ts
 // Bad
-(value as any as User).save();
+;(value as any as User).save()
 ```
 
 Annotate object literals instead of asserting them.
@@ -740,7 +740,7 @@ Annotate object literals instead of asserting them.
 // Good
 const user: User = {
   id: 123,
-};
+}
 ```
 
 ```ts
@@ -748,32 +748,32 @@ const user: User = {
 const user = {
   id: 123,
   obsoleteField: true,
-} as User;
+} as User
 ```
 
 ### Keep `try` blocks focused
 
 ```ts
 // Good
-let result: Result;
+let result: Result
 
 try {
-  result = methodThatMayThrow();
+  result = methodThatMayThrow()
 } catch (error: unknown) {
-  handleError(error);
-  throw error;
+  handleError(error)
+  throw error
 }
 
-use(result);
+use(result)
 ```
 
 ```ts
 // Bad
 try {
-  const result = methodThatMayThrow();
-  use(result);
+  const result = methodThatMayThrow()
+  use(result)
 } catch (error: unknown) {
-  handleError(error);
+  handleError(error)
 }
 ```
 
@@ -781,16 +781,16 @@ try {
 
 ```ts
 // Good
-const text = String(value);
-const enabled = Boolean(value);
-const count = Number(value);
+const text = String(value)
+const enabled = Boolean(value)
+const count = Number(value)
 ```
 
 ```ts
 // Bad
-const text = new String(value);
-const enabled = new Boolean(value);
-const count = new Number(value);
+const text = new String(value)
+const enabled = new Boolean(value)
+const count = new Number(value)
 ```
 
 ### Do not use `const enum`
@@ -816,14 +816,14 @@ const enum Status {
 ```ts
 // Good
 function inspect(value: unknown) {
-  log(value);
+  log(value)
 }
 ```
 
 ```ts
 // Bad
 function inspect(value: unknown) {
-  debugger;
+  debugger
 }
 ```
 
@@ -833,13 +833,13 @@ Do not use `eval` or `Function(string)` except in code loaders.
 
 ```ts
 // Good
-const result = parseExpression(input);
+const result = parseExpression(input)
 ```
 
 ```ts
 // Bad
-const result = eval(input);
-const fn = new Function(input);
+const result = eval(input)
+const fn = new Function(input)
 ```
 
 ### Do not modify built-ins
@@ -847,15 +847,15 @@ const fn = new Function(input);
 ```ts
 // Good
 function first<T>(items: T[]): T | undefined {
-  return items[0];
+  return items[0]
 }
 ```
 
 ```ts
 // Bad
-(Array.prototype as any).first = function () {
-  return this[0];
-};
+;(Array.prototype as any).first = function () {
+  return this[0]
+}
 ```
 
 ### Avoid `any`
@@ -864,17 +864,17 @@ Prefer specific types or `unknown`.
 
 ```ts
 // Good
-const value: unknown = input;
+const value: unknown = input
 
-if (typeof value === "string") {
-  useString(value);
+if (typeof value === 'string') {
+  useString(value)
 }
 ```
 
 ```ts
 // Bad
-const value: any = input;
-value.nonexistentMethod();
+const value: any = input
+value.nonexistentMethod()
 ```
 
 Use `any` only when necessary, suppress locally, and explain why.
@@ -882,7 +882,7 @@ Use `any` only when necessary, suppress locally, and explain why.
 ```ts
 // This test intentionally supplies only the method exercised by the subject.
 // tslint:disable-next-line:no-any
-const partialService = { get: () => mockValue } as any as Service;
+const partialService = { get: () => mockValue } as any as Service
 ```
 
 ### Avoid `{}` as a general type
@@ -892,16 +892,16 @@ Use `unknown`, `Record<string, T>`, or `object`.
 ```ts
 // Good
 function acceptOpaque(value: unknown) {
-  return value;
+  return value
 }
 
-const scores: Record<string, number> = {};
+const scores: Record<string, number> = {}
 ```
 
 ```ts
 // Bad
 function acceptAnything(value: {}) {
-  return value;
+  return value
 }
 ```
 
@@ -924,13 +924,13 @@ Organize code with imports and exports. Do not use namespaces, triple-slash refe
 ```ts
 // Good: rocket.ts
 export function launch() {
-  return "launched";
+  return 'launched'
 }
 
 // mission.ts
-import { launch } from "./rocket";
+import { launch } from './rocket'
 
-launch();
+launch()
 ```
 
 ```ts
@@ -940,7 +940,7 @@ namespace Rocket {
 }
 
 /// <reference path="./rocket.ts" />
-import Rocket = require("./rocket");
+import Rocket = require('./rocket')
 ```
 
 ### Choose imports deliberately
@@ -949,16 +949,16 @@ Prefer named imports for frequently used or clearly named symbols.
 
 ```ts
 // Good
-import { describe, expect, it } from "./testing";
+import { describe, expect, it } from './testing'
 ```
 
 Prefer namespace imports when using many symbols from a broad API.
 
 ```ts
 // Good
-import * as table from "./table";
+import * as table from './table'
 
-let row: table.Row | undefined;
+let row: table.Row | undefined
 ```
 
 Avoid overlong named imports that merely recreate a namespace.
@@ -969,13 +969,13 @@ import {
   Item as TableItem,
   Model as TableModel,
   Row as TableRow,
-} from "./table";
+} from './table'
 ```
 
 Use named imports for Apps JSPB protos.
 
 ```ts
-import { Bar, Foo } from "./messages.proto";
+import { Bar, Foo } from './messages.proto'
 ```
 
 ### Use sensible import paths
@@ -984,14 +984,14 @@ Prefer relative paths within the same logical project. Limit long parent travers
 
 ```ts
 // Good
-import { Config } from "./config";
-import { Logger } from "../logging/logger";
+import { Config } from './config'
+import { Logger } from '../logging/logger'
 ```
 
 ```ts
 // Bad
-import { Config } from "application/features/config";
-import { Logger } from "../../../../../../logging/logger";
+import { Config } from 'application/features/config'
+import { Logger } from '../../../../../../logging/logger'
 ```
 
 ### Use named exports
@@ -1013,46 +1013,46 @@ Export only symbols used outside the module. Minimize the API surface.
 
 ```ts
 // Good
-let retryCount = 0;
+let retryCount = 0
 
 export function getRetryCount() {
-  return retryCount;
+  return retryCount
 }
 ```
 
 ```ts
 // Bad
-export let retryCount = 0;
+export let retryCount = 0
 ```
 
 Resolve conditional exports before exporting them.
 
 ```ts
 function selectTransport() {
-  return useSecureTransport() ? SecureTransport : DefaultTransport;
+  return useSecureTransport() ? SecureTransport : DefaultTransport
 }
 
-export const Transport = selectTransport();
+export const Transport = selectTransport()
 ```
 
 ### Do not create static container classes
 
 ```ts
 // Good
-export const MAX_ATTEMPTS = 3;
+export const MAX_ATTEMPTS = 3
 
 export function retry() {
-  return true;
+  return true
 }
 ```
 
 ```ts
 // Bad
 export class RetryUtilities {
-  static readonly MAX_ATTEMPTS = 3;
+  static readonly MAX_ATTEMPTS = 3
 
   static retry() {
-    return true;
+    return true
   }
 }
 ```
@@ -1061,16 +1061,16 @@ export class RetryUtilities {
 
 ```ts
 // Good
-import type { RequestOptions } from "./types";
-import { sendRequest } from "./request";
+import type { RequestOptions } from './types'
+import { sendRequest } from './request'
 
-export type { Response } from "./types";
+export type { Response } from './types'
 ```
 
 ```ts
 // Bad
-import { RequestOptions } from "./types";
-export { Response } from "./types";
+import { RequestOptions } from './types'
+export { Response } from './types'
 ```
 
 ### Prefer module-local functions over private static methods
@@ -1078,12 +1078,12 @@ export { Response } from "./types";
 ```ts
 // Good
 function normalizeName(name: string) {
-  return name.trim().toLowerCase();
+  return name.trim().toLowerCase()
 }
 
 export class UserService {
   create(name: string) {
-    return normalizeName(name);
+    return normalizeName(name)
   }
 }
 ```
@@ -1092,7 +1092,7 @@ export class UserService {
 // Bad
 export class UserService {
   private static normalizeName(name: string) {
-    return name.trim().toLowerCase();
+    return name.trim().toLowerCase()
   }
 }
 ```
@@ -1114,7 +1114,7 @@ class EmptyService {
 
 class ChildService extends BaseService {
   constructor() {
-    super();
+    super()
   }
 }
 ```
@@ -1133,10 +1133,10 @@ class Controller {
 ```ts
 // Bad
 class Controller {
-  private readonly service: Service;
+  private readonly service: Service
 
   constructor(service: Service) {
-    this.service = service;
+    this.service = service
   }
 }
 ```
@@ -1146,14 +1146,14 @@ class Controller {
 ```ts
 // Good
 class Session {
-  private token = "";
+  private token = ''
 }
 ```
 
 ```ts
 // Bad
 class Session {
-  #token = "";
+  #token = ''
 }
 ```
 
@@ -1163,7 +1163,7 @@ class Session {
 // Good
 class Collection implements Iterable<string> {
   *[Symbol.iterator]() {
-    yield "value";
+    yield 'value'
   }
 }
 ```
@@ -1171,8 +1171,8 @@ class Collection implements Iterable<string> {
 ```ts
 // Bad
 class Collection {
-  ["value"]() {
-    return 1;
+  ['value']() {
+    return 1
   }
 }
 ```
@@ -1185,7 +1185,7 @@ Use classes instead of modifying prototypes.
 // Good
 class User {
   greet() {
-    return "hello";
+    return 'hello'
   }
 }
 ```
@@ -1195,8 +1195,8 @@ class User {
 function User() {}
 
 User.prototype.greet = function () {
-  return "hello";
-};
+  return 'hello'
+}
 ```
 
 ### Prefer interfaces for object shapes
@@ -1204,17 +1204,17 @@ User.prototype.greet = function () {
 ```ts
 // Good
 interface User {
-  firstName: string;
-  lastName: string;
+  firstName: string
+  lastName: string
 }
 ```
 
 ```ts
 // Bad
 type User = {
-  firstName: string;
-  lastName: string;
-};
+  firstName: string
+  lastName: string
+}
 ```
 
 Use type aliases for unions, primitives, tuples, and type expressions interfaces cannot model.
@@ -1226,14 +1226,14 @@ Annotate structural implementations at declaration sites.
 ```ts
 // Good
 interface Point {
-  x: number;
-  y: number;
+  x: number
+  y: number
 }
 
 const origin: Point = {
   x: 0,
   y: 0,
-};
+}
 ```
 
 ```ts
@@ -1241,7 +1241,7 @@ const origin: Point = {
 const origin = {
   x: 0,
   y: 0,
-};
+}
 ```
 
 Use interfaces, not classes, to define structural shapes.
@@ -1252,30 +1252,30 @@ Use `T[]` or `readonly T[]` for simple element types. Use `Array<T>` or `Readonl
 
 ```ts
 // Good
-let names: string[];
-let models: app.Model[];
-let records: Array<{ id: number; name: string }>;
-let values: Array<string | number>;
+let names: string[]
+let models: app.Model[]
+let records: Array<{ id: number; name: string }>
+let values: Array<string | number>
 ```
 
 ```ts
 // Bad
-let names: Array<string>;
-let models: Array<app.Model>;
-let records: { id: number; name: string }[];
-let values: (string | number)[];
+let names: Array<string>
+let models: Array<app.Model>
+let records: { id: number; name: string }[]
+let values: (string | number)[]
 ```
 
 ### Use meaningful index signatures
 
 ```ts
 // Good
-const fileSizes: { [fileName: string]: number } = {};
+const fileSizes: { [fileName: string]: number } = {}
 ```
 
 ```ts
 // Bad
-const fileSizes: { [key: string]: number } = {};
+const fileSizes: { [key: string]: number } = {}
 ```
 
 Prefer `Map` or `Set` when their semantics fit better. Use `Record<Keys, Value>` when keys are statically known.
@@ -1287,24 +1287,24 @@ Use explicit interfaces when they communicate the design more clearly.
 ```ts
 // Good
 interface FoodPreferences {
-  favoriteChocolate: string;
-  favoriteIceCream: string;
+  favoriteChocolate: string
+  favoriteIceCream: string
 }
 
 interface User extends FoodPreferences {
-  shoeSize: number;
+  shoeSize: number
 }
 ```
 
 ```ts
 // Bad
 interface User {
-  shoeSize: number;
-  favoriteChocolate: string;
-  favoriteIceCream: string;
+  shoeSize: number
+  favoriteChocolate: string
+  favoriteIceCream: string
 }
 
-type FoodPreferences = Pick<User, "favoriteChocolate" | "favoriteIceCream">;
+type FoodPreferences = Pick<User, 'favoriteChocolate' | 'favoriteIceCream'>
 ```
 
 ### Use tuples only when positional meaning is clear
@@ -1312,7 +1312,7 @@ type FoodPreferences = Pick<User, "favoriteChocolate" | "favoriteIceCream">;
 ```ts
 // Good
 function splitInHalf(input: string): [string, string] {
-  return [input.slice(0, 2), input.slice(2)];
+  return [input.slice(0, 2), input.slice(2)]
 }
 ```
 
@@ -1321,14 +1321,14 @@ Prefer object properties when names improve clarity.
 ```ts
 // Good
 function splitHostPort(address: string): { host: string; port: number } {
-  return { host: "localhost", port: 8080 };
+  return { host: 'localhost', port: 8080 }
 }
 ```
 
 ```ts
 // Bad
 function splitHostPort(address: string): [string, number] {
-  return ["localhost", 8080];
+  return ['localhost', 8080]
 }
 ```
 
@@ -1336,18 +1336,18 @@ function splitHostPort(address: string): [string, number] {
 
 ```ts
 // Good
-type CoffeeResponse = Latte | Americano;
+type CoffeeResponse = Latte | Americano
 
 class CoffeeService {
   getCoffee(): CoffeeResponse | undefined {
-    return undefined;
+    return undefined
   }
 }
 ```
 
 ```ts
 // Bad
-type CoffeeResponse = Latte | Americano | undefined;
+type CoffeeResponse = Latte | Americano | undefined
 ```
 
 ### Prefer optional properties and parameters
@@ -1355,7 +1355,7 @@ type CoffeeResponse = Latte | Americano | undefined;
 ```ts
 // Good
 interface CoffeeOrder {
-  milk?: Whole | LowFat | HalfHalf;
+  milk?: Whole | LowFat | HalfHalf
 }
 
 function pourCoffee(volume?: Milliliter) {}
@@ -1364,7 +1364,7 @@ function pourCoffee(volume?: Milliliter) {}
 ```ts
 // Bad
 interface CoffeeOrder {
-  milk: Whole | LowFat | HalfHalf | undefined;
+  milk: Whole | LowFat | HalfHalf | undefined
 }
 
 function pourCoffee(volume: Milliliter | undefined) {}
@@ -1377,18 +1377,18 @@ Do not define APIs whose generic parameter appears only in the return type.
 ```ts
 // Good
 function decode<T>(text: string, validator: (value: unknown) => value is T): T {
-  const value: unknown = JSON.parse(text);
+  const value: unknown = JSON.parse(text)
   if (!validator(value)) {
-    throw new Error("Invalid decoded value.");
+    throw new Error('Invalid decoded value.')
   }
-  return value;
+  return value
 }
 ```
 
 ```ts
 // Bad
 function readValue<T>(): T {
-  return storage.read() as T;
+  return storage.read() as T
 }
 ```
 
@@ -1424,7 +1424,7 @@ Use JSDoc for user-facing documentation.
 // Good
 /** Returns the current account balance. */
 function getBalance() {
-  return balance;
+  return balance
 }
 ```
 
@@ -1433,7 +1433,7 @@ Use line comments for implementation details.
 ```ts
 // Good
 // Cache the result because this calculation is expensive.
-const result = calculate();
+const result = calculate()
 ```
 
 Do not use JSDoc for local implementation notes.
@@ -1441,7 +1441,7 @@ Do not use JSDoc for local implementation notes.
 ```ts
 // Bad
 /** Cache this because it is expensive. */
-const result = calculate();
+const result = calculate()
 ```
 
 ### Use line comments for multi-line implementation comments
@@ -1471,7 +1471,7 @@ Do not draw boxes around comments.
  * @param input The value to adjust.
  */
 function adjust(input: number) {
-  return input * 2;
+  return input * 2
 }
 ```
 
@@ -1480,7 +1480,7 @@ function adjust(input: number) {
 /** Computes the adjusted value.
  * @param input The value to adjust. */
 function adjust(input: number) {
-  return input * 2;
+  return input * 2
 }
 ```
 
@@ -1521,7 +1521,7 @@ function computeScore() {}
  * @param right The right operand.
  */
 function add(left: number, right: number) {
-  return left + right;
+  return left + right
 }
 ```
 
@@ -1532,7 +1532,7 @@ function add(left: number, right: number) {
  * @param left @param right
  */
 function add(left: number, right: number) {
-  return left + right;
+  return left + right
 }
 ```
 
@@ -1549,7 +1549,7 @@ Indent wrapped block-tag descriptions by four spaces. Do not indent wrapped `@de
  * @return The matching record, or undefined when none exists.
  */
 function load(identifier: string): RecordValue | undefined {
-  return undefined;
+  return undefined
 }
 ```
 
@@ -1561,7 +1561,7 @@ function load(identifier: string): RecordValue | undefined {
  * lookup key is unavailable.
  */
 function load(identifier: string): RecordValue | undefined {
-  return undefined;
+  return undefined
 }
 ```
 
@@ -1573,7 +1573,7 @@ Document exported APIs and non-obvious members. Do not merely restate names or t
 // Good
 /** Parses and validates a user-provided configuration file. */
 export function parseConfiguration(text: string): Configuration {
-  return parse(text);
+  return parse(text)
 }
 ```
 
@@ -1581,7 +1581,7 @@ export function parseConfiguration(text: string): Configuration {
 // Bad
 /** Parses configuration. */
 export function parseConfiguration(text: string): Configuration {
-  return parse(text);
+  return parse(text)
 }
 ```
 
@@ -1613,7 +1613,7 @@ export class RequestCoordinator {}
 // Good
 /** Returns the active session. */
 function getActiveSession() {
-  return session;
+  return session
 }
 ```
 
@@ -1621,7 +1621,7 @@ function getActiveSession() {
 // Bad
 /** Return the active session. */
 function getActiveSession() {
-  return session;
+  return session
 }
 ```
 
@@ -1647,7 +1647,7 @@ Document ordinary fields at their declaration.
 ```ts
 class Brewer {
   /** The bean used by the next brew operation. */
-  nextBean: CoffeeBean;
+  nextBean: CoffeeBean
 }
 ```
 
@@ -1662,7 +1662,7 @@ Do not add JSDoc type annotations when TypeScript already expresses the type.
  * @param values Values to add.
  */
 function sum(values: number[]): number {
-  return values.reduce((total, value) => total + value, 0);
+  return values.reduce((total, value) => total + value, 0)
 }
 ```
 
@@ -1673,7 +1673,7 @@ function sum(values: number[]): number {
  * @return {number}
  */
 function sum(values: number[]): number {
-  return values.reduce((total, value) => total + value, 0);
+  return values.reduce((total, value) => total + value, 0)
 }
 ```
 
@@ -1706,20 +1706,20 @@ Prefer an options object when practical.
 // Good
 render(content, {
   shouldAnimate: true,
-  themeName: "dark",
-});
+  themeName: 'dark',
+})
 ```
 
 When preserving positional parameters, add parameter-name comments before ambiguous values.
 
 ```ts
 // Good
-render(content, /* shouldAnimate= */ true, /* themeName= */ "dark");
+render(content, /* shouldAnimate= */ true, /* themeName= */ 'dark')
 ```
 
 ```ts
 // Bad
-render(content, true, "dark");
+render(content, true, 'dark')
 ```
 
 Keep the legacy after-value style only for consistency within an existing file.
@@ -1730,23 +1730,23 @@ Keep the legacy after-value style only for consistency within an existing file.
 // Good
 /** Displays the status message. */
 @Component({
-  selector: "status-view",
-  template: "{{message}}",
+  selector: 'status-view',
+  template: '{{message}}',
 })
 export class StatusView {
-  message = "";
+  message = ''
 }
 ```
 
 ```ts
 // Bad
 @Component({
-  selector: "status-view",
-  template: "{{message}}",
+  selector: 'status-view',
+  template: '{{message}}',
 })
 /** Displays the status message. */
 export class StatusView {
-  message = "";
+  message = ''
 }
 ```
 
@@ -1757,18 +1757,18 @@ Use only framework-provided decorators where required.
 ```ts
 // Good
 @Component({
-  selector: "user-card",
-  template: "{{name}}",
+  selector: 'user-card',
+  template: '{{name}}',
 })
 class UserCard {
-  @Input() name = "";
+  @Input() name = ''
 }
 ```
 
 ```ts
 // Bad
 function LogCalls() {
-  return function () {};
+  return function () {}
 }
 
 @LogCalls()
@@ -1785,7 +1785,7 @@ Use `@deprecated` and give direct migration instructions.
  * @deprecated Use createSession() instead.
  */
 export function openSession() {
-  return createSession();
+  return createSession()
 }
 ```
 
@@ -1793,7 +1793,7 @@ export function openSession() {
 // Bad
 /** @deprecated */
 export function openSession() {
-  return createSession();
+  return createSession()
 }
 ```
 
@@ -1803,16 +1803,16 @@ Do not use `@ts-ignore`, `@ts-nocheck`, or `@ts-expect-error` in production code
 
 ```ts
 // Good
-const value = input as unknown;
-if (typeof value === "string") {
-  process(value);
+const value = input as unknown
+if (typeof value === 'string') {
+  process(value)
 }
 ```
 
 ```ts
 // Bad
 // @ts-ignore
-process(input);
+process(input)
 ```
 
 Use `@ts-expect-error` in unit tests only when necessary, and prefer precise casts or documented local lint suppressions.

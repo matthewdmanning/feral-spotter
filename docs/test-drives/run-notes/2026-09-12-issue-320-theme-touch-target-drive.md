@@ -1,12 +1,13 @@
 # 2026-09-12 — Theme control, live OS toggle, touch-target spot check (Pixel 7)
 
 **Git state:** `issue-320-ui-styling-pass` @ `98b726b` (fontSize tokenization
-+ AppButton danger border, both committed this session). Working tree clean
-at start and end.
-**Device:** Pixel 7 physical, `2A151FDH200HY4`, Android 17. Density 420,
-1080×2400. `$is_emulator: false` confirmed via PostHog device properties.
-**OS appearance at start:** Dark (`cmd uimode night` = yes). Restored to Dark
-at end.
+
+- AppButton danger border, both committed this session). Working tree clean
+  at start and end.
+  **Device:** Pixel 7 physical, `2A151FDH200HY4`, Android 17. Density 420,
+  1080×2400. `$is_emulator: false` confirmed via PostHog device properties.
+  **OS appearance at start:** Dark (`cmd uimode night` = yes). Restored to Dark
+  at end.
 
 Purpose: close out the on-device verification gap for #322, #323, #325, #338
 — all four were code-complete with passing tests but explicitly marked
@@ -14,15 +15,15 @@ Purpose: close out the on-device verification gap for #322, #323, #325, #338
 
 ## Status: all four PASS
 
-| Issue | What was checked | Result |
-| --- | --- | --- |
-| #323 | Theme control offers System/Light/Dark, shows active state | **PASS** — screenshot |
-| #323 | Choosing Light persists across a cold start (force-stop + relaunch) | **PASS** — screenshot |
-| #323 | Explicit Dark wins over a live OS change to Light | **PASS** — screenshot |
-| #323 | No throw across System→Light→System→Dark transitions | **PASS** — no crash, no ANR after Metro was healthy |
-| #338 | With System selected, toggling OS dark mode live (app foregrounded, no restart) changes the app's theme | **PASS** — screenshot, was the actual defect |
-| #322 | Breakpoints registered, tracer screen (Settings `maxWidth`) renders | **PASS at phone width** — see Not covered |
-| #325 | Touch targets ≥48dp, measured with `measure.py` | **PASS** — Settings (10 elements) and camera (4 elements), see tables below |
+| Issue | What was checked                                                                                        | Result                                                                      |
+| ----- | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| #323  | Theme control offers System/Light/Dark, shows active state                                              | **PASS** — screenshot                                                       |
+| #323  | Choosing Light persists across a cold start (force-stop + relaunch)                                     | **PASS** — screenshot                                                       |
+| #323  | Explicit Dark wins over a live OS change to Light                                                       | **PASS** — screenshot                                                       |
+| #323  | No throw across System→Light→System→Dark transitions                                                    | **PASS** — no crash, no ANR after Metro was healthy                         |
+| #338  | With System selected, toggling OS dark mode live (app foregrounded, no restart) changes the app's theme | **PASS** — screenshot, was the actual defect                                |
+| #322  | Breakpoints registered, tracer screen (Settings `maxWidth`) renders                                     | **PASS at phone width** — see Not covered                                   |
+| #325  | Touch targets ≥48dp, measured with `measure.py`                                                         | **PASS** — Settings (10 elements) and camera (4 elements), see tables below |
 
 ## #323 / #338 — theme control
 

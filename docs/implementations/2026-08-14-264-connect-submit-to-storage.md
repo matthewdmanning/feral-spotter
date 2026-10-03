@@ -62,7 +62,7 @@ tags:
 ### Per-photo capture time, not the submission-wide value
 
 - **Decision:** `SubmissionPhoto.captured_at` (set at shutter press for Camera captures) is preferred over parsed EXIF, which is preferred over `submission.captured_at`/`manual_time`, which is preferred over Submit-time fallback.
-- **Reason:** `submission.captured_at` is the *earliest* EXIF time across a multi-select Library pick (`ADR-0003`'s interim rule) — correct as a submission-level approximation, but stamped onto every photo it would misdate every photo except the earliest one.
+- **Reason:** `submission.captured_at` is the _earliest_ EXIF time across a multi-select Library pick (`ADR-0003`'s interim rule) — correct as a submission-level approximation, but stamped onto every photo it would misdate every photo except the earliest one.
 - **Affected journey/state:** `useCameraCapture.tsx` (sets `captured_at`), `useSubmissionSubmit.ts`'s `photoTimeFor()`.
 
 ## What shipped
@@ -82,15 +82,15 @@ tags:
 
 **Model or flow covered:** `useSubmissionSubmit`'s submit path (photo filtering, payload assembly, finalize best-effort); `hashUid`'s salting/determinism; Storage/Firestore rules ownership and write-shape gating; Cloud Function path parsing.
 
-| Test file | What it verifies |
-| --- | --- |
-| `__tests__/hooks/useSubmissionSubmit.submitFlow.test.ts` | Only fully-uploaded photos submit; box geometry with `cloud_storage_path` in payload; salted hash reuse (`hashUid` called, not a separate re-derivable hash); per-photo `captured_at`/EXIF preference over submission-wide earliest; best-effort finalize via `Promise.allSettled` doesn't fail submission on a rejected patch; submit proceeds regardless of consent state |
-| `src/hooks/__tests__/useSubmissionSubmit.cacheSync.test.ts`, `.reset.test.ts` | Updated mocks for the new `firebaseUpload` exports; unaffected reset behavior |
-| `src/lib/upload/__tests__/firebaseUpload.hashUid.test.ts` | `hashUid` salts before hashing (matches a Node-`crypto` reference computation); deterministic; salt actually changes the output vs. unsalted `sha256(uid)` |
-| `src/hooks/__tests__/useBoundingBoxStore.test.ts` | `getBoxesForCat` returns every box across a cat's photos, excludes other cats (string-prefix-match key scheme) |
-| `__tests__/rules/storage.test.ts` | Owner can upload/patch under their own `uidHash` folder; another uid cannot; photo-count cap; `metadata.json` write shape/cap, bypasses the photo-count gate; metadata-only patch bypasses the count gate; #267/#268 regression markers (still failing, by design — document the known gaps) |
-| `functions/src/__tests__/index.test.ts` | `onSubmissionPhotoUploaded`/`onSubmissionPhotoDeleted` set/decrement `photoCount` and `ownerUidHash`; no-op on malformed paths and on `metadata.json` |
-| `__tests__/utils/api.test.ts` | `submitObservation` describe block removed with the dead code |
+| Test file                                                                     | What it verifies                                                                                                                                                                                                                                                                                                                                                            |
+| ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `__tests__/hooks/useSubmissionSubmit.submitFlow.test.ts`                      | Only fully-uploaded photos submit; box geometry with `cloud_storage_path` in payload; salted hash reuse (`hashUid` called, not a separate re-derivable hash); per-photo `captured_at`/EXIF preference over submission-wide earliest; best-effort finalize via `Promise.allSettled` doesn't fail submission on a rejected patch; submit proceeds regardless of consent state |
+| `src/hooks/__tests__/useSubmissionSubmit.cacheSync.test.ts`, `.reset.test.ts` | Updated mocks for the new `firebaseUpload` exports; unaffected reset behavior                                                                                                                                                                                                                                                                                               |
+| `src/lib/upload/__tests__/firebaseUpload.hashUid.test.ts`                     | `hashUid` salts before hashing (matches a Node-`crypto` reference computation); deterministic; salt actually changes the output vs. unsalted `sha256(uid)`                                                                                                                                                                                                                  |
+| `src/hooks/__tests__/useBoundingBoxStore.test.ts`                             | `getBoxesForCat` returns every box across a cat's photos, excludes other cats (string-prefix-match key scheme)                                                                                                                                                                                                                                                              |
+| `__tests__/rules/storage.test.ts`                                             | Owner can upload/patch under their own `uidHash` folder; another uid cannot; photo-count cap; `metadata.json` write shape/cap, bypasses the photo-count gate; metadata-only patch bypasses the count gate; #267/#268 regression markers (still failing, by design — document the known gaps)                                                                                |
+| `functions/src/__tests__/index.test.ts`                                       | `onSubmissionPhotoUploaded`/`onSubmissionPhotoDeleted` set/decrement `photoCount` and `ownerUidHash`; no-op on malformed paths and on `metadata.json`                                                                                                                                                                                                                       |
+| `__tests__/utils/api.test.ts`                                                 | `submitObservation` describe block removed with the dead code                                                                                                                                                                                                                                                                                                               |
 
 **Not tested:**
 
@@ -135,7 +135,7 @@ tags:
 
 ### Submission-level photo time applied to every photo
 
-- **Finding:** `submission.captured_at` is the *earliest* EXIF time across a multi-select Library pick — correct as a submission-level value, but stamped per-photo it misdates every photo but the earliest.
+- **Finding:** `submission.captured_at` is the _earliest_ EXIF time across a multi-select Library pick — correct as a submission-level value, but stamped per-photo it misdates every photo but the earliest.
 - **Impact:** Every photo except one would carry a wrong `photo_time`.
 - **Resolution:** Added `SubmissionPhoto.captured_at` (set at shutter press) and `photoTimeFor()`'s per-photo/EXIF/submission-level preference chain.
 

@@ -80,7 +80,7 @@ subscribed value.
   pre-mint `null`, so the guard took the no-active-cat branch and abandoned.
 - **Two or more photos hide it.** `Confirm` on any non-last photo advances the
   carousel instead, letting state settle across a render. Only a pass whose
-  *first* evidence lands on the *last* photo is affected — in practice, a
+  _first_ evidence lands on the _last_ photo is affected — in practice, a
   one-photo submission. Any test or drive using multiple photos will pass
   against the broken code.
 - **`getBoxedPhotoIds` was never implicated.** It reads through `get().boxes`

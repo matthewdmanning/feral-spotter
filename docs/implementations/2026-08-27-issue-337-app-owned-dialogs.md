@@ -23,7 +23,7 @@
 
 ## Intent
 
-**Purpose:** The 2026-08-26 device drive found that a third of the app's confirmations ignore the theme. `Alert.alert` renders the *OS* dialog, which follows the OS appearance rather than the app's, so Clear Draft, validation, and the abandon-cat guard all render dark-grey while the app is in Light. The drive's verdict: no theme sweep can pass while that is true.
+**Purpose:** The 2026-08-26 device drive found that a third of the app's confirmations ignore the theme. `Alert.alert` renders the _OS_ dialog, which follows the OS appearance rather than the app's, so Clear Draft, validation, and the abandon-cat guard all render dark-grey while the app is in Light. The drive's verdict: no theme sweep can pass while that is true.
 
 ## The shape of the fix, and why
 
@@ -35,7 +35,7 @@ State lives in `useUIStore`, which already owned `showError`/`showSuccess`; both
 
 `AlertHost` is mounted once in `AppProviders`, above every screen, and is the only place that knows what a dialog looks like. Two behaviours the native alert gave for free and that are now ours to keep:
 
-- It dismisses *before* running a handler, so a handler that raises the next dialog (the submit flow chains two) isn't wiped by its own dismiss.
+- It dismisses _before_ running a handler, so a handler that raises the next dialog (the submit flow chains two) isn't wiped by its own dismiss.
 - Android's back button runs the `cancel` button's handler if there is one, and otherwise just closes — matching the native behaviour.
 
 Two buttons sit side by side as the native alert does; three or more stack, because side-by-side would push each under the 48dp floor #325 established.
@@ -44,7 +44,7 @@ Two buttons sit side by side as the native alert does; three or more stack, beca
 
 #328 asked whether `ValidationSheet`, `AddAnotherCatDialog`, and `PhotoPreviewModal` were one overlay primitive wearing three hats. The answer was a third option: **all three had zero importers.** Nothing to consolidate, because nothing was mounted. Each had a live replacement already — `showError`'s dialog (#265), the persistent "Add a Cat" button (#299), and the annotate screen respectively.
 
-That *unblocked* cluster 2 rather than dissolving it. The `backdrop`/`sheet` pair was byte-identical between `AddAnotherCatDialog` (dead) and `DateTimePicker` (live), so extracting it would have served one real caller — which #328's own rule rejects. `AlertHost` makes two, so `dialogShell.styles.ts` is a real consolidation. Values are DateTimePicker's originals, so it renders unchanged.
+That _unblocked_ cluster 2 rather than dissolving it. The `backdrop`/`sheet` pair was byte-identical between `AddAnotherCatDialog` (dead) and `DateTimePicker` (live), so extracting it would have served one real caller — which #328's own rule rejects. `AlertHost` makes two, so `dialogShell.styles.ts` is a real consolidation. Values are DateTimePicker's originals, so it renders unchanged.
 
 `5583ab3` themed `ValidationSheet` for the light theme and part of `8d98b85` routed `AddAnotherCatDialog`'s buttons through `AppButton`. Both were work on code no user could reach. They stay in history; the deletion supersedes them forward.
 

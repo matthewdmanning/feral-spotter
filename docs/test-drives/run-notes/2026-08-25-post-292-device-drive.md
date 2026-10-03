@@ -188,4 +188,3 @@ Settings; worth confirming when the drive resumes.
 Session logs in the session scratchpad (not committed): `drive-logcat.log`
 (full unfiltered logcat), `device-build.log` (build + Metro stdout, contains
 the sign-in stack trace), `native-build.log`, `metro.log`.
-

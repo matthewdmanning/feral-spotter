@@ -60,8 +60,8 @@ The old `preferredTheme` key is abandoned rather than migrated. No device ever h
 
 **Model or flow covered:** The real selection journey — leave System, switch between the two pinned themes, return to System, then leave it again. Returning to System is the step most likely to regress, since it is the only transition that has to re-enable adaptive themes.
 
-| Test file                                | What it verifies                                                                                                                                                                                                                  |
-| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Test file                                | What it verifies                                                                                                                                                                                                                   |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `src/config/__tests__/themeMode.test.ts` | Each mode persists and applies across the full journey; a chosen mode survives a cold start; startup defaults to System, rejects a stored value that is not a mode, and pins the theme when one was chosen; breakpoints start at 0 |
 
 The fake runtime in that file reproduces one real library rule: `setTheme` throws while adaptive themes are enabled. That makes call order a test failure here rather than a crash the first time someone picks a theme on a device.
@@ -72,9 +72,9 @@ Each assertion was checked by mutation rather than assumed load-bearing:
 
 | Mutation                                          | Result       |
 | ------------------------------------------------- | ------------ |
-| Drop the adaptive-disable guard before `setTheme`  | 2 tests fail |
-| Stop writing the mode to storage                   | 2 tests fail |
-| Change the first breakpoint from 0 to 320          | 1 test fails |
+| Drop the adaptive-disable guard before `setTheme` | 2 tests fail |
+| Stop writing the mode to storage                  | 2 tests fail |
+| Change the first breakpoint from 0 to 320         | 1 test fails |
 
 **Not tested:**
 
