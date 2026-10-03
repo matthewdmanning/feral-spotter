@@ -11,16 +11,16 @@ fail on a Kotlin or Swift mistake. A compile is the only check you have.
 
 ## 1. Where native code lives
 
-| Path | Tracked | Edit it? |
-| --- | --- | --- |
-| `modules/native-identification-camera/android/src/main/java/…/*.kt` | yes | yes — this is the source |
-| `modules/native-identification-camera/ios/*.swift` | yes | yes — this is the source |
-| `modules/ios-camera-optimizer/ios/*.swift` | yes | yes — this is the source |
-| `modules/*/android/build.gradle`, `modules/*/ios/*.podspec` | yes | yes, with care |
-| `modules/*/src/*.ts` | yes | yes — the shared contract both platforms implement |
-| `android/` | **no**, gitignored | **never** — `expo prebuild` regenerates it |
-| `ios/` | **no**, gitignored | **never** — `expo prebuild` regenerates it |
-| `modules/*/android/build/` | no | never — Gradle output |
+| Path                                                                | Tracked            | Edit it?                                           |
+| ------------------------------------------------------------------- | ------------------ | -------------------------------------------------- |
+| `modules/native-identification-camera/android/src/main/java/…/*.kt` | yes                | yes — this is the source                           |
+| `modules/native-identification-camera/ios/*.swift`                  | yes                | yes — this is the source                           |
+| `modules/ios-camera-optimizer/ios/*.swift`                          | yes                | yes — this is the source                           |
+| `modules/*/android/build.gradle`, `modules/*/ios/*.podspec`         | yes                | yes, with care                                     |
+| `modules/*/src/*.ts`                                                | yes                | yes — the shared contract both platforms implement |
+| `android/`                                                          | **no**, gitignored | **never** — `expo prebuild` regenerates it         |
+| `ios/`                                                              | **no**, gitignored | **never** — `expo prebuild` regenerates it         |
+| `modules/*/android/build/`                                          | no                 | never — Gradle output                              |
 
 `android/` and `ios/` are build output, not source. An edit there is lost at the
 next prebuild and cannot be committed. If a change seems to belong in `android/`,
@@ -37,14 +37,14 @@ Load the skill before you write code, not after the code fails. Prefer the skill
 over your own recollection of an API: these libraries change between versions,
 and the skills carry the version this repo pins.
 
-| You are writing | Load |
-| --- | --- |
-| Any Expo module — a view, a prop, an event, a lifecycle hook | `expo-module` |
-| CameraX — `ProcessCameraProvider`, `Preview`, `ImageCapture`, `SessionConfig` | `camerax` **and** `expo-module` |
-| Xcode project settings, signing, schemes, build phases | `xcode-project-setup` |
-| Dev-client behaviour, native debugging on device | `expo-dev-client` |
-| Native UI on either platform | `expo-native-ui`, or `expo-ui` for SwiftUI/Compose |
-| Firebase native SDK wiring | the matching `firebase-*` skill; see [backend.md](backend.md) for which are approved |
+| You are writing                                                               | Load                                                                                 |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Any Expo module — a view, a prop, an event, a lifecycle hook                  | `expo-module`                                                                        |
+| CameraX — `ProcessCameraProvider`, `Preview`, `ImageCapture`, `SessionConfig` | `camerax` **and** `expo-module`                                                      |
+| Xcode project settings, signing, schemes, build phases                        | `xcode-project-setup`                                                                |
+| Dev-client behaviour, native debugging on device                              | `expo-dev-client`                                                                    |
+| Native UI on either platform                                                  | `expo-native-ui`, or `expo-ui` for SwiftUI/Compose                                   |
+| Firebase native SDK wiring                                                    | the matching `firebase-*` skill; see [backend.md](backend.md) for which are approved |
 
 For any other library, framework or SDK, fetch the documentation with Context7
 rather than writing from memory. That rule is not native-specific, but native
@@ -147,7 +147,7 @@ org.gradle.workers.max=6
 - `org.gradle.java.home` outranks the `JAVA_HOME` environment variable, so
   `PATH` and `JAVA_HOME` are free for a newer JDK and the build is unaffected.
   Confirm with `./gradlew --version`: it prints `Daemon JVM: … (from
-  org.gradle.java.home)` while the launcher JVM may be anything.
+org.gradle.java.home)` while the launcher JVM may be anything.
 - `org.gradle.workers.max` caps concurrency. The default is the logical core
   count. Several CMake configure tasks at once starved the machine, the OS
   killed the Kotlin daemon, and it surfaced as `DaemonCrashedException` and
@@ -186,4 +186,4 @@ nothing until it ends.
   one-way import rule
 - [domain.md](domain.md) — camera seam vocabulary; use these terms
 - [backend.md](backend.md) — which Firebase skills are approved
-- [git.md](git.md) — the prettier gate and the `docs/` submodule commit order
+- [git.md](git.md) — the prettier gate
