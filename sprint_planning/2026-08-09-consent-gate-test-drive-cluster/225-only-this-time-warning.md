@@ -22,7 +22,7 @@ gate involved.
 
 ## UX reference
 
-[ux_principles.md](../../agents/ui-ux/reference/ux_principles.md) — this is a small
+[ux_principles.md](../../references/ux_principles.md) — this is a small
 inline warning/toast-style element, not a full modal flow; keep it
 consistent with the app's existing warning/notice patterns rather than
 introducing a new pattern.

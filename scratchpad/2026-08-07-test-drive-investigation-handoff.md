@@ -30,7 +30,7 @@ None of the punchlist items are triaged into GitHub issues yet — that's the ot
 
 ## Related, don't re-litigate
 
-- PR #194 and the design-decision doc it added (`docs/agents/ui-ux/decision-records/first-run-flow-order.md`) — full reasoning for the reorder lives there, not repeated here.
+- PR #194 and the design-decision doc it added (`docs/design-decisions/first-run-flow-order.md`) — full reasoning for the reorder lives there, not repeated here.
 - Map issue **#31** has a decision-pointer comment for #162/#163 already posted.
 
 ## Suggested skills

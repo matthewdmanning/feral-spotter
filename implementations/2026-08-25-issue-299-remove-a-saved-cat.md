@@ -27,10 +27,10 @@ already-saved cat. Both confirm first. The hook clears the cat's boxes, drops
 the `ObservedCat` row, and clears `activeCatId` if it happened to name the
 removed cat.
 
-Removing the _last_ cat no longer leaves a blank screen. The Cat List's
+Removing the *last* cat no longer leaves a blank screen. The Cat List's
 zero-cats state now offers annotate-or-describe rather than forcing either —
-see [2026-08-06-cats-173-cat-list-auto-skip](2026-08-06-cats-173-cat-list-auto-skip.md) for how that interacts with the
-first-pass auto-skip, and `docs/agents/ui-ux/decision-records/cat-list-empty-state.md` for
+see [[2026-08-06-cats-173-cat-list-auto-skip]] for how that interacts with the
+first-pass auto-skip, and `docs/design-decisions/cat-list-empty-state.md` for
 the decision itself.
 
 `useRemoveCat` is the intended consumer of `useBoundingBoxStore.clearForCat`,
@@ -42,7 +42,7 @@ which had zero callers since it was written.
   cat-scoped (ADR-0004), and one photo can show several cats. Removing a cat
   must not remove images another cat is boxed on.
 - **This does not sit behind `lib/submission/draft.ts`.** That seam owns
-  _whole-draft_ teardown (ADR-0006, #292). Here the draft survives and one cat
+  *whole-draft* teardown (ADR-0006, #292). Here the draft survives and one cat
   does not. Routing this through it would make "clear the draft" and "remove a
   cat" the same operation.
 - **An unsaved cat has no Remove.** Backing out of one is
@@ -67,7 +67,7 @@ which had zero callers since it was written.
 - `src/screens/submission/create/__tests__/CreateScreen.catListActions.test.tsx`
   — the zero-cats state: renders the choice rather than a blank screen when the
   last row is trashed in place, does not redirect, and routes each choice to its
-  own destination. Also covers that arriving with nothing recorded _still_
+  own destination. Also covers that arriving with nothing recorded *still*
   auto-skips.
 
 ## Verification status

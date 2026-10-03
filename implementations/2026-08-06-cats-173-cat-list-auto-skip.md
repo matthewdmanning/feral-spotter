@@ -115,7 +115,7 @@ recorded.
 `useState(() => cats.length === 0 && removed !== '1')`, and the render's
 early return is `cats.length === 0 && autoSkipPending`. Removing the last cat
 renders the annotate-or-describe empty state instead of redirecting. Details in
-[2026-08-25-issue-299-remove-a-saved-cat](2026-08-25-issue-299-remove-a-saved-cat.md).
+[[2026-08-25-issue-299-remove-a-saved-cat]].
 
 **Load-bearing landmines:**
 

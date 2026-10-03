@@ -39,7 +39,7 @@ Any of the following changes the facts above and should trigger a re-check of th
 - A new sign-in provider or account-linked data model is added.
 - `isCameraGated()` / `isLocationGated()` in `src/screens/consent/index.tsx` change what accuracy/status is accepted — that logic is the evidence source for several rows above.
 
-Same staleness-trigger pattern as `docs/agents/ui-ux/reference/using-design-decisions.md` — applied here because this file, unlike that folder, is a `references/` doc, not current-state UI/UX.
+Same staleness-trigger pattern as `docs/design-decisions/using-design-decisions.md` — applied here because this file, unlike that folder, is a `references/` doc, not current-state UI/UX.
 
 ## Open item before Phase 2 transcription
 
