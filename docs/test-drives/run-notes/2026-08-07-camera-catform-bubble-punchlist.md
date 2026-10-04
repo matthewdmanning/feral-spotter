@@ -22,7 +22,7 @@ Reported live during the drive, source: `docs/test-drives/temp-punchlist.md`. Ve
 
 - Still initializes with Unknown/Unsure buttons pre-selected.
 - Bottom button still labeled "Put the Cat in a Box" (stale label).
-- Warning popup text is poorly formatted — flagged as needing a corresponding update to `docs/references/ux_principles.md`.
+- Warning popup text is poorly formatted — flagged as needing a corresponding update to `docs/agents/ui-ux/reference/ux_principles.md`.
 - "Put the Cat in a Box" button is wired back to the Camera screen — it should go to the Cat List screen instead. ("Done" button correctly goes to Cat List, as expected.)
 - Header does not resize when the bubble shrinks (collapses).
 - Bubble disappears off-screen on this screen too.
@@ -47,4 +47,4 @@ Pulled from `docs/test-drives/logs/2026-08-07-punchlist-drive-full.log` (native 
 ## Follow-up
 
 - Not triaged into issues yet — this is a raw capture of the drive. Punchlist items above need the usual triage pass (issue creation, `wayfinder`/label assignment) before they're actionable.
-- Re-run this drive after a `pm clear` for a true first-run session if `docs/design-decisions/first-run-flow-order.md` (#162/#163) also needs on-device verification — this session's install retained prior app data (existing auth session + consent), so the first-run reorder was **not** exercised here at all.
+- Re-run this drive after a `pm clear` for a true first-run session if `docs/agents/ui-ux/decision-records/first-run-flow-order.md` (#162/#163) also needs on-device verification — this session's install retained prior app data (existing auth session + consent), so the first-run reorder was **not** exercised here at all.

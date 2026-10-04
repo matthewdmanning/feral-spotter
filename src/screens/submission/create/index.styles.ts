@@ -57,7 +57,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     fontSize: theme.typography.base,
   },
   // #299: 48x48 hit area, meeting the Material minimum touch target
-  // (docs/references/ux_principles.md) even though the glyph is 18px. Negative
+  // (docs/agents/ui-ux/reference/ux_principles.md) even though the glyph is 18px. Negative
   // vertical margin keeps the taller target from growing the row itself.
   catRowRemoveBtn: {
     width: 48,

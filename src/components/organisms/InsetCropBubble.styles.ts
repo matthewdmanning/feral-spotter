@@ -15,7 +15,7 @@ export const styles = StyleSheet.create((theme) => ({
   wrapTopRight: {
     // Annotate's expanded dock position (#202 fix — was bottom-right,
     // which the design decision docks top-right instead, see
-    // docs/design-decisions/inset-crop-bubble.md).
+    // docs/agents/ui-ux/current-state/inset-crop-bubble.md).
     top: 0,
     right: theme.spacing.md,
   },

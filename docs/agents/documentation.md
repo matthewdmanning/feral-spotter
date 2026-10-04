@@ -8,7 +8,7 @@ Any documentation change that describes a specific code change (implementation n
 
 ## New feature or sprint → new implementation note
 
-When implementing a new feature or sprint, write a separate implementation note in `docs/implementations/` using [[templates/feature-implementation-draft|feature implementation draft]].
+When implementing a new feature or sprint, write a separate implementation note in `docs/implementations/` using [feature implementation draft](../templates/feature-implementation-draft.md).
 
 Include:
 

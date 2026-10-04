@@ -38,7 +38,7 @@ tags:
 - **Decision:** [What was chosen]
 - **Reason:** [Why this choice fits the product/domain]
 - **Affected journey/state:** [Relevant user journey or machine state]
-- **Related decision:** [[design-decisions/...]]
+- **Related decision:** [[agents/ui-ux/current-state/...]]
 
 <!-- Repeat for each meaningful decision. Include a correction or pivot below if one occurred. -->
 

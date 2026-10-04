@@ -4,7 +4,7 @@
  * Pure sizing formula for the inset-crop bubble (#174, design decided in
  * #168): diameter = (box diagonal + box short side) / 1.6. Larger boxes get
  * proportionally larger bubbles; tiny/distant-cat boxes can compute below
- * the 44-48dp touch-target minimum (docs/references/ux_principles.md #1) —
+ * the 44-48dp touch-target minimum (docs/agents/ui-ux/reference/ux_principles.md #1) —
  * flagged as an open question in #168/#174, not clamped here.
  */
 

@@ -19,7 +19,7 @@
  * anchoring side edge by default, so its wrap is right-anchored like
  * `top-right` and centered *while expanded* via a computed translateX,
  * animating back to the anchor on collapse — see
- * `docs/design-decisions/inset-crop-bubble.md`. Defaults to collapsed on
+ * `docs/agents/ui-ux/current-state/inset-crop-bubble.md`. Defaults to collapsed on
  * mount (#202) — both screens land with a docked bubble, not one already
  * covering the frame.
  *
@@ -83,7 +83,7 @@ interface InsetCropBubbleProps {
    * *both* directions — for a host that wants "is the bubble actually
    * covering me right now" (e.g. Cat Form's title fade: fades only once
    * expanded and positioned over it, un-fades only once collapsed and
-   * docked — docs/design-decisions/inset-crop-bubble.md). Reporting the
+   * docked — docs/agents/ui-ux/current-state/inset-crop-bubble.md). Reporting the
    * expand direction eagerly here (like `onCollapsedChange` does) would
    * fade the title before the bubble has actually slid into place over it.
    */

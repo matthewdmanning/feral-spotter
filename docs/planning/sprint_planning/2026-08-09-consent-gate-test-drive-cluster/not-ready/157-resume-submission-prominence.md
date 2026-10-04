@@ -30,7 +30,7 @@ purely structural/positional evidence).
 
 ## Decision needed
 
-Per [ux_principles.md](../../../references/ux_principles.md) principle 2
+Per [ux_principles.md](../../../agents/ui-ux/reference/ux_principles.md) principle 2
 (visual hierarchy) and principle 1 (thumb-friendly, primary actions in the
 bottom third) — is the current bottom-third position actually fine once
 visual weight is accounted for, or does an in-progress submission need to
