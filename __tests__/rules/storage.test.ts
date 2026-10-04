@@ -15,7 +15,7 @@ import {
 } from 'firebase/storage'
 
 const PROJECT_ID = 'project-e3d5659d-bc4f-438f-88c'
-const BUCKET_URL = 'gs://feral-spotter-image-uploads'
+const BUCKET_URL = 'gs://project-e3d5659d-bc4f-438f-88c.firebasestorage.app'
 const SMALL_IMAGE = new Uint8Array([1, 2, 3, 4])
 const OVERSIZED_IMAGE = new Uint8Array(21 * 1024 * 1024) // over the 20MB cap
 const SMALL_JSON = new Uint8Array([0x7b, 0x7d]) // '{}'

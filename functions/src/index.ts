@@ -22,7 +22,10 @@ import {
 
 initializeApp()
 
-const BUCKET_NAME = process.env.GCS_BUCKET_NAME ?? 'feral-spotter-image-uploads'
+// Must match BUCKET_URL in src/lib/upload/firebaseUpload.ts (ADR-0005).
+const BUCKET_NAME =
+  process.env.GCS_BUCKET_NAME ??
+  'project-e3d5659d-bc4f-438f-88c.firebasestorage.app'
 const OBJECT_PATH_PATTERN = /^submissions\/([^/]+)\/([^/]+)\/([^/]+)$/
 const METADATA_PATH_PATTERN = /^submissions\/([^/]+)\/([^/]+)\/metadata\.json$/
 

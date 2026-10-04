@@ -13,7 +13,8 @@ skills are off-limits" below before touching anything Firestore-shaped.
 - **Auth**: Firebase Auth, Google + email/password live, Apple/Facebook
   version-gated off. See [ADR-0001](../adr/0001-firebase-auth-over-google-signin.md).
 - **Photo uploads**: direct client upload via `@react-native-firebase/storage`
-  to `gs://feral-spotter-image-uploads`, path
+  to the default bucket `gs://project-e3d5659d-bc4f-438f-88c.firebasestorage.app`
+  (ADR-0005's 2026-10-04 amendment), path
   `submissions/{uid}/{submissionId}/{fileName}` (raw Firebase Auth uid, not
   a hash — see ADR-0005's 2026-08-16 amendment). See
   [ADR-0005](../adr/0005-firebase-storage-for-uploads.md).
