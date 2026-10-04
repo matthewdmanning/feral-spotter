@@ -249,6 +249,11 @@ export function useNativeCameraCapture(
     [subjectMetering],
   )
 
+  const focus = useCallback(async (point: { x: number; y: number }) => {
+    if (!cameraRef.current) return false
+    return cameraRef.current.focus(point)
+  }, [])
+
   useEffect(() => {
     captureEvent(EVENTS.CAMERA_OPENED, { capture_backend: 'native' })
     if (__DEV__)
@@ -281,6 +286,7 @@ export function useNativeCameraCapture(
     renderItem,
     keyExtractor,
     handleTakePhoto,
+    focus,
     applySubjectRegion,
     cycleFlash,
     flipCamera,
