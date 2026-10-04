@@ -123,6 +123,24 @@ teardown seam this hangs off is
 this ADR left open: the bucket has a defined lifetime rule for photo objects,
 not just an upload path.
 
+## Amendment 2026-10-04: the default bucket replaces `feral-spotter-image-uploads`
+
+This supersedes "Resolved: target bucket" above. On 2026-08-17 the app moved
+to the Firebase default bucket,
+`gs://project-e3d5659d-bc4f-438f-88c.firebasestorage.app`. Uploads to
+`feral-spotter-image-uploads` failed with a 412 error, because that imported
+bucket never got the access grant for the Firebase Storage service agent. A
+default bucket needs no grant. The local `.firebaserc` rules target moved with
+it.
+
+The Storage-trigger functions kept the old bucket as their `GCS_BUCKET_NAME`
+default, so they never ran for real uploads, and the counters that
+`storage.rules` reads were never written
+([#396](https://github.com/matthewdmanning/feral-spotter/issues/396)). The
+functions default, the rules tests and `backend.md` now name the default
+bucket. `BUCKET_URL` in `src/lib/upload/firebaseUpload.ts` and `BUCKET_NAME` in
+`functions/src/index.ts` must stay equal.
+
 ## Considered Options
 
 - **Keep the custom `upload+api.ts` route** — rejected: no resumable/retry story,

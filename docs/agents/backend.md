@@ -13,7 +13,8 @@ skills are off-limits" below before touching anything Firestore-shaped.
 - **Auth**: Firebase Auth, Google + email/password live, Apple/Facebook
   version-gated off. See [ADR-0001](../adr/0001-firebase-auth-over-google-signin.md).
 - **Photo uploads**: direct client upload via `@react-native-firebase/storage`
-  to `gs://feral-spotter-image-uploads`, path
+  to the default bucket `gs://project-e3d5659d-bc4f-438f-88c.firebasestorage.app`
+  (ADR-0005's 2026-10-04 amendment), path
   `submissions/{uid}/{submissionId}/{fileName}` (raw Firebase Auth uid, not
   a hash — see ADR-0005's 2026-08-16 amendment). See
   [ADR-0005](../adr/0005-firebase-storage-for-uploads.md).
@@ -47,6 +48,18 @@ Start the suite (`firebase emulators:start`), then set:
 | ------------------------------------ | --------------------- | --------------------------------------------------------------------------------------- |
 | `EXPO_PUBLIC_USE_FIREBASE_EMULATOR`  | `true`                | Off by default, never inferred from `__DEV__`                                           |
 | `EXPO_PUBLIC_FIREBASE_EMULATOR_HOST` | `localhost` (default) | Use `10.0.2.2` on an Android emulator; `localhost` + `adb reverse` on a physical device |
+
+On a physical Android device, tunnel both ports before you open the app:
+`adb reverse tcp:9099 tcp:9099` and `adb reverse tcp:9199 tcp:9199`. The
+tunnels are lost when the adb server restarts.
+
+React Native Firebase changes `localhost` and `127.0.0.1` to `10.0.2.2` on
+Android, unless `firebase.json` sets
+`react-native.android_bypass_emulator_url_remap: true`. This repo sets it,
+because `10.0.2.2` does not exist on a physical device. The SDK reads
+`firebase.json` at build time, so rebuild the native app after you change it.
+With the remap off, an Android emulator needs
+`EXPO_PUBLIC_FIREBASE_EMULATOR_HOST=10.0.2.2` set explicitly.
 
 Wired in `src/lib/auth/firebaseAuthProvider.ts` (`connectAuthEmulator`) and
 `src/lib/upload/firebaseUpload.ts` (`connectStorageEmulator`). Both log the
