@@ -1,4 +1,4 @@
-import { requireNativeViewManager } from 'expo-modules-core'
+import { requireNativeView } from 'expo'
 import { forwardRef, type ComponentType, type ForwardedRef } from 'react'
 import type {
   NativeIdentificationCameraProps,
@@ -15,7 +15,7 @@ let cachedView: NativeViewComponent | null = null
 
 function getNativeView(): NativeViewComponent {
   if (!cachedView) {
-    cachedView = requireNativeViewManager<NativeIdentificationCameraProps>(
+    cachedView = requireNativeView<NativeIdentificationCameraProps>(
       'NativeIdentificationCamera',
     ) as NativeViewComponent
   }
