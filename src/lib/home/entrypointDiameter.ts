@@ -10,7 +10,7 @@
  * long axis after both buffers and the fixed `gap` between them.
  */
 
-/** Material/HIG touch-target minimum (docs/references/ux_principles.md #1) — a floor for narrow screens the buffer formula alone could shrink below tappable. */
+/** Material/HIG touch-target minimum (docs/agents/ui-ux/reference/ux_principles.md #1) — a floor for narrow screens the buffer formula alone could shrink below tappable. */
 const MIN_TOUCH_TARGET_DP = 48
 
 export function computeEntrypointBuffer(

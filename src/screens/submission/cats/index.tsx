@@ -71,7 +71,7 @@ export default function CatObservationScreen() {
   const [bubbleCollapsed, setBubbleCollapsed] = useState(true)
   // Separate from bubbleCollapsed (#202): the title fade needs "is the
   // bubble actually covering me right now," delayed in *both* directions
-  // (docs/design-decisions/inset-crop-bubble.md) — bubbleCollapsed's eager
+  // (docs/agents/ui-ux/current-state/inset-crop-bubble.md) — bubbleCollapsed's eager
   // expand-report would fade the title before the bubble has visually slid
   // into place over it.
   const [bubbleSettledCollapsed, setBubbleSettledCollapsed] = useState(true)
