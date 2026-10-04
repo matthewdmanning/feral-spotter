@@ -4,7 +4,11 @@
  * deleting it would destroy the user's own photo.
  */
 
-import { deleteCapturedPhotoFile } from '@/src/lib/camera/capturedPhotoFiles'
+import {
+  deleteCapturedPhotoFile,
+  releaseCapturedPhotoFile,
+  retainCapturedPhotoFile,
+} from '@/src/lib/camera/capturedPhotoFiles'
 
 const mockDelete = jest.fn()
 const mockExists = jest.fn(() => true)
@@ -50,4 +54,28 @@ it('does not throw when the file is already gone', () => {
     deleteCapturedPhotoFile('file:///app/cache/abc.jpg'),
   ).not.toThrow()
   expect(mockDelete).not.toHaveBeenCalled()
+})
+
+it('defers deletion until the gallery-save hold is released', () => {
+  const uri = 'file:///app/cache/held.jpg'
+  retainCapturedPhotoFile(uri)
+  deleteCapturedPhotoFile(uri)
+
+  expect(mockDelete).not.toHaveBeenCalled()
+
+  releaseCapturedPhotoFile(uri)
+  expect(mockDelete).toHaveBeenCalledWith(uri)
+})
+
+it('keeps deferred deletion through repeated gallery holds', () => {
+  const uri = 'file:///app/cache/repeated.jpg'
+  retainCapturedPhotoFile(uri)
+  deleteCapturedPhotoFile(uri)
+  retainCapturedPhotoFile(uri)
+
+  releaseCapturedPhotoFile(uri)
+  expect(mockDelete).not.toHaveBeenCalled()
+
+  releaseCapturedPhotoFile(uri)
+  expect(mockDelete).toHaveBeenCalledWith(uri)
 })

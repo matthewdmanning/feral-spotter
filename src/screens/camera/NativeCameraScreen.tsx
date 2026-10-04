@@ -38,7 +38,7 @@ export function NativeCameraScreen() {
     renderItem,
     keyExtractor,
     handleTakePhoto,
-    applySubjectRegion,
+    focus,
     cycleFlash,
     flipCamera,
     handleDone,
@@ -71,17 +71,13 @@ export function NativeCameraScreen() {
           .onEnd((event) => {
             const { width, height } = previewSize
             if (width <= 0 || height <= 0) return
-            // A zero-size region at the tap point: setSubjectRegion focuses on
-            // the region's centre, which is the tap itself.
-            void applySubjectRegion({
+            void focus({
               x: event.x / width,
               y: event.y / height,
-              width: 0,
-              height: 0,
             })
           }),
       ),
-    [applySubjectRegion, previewSize],
+    [focus, previewSize],
   )
 
   if (!permission?.granted)

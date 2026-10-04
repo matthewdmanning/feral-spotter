@@ -16,6 +16,10 @@ import { CameraThumb } from '@/src/components/atoms/CameraThumb'
 import { usePhotoStore } from '@/src/hooks'
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'
 import { gallerySavePermission } from '@/src/lib/permissions/gallerySavePermission'
+import {
+  releaseCapturedPhotoFile,
+  retainCapturedPhotoFile,
+} from '@/src/lib/camera/capturedPhotoFiles'
 import { uploadNewPhoto } from '@/src/lib/upload/uploadNewPhoto'
 import type { SubmissionPhoto } from '@/src/types'
 import {
@@ -98,10 +102,13 @@ export function useCapturedPhotoWorkflow({
     (frame: CapturedFrame, shutterTime: string): SubmissionPhoto => {
       const submission = buildSubmissionPhotoFromCapture(frame, shutterTime)
 
+      if (keepOnDevice) {
+        retainCapturedPhotoFile(submission.uri)
+        pendingGallerySaves.current.push(submission.uri)
+      }
+
       addPhoto(submission)
       setCapturedPhotos((prev) => [...prev, submission])
-
-      if (keepOnDevice) pendingGallerySaves.current.push(submission.uri)
 
       return submission
     },
@@ -135,13 +142,24 @@ export function useCapturedPhotoWorkflow({
     const uris = pendingGallerySaves.current
     pendingGallerySaves.current = []
     if (uris.length === 0) return
-    if (!(await gallerySavePermission.check())) return
+    let permitted = false
+    try {
+      permitted = await gallerySavePermission.check()
+    } catch (error) {
+      console.error('[useCapturedPhotoWorkflow] gallery permission:', error)
+    }
+    if (!permitted) {
+      uris.forEach(releaseCapturedPhotoFile)
+      return
+    }
 
     for (const uri of uris) {
       try {
         await Asset.create(uri)
       } catch (error) {
         console.error('[useCapturedPhotoWorkflow] Asset.create:', error)
+      } finally {
+        releaseCapturedPhotoFile(uri)
       }
     }
   }, [])
@@ -169,23 +187,17 @@ export function useCapturedPhotoWorkflow({
   )
   const handleClose = useCallback(() => router.back(), [])
 
-  // The thumbnail count is read through a ref so renderItem stays stable. It
-  // used to depend on capturedPhotos.length, which recreated the callback on
-  // every captured frame and re-rendered the whole list mid-burst.
-  const photoCount = useRef(0)
-  useEffect(() => {
-    photoCount.current = capturedPhotos.length
-  }, [capturedPhotos.length])
-
   const renderItem = useCallback(
     ({ item, index }: { item: SubmissionPhoto; index: number }) => (
       <CameraThumb
         uri={item.uri}
-        badgeCount={index === photoCount.current - 1 ? photoCount.current : 0}
+        badgeCount={
+          index === capturedPhotos.length - 1 ? capturedPhotos.length : 0
+        }
         onRemove={() => handleDiscardPhoto(item.local_id)}
       />
     ),
-    [handleDiscardPhoto],
+    [capturedPhotos.length, handleDiscardPhoto],
   )
 
   const keyExtractor = useCallback((item: SubmissionPhoto) => item.local_id, [])

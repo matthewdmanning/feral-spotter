@@ -65,7 +65,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   ),
   native_camera_capture: envDefault(
     process.env.EXPO_PUBLIC_NATIVE_CAMERA_CAPTURE,
-    false,
+    true,
   ),
   camera_max_detail: true,
   camera_motion_priority: true,
