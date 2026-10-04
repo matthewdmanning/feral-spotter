@@ -63,8 +63,11 @@ function event(
   name: string,
 ): CloudEvent<StorageObjectData> & { bucket: string } {
   return {
-    bucket: 'feral-spotter-image-uploads',
-    data: { name, bucket: 'feral-spotter-image-uploads' } as StorageObjectData,
+    bucket: 'project-e3d5659d-bc4f-438f-88c.firebasestorage.app',
+    data: {
+      name,
+      bucket: 'project-e3d5659d-bc4f-438f-88c.firebasestorage.app',
+    } as StorageObjectData,
   } as StorageEvent
 }
 
