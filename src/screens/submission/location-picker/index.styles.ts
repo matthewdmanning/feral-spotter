@@ -50,5 +50,8 @@ export const styles = StyleSheet.create((theme, rt) => ({
   },
   cancelButtonText: { ...theme.textVariants.label, color: theme.colors.text },
   setButton: { backgroundColor: theme.colors.accent },
-  setButtonText: { ...theme.textVariants.label, color: theme.colors.accentText },
+  setButtonText: {
+    ...theme.textVariants.label,
+    color: theme.colors.accentText,
+  },
 }))

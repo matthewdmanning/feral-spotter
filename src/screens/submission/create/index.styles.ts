@@ -76,7 +76,10 @@ export const styles = StyleSheet.create((theme, rt) => ({
     borderColor: theme.colors.borderStrong,
     borderStyle: 'dashed',
   },
-  addCatBtnText: { ...theme.textVariants.labelSmall, color: theme.colors.accent },
+  addCatBtnText: {
+    ...theme.textVariants.labelSmall,
+    color: theme.colors.accent,
+  },
   addPhotosBtn: {
     minHeight: theme.controlHeight.control,
     justifyContent: 'center',

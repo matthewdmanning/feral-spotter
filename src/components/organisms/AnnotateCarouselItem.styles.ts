@@ -45,5 +45,8 @@ export const styles = StyleSheet.create((theme) => ({
     backgroundColor: theme.colors.accent,
     ...theme.elevation.raised,
   },
-  confirmText: { ...theme.textVariants.labelSmall, color: theme.colors.accentText },
+  confirmText: {
+    ...theme.textVariants.labelSmall,
+    color: theme.colors.accentText,
+  },
 }))

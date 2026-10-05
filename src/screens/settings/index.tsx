@@ -156,7 +156,10 @@ export default function SettingsScreen() {
             {passwordConfigured ? (
               <View style={styles.gap}>
                 <View style={styles.configuredRow}>
-                  <Check size={theme.iconSize.md} color={theme.colors.accentSoftText} />
+                  <Check
+                    size={theme.iconSize.md}
+                    color={theme.colors.accentSoftText}
+                  />
                   <Text style={styles.configuredText}>Password configured</Text>
                 </View>
                 <Pressable

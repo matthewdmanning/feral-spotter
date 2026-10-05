@@ -203,7 +203,12 @@ export default function HomeScreen() {
               size="circle"
               diameter={entrypointDiameter}
               disabled={cameraDisabled}
-              icon={<Camera size={theme.iconSize.xxl} color={theme.colors.accentText} />}
+              icon={
+                <Camera
+                  size={theme.iconSize.xxl}
+                  color={theme.colors.accentText}
+                />
+              }
             >
               Take Photos
             </AppButton>
@@ -221,7 +226,12 @@ export default function HomeScreen() {
               size="circle"
               diameter={entrypointDiameter}
               disabled={libraryDisabled}
-              icon={<ImagePlus size={theme.iconSize.xxl} color={theme.colors.accentText} />}
+              icon={
+                <ImagePlus
+                  size={theme.iconSize.xxl}
+                  color={theme.colors.accentText}
+                />
+              }
             >
               Upload Photos
             </AppButton>

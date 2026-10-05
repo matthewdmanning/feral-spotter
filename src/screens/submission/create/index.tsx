@@ -177,16 +177,25 @@ export default function CreateSubmissionScreen() {
           style={styles.statusItem}
         >
           {showLocationWarning ? (
-            <AlertCircle size={theme.iconSize.md} color={theme.colors.warning} />
+            <AlertCircle
+              size={theme.iconSize.md}
+              color={theme.colors.warning}
+            />
           ) : (
-            <CheckCircle size={theme.iconSize.md} color={theme.colors.success} />
+            <CheckCircle
+              size={theme.iconSize.md}
+              color={theme.colors.success}
+            />
           )}
           <Text style={styles.statusItemText}>Location</Text>
         </Pressable>
 
         {showTimeWarning ? (
           <View style={styles.statusItem}>
-            <AlertCircle size={theme.iconSize.md} color={theme.colors.warning} />
+            <AlertCircle
+              size={theme.iconSize.md}
+              color={theme.colors.warning}
+            />
             <DateTimePickerButton
               value={
                 submission.manual_time
@@ -200,7 +209,10 @@ export default function CreateSubmissionScreen() {
           </View>
         ) : (
           <View style={styles.statusItem}>
-            <CheckCircle size={theme.iconSize.md} color={theme.colors.success} />
+            <CheckCircle
+              size={theme.iconSize.md}
+              color={theme.colors.success}
+            />
             <Text style={styles.statusItemText}>Date & Time Recorded</Text>
           </View>
         )}

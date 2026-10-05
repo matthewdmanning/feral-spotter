@@ -119,7 +119,8 @@ export default function AnnotateScreen() {
                 style={[
                   styles.dot,
                   {
-                    width: i === currentIndex ? theme.spacing.xl : theme.spacing.sm,
+                    width:
+                      i === currentIndex ? theme.spacing.xl : theme.spacing.sm,
                     backgroundColor:
                       i === currentIndex
                         ? theme.colors.text

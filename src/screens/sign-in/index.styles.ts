@@ -47,7 +47,10 @@ export const styles = StyleSheet.create((theme, rt) => ({
     marginTop: theme.spacing.lg,
   },
   registerText: { ...theme.textVariants.bodySmall, color: theme.colors.muted },
-  registerLink: { ...theme.textVariants.labelSmall, color: theme.colors.accent },
+  registerLink: {
+    ...theme.textVariants.labelSmall,
+    color: theme.colors.accent,
+  },
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',

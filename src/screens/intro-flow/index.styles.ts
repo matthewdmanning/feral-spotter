@@ -40,5 +40,8 @@ export const styles = StyleSheet.create((theme, rt) => ({
     backgroundColor: theme.colors.border,
   },
   // A stretched pill marks the current step by shape as well as color.
-  dotActive: { width: theme.spacing.xl, backgroundColor: theme.colors.highlight },
+  dotActive: {
+    width: theme.spacing.xl,
+    backgroundColor: theme.colors.highlight,
+  },
 }))
