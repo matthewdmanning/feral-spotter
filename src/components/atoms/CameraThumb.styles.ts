@@ -1,6 +1,8 @@
 import { StyleSheet } from 'react-native-unistyles'
 import { THUMB_SIZE } from './CameraThumb.constants'
 
+// Drawn over the live camera feed, so colors come from the onCamera tokens —
+// the theme's text color would turn dark-on-dark in light mode.
 export const styles = StyleSheet.create((theme) => ({
   wrap: { position: 'relative' },
   image: {
@@ -8,20 +10,22 @@ export const styles = StyleSheet.create((theme) => ({
     height: THUMB_SIZE,
     borderRadius: theme.radius.md,
     borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.25)',
+    borderColor: theme.colors.onCameraBorder,
   },
   badge: {
     position: 'absolute',
-    bottom: 4,
-    right: 4,
-    backgroundColor: 'rgba(0,0,0,0.65)',
-    borderRadius: theme.radius.sm,
-    paddingHorizontal: 5,
+    bottom: theme.spacing.xs,
+    right: theme.spacing.xs,
+    minWidth: theme.spacing.xl,
+    alignItems: 'center',
+    backgroundColor: theme.colors.onCameraScrim,
+    borderRadius: theme.radius.full,
+    paddingHorizontal: theme.spacing.xs + 2,
     paddingVertical: 2,
   },
   badgeText: {
-    color: theme.colors.text,
-    fontSize: theme.typography.xs,
+    ...theme.textVariants.caption,
+    color: theme.colors.onCamera,
     fontWeight: '700',
   },
 }))

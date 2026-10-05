@@ -101,7 +101,7 @@ export default function LocationPickerScreen() {
           tip sits at the map centre (translated up by its own height). */}
       <View style={styles.pinOverlay} pointerEvents="none">
         <MapPin
-          size={40}
+          size={theme.iconSize.xxl}
           color={theme.colors.accent}
           fill={theme.colors.accent}
           style={styles.pin}

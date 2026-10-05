@@ -38,7 +38,7 @@ export default function AnalyticsConsentScreen() {
             ]}
           >
             {analyticsEnabled && (
-              <Check size={14} color={theme.colors.accentText} />
+              <Check size={theme.iconSize.sm} color={theme.colors.accentText} />
             )}
           </View>
           <Text style={styles.analyticsItemText}>

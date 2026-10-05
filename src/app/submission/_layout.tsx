@@ -28,12 +28,12 @@ export default function SubmissionLayout() {
       onPress={() => router.push('/settings')}
       accessibilityLabel="Open settings"
       accessibilityRole="button"
-      // 22dp icon; hitSlop brings the touch target to the 48dp floor without
+      // 24dp icon; hitSlop brings the touch target to the 48dp floor without
       // changing header layout.
-      hitSlop={13}
+      hitSlop={12}
       style={{ marginRight: 4 }}
     >
-      <Settings size={22} color={theme.colors.text} />
+      <Settings size={theme.iconSize.lg} color={theme.colors.text} />
     </Pressable>
   )
 

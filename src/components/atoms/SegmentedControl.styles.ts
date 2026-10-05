@@ -1,40 +1,41 @@
 import { StyleSheet } from 'react-native-unistyles'
 
+// A track with a raised thumb on the selected option, rather than hard
+// cells split by hairlines.
 export const styles = StyleSheet.create((theme) => ({
   container: { gap: theme.spacing.sm },
-  label: {
-    fontSize: theme.typography.sm,
-    fontWeight: '500',
-    color: theme.colors.muted,
-  },
+  label: { ...theme.textVariants.labelSmall, color: theme.colors.muted },
   row: {
     flexDirection: 'row',
-    borderRadius: theme.radius.md,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+    gap: theme.spacing.xs,
+    padding: theme.spacing.xs,
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.colors.surfaceAlt,
   },
   // Base option — combined with selected/idle variant below
   option: {
     flex: 1,
-    minHeight: 48,
-    paddingVertical: 10,
+    minHeight: theme.controlHeight.touchTarget,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.xs,
+    borderRadius: theme.radius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  optionBorder: { borderRightWidth: 1, borderRightColor: theme.colors.border },
-
   // Named variants for selected state — applied as array in JSX
-  optionSelected: { backgroundColor: theme.colors.accent },
-  optionIdle: { backgroundColor: theme.colors.surface },
+  optionSelected: {
+    backgroundColor: theme.colors.accent,
+    ...theme.elevation.card,
+  },
+  optionIdle: { backgroundColor: 'transparent' },
   textSelected: {
-    fontSize: theme.typography.xs,
-    fontWeight: '500',
+    ...theme.textVariants.labelSmall,
     color: theme.colors.accentText,
+    textAlign: 'center',
   },
   textIdle: {
-    fontSize: theme.typography.xs,
-    fontWeight: '500',
+    ...theme.textVariants.labelSmall,
     color: theme.colors.muted,
+    textAlign: 'center',
   },
 }))

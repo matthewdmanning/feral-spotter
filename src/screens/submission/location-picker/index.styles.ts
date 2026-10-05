@@ -15,44 +15,40 @@ export const styles = StyleSheet.create((theme, rt) => ({
     justifyContent: 'center',
   },
   // Shift the pin up by half its height so its tip (not centre) marks the spot.
-  pin: { transform: [{ translateY: -20 }] },
+  pin: { transform: [{ translateY: -theme.iconSize.xxl / 2 }] },
   // Not scrollable, no header below it — pinned above the gesture bar.
   footer: {
     padding: theme.spacing.lg,
     paddingBottom: rt.insets.bottom + theme.spacing.lg,
-    gap: theme.spacing.sm,
+    gap: theme.spacing.md,
     backgroundColor: theme.colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
+    borderTopLeftRadius: theme.radius.xxl,
+    borderTopRightRadius: theme.radius.xxl,
+    // Lift the sheet over the map, and pull it up so its rounded corners
+    // sit over map content rather than over an empty strip.
+    marginTop: -theme.radius.xxl,
+    ...theme.elevation.raised,
   },
   hint: {
+    ...theme.textVariants.bodySmall,
     color: theme.colors.muted,
-    fontSize: theme.typography.sm,
     textAlign: 'center',
   },
   buttonRow: { flexDirection: 'row', gap: theme.spacing.sm },
   button: {
-    minHeight: 48,
+    minHeight: theme.controlHeight.control,
     justifyContent: 'center',
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 12,
-    borderRadius: theme.radius.md,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.radius.full,
   },
   cancelButton: {
-    backgroundColor: theme.colors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1.5,
+    borderColor: theme.colors.borderStrong,
   },
-  cancelButtonText: {
-    color: theme.colors.text,
-    fontSize: theme.typography.sm,
-    fontWeight: '600',
-  },
+  cancelButtonText: { ...theme.textVariants.label, color: theme.colors.text },
   setButton: { backgroundColor: theme.colors.accent },
-  setButtonText: {
-    color: theme.colors.accentText,
-    fontSize: theme.typography.sm,
-    fontWeight: '600',
-  },
+  setButtonText: { ...theme.textVariants.label, color: theme.colors.accentText },
 }))

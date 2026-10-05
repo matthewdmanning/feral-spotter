@@ -156,7 +156,7 @@ export default function SettingsScreen() {
             {passwordConfigured ? (
               <View style={styles.gap}>
                 <View style={styles.configuredRow}>
-                  <Check size={18} color={theme.colors.accentText} />
+                  <Check size={theme.iconSize.md} color={theme.colors.accentSoftText} />
                   <Text style={styles.configuredText}>Password configured</Text>
                 </View>
                 <Pressable
@@ -164,7 +164,7 @@ export default function SettingsScreen() {
                   style={styles.linkRow}
                   accessibilityRole="button"
                 >
-                  <Key size={16} color={theme.colors.danger} />
+                  <Key size={theme.iconSize.md} color={theme.colors.danger} />
                   <Text
                     style={[styles.linkText, { color: theme.colors.danger }]}
                   >
@@ -202,7 +202,7 @@ export default function SettingsScreen() {
               style={styles.linkRow}
               accessibilityRole="button"
             >
-              <Trash2 size={16} color={theme.colors.danger} />
+              <Trash2 size={theme.iconSize.md} color={theme.colors.danger} />
               <Text style={[styles.linkText, { color: theme.colors.danger }]}>
                 Clear Draft
               </Text>
@@ -255,7 +255,7 @@ export default function SettingsScreen() {
               style={styles.linkRow}
               accessibilityRole="button"
             >
-              <FileText size={16} color={theme.colors.accent} />
+              <FileText size={theme.iconSize.md} color={theme.colors.accent} />
               <Text style={styles.linkText}>Data Policy</Text>
             </Pressable>
           </View>

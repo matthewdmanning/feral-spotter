@@ -66,10 +66,11 @@ export function AppButton({
       accessibilityLabel={accessibilityLabel ?? children}
       accessibilityRole="button"
       accessibilityState={{ disabled: isDisabled }}
-      style={[
+      style={({ pressed }) => [
         styles.base,
         flex1 && styles.flex1,
         isDisabled && styles.disabled,
+        pressed && styles.pressed,
         diameter != null && {
           width: diameter,
           height: diameter,

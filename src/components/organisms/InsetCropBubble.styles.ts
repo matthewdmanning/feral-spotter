@@ -28,11 +28,7 @@ export const styles = StyleSheet.create((theme) => ({
     borderWidth: 2,
     borderColor: theme.colors.accent,
     backgroundColor: theme.colors.surface,
-    shadowColor: theme.colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 6,
+    ...theme.elevation.raised,
   },
   image: {
     position: 'absolute',

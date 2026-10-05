@@ -129,7 +129,7 @@ export function CameraTopBar({
         accessibilityRole="button"
         accessibilityLabel="Close camera"
       >
-        <X size={24} color={theme.colors.text} />
+        <X size={theme.iconSize.lg} color={theme.colors.text} />
       </Pressable>
       <View style={styles.topBarRight}>
         {photoCount > 0 && (
@@ -148,9 +148,9 @@ export function CameraTopBar({
           accessibilityLabel={`Flash ${flashMode}`}
         >
           {flashMode === 'on' ? (
-            <Zap size={22} color={theme.colors.warning} />
+            <Zap size={theme.iconSize.lg} color={theme.colors.warning} />
           ) : (
-            <ZapOff size={22} color={theme.colors.text} />
+            <ZapOff size={theme.iconSize.lg} color={theme.colors.text} />
           )}
           {flashMode === 'auto' && <Text style={styles.autoA}>A</Text>}
         </Pressable>
@@ -236,7 +236,7 @@ export function CameraShutterRow({
         accessibilityRole="button"
         accessibilityLabel="Switch camera"
       >
-        <SwitchCamera size={30} color={theme.colors.text} />
+        <SwitchCamera size={theme.iconSize.lg} color={theme.colors.text} />
       </Pressable>
       <Animated.View style={shutterStyle}>
         <Pressable

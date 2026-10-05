@@ -11,8 +11,6 @@ import { Tabs } from 'expo-router'
 import { useUnistyles } from 'react-native-unistyles'
 import { Camera, ClipboardList, Settings } from 'lucide-react-native'
 
-const TAB_ICON_SIZE = 24
-
 export default function HomeTabsLayout() {
   const { theme } = useUnistyles()
 
@@ -21,13 +19,13 @@ export default function HomeTabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: theme.colors.background,
+          backgroundColor: theme.colors.surface,
           borderTopColor: theme.colors.border,
           borderTopWidth: 1,
         },
         tabBarActiveTintColor: theme.colors.accent,
         tabBarInactiveTintColor: theme.colors.muted,
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        tabBarLabelStyle: theme.textVariants.caption,
       }}
     >
       <Tabs.Screen
@@ -35,7 +33,7 @@ export default function HomeTabsLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color }) => (
-            <Camera size={TAB_ICON_SIZE} color={color} />
+            <Camera size={theme.iconSize.lg} color={color} />
           ),
         }}
       />
@@ -44,7 +42,7 @@ export default function HomeTabsLayout() {
         options={{
           title: 'Reports',
           tabBarIcon: ({ color }) => (
-            <ClipboardList size={TAB_ICON_SIZE} color={color} />
+            <ClipboardList size={theme.iconSize.lg} color={color} />
           ),
         }}
       />
@@ -53,7 +51,7 @@ export default function HomeTabsLayout() {
         options={{
           title: 'Settings',
           tabBarIcon: ({ color }) => (
-            <Settings size={TAB_ICON_SIZE} color={color} />
+            <Settings size={theme.iconSize.lg} color={color} />
           ),
         }}
       />

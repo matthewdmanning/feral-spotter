@@ -27,7 +27,6 @@ export function SegmentedControl<T extends string | number>({
       <View style={styles.row} accessibilityLabel={accessibilityLabel ?? label}>
         {options.map((opt, i) => {
           const selected = opt.value === value
-          const isLast = i === options.length - 1
           return (
             <Pressable
               key={String(opt.value)}
@@ -35,7 +34,6 @@ export function SegmentedControl<T extends string | number>({
               style={[
                 styles.option,
                 selected ? styles.optionSelected : styles.optionIdle,
-                !isLast && styles.optionBorder,
               ]}
               accessibilityRole="button"
               accessibilityState={{ selected }}

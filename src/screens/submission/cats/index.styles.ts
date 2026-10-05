@@ -2,18 +2,18 @@ import { StyleSheet } from 'react-native-unistyles'
 
 export const styles = StyleSheet.create((theme) => ({
   scroll: { backgroundColor: theme.colors.background },
-  inner: { paddingHorizontal: theme.spacing.lg, gap: theme.spacing.lg },
+  inner: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.xxl,
+    gap: theme.spacing.lg,
+  },
   headerZone: { position: 'relative' },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  title: {
-    color: theme.colors.text,
-    fontSize: theme.typography.xxl,
-    fontWeight: '700',
-  },
+  title: { ...theme.textVariants.title, color: theme.colors.text },
   // The inset-crop bubble is centered over this title (#186) — fade it
   // significantly rather than trying to dodge the bubble positionally,
   // since the bubble can be wider than the available header row.
@@ -24,8 +24,9 @@ export const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing.sm,
   },
   headerBtn: {
-    paddingVertical: theme.spacing.xs,
+    minHeight: theme.controlHeight.touchTarget,
+    justifyContent: 'center',
     paddingHorizontal: theme.spacing.sm,
   },
-  headerBtnText: { fontSize: theme.typography.sm, fontWeight: '500' },
+  headerBtnText: { ...theme.textVariants.labelSmall },
 }))

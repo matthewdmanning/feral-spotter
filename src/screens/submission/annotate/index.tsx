@@ -107,7 +107,7 @@ export default function AnnotateScreen() {
             accessibilityRole="button"
             accessibilityLabel="Remove photo"
           >
-            <Trash2 size={18} color={theme.colors.muted} />
+            <Trash2 size={theme.iconSize.md} color={theme.colors.muted} />
           </Pressable>
         </View>
         <View style={styles.dotsRow}>
@@ -119,7 +119,7 @@ export default function AnnotateScreen() {
                 style={[
                   styles.dot,
                   {
-                    width: i === currentIndex ? 20 : 7,
+                    width: i === currentIndex ? theme.spacing.xl : theme.spacing.sm,
                     backgroundColor:
                       i === currentIndex
                         ? theme.colors.text

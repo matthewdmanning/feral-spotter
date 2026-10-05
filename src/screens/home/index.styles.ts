@@ -13,12 +13,15 @@ export const styles = StyleSheet.create((theme) => ({
     alignItems: 'center',
     justifyContent: 'space-evenly',
   },
-  bottomArea: { paddingHorizontal: theme.spacing.lg },
+  bottomArea: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.lg,
+  },
   // #375: the reason a disabled entrypoint is disabled.
   disabledReason: {
+    ...theme.textVariants.bodySmall,
     color: theme.colors.muted,
-    fontSize: theme.typography.sm,
     textAlign: 'center',
-    paddingHorizontal: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.xxl,
   },
 }))

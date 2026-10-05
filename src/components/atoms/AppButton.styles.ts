@@ -2,32 +2,34 @@ import { StyleSheet } from 'react-native-unistyles'
 
 export const styles = StyleSheet.create((theme) => ({
   base: {
-    minHeight: 48,
+    minHeight: theme.controlHeight.control,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: theme.spacing.sm,
-    borderRadius: theme.radius.lg,
-    paddingHorizontal: theme.spacing.lg,
+    borderRadius: theme.radius.full,
+    paddingHorizontal: theme.spacing.xxl,
     paddingVertical: theme.spacing.md,
     variants: {
       variant: {
-        primary: { backgroundColor: theme.colors.accent },
+        primary: {
+          backgroundColor: theme.colors.accent,
+          ...theme.elevation.card,
+        },
         secondary: {
-          backgroundColor: theme.colors.surfaceAlt,
-          // surfaceAlt sits at ~1.2:1 contrast against the root background —
-          // effectively invisible as a fill alone. theme.colors.border is
-          // similarly low-contrast (~1.4:1); muted reads at ~7:1, giving the
-          // outline enough definition to read as a button.
+          backgroundColor: theme.colors.surface,
+          // surface alone barely separates from the root background; the
+          // strong border gives the outline enough definition to read as a
+          // button.
           borderWidth: 1.5,
-          borderColor: theme.colors.muted,
+          borderColor: theme.colors.borderStrong,
         },
         ghost: { backgroundColor: 'transparent' },
         // Transparent + colored text alone read as a link next to an outlined
         // Cancel. The border makes it read as a subordinate destructive button.
         danger: {
           backgroundColor: 'transparent',
-          borderWidth: 1,
+          borderWidth: 1.5,
           borderColor: theme.colors.danger,
         },
       },
@@ -42,14 +44,14 @@ export const styles = StyleSheet.create((theme) => ({
           justifyContent: 'center',
           gap: theme.spacing.sm,
           borderRadius: theme.radius.full,
-          paddingHorizontal: theme.spacing.md,
+          paddingHorizontal: theme.spacing.lg,
+          ...theme.elevation.raised,
         },
       },
     },
   },
   label: {
-    fontWeight: '700',
-    fontSize: theme.typography.base,
+    ...theme.textVariants.label,
     textAlign: 'center',
     variants: {
       variant: {
@@ -64,7 +66,9 @@ export const styles = StyleSheet.create((theme) => ({
     },
   },
   flex1: { flex: 1 },
-  // 0.5 tanked label contrast on the accent-blue background (ux_principles.md
+  // 0.5 tanked label contrast on the accent background (ux_principles.md
   // contrast minimums) — 0.7 still reads as disabled, stays legible.
   disabled: { opacity: 0.7 },
+  // A slight press-in confirms the touch landed before navigation happens.
+  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
 }))

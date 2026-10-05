@@ -4,8 +4,6 @@
  * The centred-dialog shell — backdrop, card, and title — shared by
  * AlertHost and DateTimePickerButton. #328's cluster 2: both declared these
  * byte-identically, and a theme change to one used to miss the other.
- *
- * Values are DateTimePicker's originals, so it is visually unchanged.
  */
 
 import { StyleSheet } from 'react-native-unistyles'
@@ -21,16 +19,11 @@ export const dialogShell = StyleSheet.create((theme) => ({
   sheet: {
     backgroundColor: theme.colors.surface,
     borderRadius: theme.radius.xxl,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+    ...theme.elevation.raised,
     padding: theme.spacing.xxl,
     width: '100%',
     maxWidth: 360,
     gap: theme.spacing.lg,
   },
-  title: {
-    color: theme.colors.text,
-    fontSize: theme.typography.xl,
-    fontWeight: '700',
-  },
+  title: { ...theme.textVariants.heading, color: theme.colors.text },
 }))
