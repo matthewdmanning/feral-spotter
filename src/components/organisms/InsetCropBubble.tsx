@@ -95,6 +95,14 @@ interface InsetCropBubbleProps {
    * it (a tap) sends it back to its dock.
    */
   draggable?: boolean
+  /**
+   * True from the first touch on the bubble until the last finger lifts or
+   * the touch is cancelled. Raw touch events, not the responder system, so it
+   * stays true through a drag even after the pan responder has taken the
+   * touch from the Pressable. A host with a scrolling parent turns scrolling
+   * off while this is true, or the page scrolls under a dragged bubble.
+   */
+  onHoldChange?: (held: boolean) => void
 }
 
 export function InsetCropBubble({
@@ -104,6 +112,7 @@ export function InsetCropBubble({
   onCollapsedChange,
   onSettledChange,
   draggable = false,
+  onHoldChange,
 }: InsetCropBubbleProps) {
   const { theme } = useUnistyles()
   const getFirstBox = useBoundingBoxStore((s) => s.getFirstBox)
@@ -276,11 +285,19 @@ export function InsetCropBubble({
     inputRange: [0, 1],
     outputRange: [centeringOffset, collapsedOffset],
   })
+  // The scale shrinks toward the bubble's center, so the collapsed bubble
+  // would otherwise hang half the size delta below its dock, over whatever
+  // sits under the header zone (which reserves only COLLAPSED_DIAMETER).
+  // Lifting it by that delta docks its top edge at the zone's top.
+  const translateY = slideAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -collapsedOffset],
+  })
   const scale = slideAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [1, COLLAPSED_DIAMETER / diameter],
   })
-  const collapseTransform = [{ translateX }, { scale }]
+  const collapseTransform = [{ translateX }, { translateY }, { scale }]
   // The collapse is a scale transform, which would thin the border and
   // flatten the corners. Pre-scaling them by the inverse keeps both the same
   // on screen in either state. Annotate's crop is barely rounded; Cat Form's
@@ -295,6 +312,9 @@ export function InsetCropBubble({
         edge === 'top-center' ? styles.wrapTopCenter : styles.wrapTopRight,
         { transform: drag.getTranslateTransform() },
       ]}
+      onTouchStart={() => onHoldChange?.(true)}
+      onTouchEnd={() => onHoldChange?.(false)}
+      onTouchCancel={() => onHoldChange?.(false)}
       {...panResponder.panHandlers}
     >
       <Animated.View style={{ transform: collapseTransform }}>

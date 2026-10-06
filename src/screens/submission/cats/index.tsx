@@ -72,13 +72,20 @@ export default function CatObservationScreen() {
   // expand-report would fade the title before the bubble has visually slid
   // into place over it.
   const [bubbleSettledCollapsed, setBubbleSettledCollapsed] = useState(true)
+  // A finger on the bubble is a drag, not a scroll: with both live, the page
+  // moves under the bubble being dragged.
+  const [bubbleHeld, setBubbleHeld] = useState(false)
   // While collapsed, the bubble is docked flat at the edge — the header
   // only needs to reserve the collapsed size, not whatever it last
   // expanded to (#202).
   const reservedHeight = bubbleCollapsed ? COLLAPSED_DIAMETER : bubbleDiameter
 
   return (
-    <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      style={styles.scroll}
+      keyboardShouldPersistTaps="handled"
+      scrollEnabled={!bubbleHeld}
+    >
       <View style={styles.inner}>
         <View
           testID="cat-form-header-zone"
@@ -118,6 +125,7 @@ export default function CatObservationScreen() {
               onDiameterChange={setBubbleDiameter}
               onCollapsedChange={setBubbleCollapsed}
               onSettledChange={setBubbleSettledCollapsed}
+              onHoldChange={setBubbleHeld}
               draggable
             />
           )}

@@ -1,5 +1,5 @@
 import { act, render } from '@testing-library/react-native'
-import { StyleSheet } from 'react-native'
+import { ScrollView, StyleSheet } from 'react-native'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import CatObservationScreen from '../index'
@@ -75,6 +75,7 @@ const COLLAPSED_DIAMETER = 68
 // would put it in, without re-testing the bubble's internals.
 let latestOnDiameterChange: ((d: number) => void) | undefined
 let latestOnCollapsedChange: ((c: boolean) => void) | undefined
+let latestOnHoldChange: ((held: boolean) => void) | undefined
 
 jest.mock('@/src/components/organisms/InsetCropBubble', () => ({
   DEFAULT_DIAMETER: 68,
@@ -82,12 +83,15 @@ jest.mock('@/src/components/organisms/InsetCropBubble', () => ({
   InsetCropBubble: ({
     onDiameterChange,
     onCollapsedChange,
+    onHoldChange,
   }: {
     onDiameterChange?: (d: number) => void
     onCollapsedChange?: (c: boolean) => void
+    onHoldChange?: (held: boolean) => void
   }) => {
     latestOnDiameterChange = onDiameterChange
     latestOnCollapsedChange = onCollapsedChange
+    latestOnHoldChange = onHoldChange
     return null
   },
 }))
@@ -201,5 +205,21 @@ describe('Cat Form header zone — no-field-overlap guarantee (#174, #202)', () 
       const [path] = model.getPathsFromEvents(events)
       await path.test(testParams)
     })
+  })
+})
+
+describe('Cat Form page scroll while the bubble is held', () => {
+  // A drag on the bubble must not also scroll the page under it.
+  it('stops the page scrolling while a touch is on the bubble, and restores it after', () => {
+    const { UNSAFE_getByType } = render(<CatObservationScreen />)
+    const scrollEnabled = () => UNSAFE_getByType(ScrollView).props.scrollEnabled
+
+    expect(scrollEnabled()).toBe(true)
+
+    act(() => latestOnHoldChange?.(true))
+    expect(scrollEnabled()).toBe(false)
+
+    act(() => latestOnHoldChange?.(false))
+    expect(scrollEnabled()).toBe(true)
   })
 })
