@@ -7,6 +7,8 @@ export const styles = StyleSheet.create((theme) => ({
     borderColor: theme.colors.text,
     position: 'absolute',
   },
+  // A recorded cat's box. Its color comes from the cat, set at render.
+  previousBox: { position: 'absolute', borderWidth: 2 },
   crosshairLine: {
     backgroundColor: theme.colors.text,
     opacity: 0.6,

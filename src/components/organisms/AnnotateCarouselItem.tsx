@@ -21,6 +21,7 @@ import {
   useBoundingBoxFrame,
 } from '@/src/hooks/useBoundingBoxFrame'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
+import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
 import type { BoundingBox } from '@/src/types/BoundingBox'
 import type { SubmissionPhoto } from '@/src/types'
 import { useState } from 'react'
@@ -31,6 +32,7 @@ import Animated, {
   interpolate,
   useAnimatedStyle,
 } from 'react-native-reanimated'
+import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './AnnotateCarouselItem.styles'
 
 type BoxInput = Omit<BoundingBox, 'id' | 'cat_id' | 'photo_local_id'>
@@ -60,12 +62,37 @@ export function AnnotateCarouselItem({
   onZoomChange,
   onNotInPhoto,
 }: AnnotateCarouselItemProps) {
+  const { theme } = useUnistyles()
   const getBoxes = useBoundingBoxStore((s) => s.getBoxes)
+  const boxes = useBoundingBoxStore((s) => s.boxes)
+  const catColors = useBoundingBoxStore((s) => s.catColors)
+  const savedCats = useSubmissionStore((s) => s.cats)
 
   const savedBox = activeCatId
     ? getBoxes(activeCatId, photo.local_id)[0]
     : undefined
   const [natural, setNatural] = useState({ w: 0, h: 0 })
+
+  // Boxes of the cats already recorded, each in its cat's own color. Only
+  // saved cats: an abandoned pass's leftover boxes are not previous cats.
+  const previousBoxes = savedCats
+    .filter((cat) => cat.local_id !== activeCatId)
+    .flatMap((cat) =>
+      (boxes[`${cat.local_id}:${photo.local_id}`] ?? []).map((box) => ({
+        box,
+        color: theme.catPalette[catColors[cat.local_id]] ?? theme.colors.muted,
+      })),
+    )
+  // The photo sits contain-fit in the canvas (cropProjection.containFit);
+  // normalised boxes map onto that rect.
+  const fit =
+    natural.w > 0 && natural.h > 0
+      ? Math.min(width / natural.w, height / natural.h)
+      : 0
+  const fitW = natural.w * fit
+  const fitH = natural.h * fit
+  const fitX = (width - fitW) / 2
+  const fitY = (height - fitH) / 2
 
   const {
     photoGesture,
@@ -167,6 +194,22 @@ export function AnnotateCarouselItem({
               }
               accessibilityLabel="Cat observation photo"
             />
+            {previousBoxes.map(({ box, color }) => (
+              <View
+                key={box.id}
+                pointerEvents="none"
+                style={[
+                  styles.previousBox,
+                  {
+                    borderColor: color,
+                    left: fitX + box.lowerLeftX * fitW,
+                    top: fitY + box.upperRightY * fitH,
+                    width: (box.upperRightX - box.lowerLeftX) * fitW,
+                    height: (box.lowerLeftY - box.upperRightY) * fitH,
+                  },
+                ]}
+              />
+            ))}
           </Animated.View>
         </View>
       </GestureDetector>
