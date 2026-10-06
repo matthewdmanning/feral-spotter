@@ -30,7 +30,10 @@ import {
 import { useCallback, useEffect, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
-import { describeCat } from '@/src/screens/submission/cats/attributes'
+import {
+  describeCat,
+  summarizeCat,
+} from '@/src/screens/submission/cats/attributes'
 import { styles } from './index.styles'
 
 // #97's split: this screen is now the Cats List + Submission Details landing
@@ -266,7 +269,7 @@ export default function CreateSubmissionScreen() {
         <View style={styles.catList}>
           <Text style={styles.catListTitle}>Cats Recorded</Text>
           {cats.map((cat) => {
-            const label = `${cat.age.charAt(0).toUpperCase() + cat.age.slice(1)} · ${cat.pattern} · ${cat.hair_length} hair`
+            const label = summarizeCat(cat)
             const isExpanded = expandedCatId === cat.local_id
             return (
               <View key={cat.local_id} style={styles.catCard}>

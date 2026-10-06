@@ -156,7 +156,7 @@ describe('Cat List actions', () => {
   })
 
   it('opens one cat at a time and closes it on a second press', () => {
-    fireEvent.press(screen.getByText('Adult · tabby · short hair'))
+    fireEvent.press(screen.getByText('Adult · orange tabby · short hair'))
     expect(screen.getByText('Orange')).toBeTruthy()
 
     fireEvent.press(screen.getByText('Kitten · solid · long hair'))
