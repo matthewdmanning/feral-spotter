@@ -63,6 +63,10 @@ export const DEFAULT_DIAMETER = 68
 export const COLLAPSED_DIAMETER = 68
 const COLLAPSE_DURATION_MS = 220
 const BORDER_WIDTH = 1.5
+// Grows the collapsed bubble's grab area by 50% (a quarter of its size per side).
+const GRAB_SLOP = COLLAPSED_DIAMETER / 4
+// Movement past this many dp is a drag, not a tap.
+const DRAG_SLOP = 2
 
 export type InsetCropEdge = 'top-center' | 'top-right'
 
@@ -90,17 +94,17 @@ interface InsetCropBubbleProps {
    */
   onSettledChange?: (collapsed: boolean) => void
   /**
-   * Lets the user drag the bubble anywhere. A drag leaves it where it was
-   * dropped and stops it counting as covering the host's title; collapsing
-   * it (a tap) sends it back to its dock.
+   * Lets the user drag the bubble up and down. A drag starts on the first small movement,
+   * slides the bubble to the right edge on release, and stops it counting as
+   * covering the host's title. Collapsing or expanding it (a tap) keeps its
+   * height.
    */
   draggable?: boolean
   /**
-   * True from the first touch on the bubble until the last finger lifts or
-   * the touch is cancelled. Raw touch events, not the responder system, so it
-   * stays true through a drag even after the pan responder has taken the
-   * touch from the Pressable. A host with a scrolling parent turns scrolling
-   * off while this is true, or the page scrolls under a dragged bubble.
+   * True while a drag owns the touch: from the pan responder's grant until
+   * its release or termination. A tap never sets it. A host with a scrolling
+   * parent turns scrolling off while this is true, or the page scrolls under
+   * a dragged bubble.
    */
   onHoldChange?: (held: boolean) => void
 }
@@ -132,41 +136,6 @@ export function InsetCropBubble({
   // Once moved off its dock, the bubble no longer covers the title or needs
   // the header's reserved space.
   const clearOfHost = collapsed || moved
-  const panResponder = useMemo(
-    () =>
-      PanResponder.create({
-        // Capture, and only past a few dp, so a tap still reaches the
-        // Pressable and a drag wins over the parent ScrollView.
-        onMoveShouldSetPanResponderCapture: (_, g) =>
-          draggable && Math.hypot(g.dx, g.dy) > 6,
-        onPanResponderGrant: () => drag.extractOffset(),
-        onPanResponderMove: Animated.event([null, { dx: drag.x, dy: drag.y }], {
-          useNativeDriver: false,
-        }),
-        onPanResponderTerminationRequest: () => false,
-        onPanResponderRelease: () => {
-          drag.flattenOffset()
-          setMoved(true)
-        },
-      }),
-    [draggable, drag],
-  )
-
-  // Collapsing docks the bubble again, wherever it was dragged.
-  const toggleCollapsed = () => {
-    if (!collapsed) {
-      drag.flattenOffset()
-      Animated.timing(drag, {
-        toValue: { x: 0, y: 0 },
-        duration: COLLAPSE_DURATION_MS,
-        useNativeDriver: false,
-      }).start()
-      setMoved(false)
-    }
-    setCollapsed(!collapsed)
-  }
-  const hasSettledMounted = useRef(false)
-
   const box = getFirstBox(catId)
   const photo = box
     ? photos.find((p) => p.local_id === box.photo_local_id)
@@ -183,6 +152,60 @@ export function InsetCropBubble({
     boxWidthDp > 0 && boxHeightDp > 0
       ? computeBubbleDiameter(boxWidthDp, boxHeightDp)
       : DEFAULT_DIAMETER
+
+  // top-center sits at the horizontal center while expanded; a dropped bubble
+  // slides to the right edge so it never rests over the subheader text. The
+  // drag moves only its height.
+  const centeringOffset =
+    edge === 'top-center'
+      ? theme.spacing.md / 2 - (window.width - diameter) / 2
+      : 0
+  const snapX = collapsed ? 0 : -centeringOffset
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        // Capture on the first small movement, so a drag starts at once and
+        // wins over the parent ScrollView, while a tap still reaches the
+        // Pressable.
+        onMoveShouldSetPanResponderCapture: (_, g) =>
+          draggable && Math.hypot(g.dx, g.dy) > DRAG_SLOP,
+        onPanResponderGrant: () => {
+          drag.extractOffset()
+          onHoldChange?.(true)
+        },
+        onPanResponderMove: Animated.event([null, { dx: drag.x, dy: drag.y }], {
+          useNativeDriver: false,
+        }),
+        onPanResponderTerminationRequest: () => false,
+        onPanResponderRelease: () => {
+          drag.flattenOffset()
+          onHoldChange?.(false)
+          Animated.timing(drag.x, {
+            toValue: snapX,
+            duration: COLLAPSE_DURATION_MS,
+            useNativeDriver: false,
+          }).start()
+          setMoved(true)
+        },
+        onPanResponderTerminate: () => onHoldChange?.(false),
+      }),
+    [draggable, drag, snapX, onHoldChange],
+  )
+
+  // A dragged bubble keeps its height through collapse and expand, and stays
+  // at the right edge: expanded it cancels the centering shift, collapsed it
+  // sits in the dock column.
+  const toggleCollapsed = () => {
+    if (moved) {
+      Animated.timing(drag.x, {
+        toValue: collapsed ? -centeringOffset : 0,
+        duration: COLLAPSE_DURATION_MS,
+        useNativeDriver: false,
+      }).start()
+    }
+    setCollapsed(!collapsed)
+  }
+  const hasSettledMounted = useRef(false)
 
   useEffect(() => {
     if (box && photo) onDiameterChange?.(diameter)
@@ -276,10 +299,6 @@ export function InsetCropBubble({
   // collapsed (scaled-down) bubble's visual edge back at the anchor rather
   // than short of it or past it off-screen (#202 — see
   // src/lib/insetCrop/collapse.ts).
-  const centeringOffset =
-    edge === 'top-center'
-      ? theme.spacing.md / 2 - (window.width - diameter) / 2
-      : 0
   const collapsedOffset = computeCollapsedOffset(diameter, COLLAPSED_DIAMETER)
   const translateX = slideAnim.interpolate({
     inputRange: [0, 1],
@@ -312,9 +331,7 @@ export function InsetCropBubble({
         edge === 'top-center' ? styles.wrapTopCenter : styles.wrapTopRight,
         { transform: drag.getTranslateTransform() },
       ]}
-      onTouchStart={() => onHoldChange?.(true)}
-      onTouchEnd={() => onHoldChange?.(false)}
-      onTouchCancel={() => onHoldChange?.(false)}
+      hitSlop={GRAB_SLOP}
       {...panResponder.panHandlers}
     >
       <Animated.View style={{ transform: collapseTransform }}>

@@ -173,7 +173,7 @@ export default function AnnotateScreen() {
             default to position: relative, so top: 0 here already lands
             below topBar without hardcoding its height. */}
         {activeCatId && (
-          <InsetCropBubble catId={activeCatId} edge="top-right" />
+          <InsetCropBubble catId={activeCatId} edge="top-right" draggable />
         )}
       </View>
 
