@@ -89,3 +89,6 @@ _tmp_check_exports.py
 
 *.base
 *.canvas
+
+# Gradle cache inside a native module
+modules/native-identification-camera/android/.gradle/
