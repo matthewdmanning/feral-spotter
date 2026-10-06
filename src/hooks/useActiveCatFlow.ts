@@ -50,6 +50,21 @@ export function clearActiveCatIfMatches(catId: string): void {
   if (activeCatId === catId) setActiveCatId(null)
 }
 
+/**
+ * Readies Annotate for a new cat's pass: nothing left over from an earlier
+ * pass may show or carry into it. An unfinished pass's cat and boxes are
+ * dropped, unless that cat is already recorded.
+ *
+ * Not a hook, for the same reason as clearActiveCatIfMatches.
+ */
+export function startFreshPass(recordedCatIds: string[]): void {
+  const { activeCatId, setActiveCatId } = useActiveCatFlowStore.getState()
+  if (activeCatId && !recordedCatIds.includes(activeCatId)) {
+    useBoundingBoxStore.getState().clearForCat(activeCatId)
+  }
+  setActiveCatId(null)
+}
+
 export function useActiveCatFlow(): ActiveCatFlow {
   const activeCatId = useActiveCatFlowStore((s) => s.activeCatId)
   const setActiveCatId = useActiveCatFlowStore((s) => s.setActiveCatId)

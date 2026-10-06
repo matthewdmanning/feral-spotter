@@ -2,6 +2,7 @@ import { LOCATION_ACCURACY_THRESHOLD_M } from '@/src/config/location'
 import { AppButton } from '@/src/components/atoms/AppButton'
 import { DateTimePickerButton } from '@/src/components/organisms/DateTimePicker'
 import { showAlert, useSubmissionStore } from '@/src/hooks'
+import { startFreshPass } from '@/src/hooks/useActiveCatFlow'
 import { useBackHandler } from '@/src/hooks/useBackHandler'
 import { useSubmissionSubmit } from '@/src/hooks/useSubmissionSubmit'
 import { useLibraryPhotoPicker } from '@/src/hooks/useLibraryPhotoPicker'
@@ -143,7 +144,9 @@ export default function CreateSubmissionScreen() {
   // and reading a ref during render is a React Compiler violation.
   const [autoSkipPending] = useState(() => cats.length === 0 && removed !== '1')
   useEffect(() => {
-    if (autoSkipPending) router.replace('/submission/annotate')
+    if (!autoSkipPending) return
+    startFreshPass([])
+    router.replace('/submission/annotate')
     // autoSkipPending is frozen at mount, so listing it changes nothing at
     // runtime and keeps exhaustive-deps quiet.
   }, [autoSkipPending])
@@ -192,8 +195,9 @@ export default function CreateSubmissionScreen() {
   // filling out a form — Cat Form is reached from annotate's Boxing
   // Complete, not from here.
   const handleAddCat = useCallback(() => {
+    startFreshPass(cats.map((cat) => cat.local_id))
     router.push('/submission/annotate')
-  }, [])
+  }, [cats])
 
   // Auto-skip in flight (#173) — nothing to show this frame. Only while the
   // redirect is actually pending: once cats hits 0 by removal instead, the
