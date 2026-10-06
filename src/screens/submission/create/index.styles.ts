@@ -10,6 +10,8 @@ export const styles = StyleSheet.create((theme, rt) => ({
     paddingBottom: rt.insets.bottom + theme.spacing.sm,
     gap: theme.spacing.lg,
   },
+  scroll: { flex: 1 },
+  scrollContent: { gap: theme.spacing.lg },
   title: { ...theme.textVariants.title, color: theme.colors.text },
   statusRow: {
     flexDirection: 'row',
@@ -37,15 +39,27 @@ export const styles = StyleSheet.create((theme, rt) => ({
     color: theme.colors.text,
     marginTop: theme.spacing.xs,
   },
-  catRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  // One accordion item: the header row and, when open, every field below it.
+  catCard: {
     borderRadius: theme.radius.xl,
     backgroundColor: theme.colors.surface,
     ...theme.elevation.card,
     ...theme.outlined,
     padding: theme.spacing.lg,
+    gap: theme.spacing.md,
   },
+  catRow: { flexDirection: 'row', alignItems: 'center' },
+  catDetails: { gap: theme.spacing.sm },
+  catDetailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: theme.spacing.md,
+  },
+  catDetailLabel: {
+    ...theme.textVariants.bodySmall,
+    color: theme.colors.muted,
+  },
+  catDetailValue: { ...theme.textVariants.bodySmall, color: theme.colors.text },
   catRowText: { ...theme.textVariants.body, flex: 1, color: theme.colors.text },
   // #299: 48x48 hit area, meeting the Material minimum touch target
   // (docs/agents/ui-ux/reference/ux_principles.md) even though the glyph is

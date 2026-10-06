@@ -75,11 +75,25 @@ jest.mock('../index.styles', () => ({
 jest.mock('lucide-react-native', () => ({
   AlertCircle: () => null,
   CheckCircle: () => null,
+  ChevronDown: () => null,
+  ChevronUp: () => null,
   Trash2: () => null,
 }))
 
+// cat-2 is deliberately sparse: every field it lacks must still be listed, as
+// its default, when the cat is opened.
 const DEFAULT_CATS = [
-  { local_id: 'cat-1', age: 'adult', pattern: 'tabby', hair_length: 'short' },
+  {
+    local_id: 'cat-1',
+    age: 'adult',
+    ear_tipped: 'yes',
+    owned_domesticated: 'no',
+    pattern: 'tabby',
+    hair_length: 'short',
+    color: 'orange',
+    sex: 'female',
+    health_label: 'good',
+  },
   { local_id: 'cat-2', age: 'kitten', pattern: 'solid', hair_length: 'long' },
 ]
 
@@ -118,14 +132,43 @@ describe('Cat List actions', () => {
     expect(router.push).toHaveBeenCalledWith('/submission/annotate')
   })
 
-  it('pressing a cat row opens Cat Form pre-filled for that cat, not another one', () => {
+  // The Cats Recorded rows are an accordion: a press opens the cat's fields
+  // in place and navigates nowhere; Edit Cat is the way into the form.
+  it('pressing a cat row lists every field, including ones left at their default', () => {
+    fireEvent.press(screen.getByText('Kitten · solid · long hair'))
+
+    expect(router.push).not.toHaveBeenCalled()
+    for (const field of [
+      'Age',
+      'Sex',
+      'Ear Tipped',
+      'Hair Length',
+      'Pattern',
+      'Color',
+      'Owned / Domesticated',
+      'Health',
+    ]) {
+      expect(screen.getByText(field)).toBeTruthy()
+    }
+    // Sex, Ear Tipped, Owned, Color and Health are missing on this cat.
+    expect(screen.getAllByText('Unknown')).toHaveLength(3)
+    expect(screen.getAllByText('Unsure')).toHaveLength(2)
+  })
+
+  it('opens one cat at a time and closes it on a second press', () => {
     fireEvent.press(screen.getByText('Adult · tabby · short hair'))
-    expect(router.push).toHaveBeenCalledWith({
-      pathname: '/submission/cats',
-      params: { edit: 'cat-1' },
-    })
+    expect(screen.getByText('Orange')).toBeTruthy()
 
     fireEvent.press(screen.getByText('Kitten · solid · long hair'))
+    expect(screen.queryByText('Orange')).toBeNull()
+
+    fireEvent.press(screen.getByText('Kitten · solid · long hair'))
+    expect(screen.queryByText('Edit Cat')).toBeNull()
+  })
+
+  it('Edit Cat opens Cat Form pre-filled for that cat, not another one', () => {
+    fireEvent.press(screen.getByText('Kitten · solid · long hair'))
+    fireEvent.press(screen.getByText('Edit Cat'))
     expect(router.push).toHaveBeenCalledWith({
       pathname: '/submission/cats',
       params: { edit: 'cat-2' },

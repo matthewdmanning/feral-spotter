@@ -144,6 +144,29 @@ export const CAT_ATTRIBUTES = [
 
 type CatAttributesTuple = typeof CAT_ATTRIBUTES
 
+/**
+ * Every attribute of a saved cat as label and display value, in form order.
+ * A default ("Unknown"/"Unsure") is a real value (docs/agents/domain.md), so
+ * it is listed like any other: some defaults are not selectable options (Age,
+ * Hair Length, Color and Health have no Unknown button), so a value with no
+ * matching option is shown by its own name, capitalized. A field the saved
+ * cat lacks (a draft from before the field existed) reads as its default.
+ */
+export function describeCat(
+  cat: ObservedCat,
+): { label: string; value: string }[] {
+  return CAT_ATTRIBUTES.map(({ label, backendKey, options, default: dflt }) => {
+    const raw = (cat[backendKey] as string | undefined) ?? dflt
+    const option = (options as readonly AttributeOption<string>[]).find(
+      (o) => o.value === raw,
+    )
+    return {
+      label,
+      value: option?.label ?? raw.charAt(0).toUpperCase() + raw.slice(1),
+    }
+  })
+}
+
 export const CAT_DEFAULTS: {
   [A in CatAttributesTuple[number] as A['key']]: A['default']
 } = Object.fromEntries(CAT_ATTRIBUTES.map((a) => [a.key, a.default])) as {

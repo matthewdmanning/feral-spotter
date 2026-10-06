@@ -20,10 +20,17 @@ import {
   type Href,
 } from 'expo-router'
 import { randomUUID } from 'expo-crypto'
-import { AlertCircle, CheckCircle, Trash2 } from 'lucide-react-native'
+import {
+  AlertCircle,
+  CheckCircle,
+  ChevronDown,
+  ChevronUp,
+  Trash2,
+} from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, ScrollView, Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
+import { describeCat } from '@/src/screens/submission/cats/attributes'
 import { styles } from './index.styles'
 
 // #97's split: this screen is now the Cats List + Submission Details landing
@@ -102,6 +109,10 @@ export default function CreateSubmissionScreen() {
     })()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // One cat open at a time: a stack of fully open cats would push the bottom
+  // actions off a phone screen.
+  const [expandedCatId, setExpandedCatId] = useState<string | null>(null)
 
   // Zero-friction on-ramp (#173): with no cats recorded yet, skip straight
   // into annotate instead of rendering an empty Cat List. replace (not
@@ -189,116 +200,161 @@ export default function CreateSubmissionScreen() {
 
   return (
     <View style={styles.root}>
-      <Text style={styles.title}>Submission</Text>
+      {/* An open cat lists every field, so the part above the actions scrolls
+          and Finished!, Take More Photos and Reset stay on screen. */}
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={styles.title}>Submission</Text>
 
-      <View style={styles.statusRow}>
-        <Pressable
-          onPress={handleLocationIconPress}
-          disabled={!showLocationWarning}
-          accessibilityRole="button"
-          accessibilityLabel={
-            showLocationWarning
-              ? 'Location accuracy is low or unavailable — tap to set manually'
-              : 'Location acquired'
-          }
-          style={styles.statusItem}
-        >
-          {showLocationWarning ? (
-            <AlertCircle
-              size={theme.iconSize.md}
-              color={theme.colors.warning}
-            />
+        <View style={styles.statusRow}>
+          <Pressable
+            onPress={handleLocationIconPress}
+            disabled={!showLocationWarning}
+            accessibilityRole="button"
+            accessibilityLabel={
+              showLocationWarning
+                ? 'Location accuracy is low or unavailable — tap to set manually'
+                : 'Location acquired'
+            }
+            style={styles.statusItem}
+          >
+            {showLocationWarning ? (
+              <AlertCircle
+                size={theme.iconSize.md}
+                color={theme.colors.warning}
+              />
+            ) : (
+              <CheckCircle
+                size={theme.iconSize.md}
+                color={theme.colors.success}
+              />
+            )}
+            <Text style={styles.statusItemText}>Location</Text>
+          </Pressable>
+
+          {showTimeWarning ? (
+            <View style={styles.statusItem}>
+              <AlertCircle
+                size={theme.iconSize.md}
+                color={theme.colors.warning}
+              />
+              <DateTimePickerButton
+                value={
+                  submission.manual_time
+                    ? new Date(submission.manual_time)
+                    : new Date()
+                }
+                onChange={handleManualTimeChange}
+                label=""
+                maximumDate={new Date()}
+              />
+            </View>
           ) : (
-            <CheckCircle
-              size={theme.iconSize.md}
-              color={theme.colors.success}
-            />
+            <View style={styles.statusItem}>
+              <CheckCircle
+                size={theme.iconSize.md}
+                color={theme.colors.success}
+              />
+              <Text style={styles.statusItemText}>Date & Time Recorded</Text>
+            </View>
           )}
-          <Text style={styles.statusItemText}>Location</Text>
-        </Pressable>
+        </View>
 
-        {showTimeWarning ? (
-          <View style={styles.statusItem}>
-            <AlertCircle
-              size={theme.iconSize.md}
-              color={theme.colors.warning}
-            />
-            <DateTimePickerButton
-              value={
-                submission.manual_time
-                  ? new Date(submission.manual_time)
-                  : new Date()
-              }
-              onChange={handleManualTimeChange}
-              label=""
-              maximumDate={new Date()}
-            />
-          </View>
-        ) : (
-          <View style={styles.statusItem}>
-            <CheckCircle
-              size={theme.iconSize.md}
-              color={theme.colors.success}
-            />
-            <Text style={styles.statusItemText}>Date & Time Recorded</Text>
-          </View>
-        )}
-      </View>
-
-      <View style={styles.catList}>
-        <Text style={styles.catListTitle}>Cats Recorded</Text>
-        {cats.map((cat) => {
-          const label = `${cat.age.charAt(0).toUpperCase() + cat.age.slice(1)} · ${cat.pattern} · ${cat.hair_length} hair`
-          return (
-            <Pressable
-              key={cat.local_id}
-              onPress={() =>
-                router.push({
-                  pathname: '/submission/cats',
-                  params: { edit: cat.local_id },
-                })
-              }
-              style={styles.catRow}
-            >
-              <Text style={styles.catRowText}>{label}</Text>
-              {/* #299: nested Pressable so tapping the trash removes the cat
-                  rather than opening it for edit. */}
-              <Pressable
-                onPress={() => removeCatWithConfirm(cat.local_id)}
-                style={styles.catRowRemoveBtn}
-                accessibilityRole="button"
-                accessibilityLabel={`Remove cat: ${label}`}
-              >
-                <Trash2 size={theme.iconSize.md} color={theme.colors.danger} />
-              </Pressable>
-            </Pressable>
-          )
-        })}
-        {/* #299: no cats left. Two ways back in, neither forced — the user
+        <View style={styles.catList}>
+          <Text style={styles.catListTitle}>Cats Recorded</Text>
+          {cats.map((cat) => {
+            const label = `${cat.age.charAt(0).toUpperCase() + cat.age.slice(1)} · ${cat.pattern} · ${cat.hair_length} hair`
+            const isExpanded = expandedCatId === cat.local_id
+            return (
+              <View key={cat.local_id} style={styles.catCard}>
+                <Pressable
+                  onPress={() =>
+                    setExpandedCatId(isExpanded ? null : cat.local_id)
+                  }
+                  style={styles.catRow}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Cat: ${label}`}
+                  accessibilityState={{ expanded: isExpanded }}
+                >
+                  <Text style={styles.catRowText}>{label}</Text>
+                  {isExpanded ? (
+                    <ChevronUp
+                      size={theme.iconSize.md}
+                      color={theme.colors.muted}
+                    />
+                  ) : (
+                    <ChevronDown
+                      size={theme.iconSize.md}
+                      color={theme.colors.muted}
+                    />
+                  )}
+                  {/* #299: nested Pressable so tapping the trash removes the
+                    cat rather than toggling its details. */}
+                  <Pressable
+                    onPress={() => removeCatWithConfirm(cat.local_id)}
+                    style={styles.catRowRemoveBtn}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Remove cat: ${label}`}
+                  >
+                    <Trash2
+                      size={theme.iconSize.md}
+                      color={theme.colors.danger}
+                    />
+                  </Pressable>
+                </Pressable>
+                {isExpanded && (
+                  <View style={styles.catDetails}>
+                    {describeCat(cat).map(({ label: field, value }) => (
+                      <View key={field} style={styles.catDetailRow}>
+                        <Text style={styles.catDetailLabel}>{field}</Text>
+                        <Text style={styles.catDetailValue}>{value}</Text>
+                      </View>
+                    ))}
+                    <AppButton
+                      variant="secondary"
+                      onPress={() =>
+                        router.push({
+                          pathname: '/submission/cats',
+                          params: { edit: cat.local_id },
+                        })
+                      }
+                    >
+                      Edit Cat
+                    </AppButton>
+                  </View>
+                )}
+              </View>
+            )
+          })}
+          {/* #299: no cats left. Two ways back in, neither forced — the user
             may want another look at the photos, or may want to describe a
             cat they saw but cannot pick out of one. The annotate button is
             the same control either way, so only its label switches. */}
-        {cats.length === 0 && (
-          <Text style={styles.emptyCatsText}>
-            No cats recorded. Pick one out of your photos, or describe a cat you
-            saw. Your photos are still here either way.
-          </Text>
-        )}
-        <AppButton variant="secondary" onPress={handleAddCat}>
-          {cats.length === 0 ? 'Annotate Photos' : 'Add a Cat'}
-        </AppButton>
-        {cats.length === 0 && (
-          // Describing a cat without annotating it first: it saves with an
-          // empty photo_local_ids (useCatSubmit derives that from boxes) — a
-          // record of a cat that was seen but can't be picked out of a photo.
-          <AppButton
-            onPress={() => router.push('/submission/cats')}
-            variant="secondary"
-          >
-            Describe a Cat
+          {cats.length === 0 && (
+            <Text style={styles.emptyCatsText}>
+              No cats recorded. Pick one out of your photos, or describe a cat
+              you saw. Your photos are still here either way.
+            </Text>
+          )}
+          <AppButton variant="secondary" onPress={handleAddCat}>
+            {cats.length === 0 ? 'Annotate Photos' : 'Add a Cat'}
           </AppButton>
-        )}
-      </View>
+          {cats.length === 0 && (
+            // Describing a cat without annotating it first: it saves with an
+            // empty photo_local_ids (useCatSubmit derives that from boxes) — a
+            // record of a cat that was seen but can't be picked out of a photo.
+            <AppButton
+              onPress={() => router.push('/submission/cats')}
+              variant="secondary"
+            >
+              Describe a Cat
+            </AppButton>
+          )}
+        </View>
+      </ScrollView>
 
       {/* Actions pinned to the bottom, in the order a user reaches for them:
           finish, add photos, start over. */}

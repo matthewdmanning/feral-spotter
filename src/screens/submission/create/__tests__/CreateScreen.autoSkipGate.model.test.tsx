@@ -62,6 +62,8 @@ jest.mock('../index.styles', () => ({
 jest.mock('lucide-react-native', () => ({
   AlertCircle: () => null,
   CheckCircle: () => null,
+  ChevronDown: () => null,
+  ChevronUp: () => null,
   Trash2: () => null,
 }))
 
