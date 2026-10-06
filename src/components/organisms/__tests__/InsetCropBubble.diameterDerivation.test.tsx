@@ -47,8 +47,9 @@ jest.mock('@/src/hooks/useBoundingBoxStore', () => ({
   useBoundingBoxStore: (
     sel: (s: {
       getFirstBox: (catId: string) => typeof SQUARE_FRACTION_BOX
+      catColors: Record<string, number>
     }) => unknown,
-  ) => sel({ getFirstBox: () => SQUARE_FRACTION_BOX }),
+  ) => sel({ getFirstBox: () => SQUARE_FRACTION_BOX, catColors: {} }),
 }))
 
 describe('InsetCropBubble — normalized box -> dp derivation', () => {

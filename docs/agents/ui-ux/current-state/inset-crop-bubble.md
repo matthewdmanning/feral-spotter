@@ -29,11 +29,12 @@ derives_from: ['#168', '#174', '#186']
   - Direction: slides toward the right screen edge, both screens.
   - Size: shrinks to a flat 68dp collapsed diameter, regardless of expanded diameter, both screens.
 - Cat Form title fade: fades only while the bubble is expanded and positioned over the title; un-fades once the bubble is collapsed and docked at the edge.
-- Cat Form header-zone reservation: shrinks in lockstep with the bubble's collapse animation, tracking the bubble's live position, so the header never holds more space than the bubble currently occupies. If tracking the live position proves impractical, the reservation may instead shrink only once the collapse animation completes and the bubble is fully clear of the title. On either path, the reservation must never shrink while the bubble could still overlap the title.
+- Cat Form header-zone reservation (changed 2026-10-06, supersedes the live-tracking rule): fixed at the collapsed size. Expanding the bubble never shifts the form; an expanded bubble floats over the form's first rows and the user collapses it to clear them.
 
 ## Reason
 
 - Rounded-square over circular: a circular bubble read as visually heavier than intended, and gave no clean way to signal the Cat Form title fading beneath it the way a squared-off edge does.
 - Annotate top-right position: a bottom-of-screen bubble obscured screen controls; a top position clears them.
 - Right-edge collapse slide and flat collapse size: consistent, predictable collapse behavior across both screens.
-- Header-zone reservation resizing with collapse: a reservation pinned to the bubble's expanded size leaves dead, wasted space in the header once the bubble is collapsed. The never-shrink-while-overlapping constraint exists because a premature resize would let the bubble hide the title again.
+- Header-zone reservation that grows with the bubble (superseded 2026-10-06): the form jumped down whenever the bubble opened from its default spot. A fixed collapsed-size reservation avoids the jump.
+- Drag (both screens): only the collapsed bubble drags. It moves up and down only and snaps to the right edge on release. An expanded bubble does not drag. Collapse and expand keep its height. The bubble border takes the cat's own color.

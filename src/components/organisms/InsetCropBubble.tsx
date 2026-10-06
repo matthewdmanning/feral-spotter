@@ -120,6 +120,10 @@ export function InsetCropBubble({
 }: InsetCropBubbleProps) {
   const { theme } = useUnistyles()
   const getFirstBox = useBoundingBoxStore((s) => s.getFirstBox)
+  // The cat's own color, so the bubble matches its box on the photo.
+  const catColor = useBoundingBoxStore(
+    (s) => theme.catPalette[s.catColors[catId]],
+  )
   const photos = usePhotoStore((s) => s.photos)
   const [natural, setNatural] = useState({ w: 0, h: 0 })
   // Collapsed by default (#202) — both screens land with the bubble docked
@@ -161,36 +165,43 @@ export function InsetCropBubble({
       ? theme.spacing.md / 2 - (window.width - diameter) / 2
       : 0
   const snapX = collapsed ? 0 : -centeringOffset
-  const panResponder = useMemo(
-    () =>
-      PanResponder.create({
-        // Capture on the first small movement, so a drag starts at once and
-        // wins over the parent ScrollView, while a tap still reaches the
-        // Pressable.
-        onMoveShouldSetPanResponderCapture: (_, g) =>
-          draggable && Math.hypot(g.dx, g.dy) > DRAG_SLOP,
-        onPanResponderGrant: () => {
-          drag.extractOffset()
-          onHoldChange?.(true)
-        },
-        onPanResponderMove: Animated.event([null, { dx: drag.x, dy: drag.y }], {
-          useNativeDriver: false,
-        }),
-        onPanResponderTerminationRequest: () => false,
-        onPanResponderRelease: () => {
-          drag.flattenOffset()
-          onHoldChange?.(false)
-          Animated.timing(drag.x, {
-            toValue: snapX,
-            duration: COLLAPSE_DURATION_MS,
-            useNativeDriver: false,
-          }).start()
-          setMoved(true)
-        },
-        onPanResponderTerminate: () => onHoldChange?.(false),
+  const panResponder = useMemo(() => {
+    const settle = () => {
+      drag.flattenOffset()
+      onHoldChange?.(false)
+      Animated.timing(drag.x, {
+        toValue: snapX,
+        duration: COLLAPSE_DURATION_MS,
+        useNativeDriver: false,
+      }).start()
+      setMoved(true)
+    }
+    return PanResponder.create({
+      // Capture on the first small movement, so a drag starts at once and
+      // wins over the parent ScrollView, while a tap still reaches the
+      // Pressable.
+      // Only the collapsed bubble drags: expanded, it is a photo to look at.
+      onMoveShouldSetPanResponderCapture: (_, g) =>
+        draggable && collapsed && Math.hypot(g.dx, g.dy) > DRAG_SLOP,
+      onPanResponderGrant: () => {
+        // A snap from an earlier drop may still be running. Its target is
+        // absolute, so left running it would add to the offset taken here
+        // and fling the bubble off its spot on a quick second swipe.
+        drag.stopAnimation()
+        drag.extractOffset()
+        onHoldChange?.(true)
+      },
+      onPanResponderMove: Animated.event([null, { dx: drag.x, dy: drag.y }], {
+        useNativeDriver: false,
       }),
-    [draggable, drag, snapX, onHoldChange],
-  )
+      onPanResponderTerminationRequest: () => false,
+      onPanResponderRelease: settle,
+      // The system can take the touch mid-drag (a two-finger swipe does).
+      // Settling here, not just letting go, keeps the extracted offset from
+      // stranding the bubble where it was dropped.
+      onPanResponderTerminate: settle,
+    })
+  }, [draggable, collapsed, drag, snapX, onHoldChange])
 
   // A dragged bubble keeps its height through collapse and expand, and stays
   // at the right edge: expanded it cancels the centering shift, collapsed it
@@ -324,17 +335,26 @@ export function InsetCropBubble({
   const edgeScale = collapsed ? diameter / COLLAPSED_DIAMETER : 1
   const cornerRadius = edge === 'top-center' ? theme.radius.lg : theme.radius.xs
 
+  // The wrapper's layout box is the full unscaled bubble, far larger than a
+  // collapsed bubble looks. Touches go to the inner view instead: hit-testing
+  // follows its transform, so the grab area is what is drawn. Its slop is in
+  // pre-scale units, so it is scaled up to GRAB_SLOP on screen.
+  const grabSlop = collapsed ? (GRAB_SLOP * diameter) / COLLAPSED_DIAMETER : 0
+
   return (
     <Animated.View
+      pointerEvents="box-none"
       style={[
         styles.wrap,
         edge === 'top-center' ? styles.wrapTopCenter : styles.wrapTopRight,
         { transform: drag.getTranslateTransform() },
       ]}
-      hitSlop={GRAB_SLOP}
-      {...panResponder.panHandlers}
     >
-      <Animated.View style={{ transform: collapseTransform }}>
+      <Animated.View
+        style={{ transform: collapseTransform }}
+        hitSlop={grabSlop}
+        {...panResponder.panHandlers}
+      >
         <Pressable
           testID="inset-crop-bubble"
           onPress={toggleCollapsed}
@@ -343,6 +363,7 @@ export function InsetCropBubble({
             {
               width: diameter,
               height: diameter,
+              ...(catColor ? { borderColor: catColor } : null),
               borderWidth: BORDER_WIDTH * edgeScale,
               borderRadius: cornerRadius * edgeScale,
             },

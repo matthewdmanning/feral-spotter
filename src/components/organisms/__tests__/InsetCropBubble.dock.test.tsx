@@ -32,8 +32,11 @@ jest.mock('@/src/hooks', () => ({
 
 jest.mock('@/src/hooks/useBoundingBoxStore', () => ({
   useBoundingBoxStore: (
-    sel: (s: { getFirstBox: (catId: string) => typeof BOX }) => unknown,
-  ) => sel({ getFirstBox: () => BOX }),
+    sel: (s: {
+      getFirstBox: (catId: string) => typeof BOX
+      catColors: Record<string, number>
+    }) => unknown,
+  ) => sel({ getFirstBox: () => BOX, catColors: {} }),
 }))
 
 const resolved = (value: unknown): number =>
