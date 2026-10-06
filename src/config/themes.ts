@@ -121,7 +121,27 @@ const controlHeight = {
   control: 52,
 } as const
 
+/**
+ * One color per cat, drawn over photos, so it must read on any photo and
+ * stay apart from its neighbours. The first seven are the Okabe-Ito set,
+ * chosen to stay distinct under the common color-vision deficiencies; the
+ * violet is added for an eighth cat. None is the lime accent, so a cat's
+ * color never reads as the active crop frame. Same in both themes: it sits on
+ * photos, not on a themed surface. Append only — a cat stores its index.
+ */
+const catPalette = [
+  '#E69F00',
+  '#56B4E9',
+  '#009E73',
+  '#F0E442',
+  '#0072B2',
+  '#D55E00',
+  '#CC79A7',
+  '#8E44AD',
+] as const
+
 const sharedTokens = {
+  catPalette,
   spacing,
   radius,
   typography,
