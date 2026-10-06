@@ -1,3 +1,4 @@
+import { AppButton } from '@/src/components/atoms/AppButton'
 import { showAlert } from '@/src/hooks/useUIStore'
 import { cameraPermission } from '@/src/lib/permissions/cameraPermission'
 import {
@@ -14,18 +15,15 @@ import {
   Text,
   Pressable,
   ScrollView,
-  ActivityIndicator,
 } from 'react-native'
 import { router } from 'expo-router'
 import * as Location from 'expo-location'
-import { useUnistyles } from 'react-native-unistyles'
 import { useConsentStore } from '@/src/hooks/useConsentStore'
 import { useBackHandler } from '@/src/hooks/useBackHandler'
 import consentCopy from '@/src/content/consentDisclosure.json'
 import { styles } from './index.styles'
 
 export default function ConsentScreen() {
-  const { theme } = useUnistyles()
   const markAccepted = useConsentStore((s) => s.markAccepted)
   const [busy, setBusy] = useState(false)
   const [blocked, setBlocked] = useState(false)
@@ -123,13 +121,11 @@ export default function ConsentScreen() {
           continue — you&apos;ll be brought back here automatically once
           it&apos;s granted.
         </Text>
-        <Pressable
-          onPress={() => Linking.openSettings()}
-          style={styles.gatePrimary}
-          accessibilityRole="button"
-        >
-          <Text style={styles.gatePrimaryText}>Open Settings</Text>
-        </Pressable>
+        <View style={styles.gateAction}>
+          <AppButton onPress={() => Linking.openSettings()}>
+            Open Settings
+          </AppButton>
+        </View>
       </View>
     )
   }
@@ -150,19 +146,11 @@ export default function ConsentScreen() {
           </Text>
         ))}
 
-        <Pressable
-          onPress={handleAgree}
-          disabled={busy}
-          style={[styles.agreeBtn, busy && styles.agreeBusy]}
-          accessibilityRole="button"
-          accessibilityLabel={consentCopy.agreeLabel}
-        >
-          {busy ? (
-            <ActivityIndicator color={theme.colors.accentText} />
-          ) : (
-            <Text style={styles.agreeText}>{consentCopy.agreeLabel}</Text>
-          )}
-        </Pressable>
+        <View style={styles.agreeRow}>
+          <AppButton onPress={handleAgree} loading={busy}>
+            {consentCopy.agreeLabel}
+          </AppButton>
+        </View>
 
         <Pressable
           onPress={handleDecline}

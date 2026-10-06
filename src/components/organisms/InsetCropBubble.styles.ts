@@ -10,7 +10,9 @@ export const styles = StyleSheet.create((theme) => ({
     // needs a real edge to dock against (2026-08-07). Centering while
     // expanded is done with a computed translateX in the component instead.
     top: 0,
-    right: theme.spacing.md,
+    // Half the standard edge inset: the Cat Form bubble docks tight to the
+    // screen edge. The component's centering offset uses the same value.
+    right: theme.spacing.md / 2,
   },
   wrapTopRight: {
     // Annotate's expanded dock position (#202 fix — was bottom-right,
@@ -24,15 +26,11 @@ export const styles = StyleSheet.create((theme) => ({
     // Rounded square, not the #168 prototype's circular pill (regression
     // fix, #186) — a fixed corner radius, not diameter/2, so it stays a
     // square at any size instead of degenerating into a circle.
-    borderRadius: theme.radius.lg,
-    borderWidth: 2,
-    borderColor: theme.colors.accent,
+    // Corner radius and border width are set by the component, which
+    // compensates them for the collapse scale.
+    borderColor: theme.colors.text,
     backgroundColor: theme.colors.surface,
-    shadowColor: theme.colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 6,
+    ...theme.elevation.raised,
   },
   image: {
     position: 'absolute',

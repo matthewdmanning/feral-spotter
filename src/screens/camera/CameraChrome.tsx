@@ -11,6 +11,7 @@
  * preview is backend-specific.
  */
 
+import { AppButton } from '@/src/components/atoms/AppButton'
 import type { SubmissionPhoto } from '@/src/types'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { SwitchCamera, X, Zap, ZapOff } from 'lucide-react-native'
@@ -52,22 +53,14 @@ export function CameraGate({
     <View style={styles.gate}>
       <Text style={styles.gateTitle}>{title}</Text>
       {body ? <Text style={styles.gateBody}>{body}</Text> : null}
-      <Pressable
-        onPress={onPrimary}
-        style={styles.gatePrimary}
-        accessibilityRole="button"
-      >
-        <Text style={styles.gatePrimaryText}>{primaryLabel}</Text>
-      </Pressable>
-      {showOpenSettings ? (
-        <Pressable
-          onPress={() => Linking.openSettings()}
-          style={styles.gateSecondary}
-          accessibilityRole="button"
-        >
-          <Text style={styles.gateSecondaryText}>Open Settings</Text>
-        </Pressable>
-      ) : null}
+      <View style={styles.gateActions}>
+        <AppButton onPress={onPrimary}>{primaryLabel}</AppButton>
+        {showOpenSettings ? (
+          <AppButton variant="secondary" onPress={() => Linking.openSettings()}>
+            Open Settings
+          </AppButton>
+        ) : null}
+      </View>
     </View>
   )
 }
@@ -129,7 +122,7 @@ export function CameraTopBar({
         accessibilityRole="button"
         accessibilityLabel="Close camera"
       >
-        <X size={24} color={theme.colors.text} />
+        <X size={theme.iconSize.lg} color={theme.colors.text} />
       </Pressable>
       <View style={styles.topBarRight}>
         {photoCount > 0 && (
@@ -148,9 +141,9 @@ export function CameraTopBar({
           accessibilityLabel={`Flash ${flashMode}`}
         >
           {flashMode === 'on' ? (
-            <Zap size={22} color={theme.colors.warning} />
+            <Zap size={theme.iconSize.lg} color={theme.colors.warning} />
           ) : (
-            <ZapOff size={22} color={theme.colors.text} />
+            <ZapOff size={theme.iconSize.lg} color={theme.colors.text} />
           )}
           {flashMode === 'auto' && <Text style={styles.autoA}>A</Text>}
         </Pressable>
@@ -236,7 +229,7 @@ export function CameraShutterRow({
         accessibilityRole="button"
         accessibilityLabel="Switch camera"
       >
-        <SwitchCamera size={30} color={theme.colors.text} />
+        <SwitchCamera size={theme.iconSize.lg} color={theme.colors.text} />
       </Pressable>
       <Animated.View style={shutterStyle}>
         <Pressable

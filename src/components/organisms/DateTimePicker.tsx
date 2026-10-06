@@ -69,7 +69,7 @@ export function DateTimePickerButton({
         accessibilityLabel={label}
         accessibilityRole="button"
       >
-        <Icon size={16} color={theme.colors.muted} />
+        <Icon size={theme.iconSize.md} color={theme.colors.muted} />
         <Text style={styles.triggerText}>{formatValue(value, mode)}</Text>
       </Pressable>
 

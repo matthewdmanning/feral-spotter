@@ -1,3 +1,4 @@
+import { AppButton } from '@/src/components/atoms/AppButton'
 import { useCallback, useState } from 'react'
 import { View, Text, Pressable, ScrollView } from 'react-native'
 import { router } from 'expo-router'
@@ -38,7 +39,7 @@ export default function AnalyticsConsentScreen() {
             ]}
           >
             {analyticsEnabled && (
-              <Check size={14} color={theme.colors.accentText} />
+              <Check size={theme.iconSize.sm} color={theme.colors.accentText} />
             )}
           </View>
           <Text style={styles.analyticsItemText}>
@@ -47,14 +48,11 @@ export default function AnalyticsConsentScreen() {
           </Text>
         </Pressable>
 
-        <Pressable
-          onPress={handleContinue}
-          style={styles.continueBtn}
-          accessibilityRole="button"
-          accessibilityLabel={analytics.continueLabel}
-        >
-          <Text style={styles.continueText}>{analytics.continueLabel}</Text>
-        </Pressable>
+        <View style={styles.continueRow}>
+          <AppButton onPress={handleContinue}>
+            {analytics.continueLabel}
+          </AppButton>
+        </View>
       </ScrollView>
     </View>
   )

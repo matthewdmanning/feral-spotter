@@ -121,6 +121,7 @@ export default function CatObservationScreen() {
               onDiameterChange={setBubbleDiameter}
               onCollapsedChange={setBubbleCollapsed}
               onSettledChange={setBubbleSettledCollapsed}
+              draggable
             />
           )}
         </View>

@@ -3,30 +3,24 @@ import { StyleSheet } from 'react-native-unistyles'
 export const styles = StyleSheet.create((theme) => ({
   card: {
     borderRadius: theme.radius.xl,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
     backgroundColor: theme.colors.surface,
+    ...theme.elevation.card,
+    ...theme.outlined,
   },
   row: {
     paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
+    paddingVertical: theme.spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.lg,
+    gap: theme.spacing.md,
   },
   left: { alignItems: 'center', gap: theme.spacing.xs, minWidth: 52 },
-  catCount: {
-    fontSize: theme.typography.xs,
-    fontWeight: '600',
-    color: theme.colors.muted,
-  },
-  centre: { flex: 1, alignItems: 'center' },
-  datetime: {
-    fontSize: theme.typography.sm,
-    fontWeight: '600',
-    color: theme.colors.text,
-  },
+  catCount: { ...theme.textVariants.caption, color: theme.colors.muted },
+  // Left-aligned so the date starts at the same edge on every card, rather
+  // than floating to wherever its width centres it.
+  centre: { flex: 1, alignItems: 'flex-start' },
+  datetime: { ...theme.textVariants.labelSmall, color: theme.colors.text },
   right: { alignItems: 'flex-end', gap: 2 },
-  photoCount: { fontSize: theme.typography.xs, color: theme.colors.muted },
-  status: { fontSize: theme.typography.xs, fontWeight: '600' },
+  photoCount: { ...theme.textVariants.caption, color: theme.colors.muted },
+  status: { ...theme.textVariants.caption, fontWeight: '700' },
 }))

@@ -1,4 +1,5 @@
 import { showAlert } from '@/src/hooks/useUIStore'
+import { AppButton } from '@/src/components/atoms/AppButton'
 import { AnnotateCarouselItem } from '@/src/components/organisms/AnnotateCarouselItem'
 import { InsetCropBubble } from '@/src/components/organisms/InsetCropBubble'
 import { TutorialOverlay } from '@/src/components/organisms/TutorialOverlay'
@@ -73,16 +74,15 @@ export default function AnnotateScreen() {
     return (
       <View style={styles.empty}>
         <Text style={styles.emptyText}>No photos to review.</Text>
-        <Pressable
+        <AppButton
+          variant="secondary"
           onPress={() => {
             clearActiveCat()
             router.back()
           }}
-          style={styles.emptyBtn}
-          accessibilityRole="button"
         >
-          <Text style={styles.emptyBtnText}>Go back</Text>
-        </Pressable>
+          Go back
+        </AppButton>
       </View>
     )
 
@@ -107,7 +107,7 @@ export default function AnnotateScreen() {
             accessibilityRole="button"
             accessibilityLabel="Remove photo"
           >
-            <Trash2 size={18} color={theme.colors.muted} />
+            <Trash2 size={theme.iconSize.md} color={theme.colors.muted} />
           </Pressable>
         </View>
         <View style={styles.dotsRow}>
@@ -119,7 +119,8 @@ export default function AnnotateScreen() {
                 style={[
                   styles.dot,
                   {
-                    width: i === currentIndex ? 20 : 7,
+                    width:
+                      i === currentIndex ? theme.spacing.xl : theme.spacing.sm,
                     backgroundColor:
                       i === currentIndex
                         ? theme.colors.text
@@ -187,33 +188,26 @@ export default function AnnotateScreen() {
 
       {/* Bottom buttons — below carousel, never covered by canvas */}
       <View style={styles.bottomBar}>
-        <Pressable
+        <AppButton
+          variant="secondary"
+          size="compact"
           onPress={handlePrevPhoto}
           disabled={isFirst}
-          style={[
-            styles.navBtn,
-            styles.navBtnSecondary,
-            isFirst && styles.navBtnDisabled,
-          ]}
-          accessibilityRole="button"
+          flex1
         >
-          <Text style={styles.navBtnSecondaryText}>← Previous</Text>
-        </Pressable>
-        <Pressable
+          ← Previous
+        </AppButton>
+        <AppButton
+          variant="secondary"
+          size="compact"
           onPress={handleNotInPhoto}
-          style={styles.pillBtn}
-          accessibilityRole="button"
           accessibilityLabel="Not in this photo"
         >
-          <Text style={styles.pillBtnText}>Not in Photo</Text>
-        </Pressable>
-        <Pressable
-          onPress={handleBoxingComplete}
-          style={[styles.navBtn, styles.navBtnPrimary]}
-          accessibilityRole="button"
-        >
-          <Text style={styles.navBtnPrimaryText}>Done With This Cat</Text>
-        </Pressable>
+          Not in Photo
+        </AppButton>
+        <AppButton size="compact" onPress={handleBoxingComplete} flex1>
+          Done With This Cat
+        </AppButton>
       </View>
 
       <TutorialOverlay

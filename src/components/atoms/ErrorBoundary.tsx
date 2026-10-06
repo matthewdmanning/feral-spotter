@@ -56,7 +56,7 @@ function ErrorFallback({
   const { theme } = useUnistyles()
   return (
     <View style={styles.container}>
-      <AlertCircle size={64} color={theme.colors.danger} />
+      <AlertCircle size={theme.iconSize.hero} color={theme.colors.danger} />
       <View style={styles.textGroup}>
         <Text style={styles.title}>Something went wrong</Text>
         <Text style={styles.subtitle}>

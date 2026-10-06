@@ -177,16 +177,25 @@ export default function CreateSubmissionScreen() {
           style={styles.statusItem}
         >
           {showLocationWarning ? (
-            <AlertCircle size={20} color={theme.colors.warning} />
+            <AlertCircle
+              size={theme.iconSize.md}
+              color={theme.colors.warning}
+            />
           ) : (
-            <CheckCircle size={20} color={theme.colors.success} />
+            <CheckCircle
+              size={theme.iconSize.md}
+              color={theme.colors.success}
+            />
           )}
           <Text style={styles.statusItemText}>Location</Text>
         </Pressable>
 
         {showTimeWarning ? (
           <View style={styles.statusItem}>
-            <AlertCircle size={20} color={theme.colors.warning} />
+            <AlertCircle
+              size={theme.iconSize.md}
+              color={theme.colors.warning}
+            />
             <DateTimePickerButton
               value={
                 submission.manual_time
@@ -200,7 +209,10 @@ export default function CreateSubmissionScreen() {
           </View>
         ) : (
           <View style={styles.statusItem}>
-            <CheckCircle size={20} color={theme.colors.success} />
+            <CheckCircle
+              size={theme.iconSize.md}
+              color={theme.colors.success}
+            />
             <Text style={styles.statusItemText}>Date & Time Recorded</Text>
           </View>
         )}
@@ -230,7 +242,7 @@ export default function CreateSubmissionScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={`Remove cat: ${label}`}
               >
-                <Trash2 size={18} color={theme.colors.danger} />
+                <Trash2 size={theme.iconSize.md} color={theme.colors.danger} />
               </Pressable>
             </Pressable>
           )
@@ -245,15 +257,9 @@ export default function CreateSubmissionScreen() {
             saw. Your photos are still here either way.
           </Text>
         )}
-        <Pressable
-          onPress={handleAddCat}
-          style={styles.addCatBtn}
-          accessibilityRole="button"
-        >
-          <Text style={styles.addCatBtnText}>
-            {cats.length === 0 ? 'Annotate Photos' : 'Add a Cat'}
-          </Text>
-        </Pressable>
+        <AppButton variant="secondary" onPress={handleAddCat}>
+          {cats.length === 0 ? 'Annotate Photos' : 'Add a Cat'}
+        </AppButton>
         {cats.length === 0 && (
           // Describing a cat without annotating it first: it saves with an
           // empty photo_local_ids (useCatSubmit derives that from boxes) — a
@@ -267,40 +273,26 @@ export default function CreateSubmissionScreen() {
         )}
       </View>
 
-      <Pressable
-        onPress={handleAddMorePhotos}
-        style={styles.addPhotosBtn}
-        accessibilityRole="button"
-      >
-        <Text style={styles.addPhotosBtnText}>
+      {/* Actions pinned to the bottom, in the order a user reaches for them:
+          finish, add photos, start over. */}
+      <View style={styles.bottomActions}>
+        {/* #375: "Finished!" is a hard block at zero cats (#265), and the
+            button said nothing about it. */}
+        {cats.length === 0 && (
+          <Text style={styles.disabledReason}>
+            Describe at least one cat before you finish.
+          </Text>
+        )}
+        <AppButton onPress={handleDone} disabled={cats.length === 0}>
+          Finished!
+        </AppButton>
+        <AppButton variant="secondary" onPress={handleAddMorePhotos}>
           {photoSource === 'camera' ? 'Take More Photos' : 'Select More Photos'}
-        </Text>
-      </Pressable>
-
-      {/* #375: "Finished!" is a hard block at zero cats (#265), and the
-          button said nothing about it. */}
-      {cats.length === 0 && (
-        <Text style={styles.disabledReason}>
-          Describe at least one cat before you finish.
-        </Text>
-      )}
-
-      <Pressable
-        onPress={handleDone}
-        disabled={cats.length === 0}
-        style={[styles.doneBtn, cats.length === 0 && styles.doneBtnDisabled]}
-        accessibilityRole="button"
-      >
-        <Text style={styles.doneBtnText}>Finished!</Text>
-      </Pressable>
-
-      <Pressable
-        onPress={handleReset}
-        style={styles.resetBtn}
-        accessibilityRole="button"
-      >
-        <Text style={styles.resetBtnText}>Reset</Text>
-      </Pressable>
+        </AppButton>
+        <AppButton variant="danger" onPress={handleReset}>
+          Reset
+        </AppButton>
+      </View>
     </View>
   )
 }

@@ -50,7 +50,12 @@ export default function FeralReportsScreen() {
           </View>
           {caches.length === 0 ? (
             <View style={styles.empty}>
-              <Clock size={32} color={theme.colors.border} />
+              <View style={styles.emptyIcon}>
+                <Clock
+                  size={theme.iconSize.xl}
+                  color={theme.colors.accentSoftText}
+                />
+              </View>
               <Text style={styles.emptyTitle}>No reports yet</Text>
               <Text style={styles.emptyBody}>
                 Submissions appear here as you create them
