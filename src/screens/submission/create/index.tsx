@@ -1,7 +1,8 @@
 import { LOCATION_ACCURACY_THRESHOLD_M } from '@/src/config/location'
 import { AppButton } from '@/src/components/atoms/AppButton'
 import { DateTimePickerButton } from '@/src/components/organisms/DateTimePicker'
-import { useSubmissionStore } from '@/src/hooks'
+import { showAlert, useSubmissionStore } from '@/src/hooks'
+import { useBackHandler } from '@/src/hooks/useBackHandler'
 import { useSubmissionSubmit } from '@/src/hooks/useSubmissionSubmit'
 import { useLibraryPhotoPicker } from '@/src/hooks/useLibraryPhotoPicker'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
@@ -12,7 +13,12 @@ import {
   getCurrentCacheId,
 } from '@/src/lib/cache/submissionCache'
 import { buildCacheMetadata } from '@/src/lib/submission/payload'
-import { router, useLocalSearchParams, type Href } from 'expo-router'
+import {
+  router,
+  useIsFocused,
+  useLocalSearchParams,
+  type Href,
+} from 'expo-router'
 import { randomUUID } from 'expo-crypto'
 import { AlertCircle, CheckCircle, Trash2 } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
@@ -42,7 +48,7 @@ export default function CreateSubmissionScreen() {
   const cats = useSubmissionStore((s) => s.cats)
 
   const capture = useLocationCapture()
-  const { handleDone, handleReset } = useSubmissionSubmit()
+  const { handleDone, handleReset, handleDiscard } = useSubmissionSubmit()
 
   // No back path off this screen (#156) — instead, a bottom action returns
   // the user to whichever entrypoint sourced this draft (ADR 0002
@@ -56,6 +62,27 @@ export default function CreateSubmissionScreen() {
       pickFromLibrary()
     }
   }, [photoSource, pickFromLibrary])
+
+  // The header back and swipe-back are off here, but Android's hardware Back
+  // still pops to Home, which offers a draft's owner nothing: they either
+  // keep adding photos or drop the draft. Ask which. Gated on focus because
+  // this screen stays mounted under Cat Form and the map picker, whose own
+  // Back must not reach this handler.
+  const isFocused = useIsFocused()
+  const handleBackPress = useCallback(() => {
+    if (!isFocused) return false
+    showAlert('Leave Submission?', 'Your draft is not sent yet.', [
+      { text: 'Stay', style: 'cancel' },
+      {
+        text:
+          photoSource === 'camera' ? 'Take More Photos' : 'Select More Photos',
+        onPress: handleAddMorePhotos,
+      },
+      { text: 'Discard Draft', style: 'destructive', onPress: handleDiscard },
+    ])
+    return true
+  }, [isFocused, photoSource, handleAddMorePhotos, handleDiscard])
+  useBackHandler(handleBackPress)
 
   // Mount-once (#224 follow-up): this only needs to ensure a cache row
   // exists for the current draft, not react to every field edit. Depending

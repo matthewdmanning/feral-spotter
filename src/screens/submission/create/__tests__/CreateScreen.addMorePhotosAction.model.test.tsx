@@ -29,6 +29,7 @@ jest.mock('react-native-mmkv', () => ({
 const mockPickFromLibrary = jest.fn()
 
 jest.mock('expo-router', () => ({
+  useIsFocused: () => true,
   useLocalSearchParams: () => ({}),
   router: {
     push: jest.fn(),

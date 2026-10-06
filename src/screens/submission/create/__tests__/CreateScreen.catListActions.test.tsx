@@ -39,6 +39,7 @@ jest.mock('react-native-mmkv', () => ({
 let mockParams: { removed?: string } = {}
 
 jest.mock('expo-router', () => ({
+  useIsFocused: () => true,
   useLocalSearchParams: () => mockParams,
   router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() },
 }))
