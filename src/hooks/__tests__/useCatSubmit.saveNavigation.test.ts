@@ -49,9 +49,7 @@ const filledForm: CatFormValues = {
 
 describe('useCatSubmit — save navigation (#203)', () => {
   it('replaces to Cat List, never a default pop to Camera', () => {
-    const { result } = renderHook(() =>
-      useCatSubmit({ form: filledForm, annotationEnabled: false }),
-    )
+    const { result } = renderHook(() => useCatSubmit({ form: filledForm }))
 
     result.current.handleSave()
 

@@ -9,5 +9,4 @@ export const styles = StyleSheet.create((theme) => ({
   },
   inner: { padding: theme.spacing.xl, gap: theme.spacing.xl },
   section: { gap: theme.spacing.md },
-  actions: { gap: theme.spacing.md },
 }))

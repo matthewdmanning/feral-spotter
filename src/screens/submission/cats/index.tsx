@@ -1,3 +1,4 @@
+import { AppButton } from '@/src/components/atoms/AppButton'
 import { CatForm } from '@/src/components/organisms/CatForm'
 import {
   COLLAPSED_DIAMETER,
@@ -10,7 +11,6 @@ import { useActiveCatFlow } from '@/src/hooks/useActiveCatFlow'
 import { useCatForm } from '@/src/hooks/useCatForm'
 import { useCatSubmit } from '@/src/hooks/useCatSubmit'
 import { useRemoveCat } from '@/src/hooks/useRemoveCat'
-import { useSettingsStore } from '@/src/hooks/useSettingsStore'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
@@ -25,13 +25,10 @@ export default function CatObservationScreen() {
   const existingCat = editId
     ? cats.find((c) => c.local_id === editId)
     : undefined
-  const annotationEnabled = useSettingsStore(
-    (s) => s.settings.annotation_enabled,
-  )
   const { activeCatId } = useActiveCatFlow()
 
   const form = useCatForm(existingCat)
-  const submit = useCatSubmit({ form, existingCat, annotationEnabled })
+  const submit = useCatSubmit({ form, existingCat })
   const catId = existingCat?.local_id ?? activeCatId
 
   // Backing out of an unsaved cat would otherwise leave it in progress, and
@@ -125,7 +122,13 @@ export default function CatObservationScreen() {
             />
           )}
         </View>
-        <CatForm form={form} submit={submit} onRemove={handleRemove} />
+        <CatForm form={form} />
+        <AppButton onPress={submit.handleSave}>Save</AppButton>
+        {handleRemove && (
+          <AppButton onPress={handleRemove} variant="danger">
+            Remove this Cat
+          </AppButton>
+        )}
       </View>
     </ScrollView>
   )

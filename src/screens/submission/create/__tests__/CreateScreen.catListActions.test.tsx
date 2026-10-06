@@ -5,6 +5,7 @@ import {
   waitFor,
 } from '@testing-library/react-native'
 import { router } from 'expo-router'
+import { useUIStore } from '@/src/hooks/useUIStore'
 import React from 'react'
 import CreateSubmissionScreen from '../index'
 
@@ -163,12 +164,21 @@ describe('Cat List actions', () => {
     expect(screen.queryByText('Orange')).toBeNull()
 
     fireEvent.press(screen.getByText('Kitten · solid · long hair'))
-    expect(screen.queryByText('Edit Cat')).toBeNull()
+    expect(screen.queryByText('Edit')).toBeNull()
   })
 
-  it('Edit Cat opens Cat Form pre-filled for that cat, not another one', () => {
+  it('offers Delete only on an open cat, and asks before removing', () => {
+    expect(screen.queryByText('Delete')).toBeNull()
+
     fireEvent.press(screen.getByText('Kitten · solid · long hair'))
-    fireEvent.press(screen.getByText('Edit Cat'))
+    fireEvent.press(screen.getByText('Delete'))
+
+    expect(useUIStore.getState().dialog?.title).toBe('Remove this cat?')
+  })
+
+  it('Edit opens Cat Form pre-filled for that cat, not another one', () => {
+    fireEvent.press(screen.getByText('Kitten · solid · long hair'))
+    fireEvent.press(screen.getByText('Edit'))
     expect(router.push).toHaveBeenCalledWith({
       pathname: '/submission/cats',
       params: { edit: 'cat-2' },

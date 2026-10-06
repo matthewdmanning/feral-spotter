@@ -61,18 +61,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
   },
   catDetailValue: { ...theme.textVariants.bodySmall, color: theme.colors.text },
   catRowText: { ...theme.textVariants.body, flex: 1, color: theme.colors.text },
-  // #299: 48x48 hit area, meeting the Material minimum touch target
-  // (docs/agents/ui-ux/reference/ux_principles.md) even though the glyph is
-  // smaller. Negative vertical margin keeps the taller target from growing
-  // the row itself.
-  catRowRemoveBtn: {
-    width: theme.controlHeight.touchTarget,
-    height: theme.controlHeight.touchTarget,
-    marginVertical: -theme.spacing.md,
-    marginRight: -theme.spacing.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  catActions: { flexDirection: 'row', gap: theme.spacing.md },
   // #299: the zero-cats state. Both routes back in are offered here — the
   // secondary one is outlined rather than filled so Annotate still reads as
   // the expected path on a first pass, without blocking the other. No

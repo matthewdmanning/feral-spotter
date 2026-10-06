@@ -62,9 +62,7 @@ const deliberatelyUnknownForm: CatFormValues = {
 describe('useCatSubmit — missing-field warning (#205)', () => {
   it('warns about every field left untouched (undefined)', () => {
     const alertSpy = jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
-    const { result } = renderHook(() =>
-      useCatSubmit({ form: untouchedForm, annotationEnabled: false }),
-    )
+    const { result } = renderHook(() => useCatSubmit({ form: untouchedForm }))
 
     result.current.handleSave()
 
@@ -80,10 +78,7 @@ describe('useCatSubmit — missing-field warning (#205)', () => {
   it('does not warn when Unknown/Unsure was deliberately chosen for every field', () => {
     const alertSpy = jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
     const { result } = renderHook(() =>
-      useCatSubmit({
-        form: deliberatelyUnknownForm,
-        annotationEnabled: false,
-      }),
+      useCatSubmit({ form: deliberatelyUnknownForm }),
     )
 
     result.current.handleSave()

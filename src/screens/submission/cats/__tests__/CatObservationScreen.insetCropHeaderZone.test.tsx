@@ -55,7 +55,6 @@ jest.mock('@/src/hooks/useAbandonCatGuard', () => ({
 jest.mock('@/src/hooks/useCatSubmit', () => ({
   useCatSubmit: () => ({
     handleSave: jest.fn(),
-    saveLabel: 'Save Observation',
   }),
 }))
 

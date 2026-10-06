@@ -25,7 +25,6 @@ import {
   CheckCircle,
   ChevronDown,
   ChevronUp,
-  Trash2,
 } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
@@ -294,19 +293,6 @@ export default function CreateSubmissionScreen() {
                       color={theme.colors.muted}
                     />
                   )}
-                  {/* #299: nested Pressable so tapping the trash removes the
-                    cat rather than toggling its details. */}
-                  <Pressable
-                    onPress={() => removeCatWithConfirm(cat.local_id)}
-                    style={styles.catRowRemoveBtn}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Remove cat: ${label}`}
-                  >
-                    <Trash2
-                      size={theme.iconSize.md}
-                      color={theme.colors.danger}
-                    />
-                  </Pressable>
                 </Pressable>
                 {isExpanded && (
                   <View style={styles.catDetails}>
@@ -316,17 +302,27 @@ export default function CreateSubmissionScreen() {
                         <Text style={styles.catDetailValue}>{value}</Text>
                       </View>
                     ))}
-                    <AppButton
-                      variant="secondary"
-                      onPress={() =>
-                        router.push({
-                          pathname: '/submission/cats',
-                          params: { edit: cat.local_id },
-                        })
-                      }
-                    >
-                      Edit Cat
-                    </AppButton>
+                    <View style={styles.catActions}>
+                      <AppButton
+                        variant="secondary"
+                        flex1
+                        onPress={() =>
+                          router.push({
+                            pathname: '/submission/cats',
+                            params: { edit: cat.local_id },
+                          })
+                        }
+                      >
+                        Edit
+                      </AppButton>
+                      <AppButton
+                        variant="danger"
+                        flex1
+                        onPress={() => removeCatWithConfirm(cat.local_id)}
+                      >
+                        Delete
+                      </AppButton>
+                    </View>
                   </View>
                 )}
               </View>
