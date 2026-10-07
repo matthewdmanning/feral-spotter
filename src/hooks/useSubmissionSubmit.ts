@@ -48,6 +48,8 @@ import { useCallback, useState } from 'react'
 export interface SubmissionSubmitResult {
   handleDone: () => void
   handleReset: () => void
+  /** Clears the draft and returns Home with no confirmation of its own. */
+  handleDiscard: () => Promise<void>
   isSubmitting: boolean
 }
 
@@ -274,6 +276,11 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
 
   // ── Reset → confirm → clear all (#153) ─────────────────────────────────────
 
+  const handleDiscard = useCallback(async () => {
+    await discardDraft()
+    router.replace('/')
+  }, [])
+
   const handleReset = useCallback(() => {
     showAlert(
       'Reset Submission',
@@ -283,14 +290,11 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
         {
           text: 'Reset',
           style: 'destructive',
-          onPress: async () => {
-            await discardDraft()
-            router.replace('/')
-          },
+          onPress: handleDiscard,
         },
       ],
     )
-  }, [])
+  }, [handleDiscard])
 
-  return { handleDone, handleReset, isSubmitting }
+  return { handleDone, handleReset, handleDiscard, isSubmitting }
 }

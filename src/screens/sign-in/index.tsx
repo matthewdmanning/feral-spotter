@@ -2,6 +2,7 @@ import { showAlert } from '@/src/hooks/useUIStore'
 import { useCallback, useState } from 'react'
 import { View, Text, TextInput, Pressable } from 'react-native'
 import { router } from 'expo-router'
+import { useUnistyles } from 'react-native-unistyles'
 import { AppButton } from '@/src/components/atoms/AppButton'
 import { useAuth } from '@/src/lib/auth/useAuth'
 import {
@@ -16,6 +17,7 @@ const isCancellation = (err: unknown) =>
   err instanceof Error && err.message === 'SIGN_IN_CANCELLED'
 
 export default function SignInScreen() {
+  const { theme } = useUnistyles()
   const { signInWithEmail, signInWithProvider } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -76,6 +78,7 @@ export default function SignInScreen() {
           value={email}
           onChangeText={setEmail}
           placeholder="Email"
+          placeholderTextColor={theme.colors.muted}
           autoCapitalize="none"
           autoComplete="email"
           keyboardType="email-address"
@@ -87,6 +90,7 @@ export default function SignInScreen() {
           value={password}
           onChangeText={setPassword}
           placeholder="Password"
+          placeholderTextColor={theme.colors.muted}
           autoCapitalize="none"
           secureTextEntry
           accessibilityLabel="Password"

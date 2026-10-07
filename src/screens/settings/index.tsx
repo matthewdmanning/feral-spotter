@@ -3,10 +3,17 @@ import {
   setThemeMode,
   type ThemeMode,
 } from '@/src/config/unistyles'
+import { AppButton } from '@/src/components/atoms/AppButton'
 import { SegmentedControl } from '@/src/components/atoms/SegmentedControl'
+import {
+  getHapticsEnabled,
+  selectionHaptic,
+  setHapticsEnabled,
+} from '@/src/lib/haptics'
 import { useSettingsDraft } from '@/src/hooks/useSettingsDraft'
+import { APP_VERSION } from '@/src/config/constants'
 import { router } from 'expo-router'
-import { Check, FileText, Key, Trash2 } from 'lucide-react-native'
+import { Check, FileText, Key } from 'lucide-react-native'
 import { useState } from 'react'
 import {
   Platform,
@@ -42,67 +49,77 @@ const PHOTO_TOGGLES = [
     key: 'improved_camera_capture',
     label: 'Improved Camera Capture',
     desc: 'Use device-aware VisionCamera capture on Android',
+    devOnly: true,
     platform: 'android',
   },
   {
     key: 'ios_improved_camera_capture',
     label: 'Improved iPhone Capture',
     desc: 'Use the optimized VisionCamera + AVFoundation fallback on iOS',
+    devOnly: true,
     platform: 'ios',
   },
   {
     key: 'native_camera_capture',
     label: 'Native Camera Capture',
     desc: 'Use AVFoundation on iOS or CameraX on Android; the VisionCamera path remains available',
+    devOnly: true,
     platform: null,
   },
   {
     key: 'camera_max_detail',
     label: 'Maximum Detail',
     desc: 'Prefer the highest still-photo resolution exposed by the native camera',
+    devOnly: true,
     platform: null,
   },
   {
     key: 'camera_motion_priority',
     label: 'Motion Priority',
     desc: 'Favor device-supported low-latency capture and shorter exposure behavior',
+    devOnly: true,
     platform: null,
   },
   {
     key: 'camera_disable_low_light_boost',
     label: 'Disable Low-Light Boost',
     desc: 'Avoid platform low-light modes that may trade motion detail for brightness',
+    devOnly: true,
     platform: null,
   },
   {
     key: 'camera_subject_metering',
     label: 'Subject Metering',
     desc: 'Allow a bounding-box localizer to steer native focus and exposure',
+    devOnly: true,
     platform: null,
   },
   {
     key: 'camera_pinch_zoom',
     label: 'Pinch to Zoom',
     desc: 'Allow pinch to zoom the camera preview; a zoomed capture is a cropped capture',
+    devOnly: true,
     platform: null,
   },
   {
     key: 'camera_performance_checks',
     label: 'Camera Performance Checks',
     desc: 'Attach comparable camera timing data to PostHog events for A/B testing',
+    devOnly: true,
     platform: null,
   },
 ] as const
 
-const ENABLED_BY_DEFAULT = new Set([
-  'keep_photos_on_device',
-  'camera_max_detail',
-  'camera_motion_priority',
-])
-
 export default function SettingsScreen() {
   const { theme } = useUnistyles()
   const [themeMode, setSelectedThemeMode] = useState<ThemeMode>(getThemeMode)
+  const [hapticsOn, setHapticsOn] = useState(getHapticsEnabled)
+  // Like the theme, this applies at once rather than waiting for Save.
+  const toggleHaptics = (next: boolean) => {
+    setHapticsEnabled(next)
+    setHapticsOn(next)
+    selectionHaptic()
+  }
   const {
     draft,
     patch,
@@ -114,12 +131,15 @@ export default function SettingsScreen() {
     setConfirmPassword,
     handleSave,
     handleDiscard,
-    handleClearDraft,
     handleRemovePassword,
   } = useSettingsDraft()
 
+  // Experimental camera tuning ships only in development installs, never in
+  // Alpha, Beta or Preview builds (so not IS_PRERELEASE, which includes them).
   const photoToggles = PHOTO_TOGGLES.filter(
-    ({ platform }) => platform === null || platform === Platform.OS,
+    (toggle) =>
+      ('devOnly' in toggle ? __DEV__ : true) &&
+      (toggle.platform === null || toggle.platform === Platform.OS),
   )
 
   return (
@@ -152,11 +172,35 @@ export default function SettingsScreen() {
           </View>
 
           <View style={styles.card}>
+            <Text style={styles.cardTitle}>Haptic Feedback</Text>
+            <View style={styles.toggleRow}>
+              <View style={styles.toggleTextGroup}>
+                <Text style={styles.toggleLabel}>Vibration on Touch</Text>
+                <Text style={styles.hint}>
+                  A light click when you press a button or switch tabs
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => toggleHaptics(!hapticsOn)}
+                style={styles.switchTarget}
+                accessibilityRole="switch"
+                accessibilityLabel="Haptic Feedback"
+                accessibilityState={{ checked: hapticsOn }}
+              >
+                <UniSwitch value={hapticsOn} onValueChange={toggleHaptics} />
+              </Pressable>
+            </View>
+          </View>
+
+          <View style={styles.card}>
             <Text style={styles.cardTitle}>Authentication</Text>
             {passwordConfigured ? (
               <View style={styles.gap}>
                 <View style={styles.configuredRow}>
-                  <Check size={18} color={theme.colors.accentText} />
+                  <Check
+                    size={theme.iconSize.md}
+                    color={theme.colors.accentSoftText}
+                  />
                   <Text style={styles.configuredText}>Password configured</Text>
                 </View>
                 <Pressable
@@ -164,7 +208,7 @@ export default function SettingsScreen() {
                   style={styles.linkRow}
                   accessibilityRole="button"
                 >
-                  <Key size={16} color={theme.colors.danger} />
+                  <Key size={theme.iconSize.md} color={theme.colors.danger} />
                   <Text
                     style={[styles.linkText, { color: theme.colors.danger }]}
                   >
@@ -196,30 +240,9 @@ export default function SettingsScreen() {
           </View>
 
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Draft</Text>
-            <Pressable
-              onPress={handleClearDraft}
-              style={styles.linkRow}
-              accessibilityRole="button"
-            >
-              <Trash2 size={16} color={theme.colors.danger} />
-              <Text style={[styles.linkText, { color: theme.colors.danger }]}>
-                Clear Draft
-              </Text>
-            </Pressable>
-            <Text style={styles.hint}>
-              Clears the in-progress submission — cats, photos and location —
-              and returns you to the home screen. Photos saved to this device
-              are not deleted.
-            </Text>
-          </View>
-
-          <View style={styles.card}>
             <Text style={styles.cardTitle}>Photos</Text>
             {photoToggles.map(({ key, label, desc }, i) => {
-              const value = draft[key]
-              const on =
-                value === undefined ? ENABLED_BY_DEFAULT.has(key) : value
+              const on = draft[key]
               return (
                 <View key={key}>
                   {i > 0 && <View style={styles.divider} />}
@@ -248,14 +271,14 @@ export default function SettingsScreen() {
 
           <View style={styles.card}>
             <Text style={styles.cardTitle}>FeralSpotter</Text>
-            <Text style={styles.subtitle}>Version 1.0.0</Text>
+            <Text style={styles.subtitle}>Version {APP_VERSION}</Text>
             <View style={styles.divider} />
             <Pressable
               onPress={() => router.push('/data-agreement')}
               style={styles.linkRow}
               accessibilityRole="button"
             >
-              <FileText size={16} color={theme.colors.accent} />
+              <FileText size={theme.iconSize.md} color={theme.colors.accent} />
               <Text style={styles.linkText}>Data Policy</Text>
             </Pressable>
           </View>
@@ -263,22 +286,17 @@ export default function SettingsScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <Pressable
+        <AppButton
+          variant="danger"
           onPress={handleDiscard}
           disabled={isVerifying}
-          style={[styles.footerBtn, styles.footerBtnSecondary]}
+          flex1
         >
-          <Text style={styles.footerBtnSecondaryText}>Discard</Text>
-        </Pressable>
-        <Pressable
-          onPress={handleSave}
-          disabled={isVerifying}
-          style={[styles.footerBtn, styles.footerBtnPrimary]}
-        >
-          <Text style={styles.footerBtnPrimaryText}>
-            {isVerifying ? 'Verifying...' : 'Save'}
-          </Text>
-        </Pressable>
+          Discard
+        </AppButton>
+        <AppButton onPress={handleSave} loading={isVerifying} flex1>
+          Save
+        </AppButton>
       </View>
     </View>
   )

@@ -1,20 +1,10 @@
 import { act, render } from '@testing-library/react-native'
-import { StyleSheet } from 'react-native'
-import { createMachine } from 'xstate'
-import { createTestModel } from '@xstate/graph'
+import { ScrollView } from 'react-native'
 import CatObservationScreen from '../index'
 
 /**
- * #174's Cat Form no-field-overlap guarantee, extended by #202: the
- * header-zone container's `minHeight` must track not just the bubble's
- * reported diameter, but also its collapsed/expanded state — collapsed
- * reserves only `COLLAPSED_DIAMETER`, not whatever the bubble last expanded
- * to, or the header holds dead space once the bubble docks at the edge.
- * Modeled as a flow (not hand-written per-case assertions) because it's a
- * real sequence of states a live bubble walks the screen through: default
- * collapsed on mount, reports a diameter once a box exists, collapses back
- * down, re-expands. Subsumes the two hand-written cases this replaced
- * (default-diameter-before-report, and reserves-the-reported-diameter).
+ * The Cat Form page must not scroll under a bubble being dragged. The header
+ * zone's size is fixed, so no bubble state moves the form.
  */
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() },
@@ -55,7 +45,6 @@ jest.mock('@/src/hooks/useAbandonCatGuard', () => ({
 jest.mock('@/src/hooks/useCatSubmit', () => ({
   useCatSubmit: () => ({
     handleSave: jest.fn(),
-    saveLabel: 'Save Observation',
   }),
 }))
 
@@ -65,142 +54,36 @@ jest.mock('@/src/hooks/useSettingsStore', () => ({
   ) => sel({ settings: { annotation_enabled: true } }),
 }))
 
-const REPORTED_DIAMETER = 150
-const DEFAULT_DIAMETER = 68
-const COLLAPSED_DIAMETER = 68
-
-// The real InsetCropBubble owns its own default-collapsed / report-timing
-// behavior (covered by InsetCropBubble.collapseFlow.model.test.tsx). This
-// stub exposes its callback contract directly so the model here can drive
-// the screen's own reservation logic through each state a live bubble
-// would put it in, without re-testing the bubble's internals.
-let latestOnDiameterChange: ((d: number) => void) | undefined
-let latestOnCollapsedChange: ((c: boolean) => void) | undefined
+// The real InsetCropBubble owns its own drag behavior (see
+// InsetCropBubble.drag.test.tsx). This stub exposes only the hold callback
+// the screen consumes.
+let latestOnHoldChange: ((held: boolean) => void) | undefined
 
 jest.mock('@/src/components/organisms/InsetCropBubble', () => ({
   DEFAULT_DIAMETER: 68,
   COLLAPSED_DIAMETER: 68,
   InsetCropBubble: ({
-    onDiameterChange,
-    onCollapsedChange,
+    onHoldChange,
   }: {
-    onDiameterChange?: (d: number) => void
-    onCollapsedChange?: (c: boolean) => void
+    onHoldChange?: (held: boolean) => void
   }) => {
-    latestOnDiameterChange = onDiameterChange
-    latestOnCollapsedChange = onCollapsedChange
+    latestOnHoldChange = onHoldChange
     return null
   },
 }))
 
-const headerZoneMachine = createMachine({
-  id: 'catFormHeaderZone',
-  initial: 'mountedCollapsedNoDiameterYet',
-  states: {
-    mountedCollapsedNoDiameterYet: {
-      on: { EXPAND: 'expandedNoDiameterYet' },
-    },
-    expandedNoDiameterYet: {
-      on: { REPORT_DIAMETER: 'expandedWithDiameter' },
-    },
-    expandedWithDiameter: {
-      on: { COLLAPSE: 'collapsedAfterDiameterKnown' },
-    },
-    collapsedAfterDiameterKnown: {
-      on: { EXPAND: 'reExpandedRetainsDiameter' },
-    },
-    reExpandedRetainsDiameter: {},
-  },
-})
+describe('Cat Form page scroll while the bubble is held', () => {
+  // A drag on the bubble must not also scroll the page under it.
+  it('stops the page scrolling while a touch is on the bubble, and restores it after', () => {
+    const { UNSAFE_getByType } = render(<CatObservationScreen />)
+    const scrollEnabled = () => UNSAFE_getByType(ScrollView).props.scrollEnabled
 
-describe('Cat Form header zone — no-field-overlap guarantee (#174, #202)', () => {
-  let getByTestId: ReturnType<typeof render>['getByTestId']
+    expect(scrollEnabled()).toBe(true)
 
-  beforeEach(() => {
-    latestOnDiameterChange = undefined
-    latestOnCollapsedChange = undefined
-    const result = render(<CatObservationScreen />)
-    getByTestId = result.getByTestId
-  })
+    act(() => latestOnHoldChange?.(true))
+    expect(scrollEnabled()).toBe(false)
 
-  const minHeight = () => {
-    const headerZone = getByTestId('cat-form-header-zone')
-    const flattened = StyleSheet.flatten(headerZone.props.style) as {
-      minHeight?: number
-    }
-    return flattened.minHeight
-  }
-
-  const model = createTestModel(headerZoneMachine)
-
-  const testParams = {
-    states: {
-      mountedCollapsedNoDiameterYet: () => {
-        // Must never be 0/undefined — that would let the bubble's own
-        // (nonzero, absolutely-positioned) size overhang the header for a
-        // frame before either callback has fired. Note: DEFAULT_DIAMETER
-        // and COLLAPSED_DIAMETER are both 68 by design, so this assertion
-        // can't tell which one actually produced the value — the
-        // `expandedNoDiameterYet` state below (reached via journey 2's
-        // leading EXPAND event) is what actually pins bubbleDiameter's own
-        // default, independent of collapse state.
-        expect(minHeight()).toBe(DEFAULT_DIAMETER)
-      },
-      expandedNoDiameterYet: () => {
-        expect(minHeight()).toBe(DEFAULT_DIAMETER)
-      },
-      expandedWithDiameter: () => {
-        expect(minHeight()).toBe(REPORTED_DIAMETER)
-      },
-      collapsedAfterDiameterKnown: () => {
-        // The reservation shrinks to the collapsed size, not the diameter
-        // it was last expanded to (#202) — a stale full-size reservation
-        // would leave dead space in the header once the bubble docks.
-        expect(minHeight()).toBe(COLLAPSED_DIAMETER)
-      },
-      reExpandedRetainsDiameter: () => {
-        // Re-expanding restores the previously-reported diameter, not the
-        // pre-report default — the bubble doesn't forget its size.
-        expect(minHeight()).toBe(REPORTED_DIAMETER)
-      },
-    },
-    events: {
-      EXPAND: () => {
-        act(() => latestOnCollapsedChange?.(false))
-      },
-      REPORT_DIAMETER: () => {
-        act(() => latestOnDiameterChange?.(REPORTED_DIAMETER))
-      },
-      COLLAPSE: () => {
-        act(() => latestOnCollapsedChange?.(true))
-      },
-    },
-  }
-
-  const journeys = [
-    {
-      name: 'reserves the default before any diameter is known',
-      events: [],
-    },
-    {
-      name: 'reserves the reported diameter once expanded and known',
-      events: [{ type: 'EXPAND' }, { type: 'REPORT_DIAMETER' }],
-    },
-    {
-      name: 'shrinks to the collapsed size once docked, then restores on re-expand',
-      events: [
-        { type: 'EXPAND' },
-        { type: 'REPORT_DIAMETER' },
-        { type: 'COLLAPSE' },
-        { type: 'EXPAND' },
-      ],
-    },
-  ] as const
-
-  journeys.forEach(({ name, events }) => {
-    it(name, async () => {
-      const [path] = model.getPathsFromEvents(events)
-      await path.test(testParams)
-    })
+    act(() => latestOnHoldChange?.(false))
+    expect(scrollEnabled()).toBe(true)
   })
 })

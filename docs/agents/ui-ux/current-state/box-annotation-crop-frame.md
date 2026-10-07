@@ -18,6 +18,8 @@
 - Resize bound: the frame cannot grow past the photo's own on-screen extent at the current zoom level.
 - Photo gestures (pinch, pan, double-tap) reposition and zoom the photo underneath the frame, independent of handle drags — unchanged by the frame's resizability.
 - The annotate screen's carousel does not respond to horizontal swipe. Moving between photos happens only through the Previous button and automatic advance on Confirm / Not in Photo.
+- Add a Cat starts a fresh pass on the first photo. Nothing from an earlier unfinished pass shows or carries over: its cat and boxes are dropped.
+- Each photo shows the boxes of the cats already recorded, drawn in the photo's own pan and zoom. Each cat has one color from a fixed list of eight distinct colors (`catPalette` in `src/config/themes.ts`). The color is set when the cat's first box or Not in Photo mark is saved, and never changes while the cat exists. Removing another cat does not change it. A removed cat's color is reused only after every color has been handed out once.
 - The hardware back button does not exit the annotation pass. It is swallowed entirely; "Done With This Cat" is the only way to leave.
 
 ## Reason
@@ -27,4 +29,5 @@
 - Handles sit on the crosshairs rather than the border because, at the edge, they were easy to trigger by accident alongside the carousel's swipe gesture and harder to grab precisely. The crosshair is a fixed, predictable landmark regardless of the frame's current size.
 - The aspect ratio cap prevents a degenerate sliver-thin frame that would be useless as a crop region.
 - Carousel swipe was disabled because it competed with handle-drag and pinch-zoom for the same touch input, causing accidental photo changes mid-resize. Navigation is already fully covered by the Previous button and confirm-driven auto-advance, so the swipe gesture added risk without adding capability.
+- Recorded cats' boxes appear so the user can see which cats are already boxed and avoid boxing one twice. A color per cat tells them apart. The color is stored per cat, not computed from its position, so removing a cat never recolors the others.
 - The hardware back button is swallowed, rather than exiting the pass, because it fires the same JS event as an edge-swipe and the two can't be told apart — allowing one would allow the other. "Done With This Cat" already covers every exit case the back button would have, so blocking it costs no capability while removing an accidental-exit risk mid-pass.

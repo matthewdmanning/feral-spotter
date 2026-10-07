@@ -44,8 +44,8 @@ import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { computeCollapsedOffset } from '@/src/lib/insetCrop/collapse'
 import { computeBubbleDiameter } from '@/src/lib/insetCrop/diameter'
 import { Image } from 'expo-image'
-import { useEffect, useRef, useState } from 'react'
-import { Animated, Dimensions, Pressable } from 'react-native'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Animated, Dimensions, PanResponder, Pressable } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './InsetCropBubble.styles'
 
@@ -62,6 +62,11 @@ export const DEFAULT_DIAMETER = 68
 // not-yet-confirmed-box placeholder vs. a collapsed-state target size).
 export const COLLAPSED_DIAMETER = 68
 const COLLAPSE_DURATION_MS = 220
+const BORDER_WIDTH = 1.5
+// Grows the collapsed bubble's grab area by 50% (a quarter of its size per side).
+const GRAB_SLOP = COLLAPSED_DIAMETER / 4
+// Movement past this many dp is a drag, not a tap.
+const DRAG_SLOP = 2
 
 export type InsetCropEdge = 'top-center' | 'top-right'
 
@@ -88,6 +93,20 @@ interface InsetCropBubbleProps {
    * fade the title before the bubble has actually slid into place over it.
    */
   onSettledChange?: (collapsed: boolean) => void
+  /**
+   * Lets the user drag the bubble up and down. A drag starts on the first small movement,
+   * slides the bubble to the right edge on release, and stops it counting as
+   * covering the host's title. Collapsing or expanding it (a tap) keeps its
+   * height.
+   */
+  draggable?: boolean
+  /**
+   * True while a drag owns the touch: from the pan responder's grant until
+   * its release or termination. A tap never sets it. A host with a scrolling
+   * parent turns scrolling off while this is true, or the page scrolls under
+   * a dragged bubble.
+   */
+  onHoldChange?: (held: boolean) => void
 }
 
 export function InsetCropBubble({
@@ -96,9 +115,15 @@ export function InsetCropBubble({
   onDiameterChange,
   onCollapsedChange,
   onSettledChange,
+  draggable = false,
+  onHoldChange,
 }: InsetCropBubbleProps) {
   const { theme } = useUnistyles()
   const getFirstBox = useBoundingBoxStore((s) => s.getFirstBox)
+  // The cat's own color, so the bubble matches its box on the photo.
+  const catColor = useBoundingBoxStore(
+    (s) => theme.catPalette[s.catColors[catId]],
+  )
   const photos = usePhotoStore((s) => s.photos)
   const [natural, setNatural] = useState({ w: 0, h: 0 })
   // Collapsed by default (#202) — both screens land with the bubble docked
@@ -108,8 +133,13 @@ export function InsetCropBubble({
   // during render trips this repo's `react-hooks/refs` lint rule.
   const [slideAnim] = useState(() => new Animated.Value(1))
   const hasMounted = useRef(false)
-  const hasSettledMounted = useRef(false)
-
+  // JS-driven, on its own outer view: the collapse transform is
+  // native-driven, and one transform cannot mix the two drivers.
+  const [drag] = useState(() => new Animated.ValueXY())
+  const [moved, setMoved] = useState(false)
+  // Once moved off its dock, the bubble no longer covers the title or needs
+  // the header's reserved space.
+  const clearOfHost = collapsed || moved
   const box = getFirstBox(catId)
   const photo = box
     ? photos.find((p) => p.local_id === box.photo_local_id)
@@ -126,6 +156,67 @@ export function InsetCropBubble({
     boxWidthDp > 0 && boxHeightDp > 0
       ? computeBubbleDiameter(boxWidthDp, boxHeightDp)
       : DEFAULT_DIAMETER
+
+  // top-center sits at the horizontal center while expanded; a dropped bubble
+  // slides to the right edge so it never rests over the subheader text. The
+  // drag moves only its height.
+  const centeringOffset =
+    edge === 'top-center'
+      ? theme.spacing.md / 2 - (window.width - diameter) / 2
+      : 0
+  const snapX = collapsed ? 0 : -centeringOffset
+  const panResponder = useMemo(() => {
+    const settle = () => {
+      drag.flattenOffset()
+      onHoldChange?.(false)
+      Animated.timing(drag.x, {
+        toValue: snapX,
+        duration: COLLAPSE_DURATION_MS,
+        useNativeDriver: false,
+      }).start()
+      setMoved(true)
+    }
+    return PanResponder.create({
+      // Capture on the first small movement, so a drag starts at once and
+      // wins over the parent ScrollView, while a tap still reaches the
+      // Pressable.
+      // Only the collapsed bubble drags: expanded, it is a photo to look at.
+      onMoveShouldSetPanResponderCapture: (_, g) =>
+        draggable && collapsed && Math.hypot(g.dx, g.dy) > DRAG_SLOP,
+      onPanResponderGrant: () => {
+        // A snap from an earlier drop may still be running. Its target is
+        // absolute, so left running it would add to the offset taken here
+        // and fling the bubble off its spot on a quick second swipe.
+        drag.stopAnimation()
+        drag.extractOffset()
+        onHoldChange?.(true)
+      },
+      onPanResponderMove: Animated.event([null, { dx: drag.x, dy: drag.y }], {
+        useNativeDriver: false,
+      }),
+      onPanResponderTerminationRequest: () => false,
+      onPanResponderRelease: settle,
+      // The system can take the touch mid-drag (a two-finger swipe does).
+      // Settling here, not just letting go, keeps the extracted offset from
+      // stranding the bubble where it was dropped.
+      onPanResponderTerminate: settle,
+    })
+  }, [draggable, collapsed, drag, snapX, onHoldChange])
+
+  // A dragged bubble keeps its height through collapse and expand, and stays
+  // at the right edge: expanded it cancels the centering shift, collapsed it
+  // sits in the dock column.
+  const toggleCollapsed = () => {
+    if (moved) {
+      Animated.timing(drag.x, {
+        toValue: collapsed ? -centeringOffset : 0,
+        duration: COLLAPSE_DURATION_MS,
+        useNativeDriver: false,
+      }).start()
+    }
+    setCollapsed(!collapsed)
+  }
+  const hasSettledMounted = useRef(false)
 
   useEffect(() => {
     if (box && photo) onDiameterChange?.(diameter)
@@ -157,10 +248,10 @@ export function InsetCropBubble({
   useEffect(() => {
     if (!hasMounted.current) {
       hasMounted.current = true
-      onCollapsedChange?.(collapsed)
+      onCollapsedChange?.(clearOfHost)
       return
     }
-    if (!collapsed) {
+    if (!clearOfHost) {
       onCollapsedChange?.(false)
       return
     }
@@ -168,7 +259,7 @@ export function InsetCropBubble({
       onCollapsedChange?.(true)
     }, COLLAPSE_DURATION_MS)
     return () => clearTimeout(timer)
-  }, [collapsed, onCollapsedChange])
+  }, [clearOfHost, onCollapsedChange])
 
   // Symmetric version of the above for onSettledChange — delayed in both
   // directions, since a title fade needs "actually covering" rather than
@@ -177,14 +268,14 @@ export function InsetCropBubble({
   useEffect(() => {
     if (!hasSettledMounted.current) {
       hasSettledMounted.current = true
-      onSettledChange?.(collapsed)
+      onSettledChange?.(clearOfHost)
       return
     }
     const timer = setTimeout(() => {
-      onSettledChange?.(collapsed)
+      onSettledChange?.(clearOfHost)
     }, COLLAPSE_DURATION_MS)
     return () => clearTimeout(timer)
-  }, [collapsed, onSettledChange])
+  }, [clearOfHost, onSettledChange])
 
   // No box confirmed yet for this cat (story 2) — nothing to anchor on.
   if (!box || !photo) return null
@@ -219,45 +310,83 @@ export function InsetCropBubble({
   // collapsed (scaled-down) bubble's visual edge back at the anchor rather
   // than short of it or past it off-screen (#202 — see
   // src/lib/insetCrop/collapse.ts).
-  const centeringOffset =
-    edge === 'top-center' ? theme.spacing.md - (window.width - diameter) / 2 : 0
   const collapsedOffset = computeCollapsedOffset(diameter, COLLAPSED_DIAMETER)
   const translateX = slideAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [centeringOffset, collapsedOffset],
   })
+  // The scale shrinks toward the bubble's center, so the collapsed bubble
+  // would otherwise hang half the size delta below its dock, over whatever
+  // sits under the header zone (which reserves only COLLAPSED_DIAMETER).
+  // Lifting it by that delta docks its top edge at the zone's top.
+  const translateY = slideAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -collapsedOffset],
+  })
   const scale = slideAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [1, COLLAPSED_DIAMETER / diameter],
   })
-  const collapseTransform = [{ translateX }, { scale }]
+  const collapseTransform = [{ translateX }, { translateY }, { scale }]
+  // The collapse is a scale transform, which would thin the border and
+  // flatten the corners. Pre-scaling them by the inverse keeps both the same
+  // on screen in either state. Annotate's crop is barely rounded; Cat Form's
+  // is clearly rounded.
+  const edgeScale = collapsed ? diameter / COLLAPSED_DIAMETER : 1
+  const cornerRadius = edge === 'top-center' ? theme.radius.lg : theme.radius.xs
+
+  // The wrapper's layout box is the full unscaled bubble, far larger than a
+  // collapsed bubble looks. Touches go to the inner view instead: hit-testing
+  // follows its transform, so the grab area is what is drawn. Its slop is in
+  // pre-scale units, so it is scaled up to GRAB_SLOP on screen.
+  const grabSlop = collapsed ? (GRAB_SLOP * diameter) / COLLAPSED_DIAMETER : 0
 
   return (
     <Animated.View
+      pointerEvents="box-none"
       style={[
         styles.wrap,
         edge === 'top-center' ? styles.wrapTopCenter : styles.wrapTopRight,
-        { transform: collapseTransform },
+        { transform: drag.getTranslateTransform() },
       ]}
     >
-      <Pressable
-        testID="inset-crop-bubble"
-        onPress={() => setCollapsed((c) => !c)}
-        style={[styles.bubble, { width: diameter, height: diameter }]}
-        accessibilityRole="button"
-        accessibilityLabel={
-          collapsed ? 'Expand cat photo preview' : 'Collapse cat photo preview'
-        }
+      <Animated.View
+        style={{ transform: collapseTransform }}
+        hitSlop={grabSlop}
+        {...panResponder.panHandlers}
       >
-        <Image
-          source={{ uri: photo.uri }}
-          cachePolicy="memory-disk"
-          style={[styles.image, imageStyle]}
-          contentFit="cover"
-          onLoad={(e) => setNatural({ w: e.source.width, h: e.source.height })}
-          accessibilityLabel="Cropped photo of the cat being described"
-        />
-      </Pressable>
+        <Pressable
+          testID="inset-crop-bubble"
+          onPress={toggleCollapsed}
+          style={[
+            styles.bubble,
+            {
+              width: diameter,
+              height: diameter,
+              ...(catColor ? { borderColor: catColor } : null),
+              borderWidth: BORDER_WIDTH * edgeScale,
+              borderRadius: cornerRadius * edgeScale,
+            },
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel={
+            collapsed
+              ? 'Expand cat photo preview'
+              : 'Collapse cat photo preview'
+          }
+        >
+          <Image
+            source={{ uri: photo.uri }}
+            cachePolicy="memory-disk"
+            style={[styles.image, imageStyle]}
+            contentFit="cover"
+            onLoad={(e) =>
+              setNatural({ w: e.source.width, h: e.source.height })
+            }
+            accessibilityLabel="Cropped photo of the cat being described"
+          />
+        </Pressable>
+      </Animated.View>
     </Animated.View>
   )
 }

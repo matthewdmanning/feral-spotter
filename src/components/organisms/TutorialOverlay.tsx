@@ -8,6 +8,7 @@
  * sandboxed sample photo) per docs/planning/2026-07-14-annotation-tutorial-spec.md.
  */
 
+import { AppButton } from '@/src/components/atoms/AppButton'
 import { Modal, Pressable, Text, View } from 'react-native'
 import { useState } from 'react'
 import { useUnistyles } from 'react-native-unistyles'
@@ -97,13 +98,7 @@ export function TutorialOverlay({
           </Text>
           <Text style={styles.title}>{step.title}</Text>
           <Text style={styles.body}>{step.body}</Text>
-          <Pressable
-            onPress={handlePrimary}
-            style={styles.primary}
-            accessibilityRole="button"
-          >
-            <Text style={styles.primaryText}>{step.primaryLabel}</Text>
-          </Pressable>
+          <AppButton onPress={handlePrimary}>{step.primaryLabel}</AppButton>
         </View>
       </View>
     </Modal>

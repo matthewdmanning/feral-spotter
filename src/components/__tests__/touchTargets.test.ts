@@ -19,6 +19,8 @@
 import fs from 'fs'
 import path from 'path'
 
+import { darkTheme } from '@/src/config/themes'
+
 const SRC = path.join(__dirname, '..', '..')
 const TOUCH_TARGET_MIN_DP = 48
 
@@ -60,10 +62,19 @@ function parseStyles(file: string): Record<string, string> {
   return out
 }
 
-/** Vertical size a style pins, or null when it leaves height to its content. */
+/**
+ * Vertical size a style pins, or null when it leaves height to its content.
+ * Sizes are written either as literals or as `theme.controlHeight.*` tokens;
+ * tokens resolve against the real theme so a shrunk token still fails here.
+ */
 function declaredHeight(body: string): number | null {
-  const m = /\b(?:minHeight|height): (\d+)/.exec(body)
-  return m ? Number(m[1]) : null
+  const literal = /\b(?:minHeight|height): (\d+)/.exec(body)
+  if (literal) return Number(literal[1])
+  const token =
+    /\b(?:minHeight|height): theme\.controlHeight\.([A-Za-z]+)\b/.exec(body)
+  return token
+    ? darkTheme.controlHeight[token[1] as keyof typeof darkTheme.controlHeight]
+    : null
 }
 
 interface SizedTarget {
@@ -118,8 +129,10 @@ describe('touch targets', () => {
     // This caught a real defect on its first run: the parser matched against \n
     // while the files are checked in with CRLF, so it found nothing and made the
     // check above pass vacuously. Without this assertion that failure is silent.
+    // The count shrinks as hand-rolled buttons move into AppButton, which sizes
+    // every button in one place; the floor only has to prove the scan is live.
     const inspected = screens.flatMap(sizedPressableStyles)
 
-    expect(inspected.length).toBeGreaterThan(10)
+    expect(inspected.length).toBeGreaterThan(0)
   })
 })

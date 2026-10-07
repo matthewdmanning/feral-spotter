@@ -1,5 +1,6 @@
 import { View, Text, Pressable } from 'react-native'
 import { styles } from './SegmentedControl.styles'
+import { selectionHaptic } from '@/src/lib/haptics'
 
 interface Option<T extends string | number> {
   value: T
@@ -27,15 +28,15 @@ export function SegmentedControl<T extends string | number>({
       <View style={styles.row} accessibilityLabel={accessibilityLabel ?? label}>
         {options.map((opt, i) => {
           const selected = opt.value === value
-          const isLast = i === options.length - 1
           return (
             <Pressable
               key={String(opt.value)}
+              onPressIn={selectionHaptic}
               onPress={() => onChange(selected ? undefined : opt.value)}
-              style={[
+              style={({ pressed }) => [
                 styles.option,
                 selected ? styles.optionSelected : styles.optionIdle,
-                !isLast && styles.optionBorder,
+                pressed && styles.optionPressed,
               ]}
               accessibilityRole="button"
               accessibilityState={{ selected }}

@@ -16,6 +16,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 )
 
 jest.mock('expo-router', () => ({
+  useIsFocused: () => true,
   useLocalSearchParams: () => ({}),
   router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() },
 }))
@@ -57,6 +58,8 @@ jest.mock('../index.styles', () => ({
 jest.mock('lucide-react-native', () => ({
   AlertCircle: () => null,
   CheckCircle: () => null,
+  ChevronDown: () => null,
+  ChevronUp: () => null,
 }))
 
 describe('Create screen — location-commit invariant', () => {

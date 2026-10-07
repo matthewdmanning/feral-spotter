@@ -1,11 +1,13 @@
 import { Pressable, Text, View, ActivityIndicator } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './AppButton.styles'
+import { tapHaptic } from '@/src/lib/haptics'
 import type { ReactNode } from 'react'
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
 
-export type ButtonSize = 'circle'
+// compact: tighter side padding for rows that hold three buttons.
+export type ButtonSize = 'circle' | 'compact'
 
 export interface ColumnButton {
   key: string
@@ -54,22 +56,30 @@ export function AppButton({
     variant === 'primary'
       ? theme.colors.accentText
       : variant === 'danger'
-        ? theme.colors.danger
+        ? theme.colors.onDanger
         : variant === 'ghost'
           ? theme.colors.muted
-          : theme.colors.text
+          : theme.colors.onSecondary
 
   return (
     <Pressable
       onPress={onPress}
+      onPressIn={tapHaptic}
       disabled={isDisabled}
       accessibilityLabel={accessibilityLabel ?? children}
       accessibilityRole="button"
       accessibilityState={{ disabled: isDisabled }}
-      style={[
+      style={({ pressed }) => [
         styles.base,
         flex1 && styles.flex1,
         isDisabled && styles.disabled,
+        variant !== 'ghost' && {
+          // The bevel is a gradient inset over the face: it reads as height.
+          experimental_backgroundImage: pressed
+            ? `${theme.gradients.bevelPressed}, ${theme.gradients[`${variant}Pressed`]}`
+            : `${theme.gradients.bevel}, ${theme.gradients[variant]}`,
+        },
+        pressed && styles.pressed,
         diameter != null && {
           width: diameter,
           height: diameter,

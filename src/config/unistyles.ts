@@ -29,14 +29,15 @@ export { darkTheme, lightTheme }
  *   Varies by screen WIDTH (layout, max widths, column counts)
  *     -> breakpoint-keyed object:  { padding: { xs: 8, md: 24 } }
  *
- *   Derived from the DEVICE itself (safe-area insets, OS font scale, density)
+ *   Derived from the DEVICE itself (safe-area insets, density)
  *     -> the runtime argument:     StyleSheet.create((theme, rt) => ({
  *                                    paddingTop: rt.insets.top,
- *                                    fontSize: rt.fontScale * theme.typography.base,
  *                                  }))
  *
- * Reach for `rt.fontScale` rather than fixed sizes anywhere shrinking text
- * would hurt legibility — it carries the OS accessibility text-size setting.
+ * Text already follows the OS accessibility text-size setting: React Native
+ * multiplies fontSize and lineHeight by it. Do not multiply by
+ * `rt.fontScale` again — that scales text twice. Give text containers
+ * minHeight, never a fixed height, so they can grow with it.
  */
 const breakpoints = {
   xs: 0,

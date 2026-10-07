@@ -3,16 +3,13 @@ import { StyleSheet } from 'react-native-unistyles'
 export const styles = StyleSheet.create((theme, rt) => ({
   root: { flex: 1, backgroundColor: theme.colors.background },
   topBar: {
-    backgroundColor: theme.colors.surface,
     paddingHorizontal: theme.spacing.lg,
     // #187: annotate is a fullScreenModal with headerShown off, edge-to-edge
     // — with no top inset the OS status-bar strip overlapped topRow's
     // content, including the remove-photo button, so touches there hit the
     // status bar instead of the button.
-    paddingTop: rt.insets.top + 10,
-    paddingBottom: 10,
-    borderBottomWidth: 0.5,
-    borderBottomColor: theme.colors.surfaceAlt,
+    paddingTop: rt.insets.top + theme.spacing.sm,
+    paddingBottom: theme.spacing.md,
     zIndex: 2,
   },
   topRow: {
@@ -20,17 +17,12 @@ export const styles = StyleSheet.create((theme, rt) => ({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  counter: {
-    color: theme.colors.text,
-    fontSize: theme.typography.base,
-    fontWeight: '600',
-  },
+  counter: { ...theme.textVariants.label, color: theme.colors.text },
   removeBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.surfaceAlt,
+    width: theme.controlHeight.touchTarget,
+    height: theme.controlHeight.touchTarget,
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.colors.surfaceAlt,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -38,10 +30,10 @@ export const styles = StyleSheet.create((theme, rt) => ({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: theme.spacing.xs,
-    marginTop: theme.spacing.sm,
+    gap: theme.spacing.xs + 2,
+    marginTop: theme.spacing.xs,
   },
-  dot: { height: 7, borderRadius: 4 },
+  dot: { height: theme.spacing.sm, borderRadius: theme.radius.full },
   carousel: { flex: 1, backgroundColor: theme.colors.background },
   bottomBar: {
     flexDirection: 'row',
@@ -52,58 +44,14 @@ export const styles = StyleSheet.create((theme, rt) => ({
     // was drawn over the nav buttons, so touches near the bottom edge hit
     // the system bar instead of the button.
     paddingBottom: rt.insets.bottom + theme.spacing.md,
-    backgroundColor: theme.colors.surface,
-    borderTopWidth: 0.5,
-    borderTopColor: theme.colors.surfaceAlt,
     zIndex: 2,
   },
   // #375: the reason "← Previous" is disabled.
   disabledReason: {
+    ...theme.textVariants.bodySmall,
     color: theme.colors.muted,
-    fontSize: theme.typography.sm,
     textAlign: 'center',
     paddingHorizontal: theme.spacing.lg,
-  },
-  navBtn: {
-    minHeight: 48,
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: theme.radius.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  navBtnPrimary: { backgroundColor: theme.colors.accent },
-  navBtnPrimaryText: {
-    color: theme.colors.accentText,
-    fontSize: theme.typography.base,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  navBtnSecondary: {
-    backgroundColor: theme.colors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  navBtnSecondaryText: {
-    color: theme.colors.text,
-    fontSize: theme.typography.base,
-    fontWeight: '600',
-  },
-  navBtnDisabled: { opacity: 0.35 },
-  pillBtn: {
-    paddingVertical: 14,
-    paddingHorizontal: theme.spacing.lg,
-    borderRadius: theme.radius.full,
-    backgroundColor: theme.colors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pillBtnText: {
-    color: theme.colors.text,
-    fontSize: theme.typography.sm,
-    fontWeight: '600',
   },
   empty: {
     flex: 1,
@@ -113,18 +61,9 @@ export const styles = StyleSheet.create((theme, rt) => ({
     gap: theme.spacing.lg,
     padding: theme.spacing.xxl,
   },
-  emptyText: { color: theme.colors.muted, fontSize: theme.typography.base },
-  emptyBtn: {
-    backgroundColor: theme.colors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.radius.lg,
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.xxl,
-  },
-  emptyBtnText: {
-    color: theme.colors.text,
-    fontSize: theme.typography.sm,
-    fontWeight: '600',
+  emptyText: {
+    ...theme.textVariants.body,
+    color: theme.colors.muted,
+    textAlign: 'center',
   },
 }))

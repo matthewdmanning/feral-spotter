@@ -39,12 +39,10 @@ import { useCallback } from 'react'
 interface UseCatSubmitParams {
   form: CatFormValues
   existingCat?: ObservedCat
-  annotationEnabled: boolean
 }
 
 export interface CatSubmitResult {
   handleSave: () => void
-  saveLabel: string
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -52,7 +50,6 @@ export interface CatSubmitResult {
 export function useCatSubmit({
   form,
   existingCat,
-  annotationEnabled,
 }: UseCatSubmitParams): CatSubmitResult {
   const addCat = useSubmissionStore((s) => s.addCat)
   const updateCat = useSubmissionStore((s) => s.updateCat)
@@ -142,14 +139,5 @@ export function useCatSubmit({
     form,
   ])
 
-  // ── Derived ───────────────────────────────────────────────────────────────
-
-  const catId = existingCat?.local_id ?? activeCatId
-  const boxedPhotoCount = catId ? getBoxedPhotoIds(catId).length : 0
-  const saveLabel =
-    annotationEnabled && boxedPhotoCount > 0
-      ? 'Put the Cat in a Box'
-      : 'Save Observation'
-
-  return { handleSave, saveLabel }
+  return { handleSave }
 }

@@ -30,31 +30,38 @@ function ViewfinderCorners({
 }) {
   const inset = diameter * 0.16
   const size = diameter * 0.12
-  const thickness = 2
+  const thickness = 3
+  // Rounded bends soften the reticle from a hard crop mark into a friendly
+  // viewfinder.
+  const bend = size * 0.4
   const corners = [
     {
       top: inset,
       left: inset,
       borderTopWidth: thickness,
       borderLeftWidth: thickness,
+      borderTopLeftRadius: bend,
     },
     {
       top: inset,
       right: inset,
       borderTopWidth: thickness,
       borderRightWidth: thickness,
+      borderTopRightRadius: bend,
     },
     {
       bottom: inset,
       left: inset,
       borderBottomWidth: thickness,
       borderLeftWidth: thickness,
+      borderBottomLeftRadius: bend,
     },
     {
       bottom: inset,
       right: inset,
       borderBottomWidth: thickness,
       borderRightWidth: thickness,
+      borderBottomRightRadius: bend,
     },
   ] as const
 
@@ -68,6 +75,8 @@ function ViewfinderCorners({
             width: size,
             height: size,
             borderColor: color,
+            // Recedes behind the icon and label it frames.
+            opacity: 0.5,
             ...corner,
           }}
         />
@@ -194,13 +203,18 @@ export default function HomeScreen() {
               size="circle"
               diameter={entrypointDiameter}
               disabled={cameraDisabled}
-              icon={<Camera size={48} color={theme.colors.accentText} />}
+              icon={
+                <Camera
+                  size={theme.iconSize.xxl}
+                  color={theme.colors.accentText}
+                />
+              }
             >
               Take Photos
             </AppButton>
             <ViewfinderCorners
               diameter={entrypointDiameter}
-              color={theme.colors.accentAlt}
+              color={theme.colors.accentText}
             />
           </View>
           <View
@@ -212,13 +226,18 @@ export default function HomeScreen() {
               size="circle"
               diameter={entrypointDiameter}
               disabled={libraryDisabled}
-              icon={<ImagePlus size={48} color={theme.colors.accentText} />}
+              icon={
+                <ImagePlus
+                  size={theme.iconSize.xxl}
+                  color={theme.colors.accentText}
+                />
+              }
             >
               Upload Photos
             </AppButton>
             <ViewfinderCorners
               diameter={entrypointDiameter}
-              color={theme.colors.accentAlt}
+              color={theme.colors.accentText}
             />
           </View>
           {/* #375: one of the two circles above is dead whenever the pool has

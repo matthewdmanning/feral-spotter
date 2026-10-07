@@ -2,33 +2,39 @@ import { StyleSheet } from 'react-native-unistyles'
 
 export const styles = StyleSheet.create((theme) => ({
   base: {
-    minHeight: 48,
+    minHeight: theme.controlHeight.control,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: theme.spacing.sm,
-    borderRadius: theme.radius.lg,
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
+    borderRadius: theme.radius.full,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.sm,
     variants: {
       variant: {
-        primary: { backgroundColor: theme.colors.accent },
-        secondary: {
-          backgroundColor: theme.colors.surfaceAlt,
-          // surfaceAlt sits at ~1.2:1 contrast against the root background —
-          // effectively invisible as a fill alone. theme.colors.border is
-          // similarly low-contrast (~1.4:1); muted reads at ~7:1, giving the
-          // outline enough definition to read as a button.
+        // The eyeshine gradient is applied inline by AppButton (RN processes
+        // backgroundImage in JS); this solid color is its fallback.
+        // Filled variants carry a solid rim plus a gradient face (applied
+        // inline by AppButton, since RN processes backgroundImage in JS);
+        // the solid backgroundColor is the gradient's fallback.
+        primary: {
+          backgroundColor: theme.colors.accent,
           borderWidth: 1.5,
-          borderColor: theme.colors.muted,
+          borderColor: theme.colors.accentRim,
+          boxShadow: theme.depth.raised,
+        },
+        secondary: {
+          backgroundColor: theme.colors.secondary,
+          borderWidth: 1.5,
+          borderColor: theme.colors.secondaryRim,
+          boxShadow: theme.depth.raisedNeutral,
         },
         ghost: { backgroundColor: 'transparent' },
-        // Transparent + colored text alone read as a link next to an outlined
-        // Cancel. The border makes it read as a subordinate destructive button.
         danger: {
-          backgroundColor: 'transparent',
-          borderWidth: 1,
-          borderColor: theme.colors.danger,
+          backgroundColor: theme.colors.dangerStrong,
+          borderWidth: 1.5,
+          borderColor: theme.colors.dangerRim,
+          boxShadow: theme.depth.raisedNeutral,
         },
       },
       size: {
@@ -42,21 +48,22 @@ export const styles = StyleSheet.create((theme) => ({
           justifyContent: 'center',
           gap: theme.spacing.sm,
           borderRadius: theme.radius.full,
-          paddingHorizontal: theme.spacing.md,
+          paddingHorizontal: theme.spacing.lg,
+          ...theme.elevation.raised,
         },
+        compact: { paddingHorizontal: theme.spacing.md },
       },
     },
   },
   label: {
-    fontWeight: '700',
-    fontSize: theme.typography.base,
+    ...theme.textVariants.labelSmall,
     textAlign: 'center',
     variants: {
       variant: {
         primary: { color: theme.colors.accentText },
-        secondary: { color: theme.colors.text },
+        secondary: { color: theme.colors.onSecondary },
         ghost: { color: theme.colors.muted },
-        danger: { color: theme.colors.danger },
+        danger: { color: theme.colors.onDanger },
       },
       size: {
         default: {},
@@ -64,7 +71,13 @@ export const styles = StyleSheet.create((theme) => ({
     },
   },
   flex1: { flex: 1 },
-  // 0.5 tanked label contrast on the accent-blue background (ux_principles.md
+  // 0.5 tanked label contrast on the accent background (ux_principles.md
   // contrast minimums) — 0.7 still reads as disabled, stays legible.
   disabled: { opacity: 0.7 },
+  // The face sinks: bevel swaps for an inset shadow and the button drops a
+  // pixel, so a press reads as a physical click, not a fade.
+  pressed: {
+    boxShadow: theme.depth.pressed,
+    transform: [{ translateY: 1 }, { scale: 0.97 }],
+  },
 }))

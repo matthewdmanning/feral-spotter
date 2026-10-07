@@ -29,6 +29,7 @@ jest.mock('react-native-mmkv', () => ({
 const mockPickFromLibrary = jest.fn()
 
 jest.mock('expo-router', () => ({
+  useIsFocused: () => true,
   useLocalSearchParams: () => ({}),
   router: {
     push: jest.fn(),
@@ -71,6 +72,8 @@ jest.mock('../index.styles', () => ({
 jest.mock('lucide-react-native', () => ({
   AlertCircle: () => null,
   CheckCircle: () => null,
+  ChevronDown: () => null,
+  ChevronUp: () => null,
   Trash2: () => null,
 }))
 

@@ -6,6 +6,7 @@
  * `pin` method or as the fallback when a Live fix is unavailable.
  */
 
+import { AppButton } from '@/src/components/atoms/AppButton'
 import { useSubmissionStore } from '@/src/hooks'
 import type { Coordinates } from 'expo-maps'
 import { GoogleMaps } from 'expo-maps'
@@ -13,7 +14,7 @@ import * as Location from 'expo-location'
 import { router } from 'expo-router'
 import { MapPin } from 'lucide-react-native'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
 
@@ -101,7 +102,7 @@ export default function LocationPickerScreen() {
           tip sits at the map centre (translated up by its own height). */}
       <View style={styles.pinOverlay} pointerEvents="none">
         <MapPin
-          size={40}
+          size={theme.iconSize.xxl}
           color={theme.colors.accent}
           fill={theme.colors.accent}
           style={styles.pin}
@@ -111,20 +112,12 @@ export default function LocationPickerScreen() {
       <View style={styles.footer}>
         <Text style={styles.hint}>Drag the map to place the pin</Text>
         <View style={styles.buttonRow}>
-          <Pressable
-            onPress={handleCancel}
-            accessibilityRole="button"
-            style={[styles.button, styles.cancelButton]}
-          >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </Pressable>
-          <Pressable
-            onPress={handleSetLocation}
-            accessibilityRole="button"
-            style={[styles.button, styles.setButton]}
-          >
-            <Text style={styles.setButtonText}>Set location</Text>
-          </Pressable>
+          <AppButton variant="secondary" onPress={handleCancel} flex1>
+            Cancel
+          </AppButton>
+          <AppButton onPress={handleSetLocation} flex1>
+            Set location
+          </AppButton>
         </View>
       </View>
     </View>

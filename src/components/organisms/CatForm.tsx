@@ -1,8 +1,6 @@
-import { View, Text, Pressable } from 'react-native'
-import { AppButton } from '@/src/components/atoms/AppButton'
+import { View } from 'react-native'
 import { SegmentedControl } from '@/src/components/atoms/SegmentedControl'
 import type { CatForm as CatFormValues } from '@/src/hooks/useCatForm'
-import type { CatSubmitResult } from '@/src/hooks/useCatSubmit'
 import {
   AGE_OPTIONS,
   EAR_TIPPED_OPTIONS,
@@ -17,17 +15,9 @@ import { styles } from './CatForm.styles'
 
 interface CatFormProps {
   form: CatFormValues
-  submit: CatSubmitResult
-  /**
-   * #299: present only when editing an already-saved cat. A cat that has
-   * never been saved has nothing to remove — backing out of it is already
-   * handled by useAbandonCatGuard (#304), which is a different action with
-   * different copy.
-   */
-  onRemove?: () => void
 }
 
-export function CatForm({ form, submit, onRemove }: CatFormProps) {
+export function CatForm({ form }: CatFormProps) {
   return (
     <View style={styles.card}>
       <View style={styles.inner}>
@@ -87,21 +77,6 @@ export function CatForm({ form, submit, onRemove }: CatFormProps) {
             onChange={form.setHealthLabel}
             accessibilityLabel="Cat health rating"
           />
-        </View>
-
-        <View style={styles.actions}>
-          <Pressable
-            onPress={submit.handleSave}
-            style={styles.saveBtn}
-            accessibilityRole="button"
-          >
-            <Text style={styles.saveBtnText}>{submit.saveLabel}</Text>
-          </Pressable>
-          {onRemove && (
-            <AppButton onPress={onRemove} variant="danger">
-              Remove this Cat
-            </AppButton>
-          )}
         </View>
       </View>
     </View>

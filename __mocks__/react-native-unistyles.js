@@ -24,8 +24,19 @@
  */
 const React = require('react')
 
-/** Bottomless stub, so an unknown theme key never throws on property access. */
-const anyProp = () => new Proxy({}, { get: () => anyProp() })
+/**
+ * Bottomless stub, so an unknown theme key never throws on property access.
+ * It also converts to an empty string, so a component that composes tokens
+ * into a string (a layered gradient) still renders.
+ */
+const anyProp = () =>
+  new Proxy(
+    {},
+    {
+      get: (_, key) =>
+        key === Symbol.toPrimitive || key === 'toString' ? () => '' : anyProp(),
+    },
+  )
 
 /**
  * Real numbers, matching src/config/unistyles.ts. Screens do arithmetic on

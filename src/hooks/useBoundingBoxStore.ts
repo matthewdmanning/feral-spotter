@@ -6,6 +6,8 @@
  * navigation and app restarts.
  */
 
+import { darkTheme } from '@/src/config/themes'
+import { pickCatColorSlot } from '@/src/lib/annotate/catColors'
 import { asyncStorage } from '@/src/lib/cache/storage'
 import type { BoundingBox } from '@/src/types/BoundingBox'
 import { randomUUID } from 'expo-crypto'
@@ -16,6 +18,23 @@ import { createJSONStorage, persist } from 'zustand/middleware'
 
 type BoxInput = Omit<BoundingBox, 'id' | 'cat_id' | 'photo_local_id'>
 
+const PALETTE_SIZE = darkTheme.catPalette.length
+
+/** The cat's palette slot, minted on its first box or absence mark and kept until the cat is cleared. */
+function withCatColor(
+  s: Pick<BoundingBoxState, 'catColors' | 'colorUses'>,
+  catId: string,
+) {
+  if (s.catColors[catId] !== undefined) return {}
+  const uses = Array.from(
+    { length: PALETTE_SIZE },
+    (_, i) => s.colorUses[i] ?? 0,
+  )
+  const slot = pickCatColorSlot(uses, Object.values(s.catColors))
+  uses[slot] += 1
+  return { catColors: { ...s.catColors, [catId]: slot }, colorUses: uses }
+}
+
 interface BoundingBoxState {
   /** Record keyed by `${cat_id}:${photo_local_id}` */
   boxes: Record<string, BoundingBox[]>
@@ -23,6 +42,10 @@ interface BoundingBoxState {
   lastBoxes: Record<string, BoundingBox | undefined>
   /** Explicit "cat not in this photo" markers, same key scheme as boxes. Mutually exclusive with boxes: whichever of addBox/markAbsent runs last for a key wins, clearing the other. */
   absences: Record<string, true>
+  /** Palette slot per cat. Fixed for the cat's life: another cat's removal never changes it. */
+  catColors: Record<string, number>
+  /** How many times each palette slot was ever handed out — unused slots go first, so a removed cat's slot is reused only when none is left. */
+  colorUses: number[]
 
   addBox: (catId: string, photoId: string, box: BoxInput) => void
   removeBox: (catId: string, photoId: string, boxId: string) => void
@@ -51,6 +74,8 @@ export const useBoundingBoxStore = create<BoundingBoxState>()(
       boxes: {},
       lastBoxes: {},
       absences: {},
+      catColors: {},
+      colorUses: [],
 
       // One box per cat+photo — drawing a new box replaces the old one, and
       // clears any absence marker for the same slot (mutually exclusive).
@@ -66,6 +91,7 @@ export const useBoundingBoxStore = create<BoundingBoxState>()(
           const absences = { ...s.absences }
           delete absences[key]
           return {
+            ...withCatColor(s, catId),
             boxes: {
               ...s.boxes,
               [key]: [entry],
@@ -97,6 +123,7 @@ export const useBoundingBoxStore = create<BoundingBoxState>()(
           const boxes = { ...s.boxes }
           delete boxes[key]
           return {
+            ...withCatColor(s, catId),
             boxes,
             absences: { ...s.absences, [key]: true },
           }
@@ -108,7 +135,14 @@ export const useBoundingBoxStore = create<BoundingBoxState>()(
         return get().boxes[key] ?? []
       },
 
-      clearAll: () => set({ boxes: {}, lastBoxes: {}, absences: {} }),
+      clearAll: () =>
+        set({
+          boxes: {},
+          lastBoxes: {},
+          absences: {},
+          catColors: {},
+          colorUses: [],
+        }),
 
       // Sweeps all three maps, like removeBoxesForPhoto does in the other
       // direction — leaving lastBoxes behind would keep a removed cat's
@@ -128,7 +162,9 @@ export const useBoundingBoxStore = create<BoundingBoxState>()(
           for (const key of Object.keys(lastBoxes)) {
             if (key.startsWith(prefix)) delete lastBoxes[key]
           }
-          return { boxes, absences, lastBoxes }
+          const catColors = { ...s.catColors }
+          delete catColors[catId]
+          return { boxes, absences, lastBoxes, catColors }
         })
       },
 
@@ -195,7 +231,13 @@ export const useBoundingBoxStore = create<BoundingBoxState>()(
       // v1 -> v2: BoundingBox shape changed from x/y/width/height (canvas-relative)
       // to lowerLeft/upperRight corners (image-pixel-relative) — old data is incompatible, drop it.
       version: 2,
-      migrate: () => ({ boxes: {}, lastBoxes: {}, absences: {} }),
+      migrate: () => ({
+        boxes: {},
+        lastBoxes: {},
+        absences: {},
+        catColors: {},
+        colorUses: [],
+      }),
     },
   ),
 )
