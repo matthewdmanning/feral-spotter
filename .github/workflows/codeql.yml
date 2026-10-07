@@ -1,0 +1,72 @@
+name: CodeQL
+
+on:
+  pull_request:
+  schedule:
+    - cron: '23 5 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    name: Detect native changes
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.pick.outputs.matrix }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # A pull request scans only the languages whose native code it changes.
+      # The weekly schedule scans every language.
+      - name: Pick languages to scan
+        id: pick
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            files=$(git diff --name-only "$BASE_SHA...$HEAD_SHA")
+          fi
+          touches() { [ "$GITHUB_EVENT_NAME" != "pull_request" ] || echo "$files" | grep -qE "$1"; }
+
+          include=()
+          touches '^modules/[^/]+/android/' &&
+            include+=('{"language":"java-kotlin","runner":"ubuntu-latest"}')
+          touches '^modules/[^/]+/ios/' &&
+            include+=('{"language":"swift","runner":"macos-latest"}')
+
+          echo "matrix=$(jq -nc '$ARGS.positional | map(fromjson)' --args "${include[@]}")" >> "$GITHUB_OUTPUT"
+
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    needs: changes
+    if: needs.changes.outputs.matrix != '[]'
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.changes.outputs.matrix) }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v4
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
