@@ -7,3 +7,5 @@
 # Enable once per clone:  git config core.hooksPath .githooks
 
 node scripts/format-staged.mjs || exit 1
+
+gitleaks git --staged --redact --no-banner || exit 1
