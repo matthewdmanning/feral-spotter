@@ -34,6 +34,7 @@ export function NativeCameraScreen() {
     disableLowLightBoost,
     subjectMetering,
     pinchZoom,
+    liveDetector,
     flashOverlayStyle,
     renderItem,
     keyExtractor,
@@ -102,6 +103,7 @@ export function NativeCameraScreen() {
           disableLowLightBoost={disableLowLightBoost}
           subjectMetering={subjectMetering}
           pinchZoom={pinchZoom}
+          liveDetector={liveDetector}
           diagnostics={diagnostics}
           onCameraReady={handleCameraReady}
           onCameraDiagnostic={handleCameraDiagnostic}

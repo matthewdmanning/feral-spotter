@@ -102,6 +102,13 @@ const PHOTO_TOGGLES = [
     platform: null,
   },
   {
+    key: 'camera_live_detector',
+    label: 'Live Cat Detector',
+    desc: 'Draw on-device detector boxes over the native camera preview',
+    devOnly: true,
+    platform: 'android',
+  },
+  {
     key: 'camera_performance_checks',
     label: 'Camera Performance Checks',
     desc: 'Attach comparable camera timing data to PostHog events for A/B testing',

@@ -38,7 +38,7 @@ class NativeIdentificationCameraModule : Module() {
     Name("NativeIdentificationCamera")
 
     View(NativeIdentificationCameraView::class) {
-      Events("onCameraReady", "onCameraError", "onCameraDiagnostic")
+      Events("onCameraReady", "onCameraError", "onCameraDiagnostic", "onDetections")
 
       // Expo calls this once after a whole prop batch. The prop setters only
       // record that a rebind is needed, so two settings changed together cost
@@ -77,6 +77,16 @@ class NativeIdentificationCameraModule : Module() {
 
       Prop("diagnostics") { view: NativeIdentificationCameraView, value: Boolean ->
         view.diagnostics = value
+      }
+
+      Prop("liveDetector") { view: NativeIdentificationCameraView, value: Boolean ->
+        view.liveDetector = value
+      }
+
+      // Frees the detector model and its analysis thread. Unbinding alone keeps
+      // the model loaded, so a flip or a tuning rebind does not reload it.
+      OnViewDestroys { view: NativeIdentificationCameraView ->
+        view.release()
       }
 
       AsyncFunction("capture") {

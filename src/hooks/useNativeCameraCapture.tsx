@@ -48,6 +48,12 @@ export function useNativeCameraCapture(
   const performanceChecks = useSettingsStore(
     (s) => s.settings.camera_performance_checks === true,
   )
+  // Only the Android view implements the detector. Resolving it here keeps the
+  // iOS view's props identical to what it had before the detector existed.
+  const liveDetectorSetting = useSettingsStore(
+    (s) => s.settings.camera_live_detector === true,
+  )
+  const liveDetector = liveDetectorSetting && Platform.OS === 'android'
 
   const { user } = useAuth()
 
@@ -113,12 +119,14 @@ export function useNativeCameraCapture(
         motion_priority: motionPriority,
         low_light_boost_disabled: disableLowLightBoost,
         subject_metering: subjectMetering,
+        live_detector: liveDetector,
         capture_tuning: resolvedCaptureTuning.current ?? 'unreported',
         ready_duration_ms: Date.now() - openedAt,
       })
     },
     [
       disableLowLightBoost,
+      liveDetector,
       maxDetail,
       motionPriority,
       performanceChecks,
@@ -188,6 +196,7 @@ export function useNativeCameraCapture(
               motion_priority: motionPriority,
               low_light_boost_disabled: disableLowLightBoost,
               subject_metering: subjectMetering,
+              live_detector: liveDetector,
               capture_tuning: resolvedCaptureTuning.current ?? 'unreported',
               capture_duration_ms: capturedAt - captureStartedAt,
               postprocess_duration_ms: processedAt - capturedAt,
@@ -214,6 +223,7 @@ export function useNativeCameraCapture(
               motion_priority: motionPriority,
               low_light_boost_disabled: disableLowLightBoost,
               subject_metering: subjectMetering,
+              live_detector: liveDetector,
               capture_tuning: resolvedCaptureTuning.current ?? 'unreported',
               elapsed_ms: Date.now() - captureStartedAt,
             }
@@ -229,6 +239,7 @@ export function useNativeCameraCapture(
     flashMode,
     flushGallerySaves,
     isCameraReady,
+    liveDetector,
     maxDetail,
     motionPriority,
     options.postprocessor,
@@ -282,6 +293,7 @@ export function useNativeCameraCapture(
     disableLowLightBoost,
     subjectMetering,
     pinchZoom,
+    liveDetector,
     flashOverlayStyle,
     renderItem,
     keyExtractor,

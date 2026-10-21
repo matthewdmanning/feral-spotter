@@ -2,23 +2,34 @@ package expo.modules.nativeidentificationcamera
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.RectF
 import android.media.ExifInterface
 import android.util.Range
+import android.util.Size
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.ViewGroup
+import androidx.annotation.OptIn
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.FocusMeteringAction
+import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.core.SessionConfig
+import androidx.camera.core.resolutionselector.AspectRatioStrategy
 import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.camera.view.TransformExperimental
+import androidx.camera.view.transform.CoordinateTransform
+import androidx.camera.view.transform.ImageProxyTransformFactory
+import androidx.camera.view.transform.OutputTransform
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import expo.modules.kotlin.AppContext
@@ -27,6 +38,8 @@ import expo.modules.kotlin.viewevent.EventDispatcher
 import expo.modules.kotlin.views.ExpoView
 import java.io.File
 import java.util.UUID
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 /**
  * The Android half of the camera seam: this view owns the CameraX session and
@@ -48,6 +61,9 @@ import java.util.UUID
  * output-mode combination that blocks the requirement. Query CameraX's runtime
  * output-format set and validate the chosen mode on representative physical
  * devices rather than assuming from the documentation.
+ *
+ * The live detector (the `liveDetector` prop) does not trip this gate: it reads
+ * CameraX ImageAnalysis frames in RGBA at about VGA, not a RAW artifact.
  */
 @SuppressLint("ViewConstructor")
 class NativeIdentificationCameraView(
@@ -65,12 +81,22 @@ class NativeIdentificationCameraView(
    */
   val onCameraDiagnostic by EventDispatcher()
 
+  /** Throttled live-detector results for JS. See NativeDetectionsEvent. */
+  val onDetections by EventDispatcher()
+
   private val previewView = PreviewView(context).apply {
     layoutParams = ViewGroup.LayoutParams(
       ViewGroup.LayoutParams.MATCH_PARENT,
       ViewGroup.LayoutParams.MATCH_PARENT
     )
     scaleType = PreviewView.ScaleType.FILL_CENTER
+  }
+
+  private val detectionOverlay = DetectionOverlayView(context).apply {
+    layoutParams = ViewGroup.LayoutParams(
+      ViewGroup.LayoutParams.MATCH_PARENT,
+      ViewGroup.LayoutParams.MATCH_PARENT
+    )
   }
 
   private val scaleGestureDetector = ScaleGestureDetector(
@@ -178,6 +204,48 @@ class NativeIdentificationCameraView(
    */
   var diagnostics: Boolean = false
 
+  /**
+   * Live detector. Adding or removing the ImageAnalysis use case changes the
+   * session's stream set, so a change costs one rebind, like the tuning props.
+   */
+  var liveDetector: Boolean = false
+    set(value) {
+      if (field == value) return
+      field = value
+      needsRebind = true
+    }
+
+  // ── Live detector state ────────────────────────────────────────────────────
+  //
+  // Threads: the analyzer, the LiveDetector and its stats run on
+  // analysisExecutor only. Box delivery, the overlay and every event run on the
+  // main thread. `detectorGeneration` is the hand-off guard: it changes on
+  // every bind and unbind, and a result from an older generation is dropped, so
+  // boxes from a torn-down session never reach the overlay.
+
+  private var analysisExecutor: ExecutorService? = null
+
+  // Written on the main thread, read once by openDetector on the analysis
+  // thread for the detector_ready sizes.
+  @Volatile
+  private var analysisUseCase: ImageAnalysis? = null
+
+  @Volatile
+  private var previewUseCase: Preview? = null
+
+  @Volatile
+  private var detectorGeneration = 0
+
+  // Analysis thread only.
+  private var detector: LiveDetector? = null
+  private var detectorUnavailable = false
+  private var frameBitmap: Bitmap? = null
+  private val detectorStats = DetectorStats()
+
+  // Main thread only.
+  private var lastDetectionsEventAt = 0L
+  private var lastEventHadDetections = false
+
   private val tuning: CaptureTuning
     get() = CaptureTuning.of(maxDetail, motionPriority)
 
@@ -195,6 +263,7 @@ class NativeIdentificationCameraView(
 
   init {
     addView(previewView)
+    addView(detectionOverlay)
 
     val future = ProcessCameraProvider.getInstance(context)
     future.addListener({
@@ -272,6 +341,11 @@ class NativeIdentificationCameraView(
       MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY)
     )
     previewView.layout(0, 0, width, height)
+    detectionOverlay.measure(
+      MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
+      MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY)
+    )
+    detectionOverlay.layout(0, 0, width, height)
   }
 
   /**
@@ -324,9 +398,14 @@ class NativeIdentificationCameraView(
     selector: CameraSelector,
     preview: Preview,
     imageCapture: ImageCapture,
+    analysis: ImageAnalysis?,
     tuning: CaptureTuning
   ): SessionConfig {
-    val builder = SessionConfig.Builder(preview, imageCapture)
+    val builder = if (analysis == null) {
+      SessionConfig.Builder(preview, imageCapture)
+    } else {
+      SessionConfig.Builder(preview, imageCapture, analysis)
+    }
     if (!tuning.prefersFrameRateRange()) return builder.build()
 
     val probeConfig = builder.build()
@@ -365,23 +444,52 @@ class NativeIdentificationCameraView(
         it.surfaceProvider = previewView.surfaceProvider
       }
       val imageCapture = buildImageCapture(activeTuning)
-      val sessionConfig = buildSessionConfig(
-        provider,
-        selector,
-        preview,
-        imageCapture,
-        activeTuning
-      )
+      val analysis = if (liveDetector) buildImageAnalysis() else null
+      val withAnalysis = analysis?.let {
+        buildSessionConfig(provider, selector, preview, imageCapture, it, activeTuning)
+      }
 
-      val boundCamera = provider.bindToLifecycle(
-        lifecycleOwner,
-        selector,
-        sessionConfig
-      )
+      // The detector is optional and the capture is not: if this device cannot
+      // run the analysis stream beside preview and capture, bind without it
+      // and say so, rather than lose the camera.
+      var boundCamera: Camera? = null
+      var sessionConfig: SessionConfig? = null
+      if (withAnalysis != null) {
+        val supported = try {
+          provider.getCameraInfo(selector).isSessionConfigSupported(withAnalysis)
+        } catch (error: Throwable) {
+          false
+        }
+        if (supported) {
+          try {
+            boundCamera = provider.bindToLifecycle(lifecycleOwner, selector, withAnalysis)
+            sessionConfig = withAnalysis
+          } catch (error: Throwable) {
+            provider.unbind(withAnalysis)
+            diagnostic(
+              "detector_bind_failed",
+              mapOf("message" to (error.message ?: error.toString()), "camera_position" to position)
+            )
+          }
+        } else {
+          diagnostic("detector_unsupported_combination", mapOf("camera_position" to position))
+        }
+      }
+      if (boundCamera == null || sessionConfig == null) {
+        sessionConfig = buildSessionConfig(provider, selector, preview, imageCapture, null, activeTuning)
+        boundCamera = provider.bindToLifecycle(lifecycleOwner, selector, sessionConfig)
+      }
+      val analysisBound = sessionConfig === withAnalysis
 
       boundSessionConfig = sessionConfig
       imageCaptureUseCase = imageCapture
+      previewUseCase = preview
       camera = boundCamera
+      detectorGeneration += 1
+      if (analysisBound && analysis != null) {
+        analysisUseCase = analysis
+        startAnalysis(analysis, detectorGeneration)
+      }
       if (disableLowLightBoost) {
         disableLowLightBoostIfSupported(boundCamera)
       }
@@ -406,6 +514,8 @@ class NativeIdentificationCameraView(
           "motion_priority" to motionPriority,
           "low_light_boost_disabled" to disableLowLightBoost,
           "low_light_boost_supported" to boundCamera.cameraInfo.isLowLightBoostSupported,
+          "live_detector" to liveDetector,
+          "analysis_bound" to analysisBound,
           "bind_duration_ms" to (System.currentTimeMillis() - startedAt)
         )
       )
@@ -422,12 +532,250 @@ class NativeIdentificationCameraView(
     }
   }
 
+  // ── Live detector ──────────────────────────────────────────────────────────
+
+  /**
+   * 4:3 at about VGA: the detector's input is 640 px square, so a larger
+   * frame only costs conversion time. 4:3 is also Preview's default aspect,
+   * and the coordinate transform below assumes the two streams frame the same
+   * field (it logs "source viewport does not match" when they do not). The
+   * `detector_ready` diagnostic reports both sizes so a drive can check it.
+   */
+  private fun buildImageAnalysis(): ImageAnalysis =
+    ImageAnalysis.Builder()
+      .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+      .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
+      .setResolutionSelector(
+        ResolutionSelector.Builder()
+          .setAspectRatioStrategy(AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY)
+          .setResolutionStrategy(
+            ResolutionStrategy(
+              Size(640, 480),
+              ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER
+            )
+          )
+          .build()
+      )
+      .build()
+
+  private fun startAnalysis(analysis: ImageAnalysis, generation: Int) {
+    val executor = analysisExecutor ?: Executors.newSingleThreadExecutor { runnable ->
+      Thread(runnable, "FeralSpotterDetector")
+    }.also { analysisExecutor = it }
+    analysis.setAnalyzer(executor) { image -> analyzeFrame(image, generation) }
+  }
+
+  /**
+   * Main thread. Detaches the analyzer and clears the overlay. The model stays
+   * loaded while the detector is still wanted, so a flip or a tuning change
+   * does not pay the load and GPU compile again.
+   */
+  private fun stopAnalysis() {
+    analysisUseCase?.clearAnalyzer()
+    analysisUseCase = null
+    detectorGeneration += 1
+    detectionOverlay.clear()
+    if (!liveDetector) releaseDetector()
+  }
+
+  private fun releaseDetector() {
+    val executor = analysisExecutor ?: return
+    executor.execute {
+      detector?.close()
+      detector = null
+      detectorUnavailable = false
+      frameBitmap?.recycle()
+      frameBitmap = null
+      detectorStats.reset()
+    }
+  }
+
+  /** Called from the module's OnViewDestroys. The view is not reused after it. */
+  fun release() {
+    liveDetector = false
+    unbindCamera()
+    releaseDetector()
+    analysisExecutor?.shutdown()
+    analysisExecutor = null
+  }
+
+  /** Analysis thread. Always closes [image]. */
+  @OptIn(TransformExperimental::class)
+  private fun analyzeFrame(image: ImageProxy, generation: Int) {
+    try {
+      if (generation != detectorGeneration || detectorUnavailable) return
+      val active = detector ?: openDetector() ?: return
+
+      val bitmap = frameBitmapOf(image)
+      val result = active.detect(bitmap, image.imageInfo.rotationDegrees)
+
+      // Source space: the upright, uncropped analysis frame, which is the space
+      // the detections are normalized to. Must be read before image.close().
+      val source = ImageProxyTransformFactory().apply {
+        isUsingRotationDegrees = true
+        isUsingCropRect = false
+      }.getOutputTransform(image)
+
+      detectorStats.record(result)
+      if (diagnostics && detectorStats.isWindowFull()) {
+        val fields = detectorStats.drain(active)
+        post { diagnostic("detector_stats", fields) }
+      }
+      post { deliverDetections(result, source, generation, active.sidecar.labels) }
+    } catch (error: Throwable) {
+      // One report, then the detector stays off for this view: a per-frame
+      // failure would flood both the log and the event stream.
+      detectorUnavailable = true
+      val message = error.message ?: error.toString()
+      post {
+        detectionOverlay.clear()
+        diagnostic("detector_unavailable", mapOf("reason" to "inference_failed", "message" to message))
+      }
+    } finally {
+      image.close()
+    }
+  }
+
+  /** Analysis thread. Null means the detector is unavailable and was reported. */
+  private fun openDetector(): LiveDetector? {
+    val previewSize = previewUseCase?.resolutionInfo?.resolution
+    val analysisSize = analysisUseCase?.resolutionInfo?.resolution
+    return when (val opened = LiveDetector.open(context.assets)) {
+      is LiveDetector.Opened.Ready -> {
+        val ready = opened.detector
+        detector = ready
+        val fields = mutableMapOf<String, Any>(
+          "model_source" to ready.sidecar.source,
+          "accelerator" to ready.accelerator,
+          "load_ms" to ready.loadMs,
+          "input_size" to ready.sidecar.imgsz,
+          "end_to_end" to ready.sidecar.endToEnd,
+          "class_count" to ready.sidecar.labels.size,
+          "target_count" to ready.sidecar.targetClasses.size,
+          "score_threshold" to ready.sidecar.scoreThreshold.toDouble(),
+          "preview_size" to (previewSize?.let { "${it.width}x${it.height}" } ?: "unknown"),
+          "analysis_size" to (analysisSize?.let { "${it.width}x${it.height}" } ?: "unknown"),
+          "aspect_match" to sameAspect(previewSize, analysisSize)
+        )
+        ready.gpuFailure?.let { fields["gpu_failure"] = it }
+        post { diagnostic("detector_ready", fields) }
+        ready
+      }
+      LiveDetector.Opened.Missing -> {
+        detectorUnavailable = true
+        post { diagnostic("detector_unavailable", mapOf("reason" to "model_missing")) }
+        null
+      }
+      is LiveDetector.Opened.Failed -> {
+        detectorUnavailable = true
+        val message = opened.message
+        post {
+          diagnostic("detector_unavailable", mapOf("reason" to "load_failed", "message" to message))
+        }
+        null
+      }
+    }
+  }
+
+  private fun sameAspect(a: Size?, b: Size?): Boolean {
+    if (a == null || b == null) return false
+    return Math.abs(a.width.toDouble() / a.height - b.width.toDouble() / b.height) < 0.01
+  }
+
+  /**
+   * Analysis thread. RGBA frames whose rows carry no padding are copied into a
+   * reused bitmap; anything else goes through ImageProxy.toBitmap(), which
+   * allocates per frame but handles every stride.
+   */
+  private fun frameBitmapOf(image: ImageProxy): Bitmap {
+    val plane = image.planes[0]
+    if (plane.pixelStride != 4 || plane.rowStride != image.width * 4) return image.toBitmap()
+    val reusable = frameBitmap?.takeIf { it.width == image.width && it.height == image.height }
+      ?: Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888).also {
+        frameBitmap?.recycle()
+        frameBitmap = it
+      }
+    val buffer = plane.buffer
+    buffer.rewind()
+    reusable.copyPixelsFromBuffer(buffer)
+    return reusable
+  }
+
+  /** Main thread. Maps upright-frame boxes into this view and shows them. */
+  @OptIn(TransformExperimental::class)
+  private fun deliverDetections(
+    result: LiveDetector.Result,
+    source: OutputTransform,
+    generation: Int,
+    labels: List<String>
+  ) {
+    if (generation != detectorGeneration) return
+    val target = previewView.outputTransform ?: return
+    val viewWidth = previewView.width.toFloat()
+    val viewHeight = previewView.height.toFloat()
+    if (viewWidth <= 0f || viewHeight <= 0f) return
+
+    val transform = CoordinateTransform(source, target)
+    val boxes = ArrayList<DetectionOverlayView.Box>(result.detections.size)
+    val payload = ArrayList<Map<String, Any>>(result.detections.size)
+    for (detection in result.detections) {
+      val rect = RectF(
+        detection.left * result.uprightWidth,
+        detection.top * result.uprightHeight,
+        detection.right * result.uprightWidth,
+        detection.bottom * result.uprightHeight
+      )
+      transform.mapRect(rect)
+      val normalized = RectF(
+        (rect.left / viewWidth).coerceIn(0f, 1f),
+        (rect.top / viewHeight).coerceIn(0f, 1f),
+        (rect.right / viewWidth).coerceIn(0f, 1f),
+        (rect.bottom / viewHeight).coerceIn(0f, 1f)
+      )
+      // A box wholly outside the visible crop collapses to a line; skip it.
+      if (normalized.width() <= 0f || normalized.height() <= 0f) continue
+      val label = labels.getOrElse(detection.classIndex) { "class ${detection.classIndex}" }
+      boxes.add(
+        DetectionOverlayView.Box(normalized, "$label ${(detection.score * 100).toInt()}%")
+      )
+      payload.add(
+        mapOf(
+          "x" to normalized.left.toDouble(),
+          "y" to normalized.top.toDouble(),
+          "width" to normalized.width().toDouble(),
+          "height" to normalized.height().toDouble(),
+          "score" to detection.score.toDouble(),
+          "label" to label
+        )
+      )
+    }
+    detectionOverlay.show(boxes)
+    emitDetections(payload, result.inferenceMs)
+  }
+
+  /**
+   * At most one event per [DETECTIONS_EVENT_INTERVAL_MS], plus one event when
+   * the boxes clear, so a JS consumer never keeps a stale box.
+   */
+  private fun emitDetections(payload: List<Map<String, Any>>, inferenceMs: Double) {
+    val now = System.currentTimeMillis()
+    val hasDetections = payload.isNotEmpty()
+    val cleared = !hasDetections && lastEventHadDetections
+    if (!cleared && now - lastDetectionsEventAt < DETECTIONS_EVENT_INTERVAL_MS) return
+    if (!hasDetections && !lastEventHadDetections && lastDetectionsEventAt != 0L) return
+    lastDetectionsEventAt = now
+    lastEventHadDetections = hasDetections
+    onDetections(mapOf("detections" to payload, "inferenceMs" to inferenceMs))
+  }
+
   private fun unbindCamera() {
     val provider = cameraProvider ?: return
     val wasBound = boundSessionConfig != null
+    stopAnalysis()
     boundSessionConfig?.let { provider.unbind(it) }
     boundSessionConfig = null
     imageCaptureUseCase = null
+    previewUseCase = null
     camera = null
     if (wasBound) {
       diagnostic("session_unbound", mapOf("bind_count" to bindCount))
@@ -629,5 +977,9 @@ class NativeIdentificationCameraView(
   override fun onDetachedFromWindow() {
     unbindCamera()
     super.onDetachedFromWindow()
+  }
+
+  private companion object {
+    const val DETECTIONS_EVENT_INTERVAL_MS = 200L
   }
 }

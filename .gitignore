@@ -10,6 +10,11 @@ window_dump.xml
 emulator_tools/screenshots/
 modules/native-identification-camera/android/build
 
+# Live detector model and sidecar, exported per machine by
+# scripts/detector/export-detector.py. The yolo26n benchmark weights are
+# AGPL-3.0, so they are never committed.
+modules/native-identification-camera/android/src/main/assets/detector/
+
 # Dependencies
 node_modules/
 

@@ -20,6 +20,7 @@ export interface AppSettings {
   camera_disable_low_light_boost: boolean
   camera_subject_metering: boolean
   camera_pinch_zoom: boolean
+  camera_live_detector: boolean
 }
 
 interface SettingsState {
@@ -75,6 +76,11 @@ const DEFAULT_SETTINGS: AppSettings = {
     false,
   ),
   camera_pinch_zoom: false,
+  // Android only. Runs the live box detector over the native preview.
+  camera_live_detector: envDefault(
+    process.env.EXPO_PUBLIC_CAMERA_LIVE_DETECTOR,
+    false,
+  ),
 }
 
 export const useSettingsStore = create<SettingsState>()(

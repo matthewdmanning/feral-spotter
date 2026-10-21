@@ -46,6 +46,27 @@ export interface NormalizedSubjectRegion {
   height: number
 }
 
+/**
+ * One live-detector box. x, y, width and height are normalized to the camera
+ * view (0..1), the same space as NormalizedSubjectRegion, so a detection can be
+ * passed to setSubjectRegion without conversion.
+ */
+export interface NativeDetection extends NormalizedSubjectRegion {
+  score: number
+  label: string
+}
+
+/**
+ * A throttled snapshot of the live detector's latest frame. The native view
+ * draws every frame's boxes itself; this event is for JS consumers and
+ * test-drive checks, so it arrives at most a few times a second.
+ */
+export interface NativeDetectionsEvent {
+  detections: NativeDetection[]
+  /** Model run time for the reported frame, in milliseconds. */
+  inferenceMs: number
+}
+
 export interface NativeIdentificationCameraRef {
   capture(options: NativeCaptureOptions): Promise<NativeCapturedPhoto>
   focus(point: { x: number; y: number }): Promise<boolean>
@@ -66,6 +87,15 @@ export interface NativeIdentificationCameraProps {
   pinchZoom: boolean
   /** Driven by the camera_performance_checks setting. Off means the view reports nothing. */
   diagnostics: boolean
+  /**
+   * Android only. Runs the bundled LiteRT detector on preview frames and draws
+   * its boxes over the preview. iOS does not implement it yet, and Expo
+   * ignores a prop a platform does not register, so the iOS view is unchanged.
+   * Off by default: the analysis stream costs battery and heat.
+   */
+  liveDetector?: boolean
+  /** Android only. See NativeDetectionsEvent. */
+  onDetections?: (event: { nativeEvent?: NativeDetectionsEvent }) => void
   onCameraReady?: (event: { nativeEvent?: NativeCameraReadyEvent }) => void
   onCameraDiagnostic?: (event: {
     nativeEvent?: NativeCameraDiagnosticEvent
