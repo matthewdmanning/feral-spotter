@@ -138,6 +138,7 @@ tags:
 - [x] Lint: `npx expo lint src __tests__` (no new warnings)
 - [x] Formatting: `npx prettier --check` on the changed TS files
 - [x] Native compile: `./gradlew :native-identification-camera:compileDebugKotlin` after `expo prebuild --platform android --clean` (JDK 17, no warnings in this module)
+- [x] Debug APK: `./gradlew :app:assembleDebug -PreactNativeArchitectures=arm64-v8a`, built with a placeholder `google-services.json` (compile only). The APK holds `assets/detector/detector.tflite` (stored, not compressed), `detector.json`, `libtensorflowlite_jni.so` and `libtensorflowlite_gpu_jni.so`.
 
 **Unverified — needs test drive:**
 
