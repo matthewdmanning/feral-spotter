@@ -137,7 +137,7 @@ tags:
 - [x] Unit tests: `npx jest` (77 suites, 354 tests)
 - [x] Lint: `npx expo lint src __tests__` (no new warnings)
 - [x] Formatting: `npx prettier --check` on the changed TS files
-- [ ] Native compile: see below
+- [x] Native compile: `./gradlew :native-identification-camera:compileDebugKotlin` after `expo prebuild --platform android --clean` (JDK 17, no warnings in this module)
 
 **Unverified — needs test drive:**
 

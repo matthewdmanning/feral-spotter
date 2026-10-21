@@ -498,9 +498,9 @@ class NativeIdentificationCameraView(
       previewUseCase = preview
       camera = boundCamera
       detectorGeneration += 1
-      if (analysisBound && analysis != null) {
+      if (analysisBound) {
         analysisUseCase = analysis
-        startAnalysis(analysis, detectorGeneration)
+        analysis?.let { startAnalysis(it, detectorGeneration) }
       }
       if (disableLowLightBoost) {
         disableLowLightBoostIfSupported(boundCamera)
