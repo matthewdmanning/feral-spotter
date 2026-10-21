@@ -10,7 +10,8 @@ import java.io.FileNotFoundException
  *
  * Both files are gitignored (the yolo26n benchmark weights are AGPL-3.0), so a
  * fresh checkout has neither. [load] returns null in that case and the view
- * reports `detector_model_missing` instead of failing the camera session.
+ * reports `detector_unavailable` with `reason: model_missing` instead of
+ * failing the camera session.
  */
 data class DetectorSidecar(
   val source: String,

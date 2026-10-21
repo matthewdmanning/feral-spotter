@@ -121,6 +121,15 @@ def main() -> None:
     exported = Path(model.export(**export_kwargs))
     metadata = read_embedded_metadata(exported)
 
+    # The head follows from the export arguments: nms=False asks for the
+    # end-to-end head, and INT8 always falls back to the raw head. The embedded
+    # metadata must agree; a disagreement means the exporter changed.
+    end2end = not args.raw_head and args.quantize != "int8"
+    if "end2end" in metadata and bool(metadata["end2end"]) != end2end:
+        raise SystemExit(
+            f"Exported end2end={metadata['end2end']} but the arguments imply {end2end}"
+        )
+
     args.out.mkdir(parents=True, exist_ok=True)
     target_model = args.out / "detector.tflite"
     shutil.copyfile(exported, target_model)
@@ -131,7 +140,7 @@ def main() -> None:
         "ultralytics": metadata.get("version"),
         "license": metadata.get("license"),
         "imgsz": args.imgsz,
-        "end2end": bool(metadata.get("end2end", False)),
+        "end2end": end2end,
         # litert-torch keeps PyTorch's planar layout: input is [1, 3, H, W].
         "inputLayout": "nchw",
         "labels": [names[i] for i in sorted(names)],

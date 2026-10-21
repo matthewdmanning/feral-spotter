@@ -11,6 +11,7 @@ import com.google.ai.edge.litert.Accelerator
 import com.google.ai.edge.litert.CompiledModel
 import com.google.ai.edge.litert.TensorBuffer
 import java.io.FileNotFoundException
+import java.io.IOException
 
 /**
  * Runs the bundled detector on one analysis frame at a time.
@@ -148,20 +149,25 @@ class LiveDetector private constructor(
   }
 
   /**
-   * CompiledModel reads outputs as flat arrays. The shape is rebuilt from the
-   * element count and the sidecar: end-to-end rows are 6 wide, and the raw
-   * Ultralytics head is channels-first, [1, 4 + C, anchors].
+   * CompiledModel reads outputs as flat arrays, so the shape is rebuilt from
+   * the element count. End-to-end rows are 6 wide; the raw Ultralytics head is
+   * channels-first, [1, 4 + C, anchors]. The count decides when only one of
+   * the two fits. The sidecar's `end2end` flag decides only a count that fits
+   * both, so a stale sidecar cannot turn a raw head into garbage boxes.
    */
   private fun shapeOf(count: Int): IntArray {
-    if (sidecar.endToEnd) {
-      require(count % 6 == 0) { "End-to-end output has $count values, not a multiple of 6" }
-      return intArrayOf(1, count / 6, 6)
-    }
     val channels = 4 + sidecar.labels.size
-    require(count % channels == 0) {
-      "Raw output has $count values, not a multiple of $channels channels"
+    val endToEndRows = count / 6
+    // Ultralytics' end-to-end head keeps max_det rows (300 by default).
+    val fitsEndToEnd = count % 6 == 0 && endToEndRows in 1..MAX_END_TO_END_ROWS
+    val fitsRaw = count % channels == 0 && count / channels > MAX_END_TO_END_ROWS
+    return when {
+      fitsEndToEnd && (!fitsRaw || sidecar.endToEnd) -> intArrayOf(1, endToEndRows, 6)
+      fitsRaw -> intArrayOf(1, channels, count / channels)
+      else -> throw IllegalArgumentException(
+        "Output has $count values: neither [1, N<=$MAX_END_TO_END_ROWS, 6] nor [1, $channels, A]"
+      )
     }
-    return intArrayOf(1, channels, count / channels)
   }
 
   override fun close() {
@@ -175,6 +181,7 @@ class LiveDetector private constructor(
     private const val INV_255 = 1f / 255f
     private val PAD_COLOR = Color.rgb(114, 114, 114)
     private const val CPU_THREADS = 4
+    private const val MAX_END_TO_END_ROWS = 1000
 
     /** Blocking: loads, compiles and warms up the model. Call off the main thread. */
     fun open(assets: AssetManager): Opened {
@@ -187,6 +194,8 @@ class LiveDetector private constructor(
         assets.open(DetectorSidecar.MODEL_ASSET).close()
       } catch (missing: FileNotFoundException) {
         return Opened.Missing
+      } catch (error: IOException) {
+        return Opened.Failed("detector.tflite: ${error.message ?: error}")
       }
 
       val gpuFailure = try {

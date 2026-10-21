@@ -202,6 +202,8 @@ class NativeIdentificationCameraView(
    * Driven by the `camera_performance_checks` setting. Off by default, so a
    * normal install reports nothing from here.
    */
+  // Read on the analysis thread as well as the main thread.
+  @Volatile
   var diagnostics: Boolean = false
 
   /**
@@ -445,8 +447,18 @@ class NativeIdentificationCameraView(
       }
       val imageCapture = buildImageCapture(activeTuning)
       val analysis = if (liveDetector) buildImageAnalysis() else null
+      // Building the config already queries the device (the frame-rate probe),
+      // so a throw here means "unsupported", not "no camera".
       val withAnalysis = analysis?.let {
-        buildSessionConfig(provider, selector, preview, imageCapture, it, activeTuning)
+        try {
+          buildSessionConfig(provider, selector, preview, imageCapture, it, activeTuning)
+        } catch (error: Throwable) {
+          diagnostic(
+            "detector_bind_failed",
+            mapOf("message" to (error.message ?: error.toString()), "camera_position" to position)
+          )
+          null
+        }
       }
 
       // The detector is optional and the capture is not: if this device cannot
@@ -465,7 +477,7 @@ class NativeIdentificationCameraView(
             boundCamera = provider.bindToLifecycle(lifecycleOwner, selector, withAnalysis)
             sessionConfig = withAnalysis
           } catch (error: Throwable) {
-            provider.unbind(withAnalysis)
+            runCatching { provider.unbind(withAnalysis) }
             diagnostic(
               "detector_bind_failed",
               mapOf("message" to (error.message ?: error.toString()), "camera_position" to position)
@@ -574,8 +586,21 @@ class NativeIdentificationCameraView(
     analysisUseCase?.clearAnalyzer()
     analysisUseCase = null
     detectorGeneration += 1
-    detectionOverlay.clear()
+    clearDetections()
     if (!liveDetector) releaseDetector()
+  }
+
+  /**
+   * Main thread. Clears the overlay, and tells JS once if it last saw boxes,
+   * so a JS consumer never keeps a box from a session that has ended.
+   */
+  private fun clearDetections() {
+    detectionOverlay.clear()
+    if (lastEventHadDetections) {
+      onDetections(mapOf("detections" to emptyList<Any>(), "inferenceMs" to 0.0))
+    }
+    lastEventHadDetections = false
+    lastDetectionsEventAt = 0L
   }
 
   private fun releaseDetector() {
@@ -617,9 +642,10 @@ class NativeIdentificationCameraView(
       }.getOutputTransform(image)
 
       detectorStats.record(result)
-      if (diagnostics && detectorStats.isWindowFull()) {
+      if (detectorStats.isWindowFull()) {
+        // Drain every window, reported or not: the window is a fixed array.
         val fields = detectorStats.drain(active)
-        post { diagnostic("detector_stats", fields) }
+        if (diagnostics) post { diagnostic("detector_stats", fields) }
       }
       post { deliverDetections(result, source, generation, active.sidecar.labels) }
     } catch (error: Throwable) {
@@ -628,7 +654,7 @@ class NativeIdentificationCameraView(
       detectorUnavailable = true
       val message = error.message ?: error.toString()
       post {
-        detectionOverlay.clear()
+        clearDetections()
         diagnostic("detector_unavailable", mapOf("reason" to "inference_failed", "message" to message))
       }
     } finally {
@@ -769,9 +795,11 @@ class NativeIdentificationCameraView(
   }
 
   private fun unbindCamera() {
+    // Before the provider check: a toggle-off while the provider is still
+    // loading must still release the model.
+    stopAnalysis()
     val provider = cameraProvider ?: return
     val wasBound = boundSessionConfig != null
-    stopAnalysis()
     boundSessionConfig?.let { provider.unbind(it) }
     boundSessionConfig = null
     imageCaptureUseCase = null

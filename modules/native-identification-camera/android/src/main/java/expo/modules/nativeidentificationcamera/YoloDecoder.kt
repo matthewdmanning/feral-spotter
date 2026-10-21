@@ -49,8 +49,8 @@ data class Letterbox(
 
 /**
  * Decodes the two output layouts an Ultralytics LiteRT detect export can have.
- * The layout is read from the output tensor shape, not from the sidecar, so a
- * model and a stale sidecar cannot disagree about it.
+ * The layout is read from the output shape. The sidecar's `end2end` flag only
+ * breaks a tie that the shape cannot settle (see [layoutOf]).
  *
  * End-to-end head (YOLO26 default with nms=False): shape [1, N, 6]. Each row is
  * x1, y1, x2, y2, score, class. Boxes are in model-input pixels. The model has

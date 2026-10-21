@@ -157,6 +157,17 @@ tags:
 - **Finding:** in 8.4.83 and later, `nms=None` (the default) gives the raw head. Only `nms=False` gives YOLO26's end-to-end head.
 - **Resolution:** the script passes `nms=False`. The decoder handles both.
 
+### Independent review findings, fixed before merge
+
+- **Finding:** with Camera Performance Checks off, the stats window never drained. Frame 31 overflowed the array, and the detector turned itself off without a report.
+- **Resolution:** the window drains every 30 frames. Only the report depends on the setting.
+- **Finding:** a session end cleared the native overlay but sent JS no empty `onDetections`, so JS kept a stale box.
+- **Resolution:** `clearDetections()` sends one empty event when JS last saw boxes.
+- **Finding:** the frame-rate probe for the three-stream config ran outside the fallback, so a throw there lost the camera.
+- **Resolution:** a throw while building that config counts as unsupported, and the view binds without analysis.
+- **Finding:** the output shape trusted the sidecar's `end2end` flag. A stale sidecar would decode a raw head as end-to-end rows.
+- **Resolution:** the element count decides. The flag breaks only a true tie. The export script derives `end2end` from its own arguments and fails if the model metadata disagrees.
+
 ## Follow-ups and known limitations
 
 - [ ] Device drive on a flagship and on a low-end phone; record `detector_stats` for both (the two-case rule for capture analysis).
