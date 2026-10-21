@@ -40,8 +40,8 @@ class DetectorStats(private val windowFrames: Int = 30) {
       "decode_ms_mean" to round1(decodeSum / frames),
       "frames_with_detections" to framesWithDetections,
       "accelerator" to detector.accelerator,
-      "output_layout" to (detector.layoutName ?: "unknown"),
-      "output_shape" to (detector.outputShapeText ?: "unknown")
+      "output_layout" to detector.layoutName,
+      "output_shape" to detector.outputShapeText
     )
     reset()
     return summary

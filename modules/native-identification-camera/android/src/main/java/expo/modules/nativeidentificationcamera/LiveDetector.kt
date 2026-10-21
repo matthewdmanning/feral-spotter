@@ -7,37 +7,40 @@ import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.RectF
-import com.google.ai.edge.litert.Accelerator
-import com.google.ai.edge.litert.CompiledModel
-import com.google.ai.edge.litert.TensorBuffer
+import org.tensorflow.lite.Interpreter
+import org.tensorflow.lite.gpu.CompatibilityList
+import org.tensorflow.lite.gpu.GpuDelegate
 import java.io.FileNotFoundException
 import java.io.IOException
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.nio.FloatBuffer
 
 /**
  * Runs the bundled detector on one analysis frame at a time.
  *
  * Not thread safe, by design: the view creates, runs and closes it on the one
- * analysis executor thread. LiteRT's GPU path is documented as thread-bound for
- * the classic delegate, and keeping the CompiledModel on one thread avoids the
- * question for the newer API too.
+ * analysis executor thread. LiteRT documents that a GPU delegate must run on
+ * the thread that created it.
  *
- * Runtime: LiteRT 2.3.0 CompiledModel, the API Google now recommends. Its
- * Interpreter is CPU-only in 2.x. GPU is tried first, then CPU (XNNPACK).
+ * Runtime: LiteRT 1.4.2, the classic Interpreter with the GPU delegate. The
+ * newer 2.x CompiledModel API was the first choice, but its AARs carry Kotlin
+ * 2.3/2.4 metadata and this project compiles with Kotlin 2.1, which reads up
+ * to 2.2. The 1.4.2 classes are Java, so they compile here. GPU is used when
+ * LiteRT's CompatibilityList allows it; CPU (XNNPACK) is the fallback.
  *
  * Preprocessing matches Ultralytics prediction: the upright frame is scaled to
  * fit the square input, centered, padded with gray 114, and fed as RGB in
- * 0..1. litert-torch exports keep PyTorch's planar [1, 3, H, W] input.
+ * 0..1. The input layout ([1, 3, H, W] or [1, H, W, 3]) and the output shape
+ * come from the model's own tensors.
  */
 class LiveDetector private constructor(
   val sidecar: DetectorSidecar,
-  private val model: CompiledModel,
-  private val inputs: List<TensorBuffer>,
-  private val outputs: List<TensorBuffer>,
-  /** "gpu" or "cpu": the accelerator that compiled and ran the warm-up. */
+  private val interpreter: Interpreter,
+  private val gpuDelegate: GpuDelegate?,
+  /** "gpu" or "cpu": the path that compiled and ran the warm-up. */
   val accelerator: String,
-  /** Model load plus compile plus one warm-up run, in milliseconds. */
-  val loadMs: Long,
-  /** Why GPU was skipped, when [accelerator] is "cpu". */
+  /** Why GPU was not used, when [accelerator] is "cpu". */
   val gpuFailure: String?
 ) : AutoCloseable {
 
@@ -60,28 +63,56 @@ class LiveDetector private constructor(
     class Failed(val message: String) : Opened()
   }
 
-  private val size = sidecar.imgsz
+  /** Model load plus delegate setup plus one warm-up run, in milliseconds. */
+  var loadMs: Long = 0L
+    private set
+
+  private val inputShape: IntArray = interpreter.getInputTensor(0).shape()
+  private val outputShape: IntArray = interpreter.getOutputTensor(0).shape()
+  private val planarInput: Boolean
+  private val size: Int
+
+  init {
+    require(inputShape.size == 4 && inputShape[0] == 1) {
+      "Unsupported detector input shape ${inputShape.contentToString()}"
+    }
+    planarInput = inputShape[1] == 3
+    size = if (planarInput) inputShape[2] else inputShape[1]
+    val width = if (planarInput) inputShape[3] else inputShape[2]
+    require(size == width) { "Detector input must be square, got ${inputShape.contentToString()}" }
+    require(planarInput || inputShape[3] == 3) {
+      "Detector input has no RGB axis: ${inputShape.contentToString()}"
+    }
+  }
+
   private val decoder = YoloDecoder(
     numClasses = sidecar.labels.size,
     targetClasses = sidecar.targetClasses,
     scoreThreshold = sidecar.scoreThreshold
   )
+
+  /** Read from the output tensor once; the sidecar only breaks a tie. */
+  private val layout: YoloDecoder.Layout = decoder.layoutOf(outputShape, sidecar.endToEnd)
+
   private val letterboxBitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
   private val letterboxCanvas = Canvas(letterboxBitmap)
   private val pixels = IntArray(size * size)
-  private val inputValues = FloatArray(3 * size * size)
+  private val inputBuffer: ByteBuffer = directFloats(3 * size * size)
+  private val inputFloats: FloatBuffer = inputBuffer.asFloatBuffer()
+  private val outputBuffer: ByteBuffer = directFloats(outputShape.fold(1) { a, b -> a * b })
+  private val outputValues = FloatArray(outputBuffer.capacity() / 4)
   private val drawMatrix = Matrix()
   private val bounds = RectF()
   private val drawPaint = Paint(Paint.FILTER_BITMAP_FLAG)
-  private var outputShape: IntArray? = null
-  private var layout: YoloDecoder.Layout? = null
 
-  /** The decoder's reading of the output tensor, once a frame has run. */
-  val layoutName: String?
-    get() = layout?.name?.lowercase()
+  val inputSize: Int
+    get() = size
 
-  val outputShapeText: String?
-    get() = outputShape?.contentToString()
+  val layoutName: String
+    get() = layout.name.lowercase()
+
+  val outputShapeText: String
+    get() = outputShape.contentToString()
 
   /**
    * [frame] is the analysis buffer as stored by the sensor; [rotationDegrees]
@@ -96,14 +127,14 @@ class LiveDetector private constructor(
     fillInput(frame, rotationDegrees, letterbox)
 
     val t1 = System.nanoTime()
-    inputs[0].writeFloat(inputValues)
-    model.run(inputs, outputs)
-    val output = outputs[0].readFloat()
+    inputBuffer.rewind()
+    outputBuffer.rewind()
+    interpreter.run(inputBuffer, outputBuffer)
+    outputBuffer.rewind()
+    outputBuffer.asFloatBuffer().get(outputValues)
 
     val t2 = System.nanoTime()
-    val shape = outputShape ?: shapeOf(output.size).also { outputShape = it }
-    val resolvedLayout = layout ?: decoder.layoutOf(shape, sidecar.endToEnd).also { layout = it }
-    val detections = decoder.decode(output, resolvedLayout, shape, letterbox)
+    val detections = decoder.decode(outputValues, layout, outputShape, letterbox)
     val t3 = System.nanoTime()
 
     return Result(
@@ -130,50 +161,25 @@ class LiveDetector private constructor(
     letterboxBitmap.getPixels(pixels, 0, size, 0, 0, size, size)
 
     val plane = size * size
-    if (sidecar.planarInput) {
-      for (i in 0 until plane) {
-        val p = pixels[i]
-        inputValues[i] = ((p shr 16) and 0xFF) * INV_255
-        inputValues[plane + i] = ((p shr 8) and 0xFF) * INV_255
-        inputValues[2 * plane + i] = (p and 0xFF) * INV_255
-      }
+    inputFloats.rewind()
+    if (planarInput) {
+      for (i in 0 until plane) inputFloats.put(i, ((pixels[i] shr 16) and 0xFF) * INV_255)
+      for (i in 0 until plane) inputFloats.put(plane + i, ((pixels[i] shr 8) and 0xFF) * INV_255)
+      for (i in 0 until plane) inputFloats.put(2 * plane + i, (pixels[i] and 0xFF) * INV_255)
     } else {
       for (i in 0 until plane) {
         val p = pixels[i]
         val o = i * 3
-        inputValues[o] = ((p shr 16) and 0xFF) * INV_255
-        inputValues[o + 1] = ((p shr 8) and 0xFF) * INV_255
-        inputValues[o + 2] = (p and 0xFF) * INV_255
+        inputFloats.put(o, ((p shr 16) and 0xFF) * INV_255)
+        inputFloats.put(o + 1, ((p shr 8) and 0xFF) * INV_255)
+        inputFloats.put(o + 2, (p and 0xFF) * INV_255)
       }
     }
   }
 
-  /**
-   * CompiledModel reads outputs as flat arrays, so the shape is rebuilt from
-   * the element count. End-to-end rows are 6 wide; the raw Ultralytics head is
-   * channels-first, [1, 4 + C, anchors]. The count decides when only one of
-   * the two fits. The sidecar's `end2end` flag decides only a count that fits
-   * both, so a stale sidecar cannot turn a raw head into garbage boxes.
-   */
-  private fun shapeOf(count: Int): IntArray {
-    val channels = 4 + sidecar.labels.size
-    val endToEndRows = count / 6
-    // Ultralytics' end-to-end head keeps max_det rows (300 by default).
-    val fitsEndToEnd = count % 6 == 0 && endToEndRows in 1..MAX_END_TO_END_ROWS
-    val fitsRaw = count % channels == 0 && count / channels > MAX_END_TO_END_ROWS
-    return when {
-      fitsEndToEnd && (!fitsRaw || sidecar.endToEnd) -> intArrayOf(1, endToEndRows, 6)
-      fitsRaw -> intArrayOf(1, channels, count / channels)
-      else -> throw IllegalArgumentException(
-        "Output has $count values: neither [1, N<=$MAX_END_TO_END_ROWS, 6] nor [1, $channels, A]"
-      )
-    }
-  }
-
   override fun close() {
-    inputs.forEach { it.close() }
-    outputs.forEach { it.close() }
-    model.close()
+    interpreter.close()
+    gpuDelegate?.close()
     letterboxBitmap.recycle()
   }
 
@@ -181,17 +187,27 @@ class LiveDetector private constructor(
     private const val INV_255 = 1f / 255f
     private val PAD_COLOR = Color.rgb(114, 114, 114)
     private const val CPU_THREADS = 4
-    private const val MAX_END_TO_END_ROWS = 1000
 
-    /** Blocking: loads, compiles and warms up the model. Call off the main thread. */
+    private fun directFloats(count: Int): ByteBuffer =
+      ByteBuffer.allocateDirect(count * 4).order(ByteOrder.nativeOrder())
+
+    /** Blocking: loads the model, sets up the delegate and warms up. Call off the main thread. */
     fun open(assets: AssetManager): Opened {
       val sidecar = try {
         DetectorSidecar.load(assets) ?: return Opened.Missing
       } catch (error: Throwable) {
         return Opened.Failed("detector.json: ${error.message ?: error}")
       }
-      try {
-        assets.open(DetectorSidecar.MODEL_ASSET).close()
+      // Read into a direct buffer rather than memory-mapping, so loading does
+      // not depend on whether the build compressed the asset.
+      val model = try {
+        assets.open(DetectorSidecar.MODEL_ASSET).use { stream ->
+          val bytes = stream.readBytes()
+          ByteBuffer.allocateDirect(bytes.size).order(ByteOrder.nativeOrder()).apply {
+            put(bytes)
+            rewind()
+          }
+        }
       } catch (missing: FileNotFoundException) {
         return Opened.Missing
       } catch (error: IOException) {
@@ -199,55 +215,69 @@ class LiveDetector private constructor(
       }
 
       val gpuFailure = try {
-        return Opened.Ready(compile(assets, sidecar, Accelerator.GPU, null))
+        return Opened.Ready(build(model, sidecar, useGpu = true, gpuFailure = null))
       } catch (error: Throwable) {
         error.message ?: error.toString()
       }
       return try {
-        Opened.Ready(compile(assets, sidecar, Accelerator.CPU, gpuFailure))
+        Opened.Ready(build(model, sidecar, useGpu = false, gpuFailure = gpuFailure))
       } catch (error: Throwable) {
         Opened.Failed("gpu: $gpuFailure; cpu: ${error.message ?: error}")
       }
     }
 
-    private fun compile(
-      assets: AssetManager,
+    private fun build(
+      model: ByteBuffer,
       sidecar: DetectorSidecar,
-      accelerator: Accelerator,
+      useGpu: Boolean,
       gpuFailure: String?
     ): LiveDetector {
       val startedAt = System.nanoTime()
-      val options = CompiledModel.Options(accelerator)
-      if (accelerator == Accelerator.CPU) {
-        options.cpuOptions = CompiledModel.CpuOptions(numThreads = CPU_THREADS)
+      val options = Interpreter.Options()
+      var delegate: GpuDelegate? = null
+      if (useGpu) {
+        val compatibility = CompatibilityList()
+        try {
+          check(compatibility.isDelegateSupportedOnThisDevice) {
+            "GPU delegate not supported on this device"
+          }
+          delegate = GpuDelegate(compatibility.bestOptionsForThisDevice)
+          options.addDelegate(delegate)
+        } finally {
+          compatibility.close()
+        }
+      } else {
+        options.setNumThreads(CPU_THREADS)
       }
-      val model = CompiledModel.create(assets, DetectorSidecar.MODEL_ASSET, options)
-      var inputs: List<TensorBuffer> = emptyList()
-      var outputs: List<TensorBuffer> = emptyList()
+
+      var interpreter: Interpreter? = null
       try {
-        inputs = model.createInputBuffers()
-        outputs = model.createOutputBuffers()
-        // One warm-up run, so the first camera frame does not pay for shader
-        // compilation, and so a GPU that compiles but cannot run falls back.
-        inputs[0].writeFloat(FloatArray(3 * sidecar.imgsz * sidecar.imgsz))
-        model.run(inputs, outputs)
-        outputs[0].readFloat()
+        model.rewind()
+        interpreter = Interpreter(model, options)
+        val detector = LiveDetector(
+          sidecar = sidecar,
+          interpreter = interpreter,
+          gpuDelegate = delegate,
+          accelerator = if (useGpu) "gpu" else "cpu",
+          gpuFailure = gpuFailure
+        )
+        // One warm-up run, so the first camera frame does not pay for
+        // delegate compilation, and so a GPU that loads but cannot run falls
+        // back to CPU here instead of failing on a live frame.
+        detector.warmUp()
+        detector.loadMs = (System.nanoTime() - startedAt) / 1_000_000
+        return detector
       } catch (error: Throwable) {
-        inputs.forEach { it.close() }
-        outputs.forEach { it.close() }
-        model.close()
+        interpreter?.close()
+        delegate?.close()
         throw error
       }
-      val loadMs = (System.nanoTime() - startedAt) / 1_000_000
-      return LiveDetector(
-        sidecar = sidecar,
-        model = model,
-        inputs = inputs,
-        outputs = outputs,
-        accelerator = accelerator.name.lowercase(),
-        loadMs = loadMs,
-        gpuFailure = gpuFailure
-      )
     }
+  }
+
+  private fun warmUp() {
+    inputBuffer.rewind()
+    outputBuffer.rewind()
+    interpreter.run(inputBuffer, outputBuffer)
   }
 }

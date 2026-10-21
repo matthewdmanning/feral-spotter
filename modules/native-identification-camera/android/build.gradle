@@ -23,8 +23,10 @@ dependencies {
   implementation 'androidx.camera:camera-lifecycle:1.6.2'
   implementation 'androidx.camera:camera-view:1.6.2'
 
-  // Live detector. LiteRT 2.x CompiledModel; litert-gpu adds the GPU
-  // accelerator, and CPU (XNNPACK) is the fallback. Requires minSdk 24.
-  implementation 'com.google.ai.edge.litert:litert:2.3.0'
-  implementation 'com.google.ai.edge.litert:litert-gpu:2.3.0'
+  // Live detector: LiteRT 1.4.2, the classic Interpreter plus GPU delegate.
+  // LiteRT 2.x (CompiledModel) is built with Kotlin 2.3+ metadata, which this
+  // project's Kotlin 2.1 compiler cannot read. See LiveDetector.kt.
+  implementation 'com.google.ai.edge.litert:litert:1.4.2'
+  implementation 'com.google.ai.edge.litert:litert-gpu:1.4.2'
+  implementation 'com.google.ai.edge.litert:litert-gpu-api:1.4.2'
 }

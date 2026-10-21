@@ -17,8 +17,6 @@ data class DetectorSidecar(
   val source: String,
   val imgsz: Int,
   val endToEnd: Boolean,
-  /** True for [1, 3, H, W] input (every litert-torch export), false for [1, H, W, 3]. */
-  val planarInput: Boolean,
   val labels: List<String>,
   /** Indices into [labels]. Empty keeps every class. */
   val targetClasses: Set<Int>,
@@ -64,11 +62,6 @@ data class DetectorSidecar(
         source = json.optString("source", "unknown"),
         imgsz = imgsz,
         endToEnd = json.optBoolean("end2end", false),
-        planarInput = when (val layout = json.optString("inputLayout", "nchw")) {
-          "nchw" -> true
-          "nhwc" -> false
-          else -> throw IllegalArgumentException("detector.json inputLayout '$layout' is not nchw or nhwc")
-        },
         labels = labels,
         targetClasses = targets,
         scoreThreshold = json.optDouble("scoreThreshold", 0.35).toFloat()

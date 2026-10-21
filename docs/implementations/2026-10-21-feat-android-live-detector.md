@@ -39,11 +39,11 @@ tags:
 
 ## Design decisions and reasoning
 
-### Runtime: LiteRT 2.3.0 CompiledModel, GPU then CPU
+### Runtime: LiteRT 1.4.2 Interpreter, GPU then CPU
 
-- **Decision:** `com.google.ai.edge.litert:litert:2.3.0` and `litert-gpu:2.3.0`. The model compiles for GPU first. If GPU fails to compile or to run the warm-up, it compiles for CPU (XNNPACK, 4 threads).
-- **Reason:** Google's LiteRT docs call CompiledModel the current API. The 2.x `Interpreter` is CPU only. GPU with `Interpreter` needs the older 1.4.2 artifacts.
-- **Constraint:** LiteRT 2.3.0 AARs declare minSdk 24. The app's minSdk is 24.
+- **Decision:** `com.google.ai.edge.litert:litert:1.4.2`, `litert-gpu:1.4.2` and `litert-gpu-api:1.4.2`. The GPU delegate is used when LiteRT's `CompatibilityList` allows it. If the delegate fails to load or to run the warm-up, the interpreter is rebuilt for CPU (XNNPACK, 4 threads).
+- **Reason:** LiteRT 1.4.2 is the latest Interpreter release with a GPU delegate. Its classes are Java, so this project's Kotlin 2.1 compiler can read them.
+- **Input and output shapes come from the model's tensors**, not from the sidecar. The sidecar's `end2end` flag only breaks a tie for a two-class model.
 
 ### Model export: `format="litert"`, `nms=False`, FP32
 
@@ -75,7 +75,7 @@ tags:
 
 ### Threads
 
-- **Decision:** one single-thread executor owns the analyzer, the `CompiledModel` and the stats. Box delivery and all events run on the main thread. A generation counter drops results from a session that was already unbound.
+- **Decision:** one single-thread executor owns the analyzer, the interpreter, the GPU delegate and the stats. Box delivery and all events run on the main thread. A generation counter drops results from a session that was already unbound.
 - **Reason:** keeps LiteRT on one thread, and stops stale boxes after a flip or rebind.
 - The model stays loaded across rebinds while the setting is on. It is closed when the setting goes off, or in `OnViewDestroys`.
 
@@ -168,12 +168,18 @@ tags:
 - **Finding:** the output shape trusted the sidecar's `end2end` flag. A stale sidecar would decode a raw head as end-to-end rows.
 - **Resolution:** the element count decides. The flag breaks only a true tie. The export script derives `end2end` from its own arguments and fails if the model metadata disagrees.
 
+### LiteRT 2.x CompiledModel does not compile here
+
+- **Finding:** the first build used LiteRT 2.3.0 `CompiledModel`, the API Google now recommends. The Kotlin compile failed: the 2.3.0 AAR carries Kotlin 2.4 metadata, and 2.2.0 and 2.1.6 carry 2.3. This project's Kotlin compiler is 2.1 and reads metadata up to 2.2.
+- **Resolution:** LiteRT 1.4.2 `Interpreter` with the GPU delegate. Move to `CompiledModel` when the project's Kotlin reaches the AAR's metadata version. `-Xskip-metadata-version-check` was rejected: it silences the check rather than making the classes readable.
+
 ## Follow-ups and known limitations
 
 - [ ] Device drive on a flagship and on a low-end phone; record `detector_stats` for both (the two-case rule for capture analysis).
 - [ ] Decide whether a detection steers focus and exposure (`setSubjectRegion`).
 - [ ] iOS implementation of `liveDetector`.
 - [ ] License plan for any detector that ships to users.
+- [ ] Move to LiteRT 2.x `CompiledModel` after the project's Kotlin version allows it.
 - The camera vocabulary in `docs/agents/domain.md` is under review and says not to extend it, so "live detector" is not added there yet.
 - `ImageProxy.toBitmap()` allocates per frame when a device pads RGBA rows. Unpadded frames reuse one bitmap.
 
