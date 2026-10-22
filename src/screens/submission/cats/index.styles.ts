@@ -3,7 +3,7 @@ import { StyleSheet } from 'react-native-unistyles'
 export const styles = StyleSheet.create((theme) => ({
   scroll: { backgroundColor: theme.colors.background },
   inner: {
-    paddingHorizontal: theme.spacing.lg,
+    paddingHorizontal: theme.layout.gutter,
     paddingBottom: theme.spacing.xxl,
     gap: theme.spacing.lg,
   },

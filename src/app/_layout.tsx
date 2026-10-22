@@ -12,14 +12,34 @@
 import '@/src/config/unistyles'
 import { useUIStore } from '@/src/hooks'
 import { AppProviders } from '@/src/providers/AppProviders'
+import { Nunito_400Regular } from '@expo-google-fonts/nunito/400Regular'
+import { Nunito_500Medium } from '@expo-google-fonts/nunito/500Medium'
+import { Nunito_600SemiBold } from '@expo-google-fonts/nunito/600SemiBold'
+import { Nunito_700Bold } from '@expo-google-fonts/nunito/700Bold'
+import { Nunito_800ExtraBold } from '@expo-google-fonts/nunito/800ExtraBold'
+import { useFonts } from '@expo-google-fonts/nunito/useFonts'
 import NetInfo from '@react-native-community/netinfo'
 import { Stack } from 'expo-router'
+import * as SplashScreen from 'expo-splash-screen'
 import { useEffect } from 'react'
 import { useUnistyles } from 'react-native-unistyles'
+
+// Hold the splash until Nunito loads, so the first frame does not draw in
+// the system font and then jump. Keys are the `theme.fonts` family names.
+SplashScreen.preventAutoHideAsync().catch(() => {})
 
 export default function RootLayout() {
   const { theme } = useUnistyles()
   const setOnlineStatus = useUIStore((s) => s.setOnlineStatus)
+  const [fontsLoaded, fontError] = useFonts({
+    Nunito_400Regular,
+    Nunito_500Medium,
+    Nunito_600SemiBold,
+    Nunito_700Bold,
+    Nunito_800ExtraBold,
+  })
+  // A failed load falls back to the system font rather than blocking launch.
+  const fontsSettled = fontsLoaded || fontError !== null
 
   useEffect(() => {
     const unsub = NetInfo.addEventListener((s) =>
@@ -28,13 +48,23 @@ export default function RootLayout() {
     return () => unsub()
   }, [setOnlineStatus])
 
+  useEffect(() => {
+    if (fontsSettled) SplashScreen.hideAsync().catch(() => {})
+  }, [fontsSettled])
+
+  if (!fontsSettled) return null
+
   return (
     <AppProviders>
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: theme.colors.background },
           headerTintColor: theme.colors.text,
-          headerTitleStyle: { fontWeight: '700', color: theme.colors.text },
+          headerTitleStyle: {
+            fontFamily: theme.fonts.bold,
+            fontSize: theme.typography.lg,
+            color: theme.colors.text,
+          },
           headerShadowVisible: false,
           contentStyle: { backgroundColor: theme.colors.background },
           animation: 'slide_from_right',

@@ -6,9 +6,9 @@ export const styles = StyleSheet.create((theme, rt) => ({
   root: {
     flex: 1,
     backgroundColor: theme.colors.background,
-    paddingHorizontal: theme.spacing.lg,
+    paddingHorizontal: theme.layout.gutter,
     paddingBottom: rt.insets.bottom + theme.spacing.sm,
-    gap: theme.spacing.lg,
+    gap: theme.layout.sectionGap,
   },
   scroll: { flex: 1 },
   scrollContent: { gap: theme.spacing.lg },
@@ -20,7 +20,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     backgroundColor: theme.colors.surface,
     ...theme.elevation.card,
     ...theme.outlined,
-    padding: theme.spacing.lg,
+    padding: theme.layout.cardPadding,
   },
   statusItem: {
     flex: 1,
@@ -45,7 +45,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     backgroundColor: theme.colors.surface,
     ...theme.elevation.card,
     ...theme.outlined,
-    padding: theme.spacing.lg,
+    padding: theme.layout.cardPadding,
     gap: theme.spacing.md,
   },
   catRow: { flexDirection: 'row', alignItems: 'center' },
@@ -76,7 +76,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     marginTop: 'auto',
     alignSelf: 'center',
     width: '67%',
-    gap: theme.spacing.md,
+    gap: theme.layout.stackGap,
   },
   // #375: the reason "Finished!" is disabled.
   disabledReason: {

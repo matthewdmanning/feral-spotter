@@ -14,7 +14,7 @@ export const dialogShell = StyleSheet.create((theme) => ({
     backgroundColor: theme.colors.overlay,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: theme.spacing.xxl,
+    paddingHorizontal: theme.layout.gutter,
   },
   sheet: {
     backgroundColor: theme.colors.surface,

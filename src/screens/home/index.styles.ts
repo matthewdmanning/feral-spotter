@@ -14,7 +14,7 @@ export const styles = StyleSheet.create((theme) => ({
     justifyContent: 'space-evenly',
   },
   bottomArea: {
-    paddingHorizontal: theme.spacing.lg,
+    paddingHorizontal: theme.layout.gutter,
     paddingBottom: theme.spacing.lg,
   },
   // #375: the reason a disabled entrypoint is disabled.
@@ -22,6 +22,6 @@ export const styles = StyleSheet.create((theme) => ({
     ...theme.textVariants.bodySmall,
     color: theme.colors.muted,
     textAlign: 'center',
-    paddingHorizontal: theme.spacing.xxl,
+    paddingHorizontal: theme.layout.gutter,
   },
 }))

@@ -30,6 +30,7 @@
     "gradle:debug": "expo prebuild --clean && cd android && .\\gradlew assembleDebug"
   },
   "dependencies": {
+    "@expo-google-fonts/nunito": "^0.4.1",
     "@posthog/core": "^1.55.3",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/datetimepicker": "9.1.0",

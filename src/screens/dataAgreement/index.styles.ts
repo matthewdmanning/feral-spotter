@@ -4,7 +4,7 @@ export const styles = StyleSheet.create((theme) => ({
   root: { flex: 1, backgroundColor: theme.colors.background },
   scroll: {
     flexGrow: 1,
-    paddingHorizontal: theme.spacing.xxl,
+    paddingHorizontal: theme.layout.gutter,
     paddingVertical: theme.spacing.xxxl,
   },
   title: {
@@ -23,5 +23,5 @@ export const styles = StyleSheet.create((theme) => ({
     marginBottom: theme.spacing.xs,
     marginLeft: theme.spacing.md,
   },
-  itemLabel: { fontWeight: '700' },
+  itemLabel: { fontFamily: theme.fonts.bold },
 }))

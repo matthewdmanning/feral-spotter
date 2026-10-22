@@ -8,7 +8,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
   scroll: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingHorizontal: theme.spacing.xxl,
+    paddingHorizontal: theme.layout.gutter,
     paddingTop: rt.insets.top + theme.spacing.xxxl,
     paddingBottom: rt.insets.bottom + theme.spacing.xxxl,
   },
@@ -29,7 +29,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     alignItems: 'flex-start',
     gap: theme.spacing.md,
     marginTop: theme.spacing.md,
-    padding: theme.spacing.lg,
+    padding: theme.layout.cardPadding,
     borderRadius: theme.radius.xl,
     backgroundColor: theme.colors.surface,
     ...theme.elevation.card,
@@ -39,7 +39,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     color: theme.colors.text,
     flexShrink: 1,
   },
-  itemLabel: { fontWeight: '700' },
+  itemLabel: { fontFamily: theme.fonts.bold },
   checkbox: {
     width: theme.iconSize.lg,
     height: theme.iconSize.lg,

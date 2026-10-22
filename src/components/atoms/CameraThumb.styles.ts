@@ -20,12 +20,12 @@ export const styles = StyleSheet.create((theme) => ({
     alignItems: 'center',
     backgroundColor: theme.colors.onCameraScrim,
     borderRadius: theme.radius.full,
-    paddingHorizontal: theme.spacing.xs + 2,
+    paddingHorizontal: theme.spacing.sm,
     paddingVertical: 2,
   },
   badgeText: {
     ...theme.textVariants.caption,
     color: theme.colors.onCamera,
-    fontWeight: '700',
+    fontFamily: theme.fonts.bold,
   },
 }))

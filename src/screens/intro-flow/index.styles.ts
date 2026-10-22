@@ -4,7 +4,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
   root: {
     flex: 1,
     backgroundColor: theme.colors.background,
-    paddingHorizontal: theme.spacing.xxl,
+    paddingHorizontal: theme.layout.gutter,
     paddingTop: rt.insets.top + theme.spacing.xxxl,
     paddingBottom: rt.insets.bottom + theme.spacing.lg,
   },

@@ -12,7 +12,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
   content: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: theme.spacing.xxl,
+    paddingHorizontal: theme.layout.gutter,
   },
   title: {
     ...theme.textVariants.display,

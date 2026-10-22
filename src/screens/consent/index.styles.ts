@@ -5,7 +5,7 @@ export const styles = StyleSheet.create((theme) => ({
   scroll: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingHorizontal: theme.spacing.xxl,
+    paddingHorizontal: theme.layout.gutter,
     paddingVertical: theme.spacing.xxxl,
   },
   title: {
@@ -26,7 +26,7 @@ export const styles = StyleSheet.create((theme) => ({
     marginLeft: theme.spacing.md,
     flexShrink: 1,
   },
-  itemLabel: { fontWeight: '700' },
+  itemLabel: { fontFamily: theme.fonts.bold },
   agreeRow: { marginTop: theme.spacing.xxl },
   declineBtn: {
     minHeight: theme.controlHeight.touchTarget,
@@ -46,7 +46,7 @@ export const styles = StyleSheet.create((theme) => ({
     backgroundColor: theme.colors.background,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: theme.spacing.xxxl,
+    padding: theme.layout.gutter,
     gap: theme.spacing.lg,
   },
   gateTitle: {

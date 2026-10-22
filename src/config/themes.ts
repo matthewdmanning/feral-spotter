@@ -5,21 +5,29 @@
  * Add a new theme by adding another export here and wiring it into the
  * `appThemes` map in unistyles.ts — nothing else needs to change.
  *
- * Palette: Material 3 "Fidelity" scheme generated from the neon seed
- * #C6E84A with Google's material-color-utilities (SchemeFidelity, contrast
- * 0). Fidelity keeps the seed itself as the primary container, so the neon
- * survives into the UI; secondary (sage), tertiary (lavender) and error are
- * the scheme's own roles, already harmonized to the seed. success and
+ * Palette: a warm, cozy scheme built with Google's material-color-utilities
+ * as a Fidelity DynamicScheme (contrast 0) with three palettes swapped in:
+ *   primary   moss seed, HCT(116, 44, 74); dark mode uses the seed itself
+ *             as the accent, as Fidelity does
+ *   neutral   warm brown, HCT hue 70, chroma 6 (variant chroma 10), so
+ *             surfaces read as cream and cocoa instead of olive grey
+ *   tertiary  terracotta, HCT hue 45, chroma 38 (segmented answers)
+ * Secondary (sage) is Fidelity's own role from the seed. success and
  * warning are Blend.harmonize()'d toward the seed and read at tone 80
- * (dark) / 40 (light), the same tones the scheme uses for its accents.
- * Regenerate from the seed rather than hand-picking a new hex.
+ * (dark) / 40 (light). Dark accentText is primary tone 20, one step darker
+ * than Fidelity's onPrimaryContainer, so labels pass 5.4:1 on every
+ * gradient stop. Regenerate from these inputs rather than hand-picking hex.
  *
- * `depth` is the button vocabulary: `raised` is a bevel (top-edge light plus
- * a drop shadow), `pressed` sinks the face with an inset shadow, and `well`
- * recesses a track (segmented control) so its thumb sits in it.
- * `gradients.bevel` is a gradient inset laid over every filled button face:
- * light at the top, shade at the bottom, so the face reads as having height.
+ * `depth` is the button vocabulary: `raised` is a soft bevel (top-edge
+ * light plus a warm drop shadow), `pressed` sinks the face with an inset
+ * shadow, and `well` recesses a track (segmented control) so its thumb sits
+ * in it. `gradients.bevel` is a faint gradient inset laid over every filled
+ * button face, so the face reads as soft and rounded, not glossy.
  * boxShadow inset needs Android 10+; older devices draw the flat face.
+ *
+ * Type: Nunito, a rounded sans, loaded at startup (app/_layout.tsx). Each
+ * weight is its own family on Android, so text sets `fontFamily` from
+ * `fonts`, never `fontWeight`.
  */
 
 // ─── Tokens (shared across themes) ───────────────────────────────────────────
@@ -51,18 +59,32 @@ const radius = {
 } as const
 
 /**
+ * Nunito faces by weight. Android has no weight synthesis for a custom
+ * family, so every weight is a separate family name; set `fontFamily`
+ * from here instead of `fontWeight`. Names match the keys passed to
+ * `useFonts` in app/_layout.tsx.
+ */
+const fonts = {
+  regular: 'Nunito_400Regular',
+  medium: 'Nunito_500Medium',
+  semibold: 'Nunito_600SemiBold',
+  bold: 'Nunito_700Bold',
+  extrabold: 'Nunito_800ExtraBold',
+} as const
+
+/**
  * Raw size scale. Prefer `textVariants` in styles; this is for one-offs.
- * Each step sits two steps above the stock 12/14/16/18/20/24/30 scale, so
- * every text role reads larger than platform default.
+ * One step above the stock 12/14/16/18/20/24/30 scale: body text stays
+ * easy to read outdoors without crowding the screen.
  */
 const typography = {
-  xs: 16,
-  sm: 18,
-  base: 20,
-  lg: 24,
-  xl: 26,
-  xxl: 34,
-  xxxl: 40,
+  xs: 14,
+  sm: 16,
+  base: 18,
+  lg: 20,
+  xl: 24,
+  xxl: 28,
+  xxxl: 34,
 } as const
 
 /**
@@ -71,34 +93,63 @@ const typography = {
  *
  * Sizes are dp — React Native already multiplies fontSize and lineHeight by
  * the OS font-scale setting, so do not multiply by `rt.fontScale` again.
- * Line heights sit on the 4pt grid; large text runs tighter (1.2) and body
- * text looser (1.5) for readability.
+ * Line heights sit on the 4pt grid; large text runs tighter (about 1.2) and
+ * body text looser (about 1.5) for readability.
+ *
+ * Each heading role has its own size, so hierarchy reads from size first
+ * and weight second: display 34 > title 28 > heading 20 > body 18.
  */
 const textVariants = {
-  // Every heading role shares one size; weight alone separates them.
   display: {
-    fontSize: typography.lg,
-    lineHeight: 30,
-    fontWeight: '800',
-    letterSpacing: -0.3,
+    fontFamily: fonts.extrabold,
+    fontSize: typography.xxxl,
+    lineHeight: 40,
+    letterSpacing: -0.4,
   },
   title: {
-    fontSize: typography.lg,
-    lineHeight: 30,
-    fontWeight: '700',
+    fontFamily: fonts.extrabold,
+    fontSize: typography.xxl,
+    lineHeight: 36,
     letterSpacing: -0.2,
   },
   heading: {
+    fontFamily: fonts.bold,
     fontSize: typography.lg,
-    lineHeight: 30,
-    fontWeight: '700',
-    letterSpacing: -0.1,
+    lineHeight: 28,
   },
-  body: { fontSize: typography.base, lineHeight: 28, fontWeight: '400' },
-  bodySmall: { fontSize: typography.sm, lineHeight: 24, fontWeight: '400' },
-  label: { fontSize: typography.base, lineHeight: 26, fontWeight: '600' },
-  labelSmall: { fontSize: typography.sm, lineHeight: 24, fontWeight: '600' },
-  caption: { fontSize: typography.xs, lineHeight: 20, fontWeight: '500' },
+  body: {
+    fontFamily: fonts.regular,
+    fontSize: typography.base,
+    lineHeight: 28,
+  },
+  bodySmall: {
+    fontFamily: fonts.regular,
+    fontSize: typography.sm,
+    lineHeight: 24,
+  },
+  label: { fontFamily: fonts.bold, fontSize: typography.base, lineHeight: 24 },
+  labelSmall: {
+    fontFamily: fonts.bold,
+    fontSize: typography.sm,
+    lineHeight: 20,
+  },
+  caption: {
+    fontFamily: fonts.semibold,
+    fontSize: typography.xs,
+    lineHeight: 20,
+  },
+} as const
+
+/**
+ * Layout rhythm. One gutter for every screen edge and one padding for every
+ * card, so screens line up with each other. Groups sit further apart than
+ * the items inside them (section > stack), so related things read as one.
+ */
+const layout = {
+  gutter: spacing.xl,
+  cardPadding: spacing.lg,
+  stackGap: spacing.md,
+  sectionGap: spacing.xxl,
 } as const
 
 const iconSize = {
@@ -125,7 +176,7 @@ const controlHeight = {
  * One color per cat, drawn over photos, so it must read on any photo and
  * stay apart from its neighbours. The first seven are the Okabe-Ito set,
  * chosen to stay distinct under the common color-vision deficiencies; the
- * violet is added for an eighth cat. None is the lime accent, so a cat's
+ * violet is added for an eighth cat. None is the moss accent, so a cat's
  * color never reads as the active crop frame. Same in both themes: it sits on
  * photos, not on a themed surface. Append only — a cat stores its index.
  */
@@ -144,61 +195,64 @@ const sharedTokens = {
   catPalette,
   spacing,
   radius,
+  fonts,
   typography,
   textVariants,
+  layout,
   iconSize,
   controlHeight,
 }
 
 // ─── Themes ───────────────────────────────────────────────────────────────────
 
+// Faint on purpose: a soft, rounded face, not a glossy one.
 const bevel =
-  'linear-gradient(180deg, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0) 60%, rgba(0,0,0,0.22) 100%)'
+  'linear-gradient(180deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0) 60%, rgba(0,0,0,0.10) 100%)'
 // Pressed flips the shading: shade on top, so the face reads as sunk.
 const bevelPressed =
-  'linear-gradient(180deg, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0) 45%, rgba(255,255,255,0) 60%, rgba(255,255,255,0.12) 100%)'
+  'linear-gradient(180deg, rgba(0,0,0,0.14) 0%, rgba(0,0,0,0) 45%, rgba(255,255,255,0) 60%, rgba(255,255,255,0.08) 100%)'
 
 export const darkTheme = {
   colors: {
-    background: '#12140B',
-    surface: '#1E2116',
-    surfaceAlt: '#292B20',
-    text: '#E3E4D3',
-    textInverse: '#12140B',
-    muted: '#C5C9B0',
+    background: '#18120C',
+    surface: '#251E17',
+    surfaceAlt: '#302921',
+    text: '#EEE0D4',
+    textInverse: '#18120C',
+    muted: '#D7C3B0',
     // The seed. Primary actions, active tab, focus.
-    accent: '#C6E84A',
-    accentAlt: '#8F937C',
-    accentText: '#2A3500',
-    accentSoft: '#3F4C12',
-    accentSoftText: '#ADBC76',
+    accent: '#B4BD58',
+    accentAlt: '#9F8E7C',
+    accentText: '#2F3300',
+    accentSoft: '#454B00',
+    accentSoftText: '#C4CE66',
     highlight: '#EEC148',
-    // Answers and choices (segmented options): the scheme's tertiary, so a
-    // chosen answer never reads as the neon action color.
-    selection: '#DBD6FF',
-    selectionText: '#2F2D4C',
-    secondary: '#BECE86',
-    onSecondary: '#2A3500',
+    // Answers and choices (segmented options): terracotta, so a chosen
+    // answer never reads as the moss action color.
+    selection: '#FFB692',
+    selectionText: '#552001',
+    secondary: '#C7CA99',
+    onSecondary: '#30330F',
     dangerStrong: '#FFB4AB',
     onDanger: '#690005',
     // Solid button rims.
-    accentRim: '#EEFFAE',
-    secondaryRim: '#E0EDB2',
+    accentRim: '#E1EA7F',
+    secondaryRim: '#E3E6B3',
     dangerRim: '#FFDAD6',
-    success: '#92D875',
+    success: '#A0D756',
     danger: '#FFB4AB',
     warning: '#EEC148',
-    border: '#454936',
+    border: '#524436',
     // Outlines that must read as a control edge: 5.9:1 on the background.
-    borderStrong: '#8F937C',
-    overlay: 'rgba(8,9,4,0.65)',
+    borderStrong: '#9F8E7C',
+    overlay: 'rgba(11,7,3,0.65)',
     cameraOverlay: 'rgba(0,0,0,0.40)',
     // Rendering primitives, not surfaces — a drop shadow, the camera preview's
     // own backdrop, the capture-flash effect, and content drawn over the live
     // camera feed are the same color in both themes by design. Named here
     // rather than left as inline hex so every color a component touches still
     // resolves through the theme.
-    shadow: '#000000',
+    shadow: '#0B0703',
     cameraBackground: '#000000',
     flashEffect: '#FFFFFF',
     onCamera: '#FFFFFF',
@@ -209,77 +263,77 @@ export const darkTheme = {
   // heavier here just to stay visible at all.
   elevation: {
     card: {
-      shadowColor: '#000000',
+      shadowColor: '#0B0703',
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.35,
+      shadowOpacity: 0.3,
       shadowRadius: 8,
       elevation: 2,
     },
     raised: {
-      shadowColor: '#000000',
+      shadowColor: '#0B0703',
       shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.5,
+      shadowOpacity: 0.45,
       shadowRadius: 20,
       elevation: 8,
     },
   },
-  // A solid edge for cards and rows: the fill alone sits too close to the
-  // page to read as a container. Spread alongside elevation.card.
-  outlined: { borderWidth: 1.5, borderColor: '#8F937C' },
-  // Dark labels pass 6.4:1 or better on every stop.
+  // A soft edge for cards and rows: the warm fill alone sits close to the
+  // page. Spread alongside elevation.card.
+  outlined: { borderWidth: 1, borderColor: '#524436' },
+  // Dark labels pass 5.4:1 or better on every stop.
   gradients: {
     bevel,
     bevelPressed,
-    primary: 'linear-gradient(180deg, #EEFFAE 0%, #C6E84A 55%, #A9CC2C 100%)',
-    primaryPressed: 'linear-gradient(180deg, #A9CC2C 0%, #C6E84A 100%)',
-    tabBar: 'linear-gradient(180deg, #1E2116 0%, #12140B 100%)',
-    secondary: 'linear-gradient(180deg, #D3E29B 0%, #AEBE76 100%)',
-    secondaryPressed: 'linear-gradient(180deg, #AEBE76 0%, #BECE86 100%)',
-    danger: 'linear-gradient(180deg, #FFC9C2 0%, #FF9F94 100%)',
-    dangerPressed: 'linear-gradient(180deg, #FF9F94 0%, #FFB4AB 100%)',
+    primary: 'linear-gradient(180deg, #C4CE66 0%, #B4BD58 55%, #A4AD4A 100%)',
+    primaryPressed: 'linear-gradient(180deg, #A4AD4A 0%, #B4BD58 100%)',
+    tabBar: 'linear-gradient(180deg, #251E17 0%, #18120C 100%)',
+    secondary: 'linear-gradient(180deg, #D3D6A5 0%, #BCBF8F 100%)',
+    secondaryPressed: 'linear-gradient(180deg, #BCBF8F 0%, #C7CA99 100%)',
+    danger: 'linear-gradient(180deg, #FFC4BC 0%, #FFA399 100%)',
+    dangerPressed: 'linear-gradient(180deg, #FFA399 0%, #FFB4AB 100%)',
   },
   depth: {
     raised:
-      'inset 0 1px 0 rgba(255,255,255,0.45), 0 4px 14px rgba(198,232,74,0.22), 0 2px 4px rgba(0,0,0,0.5)',
+      'inset 0 1px 0 rgba(255,255,255,0.25), 0 3px 10px rgba(11,7,3,0.45)',
     raisedNeutral:
-      'inset 0 1px 0 rgba(255,255,255,0.3), 0 2px 6px rgba(0,0,0,0.45)',
-    pressed: 'inset 0 3px 6px rgba(0,0,0,0.45)',
-    well: 'inset 0 2px 5px rgba(0,0,0,0.6)',
+      'inset 0 1px 0 rgba(255,255,255,0.2), 0 2px 6px rgba(11,7,3,0.4)',
+    pressed: 'inset 0 2px 5px rgba(11,7,3,0.45)',
+    well: 'inset 0 2px 5px rgba(11,7,3,0.55)',
   },
   ...sharedTokens,
 } as const
 
 export const lightTheme = {
   colors: {
-    background: '#FAFAE9',
+    background: '#FFF8F4',
     surface: '#FFFFFF',
-    surfaceAlt: '#E9E9D8',
-    text: '#1A1D12',
-    textInverse: '#FAFAE9',
-    muted: '#454936',
-    accent: '#536600',
-    accentAlt: '#757964',
+    surfaceAlt: '#F4E6DA',
+    text: '#211A13',
+    textInverse: '#FFF8F4',
+    muted: '#524436',
+    accent: '#5C6300',
+    accentAlt: '#847464',
     accentText: '#FFFFFF',
-    accentSoft: '#D7E79D',
-    accentSoftText: '#3F4C12',
+    accentSoft: '#E1EA7F',
+    accentSoftText: '#454B00',
     highlight: '#765A00',
-    selection: '#5E5B7D',
+    selection: '#8F4D29',
     selectionText: '#FFFFFF',
-    secondary: '#576428',
+    secondary: '#5E6139',
     onSecondary: '#FFFFFF',
     dangerStrong: '#BA1A1A',
     onDanger: '#FFFFFF',
-    accentRim: '#3F4C00',
-    secondaryRim: '#3F4A14',
-    dangerRim: '#93000A',
-    success: '#2C6C15',
+    accentRim: '#454B00',
+    secondaryRim: '#464924',
+    dangerRim: '#690005',
+    success: '#426900',
     danger: '#BA1A1A',
     warning: '#765A00',
-    border: '#C5C9B0',
-    borderStrong: '#757964',
-    overlay: 'rgba(26,29,18,0.4)',
+    border: '#D7C3B0',
+    borderStrong: '#847464',
+    overlay: 'rgba(33,26,19,0.4)',
     cameraOverlay: 'rgba(0,0,0,0.30)',
-    shadow: '#1A1D12',
+    shadow: '#211A13',
     cameraBackground: '#000000',
     flashEffect: '#FFFFFF',
     onCamera: '#FFFFFF',
@@ -288,40 +342,40 @@ export const lightTheme = {
   },
   elevation: {
     card: {
-      shadowColor: '#1A1D12',
+      shadowColor: '#211A13',
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.07,
+      shadowOpacity: 0.06,
       shadowRadius: 10,
       elevation: 2,
     },
     raised: {
-      shadowColor: '#1A1D12',
+      shadowColor: '#211A13',
       shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.14,
+      shadowOpacity: 0.12,
       shadowRadius: 24,
       elevation: 8,
     },
   },
-  outlined: { borderWidth: 1.5, borderColor: '#757964' },
-  // White labels pass 5.1:1 or better on every stop.
+  outlined: { borderWidth: 1, borderColor: '#D7C3B0' },
+  // White labels pass 5.9:1 or better on every stop.
   gradients: {
     bevel,
     bevelPressed,
-    primary: 'linear-gradient(180deg, #5F7500 0%, #536600 55%, #435300 100%)',
-    primaryPressed: 'linear-gradient(180deg, #435300 0%, #536600 100%)',
-    tabBar: 'linear-gradient(180deg, #FFFFFF 0%, #EFEFDE 100%)',
-    secondary: 'linear-gradient(180deg, #66733A 0%, #4A5620 100%)',
-    secondaryPressed: 'linear-gradient(180deg, #4A5620 0%, #576428 100%)',
-    danger: 'linear-gradient(180deg, #C8302B 0%, #A11414 100%)',
-    dangerPressed: 'linear-gradient(180deg, #A11414 0%, #BA1A1A 100%)',
+    primary: 'linear-gradient(180deg, #666D0D 0%, #5C6300 55%, #505700 100%)',
+    primaryPressed: 'linear-gradient(180deg, #505700 0%, #5C6300 100%)',
+    tabBar: 'linear-gradient(180deg, #FFFFFF 0%, #FFF1E6 100%)',
+    secondary: 'linear-gradient(180deg, #686B42 0%, #545830 100%)',
+    secondaryPressed: 'linear-gradient(180deg, #545830 0%, #5E6139 100%)',
+    danger: 'linear-gradient(180deg, #C82623 0%, #AC0C12 100%)',
+    dangerPressed: 'linear-gradient(180deg, #AC0C12 0%, #BA1A1A 100%)',
   },
   depth: {
     raised:
-      'inset 0 1px 0 rgba(255,255,255,0.35), 0 4px 12px rgba(83,102,0,0.25), 0 1px 3px rgba(26,29,18,0.2)',
+      'inset 0 1px 0 rgba(255,255,255,0.25), 0 3px 10px rgba(33,26,19,0.16)',
     raisedNeutral:
-      'inset 0 1px 0 rgba(255,255,255,0.35), 0 2px 6px rgba(26,29,18,0.12)',
-    pressed: 'inset 0 3px 6px rgba(26,29,18,0.35)',
-    well: 'inset 0 2px 4px rgba(26,29,18,0.18)',
+      'inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(33,26,19,0.10)',
+    pressed: 'inset 0 2px 5px rgba(33,26,19,0.28)',
+    well: 'inset 0 2px 4px rgba(33,26,19,0.14)',
   },
   ...sharedTokens,
 } as const

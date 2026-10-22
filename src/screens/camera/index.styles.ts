@@ -18,7 +18,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: theme.spacing.xl,
+    paddingHorizontal: theme.layout.gutter,
   },
   topBarRight: {
     flexDirection: 'row',
@@ -54,7 +54,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     bottom: theme.spacing.xs,
     right: theme.spacing.xs + 2,
     color: theme.colors.text,
-    fontWeight: '800',
+    fontFamily: theme.fonts.extrabold,
   },
   bottomBar: {
     position: 'absolute',
@@ -87,8 +87,8 @@ export const styles = StyleSheet.create((theme, rt) => ({
     paddingHorizontal: theme.spacing.xxxl + theme.spacing.md,
   },
   sideBtn: {
-    width: 52,
-    height: 52,
+    width: theme.controlHeight.control,
+    height: theme.controlHeight.control,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -123,7 +123,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     backgroundColor: theme.colors.background,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: theme.spacing.xxxl,
+    padding: theme.layout.gutter,
     gap: theme.spacing.lg,
   },
   gateTitle: {

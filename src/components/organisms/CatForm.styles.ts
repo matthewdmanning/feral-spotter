@@ -7,6 +7,6 @@ export const styles = StyleSheet.create((theme) => ({
     ...theme.elevation.card,
     ...theme.outlined,
   },
-  inner: { padding: theme.spacing.xl, gap: theme.spacing.xl },
+  inner: { padding: theme.layout.cardPadding, gap: theme.spacing.lg },
   section: { gap: theme.spacing.md },
 }))

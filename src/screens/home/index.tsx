@@ -169,7 +169,7 @@ export default function HomeScreen() {
         key: 'new',
         label: 'New Sighting',
         onPress: handleNew,
-        variant: 'primary',
+        variant: 'secondary',
       },
     ],
     [handleContinue, handleNew],
@@ -183,7 +183,11 @@ export default function HomeScreen() {
           title: 'FeralSpotter',
           headerStyle: { backgroundColor: theme.colors.background },
           headerTintColor: theme.colors.text,
-          headerTitleStyle: { fontWeight: '800', color: theme.colors.text },
+          headerTitleStyle: {
+            fontFamily: theme.fonts.extrabold,
+            fontSize: theme.typography.xl,
+            color: theme.colors.text,
+          },
           headerShadowVisible: false,
         }}
       />
@@ -223,14 +227,14 @@ export default function HomeScreen() {
           >
             <AppButton
               onPress={pickFromLibrary}
-              variant="primary"
+              variant="secondary"
               size="circle"
               diameter={entrypointDiameter}
               disabled={libraryDisabled}
               icon={
                 <ImageSquareIcon
                   size={theme.iconSize.xxl}
-                  color={theme.colors.accentText}
+                  color={theme.colors.onSecondary}
                 />
               }
             >
@@ -238,7 +242,7 @@ export default function HomeScreen() {
             </AppButton>
             <ViewfinderCorners
               diameter={entrypointDiameter}
-              color={theme.colors.accentText}
+              color={theme.colors.onSecondary}
             />
           </View>
           {/* #375: one of the two circles above is dead whenever the pool has
@@ -257,8 +261,8 @@ export default function HomeScreen() {
           <BottomButtonColumn
             buttons={buttons}
             visible={columnVisible}
-            spacing={12}
-            paddingBottom={16}
+            spacing={theme.layout.stackGap}
+            paddingBottom={theme.spacing.lg}
           />
         </View>
       </View>

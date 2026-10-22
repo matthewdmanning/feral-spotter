@@ -6,7 +6,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
   // space, so the in-body title row needs the inset itself.
   root: { backgroundColor: theme.colors.background, paddingTop: rt.insets.top },
   inner: {
-    paddingHorizontal: theme.spacing.lg,
+    paddingHorizontal: theme.layout.gutter,
     paddingTop: theme.spacing.lg,
     gap: theme.spacing.md,
   },
@@ -58,7 +58,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     width: theme.spacing.sm,
     height: theme.spacing.sm,
     borderRadius: theme.radius.full,
-    marginRight: theme.spacing.xs + 2,
+    marginRight: theme.spacing.sm,
   },
   legendLabel: { ...theme.textVariants.caption, color: theme.colors.muted },
   scrollContent: { paddingBottom: theme.spacing.xxxl },
