@@ -50,11 +50,11 @@ export const COAT_GROUPS: {
     value: 'tabby',
     label: 'Tabby',
     colors: [
-      { value: 'mackerel', label: 'Mackerel (Striped)' },
-      { value: 'classic', label: 'Classic (Swirled)' },
-      { value: 'spotted', label: 'Spotted' },
+      { value: 'mackerel', label: 'Striped Tabby' },
+      { value: 'classic', label: 'Swirled Tabby' },
+      { value: 'spotted', label: 'Spotted Tabby' },
       { value: 'orange_tabby', label: 'Orange Tabby' },
-      { value: 'torbie', label: 'Torbie (Tabby/Red)' },
+      { value: 'torbie', label: 'Tabby with Orange Patches' },
     ],
   },
   {
@@ -62,17 +62,17 @@ export const COAT_GROUPS: {
     label: 'Solid',
     colors: [
       { value: 'black', label: 'Black' },
-      { value: 'blue', label: 'Blue (Gray)' },
+      { value: 'blue', label: 'Gray' },
       { value: 'white', label: 'White' },
     ],
   },
   {
     value: 'bicolor',
-    label: 'Bicolor & Piebald',
+    label: 'Two-Color',
     colors: [
-      { value: 'low_white', label: 'Low White (Mitted/Locket)' },
-      { value: 'medium_white', label: 'Medium White (Tuxedo)' },
-      { value: 'high_white', label: 'High White (Harlequin/Van)' },
+      { value: 'low_white', label: 'Mostly Color, Some White' },
+      { value: 'medium_white', label: 'Tuxedo' },
+      { value: 'high_white', label: 'Mostly White' },
     ],
   },
   {
@@ -81,15 +81,15 @@ export const COAT_GROUPS: {
     colors: [
       { value: 'tortoiseshell', label: 'Tortoiseshell' },
       { value: 'calico', label: 'Calico' },
-      { value: 'dilute_tortie_calico', label: 'Dilute Tortie/Calico' },
+      { value: 'dilute_tortie_calico', label: 'Pale Calico or Tortie' },
     ],
   },
   {
     value: 'colorpoint',
-    label: 'Colorpoint',
+    label: 'Siamese-Style',
     colors: [
-      { value: 'seal_point', label: 'Seal Point' },
-      { value: 'lynx_point', label: 'Lynx Point' },
+      { value: 'seal_point', label: 'Dark Points' },
+      { value: 'lynx_point', label: 'Striped Points' },
     ],
   },
 ]
@@ -229,13 +229,13 @@ const labelOf = (key: keyof ObservedCat, value: string): string =>
 /**
  * The preference order of the one-line summary on Submission Details, as
  * phrases that read alone: "Yes" means nothing in a title, "ear tipped" does.
- * Pattern and Color share one slot ("mackerel (striped)"), so a cat with
+ * Pattern and Color share one slot ("striped tabby"), so a cat with
  * both still has room for two more fields. A field that is Unknown or Unsure gives
  * no phrase and the next field takes its place.
  */
 const SUMMARY_PHRASES: ((cat: ObservedCat) => string | null)[] = [
   ({ age }) => (isKnown(age) ? labelOf('age', age) : null),
-  // The coat names its own group ("Mackerel (Striped)"), so a known coat
+  // The coat names its own group ("Striped Tabby"), so a known coat
   // stands alone and the group is the fallback.
   ({ color, pattern }) => {
     if (isKnown(color)) return labelOf('color', color)
