@@ -56,13 +56,6 @@ export function useNativeCameraCapture(
   const [isTakingPhoto, setIsTakingPhoto] = useState(false)
   const [isCameraReady, setIsCameraReady] = useState(false)
 
-  // Flipping rebinds the native session, so the ready flag has to drop and the
-  // ready-duration measurement has to restart.
-  const handleBeforeFlip = useCallback(() => {
-    setIsCameraReady(false)
-    cameraOpenedAt.current = performanceChecks ? Date.now() : null
-  }, [performanceChecks])
-
   const {
     isActive,
     capturedPhotos,
@@ -72,7 +65,6 @@ export function useNativeCameraCapture(
     flashMode,
     cycleFlash,
     position,
-    flipCamera,
     flashOverlayStyle,
     triggerFlash,
     persistCapturedPhoto,
@@ -80,7 +72,7 @@ export function useNativeCameraCapture(
     flushGallerySaves,
     handleDone,
     handleClose,
-  } = useCapturedPhotoWorkflow({ onBeforeFlip: handleBeforeFlip })
+  } = useCapturedPhotoWorkflow()
 
   // Mirrors isTakingPhoto so handleTakePhoto does not depend on state it sets
   // itself, which recreated the callback twice per capture.
@@ -289,7 +281,6 @@ export function useNativeCameraCapture(
     focus,
     applySubjectRegion,
     cycleFlash,
-    flipCamera,
     handleDone,
     handleClose,
   }

@@ -41,17 +41,15 @@ import {
 export type FlashMode = 'off' | 'on' | 'auto'
 export type CameraPosition = 'back' | 'front'
 
-interface CapturedPhotoWorkflowOptions {
-  /**
-   * Called before the camera position changes. The native path uses it to drop
-   * its ready flag, because flipping rebinds the session.
-   */
-  onBeforeFlip?: () => void
-}
+/**
+ * The Camera screen uses the back camera only. The front camera is too low
+ * resolution for an identification photograph, and on Android CameraX is
+ * configured to hide it (NativeIdentificationCameraPackage.kt), so there is no
+ * flip control. Kept as a value so telemetry still reports the position.
+ */
+const CAMERA_POSITION: CameraPosition = 'back'
 
-export function useCapturedPhotoWorkflow({
-  onBeforeFlip,
-}: CapturedPhotoWorkflowOptions = {}) {
+export function useCapturedPhotoWorkflow() {
   const keepOnDevice = useSettingsStore(
     (s) => s.settings.keep_photos_on_device !== false,
   )
@@ -62,7 +60,6 @@ export function useCapturedPhotoWorkflow({
 
   const [capturedPhotos, setCapturedPhotos] = useState<SubmissionPhoto[]>([])
   const [flashMode, setFlashMode] = useState<FlashMode>('auto')
-  const [position, setPosition] = useState<CameraPosition>('back')
   const listRef = useRef<FlashListRef<SubmissionPhoto>>(null)
 
   const isFocused = useIsFocused()
@@ -176,11 +173,6 @@ export function useCapturedPhotoWorkflow({
     setFlashMode((m) => (m === 'auto' ? 'on' : m === 'on' ? 'off' : 'auto'))
   }, [])
 
-  const flipCamera = useCallback(() => {
-    onBeforeFlip?.()
-    setPosition((p) => (p === 'back' ? 'front' : 'back'))
-  }, [onBeforeFlip])
-
   const handleDone = useCallback(
     () => router.navigate('/submission/create'),
     [],
@@ -226,8 +218,7 @@ export function useCapturedPhotoWorkflow({
     handleDiscardPhoto,
     flashMode,
     cycleFlash,
-    position,
-    flipCamera,
+    position: CAMERA_POSITION,
     flashOverlayStyle,
     triggerFlash,
     persistCapturedPhoto,

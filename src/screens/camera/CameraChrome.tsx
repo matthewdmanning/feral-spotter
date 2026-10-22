@@ -14,7 +14,7 @@
 import { AppButton } from '@/src/components/atoms/AppButton'
 import type { SubmissionPhoto } from '@/src/types'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
-import { SwitchCamera, X, Zap, ZapOff } from 'lucide-react-native'
+import { X, Zap, ZapOff } from 'lucide-react-native'
 import { useCallback } from 'react'
 import {
   Linking,
@@ -185,7 +185,6 @@ export function CameraThumbnailStrip({
 }
 
 interface CameraShutterRowProps {
-  onFlip: () => void
   onCapture: () => void
   /** True while a capture is running, which styles the shutter as busy. */
   busy: boolean
@@ -196,14 +195,11 @@ interface CameraShutterRowProps {
 }
 
 export function CameraShutterRow({
-  onFlip,
   onCapture,
   busy,
   disabled,
   shutterLabel,
 }: CameraShutterRowProps) {
-  const { theme } = useUnistyles()
-
   const shutterScale = useSharedValue(1)
   const shutterStyle = useAnimatedStyle(() => ({
     transform: [{ scale: shutterScale.value }],
@@ -223,14 +219,9 @@ export function CameraShutterRow({
 
   return (
     <View style={styles.shutterRow}>
-      <Pressable
-        onPress={onFlip}
-        style={[styles.sideBtn, styles.sideBtnFilled]}
-        accessibilityRole="button"
-        accessibilityLabel="Switch camera"
-      >
-        <SwitchCamera size={theme.iconSize.lg} color={theme.colors.text} />
-      </Pressable>
+      {/* Empty side slots keep the shutter centred. The left one held the
+          flip control, removed because the app uses the back camera only. */}
+      <View style={styles.sideBtn} />
       <Animated.View style={shutterStyle}>
         <Pressable
           onPress={onCapture}

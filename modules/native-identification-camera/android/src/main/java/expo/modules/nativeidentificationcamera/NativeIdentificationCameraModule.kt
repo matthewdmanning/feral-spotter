@@ -1,5 +1,6 @@
 package expo.modules.nativeidentificationcamera
 
+import androidx.camera.lifecycle.ProcessCameraProvider
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import expo.modules.kotlin.Promise
@@ -36,6 +37,17 @@ class NativeSubjectRegion : Record {
 class NativeIdentificationCameraModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("NativeIdentificationCamera")
+
+    // Starts CameraX ahead of the camera screen, so the view's own getInstance
+    // finds the provider ready instead of waiting for camera enumeration.
+    // ProcessCameraProvider is a process singleton: a second call returns the
+    // same future, and nothing here opens a camera.
+    // The future is dropped on purpose: JavaScript does not wait for it, and
+    // returning it would ask Expo to convert it to a JavaScript value.
+    Function("prewarm") {
+      appContext.reactContext?.let { ProcessCameraProvider.getInstance(it) }
+      Unit
+    }
 
     View(NativeIdentificationCameraView::class) {
       Events("onCameraReady", "onCameraError", "onCameraDiagnostic")

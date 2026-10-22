@@ -4,11 +4,10 @@ import { createTestModel } from '@xstate/graph'
 import { useCameraCapture } from '../useCameraCapture'
 
 /**
- * Models the two button-driven cycles on the Camera screen
+ * Models the button-driven flash-mode cycle on the Camera screen
  * (src/screens/camera/index.tsx) that useCameraCapture.test.ts doesn't
- * cover: flash-mode cycling (cycleFlash, the flash icon button) and
- * camera-flip (flipCamera, the SwitchCamera button). Both are small,
- * self-contained state cycles with no prior coverage.
+ * cover: cycleFlash, the flash icon button. It is a small, self-contained
+ * state cycle with no prior coverage.
  */
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
@@ -138,58 +137,6 @@ describe('useCameraCapture — flash-mode cycle (model-based test)', () => {
         { type: 'PRESS_FLASH' },
         { type: 'PRESS_FLASH' },
       ],
-    },
-  ] as const
-
-  journeys.forEach(({ name, events }) => {
-    it(name, async () => {
-      const [path] = model.getPathsFromEvents(events)
-      await path.test(testParams)
-    })
-  })
-})
-
-describe('useCameraCapture — camera-flip toggle (model-based test)', () => {
-  let result: ReturnType<
-    typeof renderHook<ReturnType<typeof useCameraCapture>, void>
-  >
-
-  beforeEach(() => {
-    mockUseCameraDevice.mockClear()
-    result = renderHook(() => useCameraCapture())
-  })
-
-  const flipMachine = createMachine({
-    id: 'cameraFlip',
-    initial: 'back',
-    states: {
-      back: { on: { PRESS_FLIP: 'front' } },
-      front: { on: { PRESS_FLIP: 'back' } },
-    },
-  })
-
-  const model = createTestModel(flipMachine)
-
-  const testParams = {
-    states: {
-      back: () => expect(mockUseCameraDevice).toHaveBeenLastCalledWith('back'),
-      front: () =>
-        expect(mockUseCameraDevice).toHaveBeenLastCalledWith('front'),
-    },
-    events: {
-      PRESS_FLIP: () => act(() => result.result.current.flipCamera()),
-    },
-  }
-
-  const journeys = [
-    { name: 'starts on the back camera', events: [] },
-    {
-      name: 'one press flips to the front camera',
-      events: [{ type: 'PRESS_FLIP' }],
-    },
-    {
-      name: 'two presses flips back to the back camera',
-      events: [{ type: 'PRESS_FLIP' }, { type: 'PRESS_FLIP' }],
     },
   ] as const
 

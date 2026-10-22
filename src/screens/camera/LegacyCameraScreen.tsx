@@ -48,7 +48,6 @@ export function LegacyCameraScreen() {
     handleCameraConfigured,
     setCaptureMode,
     cycleFlash,
-    flipCamera,
     handleDone,
     handleClose,
   } = useCameraCapture()
@@ -137,7 +136,6 @@ export function LegacyCameraScreen() {
           keyExtractor={keyExtractor}
         />
         <CameraShutterRow
-          onFlip={flipCamera}
           onCapture={handleTakePhoto}
           busy={isTakingPhoto}
           disabled={captureMode === 'single' && isTakingPhoto}

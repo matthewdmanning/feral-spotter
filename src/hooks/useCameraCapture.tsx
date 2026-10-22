@@ -51,7 +51,6 @@ export interface CameraCaptureResult {
   handleCameraConfigured: () => void
   setCaptureMode: (mode: CaptureMode) => void
   cycleFlash: () => void
-  flipCamera: () => void
   handleDone: () => void
   handleClose: () => void
 }
@@ -76,7 +75,6 @@ export function useCameraCapture(): CameraCaptureResult {
     flashMode,
     cycleFlash,
     position: cameraPosition,
-    flipCamera,
     flashOverlayStyle,
     triggerFlash,
     persistCapturedPhoto,
@@ -336,7 +334,6 @@ export function useCameraCapture(): CameraCaptureResult {
     handleCameraConfigured,
     setCaptureMode,
     cycleFlash,
-    flipCamera,
     handleDone,
     handleClose,
   }

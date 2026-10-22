@@ -23,7 +23,7 @@
 
 - [ ] C1. Grant camera permission -> camera opens
 - [ ] C2. Deny camera permission -> blocked/error state shown, not a crash
-- [ ] C3. Capture photo(s); cycle flash (auto/on/off); flip front/back camera
+- [ ] C3. Capture photo(s); cycle flash (auto/on/off); no flip control (back camera only)
 - [ ] C4. Cancel/close camera without capturing -> no photo added
 - [ ] C5. Repeated shutter presses don't re-trigger the gallery-save permission prompt
 

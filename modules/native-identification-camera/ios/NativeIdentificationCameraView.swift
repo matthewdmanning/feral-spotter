@@ -134,6 +134,15 @@ public final class NativeIdentificationCameraView: ExpoView {
     clipsToBounds = true
     previewLayer.videoGravity = .resizeAspectFill
     previewLayer.session = session
+#if compiler(>=6.2)
+    // Deferred start (iOS 26): the preview starts first and the photo output
+    // finishes initializing after it. The preview layer must not be deferred,
+    // or the user waits for the whole session before seeing anything. The
+    // photo output's half is set in configureSession.
+    if #available(iOS 26.0, *) {
+      previewLayer.isDeferredStartEnabled = false
+    }
+#endif
     pinchRecognizer.isEnabled = pinchZoom
     addGestureRecognizer(pinchRecognizer)
     reconfigure()
@@ -160,12 +169,13 @@ public final class NativeIdentificationCameraView: ExpoView {
     if position == .front {
       types = [.builtInTrueDepthCamera, .builtInWideAngleCamera]
     } else {
-      types = [
-        .builtInTripleCamera,
-        .builtInDualWideCamera,
-        .builtInDualCamera,
-        .builtInWideAngleCamera
-      ]
+      // One physical camera, not a virtual multi-camera device. A virtual
+      // device has to start each of its cameras, which slows the session's
+      // start (VisionCamera documents the same cost). The tradeoff is that the
+      // system no longer switches lenses on its own for close-ups. The main
+      // wide-angle camera also carries the highest photo resolution that
+      // maxDetail asks for.
+      types = [.builtInWideAngleCamera]
     }
 
     for type in types {
@@ -179,6 +189,17 @@ public final class NativeIdentificationCameraView: ExpoView {
   private func configureSession() {
     session.beginConfiguration()
     session.sessionPreset = .photo
+#if compiler(>=6.2)
+    // Apps built with the iOS 26 SDK default to automatic deferred start; it
+    // is set here so the behaviour does not depend on that default. Deferring
+    // the photo output lets the preview appear sooner. It does not by itself
+    // make the first capture sooner, which is what responsive capture in
+    // configureOutput is for.
+    if #available(iOS 26.0, *) {
+      session.automaticallyRunsDeferredStart = true
+      photoOutput.isDeferredStartEnabled = true
+    }
+#endif
 
     if let currentInput {
       session.removeInput(currentInput)
@@ -278,6 +299,12 @@ public final class NativeIdentificationCameraView: ExpoView {
         motionPriority && photoOutput.isZeroShutterLagSupported
       photoOutput.isFastCapturePrioritizationEnabled =
         motionPriority && photoOutput.isFastCapturePrioritizationSupported
+      // Responsive capture lets a capture start before the previous one has
+      // finished processing, and lets the first capture start while a
+      // deferred photo output is still finishing its start. Support depends
+      // on zero shutter lag, so it is read after that is set.
+      photoOutput.isResponsiveCaptureEnabled =
+        motionPriority && photoOutput.isResponsiveCaptureSupported
     }
   }
 

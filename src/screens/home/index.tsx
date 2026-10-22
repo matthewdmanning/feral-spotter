@@ -15,6 +15,7 @@ import { Camera, ImagePlus } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { StyleSheet, Text, useWindowDimensions, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
+import { scheduleCameraWarmUp } from './cameraWarmUp'
 import { styles } from './index.styles'
 
 /**
@@ -112,6 +113,10 @@ export default function HomeScreen() {
       router.replace('/sign-in')
     }
   }, [isReady, isAuthenticated])
+
+  // Prepares the Camera screen once Home has painted, so the first tap on Take
+  // Photos opens a camera that is already started. See cameraWarmUp.ts.
+  useEffect(() => scheduleCameraWarmUp(), [])
 
   // Re-read on every focus, not once on mount (#314). Home stays mounted
   // while Settings sits on top of it, so a mount-once check went stale the

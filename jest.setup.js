@@ -21,3 +21,10 @@ jest.mock('react-native-mmkv', () => ({
     delete: jest.fn(),
   })),
 }))
+
+// The Home screen schedules a camera warm-up that evaluates the whole Camera
+// screen module graph and calls the native camera module. Neither exists under
+// Jest, and no Home suite is about the warm-up, so it is stubbed for all.
+jest.mock('@/src/screens/home/cameraWarmUp', () => ({
+  scheduleCameraWarmUp: jest.fn(() => () => {}),
+}))

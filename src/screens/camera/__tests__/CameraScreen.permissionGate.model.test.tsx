@@ -11,7 +11,7 @@ import CameraScreen from '../index'
  * Model of CameraScreen's (src/screens/camera/index.tsx) two gate screens —
  * logic that lives directly in the screen's JSX, not delegated to a hook, and
  * has no coverage anywhere else. The main capture view's buttons (shutter,
- * flip, flash, close, done) are thin onPress={handler} wiring onto
+ * flash, close, done) are thin onPress={handler} wiring onto
  * useCameraCapture, which already has direct handler-level coverage
  * (useCameraCapture.test.ts, useCameraCapture.controls.model.test.ts) —
  * re-testing that wiring through a full react-native-vision-camera render
@@ -51,7 +51,6 @@ jest.mock('expo-media-library', () => ({
   PermissionStatus: { GRANTED: 'granted', DENIED: 'denied' },
 }))
 jest.mock('lucide-react-native', () => ({
-  SwitchCamera: () => null,
   X: () => null,
   Zap: () => null,
   ZapOff: () => null,
@@ -96,7 +95,6 @@ const baseCaptureResult: ReturnType<typeof useCameraCapture> = {
   keyExtractor: jest.fn(),
   handleTakePhoto: jest.fn(),
   cycleFlash: jest.fn(),
-  flipCamera: jest.fn(),
   handleDone: jest.fn(),
   handleClose,
 }

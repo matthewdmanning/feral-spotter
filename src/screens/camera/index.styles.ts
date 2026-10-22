@@ -92,12 +92,6 @@ export const styles = StyleSheet.create((theme, rt) => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sideBtnFilled: {
-    borderRadius: theme.radius.full,
-    backgroundColor: theme.colors.surface,
-    ...theme.elevation.card,
-    zIndex: 25,
-  },
   // Ring and core both use the on-camera color: they sit on the live feed,
   // where a dark core in light mode would vanish against a dark scene.
   shutter: {

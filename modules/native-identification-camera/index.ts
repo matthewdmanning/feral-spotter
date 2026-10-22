@@ -24,3 +24,16 @@ export function isNativeIdentificationCameraAvailable(): boolean {
     requireOptionalNativeModule('NativeIdentificationCamera') != null
   return isAvailable
 }
+
+/**
+ * Starts the platform camera stack before the Camera screen opens, so the first
+ * camera mount does not wait for it. It never opens a camera and is safe to
+ * call more than once. Android only: iOS has no counterpart, so there the call
+ * does nothing.
+ */
+export function prewarmCamera(): void {
+  const nativeModule = requireOptionalNativeModule<{ prewarm?: () => void }>(
+    'NativeIdentificationCamera',
+  )
+  nativeModule?.prewarm?.()
+}

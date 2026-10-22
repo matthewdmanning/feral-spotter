@@ -1,10 +1,10 @@
 import { NativeIdentificationCameraView } from '@/modules/native-identification-camera'
 import { useNativeCameraCapture } from '@/src/hooks/useNativeCameraCapture'
-import * as ImagePicker from 'expo-image-picker'
 import { Stack } from 'expo-router'
 import { useCallback, useMemo, useState } from 'react'
 import { View, type LayoutChangeEvent } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
+import { useCameraPermission } from 'react-native-vision-camera'
 import {
   CameraFlashOverlay,
   CameraPermissionGate,
@@ -15,7 +15,11 @@ import {
 import { styles } from './index.styles'
 
 export function NativeCameraScreen() {
-  const [permission, requestPermission] = ImagePicker.useCameraPermissions()
+  // VisionCamera reads the permission synchronously, so a granted camera mounts
+  // on the first render. expo-image-picker's hook starts at null and resolves
+  // a native call later, which held the camera back one async round trip and
+  // flashed the permission gate even when access was already granted.
+  const { hasPermission, requestPermission } = useCameraPermission()
   const {
     cameraRef,
     listRef,
@@ -40,7 +44,6 @@ export function NativeCameraScreen() {
     handleTakePhoto,
     focus,
     cycleFlash,
-    flipCamera,
     handleDone,
     handleClose,
   } = useNativeCameraCapture()
@@ -80,7 +83,7 @@ export function NativeCameraScreen() {
     [focus, previewSize],
   )
 
-  if (!permission?.granted)
+  if (!hasPermission)
     return (
       <>
         <Stack.Screen options={{ headerShown: false }} />
@@ -132,7 +135,6 @@ export function NativeCameraScreen() {
           keyExtractor={keyExtractor}
         />
         <CameraShutterRow
-          onFlip={flipCamera}
           onCapture={handleTakePhoto}
           busy={isTakingPhoto || !isCameraReady}
           disabled={isTakingPhoto || !isCameraReady}
