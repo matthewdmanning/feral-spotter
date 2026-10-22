@@ -91,7 +91,7 @@ const DEFAULT_CATS = [
     owned_domesticated: 'no',
     pattern: 'tabby',
     hair_length: 'short',
-    color: 'orange',
+    color: 'orange_tabby',
     sex: 'female',
     health_label: 'good',
   },
@@ -158,10 +158,10 @@ describe('Cat List actions', () => {
 
   it('opens one cat at a time and closes it on a second press', () => {
     fireEvent.press(screen.getByText('Adult · orange tabby · short hair'))
-    expect(screen.getByText('Orange')).toBeTruthy()
+    expect(screen.getByText('Orange Tabby')).toBeTruthy()
 
     fireEvent.press(screen.getByText('Kitten · solid · long hair'))
-    expect(screen.queryByText('Orange')).toBeNull()
+    expect(screen.queryByText('Orange Tabby')).toBeNull()
 
     fireEvent.press(screen.getByText('Kitten · solid · long hair'))
     expect(screen.queryByText('Edit')).toBeNull()
