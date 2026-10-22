@@ -1,3 +1,4 @@
+import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { AppButton } from '@/src/components/atoms/AppButton'
 import { showAlert } from '@/src/hooks/useUIStore'
 import { cameraPermission } from '@/src/lib/permissions/cameraPermission'
@@ -132,6 +133,7 @@ export default function ConsentScreen() {
 
   return (
     <View style={styles.root}>
+      <AmbientBackground />
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.title}>{consentCopy.title}</Text>
         <Text style={styles.body}>{consentCopy.intro}</Text>

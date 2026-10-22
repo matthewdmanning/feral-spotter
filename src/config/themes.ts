@@ -18,12 +18,20 @@
  * than Fidelity's onPrimaryContainer, so labels pass 5.4:1 on every
  * gradient stop. Regenerate from these inputs rather than hand-picking hex.
  *
- * `depth` is the button vocabulary: `raised` is a soft bevel (top-edge
- * light plus a warm drop shadow), `pressed` sinks the face with an inset
- * shadow, and `well` recesses a track (segmented control) so its thumb sits
- * in it. `gradients.bevel` is a faint gradient inset laid over every filled
- * button face, so the face reads as soft and rounded, not glossy.
- * boxShadow inset needs Android 10+; older devices draw the flat face.
+ * Liquid glass: screens sit on `gradients.ambient` (soft pools of moss,
+ * terracotta, and honey light, drawn by AmbientBackground). Cards, sheets,
+ * and camera controls spread a `glass` surface: a translucent fill, a
+ * hairline light edge, and a top-edge highlight. There is no backdrop blur
+ * (that needs a native module); the ambient pools are smooth enough that a
+ * translucent fill reads as glass without one. Secondary buttons are clear
+ * sage glass with plain text; primary is tinted moss glass.
+ *
+ * `depth` is the button vocabulary: `raised` is a glass face (crisp top
+ * rim, softer bottom rim, and a soft glow), `pressed` sinks the face with
+ * an inset shadow, and `well` recesses a track (segmented control) so its
+ * thumb sits in it. `gradients.bevel` is the sheen laid over every filled
+ * button face. boxShadow inset needs Android 10+; older devices draw the
+ * flat face.
  *
  * Type: Nunito, a rounded sans, loaded at startup (app/_layout.tsx). Each
  * weight is its own family on Android, so text sets `fontFamily` from
@@ -205,12 +213,15 @@ const sharedTokens = {
 
 // ─── Themes ───────────────────────────────────────────────────────────────────
 
-// Faint on purpose: a soft, rounded face, not a glossy one.
+// Liquid-glass sheen over every filled button face: a bright top rim that
+// fades smoothly, and a faint glow along the bottom edge where light
+// refracts back through the "glass". No hard band — that reads as 2000s
+// gloss, not glass.
 const bevel =
-  'linear-gradient(180deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0) 60%, rgba(0,0,0,0.10) 100%)'
-// Pressed flips the shading: shade on top, so the face reads as sunk.
+  'linear-gradient(180deg, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0.08) 38%, rgba(255,255,255,0) 68%, rgba(255,255,255,0.16) 100%)'
+// Pressed dims the sheen and shades the top, so the face reads as sunk.
 const bevelPressed =
-  'linear-gradient(180deg, rgba(0,0,0,0.14) 0%, rgba(0,0,0,0) 45%, rgba(255,255,255,0) 60%, rgba(255,255,255,0.08) 100%)'
+  'linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0) 40%, rgba(255,255,255,0) 70%, rgba(255,255,255,0.10) 100%)'
 
 export const darkTheme = {
   colors: {
@@ -231,13 +242,16 @@ export const darkTheme = {
     // answer never reads as the moss action color.
     selection: '#FFB692',
     selectionText: '#552001',
-    secondary: '#C7CA99',
-    onSecondary: '#30330F',
+    // Secondary is clear, sage-tinted glass: a translucent fill that takes
+    // the plain text color, so it sits a full step below the filled
+    // primary.
+    secondary: 'rgba(199,202,153,0.18)',
+    onSecondary: '#EEE0D4',
     dangerStrong: '#FFB4AB',
     onDanger: '#690005',
-    // Solid button rims.
+    // Button rims: a bright edge where the glass catches light.
     accentRim: '#E1EA7F',
-    secondaryRim: '#E3E6B3',
+    secondaryRim: 'rgba(255,240,228,0.28)',
     dangerRim: '#FFDAD6',
     success: '#A0D756',
     danger: '#FFB4AB',
@@ -262,13 +276,6 @@ export const darkTheme = {
   // Dark surfaces separate by tint more than by shadow, so shadows run
   // heavier here just to stay visible at all.
   elevation: {
-    card: {
-      shadowColor: '#0B0703',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.3,
-      shadowRadius: 8,
-      elevation: 2,
-    },
     raised: {
       shadowColor: '#0B0703',
       shadowOffset: { width: 0, height: 8 },
@@ -277,28 +284,67 @@ export const darkTheme = {
       elevation: 8,
     },
   },
-  // A soft edge for cards and rows: the warm fill alone sits close to the
-  // page. Spread alongside elevation.card.
-  outlined: { borderWidth: 1, borderColor: '#524436' },
-  // Dark labels pass 5.4:1 or better on every stop.
+  // Glass surfaces. Spread one in place of a solid surface and its elevation:
+  //   card    cards and rows on a screen
+  //   raised  dialogs and sheets over other content; near-opaque, so text
+  //           stays legible over an overlay or a map
+  //   chip    floating controls over the live camera feed
+  // A translucent fill over the ambient backdrop, a hairline light edge, a
+  // top-edge highlight, and a soft drop shadow. boxShadow, not Android
+  // `elevation`: elevation draws its shadow through a translucent fill.
+  glass: {
+    card: {
+      backgroundColor: 'rgba(255,236,220,0.06)',
+      borderWidth: 1,
+      borderColor: 'rgba(255,240,228,0.12)',
+      boxShadow:
+        'inset 0 1px 0 rgba(255,255,255,0.10), 0 8px 24px rgba(11,7,3,0.35)',
+    },
+    raised: {
+      backgroundColor: 'rgba(48,41,33,0.94)',
+      borderWidth: 1,
+      borderColor: 'rgba(255,240,228,0.16)',
+      boxShadow:
+        'inset 0 1px 0 rgba(255,255,255,0.14), 0 16px 40px rgba(11,7,3,0.55)',
+    },
+    chip: {
+      backgroundColor: 'rgba(37,30,23,0.62)',
+      borderWidth: 1,
+      borderColor: 'rgba(255,240,228,0.18)',
+      boxShadow:
+        'inset 0 1px 0 rgba(255,255,255,0.12), 0 4px 12px rgba(0,0,0,0.35)',
+    },
+  },
+  // Dark labels pass 5.4:1 or better on every primary stop.
   gradients: {
     bevel,
     bevelPressed,
-    primary: 'linear-gradient(180deg, #C4CE66 0%, #B4BD58 55%, #A4AD4A 100%)',
-    primaryPressed: 'linear-gradient(180deg, #A4AD4A 0%, #B4BD58 100%)',
-    tabBar: 'linear-gradient(180deg, #251E17 0%, #18120C 100%)',
-    secondary: 'linear-gradient(180deg, #D3D6A5 0%, #BCBF8F 100%)',
-    secondaryPressed: 'linear-gradient(180deg, #BCBF8F 0%, #C7CA99 100%)',
-    danger: 'linear-gradient(180deg, #FFC4BC 0%, #FFA399 100%)',
-    dangerPressed: 'linear-gradient(180deg, #FFA399 0%, #FFB4AB 100%)',
+    // Soft pools of moss, terracotta, and honey light under the glass, so
+    // translucent surfaces have something to show through. The pools sit
+    // away from the top edge, so they never meet an opaque native header
+    // at a visible seam.
+    ambient:
+      'radial-gradient(circle at 8% 24%, rgba(180,189,88,0.20) 0%, rgba(180,189,88,0) 58%), radial-gradient(circle at 96% 70%, rgba(255,182,146,0.15) 0%, rgba(255,182,146,0) 52%), radial-gradient(circle at 40% 108%, rgba(238,193,72,0.10) 0%, rgba(238,193,72,0) 48%)',
+    primary: 'linear-gradient(135deg, #C4CE66 0%, #B4BD58 50%, #A4AD4A 100%)',
+    primaryPressed: 'linear-gradient(135deg, #A4AD4A 0%, #B4BD58 100%)',
+    tabBar:
+      'linear-gradient(180deg, rgba(255,240,228,0.06) 0%, rgba(255,240,228,0) 100%), linear-gradient(180deg, #251E17 0%, #18120C 100%)',
+    secondary:
+      'linear-gradient(135deg, rgba(220,224,176,0.26) 0%, rgba(199,202,153,0.10) 100%)',
+    secondaryPressed:
+      'linear-gradient(135deg, rgba(199,202,153,0.10) 0%, rgba(199,202,153,0.20) 100%)',
+    danger: 'linear-gradient(135deg, #FFC4BC 0%, #FFA399 100%)',
+    dangerPressed: 'linear-gradient(135deg, #FFA399 0%, #FFB4AB 100%)',
   },
   depth: {
+    // A crisp inner rim on top, a softer one along the bottom, and a soft
+    // moss glow under the face.
     raised:
-      'inset 0 1px 0 rgba(255,255,255,0.25), 0 3px 10px rgba(11,7,3,0.45)',
+      'inset 0 1px 1px rgba(255,255,255,0.55), inset 0 -1px 1px rgba(255,255,255,0.18), 0 6px 18px rgba(180,189,88,0.22), 0 2px 4px rgba(11,7,3,0.45)',
     raisedNeutral:
-      'inset 0 1px 0 rgba(255,255,255,0.2), 0 2px 6px rgba(11,7,3,0.4)',
-    pressed: 'inset 0 2px 5px rgba(11,7,3,0.45)',
-    well: 'inset 0 2px 5px rgba(11,7,3,0.55)',
+      'inset 0 1px 1px rgba(255,255,255,0.22), inset 0 -1px 1px rgba(255,255,255,0.08), 0 4px 14px rgba(11,7,3,0.40)',
+    pressed: 'inset 0 2px 6px rgba(11,7,3,0.45)',
+    well: 'inset 0 2px 5px rgba(11,7,3,0.50), inset 0 -1px 0 rgba(255,255,255,0.06)',
   },
   ...sharedTokens,
 } as const
@@ -319,12 +365,12 @@ export const lightTheme = {
     highlight: '#765A00',
     selection: '#8F4D29',
     selectionText: '#FFFFFF',
-    secondary: '#5E6139',
-    onSecondary: '#FFFFFF',
+    secondary: 'rgba(94,97,57,0.10)',
+    onSecondary: '#211A13',
     dangerStrong: '#BA1A1A',
     onDanger: '#FFFFFF',
     accentRim: '#454B00',
-    secondaryRim: '#464924',
+    secondaryRim: 'rgba(94,97,57,0.32)',
     dangerRim: '#690005',
     success: '#426900',
     danger: '#BA1A1A',
@@ -341,13 +387,6 @@ export const lightTheme = {
     onCameraBorder: 'rgba(255,255,255,0.3)',
   },
   elevation: {
-    card: {
-      shadowColor: '#211A13',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.06,
-      shadowRadius: 10,
-      elevation: 2,
-    },
     raised: {
       shadowColor: '#211A13',
       shadowOffset: { width: 0, height: 8 },
@@ -356,26 +395,55 @@ export const lightTheme = {
       elevation: 8,
     },
   },
-  outlined: { borderWidth: 1, borderColor: '#D7C3B0' },
-  // White labels pass 5.9:1 or better on every stop.
+  // Frosted white glass on cream. The edge is a warm hairline, since a
+  // white edge vanishes on a light page; the white top highlight stays.
+  glass: {
+    card: {
+      backgroundColor: 'rgba(255,255,255,0.62)',
+      borderWidth: 1,
+      borderColor: 'rgba(132,116,100,0.18)',
+      boxShadow:
+        'inset 0 1px 0 rgba(255,255,255,0.95), 0 8px 24px rgba(92,64,40,0.10)',
+    },
+    raised: {
+      backgroundColor: 'rgba(255,255,255,0.95)',
+      borderWidth: 1,
+      borderColor: 'rgba(132,116,100,0.20)',
+      boxShadow:
+        'inset 0 1px 0 rgba(255,255,255,1), 0 16px 40px rgba(92,64,40,0.18)',
+    },
+    chip: {
+      backgroundColor: 'rgba(255,255,255,0.72)',
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.9)',
+      boxShadow:
+        'inset 0 1px 0 rgba(255,255,255,1), 0 4px 12px rgba(0,0,0,0.25)',
+    },
+  },
+  // White labels pass 5.9:1 or better on every primary stop.
   gradients: {
     bevel,
     bevelPressed,
-    primary: 'linear-gradient(180deg, #666D0D 0%, #5C6300 55%, #505700 100%)',
-    primaryPressed: 'linear-gradient(180deg, #505700 0%, #5C6300 100%)',
-    tabBar: 'linear-gradient(180deg, #FFFFFF 0%, #FFF1E6 100%)',
-    secondary: 'linear-gradient(180deg, #686B42 0%, #545830 100%)',
-    secondaryPressed: 'linear-gradient(180deg, #545830 0%, #5E6139 100%)',
-    danger: 'linear-gradient(180deg, #C82623 0%, #AC0C12 100%)',
-    dangerPressed: 'linear-gradient(180deg, #AC0C12 0%, #BA1A1A 100%)',
+    ambient:
+      'radial-gradient(circle at 8% 24%, rgba(92,99,0,0.12) 0%, rgba(92,99,0,0) 58%), radial-gradient(circle at 96% 70%, rgba(143,77,41,0.10) 0%, rgba(143,77,41,0) 52%), radial-gradient(circle at 40% 108%, rgba(238,193,72,0.16) 0%, rgba(238,193,72,0) 48%)',
+    primary: 'linear-gradient(135deg, #666D0D 0%, #5C6300 50%, #505700 100%)',
+    primaryPressed: 'linear-gradient(135deg, #505700 0%, #5C6300 100%)',
+    tabBar:
+      'linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(255,241,230,0.9) 100%)',
+    secondary:
+      'linear-gradient(135deg, rgba(255,255,255,0.70) 0%, rgba(94,97,57,0.08) 100%)',
+    secondaryPressed:
+      'linear-gradient(135deg, rgba(94,97,57,0.12) 0%, rgba(255,255,255,0.50) 100%)',
+    danger: 'linear-gradient(135deg, #C82623 0%, #AC0C12 100%)',
+    dangerPressed: 'linear-gradient(135deg, #AC0C12 0%, #BA1A1A 100%)',
   },
   depth: {
     raised:
-      'inset 0 1px 0 rgba(255,255,255,0.25), 0 3px 10px rgba(33,26,19,0.16)',
+      'inset 0 1px 1px rgba(255,255,255,0.45), inset 0 -1px 1px rgba(255,255,255,0.12), 0 6px 18px rgba(92,99,0,0.22), 0 1px 3px rgba(33,26,19,0.20)',
     raisedNeutral:
-      'inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(33,26,19,0.10)',
-    pressed: 'inset 0 2px 5px rgba(33,26,19,0.28)',
-    well: 'inset 0 2px 4px rgba(33,26,19,0.14)',
+      'inset 0 1px 1px rgba(255,255,255,0.95), inset 0 -1px 1px rgba(255,255,255,0.5), 0 4px 14px rgba(92,64,40,0.12)',
+    pressed: 'inset 0 2px 6px rgba(33,26,19,0.22)',
+    well: 'inset 0 2px 4px rgba(33,26,19,0.12), inset 0 -1px 0 rgba(255,255,255,0.8)',
   },
   ...sharedTokens,
 } as const

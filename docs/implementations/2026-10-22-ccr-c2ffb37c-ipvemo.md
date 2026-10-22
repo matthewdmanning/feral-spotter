@@ -93,3 +93,16 @@
 
 - [ ] Drive the app on an emulator in light and dark mode and check each screen.
 - `docs/DESIGN.md` still describes the old palette and scale. The user deprecated it.
+
+## Implementation updates
+
+### 2026-10-22 — extension
+
+**Purpose:** User request: "a more polished look by using a liquid glass, gradient look." Branch `liquid-glass-ui`, off `ccr-c2ffb37c-ipvemo`.
+**Change:**
+
+- New `AmbientBackground` atom paints `gradients.ambient` (radial pools of moss, terracotta, and honey light). It is the first child of every screen root except Camera, Annotate, and Location Picker, which show photos or a map.
+- New `glass` surface tokens (`card`, `raised`, `chip`) replace solid surface + elevation + outline on cards, dialogs, the tutorial card, the location sheet, and camera controls. They use `boxShadow`, not Android `elevation`, which draws through a translucent fill. The unused `outlined` and `elevation.card` tokens are removed.
+- Buttons: a smooth glass sheen replaces the bevel, and gradients run at 135°. Secondary is now clear sage glass with the plain text color. The circle size no longer adds `elevation.raised`.
+- No backdrop blur. Real blur needs a native module (`expo-blur`) and a rebuild. The ambient pools are smooth, so a translucent fill reads as glass without blur.
+- Verified: `npx tsc --noEmit` (only the known phosphor error), `npx jest` (352 pass), `npx expo lint` on changed `src/` files (0 errors). Not verified: no render on a device. Radial gradient and translucent `boxShadow` rendering on Android is unchecked.

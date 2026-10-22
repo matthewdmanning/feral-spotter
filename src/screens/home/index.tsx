@@ -1,3 +1,4 @@
+import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { AppButton, type ColumnButton } from '@/src/components/atoms/AppButton'
 import { BottomButtonColumn } from '@/src/components/molecules/BottomButtonColumn'
 import {
@@ -193,6 +194,7 @@ export default function HomeScreen() {
       />
 
       <View style={styles.root}>
+        <AmbientBackground />
         <View
           style={[
             styles.entrypointArea,

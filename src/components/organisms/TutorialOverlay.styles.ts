@@ -22,9 +22,8 @@ export const styles = StyleSheet.create((theme, rt) => ({
   },
   skipText: { ...theme.textVariants.labelSmall, color: theme.colors.muted },
   card: {
-    backgroundColor: theme.colors.surface,
     borderRadius: theme.radius.xxl,
-    ...theme.elevation.raised,
+    ...theme.glass.raised,
     padding: theme.spacing.xxl,
     width: '100%',
     maxWidth: 360,

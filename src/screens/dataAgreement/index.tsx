@@ -6,6 +6,7 @@
  * the actual consent gate.
  */
 
+import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { ScrollView, Text, View } from 'react-native'
 import agreementCopy from '@/src/content/consentDisclosure.json'
 import { styles } from './index.styles'
@@ -13,6 +14,7 @@ import { styles } from './index.styles'
 export default function DataAgreementScreen() {
   return (
     <View style={styles.root}>
+      <AmbientBackground />
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.title}>{agreementCopy.title}</Text>
         <Text style={styles.body}>{agreementCopy.intro}</Text>

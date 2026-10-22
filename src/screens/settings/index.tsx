@@ -3,6 +3,7 @@ import {
   setThemeMode,
   type ThemeMode,
 } from '@/src/config/unistyles'
+import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { AppButton } from '@/src/components/atoms/AppButton'
 import { SegmentedControl } from '@/src/components/atoms/SegmentedControl'
 import {
@@ -146,6 +147,7 @@ export default function SettingsScreen() {
 
   return (
     <View style={styles.root}>
+      <AmbientBackground />
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.inner}>
           <View style={styles.header}>

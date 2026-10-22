@@ -1,4 +1,5 @@
 import { LOCATION_ACCURACY_THRESHOLD_M } from '@/src/config/location'
+import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { AppButton } from '@/src/components/atoms/AppButton'
 import { DateTimePickerButton } from '@/src/components/organisms/DateTimePicker'
 import { showAlert, useSubmissionStore } from '@/src/hooks'
@@ -204,6 +205,7 @@ export default function CreateSubmissionScreen() {
 
   return (
     <View style={styles.root}>
+      <AmbientBackground />
       {/* An open cat lists every field, so the part above the actions scrolls
           and Finished!, Take More Photos and Reset stay on screen. */}
       <ScrollView

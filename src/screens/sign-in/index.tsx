@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react'
 import { View, Text, TextInput, Pressable } from 'react-native'
 import { router } from 'expo-router'
 import { useUnistyles } from 'react-native-unistyles'
+import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { AppButton } from '@/src/components/atoms/AppButton'
 import { useAuth } from '@/src/lib/auth/useAuth'
 import {
@@ -67,6 +68,7 @@ export default function SignInScreen() {
 
   return (
     <View style={styles.root}>
+      <AmbientBackground />
       <View style={styles.content}>
         <Text style={styles.title}>FeralSpotter</Text>
         <Text style={styles.subtitle}>

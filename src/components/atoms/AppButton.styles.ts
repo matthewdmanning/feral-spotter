@@ -49,7 +49,6 @@ export const styles = StyleSheet.create((theme) => ({
           gap: theme.spacing.sm,
           borderRadius: theme.radius.full,
           paddingHorizontal: theme.spacing.lg,
-          ...theme.elevation.raised,
         },
         compact: { paddingHorizontal: theme.spacing.md },
       },

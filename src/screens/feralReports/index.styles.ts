@@ -4,7 +4,8 @@ export const styles = StyleSheet.create((theme, rt) => ({
   // headerShown is forced false for this screen on every path (see
   // index.tsx) — there is no native header to reserve the status-bar
   // space, so the in-body title row needs the inset itself.
-  root: { backgroundColor: theme.colors.background, paddingTop: rt.insets.top },
+  screen: { flex: 1, backgroundColor: theme.colors.background },
+  root: { paddingTop: rt.insets.top },
   inner: {
     paddingHorizontal: theme.layout.gutter,
     paddingTop: theme.spacing.lg,
@@ -20,8 +21,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
   total: { ...theme.textVariants.bodySmall, color: theme.colors.muted },
   empty: {
     borderRadius: theme.radius.xl,
-    backgroundColor: theme.colors.surface,
-    ...theme.elevation.card,
+    ...theme.glass.card,
     paddingHorizontal: theme.spacing.xxl,
     paddingVertical: theme.spacing.xxxl,
     alignItems: 'center',

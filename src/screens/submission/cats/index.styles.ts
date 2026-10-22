@@ -1,7 +1,8 @@
 import { StyleSheet } from 'react-native-unistyles'
 
 export const styles = StyleSheet.create((theme) => ({
-  scroll: { backgroundColor: theme.colors.background },
+  screen: { flex: 1, backgroundColor: theme.colors.background },
+  scroll: { flex: 1 },
   inner: {
     paddingHorizontal: theme.layout.gutter,
     paddingBottom: theme.spacing.xxl,

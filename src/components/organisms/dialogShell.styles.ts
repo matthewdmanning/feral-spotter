@@ -17,9 +17,8 @@ export const dialogShell = StyleSheet.create((theme) => ({
     paddingHorizontal: theme.layout.gutter,
   },
   sheet: {
-    backgroundColor: theme.colors.surface,
     borderRadius: theme.radius.xxl,
-    ...theme.elevation.raised,
+    ...theme.glass.raised,
     padding: theme.spacing.xxl,
     width: '100%',
     maxWidth: 360,

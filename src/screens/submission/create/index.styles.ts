@@ -17,9 +17,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     flexDirection: 'row',
     gap: theme.spacing.lg,
     borderRadius: theme.radius.xl,
-    backgroundColor: theme.colors.surface,
-    ...theme.elevation.card,
-    ...theme.outlined,
+    ...theme.glass.card,
     padding: theme.layout.cardPadding,
   },
   statusItem: {
@@ -42,9 +40,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
   // One accordion item: the header row and, when open, every field below it.
   catCard: {
     borderRadius: theme.radius.xl,
-    backgroundColor: theme.colors.surface,
-    ...theme.elevation.card,
-    ...theme.outlined,
+    ...theme.glass.card,
     padding: theme.layout.cardPadding,
     gap: theme.spacing.md,
   },

@@ -1,3 +1,4 @@
+import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { STATUS_COLOR_KEY } from '@/src/components/atoms/StatusIcon'
 import { ReportCard } from '@/src/components/molecules/ReportCard'
 import { useFeralReports } from '@/src/hooks/useFeralReports'
@@ -31,58 +32,63 @@ export default function FeralReportsScreen() {
         keep in sync with the safe-area inset, instead of two.
       */}
       <Stack.Screen options={{ title: 'Feral Reports', headerShown: false }} />
-      <ScrollView
-        style={styles.root}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={theme.colors.accent}
-          />
-        }
-        contentContainerStyle={styles.scrollContent}
-      >
-        <View style={styles.inner}>
-          <View style={styles.headerRow}>
-            <Text style={styles.title}>Feral Reports</Text>
-            <Text style={styles.total}>{caches.length} total</Text>
-          </View>
-          {caches.length === 0 ? (
-            <View style={styles.empty}>
-              <View style={styles.emptyIcon}>
-                <ClockIcon
-                  size={theme.iconSize.xl}
-                  color={theme.colors.accentSoftText}
-                />
-              </View>
-              <Text style={styles.emptyTitle}>No reports yet</Text>
-              <Text style={styles.emptyBody}>
-                Submissions appear here as you create them
-              </Text>
+      <View style={styles.screen}>
+        <AmbientBackground />
+        <ScrollView
+          style={styles.root}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={theme.colors.accent}
+            />
+          }
+          contentContainerStyle={styles.scrollContent}
+        >
+          <View style={styles.inner}>
+            <View style={styles.headerRow}>
+              <Text style={styles.title}>Feral Reports</Text>
+              <Text style={styles.total}>{caches.length} total</Text>
             </View>
-          ) : (
-            <>
-              <View style={styles.legend}>
-                {STATUSES.map((s) => (
-                  <View key={s} style={styles.legendItem}>
-                    <View
-                      style={[
-                        styles.legendDot,
-                        { backgroundColor: theme.colors[STATUS_COLOR_KEY[s]] },
-                      ]}
-                    />
-                    <Text style={styles.legendLabel}>{s}</Text>
-                  </View>
-                ))}
+            {caches.length === 0 ? (
+              <View style={styles.empty}>
+                <View style={styles.emptyIcon}>
+                  <ClockIcon
+                    size={theme.iconSize.xl}
+                    color={theme.colors.accentSoftText}
+                  />
+                </View>
+                <Text style={styles.emptyTitle}>No reports yet</Text>
+                <Text style={styles.emptyBody}>
+                  Submissions appear here as you create them
+                </Text>
               </View>
-              {caches.map((cache) => (
-                <ReportCard key={cache.id} cache={cache} />
-              ))}
-            </>
-          )}
-        </View>
-      </ScrollView>
+            ) : (
+              <>
+                <View style={styles.legend}>
+                  {STATUSES.map((s) => (
+                    <View key={s} style={styles.legendItem}>
+                      <View
+                        style={[
+                          styles.legendDot,
+                          {
+                            backgroundColor: theme.colors[STATUS_COLOR_KEY[s]],
+                          },
+                        ]}
+                      />
+                      <Text style={styles.legendLabel}>{s}</Text>
+                    </View>
+                  ))}
+                </View>
+                {caches.map((cache) => (
+                  <ReportCard key={cache.id} cache={cache} />
+                ))}
+              </>
+            )}
+          </View>
+        </ScrollView>
+      </View>
     </>
   )
 }

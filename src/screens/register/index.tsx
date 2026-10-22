@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react'
 import { View, Text, TextInput } from 'react-native'
 import { router } from 'expo-router'
 import { useUnistyles } from 'react-native-unistyles'
+import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { AppButton } from '@/src/components/atoms/AppButton'
 import { useAuth } from '@/src/lib/auth/useAuth'
 import { styles } from './index.styles'
@@ -52,6 +53,7 @@ export default function RegisterScreen() {
 
   return (
     <View style={styles.root}>
+      <AmbientBackground />
       <View style={styles.content}>
         <Text style={styles.title}>Create your account</Text>
         <Text style={styles.subtitle}>Sign up with an email and password.</Text>

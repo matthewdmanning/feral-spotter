@@ -1,3 +1,4 @@
+import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { AppButton } from '@/src/components/atoms/AppButton'
 import { useCallback, useState } from 'react'
 import { View, Text, Pressable, ScrollView } from 'react-native'
@@ -21,6 +22,7 @@ export default function AnalyticsConsentScreen() {
 
   return (
     <View style={styles.root}>
+      <AmbientBackground />
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.title}>{analytics.title}</Text>
         <Text style={styles.body}>{analytics.intro}</Text>

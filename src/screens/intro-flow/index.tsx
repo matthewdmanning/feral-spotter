@@ -13,6 +13,7 @@ import {
   EXIT_WARNING_TITLE,
   ONBOARDING_SLIDES,
 } from '@/src/config/introFlowCopy'
+import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { AppButton } from '@/src/components/atoms/AppButton'
 import { useBackHandler } from '@/src/hooks/useBackHandler'
 import { router } from 'expo-router'
@@ -66,6 +67,7 @@ export default function IntroFlowScreen() {
 
   return (
     <View style={styles.root}>
+      <AmbientBackground />
       <View style={styles.slideContent}>
         <Text style={styles.header} accessibilityRole="header">
           {slide.header}

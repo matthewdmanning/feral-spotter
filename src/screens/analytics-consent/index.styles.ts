@@ -31,8 +31,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     marginTop: theme.spacing.md,
     padding: theme.layout.cardPadding,
     borderRadius: theme.radius.xl,
-    backgroundColor: theme.colors.surface,
-    ...theme.elevation.card,
+    ...theme.glass.card,
   },
   analyticsItemText: {
     ...theme.textVariants.body,
