@@ -53,7 +53,7 @@ describe('summarizeCat', () => {
 
   it('counts Pattern and Color as one slot, and the coat outranks its group', () => {
     expect(summarizeCat(cat({ color: 'blue', hair_length: 'long' }))).toBe(
-      'Gray · long hair',
+      'Blue / gray · long hair',
     )
     expect(summarizeCat(cat({ pattern: 'calico_tortie', sex: 'female' }))).toBe(
       'Calico & tortie · female',

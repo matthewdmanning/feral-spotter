@@ -62,7 +62,7 @@ export const COAT_GROUPS: {
     label: 'Solid',
     colors: [
       { value: 'black', label: 'Black' },
-      { value: 'blue', label: 'Gray' },
+      { value: 'blue', label: 'Blue / Gray' },
       { value: 'white', label: 'White' },
     ],
   },
@@ -70,9 +70,9 @@ export const COAT_GROUPS: {
     value: 'bicolor',
     label: 'Two-Color',
     colors: [
-      { value: 'low_white', label: 'Mostly Color, Some White' },
+      { value: 'low_white', label: 'Mitted/Locket' },
       { value: 'medium_white', label: 'Tuxedo' },
-      { value: 'high_white', label: 'Mostly White' },
+      { value: 'high_white', label: 'Harlequin/Van' },
     ],
   },
   {
@@ -81,15 +81,15 @@ export const COAT_GROUPS: {
     colors: [
       { value: 'tortoiseshell', label: 'Tortoiseshell' },
       { value: 'calico', label: 'Calico' },
-      { value: 'dilute_tortie_calico', label: 'Pale Calico or Tortie' },
+      { value: 'dilute_tortie_calico', label: 'Dilute Tortie/Calico' },
     ],
   },
   {
     value: 'colorpoint',
     label: 'Siamese-Style',
     colors: [
-      { value: 'seal_point', label: 'Dark Points' },
-      { value: 'lynx_point', label: 'Striped Points' },
+      { value: 'seal_point', label: 'Seal Point' },
+      { value: 'lynx_point', label: 'Lynx Point' },
     ],
   },
 ]
