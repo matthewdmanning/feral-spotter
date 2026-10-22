@@ -16,11 +16,8 @@ export const styles = StyleSheet.create((theme, rt) => ({
     position: 'absolute',
     top: rt.insets.top + theme.spacing.md,
     right: theme.layout.gutter,
-    minHeight: theme.controlHeight.touchTarget,
-    justifyContent: 'center',
     paddingHorizontal: theme.spacing.md,
   },
-  skipText: { ...theme.textVariants.labelSmall, color: theme.colors.muted },
   card: {
     borderRadius: theme.radius.xxl,
     ...theme.glass.raised,

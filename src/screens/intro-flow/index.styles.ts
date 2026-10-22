@@ -19,12 +19,6 @@ export const styles = StyleSheet.create((theme, rt) => ({
     color: theme.colors.muted,
     marginBottom: theme.spacing.md,
   },
-  link: {
-    ...theme.textVariants.labelSmall,
-    color: theme.colors.accent,
-    textDecorationLine: 'underline',
-    marginTop: theme.spacing.sm,
-  },
   footer: { gap: theme.spacing.lg },
   buttonRow: { flexDirection: 'row', gap: theme.spacing.md },
   dots: {

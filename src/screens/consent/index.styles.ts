@@ -14,50 +14,6 @@ export const styles = StyleSheet.create((theme) => ({
     textAlign: 'center',
     marginBottom: theme.spacing.lg,
   },
-  body: {
-    ...theme.textVariants.body,
-    color: theme.colors.text,
-    marginBottom: theme.spacing.md,
-  },
-  item: {
-    ...theme.textVariants.body,
-    color: theme.colors.text,
-    marginBottom: theme.spacing.xs,
-    marginLeft: theme.spacing.md,
-    flexShrink: 1,
-  },
-  itemLabel: { fontFamily: theme.fonts.bold },
   agreeRow: { marginTop: theme.spacing.xxl },
-  declineBtn: {
-    minHeight: theme.controlHeight.touchTarget,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.lg,
-  },
-  declineText: {
-    ...theme.textVariants.label,
-    color: theme.colors.muted,
-    textDecorationLine: 'underline',
-  },
-
-  gate: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: theme.layout.gutter,
-    gap: theme.spacing.lg,
-  },
-  gateTitle: {
-    ...theme.textVariants.heading,
-    color: theme.colors.text,
-    textAlign: 'center',
-  },
-  gateBody: {
-    ...theme.textVariants.body,
-    color: theme.colors.muted,
-    textAlign: 'center',
-  },
-  gateAction: { alignSelf: 'stretch', marginTop: theme.spacing.sm },
+  declineBtn: { alignSelf: 'center', marginTop: theme.spacing.sm },
 }))

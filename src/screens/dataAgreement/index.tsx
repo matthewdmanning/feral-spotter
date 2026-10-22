@@ -7,8 +7,9 @@
  */
 
 import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
-import { ScrollView, Text, View } from 'react-native'
+import { DisclosureText } from '@/src/components/molecules/DisclosureText'
 import agreementCopy from '@/src/content/consentDisclosure.json'
+import { ScrollView, Text, View } from 'react-native'
 import { styles } from './index.styles'
 
 export default function DataAgreementScreen() {
@@ -17,17 +18,7 @@ export default function DataAgreementScreen() {
       <AmbientBackground />
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.title}>{agreementCopy.title}</Text>
-        <Text style={styles.body}>{agreementCopy.intro}</Text>
-        {agreementCopy.items.map((item) => (
-          <Text key={item.label} style={styles.item}>
-            <Text style={styles.itemLabel}>{item.label}</Text> {item.text}
-          </Text>
-        ))}
-        {agreementCopy.body.map((paragraph) => (
-          <Text key={paragraph} style={styles.body}>
-            {paragraph}
-          </Text>
-        ))}
+        <DisclosureText />
       </ScrollView>
     </View>
   )

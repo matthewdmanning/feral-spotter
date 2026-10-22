@@ -5,7 +5,7 @@
  * there, before sign-in — this screen is informational only.
  */
 
-import { showAlert } from '@/src/hooks/useUIStore'
+import { confirmExitApp } from '@/src/hooks/confirmExitApp'
 import {
   AGREEMENT_SLIDE_INDEX,
   DATA_AGREEMENT_LINK_LABEL,
@@ -15,10 +15,11 @@ import {
 } from '@/src/config/introFlowCopy'
 import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { AppButton } from '@/src/components/atoms/AppButton'
+import { TextButton } from '@/src/components/atoms/TextButton'
 import { useBackHandler } from '@/src/hooks/useBackHandler'
 import { router } from 'expo-router'
 import { useCallback, useState } from 'react'
-import { BackHandler, Platform, Pressable, Text, View } from 'react-native'
+import { Text, View } from 'react-native'
 import { styles } from './index.styles'
 
 export default function IntroFlowScreen() {
@@ -31,16 +32,7 @@ export default function IntroFlowScreen() {
   useBackHandler(
     useCallback(() => {
       if (step !== 0) return false
-      showAlert(EXIT_WARNING_TITLE, EXIT_WARNING_BODY, [
-        { text: 'Back', style: 'cancel' },
-        {
-          text: 'Exit',
-          style: 'destructive',
-          onPress: () => {
-            if (Platform.OS === 'android') BackHandler.exitApp()
-          },
-        },
-      ])
+      confirmExitApp(EXIT_WARNING_TITLE, EXIT_WARNING_BODY)
       return true
     }, [step]),
   )
@@ -78,12 +70,13 @@ export default function IntroFlowScreen() {
           </Text>
         ))}
         {isAgreementSlide && (
-          <Pressable
+          <TextButton
             accessibilityRole="link"
             onPress={() => router.push('/data-agreement')}
+            underline
           >
-            <Text style={styles.link}>{DATA_AGREEMENT_LINK_LABEL}</Text>
-          </Pressable>
+            {DATA_AGREEMENT_LINK_LABEL}
+          </TextButton>
         )}
       </View>
 

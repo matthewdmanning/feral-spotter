@@ -1,5 +1,6 @@
 import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { AppButton } from '@/src/components/atoms/AppButton'
+import { TextButton } from '@/src/components/atoms/TextButton'
 import { CatForm } from '@/src/components/organisms/CatForm'
 import {
   COLLAPSED_DIAMETER,
@@ -13,12 +14,10 @@ import { useCatSubmit } from '@/src/hooks/useCatSubmit'
 import { useRemoveCat } from '@/src/hooks/useRemoveCat'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
-import { Pressable, ScrollView, Text, View } from 'react-native'
-import { useUnistyles } from 'react-native-unistyles'
+import { ScrollView, Text, View } from 'react-native'
 import { styles } from './index.styles'
 
 export default function CatObservationScreen() {
-  const { theme } = useUnistyles()
   const { edit: editId } = useLocalSearchParams<{ edit?: string }>()
 
   const cats = useSubmissionStore((s) => s.cats)
@@ -92,21 +91,9 @@ export default function CatObservationScreen() {
                 {existingCat ? 'Edit Cat' : 'Observed Cat'}
               </Text>
               <View style={styles.headerActions}>
-                <Pressable
-                  onPress={form.handleClear}
-                  style={styles.headerBtn}
-                  hitSlop={12}
-                  accessibilityRole="button"
-                >
-                  <Text
-                    style={[
-                      styles.headerBtnText,
-                      { color: theme.colors.danger },
-                    ]}
-                  >
-                    Clear
-                  </Text>
-                </Pressable>
+                <TextButton onPress={form.handleClear} tone="danger">
+                  Clear
+                </TextButton>
               </View>
             </View>
             {catId && (

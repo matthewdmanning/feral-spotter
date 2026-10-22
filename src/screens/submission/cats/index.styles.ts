@@ -26,10 +26,4 @@ export const styles = StyleSheet.create((theme) => ({
     alignItems: 'center',
     gap: theme.spacing.sm,
   },
-  headerBtn: {
-    minHeight: theme.controlHeight.touchTarget,
-    justifyContent: 'center',
-    paddingHorizontal: theme.spacing.sm,
-  },
-  headerBtnText: { ...theme.textVariants.labelSmall },
 }))

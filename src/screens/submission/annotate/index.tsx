@@ -3,14 +3,10 @@ import { AppButton } from '@/src/components/atoms/AppButton'
 import { AnnotateCarouselItem } from '@/src/components/organisms/AnnotateCarouselItem'
 import { InsetCropBubble } from '@/src/components/organisms/InsetCropBubble'
 import { TutorialOverlay } from '@/src/components/organisms/TutorialOverlay'
-import {
-  ANNOTATION_TUTORIAL_STEPS,
-  isTutorialReleased,
-} from '@/src/config/tutorial'
+import { ANNOTATION_TUTORIAL_STEPS } from '@/src/config/tutorial'
+import { useAnnotationTutorial } from '@/src/hooks/useAnnotationTutorial'
 import { useAnnotatePass } from '@/src/hooks/useAnnotatePass'
 import { useBackHandler } from '@/src/hooks/useBackHandler'
-import { useTutorialStore } from '@/src/hooks/useTutorialStore'
-import { EVENTS, captureEvent } from '@/src/lib/analytics/analytics'
 import { router } from 'expo-router'
 import { TrashIcon } from 'phosphor-react-native/src/icons/Trash'
 import { useState } from 'react'
@@ -18,6 +14,7 @@ import { Dimensions, Pressable, Text, View } from 'react-native'
 import Carousel from 'react-native-reanimated-carousel'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
+import { PHOTO_STATUS_COLOR_KEY } from './photoStatusColors'
 
 const SCREEN_W = Dimensions.get('window').width
 
@@ -47,28 +44,7 @@ export default function AnnotateScreen() {
   // there's no active cat or no confirmed boxes yet (useActiveCatFlow).
   useBackHandler(() => true)
 
-  // ── Tutorial (first annotation entry only; replay resets status to 'unseen')
-  const tutorialStatus = useTutorialStore((s) => s.annotation_tutorial_status)
-  const setTutorialStatus = useTutorialStore(
-    (s) => s.setAnnotationTutorialStatus,
-  )
-  const [tutorialStartedAt, setTutorialStartedAt] = useState(0)
-  const handleTutorialShow = () => {
-    setTutorialStartedAt(Date.now())
-    captureEvent(EVENTS.TUTORIAL_STARTED)
-  }
-  const handleTutorialStep = (step: number) =>
-    captureEvent(EVENTS.TUTORIAL_STEP_COMPLETED, { step })
-  const handleTutorialSkip = (step: number) => {
-    setTutorialStatus('skipped')
-    captureEvent(EVENTS.TUTORIAL_SKIPPED, { step })
-  }
-  const handleTutorialComplete = () => {
-    setTutorialStatus('completed')
-    captureEvent(EVENTS.TUTORIAL_COMPLETED, {
-      duration_ms: Date.now() - tutorialStartedAt,
-    })
-  }
+  const tutorial = useAnnotationTutorial()
 
   if (photos.length === 0)
     return (
@@ -122,13 +98,9 @@ export default function AnnotateScreen() {
                     width:
                       i === currentIndex ? theme.spacing.xl : theme.spacing.sm,
                     backgroundColor:
-                      i === currentIndex
-                        ? theme.colors.text
-                        : s === 'located'
-                          ? theme.colors.accent
-                          : s === 'not-in-photo'
-                            ? theme.colors.warning
-                            : theme.colors.muted,
+                      theme.colors[
+                        i === currentIndex ? 'text' : PHOTO_STATUS_COLOR_KEY[s]
+                      ],
                   },
                 ]}
               />
@@ -210,14 +182,7 @@ export default function AnnotateScreen() {
         </AppButton>
       </View>
 
-      <TutorialOverlay
-        open={isTutorialReleased() && tutorialStatus === 'unseen'}
-        steps={ANNOTATION_TUTORIAL_STEPS}
-        onShow={handleTutorialShow}
-        onStepCompleted={handleTutorialStep}
-        onSkip={handleTutorialSkip}
-        onComplete={handleTutorialComplete}
-      />
+      <TutorialOverlay {...tutorial} steps={ANNOTATION_TUTORIAL_STEPS} />
     </View>
   )
 }

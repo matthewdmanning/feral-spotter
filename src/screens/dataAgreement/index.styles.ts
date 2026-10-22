@@ -12,16 +12,4 @@ export const styles = StyleSheet.create((theme) => ({
     color: theme.colors.text,
     marginBottom: theme.spacing.lg,
   },
-  body: {
-    ...theme.textVariants.body,
-    color: theme.colors.text,
-    marginBottom: theme.spacing.md,
-  },
-  item: {
-    ...theme.textVariants.body,
-    color: theme.colors.text,
-    marginBottom: theme.spacing.xs,
-    marginLeft: theme.spacing.md,
-  },
-  itemLabel: { fontFamily: theme.fonts.bold },
 }))

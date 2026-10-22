@@ -41,49 +41,12 @@ export const styles = StyleSheet.create((theme, rt) => ({
     ...theme.textVariants.labelSmall,
     color: theme.colors.accentSoftText,
   },
-  linkRow: {
-    minHeight: theme.controlHeight.touchTarget,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.md,
-  },
-  // Default color for links with no override (Data Policy); destructive rows
-  // pass danger inline.
-  linkText: { ...theme.textVariants.label, color: theme.colors.accent },
   hint: { ...theme.textVariants.bodySmall, color: theme.colors.muted },
-  fieldGroup: { gap: theme.spacing.sm },
-  fieldLabel: { ...theme.textVariants.labelSmall, color: theme.colors.muted },
-  input: {
-    ...theme.textVariants.body,
-    minHeight: theme.controlHeight.control,
-    backgroundColor: theme.colors.surfaceAlt,
-    borderRadius: theme.radius.md,
-    paddingHorizontal: theme.layout.gutter,
-    paddingVertical: theme.spacing.md,
-    color: theme.colors.text,
-  },
   divider: {
     height: 1,
     backgroundColor: theme.colors.border,
     marginVertical: theme.spacing.xs,
   },
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  switchTarget: {
-    minWidth: theme.controlHeight.touchTarget,
-    minHeight: theme.controlHeight.touchTarget,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  toggleTextGroup: {
-    flex: 1,
-    gap: theme.spacing.xs,
-    paddingRight: theme.spacing.lg,
-  },
-  toggleLabel: { ...theme.textVariants.label, color: theme.colors.text },
   footer: {
     flexDirection: 'row',
     gap: theme.spacing.sm,

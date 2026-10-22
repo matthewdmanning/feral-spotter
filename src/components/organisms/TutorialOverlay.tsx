@@ -9,7 +9,8 @@
  */
 
 import { AppButton } from '@/src/components/atoms/AppButton'
-import { Modal, Pressable, Text, View } from 'react-native'
+import { TextButton } from '@/src/components/atoms/TextButton'
+import { Modal, Text, View } from 'react-native'
 import { useState } from 'react'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './TutorialOverlay.styles'
@@ -84,14 +85,13 @@ export function TutorialOverlay({
       statusBarTranslucent
     >
       <View style={styles.backdrop}>
-        <Pressable
+        <TextButton
           onPress={() => onSkip(index + 1)}
+          tone="muted"
           style={styles.skipBtn}
-          hitSlop={12}
-          accessibilityRole="button"
         >
-          <Text style={styles.skipText}>Skip</Text>
-        </Pressable>
+          Skip
+        </TextButton>
         <View style={styles.card}>
           <Text style={styles.counter}>
             {index + 1} / {steps.length}

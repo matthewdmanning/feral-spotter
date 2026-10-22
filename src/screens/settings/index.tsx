@@ -6,6 +6,10 @@ import {
 import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { AppButton } from '@/src/components/atoms/AppButton'
 import { SegmentedControl } from '@/src/components/atoms/SegmentedControl'
+import { TextButton } from '@/src/components/atoms/TextButton'
+import { TextField } from '@/src/components/atoms/TextField'
+import { ToggleRow } from '@/src/components/molecules/ToggleRow'
+import { visiblePhotoToggles } from '@/src/config/photoToggles'
 import {
   getHapticsEnabled,
   selectionHaptic,
@@ -18,22 +22,9 @@ import { CheckIcon } from 'phosphor-react-native/src/icons/Check'
 import { FileTextIcon } from 'phosphor-react-native/src/icons/FileText'
 import { KeyIcon } from 'phosphor-react-native/src/icons/Key'
 import { useState } from 'react'
-import {
-  Platform,
-  Pressable,
-  ScrollView,
-  Switch,
-  Text,
-  TextInput,
-  View,
-} from 'react-native'
-import { useUnistyles, withUnistyles } from 'react-native-unistyles'
+import { Platform, ScrollView, Text, View } from 'react-native'
+import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
-
-const UniSwitch = withUnistyles(Switch, (theme) => ({
-  trackColor: { false: theme.colors.border, true: theme.colors.accent },
-  thumbColor: theme.colors.text,
-}))
 
 const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
   { value: 'system', label: 'System' },
@@ -41,77 +32,7 @@ const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
   { value: 'dark', label: 'Dark' },
 ]
 
-const PHOTO_TOGGLES = [
-  {
-    key: 'keep_photos_on_device',
-    label: 'Keep Photos on Device',
-    desc: 'Save captured photos to your camera roll',
-    platform: null,
-  },
-  {
-    key: 'improved_camera_capture',
-    label: 'Improved Camera Capture',
-    desc: 'Use device-aware VisionCamera capture on Android',
-    devOnly: true,
-    platform: 'android',
-  },
-  {
-    key: 'ios_improved_camera_capture',
-    label: 'Improved iPhone Capture',
-    desc: 'Use the optimized VisionCamera + AVFoundation fallback on iOS',
-    devOnly: true,
-    platform: 'ios',
-  },
-  {
-    key: 'native_camera_capture',
-    label: 'Native Camera Capture',
-    desc: 'Use AVFoundation on iOS or CameraX on Android; the VisionCamera path remains available',
-    devOnly: true,
-    platform: null,
-  },
-  {
-    key: 'camera_max_detail',
-    label: 'Maximum Detail',
-    desc: 'Prefer the highest still-photo resolution exposed by the native camera',
-    devOnly: true,
-    platform: null,
-  },
-  {
-    key: 'camera_motion_priority',
-    label: 'Motion Priority',
-    desc: 'Favor device-supported low-latency capture and shorter exposure behavior',
-    devOnly: true,
-    platform: null,
-  },
-  {
-    key: 'camera_disable_low_light_boost',
-    label: 'Disable Low-Light Boost',
-    desc: 'Avoid platform low-light modes that may trade motion detail for brightness',
-    devOnly: true,
-    platform: null,
-  },
-  {
-    key: 'camera_subject_metering',
-    label: 'Subject Metering',
-    desc: 'Allow a bounding-box localizer to steer native focus and exposure',
-    devOnly: true,
-    platform: null,
-  },
-  {
-    key: 'camera_pinch_zoom',
-    label: 'Pinch to Zoom',
-    desc: 'Allow pinch to zoom the camera preview; a zoomed capture is a cropped capture',
-    devOnly: true,
-    platform: null,
-  },
-  {
-    key: 'camera_performance_checks',
-    label: 'Camera Performance Checks',
-    desc: 'Attach comparable camera timing data to PostHog events for A/B testing',
-    devOnly: true,
-    platform: null,
-  },
-] as const
+const PHOTO_TOGGLES = visiblePhotoToggles(__DEV__, Platform.OS)
 
 export default function SettingsScreen() {
   const { theme } = useUnistyles()
@@ -136,14 +57,6 @@ export default function SettingsScreen() {
     handleDiscard,
     handleRemovePassword,
   } = useSettingsDraft()
-
-  // Experimental camera tuning ships only in development installs, never in
-  // Alpha, Beta or Preview builds (so not IS_PRERELEASE, which includes them).
-  const photoToggles = PHOTO_TOGGLES.filter(
-    (toggle) =>
-      ('devOnly' in toggle ? __DEV__ : true) &&
-      (toggle.platform === null || toggle.platform === Platform.OS),
-  )
 
   return (
     <View style={styles.root}>
@@ -177,23 +90,12 @@ export default function SettingsScreen() {
 
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Haptic Feedback</Text>
-            <View style={styles.toggleRow}>
-              <View style={styles.toggleTextGroup}>
-                <Text style={styles.toggleLabel}>Vibration on Touch</Text>
-                <Text style={styles.hint}>
-                  A light click when you press a button or switch tabs
-                </Text>
-              </View>
-              <Pressable
-                onPress={() => toggleHaptics(!hapticsOn)}
-                style={styles.switchTarget}
-                accessibilityRole="switch"
-                accessibilityLabel="Haptic Feedback"
-                accessibilityState={{ checked: hapticsOn }}
-              >
-                <UniSwitch value={hapticsOn} onValueChange={toggleHaptics} />
-              </Pressable>
-            </View>
+            <ToggleRow
+              label="Vibration on Touch"
+              hint="A light click when you press a button or switch tabs"
+              value={hapticsOn}
+              onValueChange={toggleHaptics}
+            />
           </View>
 
           <View style={styles.card}>
@@ -207,90 +109,71 @@ export default function SettingsScreen() {
                   />
                   <Text style={styles.configuredText}>Password configured</Text>
                 </View>
-                <Pressable
+                <TextButton
                   onPress={handleRemovePassword}
-                  style={styles.linkRow}
-                  accessibilityRole="button"
+                  tone="danger"
+                  icon={
+                    <KeyIcon
+                      size={theme.iconSize.md}
+                      color={theme.colors.danger}
+                    />
+                  }
                 >
-                  <KeyIcon
-                    size={theme.iconSize.md}
-                    color={theme.colors.danger}
-                  />
-                  <Text
-                    style={[styles.linkText, { color: theme.colors.danger }]}
-                  >
-                    Remove Password
-                  </Text>
-                </Pressable>
+                  Remove Password
+                </TextButton>
               </View>
             ) : (
               <View style={styles.gap}>
                 <Text style={styles.hint}>Required to submit observations</Text>
-                {(['Password', 'Confirm Password'] as const).map((lbl, i) => (
-                  <View key={lbl} style={styles.fieldGroup}>
-                    <Text style={styles.fieldLabel}>{lbl}</Text>
-                    <TextInput
-                      secureTextEntry
-                      placeholder={lbl}
-                      placeholderTextColor={theme.colors.muted}
-                      value={i === 0 ? newPassword : confirmPassword}
-                      onChangeText={
-                        i === 0 ? setNewPassword : setConfirmPassword
-                      }
-                      autoCapitalize="none"
-                      style={styles.input}
-                    />
-                  </View>
-                ))}
+                <TextField
+                  label="Password"
+                  placeholder="Password"
+                  secureTextEntry
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                />
+                <TextField
+                  label="Confirm Password"
+                  placeholder="Confirm Password"
+                  secureTextEntry
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                />
               </View>
             )}
           </View>
 
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Photos</Text>
-            {photoToggles.map(({ key, label, desc }, i) => {
-              const on = draft[key]
-              return (
-                <View key={key}>
-                  {i > 0 && <View style={styles.divider} />}
-                  <View style={styles.toggleRow}>
-                    <View style={styles.toggleTextGroup}>
-                      <Text style={styles.toggleLabel}>{label}</Text>
-                      <Text style={styles.hint}>{desc}</Text>
-                    </View>
-                    <Pressable
-                      onPress={() => patch(key, !on)}
-                      style={styles.switchTarget}
-                      accessibilityRole="switch"
-                      accessibilityLabel={label}
-                      accessibilityState={{ checked: on }}
-                    >
-                      <UniSwitch
-                        value={on}
-                        onValueChange={(value) => patch(key, value)}
-                      />
-                    </Pressable>
-                  </View>
-                </View>
-              )
-            })}
+            {PHOTO_TOGGLES.map(({ key, label, desc }, i) => (
+              <View key={key}>
+                {i > 0 && <View style={styles.divider} />}
+                <ToggleRow
+                  label={label}
+                  hint={desc}
+                  value={draft[key]}
+                  onValueChange={(value) => patch(key, value)}
+                />
+              </View>
+            ))}
           </View>
 
           <View style={styles.card}>
             <Text style={styles.cardTitle}>FeralSpotter</Text>
             <Text style={styles.subtitle}>Version {APP_VERSION}</Text>
             <View style={styles.divider} />
-            <Pressable
+            <TextButton
               onPress={() => router.push('/data-agreement')}
-              style={styles.linkRow}
-              accessibilityRole="button"
+              accessibilityRole="link"
+              icon={
+                <FileTextIcon
+                  size={theme.iconSize.md}
+                  color={theme.colors.accent}
+                />
+              }
             >
-              <FileTextIcon
-                size={theme.iconSize.md}
-                color={theme.colors.accent}
-              />
-              <Text style={styles.linkText}>Data Policy</Text>
-            </Pressable>
+              Data Policy
+            </TextButton>
           </View>
         </View>
       </ScrollView>

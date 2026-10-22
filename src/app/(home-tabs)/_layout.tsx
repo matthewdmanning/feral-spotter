@@ -34,7 +34,10 @@ function HapticTabButton(props: BottomTabBarButtonProps) {
   )
 }
 
-// The focused tab's icon sits on a raised eyeshine pill (Material's active
+// Thin, so the pill does not push the label into the gesture bar.
+const PILL_PADDING_V = 2
+
+// The focused tab's icon sits on a raised glass pill (Material's active
 // indicator); idle icons sit flat.
 function TabIcon({ Icon, focused }: { Icon: PhosphorIcon; focused: boolean }) {
   const { theme } = useUnistyles()
@@ -43,8 +46,7 @@ function TabIcon({ Icon, focused }: { Icon: PhosphorIcon; focused: boolean }) {
       style={[
         {
           paddingHorizontal: theme.spacing.lg,
-          // Thin, so the pill does not push the label into the gesture bar.
-          paddingVertical: 2,
+          paddingVertical: PILL_PADDING_V,
           borderRadius: theme.radius.full,
         },
         focused && {
@@ -73,7 +75,7 @@ export default function HomeTabsLayout() {
   const tabBarHeight =
     theme.spacing.sm +
     theme.iconSize.xl +
-    4 +
+    PILL_PADDING_V * 2 +
     theme.spacing.xs +
     labelHeight +
     bottomGap

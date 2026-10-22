@@ -18,12 +18,11 @@ const STEP_TITLES: Record<Step, string> = {
   cats: 'Cat Observations',
 }
 
-export default function SubmissionLayout() {
-  // useUnistyles with Stack is explicitly allowed — react-navigation
-  // does not re-render screens on style prop changes.
+// Settings shortcut in the header. Every step screen below turns it off;
+// only the location picker keeps it.
+function HeaderRight() {
   const { theme } = useUnistyles()
-
-  const HeaderRight = () => (
+  return (
     <Pressable
       onPress={() => router.push('/settings')}
       accessibilityLabel="Open settings"
@@ -31,11 +30,17 @@ export default function SubmissionLayout() {
       // 24dp icon; hitSlop brings the touch target to the 48dp floor without
       // changing header layout.
       hitSlop={12}
-      style={{ marginRight: 4 }}
+      style={{ marginRight: theme.spacing.xs }}
     >
       <GearIcon size={theme.iconSize.lg} color={theme.colors.text} />
     </Pressable>
   )
+}
+
+export default function SubmissionLayout() {
+  // useUnistyles with Stack is explicitly allowed — react-navigation
+  // does not re-render screens on style prop changes.
+  const { theme } = useUnistyles()
 
   return (
     <ErrorBoundary>
@@ -51,7 +56,7 @@ export default function SubmissionLayout() {
           contentStyle: { backgroundColor: theme.colors.background },
           animation: 'slide_from_right',
           gestureEnabled: true,
-          headerRight: () => <HeaderRight />,
+          headerRight: HeaderRight,
         }}
       >
         {STEPS.map((step) => (
@@ -61,7 +66,7 @@ export default function SubmissionLayout() {
             options={{
               title: STEP_TITLES[step],
               headerBackTitle: '',
-              headerRight: () => null, // step indicator: ${STEP_NUMBER[step]} / ${STEPS.length}
+              headerRight: () => null,
               // Submission Details (#156) has its own bottom action instead
               // of a back path — header back and swipe-back are disabled for
               // this screen only; the rest of the stack keeps its defaults.

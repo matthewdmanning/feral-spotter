@@ -1,10 +1,11 @@
 import { showAlert } from '@/src/hooks/useUIStore'
 import { useCallback, useState } from 'react'
-import { View, Text, TextInput, Pressable } from 'react-native'
+import { View, Text } from 'react-native'
 import { router } from 'expo-router'
-import { useUnistyles } from 'react-native-unistyles'
 import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { AppButton } from '@/src/components/atoms/AppButton'
+import { TextButton } from '@/src/components/atoms/TextButton'
+import { TextField } from '@/src/components/atoms/TextField'
 import { useAuth } from '@/src/lib/auth/useAuth'
 import {
   FEDERATED_PROVIDERS,
@@ -18,7 +19,6 @@ const isCancellation = (err: unknown) =>
   err instanceof Error && err.message === 'SIGN_IN_CANCELLED'
 
 export default function SignInScreen() {
-  const { theme } = useUnistyles()
   const { signInWithEmail, signInWithProvider } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -75,28 +75,24 @@ export default function SignInScreen() {
           Sign in to start submitting cat observations.
         </Text>
 
-        <TextInput
-          style={styles.input}
-          value={email}
-          onChangeText={setEmail}
-          placeholder="Email"
-          placeholderTextColor={theme.colors.muted}
-          autoCapitalize="none"
-          autoComplete="email"
-          keyboardType="email-address"
-          inputMode="email"
-          accessibilityLabel="Email"
-        />
-        <TextInput
-          style={styles.input}
-          value={password}
-          onChangeText={setPassword}
-          placeholder="Password"
-          placeholderTextColor={theme.colors.muted}
-          autoCapitalize="none"
-          secureTextEntry
-          accessibilityLabel="Password"
-        />
+        <View style={styles.fields}>
+          <TextField
+            value={email}
+            onChangeText={setEmail}
+            placeholder="Email"
+            autoComplete="email"
+            keyboardType="email-address"
+            inputMode="email"
+            accessibilityLabel="Email"
+          />
+          <TextField
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Password"
+            secureTextEntry
+            accessibilityLabel="Password"
+          />
+        </View>
 
         <View style={styles.button}>
           <AppButton
@@ -110,12 +106,12 @@ export default function SignInScreen() {
 
         <View style={styles.registerRow}>
           <Text style={styles.registerText}>No account? </Text>
-          <Pressable
+          <TextButton
             onPress={() => router.push('/register')}
             accessibilityRole="link"
           >
-            <Text style={styles.registerLink}>Create one</Text>
-          </Pressable>
+            Create one
+          </TextButton>
         </View>
 
         <View style={styles.dividerRow}>

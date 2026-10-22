@@ -106,3 +106,37 @@
 - Buttons: a smooth glass sheen replaces the bevel, and gradients run at 135°. Secondary is now clear sage glass with the plain text color. The circle size no longer adds `elevation.raised`.
 - No backdrop blur. Real blur needs a native module (`expo-blur`) and a rebuild. The ambient pools are smooth, so a translucent fill reads as glass without blur.
 - Verified: `npx tsc --noEmit` (only the known phosphor error), `npx jest` (352 pass), `npx expo lint` on changed `src/` files (0 errors). Not verified: no render on a device. Radial gradient and translucent `boxShadow` rendering on Android is unchecked.
+
+### 2026-10-22 — refactor
+
+**Purpose:** User request: a pass over the whole UI for hand-rolled components, duplicated code, and business logic in component bodies. Branch `liquid-glass-ui`.
+**Change:**
+
+- **New shared components.**
+  - `atoms/TextButton` replaces six hand-rolled text links: Tutorial Skip, Consent Decline, Cat Form Clear, the intro data-agreement link, sign-in "Create one", and the settings link rows.
+  - `atoms/TextField` replaces five hand-styled inputs (register, sign-in, settings).
+  - `molecules/ToggleRow` replaces two copies of the switch row in Settings.
+  - `molecules/GateScreen` replaces the camera gate and the consent "Permission Blocked" gate. Each screen had its own copy of the same styles.
+  - `molecules/DisclosureText` replaces the same disclosure rendering in Consent and the Data Usage Agreement.
+- **Hand-rolled buttons now use AppButton.** These are the annotate Confirm button and the date/time step toggle in DateTimePicker.
+- **Duplicates removed.**
+  - `confirmExitApp` is the one copy of the exit dialog that Consent and the intro flow both had.
+  - `LABEL_COLOR_KEY` gives AppButton's label and its spinner one color source.
+  - The four carousel handle blocks are now one mapped list.
+  - The two Home circle blocks are now one `EntrypointCircle`.
+  - The "Take/Select More Photos" label is defined once.
+  - The carousel's contain-fit math now calls `cropProjection.containFit`.
+  - Magic numbers became tokens or named constants: the strip spacing (now uses `THUMB_GAP`), the column spacing, and the tab pill padding.
+- **Logic moved out of component bodies.**
+  - `useEntryGate` and `useResumableDraft` take Home's two effects. The pure rule is `isResumableDraft`.
+  - `useConsentPermissions` takes Consent's permission flow.
+  - `validateRegistration` takes the register checks.
+  - `draftWarnings` and `useDraftSync` take the create screen's warning rules and its two background effects.
+  - `previousCatBoxes` and `bubbleImageRect` take the annotate overlay and crop math.
+  - `useAnnotationTutorial` takes the tutorial's analytics handlers.
+  - `visiblePhotoToggles` and `PHOTO_TOGGLES` (in `config/`) take the settings toggle list and its build filter.
+  - The submission header button is hoisted out of the layout's render.
+- **Tests.** `src/utils/__tests__/validateRegistration.test.ts` checks the order and the length floor; no screen test covers them. `src/config/__tests__/photoToggles.invariant.test.ts` reads the real toggle list, so a dev-only toggle cannot reach a release build. The existing screen tests cover the other moves unchanged.
+- **Visual effects.** Every text link is now 16 dp bold and at least 48 dp tall. Inputs share one style: the warm alt surface with a 1 dp border.
+- **Verified:** `npx tsc --noEmit` (only the known phosphor error), `npx jest` (78 suites, 360 tests pass), `npx expo lint` on changed files (0 errors; 1 warning in TutorialOverlay, from before this change). **Not verified:** no device render.
+- **Found, not changed:** On Home, "New Sighting" and "Continue Observation" both open `/submission/create`, and New Sighting does not clear the draft. Sign-in keeps its auth calls in the screen. The create screen keeps its auto-skip redirect, which depends on render timing.

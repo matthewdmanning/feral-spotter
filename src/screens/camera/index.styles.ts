@@ -1,4 +1,8 @@
 import { StyleSheet } from 'react-native-unistyles'
+import {
+  THUMB_GAP,
+  THUMB_SIZE,
+} from '@/src/components/atoms/CameraThumb.constants'
 
 export const styles = StyleSheet.create((theme, rt) => ({
   root: { flex: 1, backgroundColor: theme.colors.cameraBackground },
@@ -76,7 +80,11 @@ export const styles = StyleSheet.create((theme, rt) => ({
     marginTop: theme.spacing.sm,
     textAlign: 'center',
   },
-  strip: { height: 64 + 16, marginBottom: theme.spacing.xl },
+  strip: {
+    height: THUMB_SIZE + theme.spacing.lg,
+    marginBottom: theme.spacing.xl,
+  },
+  stripContent: { paddingHorizontal: theme.layout.gutter, gap: THUMB_GAP },
   shutterRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -113,28 +121,5 @@ export const styles = StyleSheet.create((theme, rt) => ({
     height: 62,
     borderRadius: theme.radius.full,
     backgroundColor: theme.colors.onCamera,
-  },
-  gate: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: theme.layout.gutter,
-    gap: theme.spacing.lg,
-  },
-  gateTitle: {
-    ...theme.textVariants.heading,
-    color: theme.colors.text,
-    textAlign: 'center',
-  },
-  gateBody: {
-    ...theme.textVariants.body,
-    color: theme.colors.muted,
-    textAlign: 'center',
-  },
-  gateActions: {
-    alignSelf: 'stretch',
-    gap: theme.spacing.lg,
-    marginTop: theme.spacing.sm,
   },
 }))
