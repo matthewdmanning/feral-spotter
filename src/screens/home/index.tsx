@@ -11,7 +11,8 @@ import { useAuth } from '@/src/lib/auth/useAuth'
 import { getAllSubmissionCaches } from '@/src/lib/cache/submissionCache'
 import { computeEntrypointDiameter } from '@/src/lib/home/entrypointDiameter'
 import { Stack, router, useIsFocused } from 'expo-router'
-import { Camera, ImagePlus } from 'lucide-react-native'
+import { CameraIcon } from 'phosphor-react-native/src/icons/Camera'
+import { ImageSquareIcon } from 'phosphor-react-native/src/icons/ImageSquare'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { StyleSheet, Text, useWindowDimensions, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
@@ -204,7 +205,7 @@ export default function HomeScreen() {
               diameter={entrypointDiameter}
               disabled={cameraDisabled}
               icon={
-                <Camera
+                <CameraIcon
                   size={theme.iconSize.xxl}
                   color={theme.colors.accentText}
                 />
@@ -227,7 +228,7 @@ export default function HomeScreen() {
               diameter={entrypointDiameter}
               disabled={libraryDisabled}
               icon={
-                <ImagePlus
+                <ImageSquareIcon
                   size={theme.iconSize.xxl}
                   color={theme.colors.accentText}
                 />

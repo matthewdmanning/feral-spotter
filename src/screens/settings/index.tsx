@@ -13,7 +13,9 @@ import {
 import { useSettingsDraft } from '@/src/hooks/useSettingsDraft'
 import { APP_VERSION } from '@/src/config/constants'
 import { router } from 'expo-router'
-import { Check, FileText, Key } from 'lucide-react-native'
+import { CheckIcon } from 'phosphor-react-native/src/icons/Check'
+import { FileTextIcon } from 'phosphor-react-native/src/icons/FileText'
+import { KeyIcon } from 'phosphor-react-native/src/icons/Key'
 import { useState } from 'react'
 import {
   Platform,
@@ -197,7 +199,7 @@ export default function SettingsScreen() {
             {passwordConfigured ? (
               <View style={styles.gap}>
                 <View style={styles.configuredRow}>
-                  <Check
+                  <CheckIcon
                     size={theme.iconSize.md}
                     color={theme.colors.accentSoftText}
                   />
@@ -208,7 +210,10 @@ export default function SettingsScreen() {
                   style={styles.linkRow}
                   accessibilityRole="button"
                 >
-                  <Key size={theme.iconSize.md} color={theme.colors.danger} />
+                  <KeyIcon
+                    size={theme.iconSize.md}
+                    color={theme.colors.danger}
+                  />
                   <Text
                     style={[styles.linkText, { color: theme.colors.danger }]}
                   >
@@ -278,7 +283,10 @@ export default function SettingsScreen() {
               style={styles.linkRow}
               accessibilityRole="button"
             >
-              <FileText size={theme.iconSize.md} color={theme.colors.accent} />
+              <FileTextIcon
+                size={theme.iconSize.md}
+                color={theme.colors.accent}
+              />
               <Text style={styles.linkText}>Data Policy</Text>
             </Pressable>
           </View>

@@ -21,11 +21,6 @@ jest.mock('@/src/hooks/useConsentStore', () => ({
     }),
 }))
 
-jest.mock('lucide-react-native', () => {
-  const { View } = require('react-native')
-  return { Check: () => <View /> }
-})
-
 describe('AnalyticsConsentScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks()

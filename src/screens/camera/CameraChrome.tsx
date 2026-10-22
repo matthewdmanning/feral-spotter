@@ -14,7 +14,10 @@
 import { AppButton } from '@/src/components/atoms/AppButton'
 import type { SubmissionPhoto } from '@/src/types'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
-import { SwitchCamera, X, Zap, ZapOff } from 'lucide-react-native'
+import { CameraRotateIcon } from 'phosphor-react-native/src/icons/CameraRotate'
+import { LightningIcon } from 'phosphor-react-native/src/icons/Lightning'
+import { LightningSlashIcon } from 'phosphor-react-native/src/icons/LightningSlash'
+import { XIcon } from 'phosphor-react-native/src/icons/X'
 import { useCallback } from 'react'
 import {
   Linking,
@@ -122,7 +125,7 @@ export function CameraTopBar({
         accessibilityRole="button"
         accessibilityLabel="Close camera"
       >
-        <X size={theme.iconSize.lg} color={theme.colors.text} />
+        <XIcon size={theme.iconSize.lg} color={theme.colors.text} />
       </Pressable>
       <View style={styles.topBarRight}>
         {photoCount > 0 && (
@@ -141,9 +144,15 @@ export function CameraTopBar({
           accessibilityLabel={`Flash ${flashMode}`}
         >
           {flashMode === 'on' ? (
-            <Zap size={theme.iconSize.lg} color={theme.colors.warning} />
+            <LightningIcon
+              size={theme.iconSize.lg}
+              color={theme.colors.warning}
+            />
           ) : (
-            <ZapOff size={theme.iconSize.lg} color={theme.colors.text} />
+            <LightningSlashIcon
+              size={theme.iconSize.lg}
+              color={theme.colors.text}
+            />
           )}
           {flashMode === 'auto' && <Text style={styles.autoA}>A</Text>}
         </Pressable>
@@ -229,7 +238,7 @@ export function CameraShutterRow({
         accessibilityRole="button"
         accessibilityLabel="Switch camera"
       >
-        <SwitchCamera size={theme.iconSize.lg} color={theme.colors.text} />
+        <CameraRotateIcon size={theme.iconSize.lg} color={theme.colors.text} />
       </Pressable>
       <Animated.View style={shutterStyle}>
         <Pressable

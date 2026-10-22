@@ -6,7 +6,7 @@
 
 import { ErrorBoundary } from '@/src/components/atoms/ErrorBoundary'
 import { Stack, router } from 'expo-router'
-import { Settings } from 'lucide-react-native'
+import { GearIcon } from 'phosphor-react-native/src/icons/Gear'
 import { Pressable } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 
@@ -33,7 +33,7 @@ export default function SubmissionLayout() {
       hitSlop={12}
       style={{ marginRight: 4 }}
     >
-      <Settings size={theme.iconSize.lg} color={theme.colors.text} />
+      <GearIcon size={theme.iconSize.lg} color={theme.colors.text} />
     </Pressable>
   )
 

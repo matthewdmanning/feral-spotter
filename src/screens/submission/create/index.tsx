@@ -21,12 +21,10 @@ import {
   type Href,
 } from 'expo-router'
 import { randomUUID } from 'expo-crypto'
-import {
-  AlertCircle,
-  CheckCircle,
-  ChevronDown,
-  ChevronUp,
-} from 'lucide-react-native'
+import { CaretDownIcon } from 'phosphor-react-native/src/icons/CaretDown'
+import { CaretUpIcon } from 'phosphor-react-native/src/icons/CaretUp'
+import { CheckCircleIcon } from 'phosphor-react-native/src/icons/CheckCircle'
+import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle'
 import { useCallback, useEffect, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
@@ -228,12 +226,12 @@ export default function CreateSubmissionScreen() {
             style={styles.statusItem}
           >
             {showLocationWarning ? (
-              <AlertCircle
+              <WarningCircleIcon
                 size={theme.iconSize.md}
                 color={theme.colors.warning}
               />
             ) : (
-              <CheckCircle
+              <CheckCircleIcon
                 size={theme.iconSize.md}
                 color={theme.colors.success}
               />
@@ -243,7 +241,7 @@ export default function CreateSubmissionScreen() {
 
           {showTimeWarning ? (
             <View style={styles.statusItem}>
-              <AlertCircle
+              <WarningCircleIcon
                 size={theme.iconSize.md}
                 color={theme.colors.warning}
               />
@@ -260,7 +258,7 @@ export default function CreateSubmissionScreen() {
             </View>
           ) : (
             <View style={styles.statusItem}>
-              <CheckCircle
+              <CheckCircleIcon
                 size={theme.iconSize.md}
                 color={theme.colors.success}
               />
@@ -287,12 +285,12 @@ export default function CreateSubmissionScreen() {
                 >
                   <Text style={styles.catRowText}>{label}</Text>
                   {isExpanded ? (
-                    <ChevronUp
+                    <CaretUpIcon
                       size={theme.iconSize.md}
                       color={theme.colors.muted}
                     />
                   ) : (
-                    <ChevronDown
+                    <CaretDownIcon
                       size={theme.iconSize.md}
                       color={theme.colors.muted}
                     />

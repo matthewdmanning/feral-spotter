@@ -16,12 +16,10 @@ import { PlatformPressable } from 'expo-router/react-navigation'
 import { PixelRatio, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useUnistyles } from 'react-native-unistyles'
-import {
-  Camera,
-  ClipboardList,
-  Settings,
-  type LucideIcon,
-} from 'lucide-react-native'
+import type { Icon as PhosphorIcon } from 'phosphor-react-native'
+import { CameraIcon } from 'phosphor-react-native/src/icons/Camera'
+import { ClipboardTextIcon } from 'phosphor-react-native/src/icons/ClipboardText'
+import { GearIcon } from 'phosphor-react-native/src/icons/Gear'
 import { selectionHaptic } from '@/src/lib/haptics'
 
 function HapticTabButton(props: BottomTabBarButtonProps) {
@@ -38,7 +36,7 @@ function HapticTabButton(props: BottomTabBarButtonProps) {
 
 // The focused tab's icon sits on a raised eyeshine pill (Material's active
 // indicator); idle icons sit flat.
-function TabIcon({ Icon, focused }: { Icon: LucideIcon; focused: boolean }) {
+function TabIcon({ Icon, focused }: { Icon: PhosphorIcon; focused: boolean }) {
   const { theme } = useUnistyles()
   return (
     <View
@@ -114,7 +112,7 @@ export default function HomeTabsLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ focused }) => (
-            <TabIcon Icon={Camera} focused={focused} />
+            <TabIcon Icon={CameraIcon} focused={focused} />
           ),
         }}
       />
@@ -123,7 +121,7 @@ export default function HomeTabsLayout() {
         options={{
           title: 'Reports',
           tabBarIcon: ({ focused }) => (
-            <TabIcon Icon={ClipboardList} focused={focused} />
+            <TabIcon Icon={ClipboardTextIcon} focused={focused} />
           ),
         }}
       />
@@ -132,7 +130,7 @@ export default function HomeTabsLayout() {
         options={{
           title: 'Settings',
           tabBarIcon: ({ focused }) => (
-            <TabIcon Icon={Settings} focused={focused} />
+            <TabIcon Icon={GearIcon} focused={focused} />
           ),
         }}
       />

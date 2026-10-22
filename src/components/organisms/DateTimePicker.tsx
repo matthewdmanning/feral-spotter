@@ -7,7 +7,8 @@ import { AppButton } from '@/src/components/atoms/AppButton'
 
 import { useDateTimePicker } from '@/src/hooks/useDateTimePicker'
 import RNDateTimePicker from '@react-native-community/datetimepicker'
-import { Calendar, Clock } from 'lucide-react-native'
+import { CalendarIcon } from 'phosphor-react-native/src/icons/Calendar'
+import { ClockIcon } from 'phosphor-react-native/src/icons/Clock'
 import { Modal, Platform, Pressable, Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { dialogShell } from './dialogShell.styles'
@@ -57,7 +58,7 @@ export function DateTimePickerButton({
     handleCancel,
   } = useDateTimePicker(value, mode, onChange)
 
-  const Icon = mode === 'time' ? Clock : Calendar
+  const Icon = mode === 'time' ? ClockIcon : CalendarIcon
 
   return (
     <View style={styles.container}>

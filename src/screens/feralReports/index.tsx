@@ -3,7 +3,7 @@ import { ReportCard } from '@/src/components/molecules/ReportCard'
 import { useFeralReports } from '@/src/hooks/useFeralReports'
 import type { CacheStatus } from '@/src/lib/cache/submissionCache'
 import { Stack } from 'expo-router'
-import { Clock } from 'lucide-react-native'
+import { ClockIcon } from 'phosphor-react-native/src/icons/Clock'
 import { RefreshControl, ScrollView, Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
@@ -51,7 +51,7 @@ export default function FeralReportsScreen() {
           {caches.length === 0 ? (
             <View style={styles.empty}>
               <View style={styles.emptyIcon}>
-                <Clock
+                <ClockIcon
                   size={theme.iconSize.xl}
                   color={theme.colors.accentSoftText}
                 />

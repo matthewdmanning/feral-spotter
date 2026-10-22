@@ -12,7 +12,7 @@ import { useBackHandler } from '@/src/hooks/useBackHandler'
 import { useTutorialStore } from '@/src/hooks/useTutorialStore'
 import { EVENTS, captureEvent } from '@/src/lib/analytics/analytics'
 import { router } from 'expo-router'
-import { Trash2 } from 'lucide-react-native'
+import { TrashIcon } from 'phosphor-react-native/src/icons/Trash'
 import { useState } from 'react'
 import { Dimensions, Pressable, Text, View } from 'react-native'
 import Carousel from 'react-native-reanimated-carousel'
@@ -107,7 +107,7 @@ export default function AnnotateScreen() {
             accessibilityRole="button"
             accessibilityLabel="Remove photo"
           >
-            <Trash2 size={theme.iconSize.md} color={theme.colors.muted} />
+            <TrashIcon size={theme.iconSize.md} color={theme.colors.muted} />
           </Pressable>
         </View>
         <View style={styles.dotsRow}>

@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react'
 import { View, Text, Pressable, ScrollView } from 'react-native'
 import { router } from 'expo-router'
 import { useUnistyles } from 'react-native-unistyles'
-import { Check } from 'lucide-react-native'
+import { CheckIcon } from 'phosphor-react-native/src/icons/Check'
 import { useConsentStore } from '@/src/hooks/useConsentStore'
 import consentCopy from '@/src/content/consentDisclosure.json'
 import { styles } from './index.styles'
@@ -39,7 +39,10 @@ export default function AnalyticsConsentScreen() {
             ]}
           >
             {analyticsEnabled && (
-              <Check size={theme.iconSize.sm} color={theme.colors.accentText} />
+              <CheckIcon
+                size={theme.iconSize.sm}
+                color={theme.colors.accentText}
+              />
             )}
           </View>
           <Text style={styles.analyticsItemText}>

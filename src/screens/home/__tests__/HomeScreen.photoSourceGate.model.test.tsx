@@ -50,11 +50,6 @@ jest.mock('@/src/hooks/usePhotoStore', () => ({
   usePhotoStore: (sel: (s: { source: PhotoSource }) => unknown) =>
     sel({ source: mockSource }),
 }))
-jest.mock('lucide-react-native', () => ({
-  Camera: () => null,
-  ImagePlus: () => null,
-}))
-
 let mockSource: PhotoSource = null
 
 const gateMachine = createMachine({
