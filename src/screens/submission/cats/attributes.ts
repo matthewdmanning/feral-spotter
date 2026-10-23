@@ -11,13 +11,14 @@
  * placeholder — but the doc's "no distinction from untouched" claim only
  * holds at this persisted layer. The frontend's untouched (`undefined`) vs.
  * deliberately-chosen-Unknown distinction (#205/#152) only has a selectable
- * button for 4 of these 8 fields (Pattern, Sex, Ear Tipped, Owned) — for the
- * other 4 (Age, Hair Length, Color, Health) there's no button path to choose
+ * button for 3 of these 8 fields (Sex, Ear Tipped, Owned) — for the other 5
+ * (Age, Hair Length, Pattern, Color, Health) there's no button path to choose
  * Unknown, so a persisted default can only mean "left untouched," and the
  * two layers agree by construction.
  */
 import type { CatFormValues } from '@/src/hooks/useCatForm'
 import type { ObservedCat } from '@/src/hooks/useSubmissionStore'
+import type { CatColor, CatPattern } from '@/src/types'
 
 export interface AttributeOption<T extends string> {
   value: T
@@ -34,6 +35,64 @@ interface AttributeConfig<
   default: NonNullable<CatFormValues[K]>
   options: AttributeOption<NonNullable<CatFormValues[K]>>[]
 }
+
+/**
+ * Coat and color is one two-level choice: a group (stored as `pattern`), then
+ * a coat inside it (stored as `color`). The Pattern and Color attributes
+ * below derive their options from this table, so it is the only list to edit.
+ */
+export const COAT_GROUPS: {
+  value: Exclude<CatPattern, 'unknown'>
+  label: string
+  colors: AttributeOption<Exclude<CatColor, 'unknown'>>[]
+}[] = [
+  {
+    value: 'tabby',
+    label: 'Tabby',
+    colors: [
+      { value: 'mackerel', label: 'Striped Tabby' },
+      { value: 'classic', label: 'Swirled Tabby' },
+      { value: 'spotted', label: 'Spotted Tabby' },
+      { value: 'orange_tabby', label: 'Orange Tabby' },
+      { value: 'torbie', label: 'Tabby with Orange Patches' },
+    ],
+  },
+  {
+    value: 'solid',
+    label: 'Solid',
+    colors: [
+      { value: 'black', label: 'Black' },
+      { value: 'blue', label: 'Blue / Gray' },
+      { value: 'white', label: 'White' },
+    ],
+  },
+  {
+    value: 'bicolor',
+    label: 'Two-Color',
+    colors: [
+      { value: 'low_white', label: 'Mitted/Locket' },
+      { value: 'medium_white', label: 'Tuxedo' },
+      { value: 'high_white', label: 'Harlequin/Van' },
+    ],
+  },
+  {
+    value: 'calico_tortie',
+    label: 'Calico & Tortie',
+    colors: [
+      { value: 'tortoiseshell', label: 'Tortoiseshell' },
+      { value: 'calico', label: 'Calico' },
+      { value: 'dilute_tortie_calico', label: 'Dilute Tortie/Calico' },
+    ],
+  },
+  {
+    value: 'colorpoint',
+    label: 'Siamese-Style',
+    colors: [
+      { value: 'seal_point', label: 'Seal Point' },
+      { value: 'lynx_point', label: 'Lynx Point' },
+    ],
+  },
+]
 
 // Identity function used only for per-entry literal-type inference — lets
 // each entry's `options`/`default` narrow to that field's own type instead
@@ -84,14 +143,7 @@ export const CAT_ATTRIBUTES = [
     backendKey: 'pattern',
     label: 'Pattern',
     default: 'unknown',
-    options: [
-      { value: 'solid', label: 'Solid' },
-      { value: 'tabby', label: 'Tabby' },
-      { value: 'calico', label: 'Calico' },
-      { value: 'bicolor', label: 'Bicolor' },
-      { value: 'tortoiseshell', label: 'Tortoiseshell' },
-      { value: 'unknown', label: 'Unknown' },
-    ],
+    options: COAT_GROUPS.map(({ value, label }) => ({ value, label })),
   }),
   attribute({
     key: 'hairLength',
@@ -108,15 +160,7 @@ export const CAT_ATTRIBUTES = [
     backendKey: 'color',
     label: 'Color',
     default: 'unknown',
-    options: [
-      { value: 'black', label: 'Black' },
-      { value: 'white', label: 'White' },
-      { value: 'orange', label: 'Orange' },
-      { value: 'gray', label: 'Gray' },
-      { value: 'brown', label: 'Brown' },
-      { value: 'cream', label: 'Cream' },
-      { value: 'mixed', label: 'Mixed' },
-    ],
+    options: COAT_GROUPS.flatMap((g) => g.colors),
   }),
   attribute({
     key: 'sex',
@@ -148,7 +192,7 @@ type CatAttributesTuple = typeof CAT_ATTRIBUTES
  * Every attribute of a saved cat as label and display value, in form order.
  * A default ("Unknown"/"Unsure") is a real value (docs/agents/domain.md), so
  * it is listed like any other: some defaults are not selectable options (Age,
- * Hair Length, Color and Health have no Unknown button), so a value with no
+ * Hair Length, Pattern, Color and Health have no Unknown button), so a value with no
  * matching option is shown by its own name, capitalized. A field the saved
  * cat lacks (a draft from before the field existed) reads as its default.
  */
@@ -185,18 +229,17 @@ const labelOf = (key: keyof ObservedCat, value: string): string =>
 /**
  * The preference order of the one-line summary on Submission Details, as
  * phrases that read alone: "Yes" means nothing in a title, "ear tipped" does.
- * Pattern and Color share one slot ("cream tabby"), so a cat with both
- * still has room for two more fields. A field that is Unknown or Unsure gives
+ * Pattern and Color share one slot ("striped tabby"), so a cat with
+ * both still has room for two more fields. A field that is Unknown or Unsure gives
  * no phrase and the next field takes its place.
  */
 const SUMMARY_PHRASES: ((cat: ObservedCat) => string | null)[] = [
   ({ age }) => (isKnown(age) ? labelOf('age', age) : null),
+  // The coat names its own group ("Striped Tabby"), so a known coat
+  // stands alone and the group is the fallback.
   ({ color, pattern }) => {
-    const parts = [
-      isKnown(color) ? labelOf('color', color) : null,
-      isKnown(pattern) ? labelOf('pattern', pattern) : null,
-    ].filter((p) => p !== null)
-    return parts.length ? parts.join(' ') : null
+    if (isKnown(color)) return labelOf('color', color)
+    return isKnown(pattern) ? labelOf('pattern', pattern) : null
   },
   ({ hair_length }) =>
     isKnown(hair_length) ? `${labelOf('hair_length', hair_length)} hair` : null,

@@ -1,15 +1,15 @@
 import { View } from 'react-native'
+import { HierarchicalSegmentedControl } from '@/src/components/atoms/HierarchicalSegmentedControl'
 import { SegmentedControl } from '@/src/components/atoms/SegmentedControl'
 import type { CatForm as CatFormValues } from '@/src/hooks/useCatForm'
 import {
   AGE_OPTIONS,
   EAR_TIPPED_OPTIONS,
   OWNED_OPTIONS,
-  PATTERN_OPTIONS,
   HAIR_LENGTH_OPTIONS,
   SEX_OPTIONS,
   HEALTH_OPTIONS,
-  colorOptionsForPattern,
+  COAT_GROUPS,
 } from '@/src/screens/submission/cats/constants'
 import { styles } from './CatForm.styles'
 
@@ -49,17 +49,15 @@ export function CatForm({ form }: CatFormProps) {
             value={form.hairLength}
             onChange={form.setHairLength}
           />
-          <SegmentedControl
-            label="Pattern"
-            options={PATTERN_OPTIONS}
-            value={form.pattern}
-            onChange={form.setPattern}
-          />
-          <SegmentedControl
-            label="Color"
-            options={colorOptionsForPattern(form.pattern)}
-            value={form.color}
-            onChange={form.setColor}
+          <HierarchicalSegmentedControl
+            label="Coat and color"
+            groups={COAT_GROUPS.map((g) => ({ ...g, children: g.colors }))}
+            group={form.pattern === 'unknown' ? undefined : form.pattern}
+            value={form.color === 'unknown' ? undefined : form.color}
+            onChange={(pattern, color) => {
+              form.setPattern(pattern)
+              form.setColor(color)
+            }}
           />
         </View>
 

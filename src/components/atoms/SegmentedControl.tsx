@@ -15,6 +15,54 @@ interface SegmentedControlProps<T extends string | number> {
   accessibilityLabel?: string
 }
 
+interface SegmentedRowProps<T extends string | number> {
+  options: Option<T>[]
+  value: T | undefined
+  onChange: (value: T | undefined) => void
+  accessibilityLabel: string
+  // Long labels ("Bicolor & Piebald") need a second line to stay readable.
+  numberOfLines?: number
+}
+
+/** The track of options alone, for controls that stack more than one. */
+export function SegmentedRow<T extends string | number>({
+  options,
+  value,
+  onChange,
+  accessibilityLabel,
+  numberOfLines = 1,
+}: SegmentedRowProps<T>) {
+  return (
+    <View style={styles.row} accessibilityLabel={accessibilityLabel}>
+      {options.map((opt) => {
+        const selected = opt.value === value
+        return (
+          <Pressable
+            key={String(opt.value)}
+            onPressIn={selectionHaptic}
+            onPress={() => onChange(selected ? undefined : opt.value)}
+            style={({ pressed }) => [
+              styles.option,
+              selected ? styles.optionSelected : styles.optionIdle,
+              pressed && styles.optionPressed,
+            ]}
+            accessibilityRole="button"
+            accessibilityState={{ selected }}
+            accessibilityLabel={opt.label}
+          >
+            <Text
+              style={selected ? styles.textSelected : styles.textIdle}
+              numberOfLines={numberOfLines}
+            >
+              {opt.label}
+            </Text>
+          </Pressable>
+        )
+      })}
+    </View>
+  )
+}
+
 export function SegmentedControl<T extends string | number>({
   label,
   options,
@@ -25,33 +73,12 @@ export function SegmentedControl<T extends string | number>({
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
-      <View style={styles.row} accessibilityLabel={accessibilityLabel ?? label}>
-        {options.map((opt, i) => {
-          const selected = opt.value === value
-          return (
-            <Pressable
-              key={String(opt.value)}
-              onPressIn={selectionHaptic}
-              onPress={() => onChange(selected ? undefined : opt.value)}
-              style={({ pressed }) => [
-                styles.option,
-                selected ? styles.optionSelected : styles.optionIdle,
-                pressed && styles.optionPressed,
-              ]}
-              accessibilityRole="button"
-              accessibilityState={{ selected }}
-              accessibilityLabel={opt.label}
-            >
-              <Text
-                style={selected ? styles.textSelected : styles.textIdle}
-                numberOfLines={1}
-              >
-                {opt.label}
-              </Text>
-            </Pressable>
-          )
-        })}
-      </View>
+      <SegmentedRow
+        options={options}
+        value={value}
+        onChange={onChange}
+        accessibilityLabel={accessibilityLabel ?? label}
+      />
     </View>
   )
 }

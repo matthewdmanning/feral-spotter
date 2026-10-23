@@ -78,7 +78,7 @@ const DEFAULT_CATS: ObservedCat[] = [
     owned_domesticated: 'no',
     pattern: 'tabby',
     hair_length: 'short',
-    color: 'orange',
+    color: 'orange_tabby',
     sex: 'female',
     health_label: 'good',
     photo_local_ids: [],
@@ -147,10 +147,10 @@ describe('Cat List actions', () => {
 
   it('opens one cat at a time and closes it on a second press', async () => {
     await userEvent.press(screen.getByText('Adult · orange tabby · short hair'))
-    expect(screen.getByText('Orange')).toBeTruthy()
+    expect(screen.getByText('Orange Tabby')).toBeTruthy()
 
     await userEvent.press(screen.getByText('Kitten · solid · long hair'))
-    expect(screen.queryByText('Orange')).toBeNull()
+    expect(screen.queryByText('Orange Tabby')).toBeNull()
 
     await userEvent.press(screen.getByText('Kitten · solid · long hair'))
     expect(screen.queryByText('Edit')).toBeNull()

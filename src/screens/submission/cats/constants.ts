@@ -38,11 +38,4 @@ export const COLOR_OPTIONS = optionsFor<CatColor>('color')
 export const SEX_OPTIONS = optionsFor<CatSex>('sex')
 export const HEALTH_OPTIONS = optionsFor<HealthLabel>('healthLabel')
 
-// Pattern-specific color constraints aren't defined yet (pending a reference
-// from Matthew) — pass-through today so CatForm already reads through this
-// seam; only the mapping table changes once that reference lands.
-export function colorOptionsForPattern(
-  _pattern: CatPattern | undefined,
-): { value: CatColor; label: string }[] {
-  return COLOR_OPTIONS
-}
+export { COAT_GROUPS } from './attributes'

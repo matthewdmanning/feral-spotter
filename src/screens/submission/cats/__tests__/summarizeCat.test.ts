@@ -29,7 +29,7 @@ describe('summarizeCat', () => {
         cat({
           age: 'adult',
           pattern: 'tabby',
-          color: 'orange',
+          color: 'orange_tabby',
           hair_length: 'short',
           sex: 'female',
           health_label: 'good',
@@ -51,12 +51,12 @@ describe('summarizeCat', () => {
     ).toBe('Senior · male · ear tipped')
   })
 
-  it('counts Pattern and Color as one slot, and shows whichever is known', () => {
-    expect(summarizeCat(cat({ color: 'gray', hair_length: 'long' }))).toBe(
-      'Gray · long hair',
+  it('counts Pattern and Color as one slot, and the coat outranks its group', () => {
+    expect(summarizeCat(cat({ color: 'blue', hair_length: 'long' }))).toBe(
+      'Blue / gray · long hair',
     )
-    expect(summarizeCat(cat({ pattern: 'calico', sex: 'female' }))).toBe(
-      'Calico · female',
+    expect(summarizeCat(cat({ pattern: 'calico_tortie', sex: 'female' }))).toBe(
+      'Calico & tortie · female',
     )
   })
 
