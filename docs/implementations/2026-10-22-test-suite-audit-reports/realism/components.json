@@ -1,0 +1,58 @@
+{
+  "agent": "realism/components",
+  "status": "completed",
+  "confidence": 0.91,
+  "findings": [
+    {
+      "id": "components.segmented_control_proxy_style_mock",
+      "files": [
+        "src/components/atoms/__tests__/SegmentedControl.selectDeselect.model.test.tsx"
+      ],
+      "test": "SegmentedControl select/deselect journeys",
+      "classification": "partial_guard",
+      "confidence": 0.91,
+      "poor_quality_probability": 0.7,
+      "evidence": "Static: the test replaces SegmentedControl.styles with a Proxy that returns an empty object for every key. The actual component imports and composes those exported styles, so this mock does not follow the real style module contract and suppresses style resolution errors/regressions. Its asserted toggle state is exercised through the real Pressable and React state, so the interaction path itself remains representative; the artificial style boundary makes this a partial guard, not an impossible workflow.",
+      "action": "improve",
+      "changes": "None; read-only audit.",
+      "verification": [],
+      "mutation": {
+        "id": null,
+        "outcome": "not_run",
+        "log_path": null
+      },
+      "remaining_risk": "Test may need the real configured Unistyles styles, or a narrow mock preserving the styles object keys, to comply with repository testing guidance.",
+      "flaw_category": "mock_contract_mismatch",
+      "flaw_details": "A Proxy accepts arbitrary style token lookups and returns empty objects, unlike the real SegmentedControl.styles export; this masks failures in style resolution while testing interaction."
+    }
+  ],
+  "summary": "Reviewed all 10 component/config test files in scope plus Jest setup and relevant source contracts. One probable test-guidance non-compliance: SegmentedControl interaction test substitutes an arbitrary style Proxy; its interaction assertions otherwise exercise a real controlled component. Other reviewed fixtures represent reachable states and plausible event flows; no impossible state or invalid geometry found. Static review only; no tests executed.",
+  "remaining_work": [],
+  "reviewed_files": [
+    "src/components/atoms/__tests__/AppButton.test.tsx",
+    "src/components/atoms/__tests__/ErrorBoundary.test.tsx",
+    "src/components/atoms/__tests__/SegmentedControl.selectDeselect.model.test.tsx",
+    "__tests__/components/atoms/StatusIcon.test.tsx",
+    "src/components/organisms/__tests__/AlertHost.test.tsx",
+    "src/components/organisms/__tests__/InsetCropBubble.collapseFlow.model.test.tsx",
+    "src/components/organisms/__tests__/InsetCropBubble.diameterDerivation.test.tsx",
+    "src/components/organisms/__tests__/InsetCropBubble.dock.test.tsx",
+    "src/components/organisms/__tests__/InsetCropBubble.drag.test.tsx",
+    "src/config/__tests__/themeMode.test.ts",
+    "jest.setup.js",
+    "jest.config.js",
+    "src/components/organisms/InsetCropBubble.tsx",
+    "src/components/organisms/InsetCropBubble.styles.ts",
+    "src/components/organisms/AlertHost.tsx",
+    "src/components/atoms/SegmentedControl.tsx",
+    "src/components/atoms/SegmentedControl.styles.ts",
+    "src/components/atoms/AppButton.tsx",
+    "src/components/atoms/ErrorBoundary.tsx",
+    "src/components/atoms/StatusIcon.tsx",
+    "src/config/unistyles.ts",
+    "src/hooks/useConsentStore.ts",
+    "src/hooks/useUIStore.ts",
+    "docs/agents/testing.md",
+    "docs/agents/domain.md"
+  ]
+}

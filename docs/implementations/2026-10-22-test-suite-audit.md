@@ -81,3 +81,30 @@ provider prompts, and device integration still require device checks.
 
 Earlier verification sections record historical snapshots; the previous statements
 that Functions/rules were not run no longer describe this final remediation.
+
+## 2026-10-23 — regression realism review
+
+**Purpose:** check whether the tests and demonstrated regressions use attainable
+application states and representative library contracts.
+
+**Change:** five lower-usage agents reviewed all 81 current test files using the
+same reporting schema with nullable `flaw_category` and `flaw_details`. Snapshots,
+incremental reports, the complete inventory, and primary decisions are committed
+under [the realism reports](2026-10-22-test-suite-audit-reports/realism/README.md).
+The [primary review](2026-10-22-test-suite-audit-reports/realism/review.json) records
+confidence and the following dispositions:
+
+- Accepted two low-impact fixture issues: the upload serialization case casts an
+  incorrect wire shape, and the draft teardown fixture uses out-of-range box
+  coordinates. Both still assert useful behavior.
+- Accepted a narrow mock-fidelity issue: the SegmentedControl test's permissive
+  style proxy masks style contract failures while selection transitions stay real.
+- Left the consent scenario uncertain: it asserts transmission without overall
+  consent, bypassing ordinary route gating. Its intended transmission contract
+  needs clarification before treating it as an unreachable or poor test.
+- Rejected a screen finding after independently checking the actual render
+  conjunction; the reviewer corrected its report.
+
+This step is a static review. It does not change tests or application behavior,
+and it does not establish that every possible regression is realistic. No new
+runtime tests were run for this review; the previous validation remains applicable.
