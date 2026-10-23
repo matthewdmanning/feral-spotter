@@ -107,6 +107,82 @@ user who declined analytics.
    costs of React Native and Expo. A Baseline Profile and the `speed-profile`
    state help only the Java/Kotlin side.
 
+## Screen transitions (returning-user flow)
+
+Method: for each step, the target was found in a screen dump _before_ the
+trace started. Then a 6 s trace recorded one fixed-coordinate tap. One run
+per step. The draft held **36 photos** (left over from the profiling runs),
+which makes the annotate numbers a heavy case.
+
+| Step                          | Response | Settle  | Janky frames (worst) | JS running  |
+| ----------------------------- | -------- | ------- | -------------------- | ----------- |
+| Tab: Reports                  | 57 ms    | 870 ms  | 1 (26 ms)            | 86 ms       |
+| Tab: Settings                 | 30 ms    | 893 ms  | 2 (35 ms)            | 91 ms       |
+| Tab: Home                     | 81 ms    | 919 ms  | 1 (17 ms)            | 59 ms       |
+| Home → camera                 | 34 ms    | 1285 ms | 0                    | 143 ms      |
+| Capture                       | 54 ms    | 453 ms  | 1 (19 ms)            | 84 ms       |
+| Camera Done → annotate        | 136 ms   | 2358 ms | **13 (184 ms)**      | **1190 ms** |
+| Annotate: Confirm             | 91 ms    | 2230 ms | **63 (141 ms)**      | **1383 ms** |
+| Annotate: Not in this photo   | 57 ms    | 424 ms  | **8 (134 ms)**       | 326 ms      |
+| Annotate: Previous            | 65 ms    | 387 ms  | **12 (129 ms)**      | 405 ms      |
+| Done With This Cat → Cat Form | 48 ms    | 2222 ms | **20 (159 ms)**      | 208 ms      |
+| Cat Form: chip tap            | 32–58 ms | 170 ms  | 0                    | 21–33 ms    |
+| Cat Form: scroll (3 flings)   | 37 ms    | —       | 0                    | 40 ms       |
+| Cat Form: Save → dialog       | 48 ms    | 223 ms  | 1 (41 ms)            | 60 ms       |
+| Save anyway → Submission      | 122 ms   | 551 ms  | 1 (48 ms)            | 82 ms       |
+| Submission: Edit cat          | 24 ms    | 1983 ms | 0                    | 158 ms      |
+| Cat Form back                 | 28 ms    | 526 ms  | 0                    | 74 ms       |
+| Take More Photos → camera     | 42 ms    | 583 ms  | 0                    | 144 ms      |
+| Close camera                  | 49 ms    | 514 ms  | 0                    | 41 ms       |
+
+Not covered: the location picker. It opens only from the low-accuracy
+warning icon, and this draft had a good fix. `Add a Cat` caused no screen
+change during the 6 s trace; the cause is not checked.
+
+### Finding 1: the annotate carousel renders every photo
+
+- `src/screens/submission/annotate/index.tsx:118` renders
+  `react-native-reanimated-carousel` (4.0.3) with no `windowSize`.
+- With no `windowSize`, the library renders every item
+  (`useVisibleRanges.tsx:23` uses `total`; `ItemRenderer.tsx:76-80` skips
+  only items outside the range).
+- Effect with 36 photos: each entry to annotate and each `Confirm` runs 72
+  Glide `decodeBitmap` calls (avg 43 ms, total ~3.1 s on the decode thread),
+  plus a 878×1560 texture upload per photo. The JS thread runs 1.2–1.4 s.
+  Up to 63 janky frames, worst 184 ms.
+- Each Next/Previous step re-renders all items too: 8–12 janky frames, worst
+  about 130 ms. `handleConfirmBox` and `handleNotInPhoto` change on every
+  index change, and `renderItem` is an inline closure, so every mounted item
+  re-renders.
+- **Fix that keeps the behavior:** pass `windowSize={3}` (current photo plus
+  one on each side). The carousel already has `enabled={false}` and moves
+  only by `scrollTo` to the next or previous index, so the neighbors stay
+  mounted for the scroll animation. Cost grows with 3 photos instead of N.
+  Check with a test drive on a draft with many photos.
+
+### Finding 2: a frame loop runs on every screen, even when idle
+
+- Every trace shows the main thread running about 80 ms per second with no
+  input. RenderThread reports `NothingToDraw`.
+- `simpleperf` on the idle app (4 s): 70% of the app's samples are
+  Choreographer frames. Worklets `AnimationFrameQueue.executeQueue` (24.6%)
+  calls a worklet each frame, and Fabric `DispatchUIFrameCallback` (31.9%)
+  runs each frame.
+- Not the app's `BottomButtonColumn` (finite `withTiming`). The only
+  `useAnimatedReaction` is in `useBoundingBoxFrame.ts:184` (annotate only),
+  but the loop also runs on the home screen right after launch. The source
+  is not identified. Next step: profile an idle screen with one library at
+  a time disabled, or capture the Hermes UI-runtime profile (issue #410).
+- Effect: battery and CPU while the app is open. It competes with the JS
+  and render work in every transition.
+
+### Finding 3: smaller items
+
+- Home → camera: `createCaptureSession` took 359 ms on the first open after
+  launch, 120 ms on a later open. This is the camera driver.
+- Edit cat: `Bitmap#prepareToDraw 1181x2100` on RenderThread (14 ms) for the
+  inset crop bubble. A smaller decode size would cut it.
+
 ## Gaps in this data
 
 - **No JS function names.** The release Hermes VM is stripped. A Hermes
@@ -122,4 +198,5 @@ user who declined analytics.
 - `runs/iter_1..10.perfetto-trace`: traces
 - `aggregate.py`, `breakdown.py`, `timeline.py`: trace queries
 - `bundle_by_package.py`, `export/`: bundle attribution
+- `screens/*.perfetto-trace`, `screens.py`, `trace_tap.sh`: screen transitions
 - On the phone: `/data/local/tmp/startup.perf.data`, `/data/local/tmp/children.txt`
