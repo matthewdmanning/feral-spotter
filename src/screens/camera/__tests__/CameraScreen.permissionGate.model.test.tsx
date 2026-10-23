@@ -46,13 +46,6 @@ jest.mock('expo-media-library', () => ({
   requestPermissionsAsync: jest.fn(async () => ({ status: 'granted' })),
   PermissionStatus: { GRANTED: 'granted', DENIED: 'denied' },
 }))
-jest.mock('lucide-react-native', () => ({
-  SwitchCamera: () => null,
-  X: () => null,
-  Zap: () => null,
-  ZapOff: () => null,
-}))
-
 jest.mock('@/src/hooks/useCameraCapture', () => ({
   useCameraCapture: jest.fn(),
 }))

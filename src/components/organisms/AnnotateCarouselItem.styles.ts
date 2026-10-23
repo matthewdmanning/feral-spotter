@@ -36,19 +36,9 @@ export const styles = StyleSheet.create((theme) => ({
   },
   handleBarVertical: { width: 4, height: 20 },
   handleBarHorizontal: { width: 20, height: 4 },
-  confirmBtn: {
+  confirmWrap: {
     position: 'absolute',
     bottom: theme.spacing.xxl,
     alignSelf: 'center',
-    minHeight: theme.controlHeight.touchTarget,
-    justifyContent: 'center',
-    paddingHorizontal: theme.spacing.xxl,
-    borderRadius: theme.radius.full,
-    backgroundColor: theme.colors.accent,
-    ...theme.elevation.raised,
-  },
-  confirmText: {
-    ...theme.textVariants.labelSmall,
-    color: theme.colors.accentText,
   },
 }))

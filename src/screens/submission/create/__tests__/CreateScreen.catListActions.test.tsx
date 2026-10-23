@@ -68,14 +68,6 @@ jest.mock('../index.styles', () => ({
   styles: new Proxy({}, { get: () => ({}) }),
 }))
 
-jest.mock('lucide-react-native', () => ({
-  AlertCircle: () => null,
-  CheckCircle: () => null,
-  ChevronDown: () => null,
-  ChevronUp: () => null,
-  Trash2: () => null,
-}))
-
 // cat-2 is deliberately sparse: every field it lacks must still be listed, as
 // its default, when the cat is opened.
 const DEFAULT_CATS: ObservedCat[] = [

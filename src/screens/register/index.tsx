@@ -1,16 +1,15 @@
 import { showAlert } from '@/src/hooks/useUIStore'
 import { useCallback, useState } from 'react'
-import { View, Text, TextInput } from 'react-native'
+import { View, Text } from 'react-native'
 import { router } from 'expo-router'
-import { useUnistyles } from 'react-native-unistyles'
+import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { AppButton } from '@/src/components/atoms/AppButton'
+import { TextField } from '@/src/components/atoms/TextField'
 import { useAuth } from '@/src/lib/auth/useAuth'
+import { validateRegistration } from '@/src/utils/validation'
 import { styles } from './index.styles'
 
-const MIN_PASSWORD_LENGTH = 6
-
 export default function RegisterScreen() {
-  const { theme } = useUnistyles()
   const { registerWithEmail } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -18,22 +17,9 @@ export default function RegisterScreen() {
   const [busy, setBusy] = useState(false)
 
   const handleRegister = useCallback(async () => {
-    if (!email.trim()) {
-      showAlert('Missing email', 'Enter an email address.')
-      return
-    }
-    if (password.length < MIN_PASSWORD_LENGTH) {
-      showAlert(
-        'Weak password',
-        `Use at least ${MIN_PASSWORD_LENGTH} characters.`,
-      )
-      return
-    }
-    if (password !== confirm) {
-      showAlert(
-        'Passwords do not match',
-        'Re-enter the same password in both fields.',
-      )
+    const problem = validateRegistration(email, password, confirm)
+    if (problem) {
+      showAlert(problem.title, problem.message)
       return
     }
     setBusy(true)
@@ -52,42 +38,36 @@ export default function RegisterScreen() {
 
   return (
     <View style={styles.root}>
+      <AmbientBackground />
       <View style={styles.content}>
         <Text style={styles.title}>Create your account</Text>
         <Text style={styles.subtitle}>Sign up with an email and password.</Text>
 
-        <TextInput
-          style={styles.input}
-          value={email}
-          onChangeText={setEmail}
-          placeholder="Email"
-          placeholderTextColor={theme.colors.muted}
-          autoCapitalize="none"
-          autoComplete="email"
-          keyboardType="email-address"
-          inputMode="email"
-          accessibilityLabel="Email"
-        />
-        <TextInput
-          style={styles.input}
-          value={password}
-          onChangeText={setPassword}
-          placeholder="Password"
-          placeholderTextColor={theme.colors.muted}
-          autoCapitalize="none"
-          secureTextEntry
-          accessibilityLabel="Password"
-        />
-        <TextInput
-          style={styles.input}
-          value={confirm}
-          onChangeText={setConfirm}
-          placeholder="Confirm password"
-          placeholderTextColor={theme.colors.muted}
-          autoCapitalize="none"
-          secureTextEntry
-          accessibilityLabel="Confirm password"
-        />
+        <View style={styles.fields}>
+          <TextField
+            value={email}
+            onChangeText={setEmail}
+            placeholder="Email"
+            autoComplete="email"
+            keyboardType="email-address"
+            inputMode="email"
+            accessibilityLabel="Email"
+          />
+          <TextField
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Password"
+            secureTextEntry
+            accessibilityLabel="Password"
+          />
+          <TextField
+            value={confirm}
+            onChangeText={setConfirm}
+            placeholder="Confirm password"
+            secureTextEntry
+            accessibilityLabel="Confirm password"
+          />
+        </View>
 
         <View style={styles.button}>
           <AppButton

@@ -12,7 +12,7 @@ import type { Coordinates } from 'expo-maps'
 import { GoogleMaps } from 'expo-maps'
 import * as Location from 'expo-location'
 import { router } from 'expo-router'
-import { MapPin } from 'lucide-react-native'
+import { MapPinIcon } from 'phosphor-react-native/src/icons/MapPin'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
@@ -101,10 +101,10 @@ export default function LocationPickerScreen() {
       {/* Fixed centre pin — a non-interactive overlay, not a map marker. The
           tip sits at the map centre (translated up by its own height). */}
       <View style={styles.pinOverlay} pointerEvents="none">
-        <MapPin
+        <MapPinIcon
           size={theme.iconSize.xxl}
           color={theme.colors.accent}
-          fill={theme.colors.accent}
+          weight="fill"
           style={styles.pin}
         />
       </View>

@@ -40,11 +40,6 @@ jest.mock('@/src/components/molecules/BottomButtonColumn', () => ({
 jest.mock('@/src/hooks/useLibraryPhotoPicker', () => ({
   useLibraryPhotoPicker: () => ({ pickFromLibrary: jest.fn() }),
 }))
-jest.mock('lucide-react-native', () => ({
-  Camera: () => null,
-  ImagePlus: () => null,
-}))
-
 const photo = {
   local_id: 'photo-1',
   uri: 'file:///picked-photo.jpg',

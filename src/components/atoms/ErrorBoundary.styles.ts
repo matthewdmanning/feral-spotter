@@ -4,7 +4,7 @@ export const styles = StyleSheet.create((theme) => ({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
-    padding: theme.spacing.xxl,
+    padding: theme.layout.gutter,
     alignItems: 'center',
     justifyContent: 'center',
     gap: theme.spacing.xl,
@@ -22,12 +22,11 @@ export const styles = StyleSheet.create((theme) => ({
   },
   card: {
     borderRadius: theme.radius.xl,
-    backgroundColor: theme.colors.surface,
-    ...theme.elevation.card,
+    ...theme.glass.card,
     maxWidth: 360,
     width: '100%',
   },
-  cardInner: { padding: theme.spacing.lg, gap: theme.spacing.sm },
+  cardInner: { padding: theme.layout.cardPadding, gap: theme.spacing.sm },
   errorLabel: { ...theme.textVariants.labelSmall, color: theme.colors.text },
   errorBox: {
     backgroundColor: theme.colors.surfaceAlt,

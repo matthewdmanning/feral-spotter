@@ -4,11 +4,6 @@ import { ErrorBoundary } from '../ErrorBoundary'
 import { registerCaptureException } from '@/src/lib/analytics/analytics'
 import { useConsentStore } from '@/src/hooks/useConsentStore'
 
-jest.mock('lucide-react-native', () => {
-  const { View } = jest.requireActual('react-native')
-  return { AlertCircle: () => <View /> }
-})
-
 function Boom(): null {
   throw new Error('kaboom')
 }

@@ -43,13 +43,6 @@ jest.mock('../index.styles', () => ({
   styles: new Proxy({}, { get: () => ({}) }),
 }))
 
-jest.mock('lucide-react-native', () => ({
-  AlertCircle: () => null,
-  CheckCircle: () => null,
-  ChevronDown: () => null,
-  ChevronUp: () => null,
-}))
-
 describe('Create screen — location-commit invariant', () => {
   beforeEach(() => {
     jest.clearAllMocks()

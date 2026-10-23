@@ -1,5 +1,14 @@
 import { StyleSheet } from 'react-native-unistyles'
 
+// Each variant's label color, as a theme color key. The label style and the
+// loading spinner both read it, so a spinner always matches its label.
+export const LABEL_COLOR_KEY = {
+  primary: 'accentText',
+  secondary: 'onSecondary',
+  ghost: 'muted',
+  danger: 'onDanger',
+} as const
+
 export const styles = StyleSheet.create((theme) => ({
   base: {
     minHeight: theme.controlHeight.control,
@@ -49,7 +58,6 @@ export const styles = StyleSheet.create((theme) => ({
           gap: theme.spacing.sm,
           borderRadius: theme.radius.full,
           paddingHorizontal: theme.spacing.lg,
-          ...theme.elevation.raised,
         },
         compact: { paddingHorizontal: theme.spacing.md },
       },
@@ -60,10 +68,10 @@ export const styles = StyleSheet.create((theme) => ({
     textAlign: 'center',
     variants: {
       variant: {
-        primary: { color: theme.colors.accentText },
-        secondary: { color: theme.colors.onSecondary },
-        ghost: { color: theme.colors.muted },
-        danger: { color: theme.colors.onDanger },
+        primary: { color: theme.colors[LABEL_COLOR_KEY.primary] },
+        secondary: { color: theme.colors[LABEL_COLOR_KEY.secondary] },
+        ghost: { color: theme.colors[LABEL_COLOR_KEY.ghost] },
+        danger: { color: theme.colors[LABEL_COLOR_KEY.danger] },
       },
       size: {
         default: {},

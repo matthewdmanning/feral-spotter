@@ -3,6 +3,7 @@ import {
   type CaptureMode,
 } from '@/src/hooks/useCameraCapture'
 import { SegmentedControl } from '@/src/components/atoms/SegmentedControl'
+import { GateScreen } from '@/src/components/molecules/GateScreen'
 import { Stack } from 'expo-router'
 import { useMemo } from 'react'
 import { StyleSheet as RNStyleSheet, Text, View } from 'react-native'
@@ -10,7 +11,6 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { Camera, useCameraPermission } from 'react-native-vision-camera'
 import {
   CameraFlashOverlay,
-  CameraGate,
   CameraPermissionGate,
   CameraShutterRow,
   CameraThumbnailStrip,
@@ -77,7 +77,7 @@ export function LegacyCameraScreen() {
     return (
       <>
         <Stack.Screen options={{ headerShown: false }} />
-        <CameraGate
+        <GateScreen
           title="No Camera Found"
           primaryLabel="Go Back"
           onPrimary={handleClose}

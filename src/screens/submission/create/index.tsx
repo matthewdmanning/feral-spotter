@@ -1,32 +1,25 @@
-import { LOCATION_ACCURACY_THRESHOLD_M } from '@/src/config/location'
+import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { AppButton } from '@/src/components/atoms/AppButton'
 import { DateTimePickerButton } from '@/src/components/organisms/DateTimePicker'
 import { showAlert, useSubmissionStore } from '@/src/hooks'
 import { startFreshPass } from '@/src/hooks/useActiveCatFlow'
 import { useBackHandler } from '@/src/hooks/useBackHandler'
+import { useDraftSync } from '@/src/hooks/useDraftSync'
 import { useSubmissionSubmit } from '@/src/hooks/useSubmissionSubmit'
 import { useLibraryPhotoPicker } from '@/src/hooks/useLibraryPhotoPicker'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useRemoveCat } from '@/src/hooks/useRemoveCat'
-import { useLocationCapture } from '@/src/lib/location'
-import {
-  createSubmissionCache,
-  getCurrentCacheId,
-} from '@/src/lib/cache/submissionCache'
-import { buildCacheMetadata } from '@/src/lib/submission/payload'
+import { draftWarnings } from '@/src/lib/submission/status'
 import {
   router,
   useIsFocused,
   useLocalSearchParams,
   type Href,
 } from 'expo-router'
-import { randomUUID } from 'expo-crypto'
-import {
-  AlertCircle,
-  CheckCircle,
-  ChevronDown,
-  ChevronUp,
-} from 'lucide-react-native'
+import { CaretDownIcon } from 'phosphor-react-native/src/icons/CaretDown'
+import { CaretUpIcon } from 'phosphor-react-native/src/icons/CaretUp'
+import { CheckCircleIcon } from 'phosphor-react-native/src/icons/CheckCircle'
+import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle'
 import { useCallback, useEffect, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
@@ -51,13 +44,10 @@ export default function CreateSubmissionScreen() {
   const { removed } = useLocalSearchParams<{ removed?: string }>()
 
   const submission = useSubmissionStore((s) => s.submission)
-  const setSubmissionLocation = useSubmissionStore(
-    (s) => s.setSubmissionLocation,
-  )
   const setManualTime = useSubmissionStore((s) => s.setManualTime)
   const cats = useSubmissionStore((s) => s.cats)
 
-  const capture = useLocationCapture()
+  useDraftSync()
   const { handleDone, handleReset, handleDiscard } = useSubmissionSubmit()
 
   // No back path off this screen (#156) — instead, a bottom action returns
@@ -65,6 +55,8 @@ export default function CreateSubmissionScreen() {
   // amendment's single-source-by-construction `source`).
   const photoSource = usePhotoStore((s) => s.source)
   const { pickFromLibrary } = useLibraryPhotoPicker()
+  const addMorePhotosLabel =
+    photoSource === 'camera' ? 'Take More Photos' : 'Select More Photos'
   const handleAddMorePhotos = useCallback(() => {
     if (photoSource === 'camera') {
       router.navigate('/camera')
@@ -84,34 +76,14 @@ export default function CreateSubmissionScreen() {
     showAlert('Leave Submission?', 'Your draft is not sent yet.', [
       { text: 'Stay', style: 'cancel' },
       {
-        text:
-          photoSource === 'camera' ? 'Take More Photos' : 'Select More Photos',
+        text: addMorePhotosLabel,
         onPress: handleAddMorePhotos,
       },
       { text: 'Discard Draft', style: 'destructive', onPress: handleDiscard },
     ])
     return true
-  }, [isFocused, photoSource, handleAddMorePhotos, handleDiscard])
+  }, [isFocused, addMorePhotosLabel, handleAddMorePhotos, handleDiscard])
   useBackHandler(handleBackPress)
-
-  // Mount-once (#224 follow-up): this only needs to ensure a cache row
-  // exists for the current draft, not react to every field edit. Depending
-  // on submission.* fields here made it re-run when handleDone's
-  // clearDraft() reset them to defaults mid-navigation (post-Submit,
-  // before this screen unmounts) — current was just cleared by
-  // clearCurrentCacheId(), so getCurrentCacheId() came back null and this
-  // created a stray empty cache row for the already-submitted draft.
-  useEffect(() => {
-    ;(async () => {
-      if (!(await getCurrentCacheId())) {
-        await createSubmissionCache(
-          randomUUID(),
-          buildCacheMetadata(submission),
-        )
-      }
-    })()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   // One cat open at a time: a stack of fully open cats would push the bottom
   // actions off a phone screen.
@@ -151,34 +123,10 @@ export default function CreateSubmissionScreen() {
     // runtime and keeps exhaustive-deps quiet.
   }, [autoSkipPending])
 
-  // Commit the background Live fix into the Submission draft only once it
-  // resolves — never mid-watch, so a reacquire's early (worse) candidates
-  // can't clobber the already-stored fix while it's re-settling. Also never
-  // overwrite a location the user set by hand via the map picker
-  // (location_type === 'pin').
-  useEffect(() => {
-    if (submission.location_type === 'pin') return
-    if (capture.status === 'resolved' && capture.result) {
-      setSubmissionLocation(capture.result)
-    }
-  }, [
-    capture.status,
-    capture.result,
-    submission.location_type,
-    setSubmissionLocation,
-  ])
-
-  const hasLowAccuracy =
-    submission.accuracy != null &&
-    submission.accuracy >= LOCATION_ACCURACY_THRESHOLD_M
-  const hasFix = submission.latitude != null && submission.longitude != null
-  const showLocationWarning = !hasFix || hasLowAccuracy
-
-  // Same warning-icon/tap-to-fix treatment as location, applied to a Library
-  // pick whose photos lacked EXIF time (ADR 0003) — manual_time is unset
-  // until the user fills it in via the picker below.
-  const showTimeWarning =
-    submission.time_type === 'manual' && !submission.manual_time
+  // Same warning-icon/tap-to-fix treatment for location and for a Library
+  // pick whose photos lacked EXIF time (ADR 0003).
+  const { location: showLocationWarning, time: showTimeWarning } =
+    draftWarnings(submission)
   const handleManualTimeChange = useCallback(
     (date: Date) => setManualTime(date.toISOString()),
     [setManualTime],
@@ -206,6 +154,7 @@ export default function CreateSubmissionScreen() {
 
   return (
     <View style={styles.root}>
+      <AmbientBackground />
       {/* An open cat lists every field, so the part above the actions scrolls
           and Finished!, Take More Photos and Reset stay on screen. */}
       <ScrollView
@@ -228,12 +177,12 @@ export default function CreateSubmissionScreen() {
             style={styles.statusItem}
           >
             {showLocationWarning ? (
-              <AlertCircle
+              <WarningCircleIcon
                 size={theme.iconSize.md}
                 color={theme.colors.warning}
               />
             ) : (
-              <CheckCircle
+              <CheckCircleIcon
                 size={theme.iconSize.md}
                 color={theme.colors.success}
               />
@@ -243,7 +192,7 @@ export default function CreateSubmissionScreen() {
 
           {showTimeWarning ? (
             <View style={styles.statusItem}>
-              <AlertCircle
+              <WarningCircleIcon
                 size={theme.iconSize.md}
                 color={theme.colors.warning}
               />
@@ -260,7 +209,7 @@ export default function CreateSubmissionScreen() {
             </View>
           ) : (
             <View style={styles.statusItem}>
-              <CheckCircle
+              <CheckCircleIcon
                 size={theme.iconSize.md}
                 color={theme.colors.success}
               />
@@ -287,12 +236,12 @@ export default function CreateSubmissionScreen() {
                 >
                   <Text style={styles.catRowText}>{label}</Text>
                   {isExpanded ? (
-                    <ChevronUp
+                    <CaretUpIcon
                       size={theme.iconSize.md}
                       color={theme.colors.muted}
                     />
                   ) : (
-                    <ChevronDown
+                    <CaretDownIcon
                       size={theme.iconSize.md}
                       color={theme.colors.muted}
                     />
@@ -373,7 +322,7 @@ export default function CreateSubmissionScreen() {
           Finished!
         </AppButton>
         <AppButton variant="secondary" onPress={handleAddMorePhotos}>
-          {photoSource === 'camera' ? 'Take More Photos' : 'Select More Photos'}
+          {addMorePhotosLabel}
         </AppButton>
         <AppButton variant="danger" onPress={handleReset}>
           Reset

@@ -1,13 +1,14 @@
-import { AppButton } from '@/src/components/atoms/AppButton'
 /**
  * components/organisms/DateTimePicker.tsx
  * All state logic in useDateTimePicker.
  * Migrated from NativeWind → Unistyles v3.
  */
 
+import { AppButton } from '@/src/components/atoms/AppButton'
 import { useDateTimePicker } from '@/src/hooks/useDateTimePicker'
 import RNDateTimePicker from '@react-native-community/datetimepicker'
-import { Calendar, Clock } from 'lucide-react-native'
+import { CalendarIcon } from 'phosphor-react-native/src/icons/Calendar'
+import { ClockIcon } from 'phosphor-react-native/src/icons/Clock'
 import { Modal, Platform, Pressable, Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { dialogShell } from './dialogShell.styles'
@@ -29,6 +30,8 @@ const MODAL_TITLE: Record<PickerMode, string> = {
   time: 'Select Time',
   datetime: 'Select Date & Time',
 }
+
+const STEP_LABEL = { date: 'Date', time: 'Time' } as const
 
 const formatValue = (date: Date, mode: PickerMode) => {
   if (mode === 'date') return date.toLocaleDateString()
@@ -57,7 +60,7 @@ export function DateTimePickerButton({
     handleCancel,
   } = useDateTimePicker(value, mode, onChange)
 
-  const Icon = mode === 'time' ? Clock : Calendar
+  const Icon = mode === 'time' ? ClockIcon : CalendarIcon
 
   return (
     <View style={styles.container}>
@@ -107,27 +110,16 @@ export function DateTimePickerButton({
 
               {mode === 'datetime' && (
                 <View style={styles.stepRow}>
-                  {(['date', 'time'] as const).map((step) => {
-                    const active = currentMode === step
-                    return (
-                      <Pressable
-                        key={step}
-                        onPress={() => setStep(step)}
-                        style={[
-                          styles.stepBtn,
-                          active ? styles.stepBtnActive : styles.stepBtnIdle,
-                        ]}
-                      >
-                        <Text
-                          style={
-                            active ? styles.stepTextActive : styles.stepTextIdle
-                          }
-                        >
-                          {step.charAt(0).toUpperCase() + step.slice(1)}
-                        </Text>
-                      </Pressable>
-                    )
-                  })}
+                  {(['date', 'time'] as const).map((step) => (
+                    <AppButton
+                      key={step}
+                      onPress={() => setStep(step)}
+                      variant={currentMode === step ? 'primary' : 'secondary'}
+                      flex1
+                    >
+                      {STEP_LABEL[step]}
+                    </AppButton>
+                  ))}
                 </View>
               )}
 

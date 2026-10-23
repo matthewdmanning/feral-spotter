@@ -3,7 +3,7 @@ import { StyleSheet } from 'react-native-unistyles'
 export const styles = StyleSheet.create((theme, rt) => ({
   root: { flex: 1, backgroundColor: theme.colors.background },
   topBar: {
-    paddingHorizontal: theme.spacing.lg,
+    paddingHorizontal: theme.layout.gutter,
     // #187: annotate is a fullScreenModal with headerShown off, edge-to-edge
     // — with no top inset the OS status-bar strip overlapped topRow's
     // content, including the remove-photo button, so touches there hit the
@@ -30,7 +30,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: theme.spacing.xs + 2,
+    gap: theme.spacing.sm,
     marginTop: theme.spacing.xs,
   },
   dot: { height: theme.spacing.sm, borderRadius: theme.radius.full },
@@ -38,7 +38,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
   bottomBar: {
     flexDirection: 'row',
     gap: theme.spacing.md,
-    paddingHorizontal: theme.spacing.lg,
+    paddingHorizontal: theme.layout.gutter,
     paddingTop: theme.spacing.md,
     // Mirrors topBar above: with no bottom inset the gesture-navigation bar
     // was drawn over the nav buttons, so touches near the bottom edge hit
@@ -51,7 +51,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     ...theme.textVariants.bodySmall,
     color: theme.colors.muted,
     textAlign: 'center',
-    paddingHorizontal: theme.spacing.lg,
+    paddingHorizontal: theme.layout.gutter,
   },
   empty: {
     flex: 1,
@@ -59,7 +59,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     alignItems: 'center',
     justifyContent: 'center',
     gap: theme.spacing.lg,
-    padding: theme.spacing.xxl,
+    padding: theme.layout.gutter,
   },
   emptyText: {
     ...theme.textVariants.body,

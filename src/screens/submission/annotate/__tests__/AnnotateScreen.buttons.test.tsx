@@ -46,8 +46,6 @@ jest.mock('@/src/components/organisms/InsetCropBubble', () => ({
 jest.mock('@/src/components/organisms/TutorialOverlay', () => ({
   TutorialOverlay: () => null,
 }))
-jest.mock('lucide-react-native', () => ({ Trash2: () => null }))
-
 const PHOTO = (id: string) => ({
   local_id: id,
   uri: id,

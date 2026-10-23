@@ -63,14 +63,6 @@ jest.mock('../index.styles', () => ({
   styles: new Proxy({}, { get: () => ({}) }),
 }))
 
-jest.mock('lucide-react-native', () => ({
-  AlertCircle: () => null,
-  CheckCircle: () => null,
-  ChevronDown: () => null,
-  ChevronUp: () => null,
-  Trash2: () => null,
-}))
-
 jest.mock('@/src/hooks/usePhotoStore', () => ({
   usePhotoStore: (sel: (s: { source: 'camera' }) => unknown) =>
     sel({ source: 'camera' }),

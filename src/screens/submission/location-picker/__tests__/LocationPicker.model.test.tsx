@@ -62,8 +62,6 @@ jest.mock('../index.styles', () => ({
   styles: new Proxy({}, { get: () => ({}) }),
 }))
 
-jest.mock('lucide-react-native', () => ({ MapPin: () => null }))
-
 const pickerFlow = createMachine({
   id: 'locationPicker',
   initial: 'ready',

@@ -12,7 +12,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
   content: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: theme.spacing.xxl,
+    paddingHorizontal: theme.layout.gutter,
   },
   title: {
     ...theme.textVariants.display,
@@ -26,20 +26,8 @@ export const styles = StyleSheet.create((theme, rt) => ({
     textAlign: 'center',
     marginBottom: theme.spacing.xxxl,
   },
-  input: {
-    ...theme.textVariants.body,
-    width: '100%',
-    minHeight: theme.controlHeight.control,
-    color: theme.colors.text,
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1.5,
-    borderColor: theme.colors.border,
-    borderRadius: theme.radius.md,
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
-    marginBottom: theme.spacing.md,
-  },
-  button: { width: '100%', marginTop: theme.spacing.sm },
+  fields: { gap: theme.spacing.md },
+  button: { width: '100%', marginTop: theme.spacing.lg },
   registerRow: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -47,10 +35,6 @@ export const styles = StyleSheet.create((theme, rt) => ({
     marginTop: theme.spacing.lg,
   },
   registerText: { ...theme.textVariants.bodySmall, color: theme.colors.muted },
-  registerLink: {
-    ...theme.textVariants.labelSmall,
-    color: theme.colors.accent,
-  },
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',

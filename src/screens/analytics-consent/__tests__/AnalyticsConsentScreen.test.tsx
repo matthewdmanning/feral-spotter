@@ -13,11 +13,6 @@ jest.mock('expo-router', () => ({
   },
 }))
 
-jest.mock('lucide-react-native', () => {
-  const { View } = jest.requireActual('react-native')
-  return { Check: () => <View /> }
-})
-
 describe('AnalyticsConsentScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks()

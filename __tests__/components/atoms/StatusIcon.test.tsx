@@ -3,31 +3,19 @@ import React from 'react'
 import { StatusIcon } from '@/src/components/atoms/StatusIcon'
 import type { CacheStatus } from '@/src/lib/cache/submissionCache'
 
-jest.mock('lucide-react-native', () => {
-  const { Text: RNText } = require('react-native')
-  const iconStub = (name: string) => {
-    const Icon = ({ testID = name }: { testID?: string }) => (
-      <RNText testID={testID} />
-    )
-    Icon.displayName = name
-    return Icon
-  }
-  return {
-    CheckCircle: iconStub('CheckCircle'),
-    Clock: iconStub('Clock'),
-    Send: iconStub('Send'),
-    XCircle: iconStub('XCircle'),
-  }
-})
-
+// The real Phosphor icons render here. Each one sets a default testID of
+// `phosphor-react-native-<name>-<weight prop>`, so the name identifies the icon
+// drawn. The weight part reads "undefined" when no weight prop is passed.
 describe('StatusIcon', () => {
   it.each<[CacheStatus, string]>([
-    ['In Progress', 'Clock'],
-    ['Sending', 'Send'],
-    ['Submitted', 'CheckCircle'],
-    ['Failed', 'XCircle'],
-  ])('renders the %s icon for status "%s"', (status, expectedTestId) => {
+    ['In Progress', 'clock'],
+    ['Sending', 'paper-plane-right'],
+    ['Submitted', 'check-circle'],
+    ['Failed', 'x-circle'],
+  ])('renders the %s icon for status "%s"', (status, iconName) => {
     const { getByTestId } = render(<StatusIcon status={status} />)
-    expect(getByTestId(expectedTestId)).toBeTruthy()
+    expect(
+      getByTestId(new RegExp(`^phosphor-react-native-${iconName}-`)),
+    ).toBeTruthy()
   })
 })
