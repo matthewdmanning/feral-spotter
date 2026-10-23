@@ -1,81 +1,85 @@
-/**
- * The guard that keeps cleanup from deleting a file the app does not own.
- * A library-picked photo can carry a uri outside the cache directory, and
- * deleting it would destroy the user's own photo.
- */
-
+/** Cache-file ownership and gallery-save retention use Expo's native mock. */
+import { File, Paths } from 'expo-file-system'
 import {
   deleteCapturedPhotoFile,
   releaseCapturedPhotoFile,
   retainCapturedPhotoFile,
 } from '@/src/lib/camera/capturedPhotoFiles'
 
-const mockDelete = jest.fn()
-const mockExists = jest.fn(() => true)
-
-jest.mock('expo-file-system', () => ({
-  Paths: { cache: { uri: 'file:///app/cache/' } },
-  File: class {
-    uri: string
-    constructor(uri: string) {
-      this.uri = uri
-    }
-    get exists() {
-      return mockExists()
-    }
-    delete() {
-      mockDelete(this.uri)
-    }
-  },
-}))
+// The supplied mock helper is outside the package's public exports map.
+const { __resetMockFileSystem } = jest.requireActual(
+  require
+    .resolve('expo-file-system/package.json')
+    .replace('package.json', 'mocks/FileSystem.ts'),
+)
 
 beforeEach(() => {
-  mockDelete.mockClear()
-  mockExists.mockReturnValue(true)
+  __resetMockFileSystem()
+})
+
+afterEach(() => {
+  jest.restoreAllMocks()
 })
 
 it('deletes a captured file inside the cache directory', () => {
-  deleteCapturedPhotoFile('file:///app/cache/abc.jpg')
-  expect(mockDelete).toHaveBeenCalledWith('file:///app/cache/abc.jpg')
+  const file = new File(Paths.cache, 'capture.jpg')
+  file.create()
+  expect(file.exists).toBe(true)
+
+  deleteCapturedPhotoFile(file.uri)
+  expect(file.exists).toBe(false)
 })
 
 it.each([
-  ['a document-directory file', 'file:///app/documents/keep.jpg'],
-  ['a gallery content uri', 'content://media/external/images/1'],
-  ['an unrelated absolute path', 'file:///storage/emulated/0/DCIM/mine.jpg'],
-])('leaves %s alone', (_why, uri) => {
-  deleteCapturedPhotoFile(uri)
-  expect(mockDelete).not.toHaveBeenCalled()
+  ['a document-directory file', () => new File(Paths.document, 'keep.jpg')],
+  [
+    'a gallery content uri',
+    () => new File('content://media/external/images/1'),
+  ],
+  [
+    'an unrelated absolute path',
+    () => new File('file:///storage/emulated/0/DCIM/mine.jpg'),
+  ],
+])('leaves %s alone', (_why, buildFile) => {
+  const file = buildFile()
+  file.create({ intermediates: true })
+  expect(file.exists).toBe(true)
+
+  deleteCapturedPhotoFile(file.uri)
+  expect(file.exists).toBe(true)
 })
 
 it('does not throw when the file is already gone', () => {
-  mockExists.mockReturnValue(false)
-  expect(() =>
-    deleteCapturedPhotoFile('file:///app/cache/abc.jpg'),
-  ).not.toThrow()
-  expect(mockDelete).not.toHaveBeenCalled()
+  const file = new File(Paths.cache, 'gone.jpg')
+  const remove = jest.spyOn(File.prototype, 'delete')
+  expect(file.exists).toBe(false)
+
+  expect(() => deleteCapturedPhotoFile(file.uri)).not.toThrow()
+  expect(remove).not.toHaveBeenCalled()
+  expect(file.exists).toBe(false)
 })
 
 it('defers deletion until the gallery-save hold is released', () => {
-  const uri = 'file:///app/cache/held.jpg'
-  retainCapturedPhotoFile(uri)
-  deleteCapturedPhotoFile(uri)
+  const file = new File(Paths.cache, 'held.jpg')
+  file.create()
+  retainCapturedPhotoFile(file.uri)
+  deleteCapturedPhotoFile(file.uri)
+  expect(file.exists).toBe(true)
 
-  expect(mockDelete).not.toHaveBeenCalled()
-
-  releaseCapturedPhotoFile(uri)
-  expect(mockDelete).toHaveBeenCalledWith(uri)
+  releaseCapturedPhotoFile(file.uri)
+  expect(file.exists).toBe(false)
 })
 
 it('keeps deferred deletion through repeated gallery holds', () => {
-  const uri = 'file:///app/cache/repeated.jpg'
-  retainCapturedPhotoFile(uri)
-  deleteCapturedPhotoFile(uri)
-  retainCapturedPhotoFile(uri)
+  const file = new File(Paths.cache, 'repeated.jpg')
+  file.create()
+  retainCapturedPhotoFile(file.uri)
+  deleteCapturedPhotoFile(file.uri)
+  retainCapturedPhotoFile(file.uri)
 
-  releaseCapturedPhotoFile(uri)
-  expect(mockDelete).not.toHaveBeenCalled()
+  releaseCapturedPhotoFile(file.uri)
+  expect(file.exists).toBe(true)
 
-  releaseCapturedPhotoFile(uri)
-  expect(mockDelete).toHaveBeenCalledWith(uri)
+  releaseCapturedPhotoFile(file.uri)
+  expect(file.exists).toBe(false)
 })

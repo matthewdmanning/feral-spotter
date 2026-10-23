@@ -1,4 +1,4 @@
-import * as ui from '@/src/hooks/useUIStore'
+import { useUIStore } from '@/src/hooks/useUIStore'
 import { act, renderHook } from '@testing-library/react-native'
 
 import { stopLocationCapture } from '@/src/lib/location'
@@ -13,18 +13,6 @@ import { usePhotoStore } from '../usePhotoStore'
  * mocks of them — since the reported symptom is that cleared state
  * doesn't stick, which a mocked store could hide.
  */
-
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-)
-
-jest.mock('react-native-mmkv', () => ({
-  createMMKV: jest.fn(() => ({
-    getString: jest.fn(),
-    set: jest.fn(),
-    delete: jest.fn(),
-  })),
-}))
 
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() },
@@ -93,27 +81,19 @@ describe('useSubmissionSubmit — handleReset (#189)', () => {
     expect(useSubmissionStore.getState().cats).toHaveLength(1)
     expect(usePhotoStore.getState().photos).toHaveLength(1)
 
-    const alertSpy = jest
-      .spyOn(ui, 'showAlert')
-      .mockImplementation((_title, _msg, buttons) => {
-        const resetButton = buttons?.find((b) => b.text === 'Reset')
-        void resetButton?.onPress?.()
-      })
-
     const { result } = renderHook(() => useSubmissionSubmit())
 
     await act(async () => {
       result.current.handleReset()
-      // handleReset's onPress is async (awaits cache lookups before
-      // clearing) — flush those microtasks before asserting.
-      await Promise.resolve()
-      await Promise.resolve()
+      const confirm = useUIStore
+        .getState()
+        .dialog?.buttons.find((b) => b.text === 'Reset')
+      expect(confirm?.onPress).toEqual(expect.any(Function))
+      await confirm!.onPress!()
     })
 
     expect(useSubmissionStore.getState().cats).toEqual([])
     expect(usePhotoStore.getState().photos).toEqual([])
     expect(stopLocationCapture).toHaveBeenCalled()
-
-    alertSpy.mockRestore()
   })
 })

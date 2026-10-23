@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react-native'
+import { userEvent, render, screen } from '@testing-library/react-native'
 import { router } from 'expo-router'
 import React from 'react'
 import { useAnnotatePass } from '@/src/hooks/useAnnotatePass'
@@ -18,17 +18,6 @@ import AnnotateScreen from '../index'
  * (InsetCropBubble.collapseFlow.model.test.tsx) or are unreachable in this
  * dev version (tutorial is version-gated past the current app version).
  */
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-)
-
-jest.mock('react-native-mmkv', () => ({
-  createMMKV: jest.fn(() => ({
-    getString: jest.fn(),
-    set: jest.fn(),
-    delete: jest.fn(),
-  })),
-}))
 
 jest.mock('expo-router', () => ({
   router: { back: jest.fn() },
@@ -98,68 +87,68 @@ describe('AnnotateScreen buttons', () => {
     jest.clearAllMocks()
   })
 
-  it('empty photo pool: Go back clears the active cat and pops the screen', () => {
+  it('empty photo pool: Go back clears the active cat and pops the screen', async () => {
     jest
       .mocked(useAnnotatePass)
       .mockReturnValue({ ...baseAnnotatePass, photos: [] })
     render(<AnnotateScreen />)
 
-    fireEvent.press(screen.getByText('Go back'))
+    await userEvent.press(screen.getByText('Go back'))
 
     expect(clearActiveCat).toHaveBeenCalledTimes(1)
     expect(router.back).toHaveBeenCalledTimes(1)
   })
 
-  it('first photo: Previous is disabled and does not call the handler', () => {
+  it('first photo: Previous is disabled and does not call the handler', async () => {
     jest
       .mocked(useAnnotatePass)
       .mockReturnValue({ ...baseAnnotatePass, currentIndex: 0 })
     render(<AnnotateScreen />)
 
     const prevButton = screen.getByText('← Previous')
-    fireEvent.press(prevButton)
+    await userEvent.press(prevButton)
 
     expect(handlePrevPhoto).not.toHaveBeenCalled()
     // #375: the dead button must say why it is dead.
     expect(screen.getByText(/first photo/)).toBeTruthy()
   })
 
-  it('second photo: Previous is enabled and calls handlePrevPhoto', () => {
+  it('second photo: Previous is enabled and calls handlePrevPhoto', async () => {
     jest
       .mocked(useAnnotatePass)
       .mockReturnValue({ ...baseAnnotatePass, currentIndex: 1 })
     render(<AnnotateScreen />)
 
-    fireEvent.press(screen.getByText('← Previous'))
+    await userEvent.press(screen.getByText('← Previous'))
 
     expect(handlePrevPhoto).toHaveBeenCalledTimes(1)
     // #375: no reason line while the button works.
     expect(screen.queryByText(/first photo/)).toBeNull()
   })
 
-  it('Not in Photo calls handleNotInPhoto', () => {
+  it('Not in Photo calls handleNotInPhoto', async () => {
     jest.mocked(useAnnotatePass).mockReturnValue(baseAnnotatePass)
     render(<AnnotateScreen />)
 
-    fireEvent.press(screen.getByLabelText('Not in this photo'))
+    await userEvent.press(screen.getByLabelText('Not in this photo'))
 
     expect(handleNotInPhoto).toHaveBeenCalledTimes(1)
   })
 
-  it('Done With This Cat calls handleBoxingComplete', () => {
+  it('Done With This Cat calls handleBoxingComplete', async () => {
     jest.mocked(useAnnotatePass).mockReturnValue(baseAnnotatePass)
     render(<AnnotateScreen />)
 
-    fireEvent.press(screen.getByText('Done With This Cat'))
+    await userEvent.press(screen.getByText('Done With This Cat'))
 
     expect(handleBoxingComplete).toHaveBeenCalledTimes(1)
   })
 
-  it('long-pressing Remove photo calls handleLongPressRemove', () => {
+  it('long-pressing Remove photo calls handleLongPressRemove', async () => {
     jest.mocked(useAnnotatePass).mockReturnValue(baseAnnotatePass)
     render(<AnnotateScreen />)
 
-    fireEvent(screen.getByLabelText('Remove photo'), 'longPress')
+    await userEvent.longPress(screen.getByLabelText('Remove photo'))
 
     expect(handleLongPressRemove).toHaveBeenCalledTimes(1)
   })

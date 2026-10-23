@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react-native'
+import { userEvent, render, screen } from '@testing-library/react-native'
 import React from 'react'
 import { Linking } from 'react-native'
 import { useCameraPermission } from 'react-native-vision-camera'
@@ -25,13 +25,9 @@ jest.mock('../index.styles', () => ({
   styles: new Proxy({}, { get: () => ({}) }),
 }))
 
-jest.mock('react-native-reanimated', () => ({
-  __esModule: true,
-  useSharedValue: jest.fn((v: unknown) => ({ value: v })),
-  useAnimatedStyle: jest.fn(() => ({})),
-  withTiming: jest.fn((v: unknown) => v),
-  Easing: { out: jest.fn(), quad: {}, back: jest.fn() },
-}))
+jest.mock('react-native-reanimated', () =>
+  jest.requireActual('react-native-reanimated/mock'),
+)
 
 jest.mock('react-native-vision-camera', () => ({
   Camera: 'Camera',
@@ -138,10 +134,12 @@ describe('CameraScreen permission/device gates — model-based test', () => {
     events: {
       MOUNT_NO_PERMISSION: () => mount(false, null),
       MOUNT_NO_DEVICE: () => mount(true, null),
-      PRESS_ALLOW: () => fireEvent.press(screen.getByText('Allow Camera')),
-      PRESS_OPEN_SETTINGS: () =>
-        fireEvent.press(screen.getByText('Open Settings')),
-      PRESS_GO_BACK: () => fireEvent.press(screen.getByText('Go Back')),
+      PRESS_ALLOW: async () =>
+        await userEvent.press(screen.getByText('Allow Camera')),
+      PRESS_OPEN_SETTINGS: async () =>
+        await userEvent.press(screen.getByText('Open Settings')),
+      PRESS_GO_BACK: async () =>
+        await userEvent.press(screen.getByText('Go Back')),
     },
   }
 

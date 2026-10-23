@@ -23,17 +23,6 @@ jest.mock('@/src/hooks/useActiveCatFlow', () => ({
 
 // #299's remove control reaches useBoundingBoxStore for clearForCat, which is
 // persisted — so this layout-only suite now pulls the storage backends in.
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-)
-
-jest.mock('react-native-mmkv', () => ({
-  createMMKV: jest.fn(() => ({
-    getString: jest.fn(),
-    set: jest.fn(),
-    delete: jest.fn(),
-  })),
-}))
 
 // This model covers header-zone layout only. The leave-confirm guard (#304)
 // reaches the persisted stores and the navigation object, neither of which

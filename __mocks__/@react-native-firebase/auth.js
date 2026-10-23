@@ -1,7 +1,8 @@
+/* global jest */
+
 // Manual Jest mock — @react-native-firebase/auth's native module isn't
-// available under Jest. Only src/lib/auth/index.ts's Jest branch (the dev
-// stub) actually runs in tests, but firebaseAuthProvider.ts is still
-// statically imported by that module, so the real package must never load.
+// available under Jest. Keep the application provider real while replacing
+// the SDK operations that require the native platform.
 //
 // The Firebase Local Emulator Suite does NOT replace this mock and never
 // will: the emulator swaps out the *backend* a native module talks to, but

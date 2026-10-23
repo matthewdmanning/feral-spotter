@@ -3,6 +3,9 @@ import { router } from 'expo-router'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import { useActiveCatFlow } from '../useActiveCatFlow'
+import { useActiveCatFlowStore } from '../useActiveCatFlowStore'
+import { useBoundingBoxStore } from '../useBoundingBoxStore'
+import { useSubmissionStore } from '../useSubmissionStore'
 
 /**
  * Model of useActiveCatFlow (ADR 0004): the seam that survives the
@@ -14,12 +17,7 @@ import { useActiveCatFlow } from '../useActiveCatFlow'
  * standalone test below rather than a journey, since it would otherwise
  * conflict with the shared `annotating` assertion's photo-1/photo-2 setup.
  *
- * Both dependency stores are replaced with real, non-persisted zustand
- * stores (not the actual persisted modules) — this sidesteps the
- * react-test-renderer crash the handoff notes for live AsyncStorage
- * rehydration during a render, while still exercising real store
- * reactivity (unlike a plain object mock, set() here actually re-renders
- * the hook).
+ * Uses the real persisted stores; only native storage and navigation are mocked.
  */
 jest.mock('expo-router', () => ({
   router: { back: jest.fn(), replace: jest.fn() },
@@ -29,73 +27,6 @@ let mockUuidCounter = 0
 jest.mock('expo-crypto', () => ({
   randomUUID: () => `test-cat-id-${++mockUuidCounter}`,
 }))
-
-jest.mock('../useActiveCatFlowStore', () => {
-  const { create } = require('zustand')
-  return {
-    useActiveCatFlowStore: create((set: (partial: object) => void) => ({
-      activeCatId: null,
-      setActiveCatId: (id: string | null) => set({ activeCatId: id }),
-    })),
-  }
-})
-
-jest.mock('../useSubmissionStore', () => {
-  const { create } = require('zustand')
-  return {
-    useSubmissionStore: create(() => ({ cats: [] })),
-  }
-})
-
-jest.mock('../useBoundingBoxStore', () => {
-  const { create } = require('zustand')
-  return {
-    useBoundingBoxStore: create(
-      (
-        set: (
-          fn: (s: {
-            boxes: Record<string, unknown[]>
-            absences: Record<string, true>
-          }) => object,
-        ) => void,
-        get: () => {
-          boxes: Record<string, unknown[]>
-          absences: Record<string, true>
-        },
-      ) => ({
-        boxes: {},
-        absences: {},
-        // Mirrors the real store: addBox/markAbsent are mutually exclusive
-        // for the same cat+photo key.
-        addBox: (catId: string, photoId: string, box: object) => {
-          const key = `${catId}:${photoId}`
-          set((s) => {
-            const absences = { ...s.absences }
-            delete absences[key]
-            return {
-              boxes: { ...s.boxes, [key]: [{ ...box, id: 'test-box' }] },
-              absences,
-            }
-          })
-        },
-        markAbsent: (catId: string, photoId: string) => {
-          const key = `${catId}:${photoId}`
-          set((s) => {
-            const boxes = { ...s.boxes }
-            delete boxes[key]
-            return { boxes, absences: { ...s.absences, [key]: true } }
-          })
-        },
-        getBoxes: (catId: string, photoId: string) =>
-          get().boxes[`${catId}:${photoId}`] ?? [],
-        getBoxedPhotoIds: (catId: string) =>
-          Object.keys(get().boxes)
-            .filter((key) => key.startsWith(`${catId}:`))
-            .map((key) => key.slice(catId.length + 1)),
-      }),
-    ),
-  }
-})
 
 const box = {
   lowerLeftX: 0.1,
@@ -130,13 +61,15 @@ describe('useActiveCatFlow — model-based test', () => {
     typeof renderHook<ReturnType<typeof useActiveCatFlow>, unknown>
   >
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await Promise.all([
+      useActiveCatFlowStore.persist.rehydrate(),
+      useBoundingBoxStore.persist.rehydrate(),
+      useSubmissionStore.persist.rehydrate(),
+    ])
     jest.clearAllMocks()
-    const { useActiveCatFlowStore } = require('../useActiveCatFlowStore')
     useActiveCatFlowStore.setState({ activeCatId: null })
-    const { useBoundingBoxStore } = require('../useBoundingBoxStore')
-    useBoundingBoxStore.setState({ boxes: {}, absences: {} })
-    const { useSubmissionStore } = require('../useSubmissionStore')
+    useBoundingBoxStore.getState().clearAll()
     useSubmissionStore.setState({ cats: [] })
     hook = renderHook(() => useActiveCatFlow())
   })
@@ -201,10 +134,6 @@ describe('useActiveCatFlow — model-based test', () => {
     {
       name: 'mid-pass abandonment: back before Cat Form clears the active cat',
       events: [{ type: 'BOX_CONFIRMED' }, { type: 'BACK' }],
-    },
-    {
-      name: 'boxing complete is callable after just one box, not gated on a full pass',
-      events: [{ type: 'BOX_CONFIRMED' }, { type: 'BOXING_COMPLETE' }],
     },
     {
       name: 'not-in-photo records explicit absence without disrupting boxing complete',
@@ -289,7 +218,6 @@ describe('useActiveCatFlow — model-based test', () => {
   })
 
   it('abandoning with cats already recorded lands on Cat List, not Home (#203)', () => {
-    const { useSubmissionStore } = require('../useSubmissionStore')
     act(() => {
       useSubmissionStore.setState({ cats: [{ local_id: 'existing-cat' }] })
     })

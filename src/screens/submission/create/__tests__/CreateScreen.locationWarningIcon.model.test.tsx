@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react-native'
+import { userEvent, render, screen } from '@testing-library/react-native'
 import { router } from 'expo-router'
 import React from 'react'
 import { createMachine } from 'xstate'
@@ -13,17 +13,6 @@ import CreateSubmissionScreen from '../index'
  * state. This is a real toggle no other test exercises — the map picker
  * screen itself is separately modeled in LocationPicker.model.test.tsx.
  */
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-)
-
-jest.mock('react-native-mmkv', () => ({
-  createMMKV: jest.fn(() => ({
-    getString: jest.fn(),
-    set: jest.fn(),
-    delete: jest.fn(),
-  })),
-}))
 
 jest.mock('expo-router', () => ({
   useIsFocused: () => true,
@@ -195,10 +184,10 @@ describe('Submission Details location-warning icon — model-based test', () => 
     })
   })
 
-  it('tapping the icon while warning is shown opens the map picker', () => {
+  it('tapping the icon while warning is shown opens the map picker', async () => {
     mockSubmission = { location_type: 'device', time_type: 'device' }
     mount()
-    fireEvent.press(
+    await userEvent.press(
       screen.getByLabelText(
         'Location accuracy is low or unavailable — tap to set manually',
       ),
@@ -206,7 +195,7 @@ describe('Submission Details location-warning icon — model-based test', () => 
     expect(router.push).toHaveBeenCalledWith('/submission/location-picker')
   })
 
-  it('tapping the icon once a good fix is acquired does nothing (disabled)', () => {
+  it('tapping the icon once a good fix is acquired does nothing (disabled)', async () => {
     mockSubmission = {
       location_type: 'device',
       time_type: 'device',
@@ -215,7 +204,7 @@ describe('Submission Details location-warning icon — model-based test', () => 
       accuracy: 10,
     }
     mount()
-    fireEvent.press(screen.getByLabelText('Location acquired'))
+    await userEvent.press(screen.getByLabelText('Location acquired'))
     expect(router.push).not.toHaveBeenCalled()
   })
 })

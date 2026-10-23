@@ -17,18 +17,6 @@ import { useBoundingBoxStore } from '../useBoundingBoxStore'
  * gone" is the claim, and a mocked store would only prove the call was made.
  */
 
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-)
-
-jest.mock('react-native-mmkv', () => ({
-  createMMKV: jest.fn(() => ({
-    getString: jest.fn(),
-    set: jest.fn(),
-    delete: jest.fn(),
-  })),
-}))
-
 let beforeRemoveListener: ((e: { preventDefault: () => void }) => void) | null =
   null
 const mockAddListener = jest.fn(
@@ -68,7 +56,8 @@ describe('useAbandonCatGuard (#304)', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     beforeRemoveListener = null
-    jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
+    jest.spyOn(ui, 'showAlert')
+    ui.useUIStore.setState({ dialog: null })
     useBoundingBoxStore.setState({ boxes: {}, lastBoxes: {}, absences: {} })
     useActiveCatFlowStore.getState().setActiveCatId(null)
   })
@@ -134,13 +123,20 @@ describe('useAbandonCatGuard (#304)', () => {
     expect(after.getBoxesForCat(OTHER_CAT_ID)).toHaveLength(1)
   })
 
-  it('Cancel leaves the boxes and the active cat alone', () => {
+  it('Cancel leaves the boxes and the active cat alone', async () => {
     useBoundingBoxStore.getState().addBox(CAT_ID, PHOTO_ID, BOX)
     useActiveCatFlowStore.getState().setActiveCatId(CAT_ID)
     renderHook(() => useAbandonCatGuard(false))
 
     attemptLeave()
-    // Cancel has no onPress — dismissing the Alert is the whole action.
+    const cancel = ui.useUIStore
+      .getState()
+      .dialog?.buttons.find((button) => button.text === 'Cancel')
+    expect(cancel).toEqual(expect.objectContaining({ style: 'cancel' }))
+    await act(async () => {
+      ui.useUIStore.getState().dismissDialog()
+      await cancel?.onPress?.()
+    })
 
     expect(useBoundingBoxStore.getState().getBoxesForCat(CAT_ID)).toHaveLength(
       1,

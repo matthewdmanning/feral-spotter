@@ -1,4 +1,6 @@
-import { act, fireEvent, render } from '@testing-library/react-native'
+import { usePhotoStore } from '@/src/hooks/usePhotoStore'
+import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
+import { act, userEvent, render } from '@testing-library/react-native'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import { InsetCropBubble } from '../InsetCropBubble'
@@ -16,46 +18,48 @@ jest.mock('expo-image', () => ({
 }))
 
 const BOX = {
-  id: 'box-1',
-  cat_id: 'cat-1',
-  photo_local_id: 'photo-1',
   lowerLeftX: 0.1,
   lowerLeftY: 0.7,
   upperRightX: 0.3,
   upperRightY: 0.5,
 }
 
-jest.mock('@/src/hooks', () => ({
-  usePhotoStore: (
-    sel: (s: { photos: { local_id: string; uri: string }[] }) => unknown,
-  ) => sel({ photos: [{ local_id: 'photo-1', uri: 'file://photo-1.jpg' }] }),
-}))
-
-jest.mock('@/src/hooks/useBoundingBoxStore', () => ({
-  useBoundingBoxStore: (
-    sel: (s: {
-      getFirstBox: (catId: string) => typeof BOX
-      catColors: Record<string, number>
-    }) => unknown,
-  ) => sel({ getFirstBox: () => BOX, catColors: {} }),
-}))
+beforeEach(() => {
+  usePhotoStore.setState({
+    ...usePhotoStore.getInitialState(),
+    photos: [
+      {
+        local_id: 'photo-1',
+        uri: 'file://photo-1.jpg',
+        width: 1000,
+        height: 1000,
+        uploaded: false,
+        upload_progress: 0,
+      },
+    ],
+  })
+  useBoundingBoxStore.setState(useBoundingBoxStore.getInitialState())
+  // Another cat is seeded first so an unfiltered first-box lookup is observable.
+  useBoundingBoxStore.getState().addBox('cat-2', 'photo-1', {
+    lowerLeftX: 0.1,
+    lowerLeftY: 0.9,
+    upperRightX: 0.9,
+    upperRightY: 0.1,
+  })
+  useBoundingBoxStore.getState().addBox('cat-1', 'photo-1', BOX)
+})
 
 const collapseFlowMachine = createMachine({
   id: 'insetCropBubbleCollapseFlow',
   initial: 'mountedCollapsed',
   states: {
-    mountedCollapsed: {
-      on: { PRESS: 'expanded' },
-    },
-    expanded: {
-      on: { PRESS: 'collapsing' },
-    },
-    collapsing: {
-      on: { COLLAPSE_ANIMATION_FINISHES: 'collapsedDocked' },
-    },
-    collapsedDocked: {
-      on: { PRESS: 'expanded' },
-    },
+    mountedCollapsed: { on: { PRESS: 'expanding' } },
+    expanding: { on: { ALMOST_FINISHED: 'expandingBeforeFinish' } },
+    expandingBeforeFinish: { on: { FINISH: 'expanded' } },
+    expanded: { on: { PRESS: 'collapsing' } },
+    collapsing: { on: { ALMOST_FINISHED: 'collapsingBeforeFinish' } },
+    collapsingBeforeFinish: { on: { FINISH: 'collapsedDocked' } },
+    collapsedDocked: { on: { PRESS: 'expanding' } },
   },
 })
 
@@ -85,63 +89,73 @@ describe('InsetCropBubble — collapse/expand flow (#202)', () => {
 
   const model = createTestModel(collapseFlowMachine)
 
-  const press = () =>
-    act(() => fireEvent.press(getByTestId('inset-crop-bubble')))
+  const press = () => userEvent.press(getByTestId('inset-crop-bubble'))
+
+  const expectSignals = (collapsed: boolean, settled: boolean) => {
+    expect(onCollapsedChange).toHaveBeenLastCalledWith(collapsed)
+    expect(onSettledChange).toHaveBeenLastCalledWith(settled)
+    expect(getByTestId('inset-crop-bubble').props.accessibilityLabel).toBe(
+      collapsed && settled
+        ? 'Expand cat photo preview'
+        : 'Collapse cat photo preview',
+    )
+  }
+
+  const expectCollapsing = () => {
+    // The button immediately offers expansion again, but the host must keep
+    // its expanded reservation and title fade until the slide finishes.
+    expect(onCollapsedChange).toHaveBeenLastCalledWith(false)
+    expect(onSettledChange).toHaveBeenLastCalledWith(false)
+    expect(getByTestId('inset-crop-bubble').props.accessibilityLabel).toBe(
+      'Expand cat photo preview',
+    )
+  }
 
   const testParams = {
     states: {
-      mountedCollapsed: () => {
-        // Nothing was expanded first, so the initial state is reported
-        // synchronously — no animation to wait for. Both signals agree at
-        // rest.
-        expect(onCollapsedChange).toHaveBeenLastCalledWith(true)
-        expect(onSettledChange).toHaveBeenLastCalledWith(true)
-      },
-      expanded: () => {
-        // onCollapsedChange (header-zone) reports eagerly on expand.
-        expect(onCollapsedChange).toHaveBeenLastCalledWith(false)
-        // onSettledChange (title fade) must NOT have moved yet — the
-        // bubble hasn't actually slid into place over the title.
-        expect(onSettledChange).toHaveBeenLastCalledWith(true)
-      },
-      collapsing: () => {
-        // The tap has fired, but the 220ms slide hasn't finished — the host
-        // must not have been told "collapsed" yet (it would prematurely
-        // shrink the header zone while the bubble is still over the title).
-        expect(onCollapsedChange).toHaveBeenLastCalledWith(false)
-        expect(onSettledChange).toHaveBeenLastCalledWith(true)
-      },
-      collapsedDocked: () => {
-        expect(onCollapsedChange).toHaveBeenLastCalledWith(true)
-        expect(onSettledChange).toHaveBeenLastCalledWith(true)
-      },
+      mountedCollapsed: () => expectSignals(true, true),
+      expanding: () => expectSignals(false, true),
+      expandingBeforeFinish: () => expectSignals(false, true),
+      expanded: () => expectSignals(false, false),
+      collapsing: expectCollapsing,
+      collapsingBeforeFinish: expectCollapsing,
+      collapsedDocked: () => expectSignals(true, true),
     },
     events: {
       PRESS: () => press(),
-      COLLAPSE_ANIMATION_FINISHES: () => {
-        act(() => {
-          jest.advanceTimersByTime(220)
-        })
+      ALMOST_FINISHED: () => {
+        act(() => jest.advanceTimersByTime(219))
+      },
+      FINISH: () => {
+        act(() => jest.advanceTimersByTime(1))
       },
     },
   }
 
   const journeys = [
     {
-      name: 'mounts collapsed, expands on tap, starts collapsing on second tap, docks once the slide finishes',
+      name: 'mounts collapsed, settles expansion, then docks only once the collapse slide finishes',
       events: [
         { type: 'PRESS' },
+        { type: 'ALMOST_FINISHED' },
+        { type: 'FINISH' },
         { type: 'PRESS' },
-        { type: 'COLLAPSE_ANIMATION_FINISHES' },
+        { type: 'ALMOST_FINISHED' },
+        { type: 'FINISH' },
       ],
     },
     {
-      name: 'tapping to re-expand from collapsed is reported immediately, no animation wait',
+      name: 're-expansion reports eagerly to the layout and waits for the slide before fading the title',
       events: [
         { type: 'PRESS' },
+        { type: 'ALMOST_FINISHED' },
+        { type: 'FINISH' },
         { type: 'PRESS' },
-        { type: 'COLLAPSE_ANIMATION_FINISHES' },
+        { type: 'ALMOST_FINISHED' },
+        { type: 'FINISH' },
         { type: 'PRESS' },
+        { type: 'ALMOST_FINISHED' },
+        { type: 'FINISH' },
       ],
     },
   ] as const

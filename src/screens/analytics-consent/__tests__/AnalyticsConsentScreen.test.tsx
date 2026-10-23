@@ -1,10 +1,10 @@
-import { fireEvent, render, screen } from '@testing-library/react-native'
+import { userEvent, render, screen } from '@testing-library/react-native'
 import React from 'react'
+import { useConsentStore } from '@/src/hooks/useConsentStore'
 import AnalyticsConsentScreen from '../index'
 import consentCopy from '@/src/content/consentDisclosure.json'
 
 const mockRouterReplace = jest.fn()
-const mockSetAnalyticsAccepted = jest.fn()
 
 jest.mock('expo-router', () => ({
   router: {
@@ -13,44 +13,42 @@ jest.mock('expo-router', () => ({
   },
 }))
 
-jest.mock('@/src/hooks/useConsentStore', () => ({
-  useConsentStore: (sel: (s: object) => unknown) =>
-    sel({
-      setAnalyticsAccepted: (...args: unknown[]) =>
-        mockSetAnalyticsAccepted(...args),
-    }),
-}))
-
 jest.mock('lucide-react-native', () => {
-  const { View } = require('react-native')
+  const { View } = jest.requireActual('react-native')
   return { Check: () => <View /> }
 })
 
 describe('AnalyticsConsentScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    useConsentStore.setState({ analyticsAccepted: false })
   })
 
-  it('toggling the checkbox off then continuing disables analytics and navigates to /(home-tabs)', () => {
+  it('toggling the checkbox off then continuing disables analytics and navigates to /(home-tabs)', async () => {
+    useConsentStore.setState({ analyticsAccepted: true })
     render(<AnalyticsConsentScreen />)
 
-    fireEvent.press(
+    await userEvent.press(
       screen.getByLabelText(
         `${consentCopy.analytics.label}: ${consentCopy.analytics.text}`,
       ),
     )
-    fireEvent.press(screen.getByLabelText(consentCopy.analytics.continueLabel))
+    await userEvent.press(
+      screen.getByLabelText(consentCopy.analytics.continueLabel),
+    )
 
-    expect(mockSetAnalyticsAccepted).toHaveBeenCalledWith(false)
+    expect(useConsentStore.getState().analyticsAccepted).toBe(false)
     expect(mockRouterReplace).toHaveBeenCalledWith('/(home-tabs)')
   })
 
-  it('leaving the checkbox checked (default) and continuing enables analytics and navigates to /(home-tabs)', () => {
+  it('leaving the checkbox checked (default) and continuing enables analytics and navigates to /(home-tabs)', async () => {
     render(<AnalyticsConsentScreen />)
 
-    fireEvent.press(screen.getByLabelText(consentCopy.analytics.continueLabel))
+    await userEvent.press(
+      screen.getByLabelText(consentCopy.analytics.continueLabel),
+    )
 
-    expect(mockSetAnalyticsAccepted).toHaveBeenCalledWith(true)
+    expect(useConsentStore.getState().analyticsAccepted).toBe(true)
     expect(mockRouterReplace).toHaveBeenCalledWith('/(home-tabs)')
   })
 })

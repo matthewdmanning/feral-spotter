@@ -23,8 +23,14 @@ describe('GoogleSignIn', () => {
   })
 
   describe('googleSignOut', () => {
-    it('resolves without error', async () => {
-      await expect(googleSignOut()).resolves.toBeUndefined()
+    it('invokes SDK sign-out and propagates its failure', async () => {
+      const failure = new Error('provider sign-out failed')
+      const signOut = jest
+        .spyOn(GoogleSignin, 'signOut')
+        .mockRejectedValueOnce(failure)
+
+      await expect(googleSignOut()).rejects.toBe(failure)
+      expect(signOut).toHaveBeenCalledTimes(1)
     })
   })
 })

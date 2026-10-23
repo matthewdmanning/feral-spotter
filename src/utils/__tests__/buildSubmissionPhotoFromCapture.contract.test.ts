@@ -21,7 +21,7 @@ describe('captured photo contract', () => {
     },
     {
       backend: 'avfoundation',
-      frame: { uri: 'file:///tmp/abc.jpg', width: 4032, height: 3024 },
+      frame: { uri: 'file:///tmp/abc.jpg', width: 3024, height: 4032 },
     },
     {
       backend: 'visioncamera, saveToTemporaryFileAsync',
@@ -35,8 +35,8 @@ describe('captured photo contract', () => {
 
   it.each(accepted)('accepts the $backend payload', ({ frame }) => {
     const photo = buildSubmissionPhotoFromCapture(frame, SHUTTER)
-    expect(photo.width).toBeGreaterThan(0)
-    expect(photo.height).toBeGreaterThan(0)
+    expect(photo.width).toBe(frame.width)
+    expect(photo.height).toBe(frame.height)
     expect(photo.uri).toBe(frame.uri)
     expect(photo.uploaded).toBe(false)
   })

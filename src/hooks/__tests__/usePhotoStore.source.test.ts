@@ -8,16 +8,6 @@ import { usePhotoStore } from '../usePhotoStore'
  * the disabled entrypoint too early) or after (would leave both disabled
  * once the pool is genuinely empty).
  */
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-)
-jest.mock('react-native-mmkv', () => ({
-  createMMKV: jest.fn(() => ({
-    getString: jest.fn(),
-    set: jest.fn(),
-    delete: jest.fn(),
-  })),
-}))
 
 const photo = (id: string) => ({
   local_id: id,

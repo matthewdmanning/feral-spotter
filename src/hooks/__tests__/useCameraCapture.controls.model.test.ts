@@ -10,24 +10,13 @@ import { useCameraCapture } from '../useCameraCapture'
  * camera-flip (flipCamera, the SwitchCamera button). Both are small,
  * self-contained state cycles with no prior coverage.
  */
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-)
-
-jest.mock('react-native-mmkv', () => ({
-  createMMKV: jest.fn(() => ({
-    getString: jest.fn(),
-    set: jest.fn(),
-    delete: jest.fn(),
-  })),
-}))
 
 jest.mock('expo-location', () => ({
+  ...jest.requireActual('expo-location'),
   getForegroundPermissionsAsync: jest.fn(() =>
     Promise.resolve({ status: 'denied' }),
   ),
   getCurrentPositionAsync: jest.fn(),
-  PermissionStatus: { GRANTED: 'granted' },
   Accuracy: { Balanced: 3 },
 }))
 
@@ -56,13 +45,9 @@ jest.mock('react-native-vision-camera', () => ({
   Camera: 'Camera',
 }))
 
-jest.mock('react-native-reanimated', () => ({
-  __esModule: true,
-  useSharedValue: jest.fn((v: unknown) => ({ value: v })),
-  useAnimatedStyle: jest.fn(() => ({})),
-  withTiming: jest.fn((v: unknown) => v),
-  Easing: { out: jest.fn(), quad: {}, back: jest.fn() },
-}))
+jest.mock('react-native-reanimated', () =>
+  jest.requireActual('react-native-reanimated/mock'),
+)
 
 jest.mock('@/src/hooks', () => ({
   usePhotoStore: (sel: (s: object) => unknown) =>

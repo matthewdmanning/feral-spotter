@@ -61,7 +61,7 @@ type ConfigModule = typeof import('../unistyles')
 /** Import the config fresh, re-running its startup StyleSheet.configure call. */
 const loadConfig = (): ConfigModule => {
   jest.resetModules()
-  return require('../unistyles') as ConfigModule
+  return jest.requireActual('../unistyles') as ConfigModule
 }
 
 const lastConfigureCall = () =>
@@ -156,6 +156,7 @@ describe('startup configuration', () => {
     'pins the theme at startup when the stored mode is %s',
     (mode) => {
       mockStore.set('themeMode', mode)
+      mockColorScheme = mode === 'dark' ? 'light' : 'dark'
 
       loadConfig()
 

@@ -1,24 +1,14 @@
-import { act, renderHook } from '@testing-library/react-native'
-import { deleteCapturedPhotoFile } from '@/src/lib/camera/capturedPhotoFiles'
+import { act, renderHook, waitFor } from '@testing-library/react-native'
+import { File, Paths } from 'expo-file-system'
+import { usePhotoStore } from '../usePhotoStore'
 import { useCapturedPhotoWorkflow } from '../useCapturedPhotoWorkflow'
 
-const mockDelete = jest.fn()
-const mockExists = jest.fn(() => true)
-jest.mock('expo-file-system', () => ({
-  Paths: { cache: { uri: 'file:///app/cache/' } },
-  File: class {
-    uri: string
-    constructor(uri: string) {
-      this.uri = uri
-    }
-    get exists() {
-      return mockExists()
-    }
-    delete() {
-      mockDelete(this.uri)
-    }
-  },
-}))
+// The supplied mock helper is outside the package's public exports map.
+const { __resetMockFileSystem } = jest.requireActual(
+  require
+    .resolve('expo-file-system/package.json')
+    .replace('package.json', 'mocks/FileSystem.ts'),
+)
 
 let mockId = 0
 jest.mock('expo-crypto', () => ({
@@ -27,11 +17,25 @@ jest.mock('expo-crypto', () => ({
 
 const mockAssetCreate = jest.fn()
 const mockPermissionCheck = jest.fn(async () => true)
-jest.mock('expo-media-library', () => ({
-  get Asset() {
-    return { create: mockAssetCreate }
-  },
-}))
+// Keep the real public Asset class; only native creation is external.
+jest.mock('expo-media-library', () => {
+  const nativeModulePath = require
+    .resolve('expo-media-library/package.json')
+    .replace('package.json', 'src/ExpoMediaLibraryNext.ts')
+  jest.doMock(nativeModulePath, () => ({
+    __esModule: true,
+    default: {
+      Query: class {},
+      Asset: class {
+        static create(...args: unknown[]) {
+          return mockAssetCreate(...args)
+        }
+      },
+      Album: class {},
+    },
+  }))
+  return jest.requireActual('expo-media-library')
+})
 jest.mock('@/src/lib/permissions/gallerySavePermission', () => ({
   gallerySavePermission: {
     check: (...args: unknown[]) => mockPermissionCheck(...args),
@@ -43,13 +47,9 @@ jest.mock('expo-router', () => ({
   router: { back: jest.fn(), navigate: jest.fn() },
   useIsFocused: () => true,
 }))
-jest.mock('react-native-reanimated', () => ({
-  __esModule: true,
-  useSharedValue: jest.fn((value: unknown) => ({ value })),
-  useAnimatedStyle: jest.fn(() => ({})),
-  withTiming: jest.fn((value: unknown) => value),
-  Easing: { out: jest.fn(), quad: {} },
-}))
+jest.mock('react-native-reanimated', () =>
+  jest.requireActual('react-native-reanimated/mock'),
+)
 jest.mock('@shopify/flash-list', () => ({ FlashList: 'FlashList' }))
 jest.mock('@/src/components/atoms/CameraThumb', () => ({
   CameraThumb: 'CameraThumb',
@@ -58,29 +58,8 @@ jest.mock('@/src/lib/upload/uploadNewPhoto', () => ({
   uploadNewPhoto: jest.fn(),
 }))
 
-const mockPhotoStoreState = {
-  photos: [] as { local_id: string; uri: string }[],
-  addPhoto: jest.fn((photo: { local_id: string; uri: string }) => {
-    mockPhotoStoreState.photos.push(photo)
-  }),
-  removePhoto: jest.fn((localId: string) => {
-    const photo = mockPhotoStoreState.photos.find(
-      (item) => item.local_id === localId,
-    )
-    if (photo) deleteCapturedPhotoFile(photo.uri)
-    mockPhotoStoreState.photos = mockPhotoStoreState.photos.filter(
-      (item) => item.local_id !== localId,
-    )
-  }),
-  updatePhoto: jest.fn(),
-  submissionId: 'test-submission',
-}
 jest.mock('@/src/hooks', () => ({
-  usePhotoStore: Object.assign(
-    (select: (state: typeof mockPhotoStoreState) => unknown) =>
-      select(mockPhotoStoreState),
-    { getState: () => mockPhotoStoreState },
-  ),
+  usePhotoStore: jest.requireActual('../usePhotoStore').usePhotoStore,
 }))
 jest.mock('@/src/hooks/useSettingsStore', () => ({
   useSettingsStore: (select: (state: object) => unknown) =>
@@ -89,17 +68,23 @@ jest.mock('@/src/hooks/useSettingsStore', () => ({
 
 const frame = (uri: string) => ({ uri, width: 100, height: 100 })
 
-beforeEach(() => {
-  mockDelete.mockClear()
-  mockExists.mockReturnValue(true)
+beforeEach(async () => {
+  await usePhotoStore.persist.rehydrate()
+  usePhotoStore.setState({
+    photos: [],
+    source: null,
+    submissionId: 'test-submission',
+  })
+  __resetMockFileSystem()
   mockAssetCreate.mockReset()
   mockAssetCreate.mockResolvedValue(undefined)
   mockPermissionCheck.mockReset()
   mockPermissionCheck.mockResolvedValue(true)
-  mockPhotoStoreState.photos = []
-  mockPhotoStoreState.addPhoto.mockClear()
-  mockPhotoStoreState.removePhoto.mockClear()
   mockId = 0
+})
+
+afterEach(() => {
+  jest.restoreAllMocks()
 })
 
 it('uses the current captured photo count for the last thumbnail badge', () => {
@@ -137,44 +122,42 @@ it('holds a removed cache file until an active gallery save finishes', async () 
   mockAssetCreate.mockImplementationOnce(
     () => new Promise<void>((resolve) => (resolveSave = resolve)),
   )
+  const file = new File(Paths.cache, 'pending.jpg')
+  file.create()
   const { result } = renderHook(() => useCapturedPhotoWorkflow())
 
   act(() => {
-    result.current.persistCapturedPhoto(
-      frame('file:///app/cache/pending.jpg'),
-      'capture',
-    )
+    result.current.persistCapturedPhoto(frame(file.uri), 'capture')
   })
   const flush = result.current.flushGallerySaves()
-  await act(async () => {
-    await Promise.resolve()
-  })
+  await waitFor(() => expect(mockAssetCreate).toHaveBeenCalledWith(file.uri))
   act(() => result.current.handleDiscardPhoto('photo-1'))
-  expect(mockDelete).not.toHaveBeenCalled()
+  expect(usePhotoStore.getState().photos).toEqual([])
+  expect(file.exists).toBe(true)
 
   await act(async () => {
     resolveSave()
     await flush
   })
-  expect(mockDelete).toHaveBeenCalledWith('file:///app/cache/pending.jpg')
+  expect(file.exists).toBe(false)
 })
 
 it.each([
   ['permission denial', false],
   ['permission-check error', new Error('permission check failed')],
 ])('releases a pending file after %s', async (_case, permissionResult) => {
+  const errors = jest.spyOn(console, 'error').mockImplementation(() => {})
   if (permissionResult instanceof Error) {
     mockPermissionCheck.mockRejectedValueOnce(permissionResult)
   } else {
     mockPermissionCheck.mockResolvedValueOnce(permissionResult)
   }
+  const file = new File(Paths.cache, 'permission.jpg')
+  file.create()
   const { result } = renderHook(() => useCapturedPhotoWorkflow())
 
   act(() => {
-    result.current.persistCapturedPhoto(
-      frame('file:///app/cache/permission.jpg'),
-      'capture',
-    )
+    result.current.persistCapturedPhoto(frame(file.uri), 'capture')
   })
   await act(async () => {
     await result.current.flushGallerySaves()
@@ -182,23 +165,41 @@ it.each([
   act(() => result.current.handleDiscardPhoto('photo-1'))
 
   expect(mockAssetCreate).not.toHaveBeenCalled()
-  expect(mockDelete).toHaveBeenCalledWith('file:///app/cache/permission.jpg')
+  if (permissionResult instanceof Error) {
+    expect(errors).toHaveBeenCalledTimes(1)
+    expect(errors).toHaveBeenCalledWith(
+      '[useCapturedPhotoWorkflow] gallery permission:',
+      permissionResult,
+    )
+  } else {
+    expect(errors).not.toHaveBeenCalled()
+  }
+  expect(usePhotoStore.getState().photos).toEqual([])
+  expect(file.exists).toBe(false)
 })
 
 it('releases a pending file when the gallery save fails', async () => {
-  mockAssetCreate.mockRejectedValueOnce(new Error('save failed'))
+  const saveError = new Error('save failed')
+  const errors = jest.spyOn(console, 'error').mockImplementation(() => {})
+  mockAssetCreate.mockRejectedValueOnce(saveError)
+  const file = new File(Paths.cache, 'error.jpg')
+  file.create()
   const { result } = renderHook(() => useCapturedPhotoWorkflow())
 
   act(() => {
-    result.current.persistCapturedPhoto(
-      frame('file:///app/cache/error.jpg'),
-      'capture',
-    )
+    result.current.persistCapturedPhoto(frame(file.uri), 'capture')
   })
   await act(async () => {
     await result.current.flushGallerySaves()
   })
   act(() => result.current.handleDiscardPhoto('photo-1'))
 
-  expect(mockDelete).toHaveBeenCalledWith('file:///app/cache/error.jpg')
+  expect(mockAssetCreate).toHaveBeenCalledWith(file.uri)
+  expect(errors).toHaveBeenCalledTimes(1)
+  expect(errors).toHaveBeenCalledWith(
+    '[useCapturedPhotoWorkflow] Asset.create:',
+    saveError,
+  )
+  expect(usePhotoStore.getState().photos).toEqual([])
+  expect(file.exists).toBe(false)
 })

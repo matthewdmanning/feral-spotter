@@ -2,16 +2,10 @@ import { render } from '@testing-library/react-native'
 import React from 'react'
 import { ErrorBoundary } from '../ErrorBoundary'
 import { registerCaptureException } from '@/src/lib/analytics/analytics'
-
-const consentState = { accepted: false, analyticsAccepted: false }
-
-jest.mock('@/src/hooks/useConsentStore', () => ({
-  hasAcceptedConsent: () => consentState.accepted,
-  hasAcceptedAnalytics: () => consentState.analyticsAccepted,
-}))
+import { useConsentStore } from '@/src/hooks/useConsentStore'
 
 jest.mock('lucide-react-native', () => {
-  const { View } = require('react-native')
+  const { View } = jest.requireActual('react-native')
   return { AlertCircle: () => <View /> }
 })
 
@@ -25,8 +19,7 @@ describe('ErrorBoundary crash reporting', () => {
   beforeEach(() => {
     captureExceptionSpy.mockClear()
     registerCaptureException(captureExceptionSpy)
-    consentState.accepted = false
-    consentState.analyticsAccepted = false
+    useConsentStore.setState(useConsentStore.getInitialState())
     jest.spyOn(console, 'error').mockImplementation(() => {})
   })
 
@@ -34,19 +27,28 @@ describe('ErrorBoundary crash reporting', () => {
     jest.restoreAllMocks()
   })
 
-  it('does not report the crash before consent and analytics opt-in are both accepted', () => {
-    render(
-      <ErrorBoundary>
-        <Boom />
-      </ErrorBoundary>,
-    )
+  it.each([
+    { accepted: false, analyticsAccepted: false },
+    { accepted: true, analyticsAccepted: false },
+    { accepted: false, analyticsAccepted: true },
+  ])(
+    'does not report the crash with consent state %p',
+    ({ accepted, analyticsAccepted }) => {
+      if (accepted) useConsentStore.getState().markAccepted()
+      useConsentStore.getState().setAnalyticsAccepted(analyticsAccepted)
+      render(
+        <ErrorBoundary>
+          <Boom />
+        </ErrorBoundary>,
+      )
 
-    expect(captureExceptionSpy).not.toHaveBeenCalled()
-  })
+      expect(captureExceptionSpy).not.toHaveBeenCalled()
+    },
+  )
 
   it('reports the crash with the component stack once consent and analytics are accepted', () => {
-    consentState.accepted = true
-    consentState.analyticsAccepted = true
+    useConsentStore.getState().markAccepted()
+    useConsentStore.getState().setAnalyticsAccepted(true)
 
     render(
       <ErrorBoundary>

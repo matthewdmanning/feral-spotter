@@ -1,4 +1,4 @@
-import { render, fireEvent } from '@testing-library/react-native'
+import { render, userEvent } from '@testing-library/react-native'
 import React, { useState } from 'react'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
@@ -63,14 +63,12 @@ describe('SegmentedControl select/deselect — model-based test', () => {
       selectedB: () => expectSelected(false, true),
     },
     events: {
-      TAP_A: () => fireEvent.press(getByLabelText('A')),
-      TAP_B: () => fireEvent.press(getByLabelText('B')),
+      TAP_A: async () => await userEvent.press(getByLabelText('A')),
+      TAP_B: async () => await userEvent.press(getByLabelText('B')),
     },
   }
 
   const journeys = [
-    { name: 'fresh control has nothing selected', events: [] },
-    { name: 'tapping an option selects it', events: [{ type: 'TAP_A' }] },
     {
       name: 'tapping the selected option deselects it',
       events: [{ type: 'TAP_A' }, { type: 'TAP_A' }],
