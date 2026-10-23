@@ -13,7 +13,6 @@
  */
 import { AppButton, type ColumnButton } from '@/src/components/atoms/AppButton'
 import { useEffect } from 'react'
-import { View } from 'react-native'
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -25,15 +24,11 @@ import { styles } from './BottomButtonColumn.styles'
 interface BottomButtonColumnProps {
   buttons: ColumnButton[]
   visible: boolean
-  spacing?: number
-  paddingBottom?: number
 }
 
 export function BottomButtonColumn({
   buttons,
   visible,
-  spacing = 12,
-  paddingBottom = 16,
 }: BottomButtonColumnProps) {
   // Reanimated SharedValues — UI thread animation
   const opacity = useSharedValue(visible ? 1 : 0)
@@ -55,18 +50,17 @@ export function BottomButtonColumn({
 
   return (
     // [Unistyles style, Reanimated style] — never merged/spread together
-    <Animated.View style={[styles.container, { paddingBottom }, animatedStyle]}>
-      {buttons.map((btn, i) => (
-        <View key={btn.key} style={i > 0 ? { marginTop: spacing } : undefined}>
-          <AppButton
-            onPress={btn.onPress}
-            variant={btn.variant}
-            disabled={btn.disabled}
-            accessibilityLabel={btn.accessibilityLabel}
-          >
-            {btn.label}
-          </AppButton>
-        </View>
+    <Animated.View style={[styles.container, animatedStyle]}>
+      {buttons.map((btn) => (
+        <AppButton
+          key={btn.key}
+          onPress={btn.onPress}
+          variant={btn.variant}
+          disabled={btn.disabled}
+          accessibilityLabel={btn.accessibilityLabel}
+        >
+          {btn.label}
+        </AppButton>
       ))}
     </Animated.View>
   )

@@ -1,18 +1,17 @@
+import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { AppButton, type ColumnButton } from '@/src/components/atoms/AppButton'
 import { BottomButtonColumn } from '@/src/components/molecules/BottomButtonColumn'
-import {
-  ENTRYPOINT_BUFFER_PERCENT,
-  SUBMISSION_STALE_MS,
-} from '@/src/config/constants'
-import { hasAcceptedConsent } from '@/src/hooks/useConsentStore'
+import { ENTRYPOINT_BUFFER_PERCENT } from '@/src/config/constants'
+import { useEntryGate } from '@/src/hooks/useEntryGate'
 import { useLibraryPhotoPicker } from '@/src/hooks/useLibraryPhotoPicker'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
-import { useAuth } from '@/src/lib/auth/useAuth'
-import { getAllSubmissionCaches } from '@/src/lib/cache/submissionCache'
+import { useResumableDraft } from '@/src/hooks/useResumableDraft'
 import { computeEntrypointDiameter } from '@/src/lib/home/entrypointDiameter'
-import { Stack, router, useIsFocused } from 'expo-router'
-import { Camera, ImagePlus } from 'lucide-react-native'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Stack, router } from 'expo-router'
+import type { Icon as PhosphorIcon } from 'phosphor-react-native'
+import { CameraIcon } from 'phosphor-react-native/src/icons/Camera'
+import { ImageSquareIcon } from 'phosphor-react-native/src/icons/ImageSquare'
+import { useCallback, useMemo } from 'react'
 import { StyleSheet, Text, useWindowDimensions, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
@@ -85,9 +84,47 @@ function ViewfinderCorners({
   )
 }
 
+interface EntrypointCircleProps {
+  label: string
+  Icon: PhosphorIcon
+  variant: 'primary' | 'secondary'
+  diameter: number
+  disabled: boolean
+  onPress: () => void
+}
+
+/** One circular entrypoint: the button, its icon, and the reticle frame. */
+function EntrypointCircle({
+  label,
+  Icon,
+  variant,
+  diameter,
+  disabled,
+  onPress,
+}: EntrypointCircleProps) {
+  const { theme } = useUnistyles()
+  // Icon and reticle take the label's color, so they match the variant.
+  const color =
+    variant === 'primary' ? theme.colors.accentText : theme.colors.onSecondary
+  return (
+    <View style={{ width: diameter, height: diameter }}>
+      <AppButton
+        onPress={onPress}
+        variant={variant}
+        size="circle"
+        diameter={diameter}
+        disabled={disabled}
+        icon={<Icon size={theme.iconSize.xxl} color={color} />}
+      >
+        {label}
+      </AppButton>
+      <ViewfinderCorners diameter={diameter} color={color} />
+    </View>
+  )
+}
+
 export default function HomeScreen() {
   const { theme } = useUnistyles()
-  const { isAuthenticated, isReady } = useAuth()
   const { width: screenWidth, height: screenHeight } = useWindowDimensions()
   const isLandscape = screenWidth >= screenHeight
   const entrypointDiameter = computeEntrypointDiameter(
@@ -97,48 +134,8 @@ export default function HomeScreen() {
     theme.spacing.xxl,
   )
 
-  // App-wide gate: no device consent yet → intro flow (onboarding leads into
-  // consent); consent already accepted but not signed in → sign-in; otherwise
-  // render normal home. Consent is checked first so a consented-but-signed-out
-  // user (e.g. after logging out) never sees intro-flow/consent again — that
-  // gate is granted for the device, not the session. Never act while
-  // !isReady — auth state is indeterminate until the provider has reported
-  // at least once, and redirecting on a guess is what caused #93's loop.
-  useEffect(() => {
-    if (!isReady) return
-    if (!hasAcceptedConsent()) {
-      router.replace('/intro-flow')
-    } else if (!isAuthenticated) {
-      router.replace('/sign-in')
-    }
-  }, [isReady, isAuthenticated])
-
-  // Re-read on every focus, not once on mount (#314). Home stays mounted
-  // while Settings sits on top of it, so a mount-once check went stale the
-  // moment anything else changed the draft: Clear Draft deleted the cache row
-  // and returned here, but this still offered Continue Observation, which
-  // then dead-ended on an empty annotate screen. The same staleness ran the
-  // other way too — a draft started and returned from left the entry hidden.
-  // Reset only escaped it because its path unmounts Home.
-  const isFocused = useIsFocused()
-  const [columnVisible, setColumnVisible] = useState(false)
-  useEffect(() => {
-    if (!isFocused) return
-    let cancelled = false
-    getAllSubmissionCaches().then((caches) => {
-      if (cancelled) return
-      const latest = caches[0]
-      const isStale =
-        latest &&
-        Date.now() - new Date(latest.updated_at).getTime() > SUBMISSION_STALE_MS
-      setColumnVisible(!!latest && latest.status === 'In Progress' && !isStale)
-    })
-    // The read is async, so a blur mid-flight would otherwise land a stale
-    // answer on a screen the user has already left.
-    return () => {
-      cancelled = true
-    }
-  }, [isFocused])
+  useEntryGate()
+  const columnVisible = useResumableDraft()
 
   // A draft is single-source by construction (ADR 0002 amendment): once the
   // shared pool holds a photo, the entrypoint for the *other* source is
@@ -168,7 +165,7 @@ export default function HomeScreen() {
         key: 'new',
         label: 'New Sighting',
         onPress: handleNew,
-        variant: 'primary',
+        variant: 'secondary',
       },
     ],
     [handleContinue, handleNew],
@@ -182,64 +179,39 @@ export default function HomeScreen() {
           title: 'FeralSpotter',
           headerStyle: { backgroundColor: theme.colors.background },
           headerTintColor: theme.colors.text,
-          headerTitleStyle: { fontWeight: '800', color: theme.colors.text },
+          headerTitleStyle: {
+            fontFamily: theme.fonts.extrabold,
+            fontSize: theme.typography.xl,
+            color: theme.colors.text,
+          },
           headerShadowVisible: false,
         }}
       />
 
       <View style={styles.root}>
+        <AmbientBackground />
         <View
           style={[
             styles.entrypointArea,
             { flexDirection: isLandscape ? 'row' : 'column' },
           ]}
         >
-          <View
-            style={{ width: entrypointDiameter, height: entrypointDiameter }}
-          >
-            <AppButton
-              onPress={handleCamera}
-              variant="primary"
-              size="circle"
-              diameter={entrypointDiameter}
-              disabled={cameraDisabled}
-              icon={
-                <Camera
-                  size={theme.iconSize.xxl}
-                  color={theme.colors.accentText}
-                />
-              }
-            >
-              Take Photos
-            </AppButton>
-            <ViewfinderCorners
-              diameter={entrypointDiameter}
-              color={theme.colors.accentText}
-            />
-          </View>
-          <View
-            style={{ width: entrypointDiameter, height: entrypointDiameter }}
-          >
-            <AppButton
-              onPress={pickFromLibrary}
-              variant="primary"
-              size="circle"
-              diameter={entrypointDiameter}
-              disabled={libraryDisabled}
-              icon={
-                <ImagePlus
-                  size={theme.iconSize.xxl}
-                  color={theme.colors.accentText}
-                />
-              }
-            >
-              Upload Photos
-            </AppButton>
-            <ViewfinderCorners
-              diameter={entrypointDiameter}
-              color={theme.colors.accentText}
-            />
-          </View>
+          <EntrypointCircle
+            label="Take Photos"
+            Icon={CameraIcon}
+            variant="primary"
+            diameter={entrypointDiameter}
+            disabled={cameraDisabled}
+            onPress={handleCamera}
+          />
+          <EntrypointCircle
+            label="Upload Photos"
+            Icon={ImageSquareIcon}
+            variant="secondary"
+            diameter={entrypointDiameter}
+            disabled={libraryDisabled}
+            onPress={pickFromLibrary}
+          />
           {/* #375: one of the two circles above is dead whenever the pool has
               a source, and nothing said why. Only ever one is disabled, so
               one line covers both cases. */}
@@ -253,12 +225,7 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.bottomArea}>
-          <BottomButtonColumn
-            buttons={buttons}
-            visible={columnVisible}
-            spacing={12}
-            paddingBottom={16}
-          />
+          <BottomButtonColumn buttons={buttons} visible={columnVisible} />
         </View>
       </View>
     </>

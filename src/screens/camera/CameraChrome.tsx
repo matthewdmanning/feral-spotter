@@ -11,13 +11,15 @@
  * preview is backend-specific.
  */
 
-import { AppButton } from '@/src/components/atoms/AppButton'
+import { GateScreen } from '@/src/components/molecules/GateScreen'
 import type { SubmissionPhoto } from '@/src/types'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
-import { SwitchCamera, X, Zap, ZapOff } from 'lucide-react-native'
+import { CameraRotateIcon } from 'phosphor-react-native/src/icons/CameraRotate'
+import { LightningIcon } from 'phosphor-react-native/src/icons/Lightning'
+import { LightningSlashIcon } from 'phosphor-react-native/src/icons/LightningSlash'
+import { XIcon } from 'phosphor-react-native/src/icons/X'
 import { useCallback } from 'react'
 import {
-  Linking,
   Pressable,
   StyleSheet as RNStyleSheet,
   Text,
@@ -33,38 +35,6 @@ import Animated, {
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
 
-interface CameraGateProps {
-  title: string
-  body?: string
-  primaryLabel: string
-  onPrimary: () => void
-  /** Offers the OS settings app, for when permission was denied for good. */
-  showOpenSettings?: boolean
-}
-
-export function CameraGate({
-  title,
-  body,
-  primaryLabel,
-  onPrimary,
-  showOpenSettings = false,
-}: CameraGateProps) {
-  return (
-    <View style={styles.gate}>
-      <Text style={styles.gateTitle}>{title}</Text>
-      {body ? <Text style={styles.gateBody}>{body}</Text> : null}
-      <View style={styles.gateActions}>
-        <AppButton onPress={onPrimary}>{primaryLabel}</AppButton>
-        {showOpenSettings ? (
-          <AppButton variant="secondary" onPress={() => Linking.openSettings()}>
-            Open Settings
-          </AppButton>
-        ) : null}
-      </View>
-    </View>
-  )
-}
-
 export const CAMERA_PERMISSION_GATE_BODY =
   'FeralSpotter needs camera access to capture cat observations.'
 
@@ -74,7 +44,7 @@ export function CameraPermissionGate({
   onRequestPermission: () => void
 }) {
   return (
-    <CameraGate
+    <GateScreen
       title="Camera Access Required"
       body={CAMERA_PERMISSION_GATE_BODY}
       primaryLabel="Allow Camera"
@@ -122,7 +92,7 @@ export function CameraTopBar({
         accessibilityRole="button"
         accessibilityLabel="Close camera"
       >
-        <X size={theme.iconSize.lg} color={theme.colors.text} />
+        <XIcon size={theme.iconSize.lg} color={theme.colors.text} />
       </Pressable>
       <View style={styles.topBarRight}>
         {photoCount > 0 && (
@@ -141,9 +111,15 @@ export function CameraTopBar({
           accessibilityLabel={`Flash ${flashMode}`}
         >
           {flashMode === 'on' ? (
-            <Zap size={theme.iconSize.lg} color={theme.colors.warning} />
+            <LightningIcon
+              size={theme.iconSize.lg}
+              color={theme.colors.warning}
+            />
           ) : (
-            <ZapOff size={theme.iconSize.lg} color={theme.colors.text} />
+            <LightningSlashIcon
+              size={theme.iconSize.lg}
+              color={theme.colors.text}
+            />
           )}
           {flashMode === 'auto' && <Text style={styles.autoA}>A</Text>}
         </Pressable>
@@ -178,7 +154,7 @@ export function CameraThumbnailStrip({
       renderItem={renderItem}
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ paddingHorizontal: 20, gap: 6 }}
+      contentContainerStyle={styles.stripContent}
       style={styles.strip}
     />
   )
@@ -229,7 +205,7 @@ export function CameraShutterRow({
         accessibilityRole="button"
         accessibilityLabel="Switch camera"
       >
-        <SwitchCamera size={theme.iconSize.lg} color={theme.colors.text} />
+        <CameraRotateIcon size={theme.iconSize.lg} color={theme.colors.text} />
       </Pressable>
       <Animated.View style={shutterStyle}>
         <Pressable

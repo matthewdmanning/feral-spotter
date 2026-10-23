@@ -32,11 +32,6 @@ jest.mock('@/src/hooks/usePhotoStore', () => ({
 jest.mock('@/src/hooks/useLibraryPhotoPicker', () => ({
   useLibraryPhotoPicker: () => ({ pickFromLibrary: jest.fn() }),
 }))
-jest.mock('lucide-react-native', () => ({
-  Camera: () => null,
-  ImagePlus: () => null,
-}))
-
 /**
  * Model of HomeScreen's app-wide auth/consent gate (src/screens/home/index.tsx),
  * scoped only to this flow — not a project-wide pattern. Guards against #93

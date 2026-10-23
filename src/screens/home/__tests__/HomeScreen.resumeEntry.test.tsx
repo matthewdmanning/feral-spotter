@@ -48,8 +48,6 @@ jest.mock('@/src/hooks/usePhotoStore', () => ({
 jest.mock('@/src/hooks/useLibraryPhotoPicker', () => ({
   useLibraryPhotoPicker: () => ({ pickFromLibrary: jest.fn() }),
 }))
-jest.mock('lucide-react-native', () => new Proxy({}, { get: () => () => null }))
-
 // Same stub as the sibling Home suites: the real column pulls in reanimated,
 // which has no native part under jest. `visible` is the gate under test.
 let capturedVisible = false

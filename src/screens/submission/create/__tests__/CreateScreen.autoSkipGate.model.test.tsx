@@ -59,14 +59,6 @@ jest.mock('../index.styles', () => ({
   styles: new Proxy({}, { get: () => ({}) }),
 }))
 
-jest.mock('lucide-react-native', () => ({
-  AlertCircle: () => null,
-  CheckCircle: () => null,
-  ChevronDown: () => null,
-  ChevronUp: () => null,
-  Trash2: () => null,
-}))
-
 type Cat = {
   local_id: string
   age: string

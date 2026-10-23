@@ -49,11 +49,6 @@ const mockPickFromLibrary = jest.fn()
 jest.mock('@/src/hooks/useLibraryPhotoPicker', () => ({
   useLibraryPhotoPicker: () => ({ pickFromLibrary: mockPickFromLibrary }),
 }))
-jest.mock('lucide-react-native', () => ({
-  Camera: () => null,
-  ImagePlus: () => null,
-}))
-
 let capturedButtons: ColumnButton[] = []
 // null (not false) until the mount effect resolves, so idleEntry's
 // `toBe(false)` assertion actually proves the effect ran rather than

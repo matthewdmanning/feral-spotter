@@ -21,13 +21,12 @@ export const styles = StyleSheet.create((theme, rt) => ({
     padding: theme.spacing.lg,
     paddingBottom: rt.insets.bottom + theme.spacing.lg,
     gap: theme.spacing.md,
-    backgroundColor: theme.colors.surface,
     borderTopLeftRadius: theme.radius.xxl,
     borderTopRightRadius: theme.radius.xxl,
     // Lift the sheet over the map, and pull it up so its rounded corners
     // sit over map content rather than over an empty strip.
     marginTop: -theme.radius.xxl,
-    ...theme.elevation.raised,
+    ...theme.glass.raised,
   },
   hint: {
     ...theme.textVariants.bodySmall,

@@ -43,6 +43,7 @@ import { usePhotoStore } from '@/src/hooks'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { computeCollapsedOffset } from '@/src/lib/insetCrop/collapse'
 import { computeBubbleDiameter } from '@/src/lib/insetCrop/diameter'
+import { bubbleImageRect } from '@/src/lib/insetCrop/imageRect'
 import { Image } from 'expo-image'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Animated, Dimensions, PanResponder, Pressable } from 'react-native'
@@ -280,27 +281,7 @@ export function InsetCropBubble({
   // No box confirmed yet for this cat (story 2) — nothing to anchor on.
   if (!box || !photo) return null
 
-  let imageStyle = { width: diameter, height: diameter, left: 0, top: 0 }
-  if (natural.w > 0 && natural.h > 0) {
-    const boxCenterX = (box.lowerLeftX + box.upperRightX) / 2
-    const boxCenterY = (box.lowerLeftY + box.upperRightY) / 2
-    const boxWidthPx = (box.upperRightX - box.lowerLeftX) * natural.w
-    const boxHeightPx = (box.lowerLeftY - box.upperRightY) * natural.h
-    // A degenerate (zero-area) box would divide by zero — fall back to
-    // showing the full frame around the box's center instead of NaN styles.
-    const scale =
-      boxWidthPx > 0 && boxHeightPx > 0
-        ? Math.max(diameter / boxWidthPx, diameter / boxHeightPx)
-        : Math.min(diameter / natural.w, diameter / natural.h)
-    const imgWidth = natural.w * scale
-    const imgHeight = natural.h * scale
-    imageStyle = {
-      width: imgWidth,
-      height: imgHeight,
-      left: diameter / 2 - boxCenterX * imgWidth,
-      top: diameter / 2 - boxCenterY * imgHeight,
-    }
-  }
+  const imageStyle = bubbleImageRect(box, natural.w, natural.h, diameter)
 
   // top-center's wrap is right-anchored (styles.wrapTopCenter), same as
   // top-right — so at the anchor (offset 0) it already sits flush at the

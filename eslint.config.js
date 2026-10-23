@@ -77,6 +77,27 @@ module.exports = defineConfig([
       '@typescript-eslint/no-namespace': 'error',
       // Do not suppress compiler errors broadly (@ts-ignore/@ts-nocheck/etc.).
       '@typescript-eslint/ban-ts-comment': 'error',
+      // Icons come one file per icon. The package root is a barrel that
+      // re-exports every icon, and Metro bundles and runs all of them (#406).
+      // Type-only imports are erased at build time, so they stay allowed.
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'phosphor-react-native',
+              message:
+                "Import each icon from 'phosphor-react-native/src/icons/<Name>'. The package root loads every icon.",
+              allowTypeImports: true,
+            },
+            {
+              name: 'lucide-react-native',
+              message:
+                "Replaced by phosphor-react-native (#406). Import from 'phosphor-react-native/src/icons/<Name>'.",
+            },
+          ],
+        },
+      ],
       // Do not use `#private` fields; do not use `const enum`.
       'no-restricted-syntax': [
         'error',

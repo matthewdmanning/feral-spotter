@@ -10,11 +10,6 @@ jest.mock('@/src/hooks/useConsentStore', () => ({
   hasAcceptedAnalytics: () => consentState.analyticsAccepted,
 }))
 
-jest.mock('lucide-react-native', () => {
-  const { View } = require('react-native')
-  return { AlertCircle: () => <View /> }
-})
-
 function Boom(): null {
   throw new Error('kaboom')
 }

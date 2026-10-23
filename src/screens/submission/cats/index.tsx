@@ -1,4 +1,6 @@
+import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { AppButton } from '@/src/components/atoms/AppButton'
+import { TextButton } from '@/src/components/atoms/TextButton'
 import { CatForm } from '@/src/components/organisms/CatForm'
 import {
   COLLAPSED_DIAMETER,
@@ -12,12 +14,10 @@ import { useCatSubmit } from '@/src/hooks/useCatSubmit'
 import { useRemoveCat } from '@/src/hooks/useRemoveCat'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
-import { Pressable, ScrollView, Text, View } from 'react-native'
-import { useUnistyles } from 'react-native-unistyles'
+import { ScrollView, Text, View } from 'react-native'
 import { styles } from './index.styles'
 
 export default function CatObservationScreen() {
-  const { theme } = useUnistyles()
   const { edit: editId } = useLocalSearchParams<{ edit?: string }>()
 
   const cats = useSubmissionStore((s) => s.cats)
@@ -66,61 +66,55 @@ export default function CatObservationScreen() {
   // bubble opened from its default spot. An expanded bubble floats over the
   // form's first rows and can be dragged clear.
   return (
-    <ScrollView
-      style={styles.scroll}
-      keyboardShouldPersistTaps="handled"
-      scrollEnabled={!bubbleHeld}
-    >
-      <View style={styles.inner}>
-        <View
-          testID="cat-form-header-zone"
-          style={[
-            styles.headerZone,
-            catId ? { minHeight: COLLAPSED_DIAMETER } : null,
-          ]}
-        >
-          <View style={styles.header}>
-            <Text
-              style={[
-                styles.title,
-                catId && !bubbleSettledCollapsed ? styles.titleFaded : null,
-              ]}
-            >
-              {existingCat ? 'Edit Cat' : 'Observed Cat'}
-            </Text>
-            <View style={styles.headerActions}>
-              <Pressable
-                onPress={form.handleClear}
-                style={styles.headerBtn}
-                hitSlop={12}
-                accessibilityRole="button"
+    <View style={styles.screen}>
+      <AmbientBackground />
+      <ScrollView
+        style={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+        scrollEnabled={!bubbleHeld}
+      >
+        <View style={styles.inner}>
+          <View
+            testID="cat-form-header-zone"
+            style={[
+              styles.headerZone,
+              catId ? { minHeight: COLLAPSED_DIAMETER } : null,
+            ]}
+          >
+            <View style={styles.header}>
+              <Text
+                style={[
+                  styles.title,
+                  catId && !bubbleSettledCollapsed ? styles.titleFaded : null,
+                ]}
               >
-                <Text
-                  style={[styles.headerBtnText, { color: theme.colors.danger }]}
-                >
+                {existingCat ? 'Edit Cat' : 'Observed Cat'}
+              </Text>
+              <View style={styles.headerActions}>
+                <TextButton onPress={form.handleClear} tone="danger">
                   Clear
-                </Text>
-              </Pressable>
+                </TextButton>
+              </View>
             </View>
+            {catId && (
+              <InsetCropBubble
+                catId={catId}
+                edge="top-center"
+                onSettledChange={setBubbleSettledCollapsed}
+                onHoldChange={setBubbleHeld}
+                draggable
+              />
+            )}
           </View>
-          {catId && (
-            <InsetCropBubble
-              catId={catId}
-              edge="top-center"
-              onSettledChange={setBubbleSettledCollapsed}
-              onHoldChange={setBubbleHeld}
-              draggable
-            />
+          <CatForm form={form} />
+          <AppButton onPress={submit.handleSave}>Save</AppButton>
+          {handleRemove && (
+            <AppButton onPress={handleRemove} variant="danger">
+              Remove this Cat
+            </AppButton>
           )}
         </View>
-        <CatForm form={form} />
-        <AppButton onPress={submit.handleSave}>Save</AppButton>
-        {handleRemove && (
-          <AppButton onPress={handleRemove} variant="danger">
-            Remove this Cat
-          </AppButton>
-        )}
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   )
 }

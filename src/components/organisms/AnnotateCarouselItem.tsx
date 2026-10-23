@@ -14,6 +14,7 @@
  * of a pass is what mints the cat id, so this item can't own that write.
  */
 
+import { AppButton } from '@/src/components/atoms/AppButton'
 import {
   DOT_HITBOX_SIZE,
   HANDLE_HITBOX_SIZE,
@@ -22,10 +23,12 @@ import {
 } from '@/src/hooks/useBoundingBoxFrame'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
+import { containFit } from '@/src/lib/annotate/cropProjection'
+import { previousCatBoxes } from '@/src/lib/annotate/previousBoxes'
 import type { BoundingBox } from '@/src/types/BoundingBox'
 import type { SubmissionPhoto } from '@/src/types'
 import { useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { View } from 'react-native'
 import { Image } from 'expo-image'
 import { GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
@@ -73,26 +76,31 @@ export function AnnotateCarouselItem({
     : undefined
   const [natural, setNatural] = useState({ w: 0, h: 0 })
 
-  // Boxes of the cats already recorded, each in its cat's own color. Only
-  // saved cats: an abandoned pass's leftover boxes are not previous cats.
-  const previousBoxes = savedCats
-    .filter((cat) => cat.local_id !== activeCatId)
-    .flatMap((cat) =>
-      (boxes[`${cat.local_id}:${photo.local_id}`] ?? []).map((box) => ({
-        box,
-        color: theme.catPalette[catColors[cat.local_id]] ?? theme.colors.muted,
-      })),
-    )
-  // The photo sits contain-fit in the canvas (cropProjection.containFit);
-  // normalised boxes map onto that rect.
-  const fit =
-    natural.w > 0 && natural.h > 0
-      ? Math.min(width / natural.w, height / natural.h)
-      : 0
+  // Boxes of the cats already recorded, each in its cat's own color.
+  const previousBoxes = previousCatBoxes(
+    savedCats.map((cat) => cat.local_id),
+    activeCatId,
+    photo.local_id,
+    boxes,
+    catColors,
+  )
+  // The photo sits contain-fit in the canvas; normalised boxes map onto that
+  // rect. Nothing to place until the image reports its size.
+  const fitted = natural.w > 0 && natural.h > 0
+  const {
+    baseScale: fit,
+    baseOffsetX: fitX,
+    baseOffsetY: fitY,
+  } = fitted
+    ? containFit({
+        canvasWidth: width,
+        canvasHeight: height,
+        imgNaturalWidth: natural.w,
+        imgNaturalHeight: natural.h,
+      })
+    : { baseScale: 0, baseOffsetX: 0, baseOffsetY: 0 }
   const fitW = natural.w * fit
   const fitH = natural.h * fit
-  const fitX = (width - fitW) / 2
-  const fitY = (height - fitH) / 2
 
   const {
     photoGesture,
@@ -177,6 +185,34 @@ export function AnnotateCarouselItem({
       height / 2 + boxHalfHeight.value - HANDLE_INSET - HANDLE_HITBOX_SIZE / 2,
   }))
 
+  // Edge handles — single-finger drag reshapes the box's aspect ratio (#286).
+  const handles = [
+    {
+      label: 'Resize box width, left edge',
+      gesture: leftHandleGesture,
+      style: leftHandleStyle,
+      barStyle: styles.handleBarVertical,
+    },
+    {
+      label: 'Resize box width, right edge',
+      gesture: rightHandleGesture,
+      style: rightHandleStyle,
+      barStyle: styles.handleBarVertical,
+    },
+    {
+      label: 'Resize box height, top edge',
+      gesture: topHandleGesture,
+      style: topHandleStyle,
+      barStyle: styles.handleBarHorizontal,
+    },
+    {
+      label: 'Resize box height, bottom edge',
+      gesture: bottomHandleGesture,
+      style: bottomHandleStyle,
+      barStyle: styles.handleBarHorizontal,
+    },
+  ]
+
   // width/height are runtime props — cannot be static stylesheet values
   return (
     <View style={{ width, height }}>
@@ -194,14 +230,17 @@ export function AnnotateCarouselItem({
               }
               accessibilityLabel="Cat observation photo"
             />
-            {previousBoxes.map(({ box, color }) => (
+            {previousBoxes.map(({ box, colorSlot }) => (
               <View
                 key={box.id}
                 pointerEvents="none"
                 style={[
                   styles.previousBox,
                   {
-                    borderColor: color,
+                    borderColor:
+                      (colorSlot !== undefined &&
+                        theme.catPalette[colorSlot]) ||
+                      theme.colors.muted,
                     left: fitX + box.lowerLeftX * fitW,
                     top: fitY + box.upperRightY * fitH,
                     width: (box.upperRightX - box.lowerLeftX) * fitW,
@@ -226,54 +265,20 @@ export function AnnotateCarouselItem({
       />
 
       {/* Edge handles — single-finger drag reshapes the box's aspect ratio (#286) */}
-      <GestureDetector gesture={leftHandleGesture}>
-        <Animated.View
-          style={[
-            styles.handleTouchArea,
-            { width: HANDLE_HITBOX_SIZE, height: HANDLE_HITBOX_SIZE },
-            leftHandleStyle,
-          ]}
-          accessibilityLabel="Resize box width, left edge"
-        >
-          <View style={[styles.handleBar, styles.handleBarVertical]} />
-        </Animated.View>
-      </GestureDetector>
-      <GestureDetector gesture={rightHandleGesture}>
-        <Animated.View
-          style={[
-            styles.handleTouchArea,
-            { width: HANDLE_HITBOX_SIZE, height: HANDLE_HITBOX_SIZE },
-            rightHandleStyle,
-          ]}
-          accessibilityLabel="Resize box width, right edge"
-        >
-          <View style={[styles.handleBar, styles.handleBarVertical]} />
-        </Animated.View>
-      </GestureDetector>
-      <GestureDetector gesture={topHandleGesture}>
-        <Animated.View
-          style={[
-            styles.handleTouchArea,
-            { width: HANDLE_HITBOX_SIZE, height: HANDLE_HITBOX_SIZE },
-            topHandleStyle,
-          ]}
-          accessibilityLabel="Resize box height, top edge"
-        >
-          <View style={[styles.handleBar, styles.handleBarHorizontal]} />
-        </Animated.View>
-      </GestureDetector>
-      <GestureDetector gesture={bottomHandleGesture}>
-        <Animated.View
-          style={[
-            styles.handleTouchArea,
-            { width: HANDLE_HITBOX_SIZE, height: HANDLE_HITBOX_SIZE },
-            bottomHandleStyle,
-          ]}
-          accessibilityLabel="Resize box height, bottom edge"
-        >
-          <View style={[styles.handleBar, styles.handleBarHorizontal]} />
-        </Animated.View>
-      </GestureDetector>
+      {handles.map((handle) => (
+        <GestureDetector key={handle.label} gesture={handle.gesture}>
+          <Animated.View
+            style={[
+              styles.handleTouchArea,
+              { width: HANDLE_HITBOX_SIZE, height: HANDLE_HITBOX_SIZE },
+              handle.style,
+            ]}
+            accessibilityLabel={handle.label}
+          >
+            <View style={[styles.handleBar, handle.barStyle]} />
+          </Animated.View>
+        </GestureDetector>
+      ))}
 
       {/* Center dot — long-press to confirm */}
       <GestureDetector gesture={dotGesture}>
@@ -293,13 +298,11 @@ export function AnnotateCarouselItem({
       </GestureDetector>
 
       {/* Confirm button — same effect as holding the dot */}
-      <Pressable
-        onPress={confirmNow}
-        accessibilityRole="button"
-        style={styles.confirmBtn}
-      >
-        <Text style={styles.confirmText}>Confirm</Text>
-      </Pressable>
+      <View style={styles.confirmWrap}>
+        <AppButton onPress={confirmNow} size="compact">
+          Confirm
+        </AppButton>
+      </View>
     </View>
   )
 }

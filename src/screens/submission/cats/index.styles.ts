@@ -1,9 +1,10 @@
 import { StyleSheet } from 'react-native-unistyles'
 
 export const styles = StyleSheet.create((theme) => ({
-  scroll: { backgroundColor: theme.colors.background },
+  screen: { flex: 1, backgroundColor: theme.colors.background },
+  scroll: { flex: 1 },
   inner: {
-    paddingHorizontal: theme.spacing.lg,
+    paddingHorizontal: theme.layout.gutter,
     paddingBottom: theme.spacing.xxl,
     gap: theme.spacing.lg,
   },
@@ -25,10 +26,4 @@ export const styles = StyleSheet.create((theme) => ({
     alignItems: 'center',
     gap: theme.spacing.sm,
   },
-  headerBtn: {
-    minHeight: theme.controlHeight.touchTarget,
-    justifyContent: 'center',
-    paddingHorizontal: theme.spacing.sm,
-  },
-  headerBtnText: { ...theme.textVariants.labelSmall },
 }))

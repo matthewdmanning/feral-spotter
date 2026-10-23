@@ -37,7 +37,7 @@ export interface NormalisedBox {
   upperRightY: number
 }
 
-function containFit(dims: ProjectionDims) {
+export function containFit(dims: ProjectionDims) {
   const { canvasWidth, canvasHeight, imgNaturalWidth, imgNaturalHeight } = dims
   const baseScale = Math.min(
     canvasWidth / imgNaturalWidth,

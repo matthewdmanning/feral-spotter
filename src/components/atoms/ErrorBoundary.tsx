@@ -2,7 +2,7 @@ import { AppButton } from './AppButton'
 import React, { Component, type ReactNode } from 'react'
 import { View, Text } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
-import { AlertCircle } from 'lucide-react-native'
+import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle'
 import { captureException } from '@/src/lib/analytics/analytics'
 import { styles } from './ErrorBoundary.styles'
 
@@ -56,7 +56,10 @@ function ErrorFallback({
   const { theme } = useUnistyles()
   return (
     <View style={styles.container}>
-      <AlertCircle size={theme.iconSize.hero} color={theme.colors.danger} />
+      <WarningCircleIcon
+        size={theme.iconSize.hero}
+        color={theme.colors.danger}
+      />
       <View style={styles.textGroup}>
         <Text style={styles.title}>Something went wrong</Text>
         <Text style={styles.subtitle}>

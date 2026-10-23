@@ -48,8 +48,9 @@ const anyProp = () =>
  */
 const knownTokens = {
   spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24, xxxl: 32 },
-  radius: { sm: 6, md: 8, lg: 12, xl: 16, xxl: 20, full: 9999 },
-  typography: { xs: 12, sm: 14, base: 16, lg: 18, xl: 20, xxl: 24, xxxl: 30 },
+  radius: { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 28, full: 9999 },
+  typography: { xs: 14, sm: 16, base: 18, lg: 20, xl: 24, xxl: 28, xxxl: 34 },
+  layout: { gutter: 20, cardPadding: 16, stackGap: 12, sectionGap: 24 },
 }
 
 const theme = new Proxy(knownTokens, {
