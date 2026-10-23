@@ -86,3 +86,93 @@ describe('firestore.rules — /submissions/{submissionId}', () => {
     await assertFails(deleteDoc(doc(owner.firestore(), 'submissions', 'sub-1')))
   })
 })
+
+describe('Firestore counter and retry-marker access', () => {
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'submissionCounts', 'uid-owner'), {
+        count: 12,
+      })
+      await setDoc(
+        doc(
+          context.firestore(),
+          'submissionCounts',
+          'uid-owner',
+          'items',
+          'sub-1',
+        ),
+        {},
+      )
+    })
+  })
+
+  it.each([
+    { actor: 'owner', uid: 'uid-owner', mayReadCount: true },
+    { actor: 'another user', uid: 'uid-other', mayReadCount: false },
+    { actor: 'anonymous', uid: null, mayReadCount: false },
+  ])(
+    'exposes only the permitted count data to $actor',
+    async ({ uid, mayReadCount }) => {
+      const context = uid
+        ? testEnv.authenticatedContext(uid)
+        : testEnv.unauthenticatedContext()
+      const count = getDoc(
+        doc(context.firestore(), 'submissionCounts', 'uid-owner'),
+      )
+      if (mayReadCount) {
+        const result = await assertSucceeds(count)
+        expect(result.data()).toEqual({ count: 12 })
+      } else await assertFails(count)
+
+      // Even the owner cannot inspect the internal deduplication markers.
+      await assertFails(
+        getDoc(
+          doc(
+            context.firestore(),
+            'submissionCounts',
+            'uid-owner',
+            'items',
+            'sub-1',
+          ),
+        ),
+      )
+    },
+  )
+
+  it.each([
+    { kind: 'count', segments: ['submissionCounts', 'uid-owner'] },
+    {
+      kind: 'marker',
+      segments: ['submissionCounts', 'uid-owner', 'items', 'sub-1'],
+    },
+  ])(
+    'prevents the owner from changing or deleting a $kind',
+    async ({ segments }) => {
+      const owner = testEnv.authenticatedContext('uid-owner')
+      const target = doc(owner.firestore(), segments.join('/'))
+      await assertFails(updateDoc(target, { count: 999 }))
+      await assertFails(deleteDoc(target))
+    },
+  )
+
+  it('prevents an owner from creating a count or retry marker', async () => {
+    const owner = testEnv.authenticatedContext('uid-new')
+    await assertFails(
+      setDoc(doc(owner.firestore(), 'submissionCounts', 'uid-new'), {
+        count: 0,
+      }),
+    )
+    await assertFails(
+      setDoc(
+        doc(
+          owner.firestore(),
+          'submissionCounts',
+          'uid-new',
+          'items',
+          'sub-new',
+        ),
+        {},
+      ),
+    )
+  })
+})

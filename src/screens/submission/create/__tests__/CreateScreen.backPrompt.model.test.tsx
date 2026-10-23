@@ -16,17 +16,6 @@ import CreateSubmissionScreen from '../index'
  * Back must not open this prompt. Mocking pattern follows
  * CreateScreen.addMorePhotosAction.model.test.tsx.
  */
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-)
-
-jest.mock('react-native-mmkv', () => ({
-  createMMKV: jest.fn(() => ({
-    getString: jest.fn(),
-    set: jest.fn(),
-    delete: jest.fn(),
-  })),
-}))
 
 let mockFocused = true
 
@@ -72,14 +61,6 @@ jest.mock('@/src/lib/location', () => ({
 
 jest.mock('../index.styles', () => ({
   styles: new Proxy({}, { get: () => ({}) }),
-}))
-
-jest.mock('lucide-react-native', () => ({
-  AlertCircle: () => null,
-  CheckCircle: () => null,
-  ChevronDown: () => null,
-  ChevronUp: () => null,
-  Trash2: () => null,
 }))
 
 jest.mock('@/src/hooks/usePhotoStore', () => ({

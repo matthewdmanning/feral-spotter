@@ -19,27 +19,5 @@ export const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing.sm,
     justifyContent: 'center',
   },
-  stepBtn: {
-    minHeight: theme.controlHeight.touchTarget,
-    justifyContent: 'center',
-    flex: 1,
-    paddingVertical: theme.spacing.sm,
-    alignItems: 'center',
-    borderRadius: theme.radius.full,
-    borderWidth: 1.5,
-  },
-  stepBtnActive: {
-    backgroundColor: theme.colors.accent,
-    borderColor: theme.colors.accent,
-  },
-  stepBtnIdle: {
-    backgroundColor: 'transparent',
-    borderColor: theme.colors.border,
-  },
-  stepTextActive: {
-    ...theme.textVariants.labelSmall,
-    color: theme.colors.accentText,
-  },
-  stepTextIdle: { ...theme.textVariants.labelSmall, color: theme.colors.muted },
   actionRow: { flexDirection: 'row', gap: theme.spacing.sm },
 }))

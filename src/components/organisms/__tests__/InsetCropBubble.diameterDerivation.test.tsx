@@ -1,3 +1,5 @@
+import { usePhotoStore } from '@/src/hooks/usePhotoStore'
+import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { render } from '@testing-library/react-native'
 import { StyleSheet, Dimensions } from 'react-native'
 import { InsetCropBubble } from '../InsetCropBubble'
@@ -28,33 +30,40 @@ jest.mock('expo-image', () => ({
 // to computeBubbleDiameter(78, 78), not some other value that depends on
 // window.height leaking into the height axis.
 const SQUARE_FRACTION_BOX = {
-  id: 'box-1',
-  cat_id: 'cat-1',
-  photo_local_id: 'photo-1',
   lowerLeftX: 0.1,
   lowerLeftY: 0.7,
   upperRightX: 0.3,
   upperRightY: 0.5,
 }
 
-jest.mock('@/src/hooks', () => ({
-  usePhotoStore: (
-    sel: (s: { photos: { local_id: string; uri: string }[] }) => unknown,
-  ) => sel({ photos: [{ local_id: 'photo-1', uri: 'file://photo-1.jpg' }] }),
-}))
-
-jest.mock('@/src/hooks/useBoundingBoxStore', () => ({
-  useBoundingBoxStore: (
-    sel: (s: {
-      getFirstBox: (catId: string) => typeof SQUARE_FRACTION_BOX
-      catColors: Record<string, number>
-    }) => unknown,
-  ) => sel({ getFirstBox: () => SQUARE_FRACTION_BOX, catColors: {} }),
-}))
+beforeEach(() => {
+  usePhotoStore.setState({
+    ...usePhotoStore.getInitialState(),
+    photos: [
+      {
+        local_id: 'photo-1',
+        uri: 'file://photo-1.jpg',
+        width: 1000,
+        height: 1000,
+        uploaded: false,
+        upload_progress: 0,
+      },
+    ],
+  })
+  useBoundingBoxStore.setState(useBoundingBoxStore.getInitialState())
+  // Another cat is seeded first so an unfiltered first-box lookup is observable.
+  useBoundingBoxStore.getState().addBox('cat-2', 'photo-1', {
+    lowerLeftX: 0.1,
+    lowerLeftY: 0.9,
+    upperRightX: 0.9,
+    upperRightY: 0.1,
+  })
+  useBoundingBoxStore.getState().addBox('cat-1', 'photo-1', SQUARE_FRACTION_BOX)
+})
 
 describe('InsetCropBubble — normalized box -> dp derivation', () => {
   it('scales both box axes by the same window dimension (isotropic)', () => {
-    const { getByTestId } = render(
+    const { getByTestId, rerender } = render(
       <InsetCropBubble catId="cat-1" edge="top-right" />,
     )
     const bubble = getByTestId('inset-crop-bubble')
@@ -82,5 +91,17 @@ describe('InsetCropBubble — normalized box -> dp derivation', () => {
       (0.7 - 0.5) * realHeight,
     )
     expect(flattened.width).not.toBeCloseTo(anisotropicWrongDiameter, 4)
+
+    // Switching cats must resolve that cat's box, rather than reusing the
+    // previous cat or whichever box happened to be inserted first.
+    rerender(<InsetCropBubble catId="cat-2" edge="top-right" />)
+    const otherDiameter = StyleSheet.flatten(
+      getByTestId('inset-crop-bubble').props.style,
+    ).width as number
+    expect(otherDiameter).toBeCloseTo(
+      computeBubbleDiameter((0.9 - 0.1) * realWidth, (0.9 - 0.1) * realWidth),
+      4,
+    )
+    expect(otherDiameter).not.toBeCloseTo(expectedDiameter, 4)
   })
 })

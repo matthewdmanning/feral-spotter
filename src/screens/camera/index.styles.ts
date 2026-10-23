@@ -1,4 +1,8 @@
 import { StyleSheet } from 'react-native-unistyles'
+import {
+  THUMB_GAP,
+  THUMB_SIZE,
+} from '@/src/components/atoms/CameraThumb.constants'
 
 export const styles = StyleSheet.create((theme, rt) => ({
   root: { flex: 1, backgroundColor: theme.colors.cameraBackground },
@@ -18,7 +22,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: theme.spacing.xl,
+    paddingHorizontal: theme.layout.gutter,
   },
   topBarRight: {
     flexDirection: 'row',
@@ -31,8 +35,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     width: theme.controlHeight.touchTarget,
     height: theme.controlHeight.touchTarget,
     borderRadius: theme.radius.full,
-    backgroundColor: theme.colors.surface,
-    ...theme.elevation.card,
+    ...theme.glass.chip,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 25,
@@ -43,8 +46,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     alignItems: 'center',
     paddingHorizontal: theme.spacing.lg,
     borderRadius: theme.radius.full,
-    backgroundColor: theme.colors.surface,
-    ...theme.elevation.card,
+    ...theme.glass.chip,
     zIndex: 25,
   },
   pillText: { ...theme.textVariants.label, color: theme.colors.text },
@@ -54,7 +56,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     bottom: theme.spacing.xs,
     right: theme.spacing.xs + 2,
     color: theme.colors.text,
-    fontWeight: '800',
+    fontFamily: theme.fonts.extrabold,
   },
   bottomBar: {
     position: 'absolute',
@@ -70,8 +72,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     marginBottom: theme.spacing.md,
     padding: theme.spacing.md,
     borderRadius: theme.radius.xl,
-    backgroundColor: theme.colors.surface,
-    ...theme.elevation.raised,
+    ...theme.glass.chip,
   },
   captureModeHint: {
     ...theme.textVariants.bodySmall,
@@ -79,7 +80,11 @@ export const styles = StyleSheet.create((theme, rt) => ({
     marginTop: theme.spacing.sm,
     textAlign: 'center',
   },
-  strip: { height: 64 + 16, marginBottom: theme.spacing.xl },
+  strip: {
+    height: THUMB_SIZE + theme.spacing.lg,
+    marginBottom: theme.spacing.xl,
+  },
+  stripContent: { paddingHorizontal: theme.layout.gutter, gap: THUMB_GAP },
   shutterRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -87,15 +92,14 @@ export const styles = StyleSheet.create((theme, rt) => ({
     paddingHorizontal: theme.spacing.xxxl + theme.spacing.md,
   },
   sideBtn: {
-    width: 52,
-    height: 52,
+    width: theme.controlHeight.control,
+    height: theme.controlHeight.control,
     alignItems: 'center',
     justifyContent: 'center',
   },
   sideBtnFilled: {
     borderRadius: theme.radius.full,
-    backgroundColor: theme.colors.surface,
-    ...theme.elevation.card,
+    ...theme.glass.chip,
     zIndex: 25,
   },
   // Ring and core both use the on-camera color: they sit on the live feed,
@@ -117,28 +121,5 @@ export const styles = StyleSheet.create((theme, rt) => ({
     height: 62,
     borderRadius: theme.radius.full,
     backgroundColor: theme.colors.onCamera,
-  },
-  gate: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: theme.spacing.xxxl,
-    gap: theme.spacing.lg,
-  },
-  gateTitle: {
-    ...theme.textVariants.heading,
-    color: theme.colors.text,
-    textAlign: 'center',
-  },
-  gateBody: {
-    ...theme.textVariants.body,
-    color: theme.colors.muted,
-    textAlign: 'center',
-  },
-  gateActions: {
-    alignSelf: 'stretch',
-    gap: theme.spacing.lg,
-    marginTop: theme.spacing.sm,
   },
 }))

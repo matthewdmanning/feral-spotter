@@ -1,3 +1,5 @@
+/* global jest */
+
 // Manual Jest mock — @react-native-firebase/storage's native module isn't
 // available under Jest. Statically imported by
 // src/lib/upload/firebaseUpload.ts, so the real package must never load in
@@ -13,7 +15,7 @@
 module.exports = {
   getStorage: jest.fn(() => ({})),
   connectStorageEmulator: jest.fn(),
-  ref: jest.fn(() => ({})),
+  ref: jest.fn((storage, fullPath) => ({ fullPath })),
   putFile: jest.fn(() => {
     const task = Promise.resolve()
     task.on = jest.fn()
@@ -27,4 +29,6 @@ module.exports = {
     Promise.resolve({ timeCreated: '2026-01-01T00:00:00.000Z' }),
   ),
   updateMetadata: jest.fn(() => Promise.resolve({})),
+  listAll: jest.fn(() => Promise.resolve({ items: [], prefixes: [] })),
+  deleteObject: jest.fn(() => Promise.resolve()),
 }

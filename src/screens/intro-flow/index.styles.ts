@@ -4,7 +4,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
   root: {
     flex: 1,
     backgroundColor: theme.colors.background,
-    paddingHorizontal: theme.spacing.xxl,
+    paddingHorizontal: theme.layout.gutter,
     paddingTop: rt.insets.top + theme.spacing.xxxl,
     paddingBottom: rt.insets.bottom + theme.spacing.lg,
   },
@@ -18,12 +18,6 @@ export const styles = StyleSheet.create((theme, rt) => ({
     ...theme.textVariants.body,
     color: theme.colors.muted,
     marginBottom: theme.spacing.md,
-  },
-  link: {
-    ...theme.textVariants.labelSmall,
-    color: theme.colors.accent,
-    textDecorationLine: 'underline',
-    marginTop: theme.spacing.sm,
   },
   footer: { gap: theme.spacing.lg },
   buttonRow: { flexDirection: 'row', gap: theme.spacing.md },

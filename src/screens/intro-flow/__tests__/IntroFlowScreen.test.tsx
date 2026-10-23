@@ -1,6 +1,6 @@
 import * as ui from '@/src/hooks/useUIStore'
 import {
-  fireEvent,
+  userEvent,
   render,
   screen,
   waitFor,
@@ -26,27 +26,6 @@ jest.mock('@/src/hooks/useBackHandler', () => ({
   },
 }))
 
-jest.mock('@/src/components/atoms/AppButton', () => {
-  const { Pressable, Text } = require('react-native')
-  return {
-    AppButton: ({
-      onPress,
-      children,
-    }: {
-      onPress: () => void
-      children: string
-    }) => (
-      <Pressable
-        onPress={onPress}
-        accessibilityRole="button"
-        accessibilityLabel={children}
-      >
-        <Text>{children}</Text>
-      </Pressable>
-    ),
-  }
-})
-
 describe('IntroFlowScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks()
@@ -54,24 +33,45 @@ describe('IntroFlowScreen', () => {
     Platform.OS = 'android'
   })
 
-  it('shows the first slide and advances through all of them to /consent', async () => {
+  it('shows each slide, returns with Previous, and advances to /consent', async () => {
+    const user = userEvent.setup()
     render(<IntroFlowScreen />)
-    expect(screen.getByText(ONBOARDING_SLIDES[0].header)).toBeTruthy()
 
-    for (const slide of ONBOARDING_SLIDES) {
-      fireEvent.press(screen.getByText(slide.button))
+    const expectSlide = (index: number) => {
+      const slide = ONBOARDING_SLIDES[index]
+      expect(screen.getByRole('header', { name: slide.header })).toBeVisible()
+      for (const paragraph of slide.body) {
+        expect(screen.getByText(paragraph)).toBeVisible()
+      }
+      if (index === 0) {
+        expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled()
+      } else {
+        expect(screen.getByRole('button', { name: 'Previous' })).toBeEnabled()
+      }
+    }
+
+    expectSlide(0)
+    for (let index = 0; index < ONBOARDING_SLIDES.length; index++) {
+      await user.press(screen.getByText(ONBOARDING_SLIDES[index].button))
+      if (index + 1 < ONBOARDING_SLIDES.length) expectSlide(index + 1)
+      if (index === 1) {
+        await user.press(screen.getByRole('button', { name: 'Previous' }))
+        expectSlide(1)
+        await user.press(screen.getByText(ONBOARDING_SLIDES[1].button))
+        expectSlide(2)
+      }
     }
 
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/consent'))
   })
 
-  it('links to /data-agreement from the data-usage slide', () => {
+  it('links to /data-agreement from the data-usage slide', async () => {
     render(<IntroFlowScreen />)
     // Advance to the data-usage slide (index 2)
-    fireEvent.press(screen.getByText(ONBOARDING_SLIDES[0].button))
-    fireEvent.press(screen.getByText(ONBOARDING_SLIDES[1].button))
+    await userEvent.press(screen.getByText(ONBOARDING_SLIDES[0].button))
+    await userEvent.press(screen.getByText(ONBOARDING_SLIDES[1].button))
 
-    fireEvent.press(screen.getByRole('link'))
+    await userEvent.press(screen.getByRole('link'))
     expect(router.push).toHaveBeenCalledWith('/data-agreement')
   })
 
@@ -106,10 +106,10 @@ describe('IntroFlowScreen', () => {
     expect(exitSpy).toHaveBeenCalledTimes(1)
   })
 
-  it('does not intercept hardware back past T1', () => {
+  it('does not intercept hardware back past T1', async () => {
     const alertSpy = jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
     render(<IntroFlowScreen />)
-    fireEvent.press(screen.getByText(ONBOARDING_SLIDES[0].button))
+    await userEvent.press(screen.getByText(ONBOARDING_SLIDES[0].button))
 
     const swallowed = backHandler?.()
 

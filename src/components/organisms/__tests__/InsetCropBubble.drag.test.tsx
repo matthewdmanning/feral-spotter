@@ -1,4 +1,6 @@
-import { act, fireEvent, render } from '@testing-library/react-native'
+import { usePhotoStore } from '@/src/hooks/usePhotoStore'
+import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
+import { act, userEvent, render } from '@testing-library/react-native'
 import { Animated, StyleSheet } from 'react-native'
 import { InsetCropBubble } from '../InsetCropBubble'
 
@@ -13,29 +15,36 @@ jest.mock('expo-image', () => ({
 }))
 
 const BOX = {
-  id: 'box-1',
-  cat_id: 'cat-1',
-  photo_local_id: 'photo-1',
   lowerLeftX: 0.4,
   lowerLeftY: 0.55,
   upperRightX: 0.6,
   upperRightY: 0.45,
 }
 
-jest.mock('@/src/hooks', () => ({
-  usePhotoStore: (
-    sel: (s: { photos: { local_id: string; uri: string }[] }) => unknown,
-  ) => sel({ photos: [{ local_id: 'photo-1', uri: 'file://photo-1.jpg' }] }),
-}))
-
-jest.mock('@/src/hooks/useBoundingBoxStore', () => ({
-  useBoundingBoxStore: (
-    sel: (s: {
-      getFirstBox: (catId: string) => typeof BOX
-      catColors: Record<string, number>
-    }) => unknown,
-  ) => sel({ getFirstBox: () => BOX, catColors: {} }),
-}))
+beforeEach(() => {
+  usePhotoStore.setState({
+    ...usePhotoStore.getInitialState(),
+    photos: [
+      {
+        local_id: 'photo-1',
+        uri: 'file://photo-1.jpg',
+        width: 1000,
+        height: 1000,
+        uploaded: false,
+        upload_progress: 0,
+      },
+    ],
+  })
+  useBoundingBoxStore.setState(useBoundingBoxStore.getInitialState())
+  // Another cat is seeded first so an unfiltered first-box lookup is observable.
+  useBoundingBoxStore.getState().addBox('cat-2', 'photo-1', {
+    lowerLeftX: 0.1,
+    lowerLeftY: 0.9,
+    upperRightX: 0.9,
+    upperRightY: 0.1,
+  })
+  useBoundingBoxStore.getState().addBox('cat-1', 'photo-1', BOX)
+})
 
 const resolved = (value: unknown): number =>
   (value as { __getValue: () => number }).__getValue()
@@ -76,8 +85,8 @@ function renderBubble(onHoldChange?: (held: boolean) => void) {
   )
   // The wrapper carries the drag transform; the inner view takes the touches.
   const [wrap, inner] = utils.UNSAFE_getAllByType(Animated.View)
-  const toggle = () => {
-    fireEvent.press(utils.getByTestId('inset-crop-bubble'))
+  const toggle = async () => {
+    await userEvent.press(utils.getByTestId('inset-crop-bubble'))
     act(() => jest.advanceTimersByTime(300))
   }
   const position = () => {
@@ -133,7 +142,7 @@ describe('InsetCropBubble drag', () => {
     expect(position().x).toBeCloseTo(0)
   })
 
-  it('keeps a dragged bubble’s height through expand and collapse', () => {
+  it('keeps a dragged bubble’s height through expand and collapse', async () => {
     const { touches, toggle, position } = renderBubble()
     act(() => {
       touches.onResponderGrant(touch(0, 0))
@@ -141,8 +150,8 @@ describe('InsetCropBubble drag', () => {
       touches.onResponderRelease(touch(0, 200))
       jest.advanceTimersByTime(300)
     })
-    toggle()
-    toggle()
+    await toggle()
+    await toggle()
     expect(position().y).toBeCloseTo(200)
     expect(position().x).toBeCloseTo(0)
   })
@@ -153,17 +162,19 @@ describe('InsetCropBubble drag', () => {
     const expected = released.position()
     released.unmount()
 
-    const terminated = renderBubble()
+    const onHoldChange = jest.fn()
+    const terminated = renderBubble(onHoldChange)
     terminated.drag('onResponderTerminate')
     expect(terminated.position()).toEqual(expected)
+    expect(onHoldChange.mock.calls).toEqual([[true], [false]])
   })
 
-  it('lets only the collapsed bubble capture a drag', () => {
+  it('lets only the collapsed bubble capture a drag', async () => {
     const { liveTouches, toggle } = renderBubble()
     const capture = () =>
       liveTouches().onMoveShouldSetResponderCapture(touch(0, 50))
     expect(capture()).toBe(true)
-    toggle()
+    await toggle()
     expect(capture()).toBe(false)
   })
 

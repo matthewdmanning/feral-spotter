@@ -1,7 +1,9 @@
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { CONSENT_VERSION, useConsentStore } from '@/src/hooks/useConsentStore'
 import * as ui from '@/src/hooks/useUIStore'
 import {
   act,
-  fireEvent,
+  userEvent,
   render,
   screen,
   waitFor,
@@ -27,6 +29,7 @@ jest.mock('react-native-vision-camera', () => ({
 const mockRequestForegroundPermissionsAsync = jest.fn()
 const mockGetForegroundPermissionsAsync = jest.fn()
 jest.mock('expo-location', () => ({
+  ...jest.requireActual('expo-location'),
   requestForegroundPermissionsAsync: (...args: unknown[]) =>
     mockRequestForegroundPermissionsAsync(...args),
   getForegroundPermissionsAsync: (...args: unknown[]) =>
@@ -43,15 +46,28 @@ jest.mock('expo-router', () => ({
   },
 }))
 
-const mockMarkAccepted = jest.fn()
-jest.mock('@/src/hooks/useConsentStore', () => ({
-  useConsentStore: (sel: (s: object) => unknown) =>
-    sel({ markAccepted: mockMarkAccepted }),
-}))
-
 jest.mock('@/src/hooks/useBackHandler', () => ({
   useBackHandler: jest.fn(),
 }))
+
+beforeEach(async () => {
+  await useConsentStore.persist.rehydrate()
+  useConsentStore.setState({
+    accepted: false,
+    acceptedVersion: null,
+    analyticsAccepted: false,
+  })
+})
+
+const expectConsentAccepted = async (accepted: boolean) => {
+  const expected = {
+    accepted,
+    acceptedVersion: accepted ? CONSENT_VERSION : null,
+  }
+  expect(useConsentStore.getState()).toMatchObject(expected)
+  const stored = await AsyncStorage.getItem('consent-store')
+  expect(JSON.parse(stored ?? '{}').state).toMatchObject(expected)
+}
 
 describe('ConsentScreen decline flow', () => {
   beforeEach(() => {
@@ -67,11 +83,11 @@ describe('ConsentScreen decline flow', () => {
     mockGetForegroundPermissionsAsync.mockResolvedValue(grantedLocation)
   })
 
-  it('warns before exiting instead of declining silently', () => {
+  it('warns before exiting instead of declining silently', async () => {
     const alertSpy = jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
     render(<ConsentScreen />)
 
-    fireEvent.press(screen.getByLabelText(consentCopy.declineLabel))
+    await userEvent.press(screen.getByLabelText(consentCopy.declineLabel))
 
     expect(alertSpy).toHaveBeenCalledWith(
       consentCopy.declineWarningTitle,
@@ -83,7 +99,7 @@ describe('ConsentScreen decline flow', () => {
     )
   })
 
-  it('exits the app on Android when Exit is confirmed', () => {
+  it('exits the app on Android when Exit is confirmed', async () => {
     const exitSpy = jest
       .spyOn(BackHandler, 'exitApp')
       .mockImplementation(() => {})
@@ -92,12 +108,12 @@ describe('ConsentScreen decline flow', () => {
     })
     render(<ConsentScreen />)
 
-    fireEvent.press(screen.getByLabelText(consentCopy.declineLabel))
+    await userEvent.press(screen.getByLabelText(consentCopy.declineLabel))
 
     expect(exitSpy).toHaveBeenCalledTimes(1)
   })
 
-  it('does not exit when Back is chosen', () => {
+  it('does not exit when Back is chosen', async () => {
     const exitSpy = jest
       .spyOn(BackHandler, 'exitApp')
       .mockImplementation(() => {})
@@ -106,7 +122,7 @@ describe('ConsentScreen decline flow', () => {
     })
     render(<ConsentScreen />)
 
-    fireEvent.press(screen.getByLabelText(consentCopy.declineLabel))
+    await userEvent.press(screen.getByLabelText(consentCopy.declineLabel))
 
     expect(exitSpy).not.toHaveBeenCalled()
   })
@@ -134,14 +150,13 @@ describe('ConsentScreen blocked-permission recovery', () => {
       })
 
     render(<ConsentScreen />)
-    await act(async () => {
-      fireEvent.press(screen.getByLabelText(consentCopy.agreeLabel))
-    })
+    await userEvent.press(screen.getByLabelText(consentCopy.agreeLabel))
 
     expect(screen.getByText('Permission Blocked')).toBeTruthy()
     // #66 relaunch-bypass reopen: consent must not be recorded while still
     // gated, or a relaunch here would skip this screen with access denied.
-    expect(mockMarkAccepted).not.toHaveBeenCalled()
+    await expectConsentAccepted(false)
+    expect(mockRouterReplace).not.toHaveBeenCalled()
 
     mockCameraPermissionStatus = 'authorized'
     mockGetForegroundPermissionsAsync.mockResolvedValue(grantedLocation)
@@ -153,7 +168,8 @@ describe('ConsentScreen blocked-permission recovery', () => {
     await waitFor(() =>
       expect(mockRouterReplace).toHaveBeenCalledWith('/sign-in'),
     )
-    expect(mockMarkAccepted).toHaveBeenCalled()
+    await expectConsentAccepted(true)
+    expect(screen.queryByText('Permission Blocked')).toBeNull()
   })
 })
 
@@ -172,9 +188,7 @@ describe('ConsentScreen location one-time-grant notice (#225)', () => {
     mockRequestForegroundPermissionsAsync.mockResolvedValue(grantedLocation)
     render(<ConsentScreen />)
 
-    await act(async () => {
-      fireEvent.press(screen.getByLabelText(consentCopy.agreeLabel))
-    })
+    await userEvent.press(screen.getByLabelText(consentCopy.agreeLabel))
 
     expect(alertSpy).toHaveBeenCalledWith(
       consentCopy.locationOnceWarningTitle,
@@ -184,6 +198,7 @@ describe('ConsentScreen location one-time-grant notice (#225)', () => {
     await waitFor(() =>
       expect(mockRouterReplace).toHaveBeenCalledWith('/sign-in'),
     )
+    await expectConsentAccepted(true)
   })
 
   it('does not show the notice when access is granted via Settings recovery', async () => {
@@ -200,9 +215,10 @@ describe('ConsentScreen location one-time-grant notice (#225)', () => {
       })
 
     render(<ConsentScreen />)
-    await act(async () => {
-      fireEvent.press(screen.getByLabelText(consentCopy.agreeLabel))
-    })
+    await userEvent.press(screen.getByLabelText(consentCopy.agreeLabel))
+    expect(screen.getByText('Permission Blocked')).toBeTruthy()
+    expect(mockRouterReplace).not.toHaveBeenCalled()
+    await expectConsentAccepted(false)
 
     mockCameraPermissionStatus = 'authorized'
     mockGetForegroundPermissionsAsync.mockResolvedValue(grantedLocation)
@@ -217,5 +233,7 @@ describe('ConsentScreen location one-time-grant notice (#225)', () => {
       consentCopy.locationOnceWarningTitle,
       expect.anything(),
     )
+    await expectConsentAccepted(true)
+    expect(screen.queryByText('Permission Blocked')).toBeNull()
   })
 })

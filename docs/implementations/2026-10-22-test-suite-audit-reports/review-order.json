@@ -1,0 +1,624 @@
+[
+  {
+    "id": "hooks-real-store-flows-2026-10-23",
+    "files": [
+      "src/hooks/__tests__/useSubmissionSubmit.cacheSync.test.ts",
+      "src/hooks/__tests__/useSubmissionSubmit.reset.test.ts",
+      "src/hooks/__tests__/useCatSubmit.unsetFieldsWarning.test.ts",
+      "src/hooks/__tests__/useAnnotatePass.carouselNav.model.test.ts",
+      "src/hooks/__tests__/useCameraCapture.test.ts",
+      "__tests__/hooks/useSubmissionSubmit.submitFlow.test.ts"
+    ],
+    "test": "Scoped hook suites and submit flow",
+    "classification": "load_bearing",
+    "confidence": 0.88,
+    "poor_quality_probability": 0.12,
+    "evidence": "Tests exercise real persisted stores and dialog callbacks. Cache sync verifies final persisted Submitted metadata and cleared current cache id; save/reset flows invoke their actual confirmation callbacks and inspect store state. Carousel model now checks persisted box and absence state after actions; the prior status assertion observed a stale hook snapshot. Camera test uses the actual PermissionStatus enum while replacing the unusable native Asset boundary.",
+    "action": "improve",
+    "changes": "Fixed the carousel assertions to read persisted annotation state. Replaced the expo-media-library requireActual spread in the camera test with the actual expo-modules-core PermissionStatus enum because loading the SDK source failed from its native superclass; kept Asset and permission operations at the test boundary.",
+    "verification": [
+      {
+        "command": "npx jest --runInBand src/hooks/__tests__ __tests__/hooks/useSubmissionSubmit.submitFlow.test.ts",
+        "result": "passed",
+        "log_path": "/tmp/hooks-finish-jest.log"
+      },
+      {
+        "command": "npx eslint src/hooks/__tests__/useAnnotatePass.carouselNav.model.test.ts src/hooks/__tests__/useCameraCapture.test.ts __tests__/hooks/useSubmissionSubmit.submitFlow.test.ts",
+        "result": "passed",
+        "log_path": "/tmp/hooks-finish-eslint.log"
+      }
+    ],
+    "mutation": {
+      "id": null,
+      "outcome": "not_run",
+      "log_path": null
+    },
+    "remaining_risk": "Original seven surviving hook mutants were not replayed in this focused pass.",
+    "report": "hooks.json"
+  },
+  {
+    "id": "component-controls-and-dialogs",
+    "files": [
+      "src/components/atoms/__tests__/AppButton.test.tsx",
+      "src/components/atoms/__tests__/SegmentedControl.selectDeselect.model.test.tsx",
+      "src/components/organisms/__tests__/AlertHost.test.tsx",
+      "__tests__/components/atoms/StatusIcon.test.tsx"
+    ],
+    "test": "button ready/disabled/loading behavior; selection journeys; dialog handling and dismissal; status icon mapping",
+    "classification": "load_bearing",
+    "confidence": 0.9,
+    "poor_quality_probability": 0.1,
+    "evidence": "10-suite run includes these control and dialog cases and passes. Existing isolated probes report button callback/loading/target, segmented no-op, alert handler/dismissal, and status icon no-op mutants killed; probes were performed against isolated /tmp source snapshots.",
+    "action": "keep",
+    "changes": "No further edit needed.",
+    "verification": [
+      {
+        "command": "npx jest --runInBand <10 scoped component/config suites>",
+        "result": "passed",
+        "log_path": "/tmp/components-scoped-jest.log"
+      },
+      {
+        "command": "npx eslint <10 scoped component/config test files>",
+        "result": "passed",
+        "log_path": "/tmp/components-scoped-eslint.log"
+      }
+    ],
+    "mutation": {
+      "id": "button-press-noop; button-ignores-loading; button-touch-target-small; segmented-change-noop; alert-handler-noop; alert-dismiss-noop; alert-dismiss-after-handler; status-icon-noop",
+      "outcome": "killed",
+      "log_path": "/tmp/audit-components-semantic/semantic-probes/report.md"
+    },
+    "remaining_risk": "ESLint reports three existing require-style warnings in native mocks/test setup; zero errors.",
+    "report": "components.json"
+  },
+  {
+    "id": "sdk_firebase_auth_provider",
+    "files": ["src/lib/auth/__tests__/firebaseAuthProvider.test.ts"],
+    "test": "Firebase auth provider email sign-in, registration mapping, and sign-out failure propagation",
+    "classification": "load_bearing",
+    "confidence": 0.92,
+    "poor_quality_probability": 0.08,
+    "evidence": "Calls real provider methods against SDK-boundary mocks, checks inputs and returned public user shape, and checks Firebase sign-out rejection propagates. Original no-op signout mutation fails. Emulator-wiring tests remain separate.",
+    "action": "improve",
+    "changes": "Added provider behavior coverage. Google provider credential route is currently release-gated in source; no unreachable route was asserted.",
+    "verification": [
+      {
+        "command": "npx jest src/lib/auth/__tests__/GoogleSignIn.test.ts src/lib/auth/__tests__/firebaseAuthProvider.test.ts src/lib/auth/__tests__/firebaseAuthProvider.emulator.test.ts src/lib/auth/__tests__/authProvider.test.ts src/lib/upload/__tests__/firebaseUpload.behavior.test.ts src/lib/upload/__tests__/firebaseUpload.emulator.test.ts src/lib/upload/__tests__/uploadNewPhoto.queue.test.ts --runInBand",
+        "result": "passed",
+        "log_path": "/tmp/backend-audit-mutations/sdk_scope_final.log"
+      }
+    ],
+    "mutation": {
+      "id": "backend_firebase_auth_signout_noop",
+      "outcome": "killed",
+      "log_path": "/tmp/backend-audit-mutations/sdk_firebase_auth_signout_noop.log"
+    },
+    "remaining_risk": "Released-provider credential construction is absent because Google is currently version-gated; test GoogleSignIn token helper separately.",
+    "report": "sdk.json"
+  },
+  {
+    "id": "sdk_queue_failure_drain",
+    "files": ["src/lib/upload/__tests__/uploadNewPhoto.queue.test.ts"],
+    "test": "caps burst at two uploads and drains queued photos after one fails",
+    "classification": "load_bearing",
+    "confidence": 0.94,
+    "poor_quality_probability": 0.06,
+    "evidence": "Six-job burst asserts concurrency remains capped at two, first rejection is logged without updating that photo, and remaining jobs drain successfully with persisted upload response. Existing queue serialization probe still kills.",
+    "action": "improve",
+    "changes": "Extended queue behavior test with a rejected upload and per-photo result checks.",
+    "verification": [
+      {
+        "command": "npx jest src/lib/auth/__tests__/GoogleSignIn.test.ts src/lib/auth/__tests__/firebaseAuthProvider.test.ts src/lib/auth/__tests__/firebaseAuthProvider.emulator.test.ts src/lib/auth/__tests__/authProvider.test.ts src/lib/upload/__tests__/firebaseUpload.behavior.test.ts src/lib/upload/__tests__/firebaseUpload.emulator.test.ts src/lib/upload/__tests__/uploadNewPhoto.queue.test.ts --runInBand",
+        "result": "passed",
+        "log_path": "/tmp/backend-audit-mutations/sdk_scope_final.log"
+      }
+    ],
+    "mutation": {
+      "id": "backend_queue_serializes_to_one",
+      "outcome": "killed",
+      "log_path": "/tmp/backend-audit-mutations/queue_serializes_to_one.log"
+    },
+    "remaining_risk": "none",
+    "report": "sdk.json"
+  },
+  {
+    "id": "error-boundary-mixed-consent",
+    "files": ["src/components/atoms/__tests__/ErrorBoundary.test.tsx"],
+    "test": "each mixed consent state suppresses crash report",
+    "classification": "load_bearing",
+    "confidence": 0.95,
+    "poor_quality_probability": 0.05,
+    "evidence": "Executed table covers false/false, true/false, false/true denial and positive true/true reporting. OR-gate mutant fails both mixed-denial rows in isolated source snapshot.",
+    "action": "keep",
+    "changes": "Replaced endpoint-only denial with three-state table using actual consent store.",
+    "verification": [
+      {
+        "command": "npx jest --runInBand <10 scoped component/config suites>",
+        "result": "passed",
+        "log_path": "/tmp/components-scoped-jest.log"
+      },
+      {
+        "command": "npx eslint <10 scoped component/config test files>",
+        "result": "passed",
+        "log_path": "/tmp/components-scoped-eslint.log"
+      }
+    ],
+    "mutation": {
+      "id": "error-consent-or",
+      "outcome": "killed",
+      "log_path": "/tmp/audit-components-fixed/semantic-probes/error-consent-or.log"
+    },
+    "remaining_risk": "none",
+    "report": "components.json"
+  },
+  {
+    "id": "draft_persisted_state_survivors",
+    "files": ["src/lib/submission/__tests__/draft.invariant.test.ts"],
+    "test": "discardDraft leaves no draft-owned key holding content; completeDraft leaves no draft-owned key holding content",
+    "classification": "load_bearing",
+    "confidence": 0.96,
+    "poor_quality_probability": 0.04,
+    "evidence": "Seeds Submission location/time metadata and photo submissionId, then compares complete persisted JSON state against each store\u2019s real initial state after both teardown paths. Each named mutation failed both teardown assertions in the isolated snapshot.",
+    "action": "improve",
+    "changes": "Strengthened the fixture/assertion to exercise the stated regression; no production edits.",
+    "verification": [
+      {
+        "command": "npx jest --runInBand [10 scoped domain and workflow suites]",
+        "result": "passed",
+        "log_path": "/tmp/feral-domain-mutations-eo3im7b5/final_scoped_jest.log"
+      },
+      {
+        "command": "npx eslint [10 scoped domain and workflow test files]",
+        "result": "passed",
+        "log_path": "/tmp/feral-domain-mutations-eo3im7b5/final_scoped_eslint.log"
+      }
+    ],
+    "mutation": {
+      "id": [
+        "draft_retains_submission_metadata",
+        "draft_retains_submission_id"
+      ],
+      "outcome": "killed",
+      "log_path": "/tmp/feral-domain-mutations-eo3im7b5/draft_retains_submission_id.log"
+    },
+    "remaining_risk": "none for the named mutation; this is targeted regression coverage.",
+    "report": "domain.json"
+  },
+  {
+    "id": "resize_canvas_limit_survivor",
+    "files": ["src/lib/annotate/__tests__/boxResize.test.ts"],
+    "test": "maxHalfExtentForBox is bounded by canvas half when zoomed photo is larger",
+    "classification": "load_bearing",
+    "confidence": 0.96,
+    "poor_quality_probability": 0.04,
+    "evidence": "Uses canvas half 300 against zoomed photo half extent 400; removing canvas clamp failed the intended case in isolated mutation run.",
+    "action": "improve",
+    "changes": "Strengthened the fixture/assertion to exercise the stated regression; no production edits.",
+    "verification": [
+      {
+        "command": "npx jest --runInBand [10 scoped domain and workflow suites]",
+        "result": "passed",
+        "log_path": "/tmp/feral-domain-mutations-eo3im7b5/final_scoped_jest.log"
+      },
+      {
+        "command": "npx eslint [10 scoped domain and workflow test files]",
+        "result": "passed",
+        "log_path": "/tmp/feral-domain-mutations-eo3im7b5/final_scoped_eslint.log"
+      }
+    ],
+    "mutation": {
+      "id": "resize_removes_canvas_limit",
+      "outcome": "killed",
+      "log_path": "/tmp/feral-domain-mutations-eo3im7b5/resize_removes_canvas_limit.log"
+    },
+    "remaining_risk": "none for the named mutation; this is targeted regression coverage.",
+    "report": "domain.json"
+  },
+  {
+    "id": "capture_dimensions_survivors",
+    "files": [
+      "src/utils/__tests__/buildSubmissionPhotoFromCapture.contract.test.ts"
+    ],
+    "test": "accepts the $backend payload (all three backends)",
+    "classification": "load_bearing",
+    "confidence": 0.96,
+    "poor_quality_probability": 0.04,
+    "evidence": "Checks dimensions equal the supplied asymmetric frame dimensions. Swapped and 1x1 dimensions each failed all three acceptance cases in the isolated mutation run.",
+    "action": "improve",
+    "changes": "Strengthened the fixture/assertion to exercise the stated regression; no production edits.",
+    "verification": [
+      {
+        "command": "npx jest --runInBand [10 scoped domain and workflow suites]",
+        "result": "passed",
+        "log_path": "/tmp/feral-domain-mutations-eo3im7b5/final_scoped_jest.log"
+      },
+      {
+        "command": "npx eslint [10 scoped domain and workflow test files]",
+        "result": "passed",
+        "log_path": "/tmp/feral-domain-mutations-eo3im7b5/final_scoped_eslint.log"
+      }
+    ],
+    "mutation": {
+      "id": ["capture_swaps_dimensions", "capture_hardcodes_one_pixel"],
+      "outcome": "killed",
+      "log_path": "/tmp/feral-domain-mutations-eo3im7b5/capture_swaps_dimensions.log"
+    },
+    "remaining_risk": "none for the named mutation; this is targeted regression coverage.",
+    "report": "domain.json"
+  },
+  {
+    "id": "payload_box_photo_mapping_survivor",
+    "files": ["src/lib/submission/__tests__/payload.test.ts"],
+    "test": "attaches each box its own cloud_storage_path via the photo it belongs to (#264)",
+    "classification": "load_bearing",
+    "confidence": 0.96,
+    "poor_quality_probability": 0.04,
+    "evidence": "Uses two boxes with distinct paths and reverse map insertion order; mapping every box to first value failed the case in isolated mutation run.",
+    "action": "improve",
+    "changes": "Strengthened the fixture/assertion to exercise the stated regression; no production edits.",
+    "verification": [
+      {
+        "command": "npx jest --runInBand [10 scoped domain and workflow suites]",
+        "result": "passed",
+        "log_path": "/tmp/feral-domain-mutations-eo3im7b5/final_scoped_jest.log"
+      },
+      {
+        "command": "npx eslint [10 scoped domain and workflow test files]",
+        "result": "passed",
+        "log_path": "/tmp/feral-domain-mutations-eo3im7b5/final_scoped_eslint.log"
+      }
+    ],
+    "mutation": {
+      "id": "payload_uses_first_photo_path_for_every_box",
+      "outcome": "killed",
+      "log_path": "/tmp/feral-domain-mutations-eo3im7b5/payload_uses_first_photo_path_for_every_box.log"
+    },
+    "remaining_risk": "none for the named mutation; this is targeted regression coverage.",
+    "report": "domain.json"
+  },
+  {
+    "id": "home-real-photo-store-and-entry-actions",
+    "files": [
+      "src/screens/home/__tests__/HomeScreen.photoSourceGate.model.test.tsx",
+      "src/screens/home/__tests__/HomeScreen.entrypointActions.model.test.tsx"
+    ],
+    "test": "Home photo source gate and entry action flows",
+    "classification": "load_bearing",
+    "confidence": 0.96,
+    "poor_quality_probability": 0.04,
+    "evidence": "Executed screen suite with real photo store. Isolated remove/clear source mutations each failed 1 assertion; source-gate mutation failed 2; button-column no-op failed 2; wrong destination failed 2. This confirms store clearing and rendered button wiring are observed.",
+    "action": "improve",
+    "changes": "Use real photo store state and awaited user interactions to check removal/reset and entry actions.",
+    "verification": [
+      {
+        "command": "files=$(rg --files src/screens | rg '__tests__'); npx jest --runInBand --json --outputFile=/tmp/screens-suite.json $files",
+        "result": "passed",
+        "log_path": "/tmp/screens-suite.json"
+      }
+    ],
+    "mutation": {
+      "id": "home_remove_source_survives; home_clear_source_survives; home_column_wiring_survives",
+      "outcome": "killed",
+      "log_path": "/tmp/screen-gates-semantic-evidence/matrix.json"
+    },
+    "remaining_risk": "Home screen native photo picking is mocked at the platform boundary.",
+    "report": "screens.json"
+  },
+  {
+    "id": "picker-real-submission-location",
+    "files": [
+      "src/screens/submission/location-picker/__tests__/LocationPicker.model.test.tsx"
+    ],
+    "test": "Location picker \u2014 flow (model-based)",
+    "classification": "load_bearing",
+    "confidence": 0.96,
+    "poor_quality_probability": 0.04,
+    "evidence": "Flow tests exercise the real submission store with native map boundary mocked. Confirmed map movement writes the moved coordinates as a pin, and cancel preserves original location. Isolated no-pin and move-does-not-commit mutations failed (1 and 2 assertions); no-confirm-write and no-cancel-back probes also failed.",
+    "action": "improve",
+    "changes": "Use real Submission store and move/cancel/set journeys with persisted draft assertions.",
+    "verification": [
+      {
+        "command": "files=$(rg --files src/screens | rg '__tests__'); npx jest --runInBand --json --outputFile=/tmp/screens-suite.json $files",
+        "result": "passed",
+        "log_path": "/tmp/screens-suite.json"
+      }
+    ],
+    "mutation": {
+      "id": "gap_picker_no_pin; gap_picker_move_commits; positive_picker_no_confirm_write; positive_picker_cancel_no_back",
+      "outcome": "killed",
+      "log_path": "/tmp/audit-submission-semantic/probe-results.json"
+    },
+    "remaining_risk": "Expo Maps native rendering and camera gesture delivery are represented by a narrow mock.",
+    "report": "screens.json"
+  },
+  {
+    "id": "cat-list-store-delete-and-empty-actions",
+    "files": [
+      "src/screens/submission/create/__tests__/CreateScreen.catListActions.test.tsx"
+    ],
+    "test": "Cat List actions and Cat List with no cats left (#299)",
+    "classification": "load_bearing",
+    "confidence": 0.96,
+    "poor_quality_probability": 0.04,
+    "evidence": "Tests use real submission/UI stores with AlertHost; selected delete removes only the selected cat after confirmation, and Finished is disabled at zero cats. Isolated wrong-id delete and zero-cat-enabled mutations each failed 1 assertion. Additional action wiring probes failed for no actions/no accordion.",
+    "action": "improve",
+    "changes": "Exercise real store state, await confirmation UI actions, and assert selected deletion and disabled empty-state submit.",
+    "verification": [
+      {
+        "command": "files=$(rg --files src/screens | rg '__tests__'); npx jest --runInBand --json --outputFile=/tmp/screens-suite.json $files",
+        "result": "passed",
+        "log_path": "/tmp/screens-suite.json"
+      }
+    ],
+    "mutation": {
+      "id": "gap_delete_wrong_id; gap_zero_cat_enabled",
+      "outcome": "killed",
+      "log_path": "/tmp/audit-submission-semantic/probe-results.json"
+    },
+    "remaining_risk": "None.",
+    "report": "screens.json"
+  },
+  {
+    "id": "sdk_firebase_upload_behavior",
+    "files": ["src/lib/upload/__tests__/firebaseUpload.behavior.test.ts"],
+    "test": "Firebase submission upload behavior: serialized metadata, finalized photo metadata, best-effort scoped cleanup",
+    "classification": "load_bearing",
+    "confidence": 0.96,
+    "poor_quality_probability": 0.04,
+    "evidence": "Calls real JS wrapper functions with narrow native SDK mocks. Asserts metadata object path/content type/body, preserved existing custom metadata plus finalized timestamps/location, and scoped listing/deletion continuing after an individual rejection. Original metadata-upload-noop mutation fails.",
+    "action": "improve",
+    "changes": "Added coherent upload lifecycle behavior cases; emulator-wiring suite remains separate.",
+    "verification": [
+      {
+        "command": "npx jest src/lib/auth/__tests__/GoogleSignIn.test.ts src/lib/auth/__tests__/firebaseAuthProvider.test.ts src/lib/auth/__tests__/firebaseAuthProvider.emulator.test.ts src/lib/auth/__tests__/authProvider.test.ts src/lib/upload/__tests__/firebaseUpload.behavior.test.ts src/lib/upload/__tests__/firebaseUpload.emulator.test.ts src/lib/upload/__tests__/uploadNewPhoto.queue.test.ts --runInBand",
+        "result": "passed",
+        "log_path": "/tmp/backend-audit-mutations/sdk_scope_final.log"
+      },
+      {
+        "command": "npx eslint src/lib/auth/__tests__/GoogleSignIn.test.ts src/lib/auth/__tests__/firebaseAuthProvider.test.ts src/lib/upload/__tests__/firebaseUpload.behavior.test.ts src/lib/upload/__tests__/uploadNewPhoto.queue.test.ts",
+        "result": "passed",
+        "log_path": "/tmp/backend-audit-mutations/sdk_eslint.log"
+      }
+    ],
+    "mutation": {
+      "id": "backend_firebase_metadata_upload_noop",
+      "outcome": "killed",
+      "log_path": "/tmp/backend-audit-mutations/sdk_firebase_metadata_upload_noop.log"
+    },
+    "remaining_risk": "Listing-level failure is guarded by catch in source but not covered by the current focused test.",
+    "report": "sdk.json"
+  },
+  {
+    "id": "crop-animation-settling",
+    "files": [
+      "src/components/organisms/__tests__/InsetCropBubble.collapseFlow.model.test.tsx"
+    ],
+    "test": "mount, expand with pre-finish and finish checkpoints, collapse with pre-finish and finish checkpoints",
+    "classification": "load_bearing",
+    "confidence": 0.96,
+    "poor_quality_probability": 0.04,
+    "evidence": "Executed model journey asserts eager layout signal, retained unsettled signal before animation ends, and settled callback after finish. Mutation suppressing expanded settled notification was killed in isolated source snapshot.",
+    "action": "keep",
+    "changes": "No additional change; inherited real stores and explicit 219ms/1ms checkpoints passed.",
+    "verification": [
+      {
+        "command": "npx jest --runInBand <10 scoped component/config suites>",
+        "result": "passed",
+        "log_path": "/tmp/components-scoped-jest.log"
+      },
+      {
+        "command": "npx eslint <10 scoped component/config test files>",
+        "result": "passed",
+        "log_path": "/tmp/components-scoped-eslint.log"
+      }
+    ],
+    "mutation": {
+      "id": "collapse-never-settles-expanded",
+      "outcome": "killed",
+      "log_path": "/tmp/audit-components-fixed/semantic-probes/collapse-never-settles-expanded.log"
+    },
+    "remaining_risk": "none",
+    "report": "components.json"
+  },
+  {
+    "id": "drag-termination-releases-hold",
+    "files": [
+      "src/components/organisms/__tests__/InsetCropBubble.drag.test.tsx"
+    ],
+    "test": "system takes touch mid-drag; onHoldChange transitions true then false",
+    "classification": "load_bearing",
+    "confidence": 0.96,
+    "poor_quality_probability": 0.04,
+    "evidence": "Executed callback assertion detects a mutant that leaves the bubble held after termination; source snapshot probe is killed.",
+    "action": "keep",
+    "changes": "Added observed onHoldChange callback to termination path assertion.",
+    "verification": [
+      {
+        "command": "npx jest --runInBand <10 scoped component/config suites>",
+        "result": "passed",
+        "log_path": "/tmp/components-scoped-jest.log"
+      },
+      {
+        "command": "npx eslint <10 scoped component/config test files>",
+        "result": "passed",
+        "log_path": "/tmp/components-scoped-eslint.log"
+      }
+    ],
+    "mutation": {
+      "id": "drag-termination-keeps-held",
+      "outcome": "killed",
+      "log_path": "/tmp/audit-components-fixed/semantic-probes/drag-termination-keeps-held.log"
+    },
+    "remaining_risk": "none",
+    "report": "components.json"
+  },
+  {
+    "id": "consent-version-persistence-denial",
+    "files": [
+      "src/screens/consent/__tests__/ConsentScreen.test.tsx",
+      "src/screens/consent/__tests__/ConsentScreen.cameraGate.model.test.tsx",
+      "src/screens/consent/__tests__/ConsentScreen.locationGate.model.test.tsx"
+    ],
+    "test": "Consent denial persistence and gate journeys",
+    "classification": "load_bearing",
+    "confidence": 0.97,
+    "poor_quality_probability": 0.03,
+    "evidence": "Executed 22 screen suites successfully. Updated consent behavior assertions use the real consent store and assert the versioned accepted state/persistence and denied navigation behavior. Isolated mutations for blocked persistence/redirect and blocked UI both failed (12 tests each).",
+    "action": "improve",
+    "changes": "Retained real consent state and explicit denial/version persistence expectations.",
+    "verification": [
+      {
+        "command": "files=$(rg --files src/screens | rg '__tests__'); npx jest --runInBand --json --outputFile=/tmp/screens-suite.json $files",
+        "result": "passed",
+        "log_path": "/tmp/screens-suite.json"
+      }
+    ],
+    "mutation": {
+      "id": "consent_blocked_persists_and_redirects; consent_blocked_ui_detected",
+      "outcome": "killed",
+      "log_path": "/tmp/screen-gates-semantic-evidence/matrix.json"
+    },
+    "remaining_risk": "Native permission prompt behavior remains outside Jest; permission outcomes are boundary mocks.",
+    "report": "screens.json"
+  },
+  {
+    "id": "intro-previous-step-content",
+    "files": ["src/screens/intro-flow/__tests__/IntroFlowScreen.test.tsx"],
+    "test": "IntroFlowScreen shows each slide, returns with Previous, and advances to /consent",
+    "classification": "load_bearing",
+    "confidence": 0.97,
+    "poor_quality_probability": 0.03,
+    "evidence": "Journey test passed in full screen suite, asserting visible slide content at each step including after Previous. The isolated no-op Previous mutation failed 1 test and forward-navigation mutation failed 3.",
+    "action": "improve",
+    "changes": "Assert rendered step content through Previous and forward navigation using userEvent.",
+    "verification": [
+      {
+        "command": "files=$(rg --files src/screens | rg '__tests__'); npx jest --runInBand --json --outputFile=/tmp/screens-suite.json $files",
+        "result": "passed",
+        "log_path": "/tmp/screens-suite.json"
+      }
+    ],
+    "mutation": {
+      "id": "intro_previous_survives",
+      "outcome": "killed",
+      "log_path": "/tmp/screen-gates-semantic-evidence/matrix.json"
+    },
+    "remaining_risk": "None.",
+    "report": "screens.json"
+  },
+  {
+    "id": "sdk_google_signout",
+    "files": ["src/lib/auth/__tests__/GoogleSignIn.test.ts"],
+    "test": "GoogleSignIn > googleSignOut invokes SDK sign-out and propagates its failure",
+    "classification": "load_bearing",
+    "confidence": 0.98,
+    "poor_quality_probability": 0.02,
+    "evidence": "Executes the real JS wrapper and asserts the SDK call occurs exactly once while its rejection propagates. Original signout-noop mutation fails.",
+    "action": "keep",
+    "changes": "Replaced prior resolves-only assertion with SDK invocation and rejection behavior.",
+    "verification": [
+      {
+        "command": "npx jest src/lib/auth/__tests__/GoogleSignIn.test.ts ... --runInBand",
+        "result": "passed",
+        "log_path": "/tmp/backend-audit-mutations/sdk_scope_final.log"
+      }
+    ],
+    "mutation": {
+      "id": "backend_google_signout_noop",
+      "outcome": "killed",
+      "log_path": "/tmp/backend-audit-mutations/sdk_google_signout_noop.log"
+    },
+    "remaining_risk": "none",
+    "report": "sdk.json"
+  },
+  {
+    "id": "crop-store-cat-selection",
+    "files": [
+      "src/components/organisms/__tests__/InsetCropBubble.diameterDerivation.test.tsx",
+      "src/components/organisms/__tests__/InsetCropBubble.collapseFlow.model.test.tsx",
+      "src/components/organisms/__tests__/InsetCropBubble.dock.test.tsx",
+      "src/components/organisms/__tests__/InsetCropBubble.drag.test.tsx"
+    ],
+    "test": "InsetCropBubble resolves the selected cat box from actual Zustand stores",
+    "classification": "load_bearing",
+    "confidence": 0.98,
+    "poor_quality_probability": 0.02,
+    "evidence": "All four suites now seed actual photo and bounding-box stores. Diameter rerender switches from cat-1 to cat-2 and validates changed geometry. Wrong-cat lookup and hard-coded first-cat mutants both failed in isolated snapshots.",
+    "action": "keep",
+    "changes": "Replaced hook mocks with actual store state in the four crop suites; no further harness issue found.",
+    "verification": [
+      {
+        "command": "npx jest --runInBand <10 scoped component/config suites>",
+        "result": "passed",
+        "log_path": "/tmp/components-scoped-jest.log"
+      },
+      {
+        "command": "npx eslint <10 scoped component/config test files>",
+        "result": "passed",
+        "log_path": "/tmp/components-scoped-eslint.log"
+      }
+    ],
+    "mutation": {
+      "id": "inset-wrong-cat-lookup; inset-always-first-cat",
+      "outcome": "killed",
+      "log_path": "/tmp/audit-components-fixed/semantic-probes/inset-wrong-cat-lookup.log"
+    },
+    "remaining_risk": "none",
+    "report": "components.json"
+  },
+  {
+    "id": "theme-dark-startup-opposite-os",
+    "files": ["src/config/__tests__/themeMode.test.ts"],
+    "test": "stored dark mode pins startup while OS reports light",
+    "classification": "load_bearing",
+    "confidence": 0.98,
+    "poor_quality_probability": 0.02,
+    "evidence": "Executed dark-mode row now forces OS light; ignored persisted preference mutant returns light and fails this row in isolated snapshot.",
+    "action": "keep",
+    "changes": "Set opposite OS scheme for each stored light/dark startup case.",
+    "verification": [
+      {
+        "command": "npx jest --runInBand <10 scoped component/config suites>",
+        "result": "passed",
+        "log_path": "/tmp/components-scoped-jest.log"
+      },
+      {
+        "command": "npx eslint <10 scoped component/config test files>",
+        "result": "passed",
+        "log_path": "/tmp/components-scoped-eslint.log"
+      }
+    ],
+    "mutation": {
+      "id": "theme-ignore-startup-persistence",
+      "outcome": "killed",
+      "log_path": "/tmp/audit-components-fixed/semantic-probes/theme-ignore-startup-persistence.log"
+    },
+    "remaining_risk": "none",
+    "report": "components.json"
+  },
+  {
+    "id": "screen-suite-lint",
+    "files": ["src/screens/**/__tests__"],
+    "test": "Scoped screen test lint",
+    "classification": "load_bearing",
+    "confidence": 0.99,
+    "poor_quality_probability": 0.01,
+    "evidence": "ESLint completed successfully against the screen test files.",
+    "action": "keep",
+    "changes": "No further changes.",
+    "verification": [
+      {
+        "command": "files=$(rg --files src/screens | rg '__tests__'); npx eslint $files",
+        "result": "passed",
+        "log_path": "/tmp/screens-eslint.log"
+      }
+    ],
+    "mutation": {
+      "id": null,
+      "outcome": "not_run",
+      "log_path": null
+    },
+    "remaining_risk": "None.",
+    "report": "screens.json"
+  }
+]

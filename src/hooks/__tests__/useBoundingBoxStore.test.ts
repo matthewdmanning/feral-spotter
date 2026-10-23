@@ -7,16 +7,6 @@ import { useBoundingBoxStore } from '../useBoundingBoxStore'
  * clear every cat's entry for that photo, not just one, and must leave
  * unrelated keys (same cat, other photos) untouched.
  */
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-)
-jest.mock('react-native-mmkv', () => ({
-  createMMKV: jest.fn(() => ({
-    getString: jest.fn(),
-    set: jest.fn(),
-    delete: jest.fn(),
-  })),
-}))
 
 const box = () => ({
   lowerLeftX: 0.1,

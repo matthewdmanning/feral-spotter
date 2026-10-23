@@ -1,27 +1,16 @@
-import { act, renderHook } from '@testing-library/react-native'
+import { act, renderHook, waitFor } from '@testing-library/react-native'
 import { router } from 'expo-router'
 import { AppState } from 'react-native'
 import { useCameraCapture } from '../useCameraCapture'
-
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-)
-
-jest.mock('react-native-mmkv', () => ({
-  createMMKV: jest.fn(() => ({
-    getString: jest.fn(),
-    set: jest.fn(),
-    delete: jest.fn(),
-  })),
-}))
+import { usePhotoStore } from '../usePhotoStore'
+import { useSettingsStore } from '../useSettingsStore'
 
 jest.mock('expo-location', () => ({
+  ...jest.requireActual('expo-location'),
   getForegroundPermissionsAsync: jest.fn(() =>
     Promise.resolve({ status: 'denied' }),
   ),
   getCurrentPositionAsync: jest.fn(),
-  PermissionStatus: { GRANTED: 'granted' },
-  Accuracy: { Balanced: 3 },
 }))
 
 let mockIsFocused = true
@@ -49,35 +38,9 @@ jest.mock('react-native-vision-camera', () => ({
   Camera: 'Camera',
 }))
 
-jest.mock('react-native-reanimated', () => ({
-  __esModule: true,
-  useSharedValue: jest.fn((v: unknown) => ({ value: v })),
-  useAnimatedStyle: jest.fn(() => ({})),
-  withTiming: jest.fn((v: unknown) => v),
-  Easing: { out: jest.fn(), quad: {}, back: jest.fn() },
-}))
-
-// getState must be present: the capture workflow reads submissionId from it
-// before starting an upload. Without it the upload threw and every capture
-// test landed in the failure branch while still passing its assertions.
-const mockPhotoStoreState = {
-  addPhoto: jest.fn(),
-  removePhoto: jest.fn(),
-  updatePhoto: jest.fn(),
-  photos: [],
-  submissionId: 'test-submission',
-}
-jest.mock('@/src/hooks', () => ({
-  usePhotoStore: Object.assign(
-    (sel: (s: object) => unknown) => sel(mockPhotoStoreState),
-    { getState: () => mockPhotoStoreState },
-  ),
-}))
-
-jest.mock('@/src/hooks/useSettingsStore', () => ({
-  useSettingsStore: (sel: (s: object) => unknown) =>
-    sel({ settings: { keep_photos_on_device: true } }),
-}))
+jest.mock('react-native-reanimated', () =>
+  jest.requireActual('react-native-reanimated/mock'),
+)
 
 const mockUploadNewPhoto = jest.fn()
 jest.mock('@/src/lib/upload/uploadNewPhoto', () => ({
@@ -97,13 +60,13 @@ const mockRequestPermissionsAsync = jest.fn(async () => ({
   status: 'granted',
 }))
 jest.mock('expo-media-library', () => ({
+  PermissionStatus: jest.requireActual('expo-modules-core').PermissionStatus,
   get Asset() {
     return { create: mockAssetCreate }
   },
   getPermissionsAsync: (...args: unknown[]) => mockGetPermissionsAsync(...args),
   requestPermissionsAsync: (...args: unknown[]) =>
     mockRequestPermissionsAsync(...args),
-  PermissionStatus: { GRANTED: 'granted', DENIED: 'denied' },
 }))
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'test-id' }))
 
@@ -118,6 +81,28 @@ jest.mock('@/src/lib/analytics/analytics', () => ({
     PHOTO_CAPTURE_FAILED: 'photo_capture_failed',
   },
 }))
+
+beforeEach(() => {
+  jest.restoreAllMocks()
+  jest.clearAllMocks()
+  mockIsFocused = true
+  mockCapturePhoto.mockReset()
+  mockAssetCreate.mockReset()
+  mockAssetCreate.mockResolvedValue(undefined)
+  mockGetPermissionsAsync.mockResolvedValue({ status: 'granted' })
+  mockRequestPermissionsAsync.mockResolvedValue({ status: 'granted' })
+  usePhotoStore.setState({
+    photos: [],
+    source: null,
+    submissionId: 'test-submission',
+  })
+  useSettingsStore.getState().updateSettings({
+    keep_photos_on_device: true,
+    improved_camera_capture: false,
+    ios_improved_camera_capture: false,
+    camera_performance_checks: false,
+  })
+})
 
 describe('useCameraCapture isActive (#253)', () => {
   beforeEach(() => {
@@ -255,15 +240,43 @@ describe('useCameraCapture handleTakePhoto', () => {
       saveToTemporaryFileAsync: jest.fn(async () => '/tmp/fake.jpg'),
       dispose: jest.fn(),
     })
-    mockAssetCreate.mockRejectedValueOnce(new Error('save failed'))
-
+    const error = new Error('save failed')
+    let rejectSave!: (error: Error) => void
+    const gallerySave = new Promise<void>((_resolve, reject) => {
+      rejectSave = reject
+    })
+    mockAssetCreate.mockReturnValueOnce(gallerySave)
+    const errorSpy = jest.spyOn(console, 'error')
     const { result } = renderHook(() => useCameraCapture())
 
     await act(async () => {
       await result.current.handleTakePhoto()
     })
+    await waitFor(() => {
+      expect(mockAssetCreate).toHaveBeenCalledWith('file:///tmp/fake.jpg')
+    })
 
-    expect(result.current.capturedPhotos).toHaveLength(1)
+    await act(async () => {
+      rejectSave(error)
+      await expect(gallerySave).rejects.toBe(error)
+    })
+    await waitFor(() => {
+      expect(errorSpy).toHaveBeenCalledWith(
+        '[useCapturedPhotoWorkflow] Asset.create:',
+        error,
+      )
+    })
+
+    expect(result.current.capturedPhotos).toEqual([
+      expect.objectContaining({
+        local_id: 'test-id',
+        uri: 'file:///tmp/fake.jpg',
+      }),
+    ])
+    expect(usePhotoStore.getState().photos).toEqual(
+      result.current.capturedPhotos,
+    )
+    expect(result.current.isTakingPhoto).toBe(false)
   })
 
   it('#145/#146: requests write-only gallery access once at mount, never re-requests from the shutter path', async () => {

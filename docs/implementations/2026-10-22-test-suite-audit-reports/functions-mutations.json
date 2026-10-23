@@ -1,0 +1,86 @@
+[
+  {
+    "id": "counter-marker-reference-swap",
+    "outcome": "killed",
+    "failed_tests": 1,
+    "log_path": "docs/implementations/2026-10-22-test-suite-audit-reports/counter-marker-reference-swap.log",
+    "confidence": 0.99,
+    "production_file": "functions/src/index.ts",
+    "mutation": [
+      ["tx.set(marker, {})", "tx.set(counterDoc, {})"],
+      [
+        "tx.set(counterDoc, { count: FieldValue.increment(1) }, { merge: true })",
+        "tx.set(marker, { count: FieldValue.increment(1) }, { merge: true })"
+      ]
+    ]
+  },
+  {
+    "id": "claims-drop-unrelated-claims",
+    "outcome": "killed",
+    "failed_tests": 1,
+    "log_path": "docs/implementations/2026-10-22-test-suite-audit-reports/claims-drop-unrelated-claims.log",
+    "confidence": 0.99,
+    "production_file": "functions/src/index.ts",
+    "mutation": [["    ...event.data?.customClaims,\n", ""]]
+  },
+  {
+    "id": "sweep-delete-submitted",
+    "outcome": "killed",
+    "failed_tests": 1,
+    "log_path": "docs/implementations/2026-10-22-test-suite-audit-reports/sweep-delete-submitted.log",
+    "confidence": 0.99,
+    "production_file": "functions/src/index.ts",
+    "mutation": [
+      [
+        "      if (entry.hasMetadata) continue",
+        "      // Mutation: ignore submission metadata"
+      ]
+    ]
+  },
+  {
+    "id": "sweep-ignore-retention",
+    "outcome": "killed",
+    "failed_tests": 4,
+    "log_path": "docs/implementations/2026-10-22-test-suite-audit-reports/sweep-ignore-retention.log",
+    "confidence": 0.99,
+    "production_file": "functions/src/index.ts",
+    "mutation": [
+      [
+        "      if (entry.newestMs >= cutoff) continue",
+        "      // Mutation: ignore retention"
+      ]
+    ]
+  },
+  {
+    "id": "sweep-treat-unknown-dates-as-old",
+    "outcome": "killed",
+    "failed_tests": 2,
+    "log_path": "docs/implementations/2026-10-22-test-suite-audit-reports/sweep-treat-unknown-dates-as-old.log",
+    "confidence": 0.99,
+    "production_file": "functions/src/index.ts",
+    "mutation": [
+      [
+        "const updatedMs = updated ? Date.parse(String(updated)) : Date.now()",
+        "const updatedMs = updated ? Date.parse(String(updated)) : 0"
+      ],
+      [
+        "Number.isNaN(updatedMs) ? Date.now() : updatedMs",
+        "Number.isNaN(updatedMs) ? 0 : updatedMs"
+      ]
+    ]
+  },
+  {
+    "id": "sweep-mix-owners",
+    "outcome": "killed",
+    "failed_tests": 1,
+    "log_path": "docs/implementations/2026-10-22-test-suite-audit-reports/sweep-mix-owners.log",
+    "confidence": 0.99,
+    "production_file": "functions/src/index.ts",
+    "mutation": [
+      [
+        "const prefix = `submissions/${match[1]}/${match[2]}/`",
+        "const prefix = `submissions/${match[2]}/`"
+      ]
+    ]
+  }
+]

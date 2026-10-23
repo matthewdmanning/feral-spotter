@@ -1,0 +1,197 @@
+{
+  "agent": "components_finish_low",
+  "status": "completed",
+  "confidence": 0.95,
+  "findings": [
+    {
+      "id": "crop-animation-settling",
+      "files": [
+        "src/components/organisms/__tests__/InsetCropBubble.collapseFlow.model.test.tsx"
+      ],
+      "test": "mount, expand with pre-finish and finish checkpoints, collapse with pre-finish and finish checkpoints",
+      "classification": "load_bearing",
+      "confidence": 0.96,
+      "poor_quality_probability": 0.04,
+      "evidence": "Executed model journey asserts eager layout signal, retained unsettled signal before animation ends, and settled callback after finish. Mutation suppressing expanded settled notification was killed in isolated source snapshot.",
+      "action": "keep",
+      "changes": "No additional change; inherited real stores and explicit 219ms/1ms checkpoints passed.",
+      "verification": [
+        {
+          "command": "npx jest --runInBand <10 scoped component/config suites>",
+          "result": "passed",
+          "log_path": "/tmp/components-scoped-jest.log"
+        },
+        {
+          "command": "npx eslint <10 scoped component/config test files>",
+          "result": "passed",
+          "log_path": "/tmp/components-scoped-eslint.log"
+        }
+      ],
+      "mutation": {
+        "id": "collapse-never-settles-expanded",
+        "outcome": "killed",
+        "log_path": "/tmp/audit-components-fixed/semantic-probes/collapse-never-settles-expanded.log"
+      },
+      "remaining_risk": "none"
+    },
+    {
+      "id": "crop-store-cat-selection",
+      "files": [
+        "src/components/organisms/__tests__/InsetCropBubble.diameterDerivation.test.tsx",
+        "src/components/organisms/__tests__/InsetCropBubble.collapseFlow.model.test.tsx",
+        "src/components/organisms/__tests__/InsetCropBubble.dock.test.tsx",
+        "src/components/organisms/__tests__/InsetCropBubble.drag.test.tsx"
+      ],
+      "test": "InsetCropBubble resolves the selected cat box from actual Zustand stores",
+      "classification": "load_bearing",
+      "confidence": 0.98,
+      "poor_quality_probability": 0.02,
+      "evidence": "All four suites now seed actual photo and bounding-box stores. Diameter rerender switches from cat-1 to cat-2 and validates changed geometry. Wrong-cat lookup and hard-coded first-cat mutants both failed in isolated snapshots.",
+      "action": "keep",
+      "changes": "Replaced hook mocks with actual store state in the four crop suites; no further harness issue found.",
+      "verification": [
+        {
+          "command": "npx jest --runInBand <10 scoped component/config suites>",
+          "result": "passed",
+          "log_path": "/tmp/components-scoped-jest.log"
+        },
+        {
+          "command": "npx eslint <10 scoped component/config test files>",
+          "result": "passed",
+          "log_path": "/tmp/components-scoped-eslint.log"
+        }
+      ],
+      "mutation": {
+        "id": "inset-wrong-cat-lookup; inset-always-first-cat",
+        "outcome": "killed",
+        "log_path": "/tmp/audit-components-fixed/semantic-probes/inset-wrong-cat-lookup.log"
+      },
+      "remaining_risk": "none"
+    },
+    {
+      "id": "drag-termination-releases-hold",
+      "files": [
+        "src/components/organisms/__tests__/InsetCropBubble.drag.test.tsx"
+      ],
+      "test": "system takes touch mid-drag; onHoldChange transitions true then false",
+      "classification": "load_bearing",
+      "confidence": 0.96,
+      "poor_quality_probability": 0.04,
+      "evidence": "Executed callback assertion detects a mutant that leaves the bubble held after termination; source snapshot probe is killed.",
+      "action": "keep",
+      "changes": "Added observed onHoldChange callback to termination path assertion.",
+      "verification": [
+        {
+          "command": "npx jest --runInBand <10 scoped component/config suites>",
+          "result": "passed",
+          "log_path": "/tmp/components-scoped-jest.log"
+        },
+        {
+          "command": "npx eslint <10 scoped component/config test files>",
+          "result": "passed",
+          "log_path": "/tmp/components-scoped-eslint.log"
+        }
+      ],
+      "mutation": {
+        "id": "drag-termination-keeps-held",
+        "outcome": "killed",
+        "log_path": "/tmp/audit-components-fixed/semantic-probes/drag-termination-keeps-held.log"
+      },
+      "remaining_risk": "none"
+    },
+    {
+      "id": "error-boundary-mixed-consent",
+      "files": ["src/components/atoms/__tests__/ErrorBoundary.test.tsx"],
+      "test": "each mixed consent state suppresses crash report",
+      "classification": "load_bearing",
+      "confidence": 0.95,
+      "poor_quality_probability": 0.05,
+      "evidence": "Executed table covers false/false, true/false, false/true denial and positive true/true reporting. OR-gate mutant fails both mixed-denial rows in isolated source snapshot.",
+      "action": "keep",
+      "changes": "Replaced endpoint-only denial with three-state table using actual consent store.",
+      "verification": [
+        {
+          "command": "npx jest --runInBand <10 scoped component/config suites>",
+          "result": "passed",
+          "log_path": "/tmp/components-scoped-jest.log"
+        },
+        {
+          "command": "npx eslint <10 scoped component/config test files>",
+          "result": "passed",
+          "log_path": "/tmp/components-scoped-eslint.log"
+        }
+      ],
+      "mutation": {
+        "id": "error-consent-or",
+        "outcome": "killed",
+        "log_path": "/tmp/audit-components-fixed/semantic-probes/error-consent-or.log"
+      },
+      "remaining_risk": "none"
+    },
+    {
+      "id": "theme-dark-startup-opposite-os",
+      "files": ["src/config/__tests__/themeMode.test.ts"],
+      "test": "stored dark mode pins startup while OS reports light",
+      "classification": "load_bearing",
+      "confidence": 0.98,
+      "poor_quality_probability": 0.02,
+      "evidence": "Executed dark-mode row now forces OS light; ignored persisted preference mutant returns light and fails this row in isolated snapshot.",
+      "action": "keep",
+      "changes": "Set opposite OS scheme for each stored light/dark startup case.",
+      "verification": [
+        {
+          "command": "npx jest --runInBand <10 scoped component/config suites>",
+          "result": "passed",
+          "log_path": "/tmp/components-scoped-jest.log"
+        },
+        {
+          "command": "npx eslint <10 scoped component/config test files>",
+          "result": "passed",
+          "log_path": "/tmp/components-scoped-eslint.log"
+        }
+      ],
+      "mutation": {
+        "id": "theme-ignore-startup-persistence",
+        "outcome": "killed",
+        "log_path": "/tmp/audit-components-fixed/semantic-probes/theme-ignore-startup-persistence.log"
+      },
+      "remaining_risk": "none"
+    },
+    {
+      "id": "component-controls-and-dialogs",
+      "files": [
+        "src/components/atoms/__tests__/AppButton.test.tsx",
+        "src/components/atoms/__tests__/SegmentedControl.selectDeselect.model.test.tsx",
+        "src/components/organisms/__tests__/AlertHost.test.tsx",
+        "__tests__/components/atoms/StatusIcon.test.tsx"
+      ],
+      "test": "button ready/disabled/loading behavior; selection journeys; dialog handling and dismissal; status icon mapping",
+      "classification": "load_bearing",
+      "confidence": 0.9,
+      "poor_quality_probability": 0.1,
+      "evidence": "10-suite run includes these control and dialog cases and passes. Existing isolated probes report button callback/loading/target, segmented no-op, alert handler/dismissal, and status icon no-op mutants killed; probes were performed against isolated /tmp source snapshots.",
+      "action": "keep",
+      "changes": "No further edit needed.",
+      "verification": [
+        {
+          "command": "npx jest --runInBand <10 scoped component/config suites>",
+          "result": "passed",
+          "log_path": "/tmp/components-scoped-jest.log"
+        },
+        {
+          "command": "npx eslint <10 scoped component/config test files>",
+          "result": "passed",
+          "log_path": "/tmp/components-scoped-eslint.log"
+        }
+      ],
+      "mutation": {
+        "id": "button-press-noop; button-ignores-loading; button-touch-target-small; segmented-change-noop; alert-handler-noop; alert-dismiss-noop; alert-dismiss-after-handler; status-icon-noop",
+        "outcome": "killed",
+        "log_path": "/tmp/audit-components-semantic/semantic-probes/report.md"
+      },
+      "remaining_risk": "ESLint reports three existing require-style warnings in native mocks/test setup; zero errors."
+    }
+  ],
+  "summary": "All 10 scoped suites pass (38 tests). Scoped ESLint has zero errors and three require-style warnings. High-risk crop, consent, and theme changes have killed isolated semantic mutants.",
+  "remaining_work": []
+}

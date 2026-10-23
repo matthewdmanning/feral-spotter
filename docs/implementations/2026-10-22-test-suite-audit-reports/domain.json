@@ -1,0 +1,130 @@
+{
+  "agent": "domain_finish_low",
+  "status": "completed",
+  "confidence": 0.96,
+  "findings": [
+    {
+      "id": "draft_persisted_state_survivors",
+      "files": ["src/lib/submission/__tests__/draft.invariant.test.ts"],
+      "test": "discardDraft leaves no draft-owned key holding content; completeDraft leaves no draft-owned key holding content",
+      "classification": "load_bearing",
+      "confidence": 0.96,
+      "poor_quality_probability": 0.04,
+      "evidence": "Seeds Submission location/time metadata and photo submissionId, then compares complete persisted JSON state against each store\u2019s real initial state after both teardown paths. Each named mutation failed both teardown assertions in the isolated snapshot.",
+      "action": "improve",
+      "changes": "Strengthened the fixture/assertion to exercise the stated regression; no production edits.",
+      "verification": [
+        {
+          "command": "npx jest --runInBand [10 scoped domain and workflow suites]",
+          "result": "passed",
+          "log_path": "/tmp/feral-domain-mutations-eo3im7b5/final_scoped_jest.log"
+        },
+        {
+          "command": "npx eslint [10 scoped domain and workflow test files]",
+          "result": "passed",
+          "log_path": "/tmp/feral-domain-mutations-eo3im7b5/final_scoped_eslint.log"
+        }
+      ],
+      "mutation": {
+        "id": [
+          "draft_retains_submission_metadata",
+          "draft_retains_submission_id"
+        ],
+        "outcome": "killed",
+        "log_path": "/tmp/feral-domain-mutations-eo3im7b5/draft_retains_submission_id.log"
+      },
+      "remaining_risk": "none for the named mutation; this is targeted regression coverage."
+    },
+    {
+      "id": "resize_canvas_limit_survivor",
+      "files": ["src/lib/annotate/__tests__/boxResize.test.ts"],
+      "test": "maxHalfExtentForBox is bounded by canvas half when zoomed photo is larger",
+      "classification": "load_bearing",
+      "confidence": 0.96,
+      "poor_quality_probability": 0.04,
+      "evidence": "Uses canvas half 300 against zoomed photo half extent 400; removing canvas clamp failed the intended case in isolated mutation run.",
+      "action": "improve",
+      "changes": "Strengthened the fixture/assertion to exercise the stated regression; no production edits.",
+      "verification": [
+        {
+          "command": "npx jest --runInBand [10 scoped domain and workflow suites]",
+          "result": "passed",
+          "log_path": "/tmp/feral-domain-mutations-eo3im7b5/final_scoped_jest.log"
+        },
+        {
+          "command": "npx eslint [10 scoped domain and workflow test files]",
+          "result": "passed",
+          "log_path": "/tmp/feral-domain-mutations-eo3im7b5/final_scoped_eslint.log"
+        }
+      ],
+      "mutation": {
+        "id": "resize_removes_canvas_limit",
+        "outcome": "killed",
+        "log_path": "/tmp/feral-domain-mutations-eo3im7b5/resize_removes_canvas_limit.log"
+      },
+      "remaining_risk": "none for the named mutation; this is targeted regression coverage."
+    },
+    {
+      "id": "capture_dimensions_survivors",
+      "files": [
+        "src/utils/__tests__/buildSubmissionPhotoFromCapture.contract.test.ts"
+      ],
+      "test": "accepts the $backend payload (all three backends)",
+      "classification": "load_bearing",
+      "confidence": 0.96,
+      "poor_quality_probability": 0.04,
+      "evidence": "Checks dimensions equal the supplied asymmetric frame dimensions. Swapped and 1x1 dimensions each failed all three acceptance cases in the isolated mutation run.",
+      "action": "improve",
+      "changes": "Strengthened the fixture/assertion to exercise the stated regression; no production edits.",
+      "verification": [
+        {
+          "command": "npx jest --runInBand [10 scoped domain and workflow suites]",
+          "result": "passed",
+          "log_path": "/tmp/feral-domain-mutations-eo3im7b5/final_scoped_jest.log"
+        },
+        {
+          "command": "npx eslint [10 scoped domain and workflow test files]",
+          "result": "passed",
+          "log_path": "/tmp/feral-domain-mutations-eo3im7b5/final_scoped_eslint.log"
+        }
+      ],
+      "mutation": {
+        "id": ["capture_swaps_dimensions", "capture_hardcodes_one_pixel"],
+        "outcome": "killed",
+        "log_path": "/tmp/feral-domain-mutations-eo3im7b5/capture_swaps_dimensions.log"
+      },
+      "remaining_risk": "none for the named mutation; this is targeted regression coverage."
+    },
+    {
+      "id": "payload_box_photo_mapping_survivor",
+      "files": ["src/lib/submission/__tests__/payload.test.ts"],
+      "test": "attaches each box its own cloud_storage_path via the photo it belongs to (#264)",
+      "classification": "load_bearing",
+      "confidence": 0.96,
+      "poor_quality_probability": 0.04,
+      "evidence": "Uses two boxes with distinct paths and reverse map insertion order; mapping every box to first value failed the case in isolated mutation run.",
+      "action": "improve",
+      "changes": "Strengthened the fixture/assertion to exercise the stated regression; no production edits.",
+      "verification": [
+        {
+          "command": "npx jest --runInBand [10 scoped domain and workflow suites]",
+          "result": "passed",
+          "log_path": "/tmp/feral-domain-mutations-eo3im7b5/final_scoped_jest.log"
+        },
+        {
+          "command": "npx eslint [10 scoped domain and workflow test files]",
+          "result": "passed",
+          "log_path": "/tmp/feral-domain-mutations-eo3im7b5/final_scoped_eslint.log"
+        }
+      ],
+      "mutation": {
+        "id": "payload_uses_first_photo_path_for_every_box",
+        "outcome": "killed",
+        "log_path": "/tmp/feral-domain-mutations-eo3im7b5/payload_uses_first_photo_path_for_every_box.log"
+      },
+      "remaining_risk": "none for the named mutation; this is targeted regression coverage."
+    }
+  ],
+  "summary": "Scoped domain changes pass 10 suites / 55 tests and ESLint. The six prior semantic survivors are killed by strengthened assertions in an isolated source snapshot.",
+  "remaining_work": []
+}

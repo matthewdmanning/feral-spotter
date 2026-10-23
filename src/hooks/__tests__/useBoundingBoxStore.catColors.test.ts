@@ -5,16 +5,6 @@ import { useBoundingBoxStore } from '../useBoundingBoxStore'
  * one cat recolors another, or a new cat takes a removed cat's color while
  * unused colors remain.
  */
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-)
-jest.mock('react-native-mmkv', () => ({
-  createMMKV: jest.fn(() => ({
-    getString: jest.fn(),
-    set: jest.fn(),
-    delete: jest.fn(),
-  })),
-}))
 
 const box = {
   lowerLeftX: 0.1,

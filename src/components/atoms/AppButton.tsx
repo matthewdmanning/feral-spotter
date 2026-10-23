@@ -1,6 +1,6 @@
 import { Pressable, Text, View, ActivityIndicator } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
-import { styles } from './AppButton.styles'
+import { LABEL_COLOR_KEY, styles } from './AppButton.styles'
 import { tapHaptic } from '@/src/lib/haptics'
 import type { ReactNode } from 'react'
 
@@ -49,17 +49,10 @@ export function AppButton({
   styles.useVariants({ variant, size })
   const { theme } = useUnistyles()
   const isDisabled = disabled || loading
-  // Mirrors styles.label's per-variant color so the spinner reads as the
-  // same "text" the button would otherwise show, rather than the OS's
-  // theme-blind ActivityIndicator default (green on Android, gray on iOS).
-  const spinnerColor =
-    variant === 'primary'
-      ? theme.colors.accentText
-      : variant === 'danger'
-        ? theme.colors.onDanger
-        : variant === 'ghost'
-          ? theme.colors.muted
-          : theme.colors.onSecondary
+  // The label's own color, so the spinner reads as the same "text" the
+  // button would otherwise show, rather than the OS's theme-blind
+  // ActivityIndicator default (green on Android, gray on iOS).
+  const spinnerColor = theme.colors[LABEL_COLOR_KEY[variant]]
 
   return (
     <Pressable

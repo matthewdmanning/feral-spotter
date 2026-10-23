@@ -1,23 +1,27 @@
-/* global jest */
-/**
- * Global test setup.
- *
- * AsyncStorage is mocked here rather than in each suite: useUIStore (which
- * every dialog now routes through) persists through it, so any screen or
- * hook that raises a dialog pulls the native module in transitively. Suites
- * that already mock it locally are unaffected.
- */
+/* global jest, beforeEach */
+
+// Use the library's mock so real styles resolve against real app tokens.
+require('react-native-unistyles/mocks')
+
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 )
 
-// Same reason as above: src/lib/cache/storage.ts constructs an MMKV instance
-// at module load, and useUIStore imports it. Mirrors the stub the suites
-// that already reached this code path declare for themselves.
-jest.mock('react-native-mmkv', () => ({
-  createMMKV: jest.fn(() => ({
-    getString: jest.fn(),
-    set: jest.fn(),
-    delete: jest.fn(),
-  })),
-}))
+const { StyleSheet, UnistylesRuntime } = require('react-native-unistyles')
+const { darkTheme, lightTheme } = require('./src/config/themes')
+
+// Nonzero insets make missing safe-area padding observable in layout tests.
+Object.assign(UnistylesRuntime.miniRuntime, {
+  insets: { top: 24, bottom: 24, left: 0, right: 0, ime: 0 },
+  screen: { width: 390, height: 844 },
+})
+StyleSheet.configure({ themes: { dark: darkTheme, light: lightTheme } })
+
+// MMKV 4 selects its own in-memory implementation when NODE_ENV is 'test'.
+// Keep storage isolated without replacing the application's storage adapter.
+const AsyncStorage = require('@react-native-async-storage/async-storage')
+const { mmkvInstance } = jest.requireActual('./src/lib/cache/storage')
+beforeEach(async () => {
+  await AsyncStorage.clear()
+  mmkvInstance.clearAll()
+})

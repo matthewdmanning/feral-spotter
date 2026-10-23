@@ -1,0 +1,74 @@
+[
+  {
+    "id": "storage-owner-collision-guard",
+    "production_file": "storage.rules",
+    "mutation": {
+      "before": "doc.data.ownerUid == uid && doc.data.photoCount < 10",
+      "after": "doc.data.photoCount < 10"
+    },
+    "outcome": "killed",
+    "failed_tests": 1,
+    "log_path": "docs/implementations/2026-10-22-test-suite-audit-reports/storage-owner-collision-guard.log",
+    "confidence": 0.99
+  },
+  {
+    "id": "storage-photo-cap",
+    "production_file": "storage.rules",
+    "mutation": {
+      "before": "doc.data.photoCount < 10",
+      "after": "true"
+    },
+    "outcome": "killed",
+    "failed_tests": 1,
+    "log_path": "docs/implementations/2026-10-22-test-suite-audit-reports/storage-photo-cap.log",
+    "confidence": 0.99
+  },
+  {
+    "id": "storage-submission-cap",
+    "production_file": "storage.rules",
+    "mutation": {
+      "before": "firestore.get(/databases/(default)/documents/submissionCounts/$(uid)).data.count < 250",
+      "after": "true"
+    },
+    "outcome": "killed",
+    "failed_tests": 1,
+    "log_path": "docs/implementations/2026-10-22-test-suite-audit-reports/storage-submission-cap.log",
+    "confidence": 0.99
+  },
+  {
+    "id": "storage-overwrite-guard",
+    "production_file": "storage.rules",
+    "mutation": {
+      "before": "                 resource == null\n                 && request.resource.size",
+      "after": "                 request.resource.size"
+    },
+    "outcome": "killed",
+    "failed_tests": 1,
+    "log_path": "docs/implementations/2026-10-22-test-suite-audit-reports/storage-overwrite-guard.log",
+    "confidence": 0.99
+  },
+  {
+    "id": "firestore-retry-marker-read",
+    "production_file": "firestore.rules",
+    "mutation": {
+      "before": "allow read, write: if false;",
+      "after": "allow read: if true;\n        allow write: if false;"
+    },
+    "outcome": "killed",
+    "failed_tests": 3,
+    "log_path": "docs/implementations/2026-10-22-test-suite-audit-reports/firestore-retry-marker-read.log",
+    "confidence": 0.99
+  },
+  {
+    "id": "firestore-counter-read-owner",
+    "production_file": "firestore.rules",
+    "mutation": {
+      "before": "allow read: if request.auth != null && request.auth.uid == uid;",
+      "after": "allow read: if request.auth != null;"
+    },
+    "outcome": "killed",
+    "failed_tests": 1,
+    "log_path": "docs/implementations/2026-10-22-test-suite-audit-reports/firestore-counter-read-owner.log",
+    "confidence": 0.99
+  }
+]

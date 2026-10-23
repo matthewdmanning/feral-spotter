@@ -16,29 +16,16 @@ import { LOCATION_STALE_THRESHOLD_MS } from '@/src/config/location'
  * stale window without needing another caller to notice.
  */
 
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-)
-
-jest.mock('react-native-mmkv', () => ({
-  createMMKV: jest.fn(() => ({
-    getString: jest.fn(),
-    set: jest.fn(),
-    delete: jest.fn(),
-  })),
-}))
-
 let watchCallback: ((fix: unknown) => void) | undefined
 const removeMock = jest.fn()
 const mockGetForegroundPermissionsAsync = jest.fn()
 const mockWatchPositionAsync = jest.fn()
 
 jest.mock('expo-location', () => ({
+  ...jest.requireActual('expo-location'),
   getForegroundPermissionsAsync: (...args: unknown[]) =>
     mockGetForegroundPermissionsAsync(...args),
   watchPositionAsync: (...args: unknown[]) => mockWatchPositionAsync(...args),
-  PermissionStatus: { GRANTED: 'granted' },
-  Accuracy: { Balanced: 3, High: 4 },
 }))
 
 function fix(accuracy: number) {

@@ -9,6 +9,8 @@ import {
 import { doc, setDoc } from 'firebase/firestore'
 import {
   deleteObject,
+  listAll,
+  type StorageReference,
   ref,
   updateMetadata,
   uploadBytes,
@@ -47,8 +49,18 @@ afterAll(async () => {
 
 afterEach(async () => {
   await testEnv.clearFirestore()
-  await testEnv.clearStorage()
+  // clearStorage() uses the default bucket and only its root items. These
+  // fixtures live under nested prefixes in an explicit .firebasestorage.app bucket.
+  await testEnv.withSecurityRulesDisabled((context) =>
+    clearPrefix(ref(context.storage(BUCKET_URL))),
+  )
 })
+
+async function clearPrefix(prefix: StorageReference): Promise<void> {
+  const { items, prefixes } = await listAll(prefix)
+  await Promise.all(items.map((item) => deleteObject(item)))
+  await Promise.all(prefixes.map((child) => clearPrefix(child)))
+}
 
 async function seedCounter(
   submissionId: string,
@@ -251,14 +263,8 @@ describe('storage.rules — submissions/{uid}/{submissionId}/{fileName}', () => 
     )
   })
 
-  it("#268: a second uid's upload is gated by the first uid's counter when submissionId collides (should fail once #268 lands)", async () => {
-    // uid-A already has 10 photos on "shared-id". uid-B, using the same
-    // submissionId under their own uid folder, gets blocked by uid-A's
-    // count — cross-tenant coupling through the flat counter doc. This
-    // SUCCEEDING as a *rejection for uid-B* (who has 0 real photos) proves
-    // the collision; once #268 scopes the counter per uid, uid-B's upload
-    // should succeed instead.
-    await seedCounter('shared-id', 'uid-a', 10)
+  it('rejects a submission id owned by another user even below the photo cap', async () => {
+    await seedCounter('shared-id', 'uid-a', 0)
     const uidB = testEnv.authenticatedContext('uid-b')
     const objectRef = ref(
       uidB.storage(BUCKET_URL),
@@ -347,6 +353,47 @@ describe('storage.rules — submissions/{uid}/{submissionId}/{fileName}', () => 
     )
     await assertFails(
       uploadBytes(objectRef, OVERSIZED_IMAGE, { contentType: 'image/jpeg' }),
+    )
+  })
+  it.each([
+    { count: 249, allowed: true },
+    { count: 250, allowed: false },
+  ])(
+    'enforces the per-user submission cap at $count submissions',
+    async ({ count, allowed }) => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), 'submissionCounts', OWNER_UID), {
+          count,
+        })
+      })
+      const owner = testEnv.authenticatedContext(OWNER_UID)
+      const upload = uploadBytes(
+        ref(
+          owner.storage(BUCKET_URL),
+          `submissions/${OWNER_UID}/cap-boundary/metadata.json`,
+        ),
+        SMALL_JSON,
+        { contentType: 'application/json' },
+      )
+      if (allowed) await assertSucceeds(upload)
+      else await assertFails(upload)
+    },
+  )
+
+  it('rejects replacing an existing photo with a different-sized file', async () => {
+    const owner = testEnv.authenticatedContext(OWNER_UID)
+    const object = ref(
+      owner.storage(BUCKET_URL),
+      `submissions/${OWNER_UID}/overwrite/photo.jpg`,
+    )
+    await assertSucceeds(
+      uploadBytes(object, SMALL_IMAGE, { contentType: 'image/jpeg' }),
+    )
+
+    await assertFails(
+      uploadBytes(object, new Uint8Array([1, 2, 3, 4, 5]), {
+        contentType: 'image/jpeg',
+      }),
     )
   })
 })

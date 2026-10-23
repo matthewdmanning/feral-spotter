@@ -9,24 +9,10 @@ import { completeDraft, discardDraft } from '../draft'
  * The survival invariant (#292): after either teardown verb, no draft-owned
  * AsyncStorage key still holds content.
  *
- * Deliberately asserted against *actual storage contents* via an exclusion
- * list rather than a hand-written list of the four store keys — a fifth
- * draft store added later must fail this test without anyone remembering to
- * update it. That regression has already happened twice (bounding-box-store
- * cleared by nobody; active-cat-flow-store missing from PERSISTED_STORE_KEYS).
+ * Compare the complete persisted state with the real stores' initial state,
+ * including Submission metadata and draft identifiers that have no cat/photo
+ * marker. Seed every draft-owned store before testing either teardown verb.
  */
-
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-)
-
-jest.mock('react-native-mmkv', () => ({
-  createMMKV: jest.fn(() => ({
-    getString: jest.fn(),
-    set: jest.fn(),
-    delete: jest.fn(),
-  })),
-}))
 
 const mockStopLocationCapture = jest.fn()
 jest.mock('@/src/lib/location', () => ({
@@ -53,10 +39,32 @@ const NOT_DRAFT_OWNED = [
 
 const CAT_ID = 'cat-1'
 const PHOTO_ID = 'photo-1'
-/** Any of these surviving in a persisted store means draft data survived. */
-const DRAFT_MARKERS = new RegExp(`${CAT_ID}|${PHOTO_ID}`)
+const draftStores = [
+  useSubmissionStore,
+  usePhotoStore,
+  useBoundingBoxStore,
+  useActiveCatFlowStore,
+]
+
+// JSON serialization matches persist: functions and undefined fields are omitted.
+const initialPersistedState = Object.fromEntries(
+  draftStores.map((store) => [
+    store.persist.getOptions().name,
+    JSON.parse(JSON.stringify(store.getInitialState())),
+  ]),
+)
 
 const buildFullDraft = () => {
+  useSubmissionStore.getState().setSubmission({
+    location_type: 'pin',
+    time_type: 'manual',
+    address: 'Draft Map picker location',
+    latitude: 34.6834,
+    longitude: -82.8374,
+    accuracy: 5,
+    manual_time: '2026-08-01T10:00:00.000Z',
+    captured_at: '2026-08-01T09:00:00.000Z',
+  })
   useSubmissionStore.getState().addCat({
     local_id: CAT_ID,
     age: 'adult',
@@ -70,46 +78,55 @@ const buildFullDraft = () => {
     photo_local_ids: [PHOTO_ID],
     photos_reviewed: true,
   })
-  usePhotoStore.getState().addPhoto({
-    local_id: PHOTO_ID,
-    uri: `file://${PHOTO_ID}.jpg`,
-    uploaded: false,
-    upload_progress: 0,
-    width: 100,
-    height: 100,
-  })
+  for (const localId of [PHOTO_ID, 'photo-2']) {
+    usePhotoStore.getState().addPhoto({
+      local_id: localId,
+      uri: `file://${localId}.jpg`,
+      uploaded: false,
+      upload_progress: 0,
+      width: 100,
+      height: 100,
+    })
+  }
   useBoundingBoxStore.getState().addBox(CAT_ID, PHOTO_ID, {
     lowerLeftX: 1,
     lowerLeftY: 1,
     upperRightX: 9,
     upperRightY: 9,
   })
+  useBoundingBoxStore.getState().markAbsent(CAT_ID, 'photo-2')
+  usePhotoStore.setState({ submissionId: 'draft-submission' })
   useActiveCatFlowStore.getState().setActiveCatId(CAT_ID)
 }
 
 /** Lets zustand's persist middleware finish its async writes. */
 const flushPersist = () => new Promise((resolve) => setImmediate(resolve))
 
-/** Keys that currently hold something other than an empty/default payload. */
-const draftOwnedKeysWithContent = async (): Promise<string[]> => {
+/** Read complete JSON payloads, including unexpected draft-owned keys. */
+const readPersistedDraft = async () => {
   const keys = (await AsyncStorage.getAllKeys()).filter(
-    (k) => !NOT_DRAFT_OWNED.some((skip) => skip.test(k)),
+    (key) => !NOT_DRAFT_OWNED.some((skip) => skip.test(key)),
   )
   const entries = await AsyncStorage.multiGet(keys)
-  return entries
-    .filter(([, value]) => {
-      if (!value) return false
-      // zustand persists `{ state: {...}, version }` — a cleared store still
-      // has a row, so "held content" means the draft data inside it survived.
-      const { state } = JSON.parse(value) as { state: Record<string, unknown> }
-      return DRAFT_MARKERS.test(JSON.stringify(state))
-    })
-    .map(([key]) => key)
+  return Object.fromEntries(
+    entries.map(([key, value]) => [
+      key,
+      value ? JSON.parse(value).state : null,
+    ]),
+  )
 }
 
 describe('draft teardown — survival invariant (#292)', () => {
   beforeEach(async () => {
     jest.clearAllMocks()
+    useSubmissionStore.setState(useSubmissionStore.getInitialState(), true)
+    usePhotoStore.setState(usePhotoStore.getInitialState(), true)
+    useBoundingBoxStore.setState(useBoundingBoxStore.getInitialState(), true)
+    useActiveCatFlowStore.setState(
+      useActiveCatFlowStore.getInitialState(),
+      true,
+    )
+    await flushPersist()
     await AsyncStorage.clear()
   })
 
@@ -124,19 +141,18 @@ describe('draft teardown — survival invariant (#292)', () => {
 
       // Guards against a vacuous pass: the keys have to hold the draft before
       // teardown, or their absence afterwards proves nothing.
-      expect(await draftOwnedKeysWithContent()).toEqual(
-        expect.arrayContaining([
-          'submission-store',
-          'photo-store',
-          'bounding-box-store',
-          'active-cat-flow-store',
-        ]),
+      const persistedDraft = await readPersistedDraft()
+      expect(Object.keys(persistedDraft).sort()).toEqual(
+        Object.keys(initialPersistedState).sort(),
       )
+      for (const [key, initialState] of Object.entries(initialPersistedState)) {
+        expect(persistedDraft[key]).not.toEqual(initialState)
+      }
 
       await teardown()
       await flushPersist()
 
-      expect(await draftOwnedKeysWithContent()).toEqual([])
+      expect(await readPersistedDraft()).toEqual(initialPersistedState)
       expect(mockStopLocationCapture).toHaveBeenCalled()
     },
   )

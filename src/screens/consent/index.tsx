@@ -1,150 +1,50 @@
+import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { AppButton } from '@/src/components/atoms/AppButton'
-import { showAlert } from '@/src/hooks/useUIStore'
-import { cameraPermission } from '@/src/lib/permissions/cameraPermission'
-import {
-  isUsable as isLocationUsable,
-  locationPermission,
-} from '@/src/lib/permissions/locationPermission'
-import { useCallback, useEffect, useState } from 'react'
-import {
-  AppState,
-  BackHandler,
-  Linking,
-  Platform,
-  View,
-  Text,
-  Pressable,
-  ScrollView,
-} from 'react-native'
-import { router } from 'expo-router'
-import * as Location from 'expo-location'
-import { useConsentStore } from '@/src/hooks/useConsentStore'
-import { useBackHandler } from '@/src/hooks/useBackHandler'
+import { TextButton } from '@/src/components/atoms/TextButton'
+import { DisclosureText } from '@/src/components/molecules/DisclosureText'
+import { GateScreen } from '@/src/components/molecules/GateScreen'
 import consentCopy from '@/src/content/consentDisclosure.json'
+import { confirmExitApp } from '@/src/hooks/confirmExitApp'
+import { useBackHandler } from '@/src/hooks/useBackHandler'
+import { useConsentPermissions } from '@/src/hooks/useConsentPermissions'
+import { useCallback } from 'react'
+import { Linking, ScrollView, Text, View } from 'react-native'
 import { styles } from './index.styles'
 
+const PERMISSION_BLOCKED_BODY =
+  "Camera, photo, or location access was denied. Enable it in Settings to continue — you'll be brought back here automatically once it's granted."
+
 export default function ConsentScreen() {
-  const markAccepted = useConsentStore((s) => s.markAccepted)
-  const [busy, setBusy] = useState(false)
-  const [blocked, setBlocked] = useState(false)
+  const { busy, blocked, handleAgree } = useConsentPermissions()
 
   useBackHandler(useCallback(() => true, []))
 
-  const handleAgree = useCallback(async () => {
-    setBusy(true)
-    try {
-      // Requested sequentially, not via Promise.all: Android can only show one
-      // permission dialog at a time, so firing both concurrently resolves
-      // every request after the first as BLOCKED/denied without the user ever
-      // seeing a prompt for it. Photo-library access (#91) is not requested
-      // here — it's asked lazily at point of use by the library picker.
-      const cameraGranted = await cameraPermission.request()
-      const locationResponse =
-        await Location.requestForegroundPermissionsAsync()
-
-      if (!cameraGranted || !isLocationUsable(locationResponse)) {
-        // Consent isn't recorded on a gated outcome (#66) — a relaunch while
-        // still blocked must land back on this screen and re-request, not
-        // read as "already consented" and skip straight past the gate.
-        setBlocked(true)
-        return
-      }
-      // Neither react-native-permissions nor expo-location can distinguish
-      // Android's "Only this time" from "While using the app" location
-      // choices — expo-location's `expires` field is hardcoded to `'never'`
-      // for every Android grant, not just one-time ones — so the notice
-      // fires on every fresh grant and is worded conditionally ("if you
-      // chose...") rather than claiming to know which one the user picked
-      // (#225).
-      if (Platform.OS === 'android' && locationResponse.granted) {
-        showAlert(
-          consentCopy.locationOnceWarningTitle,
-          consentCopy.locationOnceWarningBody,
-        )
-      }
-      markAccepted()
-      router.replace('/sign-in')
-    } catch (err) {
-      console.error('[consent] permission request failed:', err)
-      showAlert(
-        'Something went wrong',
-        'Could not process permissions. Please try again.',
-      )
-    } finally {
-      setBusy(false)
-    }
-  }, [markAccepted])
-
-  // Manually granting in system Settings and returning to the app doesn't
-  // trigger a re-request — re-check on foreground so the gate clears once
-  // access is actually there instead of trapping the user behind it.
-  useEffect(() => {
-    if (!blocked) return
-
-    const recheck = async () => {
-      const cameraUsable = await cameraPermission.check()
-      const locationUsable = await locationPermission.check()
-      if (cameraUsable && locationUsable) {
-        setBlocked(false)
-        markAccepted()
-        router.replace('/sign-in')
-      }
-    }
-
-    const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'active') recheck()
-    })
-    return () => sub.remove()
-  }, [blocked, markAccepted])
-
-  const handleDecline = useCallback(() => {
-    showAlert(consentCopy.declineWarningTitle, consentCopy.declineWarningBody, [
-      { text: 'Back', style: 'cancel' },
-      {
-        text: 'Exit',
-        style: 'destructive',
-        onPress: () => {
-          // iOS has no supported way to self-terminate — Back is the only
-          // option there; Exit only does anything on Android.
-          if (Platform.OS === 'android') BackHandler.exitApp()
-        },
-      },
-    ])
-  }, [])
+  const handleDecline = useCallback(
+    () =>
+      confirmExitApp(
+        consentCopy.declineWarningTitle,
+        consentCopy.declineWarningBody,
+      ),
+    [],
+  )
 
   if (blocked) {
     return (
-      <View style={styles.gate}>
-        <Text style={styles.gateTitle}>Permission Blocked</Text>
-        <Text style={styles.gateBody}>
-          Camera, photo, or location access was denied. Enable it in Settings to
-          continue — you&apos;ll be brought back here automatically once
-          it&apos;s granted.
-        </Text>
-        <View style={styles.gateAction}>
-          <AppButton onPress={() => Linking.openSettings()}>
-            Open Settings
-          </AppButton>
-        </View>
-      </View>
+      <GateScreen
+        title="Permission Blocked"
+        body={PERMISSION_BLOCKED_BODY}
+        primaryLabel="Open Settings"
+        onPrimary={() => Linking.openSettings()}
+      />
     )
   }
 
   return (
     <View style={styles.root}>
+      <AmbientBackground />
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.title}>{consentCopy.title}</Text>
-        <Text style={styles.body}>{consentCopy.intro}</Text>
-        {consentCopy.items.map((item) => (
-          <Text key={item.label} style={styles.item}>
-            <Text style={styles.itemLabel}>{item.label}</Text> {item.text}
-          </Text>
-        ))}
-        {consentCopy.body.map((paragraph) => (
-          <Text key={paragraph} style={styles.body}>
-            {paragraph}
-          </Text>
-        ))}
+        <DisclosureText />
 
         <View style={styles.agreeRow}>
           <AppButton onPress={handleAgree} loading={busy}>
@@ -152,15 +52,15 @@ export default function ConsentScreen() {
           </AppButton>
         </View>
 
-        <Pressable
+        <TextButton
           onPress={handleDecline}
           disabled={busy}
+          tone="muted"
+          underline
           style={styles.declineBtn}
-          accessibilityRole="button"
-          accessibilityLabel={consentCopy.declineLabel}
         >
-          <Text style={styles.declineText}>{consentCopy.declineLabel}</Text>
-        </Pressable>
+          {consentCopy.declineLabel}
+        </TextButton>
       </ScrollView>
     </View>
   )
