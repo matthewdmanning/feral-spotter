@@ -1,43 +1,20 @@
 import { act, renderHook } from '@testing-library/react-native'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
+import { router } from 'expo-router'
+import { useActiveCatFlowStore } from '../useActiveCatFlowStore'
 import { useAnnotatePass } from '../useAnnotatePass'
+import { useBoundingBoxStore } from '../useBoundingBoxStore'
+import { usePhotoStore } from '../usePhotoStore'
+import { useSubmissionStore } from '../useSubmissionStore'
 
 /**
- * Models useAnnotatePass's carousel-position logic (src/hooks/useAnnotatePass.ts)
- * — Confirm Box and Not in Photo both advance to the next photo, except from
- * the last photo (no auto-advance, per the doc comment "Boxing Complete, not
- * auto-advance, ends the pass"); Previous moves back but never past 0.
- * useActiveCatFlow (the cat-discovery/persistence layer this hook wraps) is
- * already fully modeled in useActiveCatFlow.model.test.ts — mocked here to a
- * bare no-op so this model stays scoped to position, not re-testing that.
- * The remove-confirmation branching (handleLongPressRemove) is a pure
- * decision, not a flow — covered separately in
- * useAnnotatePass.removeConfirm.test.ts with plain cases, matching this
- * repo's convention for non-stateful branching (see libraryPickTime.test.ts).
+ * Drives carousel position and the final-photo completion against the real
+ * active-cat and photo stores. Confirm and Not in Photo advance until the
+ * last photo, where they complete the pass without incrementing the index.
  */
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-)
-
-jest.mock('react-native-mmkv', () => ({
-  createMMKV: jest.fn(() => ({
-    getString: jest.fn(),
-    set: jest.fn(),
-    delete: jest.fn(),
-  })),
-}))
-
-jest.mock('../useActiveCatFlow', () => ({
-  useActiveCatFlow: () => ({
-    activeCatId: null,
-    getPhotoStatus: () => 'pending',
-    handleBoxConfirmed: jest.fn(),
-    handleNotInPhoto: jest.fn(),
-    handleBoxingComplete: jest.fn(),
-    clearActiveCat: jest.fn(),
-    handleAbandonPass: jest.fn(),
-  }),
+jest.mock('expo-router', () => ({
+  router: { replace: jest.fn() },
 }))
 
 const THREE_PHOTOS = [
@@ -67,22 +44,6 @@ const THREE_PHOTOS = [
   },
 ]
 
-jest.mock('@/src/hooks', () => ({
-  usePhotoStore: (sel: (s: object) => unknown) =>
-    sel({ photos: THREE_PHOTOS, removePhoto: jest.fn() }),
-}))
-jest.mock('@/src/hooks/useBoundingBoxStore', () => ({
-  useBoundingBoxStore: (sel: (s: object) => unknown) =>
-    sel({ removeBoxesForPhoto: jest.fn() }),
-}))
-jest.mock('@/src/hooks/useSettingsStore', () => ({
-  useSettingsStore: (sel: (s: object) => unknown) =>
-    sel({
-      settings: { skip_photo_remove_confirm: false },
-      updateSetting: jest.fn(),
-    }),
-}))
-
 const box = {
   lowerLeftX: 0.1,
   lowerLeftY: 0.1,
@@ -107,8 +68,9 @@ const navMachine = createMachine({
     photo2: {
       // Last photo (index 2 of 3) — Confirm/Not in Photo record the result
       // but do not advance past the end.
-      on: { CONFIRM: 'photo2', NOT_IN_PHOTO: 'photo2', PREV: 'photo1' },
+      on: { CONFIRM: 'completed', NOT_IN_PHOTO: 'completed', PREV: 'photo1' },
     },
+    completed: {},
   },
 })
 
@@ -118,6 +80,15 @@ describe('useAnnotatePass — carousel navigation (model-based test)', () => {
   >
 
   beforeEach(() => {
+    jest.clearAllMocks()
+    useActiveCatFlowStore.getState().setActiveCatId(null)
+    useBoundingBoxStore.getState().clearAll()
+    useSubmissionStore.getState().clearDraft()
+    usePhotoStore.setState({
+      photos: THREE_PHOTOS,
+      source: 'camera',
+      submissionId: 'carousel-submission',
+    })
     hook = renderHook(() => useAnnotatePass())
   })
 
@@ -128,10 +99,33 @@ describe('useAnnotatePass — carousel navigation (model-based test)', () => {
       photo0: () => expect(hook.result.current.currentIndex).toBe(0),
       photo1: () => expect(hook.result.current.currentIndex).toBe(1),
       photo2: () => expect(hook.result.current.currentIndex).toBe(2),
+      completed: () => {
+        expect(hook.result.current.currentIndex).toBe(2)
+      },
     },
     events: {
-      CONFIRM: () => act(() => hook.result.current.handleConfirmBox(box)),
-      NOT_IN_PHOTO: () => act(() => hook.result.current.handleNotInPhoto()),
+      CONFIRM: () => {
+        const photo =
+          hook.result.current.photos[hook.result.current.currentIndex]
+        act(() => hook.result.current.handleConfirmBox(box))
+        if (photo) {
+          expect(
+            useBoundingBoxStore.getState().getBoxesForPhoto(photo.local_id),
+          ).not.toHaveLength(0)
+        }
+      },
+      NOT_IN_PHOTO: () => {
+        const photo =
+          hook.result.current.photos[hook.result.current.currentIndex]
+        act(() => hook.result.current.handleNotInPhoto())
+        if (photo) {
+          expect(
+            Object.keys(useBoundingBoxStore.getState().absences).some((key) =>
+              key.endsWith(`:${photo.local_id}`),
+            ),
+          ).toBe(true)
+        }
+      },
       PREV: () => act(() => hook.result.current.handlePrevPhoto()),
     },
   }
@@ -143,8 +137,12 @@ describe('useAnnotatePass — carousel navigation (model-based test)', () => {
       events: [{ type: 'CONFIRM' }],
     },
     {
-      name: 'not-in-photo advances the same as a confirmed box',
-      events: [{ type: 'NOT_IN_PHOTO' }],
+      name: 'not-in-photo advances and completes on the last photo after a confirmed box',
+      events: [
+        { type: 'CONFIRM' },
+        { type: 'NOT_IN_PHOTO' },
+        { type: 'NOT_IN_PHOTO' },
+      ],
     },
     {
       name: 'confirming on the last photo does not advance past the end',
@@ -165,5 +163,15 @@ describe('useAnnotatePass — carousel navigation (model-based test)', () => {
       const [path] = model.getPathsFromEvents(events)
       await path.test(testParams)
     })
+  })
+
+  it('completes the pass after boxing evidence exists', () => {
+    useActiveCatFlowStore.getState().setActiveCatId('cat-with-box')
+    useBoundingBoxStore.getState().addBox('cat-with-box', 'photo-1', box)
+
+    act(() => hook.result.current.handleBoxingComplete())
+
+    expect(router.replace).toHaveBeenCalledWith('/submission/cats')
+    expect(useActiveCatFlowStore.getState().activeCatId).toBe('cat-with-box')
   })
 })

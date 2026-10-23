@@ -1,134 +1,145 @@
 import * as ui from '@/src/hooks/useUIStore'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { act, renderHook } from '@testing-library/react-native'
 
+import { useActiveCatFlowStore } from '../useActiveCatFlowStore'
 import { useAnnotatePass } from '../useAnnotatePass'
+import { useBoundingBoxStore } from '../useBoundingBoxStore'
+import { usePhotoStore } from '../usePhotoStore'
+import { useSettingsStore } from '../useSettingsStore'
 
-/**
- * handleLongPressRemove's confirmation branching (src/hooks/useAnnotatePass.ts)
- * is a pure decision on one input (the skip-confirm setting), not a
- * stateful flow — plain cases here, not an xstate model, matching this
- * repo's convention for non-stateful branching (see libraryPickTime.test.ts).
- * Carousel-position logic is modeled separately in
- * useAnnotatePass.carouselNav.model.test.ts.
- */
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-)
-
-jest.mock('react-native-mmkv', () => ({
-  createMMKV: jest.fn(() => ({
-    getString: jest.fn(),
-    set: jest.fn(),
-    delete: jest.fn(),
-  })),
-}))
-
-jest.mock('../useActiveCatFlow', () => ({
-  useActiveCatFlow: () => ({
-    activeCatId: 'active-cat',
-    getPhotoStatus: () => 'pending',
-    handleBoxConfirmed: jest.fn(),
-    handleNotInPhoto: jest.fn(),
-    handleBoxingComplete: jest.fn(),
-    clearActiveCat: jest.fn(),
-    handleAbandonPass: jest.fn(),
-  }),
-}))
+jest.mock('expo-router', () => ({ router: { replace: jest.fn() } }))
 
 const PHOTO = {
   local_id: 'photo-1',
-  uri: 'a',
+  uri: 'file:///photo-1.jpg',
   uploaded: false,
   upload_progress: 0,
-  width: 1,
-  height: 1,
+  width: 100,
+  height: 100,
+}
+const OTHER_PHOTO = {
+  ...PHOTO,
+  local_id: 'photo-2',
+  uri: 'file:///photo-2.jpg',
+}
+const BOX = { lowerLeftX: 1, lowerLeftY: 1, upperRightX: 9, upperRightY: 9 }
+
+const pressDialogButton = async (text: string) => {
+  const button = ui.useUIStore
+    .getState()
+    .dialog?.buttons.find((b) => b.text === text)
+  expect(button).toBeDefined()
+  await act(async () => {
+    ui.useUIStore.getState().dismissDialog()
+    await button?.onPress?.()
+  })
 }
 
-const mockRemovePhoto = jest.fn()
-const mockRemoveBoxesForPhoto = jest.fn()
-const mockUpdateSetting = jest.fn()
-
-let mockSkipConfirm: boolean
-
-jest.mock('@/src/hooks', () => ({
-  usePhotoStore: (sel: (s: object) => unknown) =>
-    sel({ photos: [PHOTO], removePhoto: mockRemovePhoto }),
-}))
-jest.mock('@/src/hooks/useBoundingBoxStore', () => ({
-  useBoundingBoxStore: (sel: (s: object) => unknown) =>
-    sel({ removeBoxesForPhoto: mockRemoveBoxesForPhoto }),
-}))
-jest.mock('@/src/hooks/useSettingsStore', () => ({
-  useSettingsStore: (sel: (s: object) => unknown) =>
-    sel({
-      get settings() {
-        return { skip_photo_remove_confirm: mockSkipConfirm }
-      },
-      updateSetting: mockUpdateSetting,
+const expectFirstPhotoRemoved = () => {
+  expect(usePhotoStore.getState().photos).toEqual([OTHER_PHOTO])
+  const annotations = useBoundingBoxStore.getState()
+  expect(annotations.getBoxesForPhoto(PHOTO.local_id)).toEqual([])
+  expect(annotations.absences['absent-cat:photo-1']).toBeUndefined()
+  expect(annotations.lastBoxes['active-cat:photo-1']).toBeUndefined()
+  expect(annotations.getBoxesForPhoto(OTHER_PHOTO.local_id)).toEqual([
+    expect.objectContaining({
+      cat_id: 'active-cat',
+      photo_local_id: 'photo-2',
     }),
-}))
+  ])
+}
 
 describe('useAnnotatePass — handleLongPressRemove confirmation branching', () => {
   beforeEach(() => {
+    jest.restoreAllMocks()
     jest.clearAllMocks()
-    mockSkipConfirm = false
+    jest.spyOn(ui, 'showAlert')
+    ui.useUIStore.setState({ dialog: null })
+    useActiveCatFlowStore.getState().setActiveCatId('active-cat')
+    useSettingsStore
+      .getState()
+      .updateSetting('skip_photo_remove_confirm', false)
+    usePhotoStore.setState({
+      photos: [PHOTO, OTHER_PHOTO],
+      source: 'camera',
+      submissionId: 'remove-confirm-submission',
+    })
+    const annotations = useBoundingBoxStore.getState()
+    annotations.clearAll()
+    annotations.addBox('active-cat', PHOTO.local_id, BOX)
+    annotations.addBox('active-cat', PHOTO.local_id, BOX)
+    annotations.addBox('other-cat', PHOTO.local_id, BOX)
+    annotations.markAbsent('absent-cat', PHOTO.local_id)
+    annotations.addBox('active-cat', OTHER_PHOTO.local_id, BOX)
   })
 
   it('skip-confirm on: removes immediately without an Alert', () => {
-    mockSkipConfirm = true
-    const alertSpy = jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
+    useSettingsStore.getState().updateSetting('skip_photo_remove_confirm', true)
     const { result } = renderHook(() => useAnnotatePass())
 
     act(() => result.current.handleLongPressRemove())
 
-    expect(alertSpy).not.toHaveBeenCalled()
-    expect(mockRemovePhoto).toHaveBeenCalledWith('photo-1')
-    expect(mockRemoveBoxesForPhoto).toHaveBeenCalledWith('photo-1')
+    expect(ui.showAlert).not.toHaveBeenCalled()
+    expectFirstPhotoRemoved()
   })
 
-  it('skip-confirm off: Alert offers a 3rd "don\'t ask again" option', () => {
-    mockSkipConfirm = false
-    const alertSpy = jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
+  it('skip-confirm off: Alert offers a 3rd "don\'t ask again" option', async () => {
     const { result } = renderHook(() => useAnnotatePass())
-
     act(() => result.current.handleLongPressRemove())
 
-    expect(alertSpy).toHaveBeenCalledTimes(1)
-    const [title, message, buttons] = alertSpy.mock.calls[0]
-    expect(title).toBe('Remove photo from submission?')
-    expect(message).toBe('This cannot be undone.')
-    expect(buttons?.map((b) => b.text)).toEqual([
-      'Cancel',
-      "Remove, don't ask again",
-      'Remove',
-    ])
-  })
-
-  it('pressing "Remove, don\'t ask again" persists the setting and removes', () => {
-    mockSkipConfirm = false
-    jest.spyOn(ui, 'showAlert').mockImplementation((_t, _m, buttons) => {
-      buttons?.find((b) => b.text === "Remove, don't ask again")?.onPress?.()
-    })
-    const { result } = renderHook(() => useAnnotatePass())
-
-    act(() => result.current.handleLongPressRemove())
-
-    expect(mockUpdateSetting).toHaveBeenCalledWith(
-      'skip_photo_remove_confirm',
-      true,
+    expect(ui.useUIStore.getState().dialog).toEqual(
+      expect.objectContaining({
+        title: 'Remove photo from submission?',
+        message: 'This cannot be undone.',
+      }),
     )
-    expect(mockRemovePhoto).toHaveBeenCalledWith('photo-1')
+    expect(ui.useUIStore.getState().dialog?.buttons.map((b) => b.text)).toEqual(
+      ['Cancel', "Remove, don't ask again", 'Remove'],
+    )
+    expect(usePhotoStore.getState().photos).toEqual([PHOTO, OTHER_PHOTO])
+
+    await pressDialogButton('Remove')
+
+    expectFirstPhotoRemoved()
+    expect(useSettingsStore.getState().settings.skip_photo_remove_confirm).toBe(
+      false,
+    )
   })
 
-  it('pressing Cancel removes nothing', () => {
-    mockSkipConfirm = false
-    jest.spyOn(ui, 'showAlert').mockImplementation((_t, _m, buttons) => {
-      buttons?.find((b) => b.text === 'Cancel')?.onPress?.()
-    })
+  it('pressing "Remove, don\'t ask again" persists the setting and removes', async () => {
     const { result } = renderHook(() => useAnnotatePass())
-
     act(() => result.current.handleLongPressRemove())
 
-    expect(mockRemovePhoto).not.toHaveBeenCalled()
+    await pressDialogButton("Remove, don't ask again")
+
+    expectFirstPhotoRemoved()
+    const stored = JSON.parse((await AsyncStorage.getItem('settings-store'))!)
+    expect(stored.state.settings.skip_photo_remove_confirm).toBe(true)
+
+    // The setting must affect the next real removal as well as this callback.
+    jest.mocked(ui.showAlert).mockClear()
+    act(() => result.current.handleLongPressRemove())
+    expect(ui.showAlert).not.toHaveBeenCalled()
+    expect(usePhotoStore.getState().photos).toEqual([])
+    expect(useBoundingBoxStore.getState().getBoxesForPhoto('photo-2')).toEqual(
+      [],
+    )
+  })
+
+  it('pressing Cancel removes nothing', async () => {
+    const before = useBoundingBoxStore.getState()
+    const { result } = renderHook(() => useAnnotatePass())
+    act(() => result.current.handleLongPressRemove())
+
+    await pressDialogButton('Cancel')
+
+    expect(usePhotoStore.getState().photos).toEqual([PHOTO, OTHER_PHOTO])
+    expect(useBoundingBoxStore.getState().boxes).toEqual(before.boxes)
+    expect(useBoundingBoxStore.getState().absences).toEqual(before.absences)
+    expect(useBoundingBoxStore.getState().lastBoxes).toEqual(before.lastBoxes)
+    expect(useSettingsStore.getState().settings.skip_photo_remove_confirm).toBe(
+      false,
+    )
   })
 })

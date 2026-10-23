@@ -1,4 +1,4 @@
-import { render, waitFor, fireEvent } from '@testing-library/react-native'
+import { render, waitFor, userEvent } from '@testing-library/react-native'
 import React from 'react'
 import { router } from 'expo-router'
 import { createMachine } from 'xstate'
@@ -14,17 +14,6 @@ import CreateSubmissionScreen from '../index'
  * the same reasons (persisted-store rehydration crashes react-test-renderer
  * in this setup).
  */
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-)
-
-jest.mock('react-native-mmkv', () => ({
-  createMMKV: jest.fn(() => ({
-    getString: jest.fn(),
-    set: jest.fn(),
-    delete: jest.fn(),
-  })),
-}))
 
 const mockPickFromLibrary = jest.fn()
 
@@ -134,14 +123,14 @@ describe('Submission Details add-more-photos action — model-based test', () =>
     states: {
       camera: async () => {
         await waitFor(() => expect(getByText('Take More Photos')).toBeTruthy())
-        fireEvent.press(getByText('Take More Photos'))
+        await userEvent.press(getByText('Take More Photos'))
         expect(router.navigate).toHaveBeenCalledWith('/camera')
       },
       library: async () => {
         await waitFor(() =>
           expect(getByText('Select More Photos')).toBeTruthy(),
         )
-        fireEvent.press(getByText('Select More Photos'))
+        await userEvent.press(getByText('Select More Photos'))
         expect(mockPickFromLibrary).toHaveBeenCalledTimes(1)
       },
     },

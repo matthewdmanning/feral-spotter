@@ -41,9 +41,9 @@ describe('box-resize math (#286)', () => {
   })
 
   describe('maxHalfExtentForBox', () => {
-    it('is bounded by the canvas half when the photo is smaller', () => {
-      // photo half-extent 100 at 2x zoom = 200, still under canvas half 300
-      expect(maxHalfExtentForBox(300, 100, 2)).toBe(200)
+    it('is bounded by the canvas half when the zoomed photo is larger', () => {
+      // photo half-extent 200 at 2x zoom = 400, beyond canvas half 300
+      expect(maxHalfExtentForBox(300, 200, 2)).toBe(300)
     })
 
     it('is bounded by the photo half-extent when the photo is smaller than canvas', () => {

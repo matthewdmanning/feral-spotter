@@ -1,7 +1,10 @@
-import { renderHook } from '@testing-library/react-native'
+import { act, renderHook } from '@testing-library/react-native'
 import { router } from 'expo-router'
 import { useCatSubmit } from '../useCatSubmit'
 import type { CatFormValues } from '../useCatForm'
+import { useActiveCatFlowStore } from '../useActiveCatFlowStore'
+import { useBoundingBoxStore } from '../useBoundingBoxStore'
+import { useSubmissionStore } from '../useSubmissionStore'
 
 /**
  * #203: Cat Form Submit must land on Cat List (`/submission/create`), never
@@ -15,22 +18,6 @@ jest.mock('expo-router', () => ({
   router: { back: jest.fn(), replace: jest.fn() },
 }))
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'new-cat-id' }))
-jest.mock('@/src/hooks', () => ({
-  useSubmissionStore: (
-    sel: (s: { addCat: jest.Mock; updateCat: jest.Mock }) => unknown,
-  ) => sel({ addCat: jest.fn(), updateCat: jest.fn() }),
-}))
-jest.mock('@/src/hooks/useActiveCatFlow', () => ({
-  useActiveCatFlow: () => ({
-    activeCatId: 'active-cat-id',
-    clearActiveCat: jest.fn(),
-  }),
-}))
-jest.mock('@/src/hooks/useBoundingBoxStore', () => ({
-  useBoundingBoxStore: (
-    sel: (s: { getBoxedPhotoIds: () => string[] }) => unknown,
-  ) => sel({ getBoxedPhotoIds: () => [] }),
-}))
 jest.mock('@/src/lib/analytics/analytics', () => ({
   captureEvent: jest.fn(),
   EVENTS: { CAT_OBSERVATION_SAVED: 'cat_observation_saved' },
@@ -48,11 +35,37 @@ const filledForm: CatFormValues = {
 }
 
 describe('useCatSubmit — save navigation (#203)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    useSubmissionStore.getState().clearDraft()
+    useBoundingBoxStore.getState().clearAll()
+    useActiveCatFlowStore.getState().setActiveCatId('active-cat-id')
+    const box = { lowerLeftX: 1, lowerLeftY: 1, upperRightX: 9, upperRightY: 9 }
+    useBoundingBoxStore.getState().addBox('active-cat-id', 'photo-1', box)
+    useBoundingBoxStore.getState().addBox('other-cat', 'photo-2', box)
+  })
+
   it('replaces to Cat List, never a default pop to Camera', () => {
     const { result } = renderHook(() => useCatSubmit({ form: filledForm }))
 
-    result.current.handleSave()
+    act(() => result.current.handleSave())
 
+    expect(useSubmissionStore.getState().cats).toEqual([
+      {
+        local_id: 'active-cat-id',
+        age: 'adult',
+        ear_tipped: 'yes',
+        owned_domesticated: 'no',
+        pattern: 'solid',
+        hair_length: 'short',
+        color: 'black',
+        sex: 'male',
+        health_label: 'good',
+        photo_local_ids: ['photo-1'],
+        photos_reviewed: false,
+      },
+    ])
+    expect(useActiveCatFlowStore.getState().activeCatId).toBeNull()
     expect(router.replace).toHaveBeenCalledWith('/submission/create')
     expect(router.back).not.toHaveBeenCalled()
   })

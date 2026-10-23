@@ -1,0 +1,235 @@
+{
+  "agent": "hooks_finish_low",
+  "status": "completed",
+  "confidence": 0.97,
+  "findings": [
+    {
+      "id": "hooks-real-store-flows-2026-10-23",
+      "files": [
+        "src/hooks/__tests__/useSubmissionSubmit.cacheSync.test.ts",
+        "src/hooks/__tests__/useSubmissionSubmit.reset.test.ts",
+        "src/hooks/__tests__/useCatSubmit.unsetFieldsWarning.test.ts",
+        "src/hooks/__tests__/useAnnotatePass.carouselNav.model.test.ts",
+        "src/hooks/__tests__/useCameraCapture.test.ts",
+        "__tests__/hooks/useSubmissionSubmit.submitFlow.test.ts"
+      ],
+      "test": "Scoped hook suites and submit flow",
+      "classification": "load_bearing",
+      "confidence": 0.88,
+      "poor_quality_probability": 0.12,
+      "evidence": "Tests exercise real persisted stores and dialog callbacks. Cache sync verifies final persisted Submitted metadata and cleared current cache id; save/reset flows invoke their actual confirmation callbacks and inspect store state. Carousel model now checks persisted box and absence state after actions; the prior status assertion observed a stale hook snapshot. Camera test uses the actual PermissionStatus enum while replacing the unusable native Asset boundary.",
+      "action": "improve",
+      "changes": "Fixed the carousel assertions to read persisted annotation state. Replaced the expo-media-library requireActual spread in the camera test with the actual expo-modules-core PermissionStatus enum because loading the SDK source failed from its native superclass; kept Asset and permission operations at the test boundary.",
+      "verification": [
+        {
+          "command": "npx jest --runInBand src/hooks/__tests__ __tests__/hooks/useSubmissionSubmit.submitFlow.test.ts",
+          "result": "passed",
+          "log_path": "/tmp/hooks-finish-jest.log"
+        },
+        {
+          "command": "npx eslint src/hooks/__tests__/useAnnotatePass.carouselNav.model.test.ts src/hooks/__tests__/useCameraCapture.test.ts __tests__/hooks/useSubmissionSubmit.submitFlow.test.ts",
+          "result": "passed",
+          "log_path": "/tmp/hooks-finish-eslint.log"
+        }
+      ],
+      "mutation": {
+        "id": null,
+        "outcome": "not_run",
+        "log_path": null
+      },
+      "remaining_risk": "Original seven surviving hook mutants were not replayed in this focused pass."
+    },
+    {
+      "id": "abandon-cancel-destructive",
+      "files": [
+        "src/hooks/useAbandonCatGuard.ts",
+        "src/hooks/__tests__/useAbandonCatGuard.test.ts"
+      ],
+      "test": "abandon-cancel-destructive",
+      "classification": "load_bearing",
+      "confidence": 0.99,
+      "poor_quality_probability": 0.02,
+      "evidence": "Isolated mutation replay against copied current tests in /tmp/feral-spotter-hooks-audit: killed (0 passed, 1 failed, 0 runtime errors). Failed cases: useAbandonCatGuard (#304) Cancel leaves the boxes and the active cat alone. The seven-suite copied baseline passed 43/43 tests; the added carousel completion case independently passed before mutation.",
+      "action": "keep",
+      "changes": "Replayed the original surviving mutant in an isolated snapshot. Added a carousel test that proves a pass with box evidence routes to the cat form; it kills the previously surviving completion mutant.",
+      "verification": [
+        {
+          "command": "Isolated targeted Jest replay; see attached probe log",
+          "result": "passed",
+          "log_path": "/tmp/hooks-audit-evidence/abandon-cancel-destructive-updated.log"
+        }
+      ],
+      "mutation": {
+        "id": "abandon-cancel-destructive",
+        "outcome": "killed",
+        "log_path": "/tmp/hooks-audit-evidence/abandon-cancel-destructive-updated.log"
+      },
+      "remaining_risk": "none"
+    },
+    {
+      "id": "catsubmit-drop-commit-state",
+      "files": [
+        "src/hooks/useCatSubmit.ts",
+        "src/hooks/__tests__/useCatSubmit.saveNavigation.test.ts",
+        "src/hooks/__tests__/useCatSubmit.unsetFieldsWarning.test.ts"
+      ],
+      "test": "catsubmit-drop-commit-state",
+      "classification": "load_bearing",
+      "confidence": 0.99,
+      "poor_quality_probability": 0.02,
+      "evidence": "Isolated mutation replay against copied current tests in /tmp/feral-spotter-hooks-audit: killed (0 passed, 3 failed, 0 runtime errors). Failed cases: useCatSubmit \u2014 save navigation (#203) replaces to Cat List, never a default pop to Camera, useCatSubmit \u2014 missing-field warning (#205) warns about every field left untouched (undefined), useCatSubmit \u2014 missing-field warning (#205) does not warn when Unknown/Unsure was deliberately chosen for every field. The seven-suite copied baseline passed 43/43 tests; the added carousel completion case independently passed before mutation.",
+      "action": "keep",
+      "changes": "Replayed the original surviving mutant in an isolated snapshot. Added a carousel test that proves a pass with box evidence routes to the cat form; it kills the previously surviving completion mutant.",
+      "verification": [
+        {
+          "command": "Isolated targeted Jest replay; see attached probe log",
+          "result": "passed",
+          "log_path": "/tmp/hooks-audit-evidence/catsubmit-drop-commit-state-updated.log"
+        }
+      ],
+      "mutation": {
+        "id": "catsubmit-drop-commit-state",
+        "outcome": "killed",
+        "log_path": "/tmp/hooks-audit-evidence/catsubmit-drop-commit-state-updated.log"
+      },
+      "remaining_risk": "none"
+    },
+    {
+      "id": "catsubmit-noop-unknown",
+      "files": [
+        "src/hooks/useCatSubmit.ts",
+        "src/hooks/__tests__/useCatSubmit.unsetFieldsWarning.test.ts"
+      ],
+      "test": "catsubmit-noop-unknown",
+      "classification": "load_bearing",
+      "confidence": 0.99,
+      "poor_quality_probability": 0.02,
+      "evidence": "Isolated mutation replay against copied current tests in /tmp/feral-spotter-hooks-audit: killed (0 passed, 1 failed, 0 runtime errors). Failed cases: useCatSubmit \u2014 missing-field warning (#205) does not warn when Unknown/Unsure was deliberately chosen for every field. The seven-suite copied baseline passed 43/43 tests; the added carousel completion case independently passed before mutation.",
+      "action": "keep",
+      "changes": "Replayed the original surviving mutant in an isolated snapshot. Added a carousel test that proves a pass with box evidence routes to the cat form; it kills the previously surviving completion mutant.",
+      "verification": [
+        {
+          "command": "Isolated targeted Jest replay; see attached probe log",
+          "result": "passed",
+          "log_path": "/tmp/hooks-audit-evidence/catsubmit-noop-unknown-updated.log"
+        }
+      ],
+      "mutation": {
+        "id": "catsubmit-noop-unknown",
+        "outcome": "killed",
+        "log_path": "/tmp/hooks-audit-evidence/catsubmit-noop-unknown-updated.log"
+      },
+      "remaining_risk": "none"
+    },
+    {
+      "id": "camera-drop-gallery-flush",
+      "files": [
+        "src/hooks/useCameraCapture.tsx",
+        "src/hooks/__tests__/useCameraCapture.test.ts"
+      ],
+      "test": "camera-drop-gallery-flush",
+      "classification": "load_bearing",
+      "confidence": 0.99,
+      "poor_quality_probability": 0.02,
+      "evidence": "Isolated mutation replay against copied current tests in /tmp/feral-spotter-hooks-audit: killed (0 passed, 1 failed, 0 runtime errors). Failed cases: useCameraCapture handleTakePhoto keeps the captured photo in review state even if the gallery save fails. The seven-suite copied baseline passed 43/43 tests; the added carousel completion case independently passed before mutation.",
+      "action": "keep",
+      "changes": "Replayed the original surviving mutant in an isolated snapshot. Added a carousel test that proves a pass with box evidence routes to the cat form; it kills the previously surviving completion mutant.",
+      "verification": [
+        {
+          "command": "Isolated targeted Jest replay; see attached probe log",
+          "result": "passed",
+          "log_path": "/tmp/hooks-audit-evidence/camera-drop-gallery-flush-updated.log"
+        }
+      ],
+      "mutation": {
+        "id": "camera-drop-gallery-flush",
+        "outcome": "killed",
+        "log_path": "/tmp/hooks-audit-evidence/camera-drop-gallery-flush-updated.log"
+      },
+      "remaining_risk": "none"
+    },
+    {
+      "id": "submission-drop-invalid-feedback",
+      "files": [
+        "src/hooks/useSubmissionSubmit.ts",
+        "__tests__/hooks/useSubmissionSubmit.submitFlow.test.ts"
+      ],
+      "test": "submission-drop-invalid-feedback",
+      "classification": "load_bearing",
+      "confidence": 0.99,
+      "poor_quality_probability": 0.02,
+      "evidence": "Isolated mutation replay against copied current tests in /tmp/feral-spotter-hooks-audit: killed (0 passed, 2 failed, 0 runtime errors). Failed cases: useSubmissionSubmit submit flow blocks submit and shows an error when there are no cats, useSubmissionSubmit submit flow blocks submit and shows an error when there are no photos. The seven-suite copied baseline passed 43/43 tests; the added carousel completion case independently passed before mutation.",
+      "action": "keep",
+      "changes": "Replayed the original surviving mutant in an isolated snapshot. Added a carousel test that proves a pass with box evidence routes to the cat form; it kills the previously surviving completion mutant.",
+      "verification": [
+        {
+          "command": "Isolated targeted Jest replay; see attached probe log",
+          "result": "passed",
+          "log_path": "/tmp/hooks-audit-evidence/submission-drop-invalid-feedback-updated.log"
+        }
+      ],
+      "mutation": {
+        "id": "submission-drop-invalid-feedback",
+        "outcome": "killed",
+        "log_path": "/tmp/hooks-audit-evidence/submission-drop-invalid-feedback-updated.log"
+      },
+      "remaining_risk": "none"
+    },
+    {
+      "id": "remove-clears-wrong-cat",
+      "files": [
+        "src/hooks/useRemoveCat.ts",
+        "src/hooks/__tests__/useRemoveCat.test.ts"
+      ],
+      "test": "remove-clears-wrong-cat",
+      "classification": "load_bearing",
+      "confidence": 0.99,
+      "poor_quality_probability": 0.02,
+      "evidence": "Isolated mutation replay against copied current tests in /tmp/feral-spotter-hooks-audit: killed (0 passed, 1 failed, 0 runtime errors). Failed cases: useRemoveCat (#299) removes the cat and its boxes, leaving the other cat intact. The seven-suite copied baseline passed 43/43 tests; the added carousel completion case independently passed before mutation.",
+      "action": "keep",
+      "changes": "Replayed the original surviving mutant in an isolated snapshot. Added a carousel test that proves a pass with box evidence routes to the cat form; it kills the previously surviving completion mutant.",
+      "verification": [
+        {
+          "command": "Isolated targeted Jest replay; see attached probe log",
+          "result": "passed",
+          "log_path": "/tmp/hooks-audit-evidence/remove-clears-wrong-cat-updated.log"
+        }
+      ],
+      "mutation": {
+        "id": "remove-clears-wrong-cat",
+        "outcome": "killed",
+        "log_path": "/tmp/hooks-audit-evidence/remove-clears-wrong-cat-updated.log"
+      },
+      "remaining_risk": "none"
+    },
+    {
+      "id": "carousel-drop-completion",
+      "files": [
+        "src/hooks/useAnnotatePass.ts",
+        "src/hooks/__tests__/useAnnotatePass.carouselNav.model.test.ts"
+      ],
+      "test": "carousel-drop-completion",
+      "classification": "load_bearing",
+      "confidence": 0.99,
+      "poor_quality_probability": 0.02,
+      "evidence": "Isolated mutation replay against copied current tests in /tmp/feral-spotter-hooks-audit: killed (6 passed, 1 failed, 0 runtime errors). Failed cases: useAnnotatePass \u2014 carousel navigation (model-based test) completes the pass after boxing evidence exists. The seven-suite copied baseline passed 43/43 tests; the added carousel completion case independently passed before mutation.",
+      "action": "keep",
+      "changes": "Replayed the original surviving mutant in an isolated snapshot. Added a carousel test that proves a pass with box evidence routes to the cat form; it kills the previously surviving completion mutant.",
+      "verification": [
+        {
+          "command": "Isolated targeted Jest replay; see attached probe log",
+          "result": "passed",
+          "log_path": "/tmp/hooks-audit-evidence/carousel-drop-completion-updated.log"
+        }
+      ],
+      "mutation": {
+        "id": "carousel-drop-completion",
+        "outcome": "killed",
+        "log_path": "/tmp/hooks-audit-evidence/carousel-drop-completion-updated.log"
+      },
+      "remaining_risk": "none"
+    }
+  ],
+  "summary": "Updated isolated snapshot baseline passed all seven relevant suites (43 tests before the added carousel completion case). All seven previously surviving hook mutants were replayed against current owned tests and killed; carousel completion coverage was added after the first replay exposed that gap.",
+  "remaining_work": []
+}

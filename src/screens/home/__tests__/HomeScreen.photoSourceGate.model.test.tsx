@@ -1,8 +1,8 @@
-import { render, waitFor } from '@testing-library/react-native'
+import { act, render, waitFor } from '@testing-library/react-native'
 import React from 'react'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
-import type { PhotoSource } from '@/src/hooks/usePhotoStore'
+import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import HomeScreen from '../index'
 
 /**
@@ -12,14 +12,8 @@ import HomeScreen from '../index'
  * gate — the two are orthogonal and cross-producting them would explode the
  * state count for no benefit.
  *
- * usePhotoStore is mocked here (source-value derivation only) rather than
- * driven live, matching HomeScreen.gate.model.test.tsx's proven pattern —
- * the real persisted store's async-storage rehydration was found to corrupt
- * react-test-renderer mid-suite in this RN/React 19 setup (reproduced in
- * isolation). The store's own reducer logic — addPhoto/addPhotos pinning
- * `source`, removePhoto clearing it at exactly the last photo — is covered
- * separately and directly in usePhotoStore.source.test.ts (no rendering
- * involved, so it isn't exposed to that renderer bug).
+ * Real store actions drive pool changes so the rendered gate also checks
+ * the store subscription and source-clearing behavior after removal/reset.
  */
 jest.mock('expo-router', () => ({
   useIsFocused: () => true,
@@ -46,11 +40,14 @@ jest.mock('@/src/components/molecules/BottomButtonColumn', () => ({
 jest.mock('@/src/hooks/useLibraryPhotoPicker', () => ({
   useLibraryPhotoPicker: () => ({ pickFromLibrary: jest.fn() }),
 }))
-jest.mock('@/src/hooks/usePhotoStore', () => ({
-  usePhotoStore: (sel: (s: { source: PhotoSource }) => unknown) =>
-    sel({ source: mockSource }),
-}))
-let mockSource: PhotoSource = null
+const photo = {
+  local_id: 'photo-1',
+  uri: 'file:///picked-photo.jpg',
+  uploaded: false,
+  upload_progress: 0,
+  width: 100,
+  height: 100,
+}
 
 const gateMachine = createMachine({
   id: 'photoSourceGate',
@@ -63,26 +60,25 @@ const gateMachine = createMachine({
       },
     },
     cameraDraft: {
-      on: { REMOVE_LAST: 'emptyPool', SUBMIT: 'emptyPool' },
+      on: { REMOVE_LAST: 'emptyPool', CLEAR_PHOTO_POOL: 'emptyPool' },
     },
     libraryDraft: {
-      on: { REMOVE_LAST: 'emptyPool', SUBMIT: 'emptyPool' },
+      on: { REMOVE_LAST: 'emptyPool', CLEAR_PHOTO_POOL: 'emptyPool' },
     },
   },
 })
 
 describe('HomeScreen photo-source-exclusivity gate — model-based test', () => {
-  let rerender: (ui: React.ReactElement) => void
   let getByLabelText: ReturnType<typeof render>['getByLabelText']
   let queryByText: ReturnType<typeof render>['queryByText']
 
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks()
-    mockSource = null
+    await usePhotoStore.persist.rehydrate()
+    usePhotoStore.setState({ photos: [], source: null, submissionId: null })
     const result = render(<HomeScreen />)
     getByLabelText = result.getByLabelText
     queryByText = result.queryByText
-    rerender = result.rerender
   })
 
   const model = createTestModel(gateMachine)
@@ -118,23 +114,25 @@ describe('HomeScreen photo-source-exclusivity gate — model-based test', () => 
       libraryDraft: () => expectDisabled(true, false, 'library'),
     },
     events: {
-      CAMERA_PICK: () => {
-        mockSource = 'camera'
-        rerender(<HomeScreen />)
+      CAMERA_PICK: async () => {
+        await act(async () => {
+          usePhotoStore.getState().addPhoto(photo)
+        })
       },
-      LIBRARY_PICK: () => {
-        mockSource = 'library'
-        rerender(<HomeScreen />)
+      LIBRARY_PICK: async () => {
+        await act(async () => {
+          usePhotoStore.getState().addPhotos([photo])
+        })
       },
-      // Post-removal state (source cleared) — the store-level clear-at-last-
-      // photo edge itself is covered in usePhotoStore.source.test.ts.
-      REMOVE_LAST: () => {
-        mockSource = null
-        rerender(<HomeScreen />)
+      REMOVE_LAST: async () => {
+        await act(async () => {
+          usePhotoStore.getState().removePhoto(photo.local_id)
+        })
       },
-      SUBMIT: () => {
-        mockSource = null
-        rerender(<HomeScreen />)
+      CLEAR_PHOTO_POOL: async () => {
+        await act(async () => {
+          usePhotoStore.getState().clearPhotos()
+        })
       },
     },
   }
@@ -153,8 +151,8 @@ describe('HomeScreen photo-source-exclusivity gate — model-based test', () => 
       events: [{ type: 'CAMERA_PICK' }, { type: 'REMOVE_LAST' }],
     },
     {
-      name: 'submitting a library-sourced draft re-enables both entrypoints',
-      events: [{ type: 'LIBRARY_PICK' }, { type: 'SUBMIT' }],
+      name: 'clearing the library photo pool re-enables both entrypoints',
+      events: [{ type: 'LIBRARY_PICK' }, { type: 'CLEAR_PHOTO_POOL' }],
     },
   ] as const
 

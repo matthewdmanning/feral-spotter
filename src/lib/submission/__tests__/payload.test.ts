@@ -57,9 +57,17 @@ describe('foldBoxesIntoCat', () => {
   })
 
   it('attaches each box its own cloud_storage_path via the photo it belongs to (#264)', () => {
-    const cloudPathByLocalId = new Map([['p1', 'submissions/u/s/p1.jpg']])
+    const cloudPathByLocalId = new Map([
+      ['p2', 'submissions/u/s/p2.jpg'],
+      ['p1', 'submissions/u/s/p1.jpg'],
+    ])
+    const secondBox = { ...box('p2'), lowerLeftX: 0.5, upperRightX: 0.8 }
 
-    const result = foldBoxesIntoCat(cat, [box('p1')], cloudPathByLocalId)
+    const result = foldBoxesIntoCat(
+      { ...cat, photo_local_ids: ['p1', 'p2'] },
+      [box('p1'), secondBox],
+      cloudPathByLocalId,
+    )
 
     expect(result.boxes).toEqual([
       {
@@ -68,6 +76,14 @@ describe('foldBoxesIntoCat', () => {
         lowerLeftX: 0.1,
         lowerLeftY: 0.2,
         upperRightX: 0.3,
+        upperRightY: 0.4,
+      },
+      {
+        photo_local_id: 'p2',
+        cloud_storage_path: 'submissions/u/s/p2.jpg',
+        lowerLeftX: 0.5,
+        lowerLeftY: 0.2,
+        upperRightX: 0.8,
         upperRightY: 0.4,
       },
     ])

@@ -1,5 +1,5 @@
 import {
-  fireEvent,
+  userEvent,
   render,
   screen,
   waitFor,
@@ -8,7 +8,10 @@ import { router } from 'expo-router'
 import React from 'react'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
-import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
+import {
+  useSubmissionStore,
+  type SubmissionDraft,
+} from '@/src/hooks/useSubmissionStore'
 import LocationPickerScreen from '../index'
 
 /**
@@ -21,18 +24,14 @@ import LocationPickerScreen from '../index'
  */
 
 const MOVED = { latitude: 10, longitude: 20 }
-
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-)
-
-jest.mock('react-native-mmkv', () => ({
-  createMMKV: jest.fn(() => ({
-    getString: jest.fn(),
-    set: jest.fn(),
-    delete: jest.fn(),
-  })),
-}))
+const INITIAL_SUBMISSION: SubmissionDraft = {
+  location_type: 'device',
+  time_type: 'manual',
+  manual_time: '2026-10-21T12:30:00.000Z',
+  latitude: 34.68,
+  longitude: -82.83,
+  accuracy: 120,
+}
 
 jest.mock('expo-router', () => ({
   router: { back: jest.fn(), push: jest.fn(), replace: jest.fn() },
@@ -40,8 +39,8 @@ jest.mock('expo-router', () => ({
 
 // Mock the native map: a pressable that fires onCameraMove with a fixed centre.
 jest.mock('expo-maps', () => {
-  const ReactLocal = require('react')
-  const { Pressable } = require('react-native')
+  const ReactLocal = jest.requireActual('react')
+  const { Pressable } = jest.requireActual('react-native')
   return {
     GoogleMaps: {
       View: ({ onCameraMove }: { onCameraMove?: (e: unknown) => void }) =>
@@ -55,6 +54,7 @@ jest.mock('expo-maps', () => {
 })
 
 jest.mock('expo-location', () => ({
+  ...jest.requireActual('expo-location'),
   getLastKnownPositionAsync: jest.fn().mockResolvedValue(null),
 }))
 
@@ -68,10 +68,11 @@ const pickerFlow = createMachine({
   states: {
     ready: {
       on: {
-        MOVE_AND_SET: 'confirmed',
+        MOVE: 'moved',
         CANCEL: 'cancelled',
       },
     },
+    moved: { on: { SET: 'confirmed', CANCEL: 'cancelled' } },
     confirmed: {},
     cancelled: {},
   },
@@ -81,7 +82,7 @@ describe('Location picker — flow (model-based)', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     useSubmissionStore.setState({
-      submission: { location_type: 'pin', time_type: 'device' },
+      submission: { ...INITIAL_SUBMISSION },
     })
     render(<LocationPickerScreen />)
   })
@@ -92,42 +93,66 @@ describe('Location picker — flow (model-based)', () => {
     states: {
       ready: () => {
         expect(router.back).not.toHaveBeenCalled()
-        expect(
-          useSubmissionStore.getState().submission.latitude,
-        ).toBeUndefined()
+        expect(screen.getByText('Set location')).toBeTruthy()
+        expect(useSubmissionStore.getState().submission).toEqual(
+          INITIAL_SUBMISSION,
+        )
+      },
+      moved: () => {
+        expect(router.back).not.toHaveBeenCalled()
+        expect(useSubmissionStore.getState().submission).toEqual(
+          INITIAL_SUBMISSION,
+        )
       },
       confirmed: async () => {
         await waitFor(() =>
-          expect(useSubmissionStore.getState().submission.latitude).toBe(
-            MOVED.latitude,
-          ),
+          expect(useSubmissionStore.getState().submission).toEqual({
+            ...INITIAL_SUBMISSION,
+            ...MOVED,
+            location_type: 'pin',
+            accuracy: null,
+          }),
         )
-        expect(useSubmissionStore.getState().submission.longitude).toBe(
-          MOVED.longitude,
-        )
-        expect(router.back).toHaveBeenCalled()
+        expect(router.back).toHaveBeenCalledTimes(1)
       },
       cancelled: () => {
-        expect(router.back).toHaveBeenCalled()
-        // Cancel must not write a location.
-        expect(
-          useSubmissionStore.getState().submission.latitude,
-        ).toBeUndefined()
+        expect(router.back).toHaveBeenCalledTimes(1)
+        expect(useSubmissionStore.getState().submission).toEqual(
+          INITIAL_SUBMISSION,
+        )
       },
     },
     events: {
-      MOVE_AND_SET: () => {
-        fireEvent.press(screen.getByTestId('camera-move'))
-        fireEvent.press(screen.getByText('Set location'))
+      MOVE: async () => {
+        await userEvent.press(screen.getByTestId('camera-move'))
       },
-      CANCEL: () => {
-        fireEvent.press(screen.getByText('Cancel'))
+      SET: async () => {
+        await userEvent.press(screen.getByText('Set location'))
+      },
+      CANCEL: async () => {
+        await userEvent.press(screen.getByText('Cancel'))
       },
     },
   }
 
-  model.getShortestPaths().forEach((path) => {
-    it(path.description, async () => {
+  const journeys = [
+    {
+      name: 'moving then setting commits a manual pin and preserves Submission time',
+      events: [{ type: 'MOVE' }, { type: 'SET' }],
+    },
+    {
+      name: 'moving then cancelling preserves the original Submission draft',
+      events: [{ type: 'MOVE' }, { type: 'CANCEL' }],
+    },
+    {
+      name: 'cancelling without moving preserves the original Submission draft',
+      events: [{ type: 'CANCEL' }],
+    },
+  ] as const
+
+  journeys.forEach(({ name, events }) => {
+    it(name, async () => {
+      const [path] = model.getPathsFromEvents(events)
       await path.test(testParams)
     })
   })

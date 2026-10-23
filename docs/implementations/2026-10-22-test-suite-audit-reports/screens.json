@@ -1,0 +1,164 @@
+{
+  "agent": "screens",
+  "status": "completed",
+  "confidence": 0.96,
+  "findings": [
+    {
+      "id": "consent-version-persistence-denial",
+      "files": [
+        "src/screens/consent/__tests__/ConsentScreen.test.tsx",
+        "src/screens/consent/__tests__/ConsentScreen.cameraGate.model.test.tsx",
+        "src/screens/consent/__tests__/ConsentScreen.locationGate.model.test.tsx"
+      ],
+      "test": "Consent denial persistence and gate journeys",
+      "classification": "load_bearing",
+      "confidence": 0.97,
+      "poor_quality_probability": 0.03,
+      "evidence": "Executed 22 screen suites successfully. Updated consent behavior assertions use the real consent store and assert the versioned accepted state/persistence and denied navigation behavior. Isolated mutations for blocked persistence/redirect and blocked UI both failed (12 tests each).",
+      "action": "improve",
+      "changes": "Retained real consent state and explicit denial/version persistence expectations.",
+      "verification": [
+        {
+          "command": "files=$(rg --files src/screens | rg '__tests__'); npx jest --runInBand --json --outputFile=/tmp/screens-suite.json $files",
+          "result": "passed",
+          "log_path": "/tmp/screens-suite.json"
+        }
+      ],
+      "mutation": {
+        "id": "consent_blocked_persists_and_redirects; consent_blocked_ui_detected",
+        "outcome": "killed",
+        "log_path": "/tmp/screen-gates-semantic-evidence/matrix.json"
+      },
+      "remaining_risk": "Native permission prompt behavior remains outside Jest; permission outcomes are boundary mocks."
+    },
+    {
+      "id": "home-real-photo-store-and-entry-actions",
+      "files": [
+        "src/screens/home/__tests__/HomeScreen.photoSourceGate.model.test.tsx",
+        "src/screens/home/__tests__/HomeScreen.entrypointActions.model.test.tsx"
+      ],
+      "test": "Home photo source gate and entry action flows",
+      "classification": "load_bearing",
+      "confidence": 0.96,
+      "poor_quality_probability": 0.04,
+      "evidence": "Executed screen suite with real photo store. Isolated remove/clear source mutations each failed 1 assertion; source-gate mutation failed 2; button-column no-op failed 2; wrong destination failed 2. This confirms store clearing and rendered button wiring are observed.",
+      "action": "improve",
+      "changes": "Use real photo store state and awaited user interactions to check removal/reset and entry actions.",
+      "verification": [
+        {
+          "command": "files=$(rg --files src/screens | rg '__tests__'); npx jest --runInBand --json --outputFile=/tmp/screens-suite.json $files",
+          "result": "passed",
+          "log_path": "/tmp/screens-suite.json"
+        }
+      ],
+      "mutation": {
+        "id": "home_remove_source_survives; home_clear_source_survives; home_column_wiring_survives",
+        "outcome": "killed",
+        "log_path": "/tmp/screen-gates-semantic-evidence/matrix.json"
+      },
+      "remaining_risk": "Home screen native photo picking is mocked at the platform boundary."
+    },
+    {
+      "id": "intro-previous-step-content",
+      "files": ["src/screens/intro-flow/__tests__/IntroFlowScreen.test.tsx"],
+      "test": "IntroFlowScreen shows each slide, returns with Previous, and advances to /consent",
+      "classification": "load_bearing",
+      "confidence": 0.97,
+      "poor_quality_probability": 0.03,
+      "evidence": "Journey test passed in full screen suite, asserting visible slide content at each step including after Previous. The isolated no-op Previous mutation failed 1 test and forward-navigation mutation failed 3.",
+      "action": "improve",
+      "changes": "Assert rendered step content through Previous and forward navigation using userEvent.",
+      "verification": [
+        {
+          "command": "files=$(rg --files src/screens | rg '__tests__'); npx jest --runInBand --json --outputFile=/tmp/screens-suite.json $files",
+          "result": "passed",
+          "log_path": "/tmp/screens-suite.json"
+        }
+      ],
+      "mutation": {
+        "id": "intro_previous_survives",
+        "outcome": "killed",
+        "log_path": "/tmp/screen-gates-semantic-evidence/matrix.json"
+      },
+      "remaining_risk": "None."
+    },
+    {
+      "id": "picker-real-submission-location",
+      "files": [
+        "src/screens/submission/location-picker/__tests__/LocationPicker.model.test.tsx"
+      ],
+      "test": "Location picker \u2014 flow (model-based)",
+      "classification": "load_bearing",
+      "confidence": 0.96,
+      "poor_quality_probability": 0.04,
+      "evidence": "Flow tests exercise the real submission store with native map boundary mocked. Confirmed map movement writes the moved coordinates as a pin, and cancel preserves original location. Isolated no-pin and move-does-not-commit mutations failed (1 and 2 assertions); no-confirm-write and no-cancel-back probes also failed.",
+      "action": "improve",
+      "changes": "Use real Submission store and move/cancel/set journeys with persisted draft assertions.",
+      "verification": [
+        {
+          "command": "files=$(rg --files src/screens | rg '__tests__'); npx jest --runInBand --json --outputFile=/tmp/screens-suite.json $files",
+          "result": "passed",
+          "log_path": "/tmp/screens-suite.json"
+        }
+      ],
+      "mutation": {
+        "id": "gap_picker_no_pin; gap_picker_move_commits; positive_picker_no_confirm_write; positive_picker_cancel_no_back",
+        "outcome": "killed",
+        "log_path": "/tmp/audit-submission-semantic/probe-results.json"
+      },
+      "remaining_risk": "Expo Maps native rendering and camera gesture delivery are represented by a narrow mock."
+    },
+    {
+      "id": "cat-list-store-delete-and-empty-actions",
+      "files": [
+        "src/screens/submission/create/__tests__/CreateScreen.catListActions.test.tsx"
+      ],
+      "test": "Cat List actions and Cat List with no cats left (#299)",
+      "classification": "load_bearing",
+      "confidence": 0.96,
+      "poor_quality_probability": 0.04,
+      "evidence": "Tests use real submission/UI stores with AlertHost; selected delete removes only the selected cat after confirmation, and Finished is disabled at zero cats. Isolated wrong-id delete and zero-cat-enabled mutations each failed 1 assertion. Additional action wiring probes failed for no actions/no accordion.",
+      "action": "improve",
+      "changes": "Exercise real store state, await confirmation UI actions, and assert selected deletion and disabled empty-state submit.",
+      "verification": [
+        {
+          "command": "files=$(rg --files src/screens | rg '__tests__'); npx jest --runInBand --json --outputFile=/tmp/screens-suite.json $files",
+          "result": "passed",
+          "log_path": "/tmp/screens-suite.json"
+        }
+      ],
+      "mutation": {
+        "id": "gap_delete_wrong_id; gap_zero_cat_enabled",
+        "outcome": "killed",
+        "log_path": "/tmp/audit-submission-semantic/probe-results.json"
+      },
+      "remaining_risk": "None."
+    },
+    {
+      "id": "screen-suite-lint",
+      "files": ["src/screens/**/__tests__"],
+      "test": "Scoped screen test lint",
+      "classification": "load_bearing",
+      "confidence": 0.99,
+      "poor_quality_probability": 0.01,
+      "evidence": "ESLint completed successfully against the screen test files.",
+      "action": "keep",
+      "changes": "No further changes.",
+      "verification": [
+        {
+          "command": "files=$(rg --files src/screens | rg '__tests__'); npx eslint $files",
+          "result": "passed",
+          "log_path": "/tmp/screens-eslint.log"
+        }
+      ],
+      "mutation": {
+        "id": null,
+        "outcome": "not_run",
+        "log_path": null
+      },
+      "remaining_risk": "None."
+    }
+  ],
+  "summary": "All 22 screen test suites (102 tests) pass; scoped ESLint passes. Updated screen tests kill all replayed previously surviving screen and submission probes in isolated snapshots.",
+  "remaining_work": []
+}

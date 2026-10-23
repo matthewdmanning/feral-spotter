@@ -1,6 +1,8 @@
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { CONSENT_VERSION, useConsentStore } from '@/src/hooks/useConsentStore'
 import {
   act,
-  fireEvent,
+  userEvent,
   render,
   screen,
   waitFor,
@@ -30,6 +32,7 @@ jest.mock('react-native-vision-camera', () => ({
 const mockRequestForegroundPermissionsAsync = jest.fn()
 const mockGetForegroundPermissionsAsync = jest.fn()
 jest.mock('expo-location', () => ({
+  ...jest.requireActual('expo-location'),
   requestForegroundPermissionsAsync: (...args: unknown[]) =>
     mockRequestForegroundPermissionsAsync(...args),
   getForegroundPermissionsAsync: (...args: unknown[]) =>
@@ -44,15 +47,28 @@ jest.mock('expo-router', () => ({
   },
 }))
 
-const mockMarkAccepted = jest.fn()
-jest.mock('@/src/hooks/useConsentStore', () => ({
-  useConsentStore: (sel: (s: object) => unknown) =>
-    sel({ markAccepted: mockMarkAccepted }),
-}))
-
 jest.mock('@/src/hooks/useBackHandler', () => ({
   useBackHandler: jest.fn(),
 }))
+
+beforeEach(async () => {
+  await useConsentStore.persist.rehydrate()
+  useConsentStore.setState({
+    accepted: false,
+    acceptedVersion: null,
+    analyticsAccepted: false,
+  })
+})
+
+const expectConsentAccepted = async (accepted: boolean) => {
+  const expected = {
+    accepted,
+    acceptedVersion: accepted ? CONSENT_VERSION : null,
+  }
+  expect(useConsentStore.getState()).toMatchObject(expected)
+  const stored = await AsyncStorage.getItem('consent-store')
+  expect(JSON.parse(stored ?? '{}').state).toMatchObject(expected)
+}
 
 /**
  * Model of ConsentScreen's location-permission gate (src/screens/consent/index.tsx),
@@ -150,35 +166,41 @@ describe('ConsentScreen location gate — model-based test', () => {
   const model = createTestModel(locationGateMachine)
 
   const pressAgree = async () => {
-    await act(async () => {
-      fireEvent.press(screen.getByLabelText(consentCopy.agreeLabel))
-    })
+    await userEvent.press(screen.getByLabelText(consentCopy.agreeLabel))
   }
 
   const triggerForeground = async () => {
+    const previousChecks = mockGetForegroundPermissionsAsync.mock.calls.length
     await act(async () => {
       foregroundListener?.('active')
     })
+    await waitFor(() =>
+      expect(mockGetForegroundPermissionsAsync).toHaveBeenCalledTimes(
+        previousChecks + 1,
+      ),
+    )
   }
 
   const testParams = {
     states: {
-      idle: () => {
+      idle: async () => {
         expect(mockRouterReplace).not.toHaveBeenCalled()
         expect(screen.queryByText('Permission Blocked')).toBeNull()
-        expect(mockMarkAccepted).not.toHaveBeenCalled()
+        await expectConsentAccepted(false)
       },
       granted: async () => {
         await waitFor(() =>
           expect(mockRouterReplace).toHaveBeenCalledWith('/sign-in'),
         )
-        expect(mockMarkAccepted).toHaveBeenCalled()
+        await expectConsentAccepted(true)
+        expect(screen.queryByText('Permission Blocked')).toBeNull()
       },
       gated: async () => {
         await waitFor(() =>
           expect(screen.getByText('Permission Blocked')).toBeTruthy(),
         )
-        expect(mockMarkAccepted).not.toHaveBeenCalled()
+        await expectConsentAccepted(false)
+        expect(mockRouterReplace).not.toHaveBeenCalled()
       },
     },
     events: {

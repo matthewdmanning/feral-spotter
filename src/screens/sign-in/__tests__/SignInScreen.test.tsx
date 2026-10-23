@@ -1,6 +1,6 @@
 import * as ui from '@/src/hooks/useUIStore'
 import {
-  fireEvent,
+  userEvent,
   render,
   screen,
   waitFor,
@@ -31,31 +31,6 @@ jest.mock('@/src/lib/auth/useAuth', () => ({
   }),
 }))
 
-jest.mock('@/src/components/atoms/AppButton', () => {
-  const { Pressable, Text } = require('react-native')
-  return {
-    AppButton: ({
-      onPress,
-      children,
-      disabled,
-    }: {
-      onPress: () => void
-      children: string
-      disabled?: boolean
-    }) => (
-      <Pressable
-        onPress={onPress}
-        disabled={disabled}
-        accessibilityRole="button"
-        accessibilityLabel={children}
-        accessibilityState={{ disabled: !!disabled }}
-      >
-        <Text>{children}</Text>
-      </Pressable>
-    ),
-  }
-})
-
 describe('SignInScreen', () => {
   beforeEach(() => jest.clearAllMocks())
 
@@ -63,9 +38,9 @@ describe('SignInScreen', () => {
     mockSignInWithEmail.mockResolvedValueOnce({ uid: '123', email: 'a@b.com' })
 
     render(<SignInScreen />)
-    fireEvent.changeText(screen.getByLabelText('Email'), 'a@b.com')
-    fireEvent.changeText(screen.getByLabelText('Password'), 'secret')
-    fireEvent.press(screen.getByLabelText('Sign in'))
+    await userEvent.type(screen.getByLabelText('Email'), 'a@b.com')
+    await userEvent.type(screen.getByLabelText('Password'), 'secret')
+    await userEvent.press(screen.getByLabelText('Sign in'))
 
     await waitFor(() =>
       expect(router.replace).toHaveBeenCalledWith('/analytics-consent'),
@@ -73,11 +48,11 @@ describe('SignInScreen', () => {
     expect(mockSignInWithEmail).toHaveBeenCalledWith('a@b.com', 'secret')
   })
 
-  it('blocks email sign-in and warns when fields are empty', () => {
+  it('blocks email sign-in and warns when fields are empty', async () => {
     const alertSpy = jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
 
     render(<SignInScreen />)
-    fireEvent.press(screen.getByLabelText('Sign in'))
+    await userEvent.press(screen.getByLabelText('Sign in'))
 
     expect(mockSignInWithEmail).not.toHaveBeenCalled()
     expect(alertSpy).toHaveBeenCalledWith('Missing details', expect.any(String))
@@ -91,7 +66,7 @@ describe('SignInScreen', () => {
     })
 
     render(<SignInScreen />)
-    fireEvent.press(screen.getByLabelText('Continue with Google'))
+    await userEvent.press(screen.getByLabelText('Continue with Google'))
 
     await waitFor(() =>
       expect(router.replace).toHaveBeenCalledWith('/analytics-consent'),
@@ -99,9 +74,9 @@ describe('SignInScreen', () => {
     expect(mockSignInWithProvider).toHaveBeenCalledWith('google')
   })
 
-  it('navigates to registration from the create-account link', () => {
+  it('navigates to registration from the create-account link', async () => {
     render(<SignInScreen />)
-    fireEvent.press(screen.getByText('Create one'))
+    await userEvent.press(screen.getByText('Create one'))
     expect(router.push).toHaveBeenCalledWith('/register')
   })
 
@@ -111,9 +86,15 @@ describe('SignInScreen', () => {
     const alertSpy = jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
 
     render(<SignInScreen />)
-    fireEvent.press(screen.getByLabelText('Continue with Google'))
+    await userEvent.press(screen.getByLabelText('Continue with Google'))
 
-    await waitFor(() => expect(mockSignInWithProvider).toHaveBeenCalledTimes(1))
+    await waitFor(() =>
+      expect(alertSpy).toHaveBeenCalledWith(
+        'Sign-in failed',
+        expect.any(String),
+      ),
+    )
+    expect(mockSignInWithProvider).toHaveBeenCalledTimes(1)
     expect(router.replace).not.toHaveBeenCalled()
     expect(alertSpy).toHaveBeenCalledWith('Sign-in failed', expect.any(String))
 

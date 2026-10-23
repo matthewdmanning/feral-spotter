@@ -15,17 +15,6 @@ import CreateSubmissionScreen from '../index'
  * AsyncStorage-rehydration crash this repo's other screen tests route
  * around).
  */
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-)
-
-jest.mock('react-native-mmkv', () => ({
-  createMMKV: jest.fn(() => ({
-    getString: jest.fn(),
-    set: jest.fn(),
-    delete: jest.fn(),
-  })),
-}))
 
 jest.mock('expo-router', () => ({
   useIsFocused: () => true,

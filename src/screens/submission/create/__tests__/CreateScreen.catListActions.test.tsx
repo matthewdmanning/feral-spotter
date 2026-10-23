@@ -1,11 +1,17 @@
 import {
-  fireEvent,
+  act,
+  userEvent,
   render,
   screen,
   waitFor,
 } from '@testing-library/react-native'
 import { router } from 'expo-router'
 import { useUIStore } from '@/src/hooks/useUIStore'
+import {
+  useSubmissionStore,
+  type ObservedCat,
+} from '@/src/hooks/useSubmissionStore'
+import { AlertHost } from '@/src/components/organisms/AlertHost'
 import React from 'react'
 import CreateSubmissionScreen from '../index'
 
@@ -25,17 +31,6 @@ import CreateSubmissionScreen from '../index'
  * an empty state rather than redirecting, so zero-cats is a state the user
  * can actually sit in, with Submit disabled there (#265).
  */
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-)
-
-jest.mock('react-native-mmkv', () => ({
-  createMMKV: jest.fn(() => ({
-    getString: jest.fn(),
-    set: jest.fn(),
-    delete: jest.fn(),
-  })),
-}))
 
 let mockParams: { removed?: string } = {}
 
@@ -75,7 +70,7 @@ jest.mock('../index.styles', () => ({
 
 // cat-2 is deliberately sparse: every field it lacks must still be listed, as
 // its default, when the cat is opened.
-const DEFAULT_CATS = [
+const DEFAULT_CATS: ObservedCat[] = [
   {
     local_id: 'cat-1',
     age: 'adult',
@@ -86,49 +81,51 @@ const DEFAULT_CATS = [
     color: 'orange',
     sex: 'female',
     health_label: 'good',
+    photo_local_ids: [],
+    photos_reviewed: true,
   },
-  { local_id: 'cat-2', age: 'kitten', pattern: 'solid', hair_length: 'long' },
+  // Legacy drafts can lack attributes added after the cat was saved.
+  {
+    local_id: 'cat-2',
+    age: 'kitten',
+    pattern: 'solid',
+    hair_length: 'long',
+  } as ObservedCat,
 ]
 
-let mockCats = [...DEFAULT_CATS]
-
-jest.mock('@/src/hooks/useSubmissionStore', () => ({
-  useSubmissionStore: (
-    sel: (s: {
-      submission: { location_type: string; time_type: string }
-      cats: typeof mockCats
-      setSubmissionLocation: jest.Mock
-      setManualTime: jest.Mock
-    }) => unknown,
-  ) =>
-    sel({
-      submission: { location_type: 'device', time_type: 'device' },
-      cats: mockCats,
-      setSubmissionLocation: jest.fn(),
-      setManualTime: jest.fn(),
-    }),
-}))
+beforeEach(() => {
+  useUIStore.setState({ dialog: null })
+  useSubmissionStore.setState({
+    submission: { location_type: 'device', time_type: 'device' },
+    cats: [],
+  })
+})
 
 describe('Cat List actions', () => {
   beforeEach(async () => {
     jest.clearAllMocks()
     mockParams = {}
-    mockCats = [...DEFAULT_CATS]
-    render(<CreateSubmissionScreen />)
+    useSubmissionStore.setState({ cats: [...DEFAULT_CATS] })
+    render(
+      <>
+        <CreateSubmissionScreen />
+        <AlertHost />
+      </>,
+    )
     // Let the mount-time auto-skip check settle before asserting — a
-    // non-empty cats mock never redirects, but the effect still runs.
+    // non-empty list never redirects, but the effect still runs.
     await waitFor(() => expect(screen.getByText('Cats Recorded')).toBeTruthy())
   })
 
-  it('Add a Cat navigates to annotate', () => {
-    fireEvent.press(screen.getByText('Add a Cat'))
+  it('Add a Cat navigates to annotate', async () => {
+    await userEvent.press(screen.getByText('Add a Cat'))
     expect(router.push).toHaveBeenCalledWith('/submission/annotate')
   })
 
   // The Cats Recorded rows are an accordion: a press opens the cat's fields
   // in place and navigates nowhere; Edit Cat is the way into the form.
-  it('pressing a cat row lists every field, including ones left at their default', () => {
-    fireEvent.press(screen.getByText('Kitten · solid · long hair'))
+  it('pressing a cat row lists every field, including ones left at their default', async () => {
+    await userEvent.press(screen.getByText('Kitten · solid · long hair'))
 
     expect(router.push).not.toHaveBeenCalled()
     for (const field of [
@@ -148,42 +145,50 @@ describe('Cat List actions', () => {
     expect(screen.getAllByText('Unsure')).toHaveLength(2)
   })
 
-  it('opens one cat at a time and closes it on a second press', () => {
-    fireEvent.press(screen.getByText('Adult · orange tabby · short hair'))
+  it('opens one cat at a time and closes it on a second press', async () => {
+    await userEvent.press(screen.getByText('Adult · orange tabby · short hair'))
     expect(screen.getByText('Orange')).toBeTruthy()
 
-    fireEvent.press(screen.getByText('Kitten · solid · long hair'))
+    await userEvent.press(screen.getByText('Kitten · solid · long hair'))
     expect(screen.queryByText('Orange')).toBeNull()
 
-    fireEvent.press(screen.getByText('Kitten · solid · long hair'))
+    await userEvent.press(screen.getByText('Kitten · solid · long hair'))
     expect(screen.queryByText('Edit')).toBeNull()
   })
 
-  it('offers Delete only on an open cat, and asks before removing', () => {
+  it('offers Delete on an open cat and removes only that cat after confirmation', async () => {
     expect(screen.queryByText('Delete')).toBeNull()
 
-    fireEvent.press(screen.getByText('Kitten · solid · long hair'))
-    fireEvent.press(screen.getByText('Delete'))
+    await userEvent.press(screen.getByText('Kitten · solid · long hair'))
+    await userEvent.press(screen.getByText('Delete'))
 
     expect(useUIStore.getState().dialog?.title).toBe('Remove this cat?')
+    expect(useSubmissionStore.getState().cats).toEqual(DEFAULT_CATS)
+
+    await userEvent.press(screen.getByText('Remove'))
+
+    expect(useSubmissionStore.getState().cats).toEqual([DEFAULT_CATS[0]])
+    expect(screen.queryByText('Kitten · solid · long hair')).toBeNull()
+    expect(screen.getByText('Adult · orange tabby · short hair')).toBeTruthy()
+    expect(useUIStore.getState().dialog).toBeNull()
   })
 
-  it('Edit opens Cat Form pre-filled for that cat, not another one', () => {
-    fireEvent.press(screen.getByText('Kitten · solid · long hair'))
-    fireEvent.press(screen.getByText('Edit'))
+  it('Edit opens Cat Form pre-filled for that cat, not another one', async () => {
+    await userEvent.press(screen.getByText('Kitten · solid · long hair'))
+    await userEvent.press(screen.getByText('Edit'))
     expect(router.push).toHaveBeenCalledWith({
       pathname: '/submission/cats',
       params: { edit: 'cat-2' },
     })
   })
 
-  it('Finished! calls handleDone', () => {
-    fireEvent.press(screen.getByText('Finished!'))
+  it('Finished! calls handleDone', async () => {
+    await userEvent.press(screen.getByText('Finished!'))
     expect(mockHandleDone).toHaveBeenCalledTimes(1)
   })
 
-  it('Reset calls handleReset', () => {
-    fireEvent.press(screen.getByText('Reset'))
+  it('Reset calls handleReset', async () => {
+    await userEvent.press(screen.getByText('Reset'))
     expect(mockHandleReset).toHaveBeenCalledTimes(1)
   })
 })
@@ -203,7 +208,6 @@ describe('Cat List actions', () => {
 describe('Cat List with no cats left (#299)', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    mockCats = []
   })
 
   // The in-place case: still mounted, trash the last row. Distinct from the
@@ -212,12 +216,13 @@ describe('Cat List with no cats left (#299)', () => {
   // delete blanked the screen out from under them.
   it('renders the choice, not a blank screen, when the last row is trashed in place', async () => {
     mockParams = {}
-    mockCats = [...DEFAULT_CATS]
-    const { rerender } = render(<CreateSubmissionScreen />)
+    useSubmissionStore.setState({ cats: [...DEFAULT_CATS] })
+    render(<CreateSubmissionScreen />)
     await waitFor(() => expect(screen.getByText('Cats Recorded')).toBeTruthy())
 
-    mockCats = []
-    rerender(<CreateSubmissionScreen />)
+    act(() => {
+      useSubmissionStore.setState({ cats: [] })
+    })
 
     expect(screen.getByText('Annotate Photos')).toBeTruthy()
     expect(screen.getByText('Describe a Cat')).toBeTruthy()
@@ -233,6 +238,10 @@ describe('Cat List with no cats left (#299)', () => {
     await waitFor(() =>
       expect(screen.getByText(/Describe at least one cat/)).toBeTruthy(),
     )
+    const finished = screen.getByText('Finished!')
+    expect(finished).toBeDisabled()
+    await userEvent.press(finished)
+    expect(mockHandleDone).not.toHaveBeenCalled()
   })
 
   it('offers annotate or describe after the last cat is removed, and does not redirect', async () => {
@@ -254,10 +263,10 @@ describe('Cat List with no cats left (#299)', () => {
       expect(screen.getByText('Annotate Photos')).toBeTruthy(),
     )
 
-    fireEvent.press(screen.getByText('Describe a Cat'))
+    await userEvent.press(screen.getByText('Describe a Cat'))
     expect(router.push).toHaveBeenCalledWith('/submission/cats')
 
-    fireEvent.press(screen.getByText('Annotate Photos'))
+    await userEvent.press(screen.getByText('Annotate Photos'))
     expect(router.push).toHaveBeenCalledWith('/submission/annotate')
   })
 

@@ -1,9 +1,8 @@
-import { fireEvent, render, waitFor } from '@testing-library/react-native'
+import { userEvent, render, waitFor } from '@testing-library/react-native'
 import { router } from 'expo-router'
 import React from 'react'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
-import type { ColumnButton } from '@/src/components/atoms/AppButton'
 import { getAllSubmissionCaches } from '@/src/lib/cache/submissionCache'
 import HomeScreen from '../index'
 
@@ -49,21 +48,9 @@ const mockPickFromLibrary = jest.fn()
 jest.mock('@/src/hooks/useLibraryPhotoPicker', () => ({
   useLibraryPhotoPicker: () => ({ pickFromLibrary: mockPickFromLibrary }),
 }))
-let capturedButtons: ColumnButton[] = []
-// null (not false) until the mount effect resolves, so idleEntry's
-// `toBe(false)` assertion actually proves the effect ran rather than
-// matching the untouched default.
-let capturedVisible: boolean | null = null
-jest.mock('@/src/components/molecules/BottomButtonColumn', () => ({
-  BottomButtonColumn: (props: {
-    buttons: ColumnButton[]
-    visible: boolean
-  }) => {
-    capturedButtons = props.buttons
-    capturedVisible = props.visible
-    return null
-  },
-}))
+jest.mock('react-native-reanimated', () =>
+  jest.requireActual('react-native-reanimated/mock'),
+)
 
 const buttonsMachine = createMachine({
   id: 'homeEntrypointActions',
@@ -98,8 +85,6 @@ describe('HomeScreen entrypoint buttons — model-based test', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    capturedButtons = []
-    capturedVisible = null
   })
 
   const model = createTestModel(buttonsMachine)
@@ -123,10 +108,16 @@ describe('HomeScreen entrypoint buttons — model-based test', () => {
         expect(router.push).not.toHaveBeenCalled()
       },
       idleEntry: async () => {
-        await waitFor(() => expect(capturedVisible).toBe(false))
+        await waitFor(() => {
+          expect(getByLabelText('Continue Observation')).not.toBeVisible()
+          expect(getByLabelText('New Sighting')).not.toBeVisible()
+        })
       },
       resumeEntry: async () => {
-        await waitFor(() => expect(capturedVisible).toBe(true))
+        await waitFor(() => {
+          expect(getByLabelText('Continue Observation')).toBeVisible()
+          expect(getByLabelText('New Sighting')).toBeVisible()
+        })
       },
     },
     events: {
@@ -146,17 +137,17 @@ describe('HomeScreen entrypoint buttons — model-based test', () => {
           },
         ])
       },
-      PRESS_CAMERA: () => {
-        fireEvent.press(getByLabelText('Take Photos'))
+      PRESS_CAMERA: async () => {
+        await userEvent.press(getByLabelText('Take Photos'))
       },
-      PRESS_LIBRARY: () => {
-        fireEvent.press(getByLabelText('Upload Photos'))
+      PRESS_LIBRARY: async () => {
+        await userEvent.press(getByLabelText('Upload Photos'))
       },
-      PRESS_RESUME: () => {
-        capturedButtons.find((b) => b.key === 'continue')?.onPress()
+      PRESS_RESUME: async () => {
+        await userEvent.press(getByLabelText('Continue Observation'))
       },
-      PRESS_NEW: () => {
-        capturedButtons.find((b) => b.key === 'new')?.onPress()
+      PRESS_NEW: async () => {
+        await userEvent.press(getByLabelText('New Sighting'))
       },
     },
   }

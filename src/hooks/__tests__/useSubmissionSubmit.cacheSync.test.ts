@@ -1,7 +1,7 @@
-import * as ui from '@/src/hooks/useUIStore'
+import { useUIStore } from '@/src/hooks/useUIStore'
 import { act, renderHook } from '@testing-library/react-native'
 
-import { updateSubmissionCache } from '@/src/lib/cache/submissionCache'
+import * as cache from '@/src/lib/cache/submissionCache'
 import { uploadSubmissionMetadata } from '@/src/lib/upload/firebaseUpload'
 import { useSubmissionSubmit } from '../useSubmissionSubmit'
 import { useSubmissionStore } from '../useSubmissionStore'
@@ -15,28 +15,8 @@ import { usePhotoStore } from '../usePhotoStore'
  * ADR 0003 / #224).
  */
 
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-)
-
-jest.mock('react-native-mmkv', () => ({
-  createMMKV: jest.fn(() => ({
-    getString: jest.fn(),
-    set: jest.fn(),
-    delete: jest.fn(),
-  })),
-}))
-
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() },
-}))
-
-jest.mock('@/src/lib/cache/submissionCache', () => ({
-  getCurrentCacheId: jest.fn().mockResolvedValue('cache-1'),
-  deleteSubmissionCache: jest.fn().mockResolvedValue(undefined),
-  updateSubmissionCache: jest.fn().mockResolvedValue(undefined),
-  getSubmissionCache: jest.fn().mockResolvedValue(null),
-  clearCurrentCacheId: jest.fn().mockResolvedValue(undefined),
 }))
 
 jest.mock('@/src/lib/location', () => ({
@@ -71,13 +51,15 @@ const cat = (id: string) => ({
   color: 'black' as const,
   sex: 'unknown' as const,
   health_label: 'unknown' as const,
-  photo_local_ids: ['p1'],
+  photo_local_ids: ['photo-1'],
   photos_reviewed: true,
 })
 
 const photo = (id: string) => ({
   local_id: id,
   uri: `file://${id}.jpg`,
+  cloud_storage_path: `submissions/uid-owner/sub-1/${id}.jpg`,
+  cloud_storage_url: `https://cdn.example/${id}.jpg`,
   uploaded: true,
   upload_progress: 100,
   width: 100,
@@ -85,36 +67,38 @@ const photo = (id: string) => ({
 })
 
 describe('useSubmissionSubmit — handleDone cache sync (#228)', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    jest.restoreAllMocks()
     jest.clearAllMocks()
+    jest.spyOn(cache, 'updateSubmissionCache')
+    useUIStore.setState({ dialog: null, isSubmitting: false })
     jest.mocked(uploadSubmissionMetadata).mockResolvedValue(undefined)
     useSubmissionStore.getState().clearDraft()
     usePhotoStore.setState({ photos: [], source: null, submissionId: 'sub-1' })
     useSubmissionStore.getState().addCat(cat('cat-1'))
     usePhotoStore.getState().addPhoto(photo('photo-1'))
+    await cache.createSubmissionCache('cache-1', {
+      location_method: 'device',
+      time_method: 'device',
+    })
   })
 
   it('includes the current manual_time/time_type in the cache update on submit', async () => {
     useSubmissionStore.getState().setSubmission({ time_type: 'manual' })
     useSubmissionStore.getState().setManualTime('2026-08-01T12:00:00.000Z')
 
-    const alertSpy = jest
-      .spyOn(ui, 'showAlert')
-      .mockImplementation((_title, _msg, buttons) => {
-        const submitButton = buttons?.find((b) => b.text === 'Submit')
-        void submitButton?.onPress?.()
-      })
-
     const { result } = renderHook(() => useSubmissionSubmit())
 
     await act(async () => {
       result.current.handleDone()
-      await Promise.resolve()
-      await Promise.resolve()
-      await Promise.resolve()
+      const confirm = useUIStore
+        .getState()
+        .dialog?.buttons.find((b) => b.text === 'Submit')
+      expect(confirm?.onPress).toEqual(expect.any(Function))
+      await confirm!.onPress!()
     })
 
-    expect(updateSubmissionCache).toHaveBeenCalledWith(
+    expect(cache.updateSubmissionCache).toHaveBeenCalledWith(
       'cache-1',
       expect.objectContaining({
         metadata: expect.objectContaining({
@@ -123,7 +107,15 @@ describe('useSubmissionSubmit — handleDone cache sync (#228)', () => {
         }),
       }),
     )
-
-    alertSpy.mockRestore()
+    expect(await cache.getSubmissionCache('cache-1')).toEqual(
+      expect.objectContaining({
+        status: 'Submitted',
+        metadata: expect.objectContaining({
+          time_method: 'manual',
+          manual_time: '2026-08-01T12:00:00.000Z',
+        }),
+      }),
+    )
+    expect(await cache.getCurrentCacheId()).toBeNull()
   })
 })

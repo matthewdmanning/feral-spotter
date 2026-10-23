@@ -1,27 +1,29 @@
-/**
- * The upload queue's two load-bearing promises: a burst cannot fan out one
- * upload per frame, and the queue always drains.
- */
-
-import type { SubmissionPhoto } from '@/src/types'
+/** A burst stays bounded, and a failed upload cannot strand queued photos. */
+import type { PhotoUploadResponse, SubmissionPhoto } from '@/src/types'
 import { uploadNewPhoto } from '@/src/lib/upload/uploadNewPhoto'
 
-const mockResolvers: ((value: {
-  cloud_storage_path: string
-  cloud_storage_url: string
-}) => void)[] = []
+const mockPending: {
+  resolve: (value: PhotoUploadResponse) => void
+  reject: (error: Error) => void
+}[] = []
 let mockInFlight = 0
 let mockPeakInFlight = 0
 
 jest.mock('@/src/lib/upload/firebaseUpload', () => ({
   uploadSubmissionPhoto: jest.fn(
     () =>
-      new Promise((resolve) => {
+      new Promise<PhotoUploadResponse>((resolve, reject) => {
         mockInFlight += 1
         mockPeakInFlight = Math.max(mockPeakInFlight, mockInFlight)
-        mockResolvers.push((value) => {
-          mockInFlight -= 1
-          resolve(value)
+        mockPending.push({
+          resolve: (value) => {
+            mockInFlight -= 1
+            resolve(value)
+          },
+          reject: (error) => {
+            mockInFlight -= 1
+            reject(error)
+          },
         })
       }),
   ),
@@ -36,35 +38,48 @@ const photo = (n: number): SubmissionPhoto => ({
   height: 100,
 })
 
-const flush = () => new Promise((resolve) => setImmediate(resolve))
+const drainTasks = () => new Promise((resolve) => setImmediate(resolve))
 
-it('never runs more than two uploads at once and drains every one', async () => {
+afterEach(() => jest.restoreAllMocks())
+
+it('caps a burst at two uploads and drains queued photos after one fails', async () => {
+  const failure = new Error('connection lost')
+  const logError = jest.spyOn(console, 'error').mockImplementation(() => {})
   const updatePhoto = jest.fn()
   const burstLength = 6
 
   for (let n = 0; n < burstLength; n += 1) {
     uploadNewPhoto(photo(n), 'uid', 'submission', updatePhoto)
   }
-  await flush()
-
   expect(mockPeakInFlight).toBe(2)
 
-  // Settle them the way the network would, one at a time, and confirm the
-  // queue keeps feeding itself until nothing is left.
-  for (let settled = 0; settled < burstLength; settled += 1) {
-    const resolve = mockResolvers.shift()
-    expect(resolve).toBeDefined()
-    resolve?.({ cloud_storage_path: 'p', cloud_storage_url: 'u' })
-    await flush()
+  mockPending.shift()!.reject(failure)
+  await drainTasks()
+  expect(mockInFlight).toBe(2)
+  expect(logError).toHaveBeenCalledWith('[uploadNewPhoto]', 'photo-0', failure)
+
+  // Each completion must release a slot until the rest of the burst finishes.
+  for (let n = 1; n < burstLength; n += 1) {
+    const pending = mockPending.shift()
+    expect(pending).toBeDefined()
+    pending!.resolve({
+      cloud_storage_path: `photo-${n}.jpg`,
+      cloud_storage_url: `https://example.com/${n}.jpg`,
+    })
+    await drainTasks()
   }
 
   expect(mockPeakInFlight).toBe(2)
   expect(mockInFlight).toBe(0)
-  expect(updatePhoto).toHaveBeenCalledTimes(burstLength)
-  for (let n = 0; n < burstLength; n += 1) {
-    expect(updatePhoto).toHaveBeenCalledWith(
-      `photo-${n}`,
-      expect.objectContaining({ uploaded: true, upload_progress: 100 }),
-    )
+  expect(mockPending).toHaveLength(0)
+  expect(updatePhoto).toHaveBeenCalledTimes(burstLength - 1)
+  expect(updatePhoto).not.toHaveBeenCalledWith('photo-0', expect.anything())
+  for (let n = 1; n < burstLength; n += 1) {
+    expect(updatePhoto).toHaveBeenCalledWith(`photo-${n}`, {
+      uploaded: true,
+      upload_progress: 100,
+      cloud_storage_path: `photo-${n}.jpg`,
+      cloud_storage_url: `https://example.com/${n}.jpg`,
+    })
   }
 })

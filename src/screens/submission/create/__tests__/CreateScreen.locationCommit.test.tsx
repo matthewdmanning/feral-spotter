@@ -11,10 +11,6 @@ import CreateSubmissionScreen from '../index'
  * worse in-flight candidate can't overwrite the fix already on the draft.
  */
 
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-)
-
 jest.mock('expo-router', () => ({
   useIsFocused: () => true,
   useLocalSearchParams: () => ({}),
@@ -22,14 +18,6 @@ jest.mock('expo-router', () => ({
 }))
 
 jest.mock('expo-crypto', () => ({ randomUUID: jest.fn(() => 'sub-1') }))
-
-jest.mock('react-native-mmkv', () => ({
-  createMMKV: jest.fn(() => ({
-    getString: jest.fn(),
-    set: jest.fn(),
-    delete: jest.fn(),
-  })),
-}))
 
 jest.mock('@/src/lib/cache/submissionCache', () => ({
   createSubmissionCache: jest.fn().mockResolvedValue({}),

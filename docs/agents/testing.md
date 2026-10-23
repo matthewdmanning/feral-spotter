@@ -38,3 +38,46 @@ Pick the path generator by intent (`@xstate/graph` `TestModel`):
 
 - Model the machine with the **real user events** — including back, cancel, sign-out, retry — not just the forward happy-path transitions.
 - Assert **what the user sees at each step**, not only a redirect or a single side effect.
+
+## Use the libraries' testing resources
+
+Keep application stores, controls, and JavaScript wrappers real when their
+behavior is under test. Isolating a separately tested hook is appropriate for a
+focused screen-wiring check. Substitute native or external services at their
+boundary, and configure only the outcomes a test needs. Prefer the resources shipped with the installed version:
+
+| Library               | Resource used by this suite                                                                                                                                                                                                                                                           |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Expo                  | [`jest-expo` and native module mocks](https://docs.expo.dev/modules/mocking/). Preserve real JS exports with `jest.requireActual` when overriding an operation; don't copy enums into a partial module.                                                                               |
+| Unistyles             | `react-native-unistyles/mocks`, configured with `src/config/themes.ts` in `jest.setup.js`. Never use a proxy that accepts arbitrary theme tokens. Nonzero runtime insets exercise safe-area styles.                                                                                   |
+| Expo FileSystem       | `expo-file-system/mocks/FileSystem` supplies in-memory native file behavior through `jest-expo`. Use real public `File`/`Paths`, create fixture files, inspect `exists`, and reset with `__resetMockFileSystem`.                                                                      |
+| MMKV 4                | `createMMKV` automatically selects its supplied in-memory implementation under Jest. No application stub is needed.                                                                                                                                                                   |
+| AsyncStorage          | [`@react-native-async-storage/async-storage/jest/async-storage-mock`](https://react-native-async-storage.github.io/async-storage/docs/advanced/jest/), installed once in `jest.setup.js` and cleared between tests.                                                                   |
+| Reanimated / Worklets | [`react-native-reanimated/mock`](https://docs.swmansion.com/react-native-reanimated/docs/guides/testing/). The installed Worklets 0.8 package supplies `react-native-worklets/jest/resolver` for resolving its test implementation. Check installed paths when consulting newer docs. |
+| Google Sign-In        | The package's `jest/build/jest/setup.js`, already registered in `jest.config.js`.                                                                                                                                                                                                     |
+| Firebase rules        | [`@firebase/rules-unit-testing`](https://firebase.google.com/docs/rules/unit-tests), already used by `__tests__/rules/`; run through `npm run test:rules` with local emulators.                                                                                                       |
+
+Use React Native Testing Library's [User Event API](https://callstack.github.io/react-native-testing-library/docs/api/events/user-event)
+for presses, long presses, and typing, and await each interaction. `userEvent.setup()`
+can share an interaction session; use fake timers for animation timing tests.
+Do not wrap user events in another `act`. Direct responder events remain appropriate
+for drag/termination behavior that User Event does not simulate.
+
+Await asynchronous dialog callbacks themselves. A fixed number of
+`Promise.resolve()` calls, or an assertion that an operation merely started, does
+not establish that its success/failure handling finished. Assert the resulting
+UI or persisted state. Do not suppress unrelated exceptions to make a test pass.
+
+Delete cases subsumed by a journey that asserts the same intermediate state.
+Avoid source-text/regex tests that claim to verify rendering: render the relevant
+control and inspect its behavior or resolved style instead. Native class adapters
+without usable supplied mocks may still need narrow fakes (for example the current
+media-library Asset boundary); these must not reproduce application store logic.
+The installed Expo FileSystem package has a usable in-memory mock, so its public
+File wrapper does not need a replacement class.
+
+If a supplied mock cannot represent the boundary being tested, a narrow adapter
+fake may be justified. For example, the installed MMKV test implementation gives
+each new instance fresh memory; a cold-start configuration test needs a fixture
+that preserves stored values across module reloads. State the limitation instead
+of discarding that regression scenario.

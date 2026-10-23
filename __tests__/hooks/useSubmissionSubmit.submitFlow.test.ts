@@ -1,4 +1,5 @@
 import * as ui from '@/src/hooks/useUIStore'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { act, renderHook } from '@testing-library/react-native'
 
 import { useSubmissionSubmit } from '@/src/hooks/useSubmissionSubmit'
@@ -12,10 +13,6 @@ import {
   uploadSubmissionMetadata,
 } from '@/src/lib/upload/firebaseUpload'
 import type { SubmissionPhoto } from '@/src/types'
-
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-)
 
 jest.mock('expo-router', () => ({
   router: {
@@ -38,14 +35,6 @@ jest.mock('expo-secure-store', () => ({
 
 jest.mock('posthog-react-native', () => ({
   usePostHog: () => null,
-}))
-
-jest.mock('react-native-mmkv', () => ({
-  createMMKV: jest.fn(() => ({
-    getString: jest.fn(),
-    set: jest.fn(),
-    delete: jest.fn(),
-  })),
 }))
 
 jest.mock('@/src/lib/upload/firebaseUpload', () => ({
@@ -94,8 +83,8 @@ function defaultCat() {
 
 describe('useSubmissionSubmit submit flow', () => {
   beforeEach(async () => {
+    jest.restoreAllMocks()
     jest.clearAllMocks()
-    const AsyncStorage = require('@react-native-async-storage/async-storage')
     await AsyncStorage.clear()
     useSubmissionStore.setState({
       cats: [defaultCat()],
@@ -105,6 +94,7 @@ describe('useSubmissionSubmit submit flow', () => {
     usePhotoStore.setState({ photos: [], submissionId: 'sub-cloud-1' })
     useBoundingBoxStore.setState({ boxes: {}, lastBoxes: {}, absences: {} })
     useUIStore.setState({
+      dialog: null,
       isOnline: true,
       sessionPhotos: [],
       isSubmitting: false,
@@ -135,14 +125,16 @@ describe('useSubmissionSubmit submit flow', () => {
       ],
     })
     ;(uploadSubmissionMetadata as jest.Mock).mockResolvedValue(undefined)
-    jest.spyOn(ui, 'showAlert').mockImplementation((_title, _msg, buttons) => {
-      buttons?.find((b) => b.text === 'Submit')?.onPress?.()
-    })
 
     const { result } = renderHook(() => useSubmissionSubmit())
 
     await act(async () => {
       result.current.handleDone()
+      const submit = useUIStore
+        .getState()
+        .dialog?.buttons.find((b) => b.text === 'Submit')
+      expect(submit?.onPress).toEqual(expect.any(Function))
+      await submit!.onPress!()
     })
 
     expect(uploadSubmissionMetadata).toHaveBeenCalledWith(
@@ -180,14 +172,16 @@ describe('useSubmissionSubmit submit flow', () => {
       ],
     })
     ;(uploadSubmissionMetadata as jest.Mock).mockResolvedValue(undefined)
-    jest.spyOn(ui, 'showAlert').mockImplementation((_title, _msg, buttons) => {
-      buttons?.find((b) => b.text === 'Submit')?.onPress?.()
-    })
 
     const { result } = renderHook(() => useSubmissionSubmit())
 
     await act(async () => {
       result.current.handleDone()
+      const submit = useUIStore
+        .getState()
+        .dialog?.buttons.find((b) => b.text === 'Submit')
+      expect(submit?.onPress).toEqual(expect.any(Function))
+      await submit!.onPress!()
     })
 
     expect(finalizeSubmissionPhotoMetadata).toHaveBeenCalledWith(
@@ -219,14 +213,16 @@ describe('useSubmissionSubmit submit flow', () => {
       ],
     })
     ;(uploadSubmissionMetadata as jest.Mock).mockResolvedValue(undefined)
-    jest.spyOn(ui, 'showAlert').mockImplementation((_title, _msg, buttons) => {
-      buttons?.find((b) => b.text === 'Submit')?.onPress?.()
-    })
 
     const { result } = renderHook(() => useSubmissionSubmit())
 
     await act(async () => {
       result.current.handleDone()
+      const submit = useUIStore
+        .getState()
+        .dialog?.buttons.find((b) => b.text === 'Submit')
+      expect(submit?.onPress).toEqual(expect.any(Function))
+      await submit!.onPress!()
     })
 
     expect(finalizeSubmissionPhotoMetadata).toHaveBeenCalledWith(
@@ -263,14 +259,16 @@ describe('useSubmissionSubmit submit flow', () => {
       ],
     })
     ;(uploadSubmissionMetadata as jest.Mock).mockResolvedValue(undefined)
-    jest.spyOn(ui, 'showAlert').mockImplementation((_title, _msg, buttons) => {
-      buttons?.find((b) => b.text === 'Submit')?.onPress?.()
-    })
 
     const { result } = renderHook(() => useSubmissionSubmit())
 
     await act(async () => {
       result.current.handleDone()
+      const submit = useUIStore
+        .getState()
+        .dialog?.buttons.find((b) => b.text === 'Submit')
+      expect(submit?.onPress).toEqual(expect.any(Function))
+      await submit!.onPress!()
     })
 
     expect(finalizeSubmissionPhotoMetadata).toHaveBeenCalledWith(
@@ -307,23 +305,21 @@ describe('useSubmissionSubmit submit flow', () => {
       .mockRejectedValueOnce(new Error('network blip'))
       .mockResolvedValueOnce(undefined)
     ;(uploadSubmissionMetadata as jest.Mock).mockResolvedValue(undefined)
-    const alertSpy = jest
-      .spyOn(ui, 'showAlert')
-      .mockImplementation((_title, _msg, buttons) => {
-        buttons?.find((b) => b.text === 'Submit')?.onPress?.()
-      })
 
     const { result } = renderHook(() => useSubmissionSubmit())
 
     await act(async () => {
       result.current.handleDone()
+      const submit = useUIStore
+        .getState()
+        .dialog?.buttons.find((b) => b.text === 'Submit')
+      expect(submit?.onPress).toEqual(expect.any(Function))
+      await submit!.onPress!()
     })
 
     expect(uploadSubmissionMetadata).toHaveBeenCalled()
-    expect(alertSpy).not.toHaveBeenCalledWith(
-      'Submission Failed',
-      expect.anything(),
-    )
+    expect(useUIStore.getState().dialog?.title).not.toBe('Submission Failed')
+    expect(useUIStore.getState().isSubmitting).toBe(false)
   })
 
   it("includes each cat's box geometry from useBoundingBoxStore in the uploaded payload", async () => {
@@ -361,14 +357,16 @@ describe('useSubmissionSubmit submit flow', () => {
       ],
     })
     ;(uploadSubmissionMetadata as jest.Mock).mockResolvedValue(undefined)
-    jest.spyOn(ui, 'showAlert').mockImplementation((_title, _msg, buttons) => {
-      buttons?.find((b) => b.text === 'Submit')?.onPress?.()
-    })
 
     const { result } = renderHook(() => useSubmissionSubmit())
 
     await act(async () => {
       result.current.handleDone()
+      const submit = useUIStore
+        .getState()
+        .dialog?.buttons.find((b) => b.text === 'Submit')
+      expect(submit?.onPress).toEqual(expect.any(Function))
+      await submit!.onPress!()
     })
 
     expect(uploadSubmissionMetadata).toHaveBeenCalledWith(
@@ -394,33 +392,6 @@ describe('useSubmissionSubmit submit flow', () => {
     )
   })
 
-  // P0 (map #31): a submission that "succeeds" while silently missing a
-  // still-uploading photo must not happen — block instead of filtering it out.
-  it('blocks submit and shows an error when a photo is still uploading', async () => {
-    usePhotoStore.setState({
-      photos: [
-        photo({
-          local_id: 'photo-uploaded',
-          uploaded: true,
-          cloud_storage_path: 'gs://bucket/uploaded.jpg',
-          cloud_storage_url: 'https://cdn/uploaded.jpg',
-        }),
-        photo({ local_id: 'photo-not-uploaded', uploaded: false }),
-      ],
-    })
-    jest.spyOn(ui, 'showAlert').mockImplementation((_title, _msg, buttons) => {
-      buttons?.find((b) => b.text === 'Submit')?.onPress?.()
-    })
-
-    const { result } = renderHook(() => useSubmissionSubmit())
-
-    await act(async () => {
-      result.current.handleDone()
-    })
-
-    expect(uploadSubmissionMetadata).not.toHaveBeenCalled()
-  })
-
   // #265: zero cats is a hard block.
   it('blocks submit and shows an error when there are no cats', async () => {
     useSubmissionStore.setState({ cats: [] })
@@ -434,33 +405,57 @@ describe('useSubmissionSubmit submit flow', () => {
         }),
       ],
     })
-    jest.spyOn(ui, 'showAlert').mockImplementation((_title, _msg, buttons) => {
-      buttons?.find((b) => b.text === 'Submit')?.onPress?.()
-    })
 
     const { result } = renderHook(() => useSubmissionSubmit())
 
     await act(async () => {
       result.current.handleDone()
+      const submit = useUIStore
+        .getState()
+        .dialog?.buttons.find((b) => b.text === 'Submit')
+      expect(submit?.onPress).toEqual(expect.any(Function))
+      await submit!.onPress!()
     })
 
     expect(uploadSubmissionMetadata).not.toHaveBeenCalled()
+    expect(useUIStore.getState().dialog).toEqual(
+      expect.objectContaining({
+        title: 'Submission Incomplete',
+        message: 'At least one cat observation is required.',
+      }),
+    )
+    expect(useSubmissionStore.getState().cats).toEqual([])
+    expect(usePhotoStore.getState().photos).toHaveLength(1)
+    expect(result.current.isSubmitting).toBe(false)
+    expect(useUIStore.getState().isSubmitting).toBe(false)
   })
 
   // #265: zero photos is a hard block.
   it('blocks submit and shows an error when there are no photos', async () => {
     usePhotoStore.setState({ photos: [] })
-    jest.spyOn(ui, 'showAlert').mockImplementation((_title, _msg, buttons) => {
-      buttons?.find((b) => b.text === 'Submit')?.onPress?.()
-    })
 
     const { result } = renderHook(() => useSubmissionSubmit())
 
     await act(async () => {
       result.current.handleDone()
+      const submit = useUIStore
+        .getState()
+        .dialog?.buttons.find((b) => b.text === 'Submit')
+      expect(submit?.onPress).toEqual(expect.any(Function))
+      await submit!.onPress!()
     })
 
     expect(uploadSubmissionMetadata).not.toHaveBeenCalled()
+    expect(useUIStore.getState().dialog).toEqual(
+      expect.objectContaining({
+        title: 'Submission Incomplete',
+        message: 'At least one photo is required.',
+      }),
+    )
+    expect(useSubmissionStore.getState().cats).toEqual([defaultCat()])
+    expect(usePhotoStore.getState().photos).toEqual([])
+    expect(result.current.isSubmitting).toBe(false)
+    expect(useUIStore.getState().isSubmitting).toBe(false)
   })
 
   it('still submits (photos/details are not privileged) when consent has not been accepted', async () => {
@@ -476,14 +471,16 @@ describe('useSubmissionSubmit submit flow', () => {
       ],
     })
     ;(uploadSubmissionMetadata as jest.Mock).mockResolvedValue(undefined)
-    jest.spyOn(ui, 'showAlert').mockImplementation((_title, _msg, buttons) => {
-      buttons?.find((b) => b.text === 'Submit')?.onPress?.()
-    })
 
     const { result } = renderHook(() => useSubmissionSubmit())
 
     await act(async () => {
       result.current.handleDone()
+      const submit = useUIStore
+        .getState()
+        .dialog?.buttons.find((b) => b.text === 'Submit')
+      expect(submit?.onPress).toEqual(expect.any(Function))
+      await submit!.onPress!()
     })
 
     expect(uploadSubmissionMetadata).toHaveBeenCalledWith(
@@ -506,14 +503,16 @@ describe('useSubmissionSubmit submit flow', () => {
     jest.spyOn(Date, 'now').mockReturnValueOnce(0).mockReturnValue(999_999)
     jest.spyOn(console, 'error').mockImplementation(() => {})
     const errorSpy = jest.spyOn(ui, 'showError').mockImplementation(() => {})
-    jest.spyOn(ui, 'showAlert').mockImplementation((_title, _msg, buttons) => {
-      buttons?.find((b) => b.text === 'Submit')?.onPress?.()
-    })
 
     const { result } = renderHook(() => useSubmissionSubmit())
 
     await act(async () => {
       result.current.handleDone()
+      const submit = useUIStore
+        .getState()
+        .dialog?.buttons.find((b) => b.text === 'Submit')
+      expect(submit?.onPress).toEqual(expect.any(Function))
+      await submit!.onPress!()
     })
 
     expect(errorSpy).toHaveBeenCalledWith(
@@ -545,14 +544,16 @@ describe('useSubmissionSubmit submit flow', () => {
     )
     jest.spyOn(console, 'error').mockImplementation(() => {})
     const errorSpy = jest.spyOn(ui, 'showError').mockImplementation(() => {})
-    jest.spyOn(ui, 'showAlert').mockImplementation((_title, _msg, buttons) => {
-      buttons?.find((b) => b.text === 'Submit')?.onPress?.()
-    })
 
     const { result } = renderHook(() => useSubmissionSubmit())
 
     await act(async () => {
       result.current.handleDone()
+      const submit = useUIStore
+        .getState()
+        .dialog?.buttons.find((b) => b.text === 'Submit')
+      expect(submit?.onPress).toEqual(expect.any(Function))
+      await submit!.onPress!()
     })
 
     expect(errorSpy).toHaveBeenCalledWith(

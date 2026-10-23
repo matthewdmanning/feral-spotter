@@ -17,18 +17,6 @@ import { useSubmissionStore } from '../useSubmissionStore'
  * claim, and a mocked store would only prove a call was made.
  */
 
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-)
-
-jest.mock('react-native-mmkv', () => ({
-  createMMKV: jest.fn(() => ({
-    getString: jest.fn(),
-    set: jest.fn(),
-    delete: jest.fn(),
-  })),
-}))
-
 const CAT_ID = 'cat-1'
 const OTHER_CAT_ID = 'cat-2'
 const PHOTO_ID = 'photo-1'
@@ -58,7 +46,8 @@ const pressRemove = () => {
 describe('useRemoveCat (#299)', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
+    jest.spyOn(ui, 'showAlert')
+    ui.useUIStore.setState({ dialog: null })
     useBoundingBoxStore.setState({ boxes: {}, lastBoxes: {}, absences: {} })
     useActiveCatFlowStore.getState().setActiveCatId(null)
     useSubmissionStore.setState({ cats: [] })
@@ -113,9 +102,10 @@ describe('useRemoveCat (#299)', () => {
 
     // The removed cat's box is gone; the other cat's box on the same photo
     // survives — a photo can show more than one cat (ADR-0004).
-    expect(
-      useBoundingBoxStore.getState().getBoxesForPhoto(PHOTO_ID),
-    ).toHaveLength(1)
+    expect(useBoundingBoxStore.getState().getBoxesForPhoto(PHOTO_ID)).toEqual([
+      expect.objectContaining({ cat_id: OTHER_CAT_ID }),
+    ])
+    expect(useBoundingBoxStore.getState().getBoxesForCat(CAT_ID)).toEqual([])
   })
 
   it('never deletes photos — the pool is submission-scoped, not cat-scoped', () => {
