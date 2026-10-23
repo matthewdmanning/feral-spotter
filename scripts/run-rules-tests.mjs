@@ -1,78 +1,103 @@
-/**
- * scripts/run-rules-tests.mjs
- * Runs the Firestore/Storage rules suite against the Firebase emulators.
- *
- * Exists only to hand firebase-tools a JDK it accepts. firebase-tools requires
- * Java 21+, but this machine's PATH resolves `java` to a JDK 17 install that
- * Gradle deliberately keeps (see the Kotlin-daemon notes) — and firebase-tools
- * picks java off PATH, not JAVA_HOME, so exporting JAVA_HOME alone does
- * nothing. This prepends a 21+ JDK's bin to PATH for this command only,
- * leaving the global JAVA_HOME/PATH that the Android build depends on alone.
- *
- * Override with RULES_TEST_JAVA_HOME if your JDK lives elsewhere.
- */
+/** Runs rules tests against local emulators with an available Java 21+ runtime. */
 
 import { spawnSync } from 'node:child_process'
 import { existsSync, readdirSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
+const require = createRequire(import.meta.url)
+const repoRoot = fileURLToPath(new URL('../', import.meta.url))
+const MIN_MAJOR = 21
 const JAVA_ROOTS = [
   'C:/Program Files/Java',
   'C:/Program Files/Eclipse Adoptium',
 ]
-const MIN_MAJOR = 21
+const javaExecutable = process.platform === 'win32' ? 'java.exe' : 'java'
 
-/** Highest installed JDK at or above MIN_MAJOR, or null. */
-function findJavaHome() {
-  const override = process.env.RULES_TEST_JAVA_HOME
-  if (override) return override
-
-  const candidates = JAVA_ROOTS.filter(existsSync).flatMap((root) =>
-    readdirSync(root)
-      .map((name) => ({
-        path: join(root, name),
-        major: Number(/(\d+)/.exec(name)?.[1]),
-      }))
-      .filter(
-        ({ path, major }) =>
-          major >= MIN_MAJOR && existsSync(join(path, 'bin', 'java.exe')),
-      ),
+function supportsEmulators(command) {
+  const result = spawnSync(command, ['-version'], { encoding: 'utf8' })
+  const version = /version "(?:1\.)?(\d+)/.exec(
+    `${result.stderr ?? ''}\n${result.stdout ?? ''}`,
   )
-  return candidates.sort((a, b) => b.major - a.major)[0]?.path ?? null
+  return result.status === 0 && Number(version?.[1]) >= MIN_MAJOR
 }
 
-const javaHome = findJavaHome()
-if (!javaHome) {
+/** Preserve the Android toolchain's environment; select Java for this process only. */
+function findJava() {
+  const override = process.env.RULES_TEST_JAVA_HOME
+  if (override) {
+    if (!supportsEmulators(join(override, 'bin', javaExecutable))) {
+      throw new Error(`RULES_TEST_JAVA_HOME must point to Java ${MIN_MAJOR}+`)
+    }
+    return { home: override }
+  }
+
+  const configured = process.env.JAVA_HOME
+  if (
+    configured &&
+    supportsEmulators(join(configured, 'bin', javaExecutable))
+  ) {
+    return { home: configured }
+  }
+  if (supportsEmulators('java')) return {}
+
+  const candidates = JAVA_ROOTS.filter(existsSync)
+    .flatMap((root) =>
+      readdirSync(root).map((name) => ({
+        home: join(root, name),
+        major: Number(/(\d+)/.exec(name)?.[1]),
+      })),
+    )
+    .filter(({ major }) => major >= MIN_MAJOR)
+    .sort((a, b) => b.major - a.major)
+  return candidates.find(({ home }) =>
+    supportsEmulators(join(home, 'bin', javaExecutable)),
+  )
+}
+
+const java = findJava()
+if (!java) {
   console.error(
-    `No JDK ${MIN_MAJOR}+ found under ${JAVA_ROOTS.join(' or ')}.\n` +
-      'firebase-tools needs one to start the emulators. Install a JDK 21+ or set\n' +
-      'RULES_TEST_JAVA_HOME to an existing install.',
+    `Rules tests require Java ${MIN_MAJOR}+. Set JAVA_HOME or RULES_TEST_JAVA_HOME, or put it on PATH.`,
   )
   process.exit(1)
 }
 
-const { status } = spawnSync(
-  'npx',
+const pathKey =
+  Object.keys(process.env).find((key) => key.toLowerCase() === 'path') ?? 'PATH'
+const env = { ...process.env }
+if (java.home) {
+  env.JAVA_HOME = java.home
+  env[pathKey] =
+    `${join(java.home, 'bin')}${process.platform === 'win32' ? ';' : ':'}${env[pathKey] ?? ''}`
+}
+
+const hasProxy =
+  env.HTTPS_PROXY || env.https_proxy || env.HTTP_PROXY || env.http_proxy
+const localProxySupport = hasProxy
+  ? [
+      '--import',
+      fileURLToPath(
+        new URL('./firebase-emulator-loopback.mjs', import.meta.url),
+      ),
+    ]
+  : []
+
+// Invoke the installed CLI directly: no npx download or platform-specific shell quoting.
+const { status, error } = spawnSync(
+  process.execPath,
   [
-    'firebase',
+    ...localProxySupport,
+    require.resolve('firebase-tools/lib/bin/firebase.js'),
     'emulators:exec',
     '--project',
     'project-e3d5659d-bc4f-438f-88c',
     '--only',
     'firestore,storage,auth',
-    // Quoted explicitly: with shell:true the spawn does no quoting of its own,
-    // so an unquoted string here reaches firebase as separate argv entries.
-    '"jest -c jest.rules.config.js --runInBand"',
+    'jest -c jest.rules.config.js --runInBand',
   ],
-  {
-    stdio: 'inherit',
-    shell: true,
-    env: {
-      ...process.env,
-      JAVA_HOME: javaHome,
-      PATH: `${join(javaHome, 'bin')}${process.platform === 'win32' ? ';' : ':'}${process.env.PATH}`,
-    },
-  },
+  { stdio: 'inherit', cwd: repoRoot, env },
 )
-
+if (error) console.error(error.message)
 process.exit(status ?? 1)

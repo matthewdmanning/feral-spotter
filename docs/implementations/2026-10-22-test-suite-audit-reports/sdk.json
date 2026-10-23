@@ -1,0 +1,110 @@
+{
+  "agent": "sdk_finish_low",
+  "status": "completed",
+  "confidence": 0.95,
+  "findings": [
+    {
+      "id": "sdk_google_signout",
+      "files": ["src/lib/auth/__tests__/GoogleSignIn.test.ts"],
+      "test": "GoogleSignIn > googleSignOut invokes SDK sign-out and propagates its failure",
+      "classification": "load_bearing",
+      "confidence": 0.98,
+      "poor_quality_probability": 0.02,
+      "evidence": "Executes the real JS wrapper and asserts the SDK call occurs exactly once while its rejection propagates. Original signout-noop mutation fails.",
+      "action": "keep",
+      "changes": "Replaced prior resolves-only assertion with SDK invocation and rejection behavior.",
+      "verification": [
+        {
+          "command": "npx jest src/lib/auth/__tests__/GoogleSignIn.test.ts ... --runInBand",
+          "result": "passed",
+          "log_path": "/tmp/backend-audit-mutations/sdk_scope_final.log"
+        }
+      ],
+      "mutation": {
+        "id": "backend_google_signout_noop",
+        "outcome": "killed",
+        "log_path": "/tmp/backend-audit-mutations/sdk_google_signout_noop.log"
+      },
+      "remaining_risk": "none"
+    },
+    {
+      "id": "sdk_firebase_auth_provider",
+      "files": ["src/lib/auth/__tests__/firebaseAuthProvider.test.ts"],
+      "test": "Firebase auth provider email sign-in, registration mapping, and sign-out failure propagation",
+      "classification": "load_bearing",
+      "confidence": 0.92,
+      "poor_quality_probability": 0.08,
+      "evidence": "Calls real provider methods against SDK-boundary mocks, checks inputs and returned public user shape, and checks Firebase sign-out rejection propagates. Original no-op signout mutation fails. Emulator-wiring tests remain separate.",
+      "action": "improve",
+      "changes": "Added provider behavior coverage. Google provider credential route is currently release-gated in source; no unreachable route was asserted.",
+      "verification": [
+        {
+          "command": "npx jest src/lib/auth/__tests__/GoogleSignIn.test.ts src/lib/auth/__tests__/firebaseAuthProvider.test.ts src/lib/auth/__tests__/firebaseAuthProvider.emulator.test.ts src/lib/auth/__tests__/authProvider.test.ts src/lib/upload/__tests__/firebaseUpload.behavior.test.ts src/lib/upload/__tests__/firebaseUpload.emulator.test.ts src/lib/upload/__tests__/uploadNewPhoto.queue.test.ts --runInBand",
+          "result": "passed",
+          "log_path": "/tmp/backend-audit-mutations/sdk_scope_final.log"
+        }
+      ],
+      "mutation": {
+        "id": "backend_firebase_auth_signout_noop",
+        "outcome": "killed",
+        "log_path": "/tmp/backend-audit-mutations/sdk_firebase_auth_signout_noop.log"
+      },
+      "remaining_risk": "Released-provider credential construction is absent because Google is currently version-gated; test GoogleSignIn token helper separately."
+    },
+    {
+      "id": "sdk_firebase_upload_behavior",
+      "files": ["src/lib/upload/__tests__/firebaseUpload.behavior.test.ts"],
+      "test": "Firebase submission upload behavior: serialized metadata, finalized photo metadata, best-effort scoped cleanup",
+      "classification": "load_bearing",
+      "confidence": 0.96,
+      "poor_quality_probability": 0.04,
+      "evidence": "Calls real JS wrapper functions with narrow native SDK mocks. Asserts metadata object path/content type/body, preserved existing custom metadata plus finalized timestamps/location, and scoped listing/deletion continuing after an individual rejection. Original metadata-upload-noop mutation fails.",
+      "action": "improve",
+      "changes": "Added coherent upload lifecycle behavior cases; emulator-wiring suite remains separate.",
+      "verification": [
+        {
+          "command": "npx jest src/lib/auth/__tests__/GoogleSignIn.test.ts src/lib/auth/__tests__/firebaseAuthProvider.test.ts src/lib/auth/__tests__/firebaseAuthProvider.emulator.test.ts src/lib/auth/__tests__/authProvider.test.ts src/lib/upload/__tests__/firebaseUpload.behavior.test.ts src/lib/upload/__tests__/firebaseUpload.emulator.test.ts src/lib/upload/__tests__/uploadNewPhoto.queue.test.ts --runInBand",
+          "result": "passed",
+          "log_path": "/tmp/backend-audit-mutations/sdk_scope_final.log"
+        },
+        {
+          "command": "npx eslint src/lib/auth/__tests__/GoogleSignIn.test.ts src/lib/auth/__tests__/firebaseAuthProvider.test.ts src/lib/upload/__tests__/firebaseUpload.behavior.test.ts src/lib/upload/__tests__/uploadNewPhoto.queue.test.ts",
+          "result": "passed",
+          "log_path": "/tmp/backend-audit-mutations/sdk_eslint.log"
+        }
+      ],
+      "mutation": {
+        "id": "backend_firebase_metadata_upload_noop",
+        "outcome": "killed",
+        "log_path": "/tmp/backend-audit-mutations/sdk_firebase_metadata_upload_noop.log"
+      },
+      "remaining_risk": "Listing-level failure is guarded by catch in source but not covered by the current focused test."
+    },
+    {
+      "id": "sdk_queue_failure_drain",
+      "files": ["src/lib/upload/__tests__/uploadNewPhoto.queue.test.ts"],
+      "test": "caps burst at two uploads and drains queued photos after one fails",
+      "classification": "load_bearing",
+      "confidence": 0.94,
+      "poor_quality_probability": 0.06,
+      "evidence": "Six-job burst asserts concurrency remains capped at two, first rejection is logged without updating that photo, and remaining jobs drain successfully with persisted upload response. Existing queue serialization probe still kills.",
+      "action": "improve",
+      "changes": "Extended queue behavior test with a rejected upload and per-photo result checks.",
+      "verification": [
+        {
+          "command": "npx jest src/lib/auth/__tests__/GoogleSignIn.test.ts src/lib/auth/__tests__/firebaseAuthProvider.test.ts src/lib/auth/__tests__/firebaseAuthProvider.emulator.test.ts src/lib/auth/__tests__/authProvider.test.ts src/lib/upload/__tests__/firebaseUpload.behavior.test.ts src/lib/upload/__tests__/firebaseUpload.emulator.test.ts src/lib/upload/__tests__/uploadNewPhoto.queue.test.ts --runInBand",
+          "result": "passed",
+          "log_path": "/tmp/backend-audit-mutations/sdk_scope_final.log"
+        }
+      ],
+      "mutation": {
+        "id": "backend_queue_serializes_to_one",
+        "outcome": "killed",
+        "log_path": "/tmp/backend-audit-mutations/queue_serializes_to_one.log"
+      },
+      "remaining_risk": "none"
+    }
+  ],
+  "summary": "Auth/upload JS wrapper behavior coverage is in place; focused tests, lint, and requested isolated mutant replays passed.",
+  "remaining_work": []
+}
