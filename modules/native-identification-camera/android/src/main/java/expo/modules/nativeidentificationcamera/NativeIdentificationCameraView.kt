@@ -7,6 +7,7 @@ import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.TotalCaptureResult
 import android.media.ExifInterface
+import android.os.Build
 import android.os.Process
 import android.os.SystemClock
 import android.util.Log
@@ -219,6 +220,12 @@ class NativeIdentificationCameraView(
    */
   private var bindCount = 0
 
+  // Profiling is on only when the build is profileable (see
+  // plugins/withProfileable.js), so production builds skip every trace section
+  // and timing log below.
+  private val profiling =
+    Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && context.applicationInfo.isProfileableByShell
+
   // Async sections need a cookie that tells two mounted views apart.
   private val traceCookie = System.identityHashCode(this)
   private val captureCookies = AtomicInteger()
@@ -263,6 +270,21 @@ class NativeIdentificationCameraView(
     }
   }
 
+  private fun beginSection(name: String, cookie: Int) {
+    if (profiling) Trace.beginAsyncSection(name, cookie)
+  }
+
+  private fun endSection(name: String, cookie: Int) {
+    if (profiling) Trace.endAsyncSection(name, cookie)
+  }
+
+  private inline fun <T> traced(name: String, block: () -> T): T =
+    if (profiling) trace(name, block) else block()
+
+  private fun perfLog(message: String) {
+    if (profiling) Log.i(PERF_TAG, message)
+  }
+
   private fun diagnostic(event: String, fields: Map<String, Any> = emptyMap()) {
     if (!diagnostics) return
     onCameraDiagnostic(mapOf("event" to event) + fields)
@@ -271,10 +293,10 @@ class NativeIdentificationCameraView(
   init {
     addView(previewView)
 
-    Trace.beginAsyncSection(SECTION_PROVIDER, traceCookie)
+    beginSection(SECTION_PROVIDER, traceCookie)
     val future = ProcessCameraProvider.getInstance(context)
     future.addListener({
-      Trace.endAsyncSection(SECTION_PROVIDER, traceCookie)
+      endSection(SECTION_PROVIDER, traceCookie)
       try {
         cameraProvider = future.get()
         // The provider arrives on its own schedule, so it may land before or
@@ -419,11 +441,11 @@ class NativeIdentificationCameraView(
   }
 
   @OptIn(ExperimentalCamera2Interop::class)
-  private fun bindCamera() = trace(SECTION_BIND) {
-    val provider = cameraProvider ?: return@trace
+  private fun bindCamera() = traced(SECTION_BIND) {
+    val provider = cameraProvider ?: return@traced
     val lifecycleOwner = appContext.currentActivity as? LifecycleOwner ?: run {
       onCameraError(mapOf("message" to "Camera activity is not a LifecycleOwner"))
-      return@trace
+      return@traced
     }
 
     val startedAt = System.currentTimeMillis()
@@ -440,7 +462,9 @@ class NativeIdentificationCameraView(
         .build()
 
       val preview = Preview.Builder()
-        .also { Camera2Interop.Extender(it).setSessionCaptureCallback(frameCallback) }
+        .also {
+          if (profiling) Camera2Interop.Extender(it).setSessionCaptureCallback(frameCallback)
+        }
         .build()
         .also { it.surfaceProvider = previewView.surfaceProvider }
       val imageCapture = buildImageCapture(activeTuning)
@@ -454,8 +478,8 @@ class NativeIdentificationCameraView(
 
       // Raised before the bind, so a frame that lands as soon as the session
       // starts still closes the section.
-      awaitingFirstFrame.set(true)
-      Trace.beginAsyncSection(SECTION_FIRST_FRAME, traceCookie)
+      awaitingFirstFrame.set(profiling)
+      beginSection(SECTION_FIRST_FRAME, traceCookie)
       val boundCamera = provider.bindToLifecycle(
         lifecycleOwner,
         selector,
@@ -506,8 +530,8 @@ class NativeIdentificationCameraView(
     }
   }
 
-  private fun unbindCamera() = trace(SECTION_UNBIND) {
-    val provider = cameraProvider ?: return@trace
+  private fun unbindCamera() = traced(SECTION_UNBIND) {
+    val provider = cameraProvider ?: return@traced
     abandonFirstFrameSection()
     val wasBound = boundSessionConfig != null
     boundSessionConfig?.let { provider.unbind(it) }
@@ -534,13 +558,13 @@ class NativeIdentificationCameraView(
     // the whole wait from the JavaScript call to the saved file.
     val captureCookie = captureCookies.incrementAndGet()
     val calledAtNs = System.nanoTime()
-    Trace.beginAsyncSection(SECTION_CAPTURE, captureCookie)
+    beginSection(SECTION_CAPTURE, captureCookie)
 
     // CameraX use cases are bound on the main thread, so the capture request
     // joins them there instead of touching them from the caller's thread.
     post {
       val imageCapture = imageCaptureUseCase ?: run {
-        Trace.endAsyncSection(SECTION_CAPTURE, captureCookie)
+        endSection(SECTION_CAPTURE, captureCookie)
         promise.reject("ERR_CAMERA_NOT_READY", "Camera is not ready", null)
         return@post
       }
@@ -560,19 +584,18 @@ class NativeIdentificationCameraView(
         ContextCompat.getMainExecutor(context),
         object : ImageCapture.OnImageSavedCallback {
           override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-            trace(SECTION_RESOLVE) {
+            traced(SECTION_RESOLVE) {
               resolveWithFileDimensions(outputFile, promise, requestedAt)
             }
-            Trace.endAsyncSection(SECTION_CAPTURE, captureCookie)
-            Log.i(
-              PERF_TAG,
+            endSection(SECTION_CAPTURE, captureCookie)
+            perfLog(
               "capture_saved call_to_saved_ms=${(System.nanoTime() - calledAtNs) / 1_000_000}" +
                 " since_process_start_ms=${msSinceProcessStart()}"
             )
           }
 
           override fun onError(exception: ImageCaptureException) {
-            Trace.endAsyncSection(SECTION_CAPTURE, captureCookie)
+            endSection(SECTION_CAPTURE, captureCookie)
             promise.reject("ERR_CAPTURE_FAILED", exception.message, exception)
             diagnostic(
               "capture_failed",

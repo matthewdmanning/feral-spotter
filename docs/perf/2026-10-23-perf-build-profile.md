@@ -1,7 +1,8 @@
 # Startup profile: FeralSpotter on Pixel 7 (release build)
 
 Date: 2026-10-23. Branch: `perf-build-profile`. Build: release, installed 13:18,
-profileable. Compile state: `speed-profile`.
+profileable (prebuilt with `PROFILEABLE_BUILD=1`; without it a build is not
+profileable and the camera trace code stays off). Compile state: `speed-profile`.
 
 ## Method
 

@@ -6,15 +6,16 @@
 #
 # Needs a release build made with plugins/withHermesStartupProfiler active:
 #
-#   HERMES_STARTUP_PROFILE=1 npx expo prebuild --platform android
+#   HERMES_STARTUP_PROFILE=1 PROFILEABLE_BUILD=1 npx expo prebuild --platform android
 #   (cd android && ./gradlew assembleRelease)
 #   adb install -r android/app/build/outputs/apk/release/app-release.apk
 #
 # Do not use `npm run android`: its preandroid step runs `pm clear` and
 # erases the login and permissions. `adb install -r` keeps app data.
 #
-# Run a plain `npx expo prebuild --platform android` afterwards to remove the
-# profiler from the next build.
+# A plain prebuild keeps the profiler in MainActivity.kt. To remove it from the
+# next build, run `npx expo prebuild --platform android --clean` without the
+# variable.
 #
 # The profile is Hermes's JSON trace. Frames point into the bytecode bundle;
 # the source map copied next to it maps them back to src/.
