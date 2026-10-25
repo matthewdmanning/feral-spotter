@@ -21,6 +21,7 @@ bugs found in this same flow, both fixed). Open issues touching this flow:
 | `dataAgreement`                | `dataAgreement/index.tsx`            | not intercepted — default pop, returns to whichever `introFlow.Tn` pushed it                                                                                                                                   |
 | `signIn`                       | `sign-in/index.tsx`                  | not intercepted — default pop, returns to `introFlow.T4`                                                                                                                                                       |
 | `profile`                      | `profile/index.tsx`                  | not intercepted — default pop, returns to `signIn` (only screen in this chain with a _visible_ header back button too, since it doesn't set `headerBackVisible:false`/`gestureEnabled:false` in `_layout.tsx`) |
+| `emailOptIn`                   | `email-opt-in/index.tsx`             | not intercepted — default pop (screen has `gestureEnabled:false`, no header). Added 2026-10-24; sits between sign-in/register and `analyticsConsent`.                                                          |
 | `analyticsConsent`             | `analytics-consent/index.tsx`        | not intercepted — default pop, returns to `profile`                                                                                                                                                            |
 | `consent.disclosure`           | `consent/index.tsx` (default render) | **intercepted and swallowed unconditionally** via `useBackHandler(() => true)` — back button does nothing                                                                                                      |
 | `consent.busy`                 | same file, `busy` state              | same interception; Agree/Decline buttons are `disabled`                                                                                                                                                        |
@@ -55,6 +56,13 @@ Format: **State — action (trigger) → target** — guard / side effect.
 
 - `profile` — press **Continue** — guard: email non-empty and passes a loose regex; on failure → stays on `profile`, inline error shown, no state change. On success → `saveProfile()` (an 800ms stubbed delay, not real yet — issue #11) → `analyticsConsent` (`router.replace`)
 - `profile` — city/state/firstName/lastName fields have no validation at all (any value, including empty, is accepted)
+
+### emailOptIn
+
+_Added 2026-10-24. Sign-in and register now go here, not straight to `analyticsConsent`. The `profile` rows below are out of date (that screen no longer exists)._
+
+- `emailOptIn` — press **checkbox row** (toggles `optedIn`, defaults `false`) → same state, local flip only
+- `emailOptIn` — press **Continue** → `setEmailOptIn(optedIn)` (persisted to `consent-store`) → `analyticsConsent` (`router.replace`)
 
 ### analyticsConsent
 
@@ -101,6 +109,9 @@ profile --SUBMIT--
   guard: emailValid
   --> [profile.saving] --> analyticsConsent
   guard fails --> profile (with error)
+
+emailOptIn --TOGGLE_EMAIL_OPT_IN--> emailOptIn (context.optedIn flips, default false)
+emailOptIn --CONTINUE--> analyticsConsent (side effect: persist emailOptIn)
 
 analyticsConsent --TOGGLE_ANALYTICS--> analyticsConsent (context.analyticsEnabled flips)
 analyticsConsent --CONTINUE--> consent.disclosure (side effect: persist analyticsEnabled)

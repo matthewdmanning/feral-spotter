@@ -25,7 +25,7 @@ export default function RegisterScreen() {
     setBusy(true)
     try {
       await registerWithEmail(email.trim(), password)
-      router.replace('/analytics-consent')
+      router.replace('/email-opt-in')
     } catch (err) {
       console.error('[register] failed:', err)
       setBusy(false)

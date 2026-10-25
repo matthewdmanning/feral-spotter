@@ -12,6 +12,11 @@
  * enabled via `setAnalyticsAccepted(true)`, independent of `markAccepted()`.
  * Gate analytics on `hasAcceptedAnalytics()`/`analyticsAccepted` in addition
  * to (not instead of) the overall consent check.
+ *
+ * Email updates are a third, separate opt-in (src/screens/email-opt-in/,
+ * asked before the analytics screen; changeable in Settings). It defaults to
+ * off and is only enabled via `setEmailOptIn(true)`. It is not part of the
+ * data-collection disclosure, so declining never blocks the app.
  */
 
 import { asyncStorage } from '@/src/lib/cache/storage'
@@ -24,8 +29,10 @@ interface ConsentState {
   accepted: boolean
   acceptedVersion: number | null
   analyticsAccepted: boolean
+  emailOptIn: boolean
   markAccepted: () => void
   setAnalyticsAccepted: (enabled: boolean) => void
+  setEmailOptIn: (enabled: boolean) => void
 }
 
 export const useConsentStore = create<ConsentState>()(
@@ -34,6 +41,7 @@ export const useConsentStore = create<ConsentState>()(
       accepted: false,
       acceptedVersion: null,
       analyticsAccepted: false,
+      emailOptIn: false,
       markAccepted: () =>
         set({
           accepted: true,
@@ -43,6 +51,7 @@ export const useConsentStore = create<ConsentState>()(
         set({
           analyticsAccepted: enabled,
         }),
+      setEmailOptIn: (enabled) => set({ emailOptIn: enabled }),
     }),
     {
       name: 'consent-store',
@@ -60,4 +69,9 @@ export function hasAcceptedConsent(): boolean {
 /** Plain (non-hook) check for use outside React components, e.g. utils/analytics.ts. */
 export function hasAcceptedAnalytics(): boolean {
   return useConsentStore.getState().analyticsAccepted
+}
+
+/** Plain (non-hook) check for use outside React components. */
+export function hasOptedInToEmail(): boolean {
+  return useConsentStore.getState().emailOptIn
 }

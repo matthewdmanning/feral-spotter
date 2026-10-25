@@ -43,7 +43,7 @@ describe('SignInScreen', () => {
     await userEvent.press(screen.getByLabelText('Sign in'))
 
     await waitFor(() =>
-      expect(router.replace).toHaveBeenCalledWith('/analytics-consent'),
+      expect(router.replace).toHaveBeenCalledWith('/email-opt-in'),
     )
     expect(mockSignInWithEmail).toHaveBeenCalledWith('a@b.com', 'secret')
   })
@@ -69,7 +69,7 @@ describe('SignInScreen', () => {
     await userEvent.press(screen.getByLabelText('Continue with Google'))
 
     await waitFor(() =>
-      expect(router.replace).toHaveBeenCalledWith('/analytics-consent'),
+      expect(router.replace).toHaveBeenCalledWith('/email-opt-in'),
     )
     expect(mockSignInWithProvider).toHaveBeenCalledWith('google')
   })

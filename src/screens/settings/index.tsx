@@ -15,6 +15,7 @@ import {
   selectionHaptic,
   setHapticsEnabled,
 } from '@/src/lib/haptics'
+import { useConsentStore } from '@/src/hooks/useConsentStore'
 import { useSettingsDraft } from '@/src/hooks/useSettingsDraft'
 import { APP_VERSION } from '@/src/config/constants'
 import { router } from 'expo-router'
@@ -44,6 +45,10 @@ export default function SettingsScreen() {
     setHapticsOn(next)
     selectionHaptic()
   }
+  // Email updates are an opt-in kept in the consent store; like the theme and
+  // haptics, a change applies at once rather than waiting for Save.
+  const emailOptIn = useConsentStore((s) => s.emailOptIn)
+  const setEmailOptIn = useConsentStore((s) => s.setEmailOptIn)
   const {
     draft,
     patch,
@@ -95,6 +100,16 @@ export default function SettingsScreen() {
               hint="A light click when you press a button or switch tabs"
               value={hapticsOn}
               onValueChange={toggleHaptics}
+            />
+          </View>
+
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Communications</Text>
+            <ToggleRow
+              label="Email Updates"
+              hint="News and project updates, sent to the email address on your account"
+              value={emailOptIn}
+              onValueChange={setEmailOptIn}
             />
           </View>
 

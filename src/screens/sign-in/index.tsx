@@ -24,7 +24,7 @@ export default function SignInScreen() {
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
 
-  const advance = () => router.replace('/analytics-consent')
+  const advance = () => router.replace('/email-opt-in')
 
   const handleEmailSignIn = useCallback(async () => {
     if (!email.trim() || !password) {
