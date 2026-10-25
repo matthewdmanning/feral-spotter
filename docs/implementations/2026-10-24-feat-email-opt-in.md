@@ -98,7 +98,8 @@ tags:
 
 ## Follow-ups and known limitations
 
-- [ ] Decide where opted-in addresses are stored and how email is sent. Write an ADR.
+- [x] Tool chosen: EmailOctopus. See [ADR-0007](../adr/0007-emailoctopus-for-email-updates.md).
+- [ ] Decide how an opted-in address reaches EmailOctopus, and how an opt-out removes it.
 - [ ] Sync the choice to that store. Record when and which copy version the user saw.
 - [ ] Update the Play Data Safety and Apple privacy labels when email is actually sent. See `docs/references/privacy-nutrition-labels.md`.
 - [ ] Add a link to the unsubscribe and the privacy policy in each email.
