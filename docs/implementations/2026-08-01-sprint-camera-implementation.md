@@ -292,3 +292,73 @@ Fabric reuses the instance, so teardown clears the session state and sets
   reported in telemetry; resolving it needs the profiling run.
 - The vocabulary and configuration sweep, and the native-code CI split, are
   separate features and are not started.
+
+## 2026-10-25 — fix
+
+**Purpose:** #411 reports that Android's Upload Photos picker has an empty
+Photos tab while images remain available under Collections on a Pixel 7
+(API 37). Avoid that picker surface so Library picks can use other image
+providers.
+
+**Change:** `useLibraryPhotoPicker` sets `legacy: true` on Android only,
+using Expo's content chooser, and replaces the deprecated media-type enum
+with `mediaTypes: ['images']`. Multi-select, full quality, EXIF extraction,
+consent gating, and the shared selection-processing path are retained.
+iOS continues to use its default picker. This is a picker-routing workaround,
+not a repair to the system Photo Picker's index.
+
+### Evidence and limits
+
+The installed `expo-image-picker` 56.0.19 Android `ImageLibraryContract`
+uses `PickVisualMedia`/`PickMultipleVisualMedia` by default. Its `legacy`
+branch instead creates `ACTION_GET_CONTENT`, filters for `image/*`, and
+passes `EXTRA_ALLOW_MULTIPLE`. This option is already included in the native
+package; no native code or dependency change is needed.
+
+`ImagePickerModule.getMediaLibraryPermissions` returns an empty permission
+list on Android 13 and newer. Consequently, the denied `READ_MEDIA_IMAGES`
+and `READ_MEDIA_VISUAL_USER_SELECTED` values recorded in #411 do not by
+themselves establish a missing picker permission. Broad media permission
+requests are not added as a speculative fix.
+
+There is no attached Android device, emulator, or `adb` in this workspace.
+The failing activity and its media-source/index behavior have not been
+observed directly. Device confirmation is still required before calling
+#411 verified or closing it.
+
+### Regression coverage
+
+`src/hooks/__tests__/useLibraryPhotoPicker.selection.test.ts` exercises the
+hook with real photo, Submission, and auth stores. It checks Android content
+chooser routing versus the iOS default; two-image selection, dimensions,
+EXIF-based earliest Submission time, and upload queueing; and cancel followed
+by a successful pick without EXIF, which requires Manual time. Native picker
+operations, UUID generation, navigation, uploads, and analytics are test
+boundaries. The existing permission model keeps its denial/Settings journeys
+and now retains the actual Expo enum exports in its mock.
+
+### Device checks still required
+
+On the reported Pixel 7/API 37 build, open Upload Photos and confirm images
+are reachable through the content chooser. Select two photos, then verify
+Submission Details and uploads. Repeat from Select More Photos. Cancel once
+and retry; check a photo without EXIF triggers Manual time. Record the
+resolved picker activity and compare local gallery images with images only
+available through a provider (including the images previously visible only
+under Collections). Also check iOS's existing picker and denial/limited-grant
+flow on a device.
+
+### Verification
+
+- Full Jest suite: 82 suites, 373 tests pass.
+- Focused picker/permission run: 3 suites, 11 tests pass.
+- The new selection tests were copied into an isolated `origin/main`
+  worktree: both platform configuration checks fail against the old options,
+  while the cancel/retry journey passes. This demonstrates that the Android
+  routing regression is caught; it does not test Android's native chooser.
+- `npm run typecheck`: both application and server checks pass. An initial
+  run during dependency installation reported a transient dependency type
+  error; no type suppression or dependency edit was needed.
+- `npm run lint`: no errors, three warnings in unchanged files.
+- Prettier checks pass for all four changed files; `git diff --check` passes.
+- No device/emulator verification; use the checklist above before closing #411.

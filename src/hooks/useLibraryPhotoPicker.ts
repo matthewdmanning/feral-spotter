@@ -21,7 +21,7 @@ import {
 import * as ImagePicker from 'expo-image-picker'
 import { router } from 'expo-router'
 import { useCallback } from 'react'
-import { Linking } from 'react-native'
+import { Linking, Platform } from 'react-native'
 
 export interface LibraryPhotoPickerResult {
   pickFromLibrary: () => Promise<void>
@@ -54,7 +54,10 @@ export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      // Bypass the Android Photo Picker's empty Photos tab (#411). The
+      // content chooser also exposes images outside its photo-library index.
+      legacy: Platform.OS === 'android',
+      mediaTypes: ['images'],
       allowsMultipleSelection: true,
       quality: 1,
       exif: true,
