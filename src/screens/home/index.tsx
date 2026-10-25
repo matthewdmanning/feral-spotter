@@ -131,7 +131,7 @@ export default function HomeScreen() {
     screenWidth,
     screenHeight,
     ENTRYPOINT_BUFFER_PERCENT,
-    theme.spacing.xxl,
+    theme.spacing.xxxl,
   )
 
   useEntryGate()
@@ -220,8 +220,8 @@ export default function HomeScreen() {
         {photoSource !== null && (
           <Text style={styles.disabledReason}>
             {photoSource === 'camera'
-              ? 'This submission uses camera photos. Finish or reset it before you upload from your library.'
-              : 'This submission uses library photos. Finish or reset it before you take new photos.'}
+              ? 'This submission uses Take Photos. Finish or reset it before you use Upload Photos.'
+              : 'This submission uses Upload Photos. Finish or reset it before you use Take Photos.'}
           </Text>
         )}
 
