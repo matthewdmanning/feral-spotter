@@ -199,8 +199,19 @@ const catPalette = [
   '#8E44AD',
 ] as const
 
+/**
+ * Viewfinder reticle drawn inside the Home entrypoint circles. The stroke is
+ * a fixed width; the opacity lets the reticle recede behind the icon and
+ * label it frames.
+ */
+const reticle = {
+  thickness: 3,
+  opacity: 0.5,
+} as const
+
 const sharedTokens = {
   catPalette,
+  reticle,
   spacing,
   radius,
   fonts,
