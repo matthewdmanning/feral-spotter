@@ -212,17 +212,18 @@ export default function HomeScreen() {
             disabled={libraryDisabled}
             onPress={pickFromLibrary}
           />
-          {/* #375: one of the two circles above is dead whenever the pool has
-              a source, and nothing said why. Only ever one is disabled, so
-              one line covers both cases. */}
-          {photoSource !== null && (
-            <Text style={styles.disabledReason}>
-              {photoSource === 'camera'
-                ? 'This submission uses camera photos. Finish or reset it before you upload from your library.'
-                : 'This submission uses library photos. Finish or reset it before you take new photos.'}
-            </Text>
-          )}
         </View>
+
+        {/* #375: one of the two circles above is dead whenever the pool has
+            a source, and nothing said why. Only ever one is disabled, so
+            one line covers both cases. */}
+        {photoSource !== null && (
+          <Text style={styles.disabledReason}>
+            {photoSource === 'camera'
+              ? 'This submission uses camera photos. Finish or reset it before you upload from your library.'
+              : 'This submission uses library photos. Finish or reset it before you take new photos.'}
+          </Text>
+        )}
 
         <View style={styles.bottomArea}>
           <BottomButtonColumn buttons={buttons} visible={columnVisible} />

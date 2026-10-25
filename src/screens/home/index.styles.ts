@@ -12,6 +12,9 @@ export const styles = StyleSheet.create((theme) => ({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'space-evenly',
+    // Floor for the space between the two circles. space-evenly alone
+    // lets it shrink on short screens.
+    gap: theme.spacing.xxxl,
   },
   bottomArea: {
     paddingHorizontal: theme.layout.gutter,
