@@ -12,6 +12,8 @@ it.each(['android', 'ios'])(
     const visible = visiblePhotoToggles(false, os)
     expect(visible.every((t) => !t.devOnly)).toBe(true)
     expect(visible.map((t) => t.key)).toContain('keep_photos_on_device')
+    // Zoom is for every user, not a tuning experiment.
+    expect(visible.map((t) => t.key)).toContain('camera_pinch_zoom')
   },
 )
 
