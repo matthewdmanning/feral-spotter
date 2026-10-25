@@ -74,7 +74,7 @@ const DEFAULT_SETTINGS: AppSettings = {
     process.env.EXPO_PUBLIC_CAMERA_SUBJECT_METERING,
     false,
   ),
-  camera_pinch_zoom: false,
+  camera_pinch_zoom: true,
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -91,6 +91,24 @@ export const useSettingsStore = create<SettingsState>()(
     {
       name: 'settings-store',
       storage: createJSONStorage(() => asyncStorage),
+      // v1: pinch zoom ships on. The old default (off) was saved with every
+      // other setting, so without this an existing install would keep it off
+      // and never see the new default. A choice made after v1 is kept.
+      version: 1,
+      migrate: (persisted, version) => {
+        const state = persisted as Partial<SettingsState> | undefined
+        if (version < 1 && state?.settings) {
+          const migrated: Partial<SettingsState> = {
+            ...state,
+            settings: {
+              ...state.settings,
+              camera_pinch_zoom: DEFAULT_SETTINGS.camera_pinch_zoom,
+            },
+          }
+          return migrated as SettingsState
+        }
+        return state as SettingsState
+      },
       merge: (persisted, current) => {
         const persistedSettings = (
           persisted as Partial<SettingsState> | undefined

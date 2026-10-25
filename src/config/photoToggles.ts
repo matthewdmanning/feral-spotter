@@ -85,8 +85,8 @@ export const PHOTO_TOGGLES: readonly PhotoToggle[] = [
   {
     key: 'camera_pinch_zoom',
     label: 'Pinch to Zoom',
-    desc: 'Allow pinch to zoom the camera preview; a zoomed capture is a cropped capture',
-    devOnly: true,
+    desc: 'Pinch to zoom the preview. The saved photo stays full field',
+    devOnly: false,
     platform: null,
   },
   {
