@@ -98,10 +98,10 @@ describe('HomeScreen photo-source-exclusivity gate — model-based test', () => 
       expect(
         getByLabelText('Upload Photos').props.accessibilityState.disabled,
       ).toBe(library)
-      expect(queryByText(/uses Take Photos/)).toEqual(
+      expect(queryByText(/uses camera photos/)).toEqual(
         reason === 'camera' ? expect.anything() : null,
       )
-      expect(queryByText(/uses Upload Photos/)).toEqual(
+      expect(queryByText(/uses library photos/)).toEqual(
         reason === 'library' ? expect.anything() : null,
       )
     })
