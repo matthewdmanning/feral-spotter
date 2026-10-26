@@ -5,6 +5,7 @@ import { router } from 'expo-router'
 import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { AppButton } from '@/src/components/atoms/AppButton'
 import { TextField } from '@/src/components/atoms/TextField'
+import { nextConsentRoute } from '@/src/hooks/consentFlow'
 import { useAuth } from '@/src/lib/auth/useAuth'
 import { validateRegistration } from '@/src/utils/validation'
 import { styles } from './index.styles'
@@ -25,7 +26,7 @@ export default function RegisterScreen() {
     setBusy(true)
     try {
       await registerWithEmail(email.trim(), password)
-      router.replace('/email-opt-in')
+      router.replace(nextConsentRoute())
     } catch (err) {
       console.error('[register] failed:', err)
       setBusy(false)

@@ -24,7 +24,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     marginBottom: theme.spacing.md,
   },
 
-  analyticsRow: {
+  choiceRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: theme.spacing.md,
@@ -33,7 +33,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     borderRadius: theme.radius.xl,
     ...theme.glass.card,
   },
-  analyticsItemText: {
+  choiceItemText: {
     ...theme.textVariants.body,
     color: theme.colors.text,
     flexShrink: 1,
@@ -51,6 +51,12 @@ export const styles = StyleSheet.create((theme, rt) => ({
   checkboxChecked: {
     backgroundColor: theme.colors.accent,
     borderColor: theme.colors.accent,
+  },
+
+  footnote: {
+    ...theme.textVariants.bodySmall,
+    color: theme.colors.muted,
+    marginTop: theme.spacing.sm,
   },
 
   continueRow: { marginTop: theme.spacing.xxl },

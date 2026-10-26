@@ -23,6 +23,9 @@ derives_from: []
 - The choice never blocks the app. There is no decline warning.
 - The screen has no header and no back gesture. It leaves with `router.replace`.
 - The Settings switch shows the stored choice. A change applies at once. It does not wait for Save.
+- The screen shows the account address masked, for example `j***@example.com`.
+- A user who already chose is not asked again after sign-in.
+- Settings shows the account email. It can send a verification link to a new address.
 - Copy states that email goes to the address on the account. It states that the user can turn it off in Settings.
 
 ## Reason

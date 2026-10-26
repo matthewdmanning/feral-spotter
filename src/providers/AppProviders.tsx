@@ -155,7 +155,9 @@ export function AppProviders({ children }: AppProvidersProps) {
   const hasAcceptedConsent = useConsentStore(
     (s) => s.accepted && s.acceptedVersion === CONSENT_VERSION,
   )
-  const hasAcceptedAnalytics = useConsentStore((s) => s.analyticsAccepted)
+  const hasAcceptedAnalytics = useConsentStore(
+    (s) => s.analyticsAccepted === true,
+  )
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

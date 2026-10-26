@@ -8,14 +8,15 @@
  * screen was shown.
  *
  * Analytics is a separate, narrower opt-in captured on its own screen
- * (src/screens/analytics-consent/): it defaults to denied and is only
+ * (src/screens/analytics-consent/): it is `null` until answered, counts as denied, and is only
  * enabled via `setAnalyticsAccepted(true)`, independent of `markAccepted()`.
  * Gate analytics on `hasAcceptedAnalytics()`/`analyticsAccepted` in addition
  * to (not instead of) the overall consent check.
  *
  * Email updates are a third, separate opt-in (src/screens/email-opt-in/,
- * asked before the analytics screen; changeable in Settings). It defaults to
- * off and is only enabled via `setEmailOptIn(true)`. It is not part of the
+ * asked before the analytics screen; changeable in Settings). It is `null`
+ * until the user answers, then true/false; only `setEmailOptIn(true)` enables it.
+ * It is not part of the
  * data-collection disclosure, so declining never blocks the app.
  */
 
@@ -28,8 +29,8 @@ export const CONSENT_VERSION = 1 // bump when disclosure copy changes materially
 interface ConsentState {
   accepted: boolean
   acceptedVersion: number | null
-  analyticsAccepted: boolean
-  emailOptIn: boolean
+  analyticsAccepted: boolean | null
+  emailOptIn: boolean | null
   markAccepted: () => void
   setAnalyticsAccepted: (enabled: boolean) => void
   setEmailOptIn: (enabled: boolean) => void
@@ -40,8 +41,8 @@ export const useConsentStore = create<ConsentState>()(
     (set) => ({
       accepted: false,
       acceptedVersion: null,
-      analyticsAccepted: false,
-      emailOptIn: false,
+      analyticsAccepted: null,
+      emailOptIn: null,
       markAccepted: () =>
         set({
           accepted: true,
@@ -68,10 +69,10 @@ export function hasAcceptedConsent(): boolean {
 
 /** Plain (non-hook) check for use outside React components, e.g. utils/analytics.ts. */
 export function hasAcceptedAnalytics(): boolean {
-  return useConsentStore.getState().analyticsAccepted
+  return useConsentStore.getState().analyticsAccepted === true
 }
 
 /** Plain (non-hook) check for use outside React components. */
 export function hasOptedInToEmail(): boolean {
-  return useConsentStore.getState().emailOptIn
+  return useConsentStore.getState().emailOptIn === true
 }

@@ -1,13 +1,10 @@
-import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
-import { AppButton } from '@/src/components/atoms/AppButton'
-import { useCallback, useState } from 'react'
-import { View, Text, Pressable, ScrollView } from 'react-native'
+import { ConsentChoiceScreen } from '@/src/components/organisms/ConsentChoiceScreen'
 import { router } from 'expo-router'
-import { useUnistyles } from 'react-native-unistyles'
-import { CheckIcon } from 'phosphor-react-native/src/icons/Check'
-import { useConsentStore } from '@/src/hooks/useConsentStore'
+import { nextConsentRoute } from '@/src/hooks/consentFlow'
+import { saveEmailOptIn } from '@/src/hooks/saveEmailOptIn'
+import { useAuthStore } from '@/src/lib/auth/authStore'
 import consentCopy from '@/src/content/consentDisclosure.json'
-import { styles } from './index.styles'
+import { maskEmail } from '@/src/utils/maskEmail'
 
 /**
  * Asks, before the analytics screen, whether the user wants email updates.
@@ -15,50 +12,17 @@ import { styles } from './index.styles'
  * Continue without a choice means "no".
  */
 export default function EmailOptInScreen() {
-  const { theme } = useUnistyles()
-  const setEmailOptIn = useConsentStore((s) => s.setEmailOptIn)
-  const [optedIn, setOptedIn] = useState(false)
-  const { emailOptIn } = consentCopy
-
-  const handleContinue = useCallback(() => {
-    setEmailOptIn(optedIn)
-    router.replace('/analytics-consent')
-  }, [setEmailOptIn, optedIn])
+  const email = useAuthStore((s) => s.user?.email)
 
   return (
-    <View style={styles.root}>
-      <AmbientBackground />
-      <ScrollView contentContainerStyle={styles.scroll}>
-        <Text style={styles.title}>{emailOptIn.title}</Text>
-        <Text style={styles.body}>{emailOptIn.intro}</Text>
-
-        <Pressable
-          onPress={() => setOptedIn((v) => !v)}
-          style={styles.optInRow}
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: optedIn }}
-          accessibilityLabel={`${emailOptIn.label}: ${emailOptIn.text}`}
-        >
-          <View style={[styles.checkbox, optedIn && styles.checkboxChecked]}>
-            {optedIn && (
-              <CheckIcon
-                size={theme.iconSize.sm}
-                color={theme.colors.accentText}
-              />
-            )}
-          </View>
-          <Text style={styles.optInItemText}>
-            <Text style={styles.itemLabel}>{emailOptIn.label}</Text>{' '}
-            {emailOptIn.text}
-          </Text>
-        </Pressable>
-
-        <View style={styles.continueRow}>
-          <AppButton onPress={handleContinue}>
-            {emailOptIn.continueLabel}
-          </AppButton>
-        </View>
-      </ScrollView>
-    </View>
+    <ConsentChoiceScreen
+      copy={consentCopy.emailOptIn}
+      defaultChecked={false}
+      footnote={email ? `Updates go to ${maskEmail(email)}.` : undefined}
+      onContinue={(checked) => {
+        saveEmailOptIn(checked)
+        router.replace(nextConsentRoute('/email-opt-in'))
+      }}
+    />
   )
 }
