@@ -33,6 +33,12 @@ function createDevAuthProvider(): IAuthProvider {
     signInWithProvider: grantStub,
     signInWithEmail: grantStub,
     registerWithEmail: grantStub,
+    // The stub has no verification mail: the new address applies at once.
+    changeEmail: async (newEmail) => {
+      if (!currentUser) throw new Error('NOT_SIGNED_IN')
+      currentUser = { ...currentUser, email: newEmail }
+      notify()
+    },
     signOut: async () => {
       currentUser = null
       notify()

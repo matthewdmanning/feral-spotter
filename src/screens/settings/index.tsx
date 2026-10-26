@@ -15,6 +15,10 @@ import {
   selectionHaptic,
   setHapticsEnabled,
 } from '@/src/lib/haptics'
+import { saveEmailOptIn } from '@/src/hooks/saveEmailOptIn'
+import { useChangeEmail } from '@/src/hooks/useChangeEmail'
+import { useConsentStore } from '@/src/hooks/useConsentStore'
+import { useAuthStore } from '@/src/lib/auth/authStore'
 import { useSettingsDraft } from '@/src/hooks/useSettingsDraft'
 import { APP_VERSION } from '@/src/config/constants'
 import { router } from 'expo-router'
@@ -44,6 +48,11 @@ export default function SettingsScreen() {
     setHapticsOn(next)
     selectionHaptic()
   }
+  // Email updates are an opt-in kept in the consent store; like the theme and
+  // haptics, a change applies at once rather than waiting for Save.
+  const emailOptIn = useConsentStore((s) => s.emailOptIn === true)
+  const accountEmail = useAuthStore((s) => s.user?.email)
+  const changeEmail = useChangeEmail()
   const {
     draft,
     patch,
@@ -96,6 +105,35 @@ export default function SettingsScreen() {
               value={hapticsOn}
               onValueChange={toggleHaptics}
             />
+          </View>
+
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Communications</Text>
+            <ToggleRow
+              label="Email Updates"
+              hint="News and project updates, sent to the email address on your account"
+              value={emailOptIn}
+              onValueChange={saveEmailOptIn}
+            />
+            <View style={styles.divider} />
+            <Text style={styles.hint}>
+              Your email: {accountEmail ?? 'not available'}
+            </Text>
+            <TextField
+              label="New email"
+              placeholder="New email"
+              autoComplete="email"
+              keyboardType="email-address"
+              inputMode="email"
+              value={changeEmail.newEmail}
+              onChangeText={changeEmail.setNewEmail}
+            />
+            <TextButton
+              onPress={changeEmail.submit}
+              disabled={changeEmail.busy || !changeEmail.newEmail.trim()}
+            >
+              Send verification link
+            </TextButton>
           </View>
 
           <View style={styles.card}>

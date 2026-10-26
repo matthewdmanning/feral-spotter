@@ -14,6 +14,12 @@ export interface IAuthProvider {
   signInWithEmail(email: string, password: string): Promise<AuthUser>
   /** Registration: create a new email/password account and sign in. */
   registerWithEmail(email: string, password: string): Promise<AuthUser>
+  /**
+   * Start an email change. The new address takes effect once the user follows
+   * the verification link sent to it. Rejects `auth/requires-recent-login`
+   * when the session is too old; the user must sign in again first.
+   */
+  changeEmail(newEmail: string): Promise<void>
   signOut(): Promise<void>
   onAuthStateChanged(cb: (user: AuthUser | null) => void): () => void
 }

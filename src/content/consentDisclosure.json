@@ -32,5 +32,12 @@
     "label": "Anonymous usage analytics",
     "text": "such as app events and crash data, to help us improve FeralSpotter",
     "continueLabel": "Continue"
+  },
+  "emailOptIn": {
+    "title": "Stay in the loop?",
+    "intro": "We can send you news about FeralSpotter by email. This is optional.",
+    "label": "Email updates",
+    "text": "about FeralSpotter news and project updates, sent to the email address on your account. You can turn this off at any time in Settings.",
+    "continueLabel": "Continue"
   }
 }

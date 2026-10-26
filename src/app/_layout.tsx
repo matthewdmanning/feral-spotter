@@ -89,6 +89,10 @@ export default function RootLayout() {
         />
         <Stack.Screen name="register" options={{ title: 'Create account' }} />
         <Stack.Screen
+          name="email-opt-in"
+          options={{ headerShown: false, gestureEnabled: false }}
+        />
+        <Stack.Screen
           name="analytics-consent"
           options={{ headerShown: false, gestureEnabled: false }}
         />

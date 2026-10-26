@@ -6,6 +6,7 @@ import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { AppButton } from '@/src/components/atoms/AppButton'
 import { TextButton } from '@/src/components/atoms/TextButton'
 import { TextField } from '@/src/components/atoms/TextField'
+import { nextConsentRoute } from '@/src/hooks/consentFlow'
 import { useAuth } from '@/src/lib/auth/useAuth'
 import {
   FEDERATED_PROVIDERS,
@@ -24,7 +25,7 @@ export default function SignInScreen() {
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
 
-  const advance = () => router.replace('/analytics-consent')
+  const advance = () => router.replace(nextConsentRoute())
 
   const handleEmailSignIn = useCallback(async () => {
     if (!email.trim() || !password) {
