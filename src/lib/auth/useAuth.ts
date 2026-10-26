@@ -12,6 +12,7 @@ export function useAuth() {
     signInWithProvider: authProvider.signInWithProvider,
     signInWithEmail: authProvider.signInWithEmail,
     registerWithEmail: authProvider.registerWithEmail,
+    changeEmail: authProvider.changeEmail,
     signOut: authProvider.signOut,
   }
 }

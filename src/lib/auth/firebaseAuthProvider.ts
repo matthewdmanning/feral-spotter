@@ -8,6 +8,7 @@ import {
   OAuthProvider,
   FacebookAuthProvider,
   onAuthStateChanged,
+  verifyBeforeUpdateEmail,
   signOut as firebaseSignOut,
   type User,
 } from '@react-native-firebase/auth'
@@ -100,6 +101,11 @@ export function createFirebaseAuthProvider(): IAuthProvider {
         password,
       )
       return toAuthUser(user) as AuthUser
+    },
+    changeEmail: async (newEmail) => {
+      const user = auth.currentUser
+      if (!user) throw new Error('NOT_SIGNED_IN')
+      await verifyBeforeUpdateEmail(user, newEmail)
     },
     signOut: async () => {
       // Sign out of every federated SDK that keeps its own session, then Firebase.

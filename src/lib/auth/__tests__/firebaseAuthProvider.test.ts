@@ -6,6 +6,7 @@ import {
   signInWithCredential,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  verifyBeforeUpdateEmail,
   signOut as firebaseSignOut,
 } from '@react-native-firebase/auth'
 import { createFirebaseAuthProvider } from '../firebaseAuthProvider'
@@ -84,6 +85,25 @@ describe('Firebase auth provider', () => {
 
     expect(firebaseSignOut).toHaveBeenCalledTimes(1)
     expect(firebaseSignOut).toHaveBeenCalledWith(getAuth())
+  })
+
+  it('changeEmail asks Firebase to verify the new address first', async () => {
+    jest.mocked(getAuth).mockReturnValueOnce({
+      currentUser: firebaseUser,
+    } as never)
+
+    await createFirebaseAuthProvider().changeEmail('new@example.com')
+
+    expect(verifyBeforeUpdateEmail).toHaveBeenCalledWith(
+      firebaseUser,
+      'new@example.com',
+    )
+  })
+
+  it('changeEmail rejects when signed out', async () => {
+    await expect(
+      createFirebaseAuthProvider().changeEmail('new@example.com'),
+    ).rejects.toThrow('NOT_SIGNED_IN')
   })
 
   it('propagates Firebase sign-out failure so callers cannot report success', async () => {
