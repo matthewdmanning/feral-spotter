@@ -19,12 +19,7 @@ const mockGetMediaLibraryPermissionsAsync = jest.fn()
 const mockRequestMediaLibraryPermissionsAsync = jest.fn()
 const mockLaunchImageLibraryAsync = jest.fn(async () => ({ canceled: true }))
 jest.mock('expo-image-picker', () => ({
-  MediaTypeOptions: { Images: 'Images' },
-  PermissionStatus: {
-    GRANTED: 'granted',
-    DENIED: 'denied',
-    UNDETERMINED: 'undetermined',
-  },
+  ...jest.requireActual('expo-image-picker'),
   getMediaLibraryPermissionsAsync: (...args: unknown[]) =>
     mockGetMediaLibraryPermissionsAsync(...args),
   requestMediaLibraryPermissionsAsync: (...args: unknown[]) =>
