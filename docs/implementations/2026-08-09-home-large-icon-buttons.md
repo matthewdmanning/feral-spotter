@@ -59,3 +59,17 @@ arithmetic limitation) in favor of fixing the three `HomeScreen.*.model.test.tsx
 mocks to hold real numeric `spacing`/`radius`/`typography`, and dropped
 `AppButton`'s empty `label.variants.size.circle` (no-op vs. falling through
 to `default`).
+
+## 2026-10-26 — extension
+
+**Purpose:** check visibility of the Home entrypoint buttons and disabled-source
+explanation, beyond presence and disabled-state assertions.
+**Change:** remove the Home style stub from
+`HomeScreen.photoSourceGate.model.test.tsx` and use `toBeVisible()` with real
+styles for both buttons and the applicable explanation. Include hidden elements
+in queries so a mounted but hidden explanation fails. The other explanation
+must be absent, and both explanations must be absent after removal/reset.
+
+**Verification:** all four journeys pass on the current checkout and PR #414;
+lint and test-file formatting pass. Jest does not compute native layout, so
+clipping, overlap, and off-screen placement still require a device check.
