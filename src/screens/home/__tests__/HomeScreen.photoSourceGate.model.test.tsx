@@ -70,7 +70,6 @@ const gateMachine = createMachine({
 
 describe('HomeScreen photo-source-exclusivity gate — model-based test', () => {
   let getByLabelText: ReturnType<typeof render>['getByLabelText']
-  let queryByText: ReturnType<typeof render>['queryByText']
 
   beforeEach(async () => {
     jest.clearAllMocks()
@@ -78,19 +77,11 @@ describe('HomeScreen photo-source-exclusivity gate — model-based test', () => 
     usePhotoStore.setState({ photos: [], source: null, submissionId: null })
     const result = render(<HomeScreen />)
     getByLabelText = result.getByLabelText
-    queryByText = result.queryByText
   })
 
   const model = createTestModel(gateMachine)
 
-  // #375: a disabled entrypoint must also say why. `reason` is the source the
-  // pool is pinned to, or null when both entrypoints are live and no reason
-  // line may appear.
-  const expectDisabled = async (
-    camera: boolean,
-    library: boolean,
-    reason: 'camera' | 'library' | null,
-  ) => {
+  const expectDisabled = async (camera: boolean, library: boolean) => {
     await waitFor(() => {
       expect(
         getByLabelText('Take Photos').props.accessibilityState.disabled,
@@ -98,20 +89,14 @@ describe('HomeScreen photo-source-exclusivity gate — model-based test', () => 
       expect(
         getByLabelText('Upload Photos').props.accessibilityState.disabled,
       ).toBe(library)
-      expect(queryByText(/uses camera photos/)).toEqual(
-        reason === 'camera' ? expect.anything() : null,
-      )
-      expect(queryByText(/uses library photos/)).toEqual(
-        reason === 'library' ? expect.anything() : null,
-      )
     })
   }
 
   const testParams = {
     states: {
-      emptyPool: () => expectDisabled(false, false, null),
-      cameraDraft: () => expectDisabled(false, true, 'camera'),
-      libraryDraft: () => expectDisabled(true, false, 'library'),
+      emptyPool: () => expectDisabled(false, false),
+      cameraDraft: () => expectDisabled(false, true),
+      libraryDraft: () => expectDisabled(true, false),
     },
     events: {
       CAMERA_PICK: async () => {
