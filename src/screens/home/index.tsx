@@ -27,9 +27,10 @@ function ViewfinderCorners({
   diameter: number
   color: string
 }) {
+  const { theme } = useUnistyles()
   const inset = diameter * 0.16
   const size = diameter * 0.12
-  const thickness = 3
+  const thickness = theme.reticle.thickness
   // Rounded bends soften the reticle from a hard crop mark into a friendly
   // viewfinder.
   const bend = size * 0.4
@@ -74,8 +75,7 @@ function ViewfinderCorners({
             width: size,
             height: size,
             borderColor: color,
-            // Recedes behind the icon and label it frames.
-            opacity: 0.5,
+            opacity: theme.reticle.opacity,
             ...corner,
           }}
         />
