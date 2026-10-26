@@ -131,3 +131,14 @@ files. These are size and module counts, not time.
 - [ ] Device check of every icon, light and dark theme.
 - The camera flip control is removed on `ccr-aa3fa582-dzrsj5`. If that branch
   merges first, the `CameraRotateIcon` import goes with it.
+
+## 2026-10-26 — fix
+
+**Purpose:** restore type checking for the per-icon source imports, which expose
+Phosphor 3.0.6's `className` prop missing from `react-native-svg` 15.15.4's
+shared `SvgProps` declaration.
+**Change:** add `src/types/react-native-svg.d.ts` to augment `SvgProps` with
+`className?: string`. This declaration changes no runtime code and preserves
+the other SVG prop checks. Remove it when upstream declares the prop.
+
+**Verification:** application and server type checks pass (`npm run typecheck`).

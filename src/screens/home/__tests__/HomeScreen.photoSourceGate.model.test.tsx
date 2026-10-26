@@ -21,10 +21,6 @@ jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
 }))
 
-jest.mock('../index.styles', () => ({
-  styles: new Proxy({}, { get: () => ({}) }),
-}))
-
 jest.mock('@/src/lib/auth/useAuth', () => ({
   useAuth: () => ({ isReady: true, isAuthenticated: true }),
 }))
@@ -83,6 +79,12 @@ describe('HomeScreen photo-source-exclusivity gate — model-based test', () => 
 
   const expectDisabled = async (camera: boolean, library: boolean) => {
     await waitFor(() => {
+      expect(
+        getByLabelText('Take Photos', { includeHiddenElements: true }),
+      ).toBeVisible()
+      expect(
+        getByLabelText('Upload Photos', { includeHiddenElements: true }),
+      ).toBeVisible()
       expect(
         getByLabelText('Take Photos').props.accessibilityState.disabled,
       ).toBe(camera)
