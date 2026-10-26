@@ -63,6 +63,14 @@ export const FIREBASE_EMULATOR_HOST: string =
 export const AUTH_EMULATOR_PORT = 9099
 export const STORAGE_EMULATOR_PORT = 9199
 
+/**
+ * URL of the `syncEmailSubscription` Cloud Function. Unset means email sync is
+ * off and the opt-in stays a local flag. Kept in env, not source: it embeds the
+ * Firebase project id (see docs/agents/secrets.md).
+ */
+export const EMAIL_SYNC_URL: string | undefined =
+  process.env.EXPO_PUBLIC_EMAIL_SYNC_URL || undefined
+
 /** Autosave debounce for text inputs (ms). */
 export const AUTOSAVE_TEXT_MS = 800
 

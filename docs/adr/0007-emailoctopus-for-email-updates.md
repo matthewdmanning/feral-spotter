@@ -30,3 +30,20 @@ Decided 2026-10-24 by the project owner.
 
 Until these are decided, `emailOptIn` is a local flag only. See
 `docs/implementations/2026-10-24-feat-email-opt-in.md`.
+
+## Sync path (2026-10-26)
+
+- The app sends the choice to the `syncEmailSubscription` Cloud Function. It
+  sends its Firebase ID token and `{ subscribed }`. It never sends an address.
+- The function reads the address from the verified token. A caller cannot
+  subscribe another person.
+- The function talks to the mailing-list service through the
+  `EmailListProvider` interface (`functions/src/email/`). EmailOctopus is the
+  only implementation. To change service, add an implementation and set the
+  `EMAIL_PROVIDER` parameter.
+- The API key is the Firebase secret `EMAIL_API_KEY`. The list id is the
+  parameter `EMAIL_LIST_ID`. The app reads the function URL from
+  `EXPO_PUBLIC_EMAIL_SYNC_URL`. When it is unset, sync is off.
+- An unverified address is sent as `pending`. EmailOctopus then asks the owner
+  to confirm.
+- Not decided: what the app records about the choice (time, copy version).

@@ -12,6 +12,10 @@ import { getAuth } from 'firebase-admin/auth'
 import { initializeApp } from 'firebase-admin/app'
 import { FieldValue, getFirestore } from 'firebase-admin/firestore'
 import { getStorage } from 'firebase-admin/storage'
+import { createEmailListProvider, DEFAULT_EMAIL_PROVIDER } from './email'
+import { setEmailSubscription } from './email/setEmailSubscription'
+import { defineSecret, defineString } from 'firebase-functions/params'
+import { onRequest } from 'firebase-functions/v2/https'
 import { onSchedule } from 'firebase-functions/v2/scheduler'
 import type { AuthBlockingEvent } from 'firebase-functions/v2/identity'
 import { beforeUserSignedIn } from 'firebase-functions/v2/identity'
@@ -249,6 +253,39 @@ export const sweepPhotosWithoutMetadata = onSchedule(
       console.log(
         `[sweep] deleted ${entry.names.length} object(s) under ${prefix} (no metadata.json, older than ${SWEEP_RETENTION_DAYS}d)`,
       )
+    }
+  },
+)
+
+const EMAIL_PROVIDER = defineString('EMAIL_PROVIDER', {
+  default: DEFAULT_EMAIL_PROVIDER,
+})
+const EMAIL_LIST_ID = defineString('EMAIL_LIST_ID')
+const EMAIL_API_KEY = defineSecret('EMAIL_API_KEY')
+
+// Opt-in/out for email updates. The mailing-list service's API key stays
+// here; the app only sends its own Firebase ID token. See ADR-0007.
+export const syncEmailSubscription = onRequest(
+  { secrets: [EMAIL_API_KEY] },
+  async (req, res) => {
+    if (req.method !== 'POST') {
+      res.status(405).end()
+      return
+    }
+    try {
+      const provider = createEmailListProvider(EMAIL_PROVIDER.value(), {
+        apiKey: EMAIL_API_KEY.value(),
+        listId: EMAIL_LIST_ID.value(),
+      })
+      const { status } = await setEmailSubscription(
+        { authorization: req.header('authorization'), body: req.body },
+        provider,
+        (token) => getAuth().verifyIdToken(token),
+      )
+      res.status(status).end()
+    } catch (error) {
+      console.error('[email] subscription sync failed', error)
+      res.status(502).end()
     }
   },
 )

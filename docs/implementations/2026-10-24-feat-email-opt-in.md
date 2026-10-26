@@ -99,8 +99,10 @@ tags:
 ## Follow-ups and known limitations
 
 - [x] Tool chosen: EmailOctopus. See [ADR-0007](../adr/0007-emailoctopus-for-email-updates.md).
-- [ ] Decide how an opted-in address reaches EmailOctopus, and how an opt-out removes it.
-- [ ] Sync the choice to that store. Record when and which copy version the user saw.
+- [x] Sync path decided and built. See the 2026-10-26 section of ADR-0007.
+- [ ] Deploy `syncEmailSubscription`. Set `EMAIL_API_KEY`, `EMAIL_LIST_ID` and `EXPO_PUBLIC_EMAIL_SYNC_URL`.
+- [ ] Record when and which copy version the user saw.
+- [ ] Revise the opt-in copy. See issue #417.
 - [ ] Update the Play Data Safety and Apple privacy labels when email is actually sent. See `docs/references/privacy-nutrition-labels.md`.
 - [ ] Add a link to the unsubscribe and the privacy policy in each email.
 - Users with a hidden or missing account email (`AuthUser.email` can be `null`) can opt in, but no address exists to send to.
