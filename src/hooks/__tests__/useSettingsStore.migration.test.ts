@@ -3,15 +3,7 @@
  * settings. Without the migration an existing install keeps zoom off for good.
  */
 
-const mockGetItem = jest.fn()
-
-jest.mock('@/src/lib/cache/storage', () => ({
-  asyncStorage: {
-    getItem: (...args: unknown[]) => mockGetItem(...args),
-    setItem: jest.fn(async () => null),
-    removeItem: jest.fn(async () => null),
-  },
-}))
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const persisted = (version: number, pinch: boolean) =>
   JSON.stringify({
@@ -22,7 +14,7 @@ const persisted = (version: number, pinch: boolean) =>
   })
 
 const loadRehydrated = async (stored: string | null) => {
-  mockGetItem.mockResolvedValue(stored)
+  if (stored !== null) await AsyncStorage.setItem('settings-store', stored)
   let store: typeof import('../useSettingsStore').useSettingsStore | undefined
   jest.isolateModules(() => {
     store = require('../useSettingsStore').useSettingsStore
@@ -32,8 +24,6 @@ const loadRehydrated = async (stored: string | null) => {
 }
 
 describe('useSettingsStore pinch zoom migration', () => {
-  beforeEach(() => jest.clearAllMocks())
-
   it('turns zoom on for an install saved before it shipped on', async () => {
     const settings = await loadRehydrated(persisted(0, false))
     expect(settings.camera_pinch_zoom).toBe(true)

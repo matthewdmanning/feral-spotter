@@ -226,6 +226,11 @@ class NativeIdentificationCameraView(
     updateZoomMap()
   }
 
+  // Where a point on screen falls in the preview, both as fractions of the
+  // view size. The inverse of the scale and pan in applyViewTransform.
+  private fun previewFraction(screenFraction: Float, translation: Float, size: Int): Float =
+    0.5f + (screenFraction - 0.5f - translation / size.toFloat().coerceAtLeast(1f)) / viewZoom
+
   private fun resetViewZoom() = applyViewTransform(1f, 0f, 0f)
 
   private fun updateZoomMap() {
@@ -237,13 +242,11 @@ class NativeIdentificationCameraView(
       return
     }
     // The part of the preview now on screen, as fractions of the whole.
-    val width = previewView.width.toFloat().coerceAtLeast(1f)
-    val height = previewView.height.toFloat().coerceAtLeast(1f)
     zoomMap.showViewport(
-      0.5f + (-0.5f - previewView.translationX / width) / viewZoom,
-      0.5f + (-0.5f - previewView.translationY / height) / viewZoom,
-      0.5f + (0.5f - previewView.translationX / width) / viewZoom,
-      0.5f + (0.5f - previewView.translationY / height) / viewZoom
+      previewFraction(0f, previewView.translationX, previewView.width),
+      previewFraction(0f, previewView.translationY, previewView.height),
+      previewFraction(1f, previewView.translationX, previewView.width),
+      previewFraction(1f, previewView.translationY, previewView.height)
     )
     if (!zoomMapRefreshing) {
       zoomMapRefreshing = true
@@ -314,13 +317,6 @@ class NativeIdentificationCameraView(
 
   var subjectMetering: Boolean = false
 
-  /**
-   * Pinch to zoom the preview. Off by default, so the view claims no touch of
-   * its own and the whole gesture stays with the JavaScript tap-to-focus
-   * recognizer. It zooms the view only; the photo stays full field. On needs a
-   * TextureView, which PreviewView calls COMPATIBLE mode, because only that
-   * mode allows scaling the preview freely.
-   */
   var pinchZoom: Boolean = false
     set(value) {
       if (field == value) return
@@ -878,18 +874,21 @@ class NativeIdentificationCameraView(
 
     val width = previewView.width.toFloat()
     val height = previewView.height.toFloat()
-    var pointX = (normalizedX * width).toFloat()
-    var pointY = (normalizedY * height).toFloat()
-    if (viewSpace) {
-      // Undo the view zoom, so a tap on a zoomed preview focuses what is under
-      // the finger and not the point that was there at 1x.
-      val zoom = viewZoom
-      pointX = width / 2f + (pointX - width / 2f - previewView.translationX) / zoom
-      pointY = height / 2f + (pointY - height / 2f - previewView.translationY) / zoom
+    // Undo the view zoom for a tap, so a zoomed preview focuses what is under
+    // the finger and not the point that was there at 1x.
+    val fractionX = if (viewSpace) {
+      previewFraction(normalizedX.toFloat(), previewView.translationX, previewView.width)
+    } else {
+      normalizedX.toFloat()
+    }
+    val fractionY = if (viewSpace) {
+      previewFraction(normalizedY.toFloat(), previewView.translationY, previewView.height)
+    } else {
+      normalizedY.toFloat()
     }
     val point = previewView.meteringPointFactory.createPoint(
-      pointX.coerceIn(0f, width),
-      pointY.coerceIn(0f, height)
+      (fractionX * width).coerceIn(0f, width),
+      (fractionY * height).coerceIn(0f, height)
     )
     val action = FocusMeteringAction.Builder(
       point,
