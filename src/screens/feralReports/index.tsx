@@ -1,9 +1,11 @@
 import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { STATUS_COLOR_KEY } from '@/src/components/atoms/StatusIcon'
 import { ReportCard } from '@/src/components/molecules/ReportCard'
+import { ReportsMap } from '@/src/components/organisms/ReportsMap'
 import { useFeralReports } from '@/src/hooks/useFeralReports'
 import type { CacheStatus } from '@/src/lib/cache/submissionCache'
-import { Stack } from 'expo-router'
+import type { ReportSpot } from '@/src/lib/reports/history'
+import { router, Stack } from 'expo-router'
 import { ClockIcon } from 'phosphor-react-native/src/icons/Clock'
 import { RefreshControl, ScrollView, Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
@@ -18,7 +20,14 @@ const STATUSES: CacheStatus[] = [
 
 export default function FeralReportsScreen() {
   const { theme } = useUnistyles()
-  const { caches, refreshing, onRefresh } = useFeralReports()
+  const { caches, spots, refreshing, onRefresh } = useFeralReports()
+  // A pin can hold several Sightings; it opens the newest. The rest are in
+  // the list below.
+  const handleSpotPress = (spot: ReportSpot) =>
+    router.push({
+      pathname: '/report/[id]',
+      params: { id: spot.reportIds[0] },
+    })
 
   return (
     <>
@@ -66,6 +75,9 @@ export default function FeralReportsScreen() {
               </View>
             ) : (
               <>
+                {spots.length > 0 && (
+                  <ReportsMap spots={spots} onSpotPress={handleSpotPress} />
+                )}
                 <View style={styles.legend}>
                   {STATUSES.map((s) => (
                     <View key={s} style={styles.legendItem}>
