@@ -25,4 +25,6 @@ dependencies {
   // Already on the classpath through camera-core; declared because the view
   // calls it directly for Perfetto sections and counters.
   implementation 'androidx.tracing:tracing:1.3.0'
+
+  testImplementation 'junit:junit:4.13.2'
 }

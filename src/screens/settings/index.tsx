@@ -20,7 +20,7 @@ import { useChangeEmail } from '@/src/hooks/useChangeEmail'
 import { useConsentStore } from '@/src/hooks/useConsentStore'
 import { useAuthStore } from '@/src/lib/auth/authStore'
 import { useSettingsDraft } from '@/src/hooks/useSettingsDraft'
-import { APP_VERSION } from '@/src/config/constants'
+import { APP_VERSION, FEATURE_FLAGS } from '@/src/config/constants'
 import { router } from 'expo-router'
 import { CheckIcon } from 'phosphor-react-native/src/icons/Check'
 import { FileTextIcon } from 'phosphor-react-native/src/icons/FileText'
@@ -36,7 +36,9 @@ const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
   { value: 'dark', label: 'Dark' },
 ]
 
-const PHOTO_TOGGLES = visiblePhotoToggles(__DEV__, Platform.OS)
+const VISIBLE_TOGGLES = visiblePhotoToggles(FEATURE_FLAGS, Platform.OS)
+const PHOTO_TOGGLES = VISIBLE_TOGGLES.filter((toggle) => !toggle.flag)
+const DEVELOPER_TOGGLES = VISIBLE_TOGGLES.filter((toggle) => toggle.flag)
 
 export default function SettingsScreen() {
   const { theme } = useUnistyles()
@@ -181,20 +183,28 @@ export default function SettingsScreen() {
             )}
           </View>
 
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Photos</Text>
-            {PHOTO_TOGGLES.map(({ key, label, desc }, i) => (
-              <View key={key}>
-                {i > 0 && <View style={styles.divider} />}
-                <ToggleRow
-                  label={label}
-                  hint={desc}
-                  value={draft[key]}
-                  onValueChange={(value) => patch(key, value)}
-                />
-              </View>
-            ))}
-          </View>
+          {[
+            { title: 'Photos', toggles: PHOTO_TOGGLES },
+            { title: 'Developer Mode', toggles: DEVELOPER_TOGGLES },
+          ].map(
+            ({ title, toggles }) =>
+              toggles.length > 0 && (
+                <View key={title} style={styles.card}>
+                  <Text style={styles.cardTitle}>{title}</Text>
+                  {toggles.map(({ key, label, desc }, i) => (
+                    <View key={key}>
+                      {i > 0 && <View style={styles.divider} />}
+                      <ToggleRow
+                        label={label}
+                        hint={desc}
+                        value={draft[key]}
+                        onValueChange={(value) => patch(key, value)}
+                      />
+                    </View>
+                  ))}
+                </View>
+              ),
+          )}
 
           <View style={styles.card}>
             <Text style={styles.cardTitle}>FeralSpotter</Text>

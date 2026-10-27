@@ -2,27 +2,23 @@ package expo.modules.nativeidentificationcamera
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.TotalCaptureResult
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.Rect
-import android.graphics.RectF
 import android.media.ExifInterface
 import android.os.Build
 import android.os.Process
 import android.os.SystemClock
 import android.util.Log
 import android.util.Range
-import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import androidx.annotation.OptIn
 import androidx.camera.camera2.interop.Camera2Interop
 import androidx.camera.camera2.interop.ExperimentalCamera2Interop
@@ -46,6 +42,7 @@ import expo.modules.kotlin.Promise
 import expo.modules.kotlin.viewevent.EventDispatcher
 import expo.modules.kotlin.views.ExpoView
 import java.io.File
+import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
@@ -117,36 +114,18 @@ class NativeIdentificationCameraView(
   // sensor stays at 1x. CameraX zoom crops every bound use case, so a sensor
   // zoom would crop the saved photo too. The photo must stay full field and
   // full resolution, so the zoom here only magnifies what the user looks at.
-  // The scale is kept in `viewZoom` and the pan in previewView.translationX/Y;
-  // both are about the view's centre.
+  // The zoom always centres on the preview. The scale is kept in `viewZoom`, an
+  // immutable value read by focus on a caller's thread, and copied onto
+  // previewView by applyViewZoom. Its limits are the one place the zoom range
+  // is set.
   @Volatile
-  private var viewZoom = 1f
-  private var lastFocusX = 0f
-  private var lastFocusY = 0f
+  private var viewZoom = ViewZoom.initial()
 
   private val scaleGestureDetector = ScaleGestureDetector(
     context,
     object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
-      override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
-        lastFocusX = detector.focusX
-        lastFocusY = detector.focusY
-        return true
-      }
-
-      // Keeps the point of the preview under the fingers under the fingers, so
-      // a two-finger move pans while it scales.
       override fun onScale(detector: ScaleGestureDetector): Boolean {
-        val oldZoom = viewZoom
-        val newZoom = (oldZoom * detector.scaleFactor).coerceIn(1f, MAX_VIEW_ZOOM)
-        val centreX = previewView.width / 2f
-        val centreY = previewView.height / 2f
-        val translateX = detector.focusX - centreX -
-          (lastFocusX - centreX - previewView.translationX) * newZoom / oldZoom
-        val translateY = detector.focusY - centreY -
-          (lastFocusY - centreY - previewView.translationY) * newZoom / oldZoom
-        lastFocusX = detector.focusX
-        lastFocusY = detector.focusY
-        applyViewTransform(newZoom, translateX, translateY)
+        applyViewZoom(viewZoom.scaledBy(detector.scaleFactor))
         return true
       }
 
@@ -157,7 +136,7 @@ class NativeIdentificationCameraView(
         diagnostic(
           "pinch_ended",
           mapOf(
-            "view_zoom" to viewZoom.toDouble(),
+            "view_zoom" to viewZoom.scale.toDouble(),
             // Stays 1.0 if the photo is still full field. -1 means the session
             // went away before the pinch ended.
             "sensor_zoom_ratio" to
@@ -169,90 +148,31 @@ class NativeIdentificationCameraView(
     }
   )
 
-  // One finger drags the zoomed preview. Two fingers are the scale detector's.
-  private val panGestureDetector = GestureDetector(
-    context,
-    object : GestureDetector.SimpleOnGestureListener() {
-      override fun onScroll(
-        e1: MotionEvent?,
-        e2: MotionEvent,
-        distanceX: Float,
-        distanceY: Float
-      ): Boolean {
-        if (viewZoom <= 1f || scaleGestureDetector.isInProgress) return false
-        applyViewTransform(
-          viewZoom,
-          previewView.translationX - distanceX,
-          previewView.translationY - distanceY
-        )
-        return true
-      }
-    }
-  )
-
-  // Small copy of the whole preview with a box for the part on screen, so a
-  // zoomed-in user can still see where they are in the field.
-  private val zoomMap = ZoomMapView(context).apply {
+  // The current multiplier, such as "2.3x", shown only while zoomed in.
+  private val zoomLabel = TextView(context).apply {
     visibility = View.GONE
-  }
-  private var zoomMapRefreshing = false
-  private val refreshZoomMap = object : Runnable {
-    override fun run() {
-      if (!zoomMapRefreshing) return
-      val width = zoomMap.width
-      val height = zoomMap.height
-      // PreviewView.getBitmap is the displayed frame, already turned upright.
-      // It is full view size, so the refresh is slow and stops at 1x.
-      val frame = if (width > 0 && height > 0) previewView.bitmap else null
-      if (frame != null) {
-        val small = Bitmap.createScaledBitmap(frame, width, height, true)
-        if (small !== frame) frame.recycle()
-        zoomMap.showFrame(small)
-      }
-      postDelayed(this, ZOOM_MAP_REFRESH_MS)
+    setTextColor(Color.WHITE)
+    textSize = ZOOM_LABEL_TEXT_SP
+    val density = context.resources.displayMetrics.density
+    val padding = (ZOOM_LABEL_PADDING_DP * density).toInt()
+    setPadding(padding * 2, padding, padding * 2, padding)
+    background = GradientDrawable().apply {
+      setColor(ZOOM_LABEL_BACKGROUND)
+      cornerRadius = ZOOM_LABEL_RADIUS_DP * density
     }
+    importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
   }
 
-  private fun applyViewTransform(zoom: Float, translateX: Float, translateY: Float) {
-    val clamped = zoom.coerceIn(1f, MAX_VIEW_ZOOM)
-    // Edges are kept on screen: no black border beside a zoomed preview.
-    val maxX = (clamped - 1f) * previewView.width / 2f
-    val maxY = (clamped - 1f) * previewView.height / 2f
-    viewZoom = clamped
-    previewView.scaleX = clamped
-    previewView.scaleY = clamped
-    previewView.translationX = translateX.coerceIn(-maxX, maxX)
-    previewView.translationY = translateY.coerceIn(-maxY, maxY)
-    updateZoomMap()
+  private fun applyViewZoom(zoom: ViewZoom) {
+    viewZoom = zoom
+    previewView.scaleX = zoom.scale
+    previewView.scaleY = zoom.scale
+    val zoomed = pinchZoom && zoom.isZoomed
+    zoomLabel.visibility = if (zoomed) View.VISIBLE else View.GONE
+    if (zoomed) zoomLabel.text = String.format(Locale.US, "%.1f×", zoom.scale)
   }
 
-  // Where a point on screen falls in the preview, both as fractions of the
-  // view size. The inverse of the scale and pan in applyViewTransform.
-  private fun previewFraction(screenFraction: Float, translation: Float, size: Int): Float =
-    0.5f + (screenFraction - 0.5f - translation / size.toFloat().coerceAtLeast(1f)) / viewZoom
-
-  private fun resetViewZoom() = applyViewTransform(1f, 0f, 0f)
-
-  private fun updateZoomMap() {
-    val zoomed = pinchZoom && viewZoom > 1f
-    zoomMap.visibility = if (zoomed) View.VISIBLE else View.GONE
-    if (!zoomed) {
-      zoomMapRefreshing = false
-      removeCallbacks(refreshZoomMap)
-      return
-    }
-    // The part of the preview now on screen, as fractions of the whole.
-    zoomMap.showViewport(
-      previewFraction(0f, previewView.translationX, previewView.width),
-      previewFraction(0f, previewView.translationY, previewView.height),
-      previewFraction(1f, previewView.translationX, previewView.width),
-      previewFraction(1f, previewView.translationY, previewView.height)
-    )
-    if (!zoomMapRefreshing) {
-      zoomMapRefreshing = true
-      post(refreshZoomMap)
-    }
-  }
+  private fun resetViewZoom() = applyViewZoom(viewZoom.reset())
 
   private var cameraProvider: ProcessCameraProvider? = null
 
@@ -418,7 +338,7 @@ class NativeIdentificationCameraView(
 
   init {
     addView(previewView)
-    addView(zoomMap)
+    addView(zoomLabel)
 
     beginSection(SECTION_PROVIDER, traceCookie)
     val future = ProcessCameraProvider.getInstance(context)
@@ -481,7 +401,6 @@ class NativeIdentificationCameraView(
   override fun onTouchEvent(event: MotionEvent): Boolean {
     if (!pinchZoom) return false
     scaleGestureDetector.onTouchEvent(event)
-    panGestureDetector.onTouchEvent(event)
     return true
   }
 
@@ -500,23 +419,20 @@ class NativeIdentificationCameraView(
     )
     previewView.layout(0, 0, width, height)
 
-    // The map keeps the preview's shape, at the left edge and mid-height, clear
-    // of the top bar and the shutter row that React Native draws above this view.
-    val density = resources.displayMetrics.density
-    val mapWidth = (ZOOM_MAP_WIDTH_DP * density).toInt()
-    val mapHeight = if (width > 0) mapWidth * height / width else mapWidth
-    val mapLeft = (ZOOM_MAP_MARGIN_DP * density).toInt()
-    val mapTop = (height - mapHeight) / 2
-    zoomMap.measure(
-      MeasureSpec.makeMeasureSpec(mapWidth, MeasureSpec.EXACTLY),
-      MeasureSpec.makeMeasureSpec(mapHeight, MeasureSpec.EXACTLY)
+    // The label sits at the left edge and mid-height, clear of the top bar and
+    // the shutter row that React Native draws above this view.
+    zoomLabel.measure(
+      MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST),
+      MeasureSpec.makeMeasureSpec(height, MeasureSpec.AT_MOST)
     )
-    zoomMap.layout(mapLeft, mapTop, mapLeft + mapWidth, mapTop + mapHeight)
-
-    // A new size changes how far the preview may pan.
-    if (viewZoom > 1f) {
-      applyViewTransform(viewZoom, previewView.translationX, previewView.translationY)
-    }
+    val labelLeft = (ZOOM_LABEL_MARGIN_DP * resources.displayMetrics.density).toInt()
+    val labelTop = (height - zoomLabel.measuredHeight) / 2
+    zoomLabel.layout(
+      labelLeft,
+      labelTop,
+      labelLeft + zoomLabel.measuredWidth,
+      labelTop + zoomLabel.measuredHeight
+    )
   }
 
   /**
@@ -838,11 +754,30 @@ class NativeIdentificationCameraView(
   }
 
   /**
-   * @param viewSpace true for a tap, which is where the user touched the zoomed
-   * view. false for a point already in the preview itself, such as a subject
-   * region, which a view zoom does not move.
+   * A tap, in fractions of the view. Undoes the view zoom, so a zoomed preview
+   * focuses what is under the finger and not the point that was there at 1x.
    */
-  fun focus(normalizedX: Double, normalizedY: Double, viewSpace: Boolean = true): Boolean {
+  fun focus(normalizedX: Double, normalizedY: Double): Boolean {
+    val zoom = viewZoom
+    return focusPreviewPoint(
+      zoom.previewFraction(normalizedX.toFloat()).toDouble(),
+      zoom.previewFraction(normalizedY.toFloat()).toDouble(),
+      normalizedX,
+      normalizedY
+    )
+  }
+
+  /**
+   * A point already in the preview, which a view zoom does not move. The
+   * requested point is what the caller asked for, and is what is checked and
+   * reported; for a tap it differs from the preview point while zoomed.
+   */
+  private fun focusPreviewPoint(
+    previewX: Double,
+    previewY: Double,
+    requestedX: Double = previewX,
+    requestedY: Double = previewY
+  ): Boolean {
     // Reported whether or not it is applied: a tap that arrives but is refused
     // looks identical on screen to a tap that never arrived.
     fun report(accepted: Boolean, reason: String) {
@@ -851,15 +786,15 @@ class NativeIdentificationCameraView(
         mapOf(
           "accepted" to accepted,
           "reason" to reason,
-          "normalized_x" to normalizedX,
-          "normalized_y" to normalizedY,
+          "normalized_x" to requestedX,
+          "normalized_y" to requestedY,
           "subject_metering" to subjectMetering,
           "camera_position" to position
         )
       )
     }
 
-    if (normalizedX !in 0.0..1.0 || normalizedY !in 0.0..1.0) {
+    if (requestedX !in 0.0..1.0 || requestedY !in 0.0..1.0) {
       report(false, "out_of_bounds")
       return false
     }
@@ -872,23 +807,9 @@ class NativeIdentificationCameraView(
       return false
     }
 
-    val width = previewView.width.toFloat()
-    val height = previewView.height.toFloat()
-    // Undo the view zoom for a tap, so a zoomed preview focuses what is under
-    // the finger and not the point that was there at 1x.
-    val fractionX = if (viewSpace) {
-      previewFraction(normalizedX.toFloat(), previewView.translationX, previewView.width)
-    } else {
-      normalizedX.toFloat()
-    }
-    val fractionY = if (viewSpace) {
-      previewFraction(normalizedY.toFloat(), previewView.translationY, previewView.height)
-    } else {
-      normalizedY.toFloat()
-    }
     val point = previewView.meteringPointFactory.createPoint(
-      (fractionX * width).coerceIn(0f, width),
-      (fractionY * height).coerceIn(0f, height)
+      (previewX.coerceIn(0.0, 1.0) * previewView.width).toFloat(),
+      (previewY.coerceIn(0.0, 1.0) * previewView.height).toFloat()
     )
     val action = FocusMeteringAction.Builder(
       point,
@@ -912,66 +833,20 @@ class NativeIdentificationCameraView(
       )
       return false
     }
-    return focus(
+    return focusPreviewPoint(
       region.x + region.width / 2.0,
-      region.y + region.height / 2.0,
-      viewSpace = false
+      region.y + region.height / 2.0
     )
   }
 
   override fun onDetachedFromWindow() {
-    zoomMapRefreshing = false
-    removeCallbacks(refreshZoomMap)
     unbindCamera()
     super.onDetachedFromWindow()
   }
 }
 
-// The most the preview can be magnified. Past this the preview stream is too
-// coarse to show more.
-private const val MAX_VIEW_ZOOM = 5f
-private const val ZOOM_MAP_REFRESH_MS = 250L
-private const val ZOOM_MAP_WIDTH_DP = 96
-private const val ZOOM_MAP_MARGIN_DP = 16
-
-/** The small whole-field picture with a box around the part on screen. */
-private class ZoomMapView(context: Context) : View(context) {
-  private var frame: Bitmap? = null
-  private val viewport = RectF(0f, 0f, 1f, 1f)
-  private val destination = Rect()
-  private val box = RectF()
-  private val outline = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-    style = Paint.Style.STROKE
-    strokeWidth = 2f * context.resources.displayMetrics.density
-    color = Color.WHITE
-  }
-
-  init {
-    importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
-  }
-
-  fun showFrame(bitmap: Bitmap) {
-    val previous = frame
-    frame = bitmap
-    if (previous !== bitmap) previous?.recycle()
-    invalidate()
-  }
-
-  fun showViewport(left: Float, top: Float, right: Float, bottom: Float) {
-    viewport.set(left, top, right, bottom)
-    invalidate()
-  }
-
-  override fun onDraw(canvas: Canvas) {
-    destination.set(0, 0, width, height)
-    frame?.let { canvas.drawBitmap(it, null, destination, null) }
-    canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), outline)
-    box.set(
-      viewport.left * width,
-      viewport.top * height,
-      viewport.right * width,
-      viewport.bottom * height
-    )
-    canvas.drawRect(box, outline)
-  }
-}
+private const val ZOOM_LABEL_MARGIN_DP = 16
+private const val ZOOM_LABEL_PADDING_DP = 6
+private const val ZOOM_LABEL_RADIUS_DP = 16
+private const val ZOOM_LABEL_TEXT_SP = 14f
+private const val ZOOM_LABEL_BACKGROUND = 0x99000000.toInt()

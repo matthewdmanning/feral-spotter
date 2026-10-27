@@ -42,8 +42,10 @@ export function useNativeCameraCapture(
   const subjectMetering = useSettingsStore(
     (s) => s.settings.camera_subject_metering === true,
   )
+  // Android only: it zooms the preview there. iOS zooms the camera itself, so
+  // a zoomed iOS capture is a cropped capture.
   const pinchZoom = useSettingsStore(
-    (s) => s.settings.camera_pinch_zoom === true,
+    (s) => Platform.OS === 'android' && s.settings.camera_pinch_zoom === true,
   )
   const performanceChecks = useSettingsStore(
     (s) => s.settings.camera_performance_checks === true,
