@@ -16,12 +16,9 @@ import { useSubmissionStore } from '@/src/hooks'
 import { useActiveCatFlow } from '@/src/hooks/useActiveCatFlow'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { EVENTS, captureEvent } from '@/src/lib/analytics/analytics'
-import type { CatFormValues, CatProfilePic } from '@/src/hooks/useCatForm'
+import type { CatFormValues } from '@/src/hooks/useCatForm'
 import type { ObservedCat } from '@/src/hooks/useSubmissionStore'
-import {
-  CAT_ATTRIBUTES,
-  FIELD_LABELS,
-} from '@/src/screens/submission/cats/attributes'
+import { CAT_ATTRIBUTES, FIELD_LABELS } from '@/src/lib/cats/attributes'
 import { CAT_DEFAULTS } from '@/src/screens/submission/cats/constants'
 import { router } from 'expo-router'
 import { randomUUID } from 'expo-crypto'
@@ -37,7 +34,8 @@ import { useCallback } from 'react'
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface UseCatSubmitParams {
-  form: CatFormValues & Partial<Pick<CatProfilePic, 'profilePhotoId'>>
+  /** profilePhotoId: the Profile Pic choice, when the caller offers one. */
+  form: CatFormValues & { profilePhotoId?: string }
   existingCat?: ObservedCat
 }
 

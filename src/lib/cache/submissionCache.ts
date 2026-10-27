@@ -83,8 +83,11 @@ export interface SubmissionCacheFile {
   status: CacheStatus
   metadata: CacheMetadata
   cats: CachedCat[]
-  photo_links?: string[] // file:// URIs (if keepPhotosOnDevice) or cloud URLs,
-  // populated on Submit press only
+  /**
+   * @deprecated Rows sent before `photos` existed. No longer written; read
+   * counts through `sightingPhotoCount` (lib/sightings/history.ts).
+   */
+  photo_links?: string[]
   /** Per-photo read paths, keyed by local_id — Profile Pics resolve here. Set on Submit. */
   photos?: CachedPhoto[]
   /** Firebase uid of the submitter — scopes the personal history. Set on Submit. */

@@ -9,10 +9,16 @@ export const styles = StyleSheet.create((theme) => ({
   },
   label: { ...theme.textVariants.label, color: theme.colors.text },
   hint: { ...theme.textVariants.bodySmall, color: theme.colors.muted },
-  row: { gap: theme.spacing.md, paddingTop: theme.spacing.xs },
+  // The star badge hangs past each crop's bottom-right corner by `xs`; the
+  // horizontal ScrollView clips its content, so the row pads to keep it in.
+  row: {
+    gap: theme.spacing.md,
+    paddingTop: theme.spacing.xs,
+    paddingBottom: theme.spacing.xs,
+    paddingRight: theme.spacing.xs,
+  },
   option: { position: 'relative' },
-  selected: { borderWidth: 3 },
-  unselected: { opacity: 0.7 },
+  selected: { borderWidth: theme.borderWidth.selected },
   badge: {
     position: 'absolute',
     right: -theme.spacing.xs,

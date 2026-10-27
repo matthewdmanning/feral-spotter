@@ -1,12 +1,13 @@
 import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { STATUS_COLOR_KEY } from '@/src/components/atoms/StatusIcon'
 import { ReportCard } from '@/src/components/molecules/ReportCard'
-import { ReportsMap } from '@/src/components/organisms/ReportsMap'
+import { SightingsMap } from '@/src/components/organisms/SightingsMap'
 import { useFeralReports } from '@/src/hooks/useFeralReports'
 import type { CacheStatus } from '@/src/lib/cache/submissionCache'
-import type { ReportSpot } from '@/src/lib/reports/history'
+import type { SightingSpot } from '@/src/lib/sightings/history'
 import { router, Stack } from 'expo-router'
 import { ClockIcon } from 'phosphor-react-native/src/icons/Clock'
+import { useState } from 'react'
 import { RefreshControl, ScrollView, Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
@@ -20,13 +21,16 @@ const STATUSES: CacheStatus[] = [
 
 export default function FeralReportsScreen() {
   const { theme } = useUnistyles()
-  const { caches, spots, refreshing, onRefresh } = useFeralReports()
+  const { caches, spots, resumableId, refreshing, onRefresh } =
+    useFeralReports()
+  // Off while a finger is on the map, so a pan moves the map, not the page.
+  const [scrollEnabled, setScrollEnabled] = useState(true)
   // A pin can hold several Sightings; it opens the newest. The rest are in
   // the list below.
-  const handleSpotPress = (spot: ReportSpot) =>
+  const handleSpotPress = (spot: SightingSpot) =>
     router.push({
-      pathname: '/report/[id]',
-      params: { id: spot.reportIds[0] },
+      pathname: '/sighting/[id]',
+      params: { id: spot.sightingIds[0] },
     })
 
   return (
@@ -46,6 +50,7 @@ export default function FeralReportsScreen() {
         <ScrollView
           style={styles.root}
           showsVerticalScrollIndicator={false}
+          scrollEnabled={scrollEnabled}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -75,9 +80,11 @@ export default function FeralReportsScreen() {
               </View>
             ) : (
               <>
-                {spots.length > 0 && (
-                  <ReportsMap spots={spots} onSpotPress={handleSpotPress} />
-                )}
+                <SightingsMap
+                  spots={spots}
+                  onSpotPress={handleSpotPress}
+                  onTouchActiveChange={(active) => setScrollEnabled(!active)}
+                />
                 <View style={styles.legend}>
                   {STATUSES.map((s) => (
                     <View key={s} style={styles.legendItem}>
@@ -94,7 +101,11 @@ export default function FeralReportsScreen() {
                   ))}
                 </View>
                 {caches.map((cache) => (
-                  <ReportCard key={cache.id} cache={cache} />
+                  <ReportCard
+                    key={cache.id}
+                    cache={cache}
+                    resumableId={resumableId}
+                  />
                 ))}
               </>
             )}

@@ -17,6 +17,9 @@ import { View, type StyleProp, type ViewStyle } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './CatCrop.styles'
 
+/** The fallback cat glyph fills half the frame, leaving a calm margin. */
+const GLYPH_SCALE = 0.5
+
 interface CatCropProps {
   uri: string | undefined
   box: NormalisedBox | undefined
@@ -66,7 +69,7 @@ export function CatCrop({
         />
       ) : (
         <CatIcon
-          size={size * 0.5}
+          size={size * GLYPH_SCALE}
           color={theme.colors.accentSoftText}
           weight="duotone"
         />

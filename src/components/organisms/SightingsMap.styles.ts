@@ -1,6 +1,9 @@
 import { StyleSheet } from 'react-native-unistyles'
 
-/** About half as tall as wide — lib/reports/history.ts's zoom fit assumes it. */
+/**
+ * Shows a neighbourhood of pins while leaving the first cards in view. The
+ * zoom fit measures the frame, so changing this needs no other edit.
+ */
 const MAP_HEIGHT = 220
 
 export const styles = StyleSheet.create((theme) => ({

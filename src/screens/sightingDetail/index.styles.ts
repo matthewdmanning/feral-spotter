@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native-unistyles'
 
-// Mirrors Submission Details' cards and field rows, so a past Sighting reads
-// as the same record the user built — minus every control.
+// Mirrors Submission Details' cards, so a past Sighting reads as the same
+// record the user built — minus every control.
 export const styles = StyleSheet.create((theme, rt) => ({
   screen: { flex: 1, backgroundColor: theme.colors.background },
   centred: {
@@ -21,24 +21,14 @@ export const styles = StyleSheet.create((theme, rt) => ({
     alignItems: 'center',
     gap: theme.spacing.sm,
   },
+  headerText: { flex: 1 },
   datetime: { ...theme.textVariants.heading, color: theme.colors.text },
+  status: { ...theme.textVariants.caption, fontFamily: theme.fonts.bold },
   card: {
     borderRadius: theme.radius.xl,
     ...theme.glass.card,
     padding: theme.layout.cardPadding,
     gap: theme.spacing.sm,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: theme.spacing.md,
-  },
-  rowLabel: { ...theme.textVariants.bodySmall, color: theme.colors.muted },
-  rowValue: {
-    ...theme.textVariants.bodySmall,
-    color: theme.colors.text,
-    flexShrink: 1,
-    textAlign: 'right',
   },
   sectionTitle: {
     ...theme.textVariants.heading,

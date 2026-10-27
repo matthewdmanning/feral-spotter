@@ -1,5 +1,6 @@
 import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { AppButton } from '@/src/components/atoms/AppButton'
+import { FieldRow } from '@/src/components/molecules/FieldRow'
 import { DateTimePickerButton } from '@/src/components/organisms/DateTimePicker'
 import { showAlert, useSubmissionStore } from '@/src/hooks'
 import { startFreshPass } from '@/src/hooks/useActiveCatFlow'
@@ -23,10 +24,7 @@ import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle
 import { useCallback, useEffect, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
-import {
-  describeCat,
-  summarizeCat,
-} from '@/src/screens/submission/cats/attributes'
+import { describeCat, summarizeCat } from '@/src/lib/cats/attributes'
 import { styles } from './index.styles'
 
 // #97's split: this screen is now the Cats List + Submission Details landing
@@ -249,11 +247,8 @@ export default function CreateSubmissionScreen() {
                 </Pressable>
                 {isExpanded && (
                   <View style={styles.catDetails}>
-                    {describeCat(cat).map(({ label: field, value }) => (
-                      <View key={field} style={styles.catDetailRow}>
-                        <Text style={styles.catDetailLabel}>{field}</Text>
-                        <Text style={styles.catDetailValue}>{value}</Text>
-                      </View>
+                    {describeCat(cat).map(({ label, value }) => (
+                      <FieldRow key={label} label={label} value={value} />
                     ))}
                     <View style={styles.catActions}>
                       <AppButton

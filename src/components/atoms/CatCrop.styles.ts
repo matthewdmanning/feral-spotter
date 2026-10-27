@@ -4,7 +4,7 @@ export const styles = StyleSheet.create((theme) => ({
   frame: {
     overflow: 'hidden',
     borderRadius: theme.radius.lg,
-    borderWidth: 1.5,
+    borderWidth: theme.borderWidth.frame,
     borderColor: theme.colors.border,
     backgroundColor: theme.colors.accentSoft,
     alignItems: 'center',

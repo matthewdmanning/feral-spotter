@@ -5,13 +5,17 @@ Writes assets/images/catPins/cat-pin[-N|-many][@2x|@3x].png: a plain pin and
 one per badge value (2..9 and "9+"), at 1x/2x/3x. Map markers take a bitmap,
 not a React view, so the count badge is baked into the image.
 
-Colors are the light theme's tokens (src/config/themes.ts): the map tiles are
-light in both app themes, so one set of pins serves both.
+Map tiles are light in both app themes, so one set of pins serves both. Colors
+are read from src/config/themes.ts, never hardcoded: the head and face use
+lightTheme's accent pair; the ears, badge, and badge text use darkTheme's
+pastel selection, highlight, and background, which stand out on light tiles.
+The badge cap is MAX_BADGE_COUNT, read from src/lib/sightings/history.ts.
 
 Run from the repo root:  python3 scripts/generate-cat-pins.py
 Needs Pillow and an installed node_modules (for the Nunito font).
 """
 
+import re
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
@@ -22,19 +26,30 @@ FONT = (
     ROOT
     / "node_modules/@expo-google-fonts/nunito/800ExtraBold/Nunito_800ExtraBold.ttf"
 )
+THEMES = (ROOT / "src/config/themes.ts").read_text(encoding="utf-8")
+HISTORY = (ROOT / "src/lib/sightings/history.ts").read_text(encoding="utf-8")
 
-# Light-theme tokens.
-HEAD = "#5C6300"  # accent
-FACE = "#FFFFFF"  # accentText on accent
-RIM = "#FFFFFF"
-NOSE = "#FFB692"  # selection
-BADGE = "#EEC148"  # highlight
-BADGE_TEXT = "#18120C"  # dark background tone
+
+def token(theme: str, name: str) -> str:
+    """The first `name: '#RRGGBB'` after `export const <theme> = {`."""
+    start = THEMES.index(f"export const {theme} = {{")
+    match = re.compile(rf"\b{name}: '(#[0-9A-Fa-f]{{6}})'").search(THEMES, start)
+    if not match:
+        raise SystemExit(f"{theme}.colors.{name} not found in themes.ts")
+    return match.group(1)
+
+
+HEAD = token("lightTheme", "accent")
+FACE = token("lightTheme", "accentText")
+RIM = FACE
+NOSE = token("darkTheme", "selection")
+BADGE = token("darkTheme", "highlight")
+BADGE_TEXT = token("darkTheme", "background")
+MAX_BADGE = int(re.search(r"MAX_BADGE_COUNT = (\d+)", HISTORY).group(1))
 
 # Design units (dp at 1x). The pin tip sits at bottom-center: the marker anchor.
 W, H = 40, 46
 SUPERSAMPLE = 8
-MAX_BADGE = 9
 
 
 def draw_pin(scale: int, badge: str | None) -> Image.Image:

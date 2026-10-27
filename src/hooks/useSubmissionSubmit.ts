@@ -175,7 +175,6 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
                 cats: cats.map((cat) =>
                   toCachedCat(cat, boxesByCat.get(cat.local_id) ?? []),
                 ),
-                photo_links: freshPhotos.map((p) => p.uri),
                 photos: freshPhotos.map((p) => ({
                   local_id: p.local_id,
                   uri: p.uri,

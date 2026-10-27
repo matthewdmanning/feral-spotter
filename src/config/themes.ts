@@ -209,9 +209,25 @@ const reticle = {
   opacity: 0.5,
 } as const
 
+/**
+ * Strokes beyond the glass hairline: `frame` edges a photo thumbnail,
+ * `selected` marks the chosen one of a set of thumbnails.
+ */
+const borderWidth = {
+  frame: 1.5,
+  selected: 3,
+} as const
+
+/** Feedback on a touched card or other surface that is not a button. */
+const opacity = {
+  pressed: 0.7,
+} as const
+
 const sharedTokens = {
   catPalette,
   reticle,
+  borderWidth,
+  opacity,
   spacing,
   radius,
   fonts,

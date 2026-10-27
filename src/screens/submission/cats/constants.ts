@@ -15,9 +15,9 @@ import type {
   HealthLabel,
   Owned,
 } from '@/src/types'
-import { CAT_ATTRIBUTES, type AttributeOption } from './attributes'
+import { CAT_ATTRIBUTES, type AttributeOption } from '@/src/lib/cats/attributes'
 
-export { CAT_DEFAULTS } from './attributes'
+export { CAT_DEFAULTS } from '@/src/lib/cats/attributes'
 
 // ─── Options ──────────────────────────────────────────────────────────────────
 
@@ -38,4 +38,4 @@ export const COLOR_OPTIONS = optionsFor<CatColor>('color')
 export const SEX_OPTIONS = optionsFor<CatSex>('sex')
 export const HEALTH_OPTIONS = optionsFor<HealthLabel>('healthLabel')
 
-export { COAT_GROUPS } from './attributes'
+export { COAT_GROUPS } from '@/src/lib/cats/attributes'

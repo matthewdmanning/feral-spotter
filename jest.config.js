@@ -38,6 +38,7 @@ module.exports = {
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
     '!src/**/__tests__/**',
+    '!src/test-utils/**',
     '!src/**/*.styles.{ts,tsx}',
   ],
 }

@@ -5,7 +5,7 @@ export const styles = StyleSheet.create((theme) => ({
     borderRadius: theme.radius.xl,
     ...theme.glass.card,
   },
-  pressed: { opacity: 0.7 },
+  pressed: { opacity: theme.opacity.pressed },
   row: {
     padding: theme.layout.cardPadding,
     flexDirection: 'row',

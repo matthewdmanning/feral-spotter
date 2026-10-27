@@ -46,16 +46,6 @@ export const styles = StyleSheet.create((theme, rt) => ({
   },
   catRow: { flexDirection: 'row', alignItems: 'center' },
   catDetails: { gap: theme.spacing.sm },
-  catDetailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: theme.spacing.md,
-  },
-  catDetailLabel: {
-    ...theme.textVariants.bodySmall,
-    color: theme.colors.muted,
-  },
-  catDetailValue: { ...theme.textVariants.bodySmall, color: theme.colors.text },
   catRowText: { ...theme.textVariants.body, flex: 1, color: theme.colors.text },
   catActions: { flexDirection: 'row', gap: theme.spacing.md },
   // #299: the zero-cats state. Both routes back in are offered here — the

@@ -1,5 +1,5 @@
 /**
- * components/organisms/ReportsMap.tsx
+ * components/organisms/SightingsMap.tsx
  * Map overview at the top of the Reports tab: one cat-head pin per spot the
  * user has reported from. A spot with more than one cat carries the count in
  * a badge at the icon's bottom right (9+ past nine). Pressing a pin opens
@@ -25,17 +25,19 @@ import {
   MAX_BADGE_COUNT,
   mapViewForSpots,
   pinBadge,
+  type MapSize,
   type PinBadge,
-  type ReportSpot,
-} from '@/src/lib/reports/history'
+  type SightingSpot,
+} from '@/src/lib/sightings/history'
 import { Image, type ImageRef } from 'expo-image'
 import { AppleMaps, GoogleMaps } from 'expo-maps'
 import { useEffect, useMemo, useState } from 'react'
-import { Platform, View } from 'react-native'
+import { Platform, View, type LayoutChangeEvent } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
-import { styles } from './ReportsMap.styles'
+import { styles } from './SightingsMap.styles'
 
-type PinKey = 'none' | `${number}` | 'many'
+/** One key per baked bitmap: 2…MAX_BADGE_COUNT, plus no badge and "9+". */
+type PinKey = 'none' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | 'many'
 
 const PIN_ASSETS: Record<PinKey, number> = {
   none: catPin,
@@ -51,10 +53,12 @@ const PIN_ASSETS: Record<PinKey, number> = {
 }
 
 const pinKey = (badge: PinBadge): PinKey =>
-  badge === 'none' || badge === 'many' ? badge : `${badge}`
+  badge === 'none' || badge === 'many' ? badge : (`${badge}` as PinKey)
+
+type PinIcons = Partial<Record<PinKey, ImageRef>>
 
 // Loaded once per process; every map mount reuses the native images.
-let pinIconsPromise: Promise<Partial<Record<PinKey, ImageRef>>> | null = null
+let pinIconsPromise: Promise<PinIcons> | null = null
 function loadPinIcons() {
   pinIconsPromise ??= Promise.all(
     (Object.entries(PIN_ASSETS) as [PinKey, number][]).map(
@@ -64,7 +68,7 @@ function loadPinIcons() {
     .then((entries) => Object.fromEntries(entries))
     .catch((error) => {
       // Default markers still work; retry on the next mount.
-      console.error('[ReportsMap] loadPinIcons', error)
+      console.error('[SightingsMap] loadPinIcons', error)
       pinIconsPromise = null
       return {}
     })
@@ -74,14 +78,28 @@ function loadPinIcons() {
 // The pin tip, not the icon's centre, marks the spot.
 const PIN_ANCHOR = { x: 0.5, y: 1 }
 
-interface ReportsMapProps {
-  spots: ReportSpot[]
-  onSpotPress: (spot: ReportSpot) => void
+const catsLabel = (spot: SightingSpot) =>
+  `${spot.catCount} cat${spot.catCount === 1 ? '' : 's'}`
+
+interface SightingsMapProps {
+  spots: SightingSpot[]
+  onSpotPress: (spot: SightingSpot) => void
+  /** True while a finger is on the map — lets a parent pause its scroll. */
+  onTouchActiveChange?: (active: boolean) => void
 }
 
-export function ReportsMap({ spots, onSpotPress }: ReportsMapProps) {
+export function SightingsMap({
+  spots,
+  onSpotPress,
+  onTouchActiveChange,
+}: SightingsMapProps) {
   const { theme } = useUnistyles()
-  const [icons, setIcons] = useState<Partial<Record<PinKey, ImageRef>>>({})
+  // Android: null until the bitmaps resolve, so default markers never flash
+  // in first. A failed load resolves to {} and falls back to defaults.
+  const [icons, setIcons] = useState<PinIcons | null>(
+    Platform.OS === 'android' ? null : {},
+  )
+  const [size, setSize] = useState<MapSize | null>(null)
 
   useEffect(() => {
     if (Platform.OS !== 'android') return
@@ -94,25 +112,42 @@ export function ReportsMap({ spots, onSpotPress }: ReportsMapProps) {
     }
   }, [])
 
-  // Frame every pin once per set of spots — not on every render, which
-  // would snap the camera back while the user pans.
-  const view = useMemo(() => mapViewForSpots(spots), [spots])
-  if (!view) return null
+  const view = size ? mapViewForSpots(spots, size) : null
+  // Keyed on values, not identity: a tab-focus re-read builds equal spots
+  // as new objects, and a new camera object would snap back a user's pan.
+  const latitude = view?.coordinates.latitude
+  const longitude = view?.coordinates.longitude
+  const zoom = view?.zoom
+  const cameraPosition = useMemo(
+    () =>
+      latitude == null || longitude == null
+        ? undefined
+        : { coordinates: { latitude, longitude }, zoom },
+    [latitude, longitude, zoom],
+  )
 
-  const cameraPosition = { coordinates: view.coordinates, zoom: view.zoom }
+  if (spots.length === 0) return null
+
+  const handleLayout = ({ nativeEvent }: LayoutChangeEvent) => {
+    const { width, height } = nativeEvent.layout
+    if (width !== size?.width || height !== size?.height) {
+      setSize({ width, height })
+    }
+  }
   const handleMarkerClick = ({ id }: { id?: string }) => {
     const spot = spots.find((s) => s.id === id)
     if (spot) onSpotPress(spot)
   }
-  const catsLabel = (spot: ReportSpot) =>
-    `${spot.catCount} cat${spot.catCount === 1 ? '' : 's'}`
 
   return (
     <View
       style={styles.frame}
-      accessibilityLabel={`Map of ${spots.length} reported spot${spots.length === 1 ? '' : 's'}`}
+      onLayout={handleLayout}
+      onTouchStart={() => onTouchActiveChange?.(true)}
+      onTouchEnd={() => onTouchActiveChange?.(false)}
+      onTouchCancel={() => onTouchActiveChange?.(false)}
     >
-      {Platform.OS === 'ios' ? (
+      {!cameraPosition || !icons ? null : Platform.OS === 'ios' ? (
         <AppleMaps.View
           style={styles.map}
           cameraPosition={cameraPosition}

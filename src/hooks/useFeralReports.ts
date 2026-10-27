@@ -1,7 +1,7 @@
 /**
  * hooks/useFeralReports.ts
- * Loads the signed-in user's Sighting history, groups it into map spots,
- * and handles refresh.
+ * Loads the signed-in user's Sighting history, orders it, groups it into map
+ * spots, and handles refresh.
  */
 
 import {
@@ -12,24 +12,42 @@ import {
 import { useAuth } from '@/src/lib/auth/useAuth'
 import {
   getAllSubmissionCaches,
-  getSubmissionCache,
   type SubmissionCacheFile,
 } from '@/src/lib/cache/submissionCache'
 import {
-  groupReportsBySpot,
-  ownReports,
-  type ReportSpot,
-} from '@/src/lib/reports/history'
+  groupSightingsBySpot,
+  ownSightings,
+  sortBySightingTime,
+  type SightingSpot,
+} from '@/src/lib/sightings/history'
+import { isResumableDraft } from '@/src/lib/submission/resumable'
 import { useFocusEffect } from 'expo-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 export interface FeralReportsResult {
+  /** Newest first by Sighting time — the time each card shows. */
   caches: SubmissionCacheFile[]
   /** Map pins, newest spot first. Sightings with no location are left out. */
-  spots: ReportSpot[]
+  spots: SightingSpot[]
+  /** The draft Home's Continue Observation would resume, if any. */
+  resumableId: string | undefined
   refreshing: boolean
   load: () => void
   onRefresh: () => void
+}
+
+interface History {
+  all: SubmissionCacheFile[]
+  resumableId: string | undefined
+}
+
+/** `all` arrives newest-created first, the order Home's resume check reads. */
+function toHistory(all: SubmissionCacheFile[]): History {
+  const latest = all[0]
+  return {
+    all,
+    resumableId: isResumableDraft(latest, Date.now()) ? latest?.id : undefined,
+  }
 }
 
 function fireViewed(all: SubmissionCacheFile[]) {
@@ -41,18 +59,21 @@ function fireViewed(all: SubmissionCacheFile[]) {
 export function useFeralReports(): FeralReportsResult {
   const { user } = useAuth()
   const uid = user?.uid
-  const [allCaches, setAllCaches] = useState<SubmissionCacheFile[]>([])
+  const [history, setHistory] = useState<History>({
+    all: [],
+    resumableId: undefined,
+  })
   const [refreshing, setRefreshing] = useState(false)
 
   const load = useCallback(async () => {
     const all = await getAllSubmissionCaches()
-    setAllCaches(all)
+    setHistory(toHistory(all))
     fireViewed(all)
   }, [])
 
   useEffect(() => {
     getAllSubmissionCaches().then((all) => {
-      setAllCaches(all)
+      setHistory(toHistory(all))
       fireViewed(all)
     })
   }, [])
@@ -67,12 +88,15 @@ export function useFeralReports(): FeralReportsResult {
         focusedOnce.current = true
         return
       }
-      getAllSubmissionCaches().then(setAllCaches)
+      getAllSubmissionCaches().then((all) => setHistory(toHistory(all)))
     }, []),
   )
 
-  const caches = useMemo(() => ownReports(allCaches, uid), [allCaches, uid])
-  const spots = useMemo(() => groupReportsBySpot(caches), [caches])
+  const caches = useMemo(
+    () => sortBySightingTime(ownSightings(history.all, uid)),
+    [history.all, uid],
+  )
+  const spots = useMemo(() => groupSightingsBySpot(caches), [caches])
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
@@ -80,28 +104,12 @@ export function useFeralReports(): FeralReportsResult {
     setRefreshing(false)
   }, [load])
 
-  return { caches, spots, refreshing, load, onRefresh }
-}
-
-export interface ReportResult {
-  /** undefined while loading; null when no such Sighting is on this device. */
-  report: SubmissionCacheFile | null | undefined
-}
-
-/** One Sighting from history, for the read-only detail view. */
-export function useReport(id: string | undefined): ReportResult {
-  const [loaded, setLoaded] = useState<{
-    id: string | undefined
-    report: SubmissionCacheFile | null
-  }>()
-  useEffect(() => {
-    let active = true
-    ;(id ? getSubmissionCache(id) : Promise.resolve(null)).then((report) => {
-      if (active) setLoaded({ id, report })
-    })
-    return () => {
-      active = false
-    }
-  }, [id])
-  return { report: loaded?.id === id ? loaded?.report : undefined }
+  return {
+    caches,
+    spots,
+    resumableId: history.resumableId,
+    refreshing,
+    load,
+    onRefresh,
+  }
 }
