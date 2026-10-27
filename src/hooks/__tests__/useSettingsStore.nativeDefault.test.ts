@@ -1,11 +1,3 @@
-jest.mock('@/src/lib/cache/storage', () => ({
-  asyncStorage: {
-    getItem: jest.fn(async () => null),
-    setItem: jest.fn(async () => null),
-    removeItem: jest.fn(async () => null),
-  },
-}))
-
 describe('useSettingsStore native camera default', () => {
   const originalValue = process.env.EXPO_PUBLIC_NATIVE_CAMERA_CAPTURE
 

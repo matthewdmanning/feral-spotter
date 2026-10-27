@@ -26,6 +26,10 @@
 - [ ] C3. Capture photo(s); cycle flash (auto/on/off); flip front/back camera
 - [ ] C4. Cancel/close camera without capturing -> no photo added
 - [ ] C5. Repeated shutter presses don't re-trigger the gallery-save permission prompt
+- [ ] C6. Pinch the preview -> it magnifies up to 5x and a small map shows the part on screen. Drag with one finger -> it pans and stops at the edges
+- [ ] C7. Zoomed in, tap a point -> focus lands on what is under the finger, and the tap does not fire the shutter
+- [ ] C8. Take a photo while zoomed -> the saved photo is the full field, not the zoomed part (compare with the same scene at 1x)
+- [ ] C9. Close and reopen the camera, or flip front/back -> the preview starts at 1x
 
 ## Library picker (D)
 

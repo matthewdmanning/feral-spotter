@@ -10,6 +10,18 @@ import Constants from 'expo-constants'
 export const IS_PRERELEASE: boolean =
   Boolean(Constants.expoConfig?.extra?.isPrerelease) || __DEV__
 
+/**
+ * Feature flags. Each is off in a release build unless its EXPO_PUBLIC_*
+ * variable is "true" at bundle time. `experimentalCamera` is also on in
+ * development.
+ */
+export const FEATURE_FLAGS = {
+  experimentalCamera:
+    __DEV__ || process.env.EXPO_PUBLIC_EXPERIMENTAL_CAMERA === 'true',
+} as const
+
+export type FeatureFlag = keyof typeof FEATURE_FLAGS
+
 /** App version from Expo config. */
 export const APP_VERSION: string = Constants.expoConfig?.version ?? '1.0.0'
 
