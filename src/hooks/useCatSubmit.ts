@@ -16,7 +16,7 @@ import { useSubmissionStore } from '@/src/hooks'
 import { useActiveCatFlow } from '@/src/hooks/useActiveCatFlow'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { EVENTS, captureEvent } from '@/src/lib/analytics/analytics'
-import type { CatFormValues } from '@/src/hooks/useCatForm'
+import type { CatFormValues, CatProfilePic } from '@/src/hooks/useCatForm'
 import type { ObservedCat } from '@/src/hooks/useSubmissionStore'
 import {
   CAT_ATTRIBUTES,
@@ -37,7 +37,7 @@ import { useCallback } from 'react'
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface UseCatSubmitParams {
-  form: CatFormValues
+  form: CatFormValues & Partial<Pick<CatProfilePic, 'profilePhotoId'>>
   existingCat?: ObservedCat
 }
 
@@ -77,6 +77,9 @@ export function useCatSubmit({
             ? boxedPhotoIds
             : (existingCat?.photo_local_ids ?? []),
         photos_reviewed: existingCat?.photos_reviewed ?? false,
+        ...(form.profilePhotoId && {
+          profile_photo_local_id: form.profilePhotoId,
+        }),
       }
     },
     [form, existingCat, getBoxedPhotoIds],

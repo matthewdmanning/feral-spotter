@@ -43,7 +43,14 @@ export interface CatFormActions {
   handleClear: () => void // shows confirmation Alert, then resets
 }
 
-export type CatForm = CatFormValues & CatFormActions
+/** Not one of the 8 attributes: which boxed photo is the Profile Pic. */
+export interface CatProfilePic {
+  /** Undefined: the first box stands in (lib/submission/profilePhoto.ts). */
+  profilePhotoId: string | undefined
+  setProfilePhotoId: (photoLocalId: string) => void
+}
+
+export type CatForm = CatFormValues & CatFormActions & CatProfilePic
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
@@ -75,6 +82,11 @@ export function useCatForm(existingCat?: ObservedCat): CatForm {
   const [healthLabel, setHealthLabel] = useState<HealthLabel | undefined>(
     existingCat?.health_label as HealthLabel | undefined,
   )
+  const [profilePhotoId, setProfilePhotoId] = useState<string | undefined>(
+    existingCat?.profile_photo_local_id,
+  )
+  // Clear resets the 8 attributes only — the Profile Pic is a photo
+  // choice, not an answer about the cat.
   const handleClear = useCallback(() => {
     showAlert(
       'Clear form?',
@@ -117,5 +129,7 @@ export function useCatForm(existingCat?: ObservedCat): CatForm {
     setSex,
     setHealthLabel,
     handleClear,
+    profilePhotoId,
+    setProfilePhotoId,
   }
 }
