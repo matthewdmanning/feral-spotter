@@ -28,6 +28,9 @@ export function buildCacheMetadata(submission: SubmissionDraft): CacheMetadata {
     address: submission.address,
     manual_time: submission.manual_time,
     captured_at: submission.captured_at,
+    latitude: submission.latitude,
+    longitude: submission.longitude,
+    accuracy: submission.accuracy,
   }
 }
 

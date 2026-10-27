@@ -37,6 +37,10 @@ import {
   resolvePhotoTime,
 } from '@/src/lib/submission/payload'
 import {
+  resolveProfileBox,
+  toCachedCat,
+} from '@/src/lib/submission/profilePhoto'
+import {
   finalizeSubmissionPhotoMetadata,
   uploadSubmissionMetadata,
 } from '@/src/lib/upload/firebaseUpload'
@@ -148,6 +152,13 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
             // above: waitForUploads can resolve with fresher `uploaded`
             // flags than what was captured when this Alert was built.
             const freshPhotos = usePhotoStore.getState().photos
+            // Confirmation order — the Profile Pic fallback is the first box.
+            const boxesByCat = new Map(
+              cats.map((cat) => [
+                cat.local_id,
+                useBoundingBoxStore.getState().getBoxesForCat(cat.local_id),
+              ]),
+            )
 
             const cId = await getCurrentCacheId()
             if (cId) {
@@ -156,10 +167,21 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
               // this submit touches — or fields set after cache creation
               // (e.g. manual_time, filled in after the initial snapshot on
               // an EXIF-less Library pick) get silently dropped.
+              // The history row must outlive the draft: camera files are
+              // deleted at teardown, so it keeps each photo's cloud URL and
+              // each cat's resolved Profile Pic crop.
               await updateSubmissionCache(cId, {
                 status: 'Sending',
-                cats,
+                cats: cats.map((cat) =>
+                  toCachedCat(cat, boxesByCat.get(cat.local_id) ?? []),
+                ),
                 photo_links: freshPhotos.map((p) => p.uri),
+                photos: freshPhotos.map((p) => ({
+                  local_id: p.local_id,
+                  uri: p.uri,
+                  cloud_storage_url: p.cloud_storage_url,
+                })),
+                user_id: user?.uid,
                 metadata: buildCacheMetadata(submission),
               })
               const snap = await getSubmissionCache(cId)
@@ -184,13 +206,20 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
               const cloudPathByLocalId = new Map(
                 uploadedPhotos.map((p) => [p.local_id, p.cloud_storage_path]),
               )
-              const catsWithBoxes = cats.map((cat) =>
-                foldBoxesIntoCat(
-                  cat,
-                  useBoundingBoxStore.getState().getBoxesForCat(cat.local_id),
+              const catsWithBoxes = cats.map((cat) => {
+                const boxes = boxesByCat.get(cat.local_id) ?? []
+                return foldBoxesIntoCat(
+                  {
+                    ...cat,
+                    profile_photo_local_id: resolveProfileBox(
+                      boxes,
+                      cat.profile_photo_local_id,
+                    )?.photo_local_id,
+                  },
+                  boxes,
                   cloudPathByLocalId,
-                ),
-              )
+                )
+              })
 
               const payload = buildSubmissionPayload({
                 submission,

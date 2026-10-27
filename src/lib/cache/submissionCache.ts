@@ -37,6 +37,28 @@ export interface CachedCat {
   sex: string
   photo_local_ids: string[]
   photos_reviewed: boolean
+  /** The photo the user chose for the cat's Profile Pic, if any. */
+  profile_photo_local_id?: string
+  /** The resolved Profile Pic crop — chosen box, else first box. Set on Submit. */
+  profile_box?: CachedProfileBox
+}
+
+/** One normalised box (src/types/BoundingBox.ts) — the crop a Profile Pic shows. */
+export interface CachedProfileBox {
+  photo_local_id: string
+  lowerLeftX: number
+  lowerLeftY: number
+  upperRightX: number
+  upperRightY: number
+}
+
+/** Where a submitted photo can still be read from after draft teardown. */
+export interface CachedPhoto {
+  local_id: string
+  /** file:// — deleted with the draft for camera captures; library picks keep it. */
+  uri: string
+  /** Firebase download URL — outlives the draft. */
+  cloud_storage_url?: string
 }
 
 export interface CacheMetadata {
@@ -47,6 +69,11 @@ export interface CacheMetadata {
   address?: string
   manual_time?: string // ISO string, set when time_method === 'manual'
   captured_at?: string // ISO string, set for a Library pick with trusted EXIF DateTime
+  // The one Submission location (ADR 0002) — plots the Sighting on the
+  // Reports map. Absent until a fix or pin exists.
+  latitude?: number
+  longitude?: number
+  accuracy?: number | null
 }
 
 export interface SubmissionCacheFile {
@@ -58,6 +85,10 @@ export interface SubmissionCacheFile {
   cats: CachedCat[]
   photo_links?: string[] // file:// URIs (if keepPhotosOnDevice) or cloud URLs,
   // populated on Submit press only
+  /** Per-photo read paths, keyed by local_id — Profile Pics resolve here. Set on Submit. */
+  photos?: CachedPhoto[]
+  /** Firebase uid of the submitter — scopes the personal history. Set on Submit. */
+  user_id?: string
 }
 
 // ─── Storage keys ─────────────────────────────────────────────────────────────
