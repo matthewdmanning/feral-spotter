@@ -1,7 +1,10 @@
 import { STATUS_COLOR_KEY, StatusIcon } from '@/src/components/atoms/StatusIcon'
 import type { SubmissionCacheFile } from '@/src/lib/cache/submissionCache'
+import { selectionHaptic } from '@/src/lib/haptics'
+import { sightingTime } from '@/src/lib/reports/history'
 import { formatDateTime } from '@/src/utils/formatDateTime'
-import { Text, View } from 'react-native'
+import { router } from 'expo-router'
+import { Pressable, Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './ReportCard.styles'
 
@@ -12,7 +15,16 @@ export function ReportCard({ cache }: { cache: SubmissionCacheFile }) {
   const colorKey = STATUS_COLOR_KEY[cache.status]
 
   return (
-    <View style={styles.card}>
+    <Pressable
+      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      onPress={() => {
+        selectionHaptic()
+        router.push({ pathname: '/report/[id]', params: { id: cache.id } })
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={`Sighting, ${cache.status}, ${formatDateTime(sightingTime(cache))}`}
+      accessibilityHint="Opens the Sighting's details"
+    >
       <View style={styles.row}>
         <View style={styles.left}>
           <StatusIcon status={cache.status} />
@@ -22,7 +34,7 @@ export function ReportCard({ cache }: { cache: SubmissionCacheFile }) {
         </View>
         <View style={styles.centre}>
           <Text style={styles.datetime} numberOfLines={1}>
-            {formatDateTime(cache.created_at)}
+            {formatDateTime(sightingTime(cache))}
           </Text>
         </View>
         <View style={styles.right}>
@@ -36,6 +48,6 @@ export function ReportCard({ cache }: { cache: SubmissionCacheFile }) {
           </Text>
         </View>
       </View>
-    </View>
+    </Pressable>
   )
 }

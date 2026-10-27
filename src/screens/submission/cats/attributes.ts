@@ -196,8 +196,16 @@ type CatAttributesTuple = typeof CAT_ATTRIBUTES
  * matching option is shown by its own name, capitalized. A field the saved
  * cat lacks (a draft from before the field existed) reads as its default.
  */
+/**
+ * The 8 persisted attribute values, as any saved cat carries them — a draft
+ * ObservedCat or a history CachedCat (lib/cache/submissionCache.ts).
+ */
+export type CatAttributeValues = {
+  [A in (typeof CAT_ATTRIBUTES)[number] as A['backendKey']]?: string
+}
+
 export function describeCat(
-  cat: ObservedCat,
+  cat: CatAttributeValues,
 ): { label: string; value: string }[] {
   return CAT_ATTRIBUTES.map(({ label, backendKey, options, default: dflt }) => {
     const raw = (cat[backendKey] as string | undefined) ?? dflt
@@ -233,7 +241,7 @@ const labelOf = (key: keyof ObservedCat, value: string): string =>
  * both still has room for two more fields. A field that is Unknown or Unsure gives
  * no phrase and the next field takes its place.
  */
-const SUMMARY_PHRASES: ((cat: ObservedCat) => string | null)[] = [
+const SUMMARY_PHRASES: ((cat: CatAttributeValues) => string | null)[] = [
   ({ age }) => (isKnown(age) ? labelOf('age', age) : null),
   // The coat names its own group ("Striped Tabby"), so a known coat
   // stands alone and the group is the fallback.
@@ -263,7 +271,7 @@ const SUMMARY_PHRASES: ((cat: ObservedCat) => string | null)[] = [
 ]
 
 /** The cat's one-line title: its first three known fields, in preference order. */
-export function summarizeCat(cat: ObservedCat): string {
+export function summarizeCat(cat: CatAttributeValues): string {
   const phrases = SUMMARY_PHRASES.map((phrase) => phrase(cat))
     .filter((p): p is string => p !== null)
     .slice(0, SUMMARY_FIELD_COUNT)
