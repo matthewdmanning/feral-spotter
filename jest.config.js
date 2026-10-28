@@ -1,6 +1,8 @@
 module.exports = {
   preset: 'jest-expo',
-  resolver: 'react-native-worklets/jest/resolver',
+  // Reanimated's resolver forces the web build of Reanimated and Worklets in
+  // Jest (Reanimated 4.7 testing guide); it supersedes the Worklets-only one.
+  resolver: 'react-native-reanimated/jest/resolver',
   setupFilesAfterEnv: [
     '<rootDir>/node_modules/@react-native-google-signin/google-signin/jest/build/jest/setup.js',
     '<rootDir>/jest.setup.js',

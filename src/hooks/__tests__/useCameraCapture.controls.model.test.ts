@@ -45,10 +45,6 @@ jest.mock('react-native-vision-camera', () => ({
   Camera: 'Camera',
 }))
 
-jest.mock('react-native-reanimated', () =>
-  jest.requireActual('react-native-reanimated/mock'),
-)
-
 jest.mock('@/src/hooks', () => ({
   usePhotoStore: (sel: (s: object) => unknown) =>
     sel({ addPhoto: jest.fn(), photos: [] }),

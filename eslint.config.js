@@ -1,6 +1,7 @@
 // https://docs.expo.dev/guides/using-eslint/
 const { defineConfig } = require('eslint/config')
 const expoConfig = require('eslint-config-expo/flat')
+const globals = require('globals')
 
 module.exports = defineConfig([
   expoConfig,
@@ -13,6 +14,16 @@ module.exports = defineConfig([
   {
     files: ['babel.config.js'],
     ignores: ['dist/*'],
+  },
+  // eslint-config-expo 58 no longer declares these globals for plain JS:
+  // Node for config files and plugins, Jest for manual mocks and setup.
+  {
+    files: ['*.config.js', 'jest.setup.js', 'plugins/**/*.js'],
+    languageOptions: { globals: globals.node },
+  },
+  {
+    files: ['__mocks__/**/*.js', 'jest.setup.js'],
+    languageOptions: { globals: globals.jest },
   },
   // Google TypeScript Style Guide rules that ESLint can express without
   // type-aware linting. See docs/COMBINED_STYLE_GUIDE.md. Scoped to TS/TSX so
