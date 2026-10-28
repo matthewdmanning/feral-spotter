@@ -39,6 +39,7 @@
     "plugins": [
       "expo-router",
       "expo-image",
+      "react-native-liquid-glassmorphism",
       "./plugins/withProfileable",
       "./plugins/withHermesStartupProfiler",
       "@react-native-firebase/app",

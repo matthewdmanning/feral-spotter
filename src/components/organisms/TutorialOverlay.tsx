@@ -8,6 +8,7 @@
  * sandboxed sample photo) per docs/planning/2026-07-14-annotation-tutorial-spec.md.
  */
 
+import { GlassSurface } from '@/src/components/atoms/GlassSurface'
 import { AppButton } from '@/src/components/atoms/AppButton'
 import { TextButton } from '@/src/components/atoms/TextButton'
 import { Modal, Text, View } from 'react-native'
@@ -92,14 +93,14 @@ export function TutorialOverlay({
         >
           Skip
         </TextButton>
-        <View style={styles.card}>
+        <GlassSurface kind="raised" style={styles.card}>
           <Text style={styles.counter}>
             {index + 1} / {steps.length}
           </Text>
           <Text style={styles.title}>{step.title}</Text>
           <Text style={styles.body}>{step.body}</Text>
           <AppButton onPress={handlePrimary}>{step.primaryLabel}</AppButton>
-        </View>
+        </GlassSurface>
       </View>
     </Modal>
   )

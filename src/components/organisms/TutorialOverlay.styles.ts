@@ -20,7 +20,6 @@ export const styles = StyleSheet.create((theme, rt) => ({
   },
   card: {
     borderRadius: theme.radius.xxl,
-    ...theme.glass.raised,
     padding: theme.spacing.xxl,
     width: '100%',
     maxWidth: 360,

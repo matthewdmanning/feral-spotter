@@ -19,12 +19,14 @@
  * gradient stop. Regenerate from these inputs rather than hand-picking hex.
  *
  * Liquid glass: screens sit on `gradients.ambient` (soft pools of moss,
- * terracotta, and honey light, drawn by AmbientBackground). Cards, sheets,
- * and camera controls spread a `glass` surface: a translucent fill, a
- * hairline light edge, and a top-edge highlight. There is no backdrop blur
- * (that needs a native module); the ambient pools are smooth enough that a
- * translucent fill reads as glass without one. Secondary buttons are clear
- * sage glass with plain text; primary is tinted moss glass.
+ * terracotta, and honey light, drawn by AmbientBackground). Cards and
+ * sheets render through GlassSurface, which draws native glass (Expo's
+ * GlassView on iOS, react-native-liquid-glassmorphism on Android) tinted
+ * with `glass.<kind>`. When glass cannot draw, the surface is the solid
+ * `colors.surface`.
+ * There is no CSS glass. Camera controls are solid surface colour: glass
+ * cannot capture the live camera preview. Secondary buttons are clear sage
+ * glass with plain text; primary is tinted moss glass.
  *
  * `depth` is the button vocabulary: `raised` is a glass face (crisp top
  * rim, softer bottom rim, and a soft glow), `pressed` sinks the face with
@@ -299,36 +301,15 @@ export const darkTheme = {
       elevation: 8,
     },
   },
-  // Glass surfaces. Spread one in place of a solid surface and its elevation:
+  // Glass surfaces, drawn by GlassSurface:
   //   card    cards and rows on a screen
-  //   raised  dialogs and sheets over other content; near-opaque, so text
-  //           stays legible over an overlay or a map
-  //   chip    floating controls over the live camera feed
-  // A translucent fill over the ambient backdrop, a hairline light edge, a
-  // top-edge highlight, and a soft drop shadow. boxShadow, not Android
-  // `elevation`: elevation draws its shadow through a translucent fill.
+  //   raised  dialogs and sheets over other content; near-opaque tint, so
+  //           text stays legible over an overlay
+  // Tint colours for the native glass. When glass cannot draw, GlassSurface
+  // uses `colors.surface` instead.
   glass: {
-    card: {
-      backgroundColor: 'rgba(255,236,220,0.06)',
-      borderWidth: 1,
-      borderColor: 'rgba(255,240,228,0.12)',
-      boxShadow:
-        'inset 0 1px 0 rgba(255,255,255,0.10), 0 8px 24px rgba(11,7,3,0.35)',
-    },
-    raised: {
-      backgroundColor: 'rgba(48,41,33,0.94)',
-      borderWidth: 1,
-      borderColor: 'rgba(255,240,228,0.16)',
-      boxShadow:
-        'inset 0 1px 0 rgba(255,255,255,0.14), 0 16px 40px rgba(11,7,3,0.55)',
-    },
-    chip: {
-      backgroundColor: 'rgba(37,30,23,0.62)',
-      borderWidth: 1,
-      borderColor: 'rgba(255,240,228,0.18)',
-      boxShadow:
-        'inset 0 1px 0 rgba(255,255,255,0.12), 0 4px 12px rgba(0,0,0,0.35)',
-    },
+    card: 'rgba(255,236,220,0.06)',
+    raised: 'rgba(48,41,33,0.94)',
   },
   // Dark labels pass 5.4:1 or better on every primary stop.
   gradients: {
@@ -410,30 +391,10 @@ export const lightTheme = {
       elevation: 8,
     },
   },
-  // Frosted white glass on cream. The edge is a warm hairline, since a
-  // white edge vanishes on a light page; the white top highlight stays.
+  // Frosted white glass on cream.
   glass: {
-    card: {
-      backgroundColor: 'rgba(255,255,255,0.62)',
-      borderWidth: 1,
-      borderColor: 'rgba(132,116,100,0.18)',
-      boxShadow:
-        'inset 0 1px 0 rgba(255,255,255,0.95), 0 8px 24px rgba(92,64,40,0.10)',
-    },
-    raised: {
-      backgroundColor: 'rgba(255,255,255,0.95)',
-      borderWidth: 1,
-      borderColor: 'rgba(132,116,100,0.20)',
-      boxShadow:
-        'inset 0 1px 0 rgba(255,255,255,1), 0 16px 40px rgba(92,64,40,0.18)',
-    },
-    chip: {
-      backgroundColor: 'rgba(255,255,255,0.72)',
-      borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.9)',
-      boxShadow:
-        'inset 0 1px 0 rgba(255,255,255,1), 0 4px 12px rgba(0,0,0,0.25)',
-    },
+    card: 'rgba(255,255,255,0.62)',
+    raised: 'rgba(255,255,255,0.95)',
   },
   // White labels pass 5.9:1 or better on every primary stop.
   gradients: {

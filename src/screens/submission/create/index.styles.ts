@@ -23,7 +23,6 @@ export const styles = StyleSheet.create((theme, rt) => ({
     flexDirection: 'row',
     gap: theme.spacing.lg,
     borderRadius: theme.radius.xl,
-    ...theme.glass.card,
     padding: theme.layout.cardPadding,
   },
   statusItem: {
@@ -49,7 +48,6 @@ export const styles = StyleSheet.create((theme, rt) => ({
   // header strip — edge to edge — is the tap target, not only the label.
   catCard: {
     borderRadius: theme.radius.xl,
-    ...theme.glass.card,
   },
   catRow: {
     flexDirection: 'row',

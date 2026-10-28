@@ -23,7 +23,6 @@ export const styles = StyleSheet.create((theme, rt) => ({
   subtitle: { ...theme.textVariants.bodySmall, color: theme.colors.muted },
   card: {
     borderRadius: theme.radius.xl,
-    ...theme.glass.card,
     padding: theme.layout.cardPadding,
     gap: theme.spacing.md,
   },

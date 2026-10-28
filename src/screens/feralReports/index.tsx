@@ -1,3 +1,4 @@
+import { GlassSurface } from '@/src/components/atoms/GlassSurface'
 import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { STATUS_COLOR_KEY } from '@/src/components/atoms/StatusIcon'
 import { ReportCard } from '@/src/components/molecules/ReportCard'
@@ -89,7 +90,7 @@ export default function FeralReportsScreen() {
             </View>
           }
           ListEmptyComponent={
-            <View style={styles.empty}>
+            <GlassSurface kind="card" style={styles.empty}>
               <View style={styles.emptyIcon}>
                 <ClockIcon
                   size={theme.iconSize.xl}
@@ -100,7 +101,7 @@ export default function FeralReportsScreen() {
               <Text style={styles.emptyBody}>
                 Submissions appear here as you create them
               </Text>
-            </View>
+            </GlassSurface>
           }
         />
       </View>

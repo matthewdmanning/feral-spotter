@@ -9,6 +9,7 @@
  * that has to know how a dialog looks.
  */
 
+import { GlassSurface } from '@/src/components/atoms/GlassSurface'
 import { AppButton } from '@/src/components/atoms/AppButton'
 import { ButtonRow } from '@/src/components/molecules/ButtonRow'
 import { useUIStore, type AlertButton } from '@/src/hooks/useUIStore'
@@ -78,7 +79,7 @@ export function AlertHost() {
       onRequestClose={onRequestClose}
     >
       <View style={dialogShell.backdrop}>
-        <View style={dialogShell.sheet}>
+        <GlassSurface kind="raised" style={dialogShell.sheet}>
           <Text style={dialogShell.title}>{dialog.title}</Text>
           {dialog.message ? (
             <Text style={styles.message}>{dialog.message}</Text>
@@ -88,7 +89,7 @@ export function AlertHost() {
           ) : (
             <View style={styles.buttonColumn}>{buttons}</View>
           )}
-        </View>
+        </GlassSurface>
       </View>
     </Modal>
   )

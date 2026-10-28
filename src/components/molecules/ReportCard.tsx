@@ -1,3 +1,4 @@
+import { GlassSurface } from '@/src/components/atoms/GlassSurface'
 import { memo } from 'react'
 import { STATUS_COLOR_KEY, StatusIcon } from '@/src/components/atoms/StatusIcon'
 import type { SubmissionCacheFile } from '@/src/lib/cache/submissionCache'
@@ -18,7 +19,7 @@ export const ReportCard = memo(function ReportCard({
   const colorKey = STATUS_COLOR_KEY[cache.status]
 
   return (
-    <View style={styles.card}>
+    <GlassSurface kind="card" style={styles.card}>
       <View style={styles.row}>
         <View style={styles.left}>
           <StatusIcon status={cache.status} />
@@ -42,6 +43,6 @@ export const ReportCard = memo(function ReportCard({
           </Text>
         </View>
       </View>
-    </View>
+    </GlassSurface>
   )
 })
