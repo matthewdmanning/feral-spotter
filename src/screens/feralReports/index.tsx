@@ -35,7 +35,7 @@ export default function FeralReportsScreen() {
     <>
       {/*
         This screen is reachable both as a tab ((home-tabs)/feral-reports,
-        headerShown false at the Tabs level — see (home-tabs)/_layout.tsx)
+        where native tabs draw no header — see (home-tabs)/_layout.tsx)
         and, in principle, as a plain stack push (app/feral-reports.tsx),
         where the root Stack's default headerShown: true would otherwise
         apply. Forcing it off here keeps this screen's own in-body title

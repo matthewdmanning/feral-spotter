@@ -323,8 +323,6 @@ export const darkTheme = {
       'radial-gradient(circle at 8% 24%, rgba(180,189,88,0.20) 0%, rgba(180,189,88,0) 58%), radial-gradient(circle at 96% 70%, rgba(255,182,146,0.15) 0%, rgba(255,182,146,0) 52%), radial-gradient(circle at 40% 108%, rgba(238,193,72,0.10) 0%, rgba(238,193,72,0) 48%)',
     primary: 'linear-gradient(135deg, #C4CE66 0%, #B4BD58 50%, #A4AD4A 100%)',
     primaryPressed: 'linear-gradient(135deg, #A4AD4A 0%, #B4BD58 100%)',
-    tabBar:
-      'linear-gradient(180deg, rgba(255,240,228,0.06) 0%, rgba(255,240,228,0) 100%), linear-gradient(180deg, #251E17 0%, #18120C 100%)',
     secondary:
       'linear-gradient(135deg, rgba(220,224,176,0.26) 0%, rgba(199,202,153,0.10) 100%)',
     secondaryPressed:
@@ -404,8 +402,6 @@ export const lightTheme = {
       'radial-gradient(circle at 8% 24%, rgba(92,99,0,0.12) 0%, rgba(92,99,0,0) 58%), radial-gradient(circle at 96% 70%, rgba(143,77,41,0.10) 0%, rgba(143,77,41,0) 52%), radial-gradient(circle at 40% 108%, rgba(238,193,72,0.16) 0%, rgba(238,193,72,0) 48%)',
     primary: 'linear-gradient(135deg, #666D0D 0%, #5C6300 50%, #505700 100%)',
     primaryPressed: 'linear-gradient(135deg, #505700 0%, #5C6300 100%)',
-    tabBar:
-      'linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(255,241,230,0.9) 100%)',
     secondary:
       'linear-gradient(135deg, rgba(255,255,255,0.70) 0%, rgba(94,97,57,0.08) 100%)',
     secondaryPressed:
