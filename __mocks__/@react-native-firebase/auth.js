@@ -1,5 +1,3 @@
-/* global jest */
-
 // Manual Jest mock — @react-native-firebase/auth's native module isn't
 // available under Jest. Keep the application provider real while replacing
 // the SDK operations that require the native platform.

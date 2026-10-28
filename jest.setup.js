@@ -1,4 +1,15 @@
-/* global jest, beforeEach */
+// Reanimated 4.7's own test environment (its Jest guide), instead of the
+// per-file 'react-native-reanimated/mock' it replaced.
+require('react-native-reanimated').setUpTests()
+
+// Gesture Handler 3's own Jest mocks. Its UI-runtime bindings ask Worklets
+// for the UI runtime, which the web build Worklets runs under Jest does not
+// have (getUIRuntimeHolder throws), so answer "no runtime" instead.
+require('react-native-gesture-handler/jestSetup')
+jest.mock('react-native-worklets', () => ({
+  ...jest.requireActual('react-native-worklets'),
+  getUIRuntimeHolder: () => undefined,
+}))
 
 // Use the library's mock so real styles resolve against real app tokens.
 require('react-native-unistyles/mocks')

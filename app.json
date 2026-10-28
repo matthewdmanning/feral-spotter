@@ -38,6 +38,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-image",
       "./plugins/withProfileable",
       "./plugins/withHermesStartupProfiler",
       "@react-native-firebase/app",

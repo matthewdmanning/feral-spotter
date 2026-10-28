@@ -15,9 +15,10 @@
  * every box unconditionally, so nothing survives Reset into a new draft).
  * This is the in-draft half ADR-0004's amendment left in scope.
  *
- * Uses one `beforeRemove` listener rather than intercepting each exit
+ * Uses Expo Router's `usePreventRemove` rather than intercepting each exit
  * separately: it covers the header back arrow, swipe-back and Android
- * hardware back in a single place. `BackHandler` alone can't distinguish an
+ * hardware back in a single place. (Expo SDK 58 removed the raw
+ * `navigation.addListener('beforeRemove')` event this hook used before.) `BackHandler` alone can't distinguish an
  * edge-swipe from a hardware press — the annotate screen hit exactly that and
  * had to swallow both.
  *
@@ -30,8 +31,8 @@ import { showAlert } from '@/src/hooks/useUIStore'
 import { useActiveCatFlow } from '@/src/hooks/useActiveCatFlow'
 import { useActiveCatFlowStore } from '@/src/hooks/useActiveCatFlowStore'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
-import { useNavigation } from 'expo-router'
-import { useEffect } from 'react'
+import { usePreventRemove } from 'expo-router'
+import { useEffect, useRef } from 'react'
 
 /**
  * @param isEditingSavedCat true when the screen was opened to edit an
@@ -39,40 +40,49 @@ import { useEffect } from 'react'
  * never offer to delete that cat's boxes.
  */
 export function useAbandonCatGuard(isEditingSavedCat: boolean): void {
-  const navigation = useNavigation()
+  const activeCatId = useActiveCatFlowStore((s) => s.activeCatId)
   const clearForCat = useBoundingBoxStore((s) => s.clearForCat)
   const { handleAbandonPass } = useActiveCatFlow()
+  // usePreventRemove returns the disabler its own callback needs; a ref
+  // hands it over without reading a variable before it is declared.
+  const disablePreventionRef = useRef<() => void>(() => {})
 
-  useEffect(
-    () =>
-      navigation.addListener('beforeRemove', (e) => {
-        // Read the id fresh rather than closing over it: handleSave clears it
-        // immediately before navigating away, and a stale closure value would
-        // prompt on the way out of a successful save.
-        const activeCatId = useActiveCatFlowStore.getState().activeCatId
-        if (isEditingSavedCat || !activeCatId) return
-
-        e.preventDefault()
-        showAlert(
-          'Remove this cat?',
-          "You haven't saved this cat. Leaving now removes the boxes you drew for it and anything you filled in here. Your photos and any other cats are not affected.",
-          [
-            { text: 'Cancel', style: 'cancel' },
-            {
-              text: 'Remove progress on this cat',
-              style: 'destructive',
-              onPress: () => {
-                clearForCat(activeCatId)
-                // Clears the id and picks the destination itself — Cat List
-                // when other cats exist, Home when none, since Cat List's
-                // zero-cat auto-skip would otherwise bounce straight back
-                // into annotate.
-                handleAbandonPass()
-              },
+  const disablePrevention = usePreventRemove(
+    !isEditingSavedCat && activeCatId !== null,
+    ({ repeat }) => {
+      // Read the id fresh rather than trusting the render that armed the
+      // guard: handleSave clears it immediately before navigating away, in the
+      // same tick, before a re-render can drop the prevention. A cleared id
+      // means a save, so let that navigation through.
+      const currentCatId = useActiveCatFlowStore.getState().activeCatId
+      if (!currentCatId) {
+        disablePreventionRef.current()
+        repeat()
+        return
+      }
+      showAlert(
+        'Remove this cat?',
+        "You haven't saved this cat. Leaving now removes the boxes you drew for it and anything you filled in here. Your photos and any other cats are not affected.",
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Remove progress on this cat',
+            style: 'destructive',
+            onPress: () => {
+              clearForCat(currentCatId)
+              disablePreventionRef.current()
+              // Clears the id and picks the destination itself — Cat List
+              // when other cats exist, Home when none, since Cat List's
+              // zero-cat auto-skip would otherwise bounce straight back
+              // into annotate.
+              handleAbandonPass()
             },
-          ],
-        )
-      }),
-    [navigation, isEditingSavedCat, clearForCat, handleAbandonPass],
+          },
+        ],
+      )
+    },
   )
+  useEffect(() => {
+    disablePreventionRef.current = disablePrevention
+  }, [disablePrevention])
 }
