@@ -6,16 +6,16 @@ export const styles = StyleSheet.create((theme, rt) => ({
   // space, so the in-body title row needs the inset itself.
   screen: { flex: 1, backgroundColor: theme.colors.background },
   root: { paddingTop: rt.insets.top },
-  // One gap between every card, the same as the Cats Recorded list.
   listContent: {
     paddingHorizontal: theme.layout.gutter,
     paddingTop: theme.spacing.lg,
     paddingBottom: theme.spacing.xxxl,
-    gap: theme.layout.stackGap,
   },
-  // 12dp inside the header; the list gap adds 12dp below it, plus 4dp so the
-  // header reads as its own group (16 > 12).
-  header: { gap: theme.spacing.md, marginBottom: theme.spacing.xs },
+  // One gap between every card, the same as the Cats Recorded list.
+  separator: { height: theme.layout.stackGap },
+  // 12dp inside the header and 16dp below it, so the header reads as its own
+  // group (16 > the 12dp between cards).
+  header: { gap: theme.spacing.md, marginBottom: theme.spacing.lg },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

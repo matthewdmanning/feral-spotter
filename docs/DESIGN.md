@@ -1,5 +1,7 @@
 # Design System
 
+> **Deprecated.** Do not use this file to block or justify a change. [mobile-ux-layout-best-practices.md](agents/ui-ux/reference/mobile-ux-layout-best-practices.md) governs layout and UX. Kept for history only.
+
 Started 2026-09-25 by the `improve-app` journey. Tracking issue
 matthewdmanning/feral-spotter#371.
 

@@ -8,7 +8,8 @@ import type {
 } from '@/src/lib/cache/submissionCache'
 import { Stack } from 'expo-router'
 import { ClockIcon } from 'phosphor-react-native/src/icons/Clock'
-import { FlatList, RefreshControl, Text, View } from 'react-native'
+import { FlashList } from '@shopify/flash-list'
+import { RefreshControl, Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
 
@@ -19,6 +20,7 @@ const STATUSES: CacheStatus[] = [
   'Failed',
 ]
 
+const Separator = () => <View style={styles.separator} />
 const keyExtractor = (cache: SubmissionCacheFile) => cache.id
 const renderItem = ({ item }: { item: SubmissionCacheFile }) => (
   <ReportCard cache={item} />
@@ -42,15 +44,17 @@ export default function FeralReportsScreen() {
       <Stack.Screen options={{ title: 'Feral Reports', headerShown: false }} />
       <View style={styles.screen}>
         <AmbientBackground />
-        {/* FlatList, not ScrollView + map: a long history renders only the
-            cards near the screen. The title row, legend and empty state ride
-            in the list's own header and empty slots, so there is one
-            scroller. */}
-        <FlatList
+        {/* FlashList (already the app's list library), not ScrollView + map:
+            a long history recycles the cards near the screen. The title row,
+            legend and empty state ride in the list's own header and empty
+            slots, so there is one scroller. FlashList's content style takes
+            padding only, so the card gap is ItemSeparatorComponent. */}
+        <FlashList
           style={styles.root}
           data={caches}
           keyExtractor={keyExtractor}
           renderItem={renderItem}
+          ItemSeparatorComponent={Separator}
           contentContainerStyle={styles.listContent}
           refreshControl={
             <RefreshControl

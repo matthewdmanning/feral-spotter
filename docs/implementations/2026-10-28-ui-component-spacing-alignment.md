@@ -1,7 +1,7 @@
 # Component spacing alignment: tabs, lists, accordion, button rows
 
 **Scope:** refactor (UI spacing and layout)
-**Issues/spec:** [mobile-ux-layout-best-practices.md](../agents/ui-ux/reference/mobile-ux-layout-best-practices.md); `DESIGN.md` spacing rule (groups further apart than items inside them)
+**Issues/spec:** [mobile-ux-layout-best-practices.md](../agents/ui-ux/reference/mobile-ux-layout-best-practices.md)
 **Date:** 2026-10-28
 **Branch/PR:** `ui/component-spacing-alignment`
 
@@ -17,7 +17,6 @@
 
 **Out of scope / not addressed:**
 
-- Submission bottom-action arrangement (S1/S4–S6 in `DESIGN.md`). That is a decided rearrangement, not a spacing fix.
 - Annotate bottom bar. It mixes a content-width button with two `flex1` buttons. Only its gap moved to a token.
 - Segmented controls. They already use tokens and the 48dp floor.
 
@@ -97,3 +96,18 @@
 
 - [ ] Device pass at default and largest font size, light and dark.
 - Annotate bottom bar does not stack at large font size.
+
+## Implementation updates
+
+### 2026-10-28 — refactor
+
+**Purpose:** `DESIGN.md` is deprecated; the best-practices doc governs. Apply what `DESIGN.md` held back, and replace a hand-rolled list choice with the installed library.
+**Change:**
+
+- `layout.gutter` 20 → 16 (`spacing.lg`). Layout values go on the 8dp grid (§2). Affects every screen edge.
+- Submission: Reset moved to the title row as a danger `TextButton`, the same pattern as Cat Form's Clear. It still confirms. Take More Photos and Finished! now share one `ButtonRow`, primary last. The 67% width is gone; actions span the gutter.
+- Feral Reports: `FlatList` → `FlashList`, the list library already used by the camera strip. Card gap moved to `ItemSeparatorComponent`, because FlashList's content style takes padding only.
+
+**Hand-rolled audit:** no other component replaces an installed library. Checked: images (no RN `Image`; `expo-image` installed), date picker (wraps `@react-native-community/datetimepicker`), switch (RN `Switch`), dialogs (app-owned on purpose, #337), segmented control and accordion (no library installed for either). Open question: the tab bar is a styled JS `Tabs`; `expo-router/unstable-native-tabs` gives the native Material bar on SDK 56, but the API is unstable before SDK 58.
+
+**Unverified:** no device pass for the gutter change or the Submission layout.

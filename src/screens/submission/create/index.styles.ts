@@ -1,8 +1,8 @@
 import { StyleSheet } from 'react-native-unistyles'
 
 export const styles = StyleSheet.create((theme, rt) => ({
-  // Header handles the top inset; this screen isn't scrollable, so the last
-  // button (Reset) needs the bottom inset itself to clear the gesture bar.
+  // Header handles the top inset; the pinned actions sit below the scroll
+  // area, so they need the bottom inset themselves to clear the gesture bar.
   root: {
     flex: 1,
     backgroundColor: theme.colors.background,
@@ -12,6 +12,12 @@ export const styles = StyleSheet.create((theme, rt) => ({
   },
   scroll: { flex: 1 },
   scrollContent: { gap: theme.spacing.lg },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: theme.spacing.md,
+  },
   title: { ...theme.textVariants.title, color: theme.colors.text },
   statusRow: {
     flexDirection: 'row',
@@ -91,12 +97,8 @@ export const styles = StyleSheet.create((theme, rt) => ({
     textAlign: 'center',
     paddingVertical: theme.spacing.sm,
   },
-  bottomActions: {
-    marginTop: 'auto',
-    alignSelf: 'center',
-    width: '67%',
-    gap: theme.layout.stackGap,
-  },
+  // Full gutter width, like every other screen's actions.
+  bottomActions: { gap: theme.layout.stackGap },
   // #375: the reason "Finished!" is disabled.
   disabledReason: {
     ...theme.textVariants.bodySmall,
