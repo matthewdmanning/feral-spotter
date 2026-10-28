@@ -5,6 +5,7 @@
  */
 
 import { AppButton } from '@/src/components/atoms/AppButton'
+import { ButtonRow } from '@/src/components/molecules/ButtonRow'
 import { useDateTimePicker } from '@/src/hooks/useDateTimePicker'
 import RNDateTimePicker from '@react-native-community/datetimepicker'
 import { CalendarIcon } from 'phosphor-react-native/src/icons/Calendar'
@@ -123,14 +124,12 @@ export function DateTimePickerButton({
                 </View>
               )}
 
-              <View style={styles.actionRow}>
-                <AppButton onPress={handleCancel} variant="secondary" flex1>
+              <ButtonRow>
+                <AppButton onPress={handleCancel} variant="secondary">
                   Cancel
                 </AppButton>
-                <AppButton onPress={handleConfirm} flex1>
-                  Confirm
-                </AppButton>
-              </View>
+                <AppButton onPress={handleConfirm}>Confirm</AppButton>
+              </ButtonRow>
             </View>
           </View>
         </Modal>

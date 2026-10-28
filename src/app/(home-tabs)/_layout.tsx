@@ -34,19 +34,17 @@ function HapticTabButton(props: BottomTabBarButtonProps) {
   )
 }
 
-// Thin, so the pill does not push the label into the gesture bar.
-const PILL_PADDING_V = 2
-
 // The focused tab's icon sits on a raised glass pill (Material's active
-// indicator); idle icons sit flat.
+// indicator: 64x32dp around a 24dp icon, 4dp above the label); idle icons
+// sit flat. Every value is on the 4dp grid.
 function TabIcon({ Icon, focused }: { Icon: PhosphorIcon; focused: boolean }) {
   const { theme } = useUnistyles()
   return (
     <View
       style={[
         {
-          paddingHorizontal: theme.spacing.lg,
-          paddingVertical: PILL_PADDING_V,
+          paddingHorizontal: theme.spacing.xl,
+          paddingVertical: theme.spacing.xs,
           borderRadius: theme.radius.full,
         },
         focused && {
@@ -56,7 +54,7 @@ function TabIcon({ Icon, focused }: { Icon: PhosphorIcon; focused: boolean }) {
       ]}
     >
       <Icon
-        size={theme.iconSize.xl}
+        size={theme.iconSize.lg}
         color={focused ? theme.colors.accentText : theme.colors.muted}
       />
     </View>
@@ -73,9 +71,9 @@ export default function HomeTabsLayout() {
     theme.textVariants.caption.lineHeight * PixelRatio.getFontScale()
   const bottomGap = insets.bottom + theme.spacing.md
   const tabBarHeight =
-    theme.spacing.sm +
-    theme.iconSize.xl +
-    PILL_PADDING_V * 2 +
+    theme.spacing.md +
+    theme.iconSize.lg +
+    theme.spacing.xs * 2 +
     theme.spacing.xs +
     labelHeight +
     bottomGap
@@ -89,7 +87,7 @@ export default function HomeTabsLayout() {
           borderTopColor: theme.colors.border,
           borderTopWidth: 1,
           height: tabBarHeight,
-          paddingTop: theme.spacing.sm,
+          paddingTop: theme.spacing.md,
           paddingBottom: bottomGap,
         },
         tabBarBackground: () => (

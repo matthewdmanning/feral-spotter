@@ -33,5 +33,4 @@ export const styles = StyleSheet.create((theme, rt) => ({
     color: theme.colors.muted,
     textAlign: 'center',
   },
-  buttonRow: { flexDirection: 'row', gap: theme.spacing.sm },
 }))

@@ -1,5 +1,6 @@
 import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { AppButton } from '@/src/components/atoms/AppButton'
+import { ButtonRow } from '@/src/components/molecules/ButtonRow'
 import { DateTimePickerButton } from '@/src/components/organisms/DateTimePicker'
 import { showAlert, useSubmissionStore } from '@/src/hooks'
 import { startFreshPass } from '@/src/hooks/useActiveCatFlow'
@@ -229,7 +230,10 @@ export default function CreateSubmissionScreen() {
                   onPress={() =>
                     setExpandedCatId(isExpanded ? null : cat.local_id)
                   }
-                  style={styles.catRow}
+                  style={({ pressed }) => [
+                    styles.catRow,
+                    pressed && styles.catRowPressed,
+                  ]}
                   accessibilityRole="button"
                   accessibilityLabel={`Cat: ${label}`}
                   accessibilityState={{ expanded: isExpanded }}
@@ -256,25 +260,25 @@ export default function CreateSubmissionScreen() {
                       </View>
                     ))}
                     <View style={styles.catActions}>
-                      <AppButton
-                        variant="secondary"
-                        flex1
-                        onPress={() =>
-                          router.push({
-                            pathname: '/submission/cats',
-                            params: { edit: cat.local_id },
-                          })
-                        }
-                      >
-                        Edit
-                      </AppButton>
-                      <AppButton
-                        variant="danger"
-                        flex1
-                        onPress={() => removeCatWithConfirm(cat.local_id)}
-                      >
-                        Delete
-                      </AppButton>
+                      <ButtonRow>
+                        <AppButton
+                          variant="secondary"
+                          onPress={() =>
+                            router.push({
+                              pathname: '/submission/cats',
+                              params: { edit: cat.local_id },
+                            })
+                          }
+                        >
+                          Edit
+                        </AppButton>
+                        <AppButton
+                          variant="danger"
+                          onPress={() => removeCatWithConfirm(cat.local_id)}
+                        >
+                          Delete
+                        </AppButton>
+                      </ButtonRow>
                     </View>
                   </View>
                 )}

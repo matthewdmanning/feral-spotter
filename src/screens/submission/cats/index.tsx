@@ -107,12 +107,14 @@ export default function CatObservationScreen() {
             )}
           </View>
           <CatForm form={form} />
-          <AppButton onPress={submit.handleSave}>Save</AppButton>
-          {handleRemove && (
-            <AppButton onPress={handleRemove} variant="danger">
-              Remove this Cat
-            </AppButton>
-          )}
+          <View style={styles.actions}>
+            <AppButton onPress={submit.handleSave}>Save</AppButton>
+            {handleRemove && (
+              <AppButton onPress={handleRemove} variant="danger">
+                Remove this Cat
+              </AppButton>
+            )}
+          </View>
         </View>
       </ScrollView>
     </View>

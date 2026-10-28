@@ -31,33 +31,56 @@ export const styles = StyleSheet.create((theme, rt) => ({
     color: theme.colors.text,
     flexShrink: 1,
   },
-  catList: { gap: theme.spacing.sm },
+  // Same gap between cards as the Reports list.
+  catList: { gap: theme.layout.stackGap },
   catListTitle: {
     ...theme.textVariants.heading,
     color: theme.colors.text,
     marginTop: theme.spacing.xs,
   },
   // One accordion item: the header row and, when open, every field below it.
+  // The card has no padding of its own: the header carries it, so the whole
+  // header strip — edge to edge — is the tap target, not only the label.
   catCard: {
     borderRadius: theme.radius.xl,
     ...theme.glass.card,
-    padding: theme.layout.cardPadding,
-    gap: theme.spacing.md,
   },
-  catRow: { flexDirection: 'row', alignItems: 'center' },
-  catDetails: { gap: theme.spacing.sm },
+  catRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.md,
+    minHeight: theme.controlHeight.control,
+    paddingHorizontal: theme.layout.cardPadding,
+    paddingVertical: theme.spacing.md,
+  },
+  catRowPressed: { opacity: 0.7 },
+  catDetails: {
+    gap: theme.spacing.sm,
+    paddingHorizontal: theme.layout.cardPadding,
+    paddingBottom: theme.layout.cardPadding,
+  },
+  // A two-column key/value table: labels left, values right-aligned, and a
+  // long value wraps inside its own column instead of pushing the label.
   catDetailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: theme.spacing.md,
+    alignItems: 'baseline',
+    gap: theme.spacing.lg,
   },
   catDetailLabel: {
     ...theme.textVariants.bodySmall,
     color: theme.colors.muted,
   },
-  catDetailValue: { ...theme.textVariants.bodySmall, color: theme.colors.text },
+  catDetailValue: {
+    ...theme.textVariants.bodySmall,
+    color: theme.colors.text,
+    flexShrink: 1,
+    textAlign: 'right',
+  },
   catRowText: { ...theme.textVariants.body, flex: 1, color: theme.colors.text },
-  catActions: { flexDirection: 'row', gap: theme.spacing.md },
+  // The actions are a group of their own: 8 + 8 = 16dp above, against 8dp
+  // between table rows.
+  catActions: { marginTop: theme.spacing.sm },
   // #299: the zero-cats state. Both routes back in are offered here — the
   // secondary one is outlined rather than filled so Annotate still reads as
   // the expected path on a first pass, without blocking the other. No

@@ -6,16 +6,21 @@ export const styles = StyleSheet.create((theme, rt) => ({
   // space, so the in-body title row needs the inset itself.
   screen: { flex: 1, backgroundColor: theme.colors.background },
   root: { paddingTop: rt.insets.top },
-  inner: {
+  // One gap between every card, the same as the Cats Recorded list.
+  listContent: {
     paddingHorizontal: theme.layout.gutter,
     paddingTop: theme.spacing.lg,
-    gap: theme.spacing.md,
+    paddingBottom: theme.spacing.xxxl,
+    gap: theme.layout.stackGap,
   },
+  // 12dp inside the header; the list gap adds 12dp below it, plus 4dp so the
+  // header reads as its own group (16 > 12).
+  header: { gap: theme.spacing.md, marginBottom: theme.spacing.xs },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'baseline',
-    marginBottom: theme.spacing.xs,
+    gap: theme.spacing.md,
   },
   title: { ...theme.textVariants.title, color: theme.colors.text },
   total: { ...theme.textVariants.bodySmall, color: theme.colors.muted },
@@ -42,24 +47,22 @@ export const styles = StyleSheet.create((theme, rt) => ({
     color: theme.colors.muted,
     textAlign: 'center',
   },
+  // gap, not trailing margins: a wrapped line starts flush with the first.
   legend: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: theme.spacing.xs,
+    columnGap: theme.spacing.lg,
+    rowGap: theme.spacing.xs,
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexShrink: 0,
-    marginRight: theme.spacing.lg,
-    marginBottom: theme.spacing.xs,
+    gap: theme.spacing.sm,
   },
   legendDot: {
     width: theme.spacing.sm,
     height: theme.spacing.sm,
     borderRadius: theme.radius.full,
-    marginRight: theme.spacing.sm,
   },
   legendLabel: { ...theme.textVariants.caption, color: theme.colors.muted },
-  scrollContent: { paddingBottom: theme.spacing.xxxl },
 }))

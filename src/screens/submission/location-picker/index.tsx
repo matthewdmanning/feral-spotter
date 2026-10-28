@@ -7,6 +7,7 @@
  */
 
 import { AppButton } from '@/src/components/atoms/AppButton'
+import { ButtonRow } from '@/src/components/molecules/ButtonRow'
 import { useSubmissionStore } from '@/src/hooks'
 import type { Coordinates } from 'expo-maps'
 import { GoogleMaps } from 'expo-maps'
@@ -111,14 +112,12 @@ export default function LocationPickerScreen() {
 
       <View style={styles.footer}>
         <Text style={styles.hint}>Drag the map to place the pin</Text>
-        <View style={styles.buttonRow}>
-          <AppButton variant="secondary" onPress={handleCancel} flex1>
+        <ButtonRow>
+          <AppButton variant="secondary" onPress={handleCancel}>
             Cancel
           </AppButton>
-          <AppButton onPress={handleSetLocation} flex1>
-            Set location
-          </AppButton>
-        </View>
+          <AppButton onPress={handleSetLocation}>Set location</AppButton>
+        </ButtonRow>
       </View>
     </View>
   )

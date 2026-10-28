@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { STATUS_COLOR_KEY, StatusIcon } from '@/src/components/atoms/StatusIcon'
 import type { SubmissionCacheFile } from '@/src/lib/cache/submissionCache'
 import { formatDateTime } from '@/src/utils/formatDateTime'
@@ -5,7 +6,12 @@ import { Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './ReportCard.styles'
 
-export function ReportCard({ cache }: { cache: SubmissionCacheFile }) {
+// memo: a list cell re-renders only when its own cache entry changes.
+export const ReportCard = memo(function ReportCard({
+  cache,
+}: {
+  cache: SubmissionCacheFile
+}) {
   const { theme } = useUnistyles()
   const catCount = cache.cats.length
   const photoCount = cache.photo_links?.length ?? 0
@@ -38,4 +44,4 @@ export function ReportCard({ cache }: { cache: SubmissionCacheFile }) {
       </View>
     </View>
   )
-}
+})

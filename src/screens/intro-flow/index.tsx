@@ -15,6 +15,7 @@ import {
 } from '@/src/config/introFlowCopy'
 import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { AppButton } from '@/src/components/atoms/AppButton'
+import { ButtonRow } from '@/src/components/molecules/ButtonRow'
 import { TextButton } from '@/src/components/atoms/TextButton'
 import { useBackHandler } from '@/src/hooks/useBackHandler'
 import { router } from 'expo-router'
@@ -81,19 +82,12 @@ export default function IntroFlowScreen() {
       </View>
 
       <View style={styles.footer}>
-        <View style={styles.buttonRow}>
-          <AppButton
-            onPress={goBack}
-            variant="secondary"
-            disabled={step === 0}
-            flex1
-          >
+        <ButtonRow>
+          <AppButton onPress={goBack} variant="secondary" disabled={step === 0}>
             Previous
           </AppButton>
-          <AppButton onPress={advance} flex1>
-            {slide.button}
-          </AppButton>
-        </View>
+          <AppButton onPress={advance}>{slide.button}</AppButton>
+        </ButtonRow>
         <View style={styles.dots} accessibilityElementsHidden>
           {ONBOARDING_SLIDES.map((s, i) => (
             <View

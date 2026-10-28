@@ -21,6 +21,9 @@ export const styles = StyleSheet.create((theme) => ({
   // significantly rather than trying to dodge the bubble positionally,
   // since the bubble can be wider than the available header row.
   titleFaded: { opacity: 0.15 },
+  // Groups sit further apart than the items inside them: 16 + 8 = 24dp
+  // (layout.sectionGap) above the actions, 12dp between them.
+  actions: { gap: theme.layout.stackGap, marginTop: theme.spacing.sm },
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',

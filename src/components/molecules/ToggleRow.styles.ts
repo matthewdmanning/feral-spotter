@@ -1,16 +1,14 @@
 import { StyleSheet } from 'react-native-unistyles'
 
 export const styles = StyleSheet.create((theme) => ({
+  // minHeight, never height: the label and hint grow with the OS font size.
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: theme.spacing.lg,
+    minHeight: theme.controlHeight.touchTarget,
   },
-  textGroup: {
-    flex: 1,
-    gap: theme.spacing.xs,
-    paddingRight: theme.spacing.lg,
-  },
+  textGroup: { flex: 1, gap: theme.spacing.xs },
   label: { ...theme.textVariants.label, color: theme.colors.text },
   hint: { ...theme.textVariants.bodySmall, color: theme.colors.muted },
   // The bare Switch is under 48dp tall; this wrapper is the touch target.
