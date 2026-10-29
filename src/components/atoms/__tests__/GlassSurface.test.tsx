@@ -1,4 +1,10 @@
-import { fireEvent, render, screen } from '@testing-library/react-native'
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react-native'
 import { isGlassEffectAPIAvailable } from 'expo-glass-effect'
 import { AccessibilityInfo, Platform, StyleSheet } from 'react-native'
 import { UnistylesRuntime } from 'react-native-unistyles'
@@ -19,20 +25,30 @@ const isThemeSurface = () =>
   StyleSheet.flatten(screen.getByTestId('glass').props.style)
     ?.backgroundColor === UnistylesRuntime.getTheme().colors.surface
 
+// Each platform reads a different signal. The other one gets the opposite
+// value, so a surface that reads the wrong signal fails the case.
 const setReduceTransparency = (value: boolean) => {
   jest
     .spyOn(AccessibilityInfo, 'isHighTextContrastEnabled')
-    .mockResolvedValue(value)
+    .mockResolvedValue(Platform.OS === 'android' ? value : !value)
   jest
     .spyOn(AccessibilityInfo, 'isReduceTransparencyEnabled')
-    .mockResolvedValue(value)
+    .mockResolvedValue(Platform.OS === 'ios' ? value : !value)
 }
 
 const renderSettled = async () => {
   render(<GlassSurface kind="card" testID="glass" />)
-  // Let the initial accessibility read settle.
-  await screen.findByTestId('glass')
-  await Promise.resolve()
+  // Wait for the platform's accessibility read, then let its result apply.
+  await waitFor(() =>
+    expect(
+      jest.mocked(
+        Platform.OS === 'android'
+          ? AccessibilityInfo.isHighTextContrastEnabled
+          : AccessibilityInfo.isReduceTransparencyEnabled,
+      ),
+    ).toHaveBeenCalled(),
+  )
+  await act(async () => {})
 }
 
 afterEach(() => {

@@ -308,7 +308,7 @@ export const darkTheme = {
   // Tint colours for the native glass. When glass cannot draw, GlassSurface
   // uses `colors.surface` instead.
   glass: {
-    card: 'rgba(255,236,220,0.06)',
+    card: 'rgba(37,30,23,0.72)',
     raised: 'rgba(48,41,33,0.94)',
   },
   // Dark labels pass 5.4:1 or better on every primary stop.
