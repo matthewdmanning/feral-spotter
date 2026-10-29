@@ -39,6 +39,8 @@
     "plugins": [
       "expo-router",
       "expo-image",
+      "./plugins/withCmakeVersion",
+      "./plugins/withPixel7Architecture",
       "./plugins/withProfileable",
       "./plugins/withHermesStartupProfiler",
       "@react-native-firebase/app",
