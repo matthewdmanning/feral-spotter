@@ -64,10 +64,6 @@ jest.mock('@/src/lib/location', () => ({
   }),
 }))
 
-jest.mock('../index.styles', () => ({
-  styles: new Proxy({}, { get: () => ({}) }),
-}))
-
 // cat-2 is deliberately sparse: every field it lacks must still be listed, as
 // its default, when the cat is opened.
 const DEFAULT_CATS: ObservedCat[] = [

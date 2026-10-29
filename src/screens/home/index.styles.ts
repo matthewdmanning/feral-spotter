@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native-unistyles'
 
-export const styles = StyleSheet.create((theme) => ({
+export const styles = StyleSheet.create((theme, rt) => ({
   root: {
     flex: 1,
     backgroundColor: theme.colors.background,
@@ -14,7 +14,8 @@ export const styles = StyleSheet.create((theme) => ({
     justifyContent: 'space-evenly',
     // Floor for the space between the two circles. space-evenly alone
     // lets it shrink on short screens.
-    gap: theme.spacing.xxxl,
+    gap: theme.spacing.md,
+    paddingTop: rt.insets.top,
   },
   bottomArea: {
     paddingHorizontal: theme.layout.gutter,

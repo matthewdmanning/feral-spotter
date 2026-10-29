@@ -1,5 +1,7 @@
 import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { AppButton } from '@/src/components/atoms/AppButton'
+import { TextButton } from '@/src/components/atoms/TextButton'
+import { ButtonRow } from '@/src/components/molecules/ButtonRow'
 import { DateTimePickerButton } from '@/src/components/organisms/DateTimePicker'
 import { showAlert, useSubmissionStore } from '@/src/hooks'
 import { startFreshPass } from '@/src/hooks/useActiveCatFlow'
@@ -162,7 +164,15 @@ export default function CreateSubmissionScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>Submission</Text>
+        {/* Reset is rare and destructive, so it stays out of the thumb zone
+            beside Finished!. Same header text-button pattern as Cat Form's
+            Clear. It still confirms first (handleReset). */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Submission</Text>
+          <TextButton onPress={handleReset} tone="danger">
+            Reset
+          </TextButton>
+        </View>
 
         <View style={styles.statusRow}>
           <Pressable
@@ -229,7 +239,10 @@ export default function CreateSubmissionScreen() {
                   onPress={() =>
                     setExpandedCatId(isExpanded ? null : cat.local_id)
                   }
-                  style={styles.catRow}
+                  style={({ pressed }) => [
+                    styles.catRow,
+                    pressed && styles.catRowPressed,
+                  ]}
                   accessibilityRole="button"
                   accessibilityLabel={`Cat: ${label}`}
                   accessibilityState={{ expanded: isExpanded }}
@@ -256,25 +269,25 @@ export default function CreateSubmissionScreen() {
                       </View>
                     ))}
                     <View style={styles.catActions}>
-                      <AppButton
-                        variant="secondary"
-                        flex1
-                        onPress={() =>
-                          router.push({
-                            pathname: '/submission/cats',
-                            params: { edit: cat.local_id },
-                          })
-                        }
-                      >
-                        Edit
-                      </AppButton>
-                      <AppButton
-                        variant="danger"
-                        flex1
-                        onPress={() => removeCatWithConfirm(cat.local_id)}
-                      >
-                        Delete
-                      </AppButton>
+                      <ButtonRow>
+                        <AppButton
+                          variant="secondary"
+                          onPress={() =>
+                            router.push({
+                              pathname: '/submission/cats',
+                              params: { edit: cat.local_id },
+                            })
+                          }
+                        >
+                          Edit
+                        </AppButton>
+                        <AppButton
+                          variant="danger"
+                          onPress={() => removeCatWithConfirm(cat.local_id)}
+                        >
+                          Delete
+                        </AppButton>
+                      </ButtonRow>
                     </View>
                   </View>
                 )}
@@ -308,8 +321,8 @@ export default function CreateSubmissionScreen() {
         </View>
       </ScrollView>
 
-      {/* Actions pinned to the bottom, in the order a user reaches for them:
-          finish, add photos, start over. */}
+      {/* Actions pinned to the bottom. The primary action is last, on the
+          right, nearest the thumb — the same order as every other ButtonRow. */}
       <View style={styles.bottomActions}>
         {/* #375: "Finished!" is a hard block at zero cats (#265), and the
             button said nothing about it. */}
@@ -318,15 +331,14 @@ export default function CreateSubmissionScreen() {
             Describe at least one cat before you finish.
           </Text>
         )}
-        <AppButton onPress={handleDone} disabled={cats.length === 0}>
-          Finished!
-        </AppButton>
-        <AppButton variant="secondary" onPress={handleAddMorePhotos}>
-          {addMorePhotosLabel}
-        </AppButton>
-        <AppButton variant="danger" onPress={handleReset}>
-          Reset
-        </AppButton>
+        <ButtonRow>
+          <AppButton variant="secondary" onPress={handleAddMorePhotos}>
+            {addMorePhotosLabel}
+          </AppButton>
+          <AppButton onPress={handleDone} disabled={cats.length === 0}>
+            Finished!
+          </AppButton>
+        </ButtonRow>
       </View>
     </View>
   )

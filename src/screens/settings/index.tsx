@@ -8,6 +8,7 @@ import { AppButton } from '@/src/components/atoms/AppButton'
 import { SegmentedControl } from '@/src/components/atoms/SegmentedControl'
 import { TextButton } from '@/src/components/atoms/TextButton'
 import { TextField } from '@/src/components/atoms/TextField'
+import { ButtonRow } from '@/src/components/molecules/ButtonRow'
 import { ToggleRow } from '@/src/components/molecules/ToggleRow'
 import { visiblePhotoToggles } from '@/src/config/photoToggles'
 import {
@@ -25,7 +26,7 @@ import { router } from 'expo-router'
 import { CheckIcon } from 'phosphor-react-native/src/icons/Check'
 import { FileTextIcon } from 'phosphor-react-native/src/icons/FileText'
 import { KeyIcon } from 'phosphor-react-native/src/icons/Key'
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { Platform, ScrollView, Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
@@ -191,8 +192,11 @@ export default function SettingsScreen() {
               toggles.length > 0 && (
                 <View key={title} style={styles.card}>
                   <Text style={styles.cardTitle}>{title}</Text>
+                  {/* Fragment, not a View: the divider must be a direct child
+                      of the card so the card gap spaces it evenly above and
+                      below. A wrapper View put the gap on one side only. */}
                   {toggles.map(({ key, label, desc }, i) => (
-                    <View key={key}>
+                    <Fragment key={key}>
                       {i > 0 && <View style={styles.divider} />}
                       <ToggleRow
                         label={label}
@@ -200,7 +204,7 @@ export default function SettingsScreen() {
                         value={draft[key]}
                         onValueChange={(value) => patch(key, value)}
                       />
-                    </View>
+                    </Fragment>
                   ))}
                 </View>
               ),
@@ -227,17 +231,18 @@ export default function SettingsScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <AppButton
-          variant="danger"
-          onPress={handleDiscard}
-          disabled={isVerifying}
-          flex1
-        >
-          Discard
-        </AppButton>
-        <AppButton onPress={handleSave} loading={isVerifying} flex1>
-          Save
-        </AppButton>
+        <ButtonRow>
+          <AppButton
+            variant="danger"
+            onPress={handleDiscard}
+            disabled={isVerifying}
+          >
+            Discard
+          </AppButton>
+          <AppButton onPress={handleSave} loading={isVerifying}>
+            Save
+          </AppButton>
+        </ButtonRow>
       </View>
     </View>
   )

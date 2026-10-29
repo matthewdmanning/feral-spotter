@@ -152,9 +152,13 @@ const textVariants = {
  * Layout rhythm. One gutter for every screen edge and one padding for every
  * card, so screens line up with each other. Groups sit further apart than
  * the items inside them (section > stack), so related things read as one.
+ *
+ * Layout values sit on the 8dp grid (mobile-ux-layout-best-practices.md §2):
+ * gutter and card padding are both 16, so a card's text lines up 32dp from
+ * the screen edge. stackGap stays 12, the Material button-group default.
  */
 const layout = {
-  gutter: spacing.xl,
+  gutter: spacing.lg,
   cardPadding: spacing.lg,
   stackGap: spacing.md,
   sectionGap: spacing.xxl,

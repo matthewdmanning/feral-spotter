@@ -44,10 +44,6 @@ jest.mock('@/src/lib/location', () => ({
   }),
 }))
 
-jest.mock('../index.styles', () => ({
-  styles: new Proxy({}, { get: () => ({}) }),
-}))
-
 type Cat = {
   local_id: string
   age: string

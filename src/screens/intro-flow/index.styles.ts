@@ -20,7 +20,6 @@ export const styles = StyleSheet.create((theme, rt) => ({
     marginBottom: theme.spacing.md,
   },
   footer: { gap: theme.spacing.lg },
-  buttonRow: { flexDirection: 'row', gap: theme.spacing.md },
   dots: {
     flexDirection: 'row',
     justifyContent: 'center',

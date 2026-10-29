@@ -54,10 +54,6 @@ jest.mock('@/src/lib/location', () => ({
   }),
 }))
 
-jest.mock('../index.styles', () => ({
-  styles: new Proxy({}, { get: () => ({}) }),
-}))
-
 let mockSource: PhotoSource = 'camera'
 
 jest.mock('@/src/hooks/usePhotoStore', () => ({

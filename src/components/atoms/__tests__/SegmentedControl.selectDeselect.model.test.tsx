@@ -4,10 +4,6 @@ import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import { SegmentedControl } from '../SegmentedControl'
 
-jest.mock('../SegmentedControl.styles', () => ({
-  styles: new Proxy({}, { get: () => ({}) }),
-}))
-
 /**
  * Model of the toggle-to-deselect behavior added for #205: a segmented
  * control starts with no option selected, tapping an option selects it,

@@ -97,3 +97,10 @@ export const SUBMISSION_STALE_MS = 24 * 60 * 60 * 1000
 
 /** Gap between the screen's shorter edge and Home's circular entrypoint buttons, as a fraction of the shorter screen side. */
 export const ENTRYPOINT_BUFFER_PERCENT = 0.2
+
+/**
+ * OS font scale at and above which a ButtonRow stacks its buttons. 1.3 is
+ * Android's "Large" step: from there, two pill labels in a 360dp-wide dialog
+ * start to wrap.
+ */
+export const BUTTON_ROW_STACK_FONT_SCALE = 1.3
