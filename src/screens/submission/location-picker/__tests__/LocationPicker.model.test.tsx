@@ -58,10 +58,6 @@ jest.mock('expo-location', () => ({
   getLastKnownPositionAsync: jest.fn().mockResolvedValue(null),
 }))
 
-jest.mock('../index.styles', () => ({
-  styles: new Proxy({}, { get: () => ({}) }),
-}))
-
 const pickerFlow = createMachine({
   id: 'locationPicker',
   initial: 'ready',

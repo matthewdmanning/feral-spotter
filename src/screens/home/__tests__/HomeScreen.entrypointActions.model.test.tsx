@@ -27,10 +27,6 @@ jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
 }))
 
-jest.mock('../index.styles', () => ({
-  styles: new Proxy({}, { get: () => ({}) }),
-}))
-
 jest.mock('@/src/lib/auth/useAuth', () => ({
   useAuth: () => ({ isReady: true, isAuthenticated: true }),
 }))
@@ -82,6 +78,9 @@ const buttonsMachine = createMachine({
 
 describe('HomeScreen entrypoint buttons — model-based test', () => {
   let getByLabelText: ReturnType<typeof render>['getByLabelText']
+  let queryByLabelText: ReturnType<typeof render>['queryByLabelText']
+  const queryShown = (label: string) =>
+    queryByLabelText(label, { includeHiddenElements: false })
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -98,6 +97,7 @@ describe('HomeScreen entrypoint buttons — model-based test', () => {
     )
     const result = render(<HomeScreen />)
     getByLabelText = result.getByLabelText
+    queryByLabelText = result.queryByLabelText
     await waitFor(() => expect(getAllSubmissionCaches).toHaveBeenCalled())
   }
 
@@ -107,16 +107,19 @@ describe('HomeScreen entrypoint buttons — model-based test', () => {
         expect(router.navigate).not.toHaveBeenCalled()
         expect(router.push).not.toHaveBeenCalled()
       },
+      // Visibility as assistive tech sees it. The fade itself is a Reanimated
+      // animated style, which Reanimated 4.7's Jest environment does not
+      // write back to the style prop that toBeVisible reads.
       idleEntry: async () => {
         await waitFor(() => {
-          expect(getByLabelText('Continue Observation')).not.toBeVisible()
-          expect(getByLabelText('New Sighting')).not.toBeVisible()
+          expect(queryShown('Continue Observation')).toBeNull()
+          expect(queryShown('New Sighting')).toBeNull()
         })
       },
       resumeEntry: async () => {
         await waitFor(() => {
-          expect(getByLabelText('Continue Observation')).toBeVisible()
-          expect(getByLabelText('New Sighting')).toBeVisible()
+          expect(queryShown('Continue Observation')).not.toBeNull()
+          expect(queryShown('New Sighting')).not.toBeNull()
         })
       },
     },
