@@ -214,19 +214,28 @@ export default function HomeScreen() {
           />
         </View>
 
-        {/* #375: one of the two circles above is dead whenever the pool has
+        {/* Everything below the circles lives in one footer, so adding or
+            removing a footer child never changes how the circles are
+            spaced: they split whatever the footer leaves. */}
+        <View>
+          {/* #375: one of the two circles above is dead whenever the pool has
             a source, and nothing said why. Only ever one is disabled, so
             one line covers both cases. */}
-        {photoSource !== null && (
-          <Text style={styles.disabledReason}>
-            {photoSource === 'camera'
-              ? 'This submission uses camera photos. Finish or reset it before you use Upload Photos.'
-              : 'This submission uses library photos. Finish or reset it before you use Take Photos.'}
-          </Text>
-        )}
+          {photoSource !== null && (
+            <Text style={styles.disabledReason}>
+              {photoSource === 'camera'
+                ? 'This submission uses camera photos. Finish or reset it before you use Upload Photos.'
+                : 'This submission uses library photos. Finish or reset it before you use Take Photos.'}
+            </Text>
+          )}
 
-        <View style={styles.bottomArea}>
-          <BottomButtonColumn buttons={buttons} visible={columnVisible} />
+          {/* Mounted only while shown: the column's fade-out scales it but
+              keeps its layout height, which pushed the circles up. */}
+          {columnVisible && (
+            <View style={styles.bottomArea}>
+              <BottomButtonColumn buttons={buttons} visible />
+            </View>
+          )}
         </View>
       </View>
     </>

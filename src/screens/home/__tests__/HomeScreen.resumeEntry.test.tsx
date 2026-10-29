@@ -28,10 +28,6 @@ jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
 }))
 
-jest.mock('../index.styles', () => ({
-  styles: new Proxy({}, { get: () => ({}) }),
-}))
-
 jest.mock('@/src/lib/auth/useAuth', () => ({
   useAuth: () => ({ isReady: true, isAuthenticated: true }),
 }))
@@ -52,8 +48,14 @@ jest.mock('@/src/hooks/useLibraryPhotoPicker', () => ({
 // which has no native part under jest. `visible` is the gate under test.
 let capturedVisible = false
 jest.mock('@/src/components/molecules/BottomButtonColumn', () => ({
+  // The screen mounts the column only while it is shown.
   BottomButtonColumn: (props: { visible: boolean }) => {
-    capturedVisible = props.visible
+    require('react').useEffect(() => {
+      capturedVisible = props.visible
+      return () => {
+        capturedVisible = false
+      }
+    })
     return null
   },
 }))
