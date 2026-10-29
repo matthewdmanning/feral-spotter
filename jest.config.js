@@ -29,10 +29,11 @@ module.exports = {
   // (Jest's own node_modules default is dropped if this array isn't repeated.)
   testPathIgnorePatterns: ['/node_modules/', '<rootDir>/__tests__/rules/'],
   // jest-expo's list plus phosphor-react-native, which ships its icons as
-  // TypeScript source (the per-icon paths the app imports, #406). Replacing
+  // TypeScript source (the per-icon paths the app imports, #406), and
+  // @shopify/flash-list, which ships ES modules. Replacing
   // the option replaces the preset's whole list, so its entries are repeated.
   transformIgnorePatterns: [
-    '/node_modules/(?!(.pnpm|react-native|@react-native|@react-native-community|expo|@expo|@expo-google-fonts|react-navigation|@react-navigation|@sentry/react-native|native-base|standard-navigation|phosphor-react-native))',
+    '/node_modules/(?!(.pnpm|react-native|@react-native|@react-native-community|expo|@expo|@expo-google-fonts|react-navigation|@react-navigation|@sentry/react-native|native-base|standard-navigation|phosphor-react-native|@shopify/flash-list))',
     '/node_modules/react-native-reanimated/plugin/',
     '/node_modules/@react-native/babel-preset/',
   ],
