@@ -8,7 +8,9 @@ trap 'rm -f "$LOG"' EXIT
 
 cd android
 
-if ./gradlew assembleDebug --stacktrace --continue > "$LOG" 2>&1; then
+# No --continue: Gradle stops at the first failed task, so a breaking error
+# ends the build at once.
+if ./gradlew assembleDebug --stacktrace > "$LOG" 2>&1; then
   echo "Build succeeded."
 else
   echo ""
