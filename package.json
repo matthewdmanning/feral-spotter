@@ -83,6 +83,7 @@
     "@commitlint/cli": "^21.2.1",
     "@commitlint/config-conventional": "^21.2.0",
     "@firebase/rules-unit-testing": "^5.0.1",
+    "@phosphor-icons/core": "2.1.1",
     "@react-native/jest-preset": "^0.88.1",
     "@testing-library/react-native": "^13.3.3",
     "@types/jest": "^30.0.0",

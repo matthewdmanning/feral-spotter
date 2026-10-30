@@ -22,7 +22,6 @@ export const styles = StyleSheet.create((theme) => ({
   },
   card: {
     borderRadius: theme.radius.xl,
-    ...theme.glass.card,
     maxWidth: 360,
     width: '100%',
   },

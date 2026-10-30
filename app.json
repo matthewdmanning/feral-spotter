@@ -41,6 +41,8 @@
       "expo-image",
       "./plugins/withCmakeVersion",
       "./plugins/withPixel7Architecture",
+      "react-native-liquid-glassmorphism",
+      "./plugins/withPhosphorTabDrawables",
       "./plugins/withProfileable",
       "./plugins/withHermesStartupProfiler",
       "@react-native-firebase/app",

@@ -4,6 +4,7 @@
  * Migrated from NativeWind → Unistyles v3.
  */
 
+import { GlassSurface } from '@/src/components/atoms/GlassSurface'
 import { AppButton } from '@/src/components/atoms/AppButton'
 import { ButtonRow } from '@/src/components/molecules/ButtonRow'
 import { useDateTimePicker } from '@/src/hooks/useDateTimePicker'
@@ -87,7 +88,7 @@ export function DateTimePickerButton({
           statusBarTranslucent
         >
           <View style={dialogShell.backdrop}>
-            <View style={dialogShell.sheet}>
+            <GlassSurface kind="raised" style={dialogShell.sheet}>
               <Text style={dialogShell.title}>{MODAL_TITLE[mode]}</Text>
 
               {currentMode === 'date' && (
@@ -130,7 +131,7 @@ export function DateTimePickerButton({
                 </AppButton>
                 <AppButton onPress={handleConfirm}>Confirm</AppButton>
               </ButtonRow>
-            </View>
+            </GlassSurface>
           </View>
         </Modal>
       )}

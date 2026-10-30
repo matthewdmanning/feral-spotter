@@ -26,7 +26,11 @@ export const styles = StyleSheet.create((theme, rt) => ({
     // Lift the sheet over the map, and pull it up so its rounded corners
     // sit over map content rather than over an empty strip.
     marginTop: -theme.radius.xxl,
-    ...theme.glass.raised,
+    // Solid, never glass: the map is a native surface that glass cannot
+    // capture, so glass would freeze on a stale frame.
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   hint: {
     ...theme.textVariants.bodySmall,

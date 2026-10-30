@@ -26,7 +26,6 @@ export const styles = StyleSheet.create((theme, rt) => ({
   total: { ...theme.textVariants.bodySmall, color: theme.colors.muted },
   empty: {
     borderRadius: theme.radius.xl,
-    ...theme.glass.card,
     paddingHorizontal: theme.spacing.xxl,
     paddingVertical: theme.spacing.xxxl,
     alignItems: 'center',
