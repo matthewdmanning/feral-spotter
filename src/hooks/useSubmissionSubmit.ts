@@ -29,7 +29,11 @@ import {
   getSubmissionCache,
   updateSubmissionCache,
 } from '@/src/lib/cache/submissionCache'
-import { completeDraft, discardDraft } from '@/src/lib/submission/draft'
+import {
+  confirmResetSubmission,
+  discardDraftAndGoHome,
+} from '@/src/hooks/confirmResetSubmission'
+import { completeDraft } from '@/src/lib/submission/draft'
 import {
   buildCacheMetadata,
   buildSubmissionPayload,
@@ -276,25 +280,10 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
 
   // ── Reset → confirm → clear all (#153) ─────────────────────────────────────
 
-  const handleDiscard = useCallback(async () => {
-    await discardDraft()
-    router.replace('/')
-  }, [])
-
-  const handleReset = useCallback(() => {
-    showAlert(
-      'Reset Submission',
-      'This will permanently clear all cats, photos and submission data.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Reset',
-          style: 'destructive',
-          onPress: handleDiscard,
-        },
-      ],
-    )
-  }, [handleDiscard])
-
-  return { handleDone, handleReset, handleDiscard, isSubmitting }
+  return {
+    handleDone,
+    handleReset: confirmResetSubmission,
+    handleDiscard: discardDraftAndGoHome,
+    isSubmitting,
+  }
 }

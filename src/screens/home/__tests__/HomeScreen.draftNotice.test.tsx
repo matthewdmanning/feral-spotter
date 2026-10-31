@@ -64,18 +64,27 @@ describe('HomeScreen photo draft notice (#424)', () => {
     expect(screen.queryByText('Reset')).toBeNull()
   })
 
-  it('offers Finish for a restored draft, and Finish opens the report', async () => {
+  it('offers Finish and Reset for a restored draft, and Finish opens the report', async () => {
     seedPool(APP_STARTED_AT - 1)
     render(<HomeScreen />)
     expect(
       screen.getByText(
-        'You have an unfinished submission with camera photos. Finish it to use Upload Photos.',
+        'You have an unfinished submission with camera photos. Finish or reset it to use Upload Photos.',
       ),
     ).toBeOnTheScreen()
-    expect(screen.queryByText('Reset')).toBeNull()
+    expect(screen.getByText('Reset')).toBeOnTheScreen()
 
     await userEvent.setup().press(screen.getByText('Finish'))
     expect(router.push).toHaveBeenCalledWith('/submission/create')
+  })
+
+  it('asks before discarding a restored draft', async () => {
+    seedPool(APP_STARTED_AT - 1)
+    render(<HomeScreen />)
+
+    await userEvent.setup().press(screen.getByText('Reset'))
+    expect(useUIStore.getState().dialog?.title).toBe('Reset Submission')
+    expect(usePhotoStore.getState().photos).toHaveLength(1)
   })
 
   it('offers Reset for an in-session draft, and Reset asks before discarding', async () => {

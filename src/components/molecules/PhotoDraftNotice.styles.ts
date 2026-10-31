@@ -8,6 +8,10 @@ export const styles = StyleSheet.create((theme) => ({
     paddingHorizontal: theme.layout.gutter,
     paddingBottom: theme.spacing.xxl,
   },
+  actions: {
+    flexDirection: 'row',
+    gap: theme.spacing.md,
+  },
   message: {
     ...theme.textVariants.bodySmall,
     color: theme.colors.muted,

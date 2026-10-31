@@ -112,7 +112,13 @@ function EntrypointCircle({
   const color =
     variant === 'primary' ? theme.colors.accentText : theme.colors.onSecondary
   return (
-    <View style={{ width: diameter, height: diameter }}>
+    <View
+      style={[
+        { width: diameter, height: diameter },
+        // Grey the whole circle, reticle included, so it reads as inactive.
+        disabled && { opacity: 0.5, filter: [{ grayscale: 1 }] },
+      ]}
+    >
       <AppButton
         onPress={onPress}
         variant={variant}

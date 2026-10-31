@@ -19,7 +19,7 @@ tags:
 - [x] The survival rule runs at app start-up.
 - [x] Home shows different copy for a restored draft and an in-session draft.
 - [x] More space between the Home notice and the bottom tabs.
-- [x] Finish (restored) and Reset (in-session, with confirmation) buttons.
+- [x] Reset (always, with confirmation) and Finish (restored draft only) buttons. The dialog says camera-roll copies stay when "Keep Photos on Device" saved some.
 
 **Out of scope / not addressed:**
 
@@ -59,8 +59,9 @@ tags:
 - `src/hooks/usePhotoStore.ts`: `updated_at`.
 - `src/lib/submission/draft.ts`: `discardUnsurvivingDraft(now)`. It waits for all four draft stores to hydrate, then discards through `discardDraft`.
 - `src/app/_layout.tsx`: runs the check once at start-up.
-- `src/components/molecules/PhotoDraftNotice.tsx` and `.styles.ts`: copy, Finish or Reset button, and 24 dp bottom padding.
-- `src/screens/home/index.tsx`: uses the notice. Finish opens `/submission/create`. Reset calls `confirmResetSubmission`.
+- `src/components/molecules/PhotoDraftNotice.tsx` and `.styles.ts`: copy, Reset button (and Finish when restored), and 24 dp bottom padding.
+- `src/screens/home/index.tsx`: uses the notice. Finish opens `/submission/create`. Reset calls `confirmResetSubmission`. A disabled entrypoint circle is greyed out, reticle included.
+- `src/hooks/confirmResetSubmission.ts`: the one reset dialog and `discardDraftAndGoHome()`. `useSubmissionSubmit` reuses both.
 
 ## Tests
 
