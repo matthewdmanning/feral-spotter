@@ -9,6 +9,7 @@
  * Hidden when the cat has no box (a cat described without annotating).
  */
 
+import { GlassSurface } from '@/src/components/atoms/GlassSurface'
 import { CatCrop } from '@/src/components/atoms/CatCrop'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
@@ -47,7 +48,7 @@ export function ProfilePicPicker({
   const canChoose = boxes.length > 1
 
   return (
-    <View style={styles.root}>
+    <GlassSurface kind="card" style={styles.root}>
       <Text style={styles.label}>Profile Pic</Text>
       <Text style={styles.hint}>
         {canChoose
@@ -98,6 +99,6 @@ export function ProfilePicPicker({
           )
         })}
       </ScrollView>
-    </View>
+    </GlassSurface>
   )
 }

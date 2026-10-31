@@ -23,10 +23,6 @@ jest.mock('expo-router', () => ({
   router: { back: jest.fn() },
 }))
 
-jest.mock('../index.styles', () => ({
-  styles: new Proxy({}, { get: () => ({}) }),
-}))
-
 jest.mock('@/src/hooks/useAnnotatePass', () => ({ useAnnotatePass: jest.fn() }))
 jest.mock('@/src/hooks/useBackHandler', () => ({ useBackHandler: jest.fn() }))
 jest.mock('@/src/hooks/useTutorialStore', () => ({

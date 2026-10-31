@@ -3,6 +3,8 @@ package expo.modules.nativeidentificationcamera
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.BitmapFactory
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.TotalCaptureResult
@@ -14,7 +16,9 @@ import android.util.Log
 import android.util.Range
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
+import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import androidx.annotation.OptIn
 import androidx.camera.camera2.interop.Camera2Interop
 import androidx.camera.camera2.interop.ExperimentalCamera2Interop
@@ -38,6 +42,7 @@ import expo.modules.kotlin.Promise
 import expo.modules.kotlin.viewevent.EventDispatcher
 import expo.modules.kotlin.views.ExpoView
 import java.io.File
+import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
@@ -105,16 +110,22 @@ class NativeIdentificationCameraView(
     scaleType = PreviewView.ScaleType.FILL_CENTER
   }
 
+  // Pinch to zoom is a view zoom: the PreviewView is scaled on screen and the
+  // sensor stays at 1x. CameraX zoom crops every bound use case, so a sensor
+  // zoom would crop the saved photo too. The photo must stay full field and
+  // full resolution, so the zoom here only magnifies what the user looks at.
+  // The zoom always centres on the preview. The scale is kept in `viewZoom`, an
+  // immutable value read by focus on a caller's thread, and copied onto
+  // previewView by applyViewZoom. Its limits are the one place the zoom range
+  // is set.
+  @Volatile
+  private var viewZoom = ViewZoom.initial()
+
   private val scaleGestureDetector = ScaleGestureDetector(
     context,
     object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
       override fun onScale(detector: ScaleGestureDetector): Boolean {
-        val boundCamera = camera ?: return false
-        val zoomState = boundCamera.cameraInfo.zoomState.value ?: return false
-        val requested = zoomState.zoomRatio * detector.scaleFactor
-        boundCamera.cameraControl.setZoomRatio(
-          requested.coerceIn(zoomState.minZoomRatio, zoomState.maxZoomRatio)
-        )
+        applyViewZoom(viewZoom.scaledBy(detector.scaleFactor))
         return true
       }
 
@@ -125,8 +136,10 @@ class NativeIdentificationCameraView(
         diagnostic(
           "pinch_ended",
           mapOf(
-            // -1 means the session went away before the pinch ended.
-            "zoom_ratio" to
+            "view_zoom" to viewZoom.scale.toDouble(),
+            // Stays 1.0 if the photo is still full field. -1 means the session
+            // went away before the pinch ended.
+            "sensor_zoom_ratio" to
               (camera?.cameraInfo?.zoomState?.value?.zoomRatio?.toDouble() ?: -1.0),
             "camera_position" to position
           )
@@ -134,6 +147,32 @@ class NativeIdentificationCameraView(
       }
     }
   )
+
+  // The current multiplier, such as "2.3x", shown only while zoomed in.
+  private val zoomLabel = TextView(context).apply {
+    visibility = View.GONE
+    setTextColor(Color.WHITE)
+    textSize = ZOOM_LABEL_TEXT_SP
+    val density = context.resources.displayMetrics.density
+    val padding = (ZOOM_LABEL_PADDING_DP * density).toInt()
+    setPadding(padding * 2, padding, padding * 2, padding)
+    background = GradientDrawable().apply {
+      setColor(ZOOM_LABEL_BACKGROUND)
+      cornerRadius = ZOOM_LABEL_RADIUS_DP * density
+    }
+    importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
+  }
+
+  private fun applyViewZoom(zoom: ViewZoom) {
+    viewZoom = zoom
+    previewView.scaleX = zoom.scale
+    previewView.scaleY = zoom.scale
+    val zoomed = pinchZoom && zoom.isZoomed
+    zoomLabel.visibility = if (zoomed) View.VISIBLE else View.GONE
+    if (zoomed) zoomLabel.text = String.format(Locale.US, "%.1f×", zoom.scale)
+  }
+
+  private fun resetViewZoom() = applyViewZoom(viewZoom.reset())
 
   private var cameraProvider: ProcessCameraProvider? = null
 
@@ -198,11 +237,18 @@ class NativeIdentificationCameraView(
 
   var subjectMetering: Boolean = false
 
-  /**
-   * Pinch to zoom. Off by default, so the view claims no touch of its own and
-   * the whole gesture stays with the JavaScript tap-to-focus recognizer.
-   */
   var pinchZoom: Boolean = false
+    set(value) {
+      if (field == value) return
+      field = value
+      previewView.implementationMode = if (value) {
+        PreviewView.ImplementationMode.COMPATIBLE
+      } else {
+        PreviewView.ImplementationMode.PERFORMANCE
+      }
+      if (!value) resetViewZoom()
+      needsRebind = true
+    }
 
   /**
    * Driven by the `camera_performance_checks` setting. Off by default, so a
@@ -292,6 +338,7 @@ class NativeIdentificationCameraView(
 
   init {
     addView(previewView)
+    addView(zoomLabel)
 
     beginSection(SECTION_PROVIDER, traceCookie)
     val future = ProcessCameraProvider.getInstance(context)
@@ -371,6 +418,21 @@ class NativeIdentificationCameraView(
       MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY)
     )
     previewView.layout(0, 0, width, height)
+
+    // The label sits at the left edge and mid-height, clear of the top bar and
+    // the shutter row that React Native draws above this view.
+    zoomLabel.measure(
+      MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST),
+      MeasureSpec.makeMeasureSpec(height, MeasureSpec.AT_MOST)
+    )
+    val labelLeft = (ZOOM_LABEL_MARGIN_DP * resources.displayMetrics.density).toInt()
+    val labelTop = (height - zoomLabel.measuredHeight) / 2
+    zoomLabel.layout(
+      labelLeft,
+      labelTop,
+      labelLeft + zoomLabel.measuredWidth,
+      labelTop + zoomLabel.measuredHeight
+    )
   }
 
   /**
@@ -538,6 +600,9 @@ class NativeIdentificationCameraView(
     boundSessionConfig = null
     imageCaptureUseCase = null
     camera = null
+    // CameraX zoom resets when the camera closes; the view zoom does the same,
+    // so a new session never starts zoomed.
+    resetViewZoom()
     if (wasBound) {
       diagnostic("session_unbound", mapOf("bind_count" to bindCount))
     }
@@ -688,7 +753,31 @@ class NativeIdentificationCameraView(
     )
   }
 
+  /**
+   * A tap, in fractions of the view. Undoes the view zoom, so a zoomed preview
+   * focuses what is under the finger and not the point that was there at 1x.
+   */
   fun focus(normalizedX: Double, normalizedY: Double): Boolean {
+    val zoom = viewZoom
+    return focusPreviewPoint(
+      zoom.previewFraction(normalizedX.toFloat()).toDouble(),
+      zoom.previewFraction(normalizedY.toFloat()).toDouble(),
+      normalizedX,
+      normalizedY
+    )
+  }
+
+  /**
+   * A point already in the preview, which a view zoom does not move. The
+   * requested point is what the caller asked for, and is what is checked and
+   * reported; for a tap it differs from the preview point while zoomed.
+   */
+  private fun focusPreviewPoint(
+    previewX: Double,
+    previewY: Double,
+    requestedX: Double = previewX,
+    requestedY: Double = previewY
+  ): Boolean {
     // Reported whether or not it is applied: a tap that arrives but is refused
     // looks identical on screen to a tap that never arrived.
     fun report(accepted: Boolean, reason: String) {
@@ -697,15 +786,15 @@ class NativeIdentificationCameraView(
         mapOf(
           "accepted" to accepted,
           "reason" to reason,
-          "normalized_x" to normalizedX,
-          "normalized_y" to normalizedY,
+          "normalized_x" to requestedX,
+          "normalized_y" to requestedY,
           "subject_metering" to subjectMetering,
           "camera_position" to position
         )
       )
     }
 
-    if (normalizedX !in 0.0..1.0 || normalizedY !in 0.0..1.0) {
+    if (requestedX !in 0.0..1.0 || requestedY !in 0.0..1.0) {
       report(false, "out_of_bounds")
       return false
     }
@@ -719,8 +808,8 @@ class NativeIdentificationCameraView(
     }
 
     val point = previewView.meteringPointFactory.createPoint(
-      (normalizedX * previewView.width).toFloat(),
-      (normalizedY * previewView.height).toFloat()
+      (previewX.coerceIn(0.0, 1.0) * previewView.width).toFloat(),
+      (previewY.coerceIn(0.0, 1.0) * previewView.height).toFloat()
     )
     val action = FocusMeteringAction.Builder(
       point,
@@ -744,7 +833,7 @@ class NativeIdentificationCameraView(
       )
       return false
     }
-    return focus(
+    return focusPreviewPoint(
       region.x + region.width / 2.0,
       region.y + region.height / 2.0
     )
@@ -755,3 +844,9 @@ class NativeIdentificationCameraView(
     super.onDetachedFromWindow()
   }
 }
+
+private const val ZOOM_LABEL_MARGIN_DP = 16
+private const val ZOOM_LABEL_PADDING_DP = 6
+private const val ZOOM_LABEL_RADIUS_DP = 16
+private const val ZOOM_LABEL_TEXT_SP = 14f
+private const val ZOOM_LABEL_BACKGROUND = 0x99000000.toInt()

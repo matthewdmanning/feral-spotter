@@ -3,8 +3,10 @@ import { router } from 'expo-router'
 import React from 'react'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
+import { SUBMISSION_STALE_MS } from '@/src/config/constants'
 import { getAllSubmissionCaches } from '@/src/lib/cache/submissionCache'
 import HomeScreen from '../index'
+import { useDraftStartupStore } from '@/src/hooks/useDraftStartupStore'
 
 /**
  * Model of every button on HomeScreen (src/screens/home/index.tsx) and what
@@ -27,10 +29,6 @@ jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
 }))
 
-jest.mock('../index.styles', () => ({
-  styles: new Proxy({}, { get: () => ({}) }),
-}))
-
 jest.mock('@/src/lib/auth/useAuth', () => ({
   useAuth: () => ({ isReady: true, isAuthenticated: true }),
 }))
@@ -48,10 +46,6 @@ const mockPickFromLibrary = jest.fn()
 jest.mock('@/src/hooks/useLibraryPhotoPicker', () => ({
   useLibraryPhotoPicker: () => ({ pickFromLibrary: mockPickFromLibrary }),
 }))
-jest.mock('react-native-reanimated', () =>
-  jest.requireActual('react-native-reanimated/mock'),
-)
-
 const buttonsMachine = createMachine({
   id: 'homeEntrypointActions',
   initial: 'unmounted',
@@ -82,8 +76,12 @@ const buttonsMachine = createMachine({
 
 describe('HomeScreen entrypoint buttons — model-based test', () => {
   let getByLabelText: ReturnType<typeof render>['getByLabelText']
+  let queryByLabelText: ReturnType<typeof render>['queryByLabelText']
+  const queryShown = (label: string) =>
+    queryByLabelText(label, { includeHiddenElements: false })
 
   beforeEach(() => {
+    useDraftStartupStore.setState({ phase: 'ready', task: Promise.resolve() })
     jest.clearAllMocks()
   })
 
@@ -98,6 +96,7 @@ describe('HomeScreen entrypoint buttons — model-based test', () => {
     )
     const result = render(<HomeScreen />)
     getByLabelText = result.getByLabelText
+    queryByLabelText = result.queryByLabelText
     await waitFor(() => expect(getAllSubmissionCaches).toHaveBeenCalled())
   }
 
@@ -107,16 +106,19 @@ describe('HomeScreen entrypoint buttons — model-based test', () => {
         expect(router.navigate).not.toHaveBeenCalled()
         expect(router.push).not.toHaveBeenCalled()
       },
+      // Visibility as assistive tech sees it. The fade itself is a Reanimated
+      // animated style, which Reanimated 4.7's Jest environment does not
+      // write back to the style prop that toBeVisible reads.
       idleEntry: async () => {
         await waitFor(() => {
-          expect(getByLabelText('Continue Observation')).not.toBeVisible()
-          expect(getByLabelText('New Sighting')).not.toBeVisible()
+          expect(queryShown('Continue Observation')).toBeNull()
+          expect(queryShown('New Sighting')).toBeNull()
         })
       },
       resumeEntry: async () => {
         await waitFor(() => {
-          expect(getByLabelText('Continue Observation')).toBeVisible()
-          expect(getByLabelText('New Sighting')).toBeVisible()
+          expect(queryShown('Continue Observation')).not.toBeNull()
+          expect(queryShown('New Sighting')).not.toBeNull()
         })
       },
     },
@@ -132,7 +134,7 @@ describe('HomeScreen entrypoint buttons — model-based test', () => {
           {
             status: 'In Progress',
             updated_at: new Date(
-              Date.now() - 25 * 60 * 60 * 1000,
+              Date.now() - SUBMISSION_STALE_MS - 60 * 60 * 1000,
             ).toISOString(),
           },
         ])

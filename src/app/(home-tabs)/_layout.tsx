@@ -3,139 +3,70 @@
  * Tab navigator — only screens that truly belong in bottom tabs.
  * Routes declare when a screen shows; screens/ contains what they show.
  *
- * useUnistyles with Tabs is explicitly allowed by Unistyles —
- * react-navigation does not re-render screens on screenOptions changes.
+ * Native tabs (expo-router/native-tabs): Android draws its own Material
+ * bottom navigation bar (active indicator, ripple, animation, TalkBack), and
+ * iOS 26 draws its system glass tab bar. The Android bar takes solid colours
+ * only; the theme reaches it through the indicator, ripple, icon and label
+ * colours.
  *
- * Gradients are inline styles, not Unistyles ones: RN processes
- * experimental_backgroundImage in JS, which Unistyles' native updates skip.
+ * Icons are Phosphor, the same set as the rest of the app. On Android they
+ * are vector drawables written at prebuild by
+ * plugins/withPhosphorTabDrawables.js, the fastest icon source native tabs
+ * accept: regular weight idle, fill weight selected. iOS uses SF Symbols.
+ * src/config/tabIcons.json names both.
+ *
+ * useUnistyles with a navigator is explicitly allowed by Unistyles —
+ * navigators do not re-render screens on option changes.
  */
 
-import { Tabs } from 'expo-router'
-import type { BottomTabBarButtonProps } from 'expo-router/js-tabs'
-import { PlatformPressable } from 'expo-router/react-navigation'
-import { PixelRatio, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useUnistyles } from 'react-native-unistyles'
-import type { Icon as PhosphorIcon } from 'phosphor-react-native'
-import { CameraIcon } from 'phosphor-react-native/src/icons/Camera'
-import { ClipboardTextIcon } from 'phosphor-react-native/src/icons/ClipboardText'
-import { GearIcon } from 'phosphor-react-native/src/icons/Gear'
+import tabIcons from '@/src/config/tabIcons.json'
 import { selectionHaptic } from '@/src/lib/haptics'
+import { NativeTabs, type SFSymbolIcon } from 'expo-router/native-tabs'
+import { useUnistyles } from 'react-native-unistyles'
 
-function HapticTabButton(props: BottomTabBarButtonProps) {
-  return (
-    <PlatformPressable
-      {...props}
-      onPressIn={(event) => {
-        selectionHaptic()
-        props.onPressIn?.(event)
-      }}
-    />
-  )
-}
+type SFSymbols = NonNullable<SFSymbolIcon['sf']>
+type TabName = keyof typeof tabIcons
 
-// Thin, so the pill does not push the label into the gesture bar.
-const PILL_PADDING_V = 2
-
-// The focused tab's icon sits on a raised glass pill (Material's active
-// indicator); idle icons sit flat.
-function TabIcon({ Icon, focused }: { Icon: PhosphorIcon; focused: boolean }) {
-  const { theme } = useUnistyles()
-  return (
-    <View
-      style={[
-        {
-          paddingHorizontal: theme.spacing.lg,
-          paddingVertical: PILL_PADDING_V,
-          borderRadius: theme.radius.full,
-        },
-        focused && {
-          experimental_backgroundImage: theme.gradients.primary,
-          boxShadow: theme.depth.raised,
-        },
-      ]}
-    >
-      <Icon
-        size={theme.iconSize.xl}
-        color={focused ? theme.colors.accentText : theme.colors.muted}
-      />
-    </View>
-  )
-}
+const TABS: { name: TabName; title: string }[] = [
+  { name: 'index', title: 'Home' },
+  { name: 'feral-reports', title: 'Reports' },
+  { name: 'settings', title: 'Settings' },
+]
 
 export default function HomeTabsLayout() {
   const { theme } = useUnistyles()
-  const insets = useSafeAreaInsets()
-  // The stock bar height assumes default text and 24dp icons. Size it from
-  // the real contents instead — pill, label at the OS font scale — plus a
-  // gap above the gesture bar, so the labels never sit on it.
-  const labelHeight =
-    theme.textVariants.caption.lineHeight * PixelRatio.getFontScale()
-  const bottomGap = insets.bottom + theme.spacing.md
-  const tabBarHeight =
-    theme.spacing.sm +
-    theme.iconSize.xl +
-    PILL_PADDING_V * 2 +
-    theme.spacing.xs +
-    labelHeight +
-    bottomGap
+  const label = {
+    fontFamily: theme.fonts.semibold,
+    fontSize: theme.textVariants.caption.fontSize,
+  }
 
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarStyle: {
-          backgroundColor: theme.colors.surface,
-          borderTopColor: theme.colors.border,
-          borderTopWidth: 1,
-          height: tabBarHeight,
-          paddingTop: theme.spacing.sm,
-          paddingBottom: bottomGap,
-        },
-        tabBarBackground: () => (
-          <View
-            style={{
-              flex: 1,
-              experimental_backgroundImage: theme.gradients.tabBar,
-            }}
-          />
-        ),
-        tabBarButton: HapticTabButton,
-        tabBarActiveTintColor: theme.colors.accent,
-        tabBarInactiveTintColor: theme.colors.muted,
-        tabBarLabelStyle: {
-          ...theme.textVariants.caption,
-          marginTop: theme.spacing.xs,
-        },
+    <NativeTabs
+      backgroundColor={theme.colors.surface}
+      indicatorColor={theme.colors.accentSoft}
+      rippleColor={theme.colors.secondary}
+      iconColor={{
+        default: theme.colors.muted,
+        selected: theme.colors.accentSoftText,
       }}
+      labelStyle={{
+        default: { ...label, color: theme.colors.muted },
+        selected: { ...label, color: theme.colors.text },
+      }}
+      // Three tabs: Material shows every label.
+      labelVisibilityMode="labeled"
+      screenListeners={{ tabPress: () => selectionHaptic() }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ focused }) => (
-            <TabIcon Icon={CameraIcon} focused={focused} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="feral-reports"
-        options={{
-          title: 'Reports',
-          tabBarIcon: ({ focused }) => (
-            <TabIcon Icon={ClipboardTextIcon} focused={focused} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: 'Settings',
-          tabBarIcon: ({ focused }) => (
-            <TabIcon Icon={GearIcon} focused={focused} />
-          ),
-        }}
-      />
-    </Tabs>
+      {TABS.map(({ name, title }) => {
+        const { drawable, sf } = tabIcons[name]
+        return (
+          <NativeTabs.Trigger key={name} name={name}>
+            <NativeTabs.Trigger.Label>{title}</NativeTabs.Trigger.Label>
+            {/* The JSON types symbol names as plain strings. */}
+            <NativeTabs.Trigger.Icon drawable={drawable} sf={sf as SFSymbols} />
+          </NativeTabs.Trigger>
+        )
+      })}
+    </NativeTabs>
   )
 }

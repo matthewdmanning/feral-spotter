@@ -4,7 +4,8 @@ export const styles = StyleSheet.create((theme) => ({
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: theme.spacing.md,
+    alignItems: 'baseline',
+    gap: theme.spacing.lg,
   },
   label: { ...theme.textVariants.bodySmall, color: theme.colors.muted },
   // Shrinks and wraps, so a long value (an address) never pushes its label

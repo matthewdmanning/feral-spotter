@@ -152,6 +152,7 @@ export const useSubmissionStore = create<SubmissionState>()(
     }),
     {
       name: 'submission-store',
+      skipHydration: true,
       storage: createJSONStorage(() => asyncStorage),
     },
   ),

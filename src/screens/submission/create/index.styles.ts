@@ -1,8 +1,8 @@
 import { StyleSheet } from 'react-native-unistyles'
 
 export const styles = StyleSheet.create((theme, rt) => ({
-  // Header handles the top inset; this screen isn't scrollable, so the last
-  // button (Reset) needs the bottom inset itself to clear the gesture bar.
+  // Header handles the top inset; the pinned actions sit below the scroll
+  // area, so they need the bottom inset themselves to clear the gesture bar.
   root: {
     flex: 1,
     backgroundColor: theme.colors.background,
@@ -12,12 +12,17 @@ export const styles = StyleSheet.create((theme, rt) => ({
   },
   scroll: { flex: 1 },
   scrollContent: { gap: theme.spacing.lg },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: theme.spacing.md,
+  },
   title: { ...theme.textVariants.title, color: theme.colors.text },
   statusRow: {
     flexDirection: 'row',
     gap: theme.spacing.lg,
     borderRadius: theme.radius.xl,
-    ...theme.glass.card,
     padding: theme.layout.cardPadding,
   },
   statusItem: {
@@ -31,23 +36,37 @@ export const styles = StyleSheet.create((theme, rt) => ({
     color: theme.colors.text,
     flexShrink: 1,
   },
-  catList: { gap: theme.spacing.sm },
+  // Same gap between cards as the Reports list.
+  catList: { gap: theme.layout.stackGap },
   catListTitle: {
     ...theme.textVariants.heading,
     color: theme.colors.text,
     marginTop: theme.spacing.xs,
   },
   // One accordion item: the header row and, when open, every field below it.
+  // The card has no padding of its own: the header carries it, so the whole
+  // header strip — edge to edge — is the tap target, not only the label.
   catCard: {
     borderRadius: theme.radius.xl,
-    ...theme.glass.card,
-    padding: theme.layout.cardPadding,
-    gap: theme.spacing.md,
   },
-  catRow: { flexDirection: 'row', alignItems: 'center' },
-  catDetails: { gap: theme.spacing.sm },
+  catRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.md,
+    minHeight: theme.controlHeight.control,
+    paddingHorizontal: theme.layout.cardPadding,
+    paddingVertical: theme.spacing.md,
+  },
+  catRowPressed: { opacity: 0.7 },
+  catDetails: {
+    gap: theme.spacing.sm,
+    paddingHorizontal: theme.layout.cardPadding,
+    paddingBottom: theme.layout.cardPadding,
+  },
   catRowText: { ...theme.textVariants.body, flex: 1, color: theme.colors.text },
-  catActions: { flexDirection: 'row', gap: theme.spacing.md },
+  // The actions are a group of their own: 8 + 8 = 16dp above, against 8dp
+  // between table rows.
+  catActions: { marginTop: theme.spacing.sm },
   // #299: the zero-cats state. Both routes back in are offered here — the
   // secondary one is outlined rather than filled so Annotate still reads as
   // the expected path on a first pass, without blocking the other. No
@@ -58,12 +77,8 @@ export const styles = StyleSheet.create((theme, rt) => ({
     textAlign: 'center',
     paddingVertical: theme.spacing.sm,
   },
-  bottomActions: {
-    marginTop: 'auto',
-    alignSelf: 'center',
-    width: '67%',
-    gap: theme.layout.stackGap,
-  },
+  // Full gutter width, like every other screen's actions.
+  bottomActions: { gap: theme.layout.stackGap },
   // #375: the reason "Finished!" is disabled.
   disabledReason: {
     ...theme.textVariants.bodySmall,

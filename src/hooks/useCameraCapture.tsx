@@ -35,6 +35,7 @@ export interface CameraCaptureResult {
   cameraRef: React.RefObject<CameraRef | null>
   photoOutput: CameraPhotoOutput
   isActive: boolean
+  canCapture: boolean
   enableLowLightBoost: boolean
   capturedPhotos: SubmissionPhoto[]
   flashMode: FlashMode
@@ -69,6 +70,7 @@ export function useCameraCapture(): CameraCaptureResult {
 
   const {
     isActive,
+    canCapture,
     capturedPhotos,
     listRef,
     renderItem,
@@ -117,6 +119,7 @@ export function useCameraCapture(): CameraCaptureResult {
   // it sets itself as a dependency, which recreated the callback twice per
   // capture and re-rendered the shutter.
   const isTakingPhotoRef = useRef(false)
+  const hasStartedLocationCapture = useRef(false)
 
   const capturePipeline = iosIdentificationEnabled
     ? 'ios_identification'
@@ -130,6 +133,7 @@ export function useCameraCapture(): CameraCaptureResult {
       : `tap_${captureMode}`
 
   const handleTakePhoto = useCallback(async () => {
+    if (!canCapture) return
     if (captureMode === 'burst' && isTakingPhotoRef.current) {
       burstStopRequested.current = true
       return
@@ -258,6 +262,7 @@ export function useCameraCapture(): CameraCaptureResult {
     photoOutput,
     startPhotoUpload,
     triggerFlash,
+    canCapture,
     user,
   ])
 
@@ -315,14 +320,20 @@ export function useCameraCapture(): CameraCaptureResult {
         '[location] consent hydrated:',
         useConsentStore.persist.hasHydrated(),
       )
-    void startLocationCapture()
   }, [])
+
+  useEffect(() => {
+    if (!canCapture || hasStartedLocationCapture.current) return
+    hasStartedLocationCapture.current = true
+    void startLocationCapture()
+  }, [canCapture])
 
   return {
     device,
     cameraRef,
     photoOutput,
     isActive,
+    canCapture,
     enableLowLightBoost,
     capturedPhotos,
     flashMode,

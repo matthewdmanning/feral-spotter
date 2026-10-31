@@ -18,7 +18,6 @@ export const dialogShell = StyleSheet.create((theme) => ({
   },
   sheet: {
     borderRadius: theme.radius.xxl,
-    ...theme.glass.raised,
     padding: theme.spacing.xxl,
     width: '100%',
     maxWidth: 360,

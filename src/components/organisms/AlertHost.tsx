@@ -9,7 +9,9 @@
  * that has to know how a dialog looks.
  */
 
+import { GlassSurface } from '@/src/components/atoms/GlassSurface'
 import { AppButton } from '@/src/components/atoms/AppButton'
+import { ButtonRow } from '@/src/components/molecules/ButtonRow'
 import { useUIStore, type AlertButton } from '@/src/hooks/useUIStore'
 import { Modal, Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
@@ -58,6 +60,16 @@ export function AlertHost() {
   // stack, because side-by-side would push each under the 48dp floor.
   const sideBySide = dialog.buttons.length === 2
 
+  const buttons = dialog.buttons.map((button) => (
+    <AppButton
+      key={button.text}
+      onPress={() => press(button)}
+      variant={variantFor(button.style)}
+    >
+      {button.text}
+    </AppButton>
+  ))
+
   return (
     <Modal
       visible
@@ -67,24 +79,17 @@ export function AlertHost() {
       onRequestClose={onRequestClose}
     >
       <View style={dialogShell.backdrop}>
-        <View style={dialogShell.sheet}>
+        <GlassSurface kind="raised" style={dialogShell.sheet}>
           <Text style={dialogShell.title}>{dialog.title}</Text>
           {dialog.message ? (
             <Text style={styles.message}>{dialog.message}</Text>
           ) : null}
-          <View style={sideBySide ? styles.buttonRow : styles.buttonColumn}>
-            {dialog.buttons.map((button) => (
-              <AppButton
-                key={button.text}
-                onPress={() => press(button)}
-                variant={variantFor(button.style)}
-                flex1={sideBySide}
-              >
-                {button.text}
-              </AppButton>
-            ))}
-          </View>
-        </View>
+          {sideBySide ? (
+            <ButtonRow>{buttons}</ButtonRow>
+          ) : (
+            <View style={styles.buttonColumn}>{buttons}</View>
+          )}
+        </GlassSurface>
       </View>
     </Modal>
   )

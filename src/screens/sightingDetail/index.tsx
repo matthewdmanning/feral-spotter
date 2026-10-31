@@ -5,6 +5,7 @@
  * selectors, no edit or delete. History is a record, not a draft.
  */
 
+import { GlassSurface } from '@/src/components/atoms/GlassSurface'
 import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { CatCrop } from '@/src/components/atoms/CatCrop'
 import { STATUS_COLOR_KEY, StatusIcon } from '@/src/components/atoms/StatusIcon'
@@ -75,18 +76,18 @@ export default function SightingDetailScreen() {
           </View>
         </View>
 
-        <View style={styles.card}>
+        <GlassSurface kind="card" style={styles.card}>
           {describeSighting(sighting).map(({ label, value }) => (
             <FieldRow key={label} label={label} value={value} />
           ))}
-        </View>
+        </GlassSurface>
 
         <Text style={styles.sectionTitle}>Cats Recorded</Text>
         {sighting.cats.length === 0 && (
           <Text style={styles.emptyBody}>No cats recorded.</Text>
         )}
         {sighting.cats.map((cat, index) => (
-          <View key={cat.local_id} style={styles.card}>
+          <GlassSurface kind="card" key={cat.local_id} style={styles.card}>
             <View style={styles.catHeader}>
               <CatCrop
                 uri={profilePicUri(sighting, cat)}
@@ -99,7 +100,7 @@ export default function SightingDetailScreen() {
             {describeCat(cat).map(({ label, value }) => (
               <FieldRow key={label} label={label} value={value} />
             ))}
-          </View>
+          </GlassSurface>
         ))}
       </ScrollView>
     </View>

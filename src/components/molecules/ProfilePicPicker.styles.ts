@@ -3,7 +3,6 @@ import { StyleSheet } from 'react-native-unistyles'
 export const styles = StyleSheet.create((theme) => ({
   root: {
     borderRadius: theme.radius.xl,
-    ...theme.glass.card,
     padding: theme.layout.cardPadding,
     gap: theme.spacing.sm,
   },

@@ -21,14 +21,6 @@ jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
 }))
 
-jest.mock('../index.styles', () => ({
-  styles: new Proxy({}, { get: () => ({}) }),
-}))
-
-jest.mock('react-native-reanimated', () =>
-  jest.requireActual('react-native-reanimated/mock'),
-)
-
 jest.mock('react-native-vision-camera', () => ({
   Camera: 'Camera',
   useCameraPermission: jest.fn(),
@@ -77,6 +69,7 @@ const baseCaptureResult: ReturnType<typeof useCameraCapture> = {
   cameraRef: { current: null },
   photoOutput: {} as never,
   capturedPhotos: [],
+  canCapture: true,
   flashMode: 'auto',
   isTakingPhoto: false,
   flashOverlayStyle: {},

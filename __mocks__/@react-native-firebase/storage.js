@@ -1,5 +1,3 @@
-/* global jest */
-
 // Manual Jest mock — @react-native-firebase/storage's native module isn't
 // available under Jest. Statically imported by
 // src/lib/upload/firebaseUpload.ts, so the real package must never load in

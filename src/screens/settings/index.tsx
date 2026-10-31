@@ -1,3 +1,4 @@
+import { GlassSurface } from '@/src/components/atoms/GlassSurface'
 import {
   getThemeMode,
   setThemeMode,
@@ -8,6 +9,7 @@ import { AppButton } from '@/src/components/atoms/AppButton'
 import { SegmentedControl } from '@/src/components/atoms/SegmentedControl'
 import { TextButton } from '@/src/components/atoms/TextButton'
 import { TextField } from '@/src/components/atoms/TextField'
+import { ButtonRow } from '@/src/components/molecules/ButtonRow'
 import { ToggleRow } from '@/src/components/molecules/ToggleRow'
 import { visiblePhotoToggles } from '@/src/config/photoToggles'
 import {
@@ -20,12 +22,12 @@ import { useChangeEmail } from '@/src/hooks/useChangeEmail'
 import { useConsentStore } from '@/src/hooks/useConsentStore'
 import { useAuthStore } from '@/src/lib/auth/authStore'
 import { useSettingsDraft } from '@/src/hooks/useSettingsDraft'
-import { APP_VERSION } from '@/src/config/constants'
+import { APP_VERSION, FEATURE_FLAGS } from '@/src/config/constants'
 import { router } from 'expo-router'
 import { CheckIcon } from 'phosphor-react-native/src/icons/Check'
 import { FileTextIcon } from 'phosphor-react-native/src/icons/FileText'
 import { KeyIcon } from 'phosphor-react-native/src/icons/Key'
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { Platform, ScrollView, Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
@@ -36,7 +38,9 @@ const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
   { value: 'dark', label: 'Dark' },
 ]
 
-const PHOTO_TOGGLES = visiblePhotoToggles(__DEV__, Platform.OS)
+const VISIBLE_TOGGLES = visiblePhotoToggles(FEATURE_FLAGS, Platform.OS)
+const PHOTO_TOGGLES = VISIBLE_TOGGLES.filter((toggle) => !toggle.flag)
+const DEVELOPER_TOGGLES = VISIBLE_TOGGLES.filter((toggle) => toggle.flag)
 
 export default function SettingsScreen() {
   const { theme } = useUnistyles()
@@ -79,7 +83,7 @@ export default function SettingsScreen() {
             </Text>
           </View>
 
-          <View style={styles.card}>
+          <GlassSurface kind="card" style={styles.card}>
             <Text style={styles.cardTitle}>Appearance</Text>
             <SegmentedControl
               label="Theme"
@@ -95,9 +99,9 @@ export default function SettingsScreen() {
             <Text style={styles.hint}>
               System follows your device&apos;s appearance setting.
             </Text>
-          </View>
+          </GlassSurface>
 
-          <View style={styles.card}>
+          <GlassSurface kind="card" style={styles.card}>
             <Text style={styles.cardTitle}>Haptic Feedback</Text>
             <ToggleRow
               label="Vibration on Touch"
@@ -105,9 +109,9 @@ export default function SettingsScreen() {
               value={hapticsOn}
               onValueChange={toggleHaptics}
             />
-          </View>
+          </GlassSurface>
 
-          <View style={styles.card}>
+          <GlassSurface kind="card" style={styles.card}>
             <Text style={styles.cardTitle}>Communications</Text>
             <ToggleRow
               label="Email Updates"
@@ -134,9 +138,9 @@ export default function SettingsScreen() {
             >
               Send verification link
             </TextButton>
-          </View>
+          </GlassSurface>
 
-          <View style={styles.card}>
+          <GlassSurface kind="card" style={styles.card}>
             <Text style={styles.cardTitle}>Authentication</Text>
             {passwordConfigured ? (
               <View style={styles.gap}>
@@ -179,24 +183,35 @@ export default function SettingsScreen() {
                 />
               </View>
             )}
-          </View>
+          </GlassSurface>
 
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Photos</Text>
-            {PHOTO_TOGGLES.map(({ key, label, desc }, i) => (
-              <View key={key}>
-                {i > 0 && <View style={styles.divider} />}
-                <ToggleRow
-                  label={label}
-                  hint={desc}
-                  value={draft[key]}
-                  onValueChange={(value) => patch(key, value)}
-                />
-              </View>
-            ))}
-          </View>
+          {[
+            { title: 'Photos', toggles: PHOTO_TOGGLES },
+            { title: 'Developer Mode', toggles: DEVELOPER_TOGGLES },
+          ].map(
+            ({ title, toggles }) =>
+              toggles.length > 0 && (
+                <GlassSurface kind="card" key={title} style={styles.card}>
+                  <Text style={styles.cardTitle}>{title}</Text>
+                  {/* Fragment, not a View: the divider must be a direct child
+                      of the card so the card gap spaces it evenly above and
+                      below. A wrapper View put the gap on one side only. */}
+                  {toggles.map(({ key, label, desc }, i) => (
+                    <Fragment key={key}>
+                      {i > 0 && <View style={styles.divider} />}
+                      <ToggleRow
+                        label={label}
+                        hint={desc}
+                        value={draft[key]}
+                        onValueChange={(value) => patch(key, value)}
+                      />
+                    </Fragment>
+                  ))}
+                </GlassSurface>
+              ),
+          )}
 
-          <View style={styles.card}>
+          <GlassSurface kind="card" style={styles.card}>
             <Text style={styles.cardTitle}>FeralSpotter</Text>
             <Text style={styles.subtitle}>Version {APP_VERSION}</Text>
             <View style={styles.divider} />
@@ -212,22 +227,23 @@ export default function SettingsScreen() {
             >
               Data Policy
             </TextButton>
-          </View>
+          </GlassSurface>
         </View>
       </ScrollView>
 
       <View style={styles.footer}>
-        <AppButton
-          variant="danger"
-          onPress={handleDiscard}
-          disabled={isVerifying}
-          flex1
-        >
-          Discard
-        </AppButton>
-        <AppButton onPress={handleSave} loading={isVerifying} flex1>
-          Save
-        </AppButton>
+        <ButtonRow>
+          <AppButton
+            variant="danger"
+            onPress={handleDiscard}
+            disabled={isVerifying}
+          >
+            Discard
+          </AppButton>
+          <AppButton onPress={handleSave} loading={isVerifying}>
+            Save
+          </AppButton>
+        </ButtonRow>
       </View>
     </View>
   )

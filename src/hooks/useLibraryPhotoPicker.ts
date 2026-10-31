@@ -10,6 +10,7 @@
 import { showAlert } from '@/src/hooks/useUIStore'
 import { usePhotoStore, useSubmissionStore } from '@/src/hooks'
 import { useAuth } from '@/src/lib/auth/useAuth'
+import { initializeDraft } from '@/src/hooks/useDraftStartupStore'
 import { EVENTS, captureEvent } from '@/src/lib/analytics/analytics'
 import { libraryPermission } from '@/src/lib/permissions/libraryPermission'
 import { uploadNewPhoto } from '@/src/lib/upload/uploadNewPhoto'
@@ -28,7 +29,6 @@ export interface LibraryPhotoPickerResult {
 }
 
 export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
-  const photos = usePhotoStore((s) => s.photos)
   const addPhotos = usePhotoStore((s) => s.addPhotos)
   const updatePhoto = usePhotoStore((s) => s.updatePhoto)
   const setLocationType = useSubmissionStore((s) => s.setLocationType)
@@ -36,6 +36,16 @@ export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
   const { user } = useAuth()
 
   const pickFromLibrary = useCallback(async () => {
+    try {
+      await initializeDraft()
+    } catch {
+      showAlert(
+        'Could not restore your sighting',
+        'Restart the app to try again.',
+      )
+      return
+    }
+    if (usePhotoStore.getState().source === 'camera') return
     // Check-then-request, mirroring useCameraCapture's write-only gallery-save
     // check (#145/#146): a granted/limited check short-circuits every repeat
     // tap, so the native request only ever fires once, on the first
@@ -64,7 +74,9 @@ export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
     })
     if (result.canceled || result.assets.length === 0) return
 
-    const isFirstPick = photos.length === 0
+    // A camera capture may have arrived while the system picker was open.
+    if (usePhotoStore.getState().source === 'camera') return
+    const isFirstPick = usePhotoStore.getState().photos.length === 0
     const newPhotos = result.assets.map(buildSubmissionPhoto)
     addPhotos(newPhotos)
     captureEvent(EVENTS.LIBRARY_PHOTOS_SELECTED, {
@@ -95,14 +107,7 @@ export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
     setSubmission({ time_type, captured_at })
 
     router.navigate('/submission/create')
-  }, [
-    photos.length,
-    addPhotos,
-    updatePhoto,
-    setLocationType,
-    setSubmission,
-    user,
-  ])
+  }, [addPhotos, updatePhoto, setLocationType, setSubmission, user])
 
   return { pickFromLibrary }
 }

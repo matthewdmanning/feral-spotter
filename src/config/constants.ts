@@ -10,6 +10,18 @@ import Constants from 'expo-constants'
 export const IS_PRERELEASE: boolean =
   Boolean(Constants.expoConfig?.extra?.isPrerelease) || __DEV__
 
+/**
+ * Feature flags. Each is off in a release build unless its EXPO_PUBLIC_*
+ * variable is "true" at bundle time. `experimentalCamera` is also on in
+ * development.
+ */
+export const FEATURE_FLAGS = {
+  experimentalCamera:
+    __DEV__ || process.env.EXPO_PUBLIC_EXPERIMENTAL_CAMERA === 'true',
+} as const
+
+export type FeatureFlag = keyof typeof FEATURE_FLAGS
+
 /** App version from Expo config. */
 export const APP_VERSION: string = Constants.expoConfig?.version ?? '1.0.0'
 
@@ -80,8 +92,18 @@ export const AUTOSAVE_INSTANT_MS = 400
 /** Autosave status display duration after save completes (ms). */
 export const AUTOSAVE_CLEAR_MS = 2000
 
-/** An in-progress submission older than this is too stale to offer "Continue Observation" for (ms). */
-export const SUBMISSION_STALE_MS = 24 * 60 * 60 * 1000
+/** A draft untouched for longer than this is stale: Home stops offering "Continue Observation" and the start-up check discards its photos (ms). */
+export const SUBMISSION_STALE_MS = 48 * 60 * 60 * 1000
+
+/** When this app process started. A draft last changed before it was restored from a previous session. */
+export const APP_STARTED_AT = Date.now()
 
 /** Gap between the screen's shorter edge and Home's circular entrypoint buttons, as a fraction of the shorter screen side. */
 export const ENTRYPOINT_BUFFER_PERCENT = 0.2
+
+/**
+ * OS font scale at and above which a ButtonRow stacks its buttons. 1.3 is
+ * Android's "Large" step: from there, two pill labels in a 360dp-wide dialog
+ * start to wrap.
+ */
+export const BUTTON_ROW_STACK_FONT_SCALE = 1.3

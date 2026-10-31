@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native-unistyles'
 
-export const styles = StyleSheet.create((theme) => ({
+export const styles = StyleSheet.create((theme, rt) => ({
   root: {
     flex: 1,
     backgroundColor: theme.colors.background,
@@ -14,17 +14,11 @@ export const styles = StyleSheet.create((theme) => ({
     justifyContent: 'space-evenly',
     // Floor for the space between the two circles. space-evenly alone
     // lets it shrink on short screens.
-    gap: theme.spacing.xxxl,
+    gap: theme.spacing.md,
+    paddingTop: rt.insets.top,
   },
   bottomArea: {
     paddingHorizontal: theme.layout.gutter,
     paddingBottom: theme.spacing.lg,
-  },
-  // #375: the reason a disabled entrypoint is disabled.
-  disabledReason: {
-    ...theme.textVariants.bodySmall,
-    color: theme.colors.muted,
-    textAlign: 'center',
-    paddingHorizontal: theme.layout.gutter,
   },
 }))

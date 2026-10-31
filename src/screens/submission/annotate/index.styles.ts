@@ -37,7 +37,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
   carousel: { flex: 1, backgroundColor: theme.colors.background },
   bottomBar: {
     flexDirection: 'row',
-    gap: theme.spacing.md,
+    gap: theme.layout.stackGap,
     paddingHorizontal: theme.layout.gutter,
     paddingTop: theme.spacing.md,
     // Mirrors topBar above: with no bottom inset the gesture-navigation bar

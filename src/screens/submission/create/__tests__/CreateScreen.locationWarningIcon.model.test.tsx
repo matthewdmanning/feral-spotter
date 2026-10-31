@@ -42,10 +42,6 @@ jest.mock('@/src/lib/location', () => ({
   }),
 }))
 
-jest.mock('../index.styles', () => ({
-  styles: new Proxy({}, { get: () => ({}) }),
-}))
-
 interface MockSubmission {
   location_type: string
   time_type: string

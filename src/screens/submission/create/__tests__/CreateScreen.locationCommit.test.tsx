@@ -39,10 +39,6 @@ jest.mock('@/src/lib/location', () => ({
   useLocationCapture: () => mockCapture,
 }))
 
-jest.mock('../index.styles', () => ({
-  styles: new Proxy({}, { get: () => ({}) }),
-}))
-
 describe('Create screen — location-commit invariant', () => {
   beforeEach(() => {
     jest.clearAllMocks()

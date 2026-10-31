@@ -1,3 +1,5 @@
+import { GlassSurface } from '@/src/components/atoms/GlassSurface'
+import { memo } from 'react'
 import { STATUS_COLOR_KEY, StatusIcon } from '@/src/components/atoms/StatusIcon'
 import type { SubmissionCacheFile } from '@/src/lib/cache/submissionCache'
 import { selectionHaptic } from '@/src/lib/haptics'
@@ -19,7 +21,11 @@ interface ReportCardProps {
   resumableId: string | undefined
 }
 
-export function ReportCard({ cache, resumableId }: ReportCardProps) {
+// Keep recycled history cells memoized while the cache and resume target are unchanged.
+export const ReportCard = memo(function ReportCard({
+  cache,
+  resumableId,
+}: ReportCardProps) {
   const { theme } = useUnistyles()
   const catCount = cache.cats.length
   const photoCount = sightingPhotoCount(cache)
@@ -57,11 +63,16 @@ export function ReportCard({ cache, resumableId }: ReportCardProps) {
   )
 
   // An abandoned draft has nothing to open, so it is not a button.
-  if (!action) return <View style={styles.card}>{row}</View>
+  if (!action)
+    return (
+      <GlassSurface kind="card" style={styles.card}>
+        {row}
+      </GlassSurface>
+    )
 
   return (
     <Pressable
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      style={({ pressed }) => pressed && styles.pressed}
       onPress={() => {
         selectionHaptic()
         if (action === 'resume') router.push('/submission/create')
@@ -76,7 +87,9 @@ export function ReportCard({ cache, resumableId }: ReportCardProps) {
           : "Opens the Sighting's details"
       }
     >
-      {row}
+      <GlassSurface kind="card" style={styles.card}>
+        {row}
+      </GlassSurface>
     </Pressable>
   )
-}
+})

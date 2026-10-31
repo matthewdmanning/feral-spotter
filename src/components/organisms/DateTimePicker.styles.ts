@@ -19,5 +19,4 @@ export const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing.sm,
     justifyContent: 'center',
   },
-  actionRow: { flexDirection: 'row', gap: theme.spacing.sm },
 }))

@@ -5,6 +5,7 @@
 
 import { getAllSubmissionCaches } from '@/src/lib/cache/submissionCache'
 import { isResumableDraft } from '@/src/lib/submission/resumable'
+import { useDraftStartupStore } from '@/src/hooks/useDraftStartupStore'
 import { useIsFocused } from 'expo-router'
 import { useEffect, useState } from 'react'
 
@@ -17,9 +18,10 @@ export function useResumableDraft(): boolean {
   // other way too — a draft started and returned from left the entry hidden.
   // Reset only escaped it because its path unmounts Home.
   const isFocused = useIsFocused()
+  const draftReady = useDraftStartupStore((s) => s.phase === 'ready')
   const [resumable, setResumable] = useState(false)
   useEffect(() => {
-    if (!isFocused) return
+    if (!isFocused || !draftReady) return
     let cancelled = false
     getAllSubmissionCaches().then((caches) => {
       if (cancelled) return
@@ -30,6 +32,6 @@ export function useResumableDraft(): boolean {
     return () => {
       cancelled = true
     }
-  }, [isFocused])
-  return resumable
+  }, [isFocused, draftReady])
+  return draftReady && resumable
 }

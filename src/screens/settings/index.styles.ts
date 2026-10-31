@@ -23,7 +23,6 @@ export const styles = StyleSheet.create((theme, rt) => ({
   subtitle: { ...theme.textVariants.bodySmall, color: theme.colors.muted },
   card: {
     borderRadius: theme.radius.xl,
-    ...theme.glass.card,
     padding: theme.layout.cardPadding,
     gap: theme.spacing.md,
   },
@@ -42,14 +41,13 @@ export const styles = StyleSheet.create((theme, rt) => ({
     color: theme.colors.accentSoftText,
   },
   hint: { ...theme.textVariants.bodySmall, color: theme.colors.muted },
+  // The card gap (12) plus this margin puts 16dp on each side of a divider.
   divider: {
     height: 1,
     backgroundColor: theme.colors.border,
     marginVertical: theme.spacing.xs,
   },
   footer: {
-    flexDirection: 'row',
-    gap: theme.spacing.sm,
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
     paddingVertical: theme.spacing.lg,

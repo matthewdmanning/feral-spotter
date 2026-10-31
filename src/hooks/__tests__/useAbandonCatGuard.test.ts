@@ -17,17 +17,27 @@ import { useBoundingBoxStore } from '../useBoundingBoxStore'
  * gone" is the claim, and a mocked store would only prove the call was made.
  */
 
-let beforeRemoveListener: ((e: { preventDefault: () => void }) => void) | null =
-  null
-const mockAddListener = jest.fn(
-  (event: string, cb: typeof beforeRemoveListener) => {
-    if (event === 'beforeRemove') beforeRemoveListener = cb
-    return jest.fn()
-  },
-)
+// A faithful stand-in for Expo Router's usePreventRemove: the latest render's
+// flag arms the guard, and disablePrevention drops it at once (as the real
+// hook does), not on the next render.
+let prevented = false
+let preventCallback:
+  | ((options: { data: { action: unknown }; repeat: () => void }) => void)
+  | undefined
+const mockRepeat = jest.fn()
+const mockDisablePrevention = jest.fn(() => {
+  prevented = false
+})
 
 jest.mock('expo-router', () => ({
-  useNavigation: () => ({ addListener: mockAddListener }),
+  usePreventRemove: (
+    preventRemove: boolean,
+    callback: typeof preventCallback,
+  ) => {
+    prevented = preventRemove
+    preventCallback = callback
+    return mockDisablePrevention
+  },
   router: { replace: jest.fn(), push: jest.fn(), back: jest.fn() },
 }))
 
@@ -36,13 +46,21 @@ const OTHER_CAT_ID = 'cat-2'
 const PHOTO_ID = 'photo-1'
 const BOX = { lowerLeftX: 1, lowerLeftY: 1, upperRightX: 9, upperRightY: 9 }
 
-/** Simulates any exit — header back, swipe-back or hardware back all land here. */
+/**
+ * Simulates any exit — header back, swipe-back or hardware back all land
+ * here. Returns whether the router blocked it.
+ */
 const attemptLeave = () => {
-  const preventDefault = jest.fn()
+  const blocked = prevented
   act(() => {
-    beforeRemoveListener?.({ preventDefault })
+    if (prevented) {
+      preventCallback?.({
+        data: { action: { type: 'GO_BACK' } },
+        repeat: mockRepeat,
+      })
+    }
   })
-  return { preventDefault }
+  return { blocked }
 }
 
 const pressRemove = () => {
@@ -55,7 +73,8 @@ const pressRemove = () => {
 describe('useAbandonCatGuard (#304)', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    beforeRemoveListener = null
+    prevented = false
+    preventCallback = undefined
     jest.spyOn(ui, 'showAlert')
     ui.useUIStore.setState({ dialog: null })
     useBoundingBoxStore.setState({ boxes: {}, lastBoxes: {}, absences: {} })
@@ -66,34 +85,48 @@ describe('useAbandonCatGuard (#304)', () => {
     useActiveCatFlowStore.getState().setActiveCatId(CAT_ID)
     renderHook(() => useAbandonCatGuard(false))
 
-    const { preventDefault } = attemptLeave()
+    const { blocked } = attemptLeave()
 
-    expect(preventDefault).toHaveBeenCalled()
+    expect(blocked).toBe(true)
     expect(ui.showAlert).toHaveBeenCalledTimes(1)
   })
 
   it('lets the exit through after a save has cleared the active cat', () => {
-    // handleSave calls clearActiveCat() immediately before navigating, so the
-    // listener must read the id fresh — a stale closure would popup on save.
     useActiveCatFlowStore.getState().setActiveCatId(CAT_ID)
     renderHook(() => useAbandonCatGuard(false))
     act(() => {
       useActiveCatFlowStore.getState().setActiveCatId(null)
     })
 
-    const { preventDefault } = attemptLeave()
+    const { blocked } = attemptLeave()
 
-    expect(preventDefault).not.toHaveBeenCalled()
+    expect(blocked).toBe(false)
     expect(ui.showAlert).not.toHaveBeenCalled()
+  })
+
+  it('lets a save through that navigates before the guard re-renders', () => {
+    // handleSave clears the id and navigates in the same tick, so the guard
+    // is still armed when the router asks. It must read the id fresh and
+    // repeat the navigation — a stale read would popup on every save.
+    useActiveCatFlowStore.getState().setActiveCatId(CAT_ID)
+    renderHook(() => useAbandonCatGuard(false))
+    useActiveCatFlowStore.setState({ activeCatId: null })
+
+    const { blocked } = attemptLeave()
+
+    expect(blocked).toBe(true)
+    expect(ui.showAlert).not.toHaveBeenCalled()
+    expect(mockDisablePrevention).toHaveBeenCalled()
+    expect(mockRepeat).toHaveBeenCalledTimes(1)
   })
 
   it('lets the exit through when editing an already-saved cat', () => {
     useActiveCatFlowStore.getState().setActiveCatId(CAT_ID)
     renderHook(() => useAbandonCatGuard(true))
 
-    const { preventDefault } = attemptLeave()
+    const { blocked } = attemptLeave()
 
-    expect(preventDefault).not.toHaveBeenCalled()
+    expect(blocked).toBe(false)
     expect(ui.showAlert).not.toHaveBeenCalled()
   })
 

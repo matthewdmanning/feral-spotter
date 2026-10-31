@@ -34,6 +34,7 @@ export function NativeCameraScreen() {
     disableLowLightBoost,
     subjectMetering,
     pinchZoom,
+    canCapture,
     flashOverlayStyle,
     renderItem,
     keyExtractor,
@@ -135,7 +136,7 @@ export function NativeCameraScreen() {
           onFlip={flipCamera}
           onCapture={handleTakePhoto}
           busy={isTakingPhoto || !isCameraReady}
-          disabled={isTakingPhoto || !isCameraReady}
+          disabled={!canCapture || isTakingPhoto || !isCameraReady}
           shutterLabel="Capture photo"
         />
       </View>

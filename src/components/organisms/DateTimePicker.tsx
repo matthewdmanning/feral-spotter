@@ -4,7 +4,9 @@
  * Migrated from NativeWind → Unistyles v3.
  */
 
+import { GlassSurface } from '@/src/components/atoms/GlassSurface'
 import { AppButton } from '@/src/components/atoms/AppButton'
+import { ButtonRow } from '@/src/components/molecules/ButtonRow'
 import { useDateTimePicker } from '@/src/hooks/useDateTimePicker'
 import RNDateTimePicker from '@react-native-community/datetimepicker'
 import { CalendarIcon } from 'phosphor-react-native/src/icons/Calendar'
@@ -86,7 +88,7 @@ export function DateTimePickerButton({
           statusBarTranslucent
         >
           <View style={dialogShell.backdrop}>
-            <View style={dialogShell.sheet}>
+            <GlassSurface kind="raised" style={dialogShell.sheet}>
               <Text style={dialogShell.title}>{MODAL_TITLE[mode]}</Text>
 
               {currentMode === 'date' && (
@@ -123,15 +125,13 @@ export function DateTimePickerButton({
                 </View>
               )}
 
-              <View style={styles.actionRow}>
-                <AppButton onPress={handleCancel} variant="secondary" flex1>
+              <ButtonRow>
+                <AppButton onPress={handleCancel} variant="secondary">
                   Cancel
                 </AppButton>
-                <AppButton onPress={handleConfirm} flex1>
-                  Confirm
-                </AppButton>
-              </View>
-            </View>
+                <AppButton onPress={handleConfirm}>Confirm</AppButton>
+              </ButtonRow>
+            </GlassSurface>
           </View>
         </Modal>
       )}

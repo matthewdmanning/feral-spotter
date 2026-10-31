@@ -11,7 +11,7 @@ export const styles = StyleSheet.create((theme) => ({
     height: MAP_HEIGHT,
     borderRadius: theme.radius.xl,
     overflow: 'hidden',
-    ...theme.glass.card,
+    backgroundColor: theme.colors.surface,
   },
   map: { flex: 1 },
 }))

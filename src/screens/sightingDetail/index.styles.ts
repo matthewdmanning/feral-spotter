@@ -26,7 +26,6 @@ export const styles = StyleSheet.create((theme, rt) => ({
   status: { ...theme.textVariants.caption, fontFamily: theme.fonts.bold },
   card: {
     borderRadius: theme.radius.xl,
-    ...theme.glass.card,
     padding: theme.layout.cardPadding,
     gap: theme.spacing.sm,
   },

@@ -60,8 +60,10 @@ export interface NativeIdentificationCameraProps {
   disableLowLightBoost: boolean
   subjectMetering: boolean
   /**
-   * Pinch to zoom. Off by default: a zoomed capture is a cropped capture, and
-   * an identification photograph is worth more at full sensor width.
+   * Pinch to zoom the preview. On Android this magnifies the preview only: the
+   * sensor stays at 1x, so the saved photo is still full field and full
+   * resolution, and a small map shows the part on screen. iOS still zooms the
+   * camera itself, so an iOS capture is cropped.
    */
   pinchZoom: boolean
   /** Driven by the camera_performance_checks setting. Off means the view reports nothing. */
