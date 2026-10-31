@@ -38,10 +38,6 @@ jest.mock('react-native-vision-camera', () => ({
   Camera: 'Camera',
 }))
 
-jest.mock('react-native-reanimated', () =>
-  jest.requireActual('react-native-reanimated/mock'),
-)
-
 const mockUploadNewPhoto = jest.fn()
 jest.mock('@/src/lib/upload/uploadNewPhoto', () => ({
   uploadNewPhoto: (...args: unknown[]) => mockUploadNewPhoto(...args),

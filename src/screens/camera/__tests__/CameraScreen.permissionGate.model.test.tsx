@@ -21,10 +21,6 @@ jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
 }))
 
-jest.mock('react-native-reanimated', () =>
-  jest.requireActual('react-native-reanimated/mock'),
-)
-
 jest.mock('react-native-vision-camera', () => ({
   Camera: 'Camera',
   useCameraPermission: jest.fn(),

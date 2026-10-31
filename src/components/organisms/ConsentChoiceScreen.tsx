@@ -1,3 +1,4 @@
+import { GlassSurface } from '@/src/components/atoms/GlassSurface'
 import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { AppButton } from '@/src/components/atoms/AppButton'
 import { useState } from 'react'
@@ -40,22 +41,23 @@ export function ConsentChoiceScreen({
 
         <Pressable
           onPress={() => setChecked((v) => !v)}
-          style={styles.choiceRow}
           accessibilityRole="checkbox"
           accessibilityState={{ checked }}
           accessibilityLabel={`${copy.label}: ${copy.text}`}
         >
-          <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
-            {checked && (
-              <CheckIcon
-                size={theme.iconSize.sm}
-                color={theme.colors.accentText}
-              />
-            )}
-          </View>
-          <Text style={styles.choiceItemText}>
-            <Text style={styles.itemLabel}>{copy.label}</Text> {copy.text}
-          </Text>
+          <GlassSurface kind="card" style={styles.choiceRow}>
+            <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
+              {checked && (
+                <CheckIcon
+                  size={theme.iconSize.sm}
+                  color={theme.colors.accentText}
+                />
+              )}
+            </View>
+            <Text style={styles.choiceItemText}>
+              <Text style={styles.itemLabel}>{copy.label}</Text> {copy.text}
+            </Text>
+          </GlassSurface>
         </Pressable>
         {footnote ? <Text style={styles.footnote}>{footnote}</Text> : null}
 

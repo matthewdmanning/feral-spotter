@@ -1,4 +1,5 @@
 import { AppButton } from './AppButton'
+import { GlassSurface } from './GlassSurface'
 import React, { Component, type ReactNode } from 'react'
 import { View, Text } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
@@ -66,14 +67,14 @@ function ErrorFallback({
           An unexpected error occurred. Please try again.
         </Text>
       </View>
-      <View style={styles.card}>
+      <GlassSurface kind="card" style={styles.card}>
         <View style={styles.cardInner}>
           <Text style={styles.errorLabel}>Error Details:</Text>
           <View style={styles.errorBox}>
             <Text style={styles.errorText}>{error.message}</Text>
           </View>
         </View>
-      </View>
+      </GlassSurface>
       <AppButton onPress={onReset}>Try Again</AppButton>
     </View>
   )

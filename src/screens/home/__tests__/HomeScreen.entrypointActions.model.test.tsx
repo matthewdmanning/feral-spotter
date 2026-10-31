@@ -44,10 +44,6 @@ const mockPickFromLibrary = jest.fn()
 jest.mock('@/src/hooks/useLibraryPhotoPicker', () => ({
   useLibraryPhotoPicker: () => ({ pickFromLibrary: mockPickFromLibrary }),
 }))
-jest.mock('react-native-reanimated', () =>
-  jest.requireActual('react-native-reanimated/mock'),
-)
-
 const buttonsMachine = createMachine({
   id: 'homeEntrypointActions',
   initial: 'unmounted',

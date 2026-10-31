@@ -1,3 +1,4 @@
+import { GlassSurface } from '@/src/components/atoms/GlassSurface'
 import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { STATUS_COLOR_KEY } from '@/src/components/atoms/StatusIcon'
 import { ReportCard } from '@/src/components/molecules/ReportCard'
@@ -34,7 +35,7 @@ export default function FeralReportsScreen() {
     <>
       {/*
         This screen is reachable both as a tab ((home-tabs)/feral-reports,
-        headerShown false at the Tabs level — see (home-tabs)/_layout.tsx)
+        where native tabs draw no header — see (home-tabs)/_layout.tsx)
         and, in principle, as a plain stack push (app/feral-reports.tsx),
         where the root Stack's default headerShown: true would otherwise
         apply. Forcing it off here keeps this screen's own in-body title
@@ -89,7 +90,7 @@ export default function FeralReportsScreen() {
             </View>
           }
           ListEmptyComponent={
-            <View style={styles.empty}>
+            <GlassSurface kind="card" style={styles.empty}>
               <View style={styles.emptyIcon}>
                 <ClockIcon
                   size={theme.iconSize.xl}
@@ -100,7 +101,7 @@ export default function FeralReportsScreen() {
               <Text style={styles.emptyBody}>
                 Submissions appear here as you create them
               </Text>
-            </View>
+            </GlassSurface>
           }
         />
       </View>

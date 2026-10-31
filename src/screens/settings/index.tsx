@@ -1,3 +1,4 @@
+import { GlassSurface } from '@/src/components/atoms/GlassSurface'
 import {
   getThemeMode,
   setThemeMode,
@@ -82,7 +83,7 @@ export default function SettingsScreen() {
             </Text>
           </View>
 
-          <View style={styles.card}>
+          <GlassSurface kind="card" style={styles.card}>
             <Text style={styles.cardTitle}>Appearance</Text>
             <SegmentedControl
               label="Theme"
@@ -98,9 +99,9 @@ export default function SettingsScreen() {
             <Text style={styles.hint}>
               System follows your device&apos;s appearance setting.
             </Text>
-          </View>
+          </GlassSurface>
 
-          <View style={styles.card}>
+          <GlassSurface kind="card" style={styles.card}>
             <Text style={styles.cardTitle}>Haptic Feedback</Text>
             <ToggleRow
               label="Vibration on Touch"
@@ -108,9 +109,9 @@ export default function SettingsScreen() {
               value={hapticsOn}
               onValueChange={toggleHaptics}
             />
-          </View>
+          </GlassSurface>
 
-          <View style={styles.card}>
+          <GlassSurface kind="card" style={styles.card}>
             <Text style={styles.cardTitle}>Communications</Text>
             <ToggleRow
               label="Email Updates"
@@ -137,9 +138,9 @@ export default function SettingsScreen() {
             >
               Send verification link
             </TextButton>
-          </View>
+          </GlassSurface>
 
-          <View style={styles.card}>
+          <GlassSurface kind="card" style={styles.card}>
             <Text style={styles.cardTitle}>Authentication</Text>
             {passwordConfigured ? (
               <View style={styles.gap}>
@@ -182,7 +183,7 @@ export default function SettingsScreen() {
                 />
               </View>
             )}
-          </View>
+          </GlassSurface>
 
           {[
             { title: 'Photos', toggles: PHOTO_TOGGLES },
@@ -190,7 +191,7 @@ export default function SettingsScreen() {
           ].map(
             ({ title, toggles }) =>
               toggles.length > 0 && (
-                <View key={title} style={styles.card}>
+                <GlassSurface kind="card" key={title} style={styles.card}>
                   <Text style={styles.cardTitle}>{title}</Text>
                   {/* Fragment, not a View: the divider must be a direct child
                       of the card so the card gap spaces it evenly above and
@@ -206,11 +207,11 @@ export default function SettingsScreen() {
                       />
                     </Fragment>
                   ))}
-                </View>
+                </GlassSurface>
               ),
           )}
 
-          <View style={styles.card}>
+          <GlassSurface kind="card" style={styles.card}>
             <Text style={styles.cardTitle}>FeralSpotter</Text>
             <Text style={styles.subtitle}>Version {APP_VERSION}</Text>
             <View style={styles.divider} />
@@ -226,7 +227,7 @@ export default function SettingsScreen() {
             >
               Data Policy
             </TextButton>
-          </View>
+          </GlassSurface>
         </View>
       </ScrollView>
 

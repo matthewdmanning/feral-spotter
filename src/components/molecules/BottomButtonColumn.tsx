@@ -45,12 +45,19 @@ export function BottomButtonColumn({
     opacity: opacity.value,
     transform: [{ scaleY: scaleY.value }],
     overflow: 'hidden',
-    pointerEvents: opacity.value < 0.05 ? 'none' : 'auto',
   }))
 
   return (
     // [Unistyles style, Reanimated style] — never merged/spread together
-    <Animated.View style={[styles.container, animatedStyle]}>
+    // Touch and TalkBack follow `visible` at once, not the fade: a hiding
+    // column must not keep tappable or focusable buttons. (pointerEvents used
+    // to live in the animated style, keyed to the faded opacity.)
+    <Animated.View
+      style={[styles.container, animatedStyle]}
+      pointerEvents={visible ? 'auto' : 'none'}
+      accessibilityElementsHidden={!visible}
+      importantForAccessibility={visible ? 'auto' : 'no-hide-descendants'}
+    >
       {buttons.map((btn) => (
         <AppButton
           key={btn.key}

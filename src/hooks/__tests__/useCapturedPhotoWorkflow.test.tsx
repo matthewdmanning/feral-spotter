@@ -1,5 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native'
 import { File, Paths } from 'expo-file-system'
+import { Asset } from 'expo-media-library'
 import { usePhotoStore } from '../usePhotoStore'
 import { useCapturedPhotoWorkflow } from '../useCapturedPhotoWorkflow'
 
@@ -17,25 +18,10 @@ jest.mock('expo-crypto', () => ({
 
 const mockAssetCreate = jest.fn()
 const mockPermissionCheck = jest.fn(async () => true)
-// Keep the real public Asset class; only native creation is external.
-jest.mock('expo-media-library', () => {
-  const nativeModulePath = require
-    .resolve('expo-media-library/package.json')
-    .replace('package.json', 'src/ExpoMediaLibraryNext.ts')
-  jest.doMock(nativeModulePath, () => ({
-    __esModule: true,
-    default: {
-      Query: class {},
-      Asset: class {
-        static create(...args: unknown[]) {
-          return mockAssetCreate(...args)
-        }
-      },
-      Album: class {},
-    },
-  }))
-  return jest.requireActual('expo-media-library')
-})
+// The gallery save is external: stub the public Asset.create the hook calls.
+// (A native-module mock broke when SDK 58 moved expo-media-library's native
+// binding, and the hook's contract is this one call, not the binding.) Set
+// in beforeEach, because afterEach's restoreAllMocks removes the spy.
 jest.mock('@/src/lib/permissions/gallerySavePermission', () => ({
   gallerySavePermission: {
     check: (...args: unknown[]) => mockPermissionCheck(...args),
@@ -47,9 +33,6 @@ jest.mock('expo-router', () => ({
   router: { back: jest.fn(), navigate: jest.fn() },
   useIsFocused: () => true,
 }))
-jest.mock('react-native-reanimated', () =>
-  jest.requireActual('react-native-reanimated/mock'),
-)
 jest.mock('@shopify/flash-list', () => ({ FlashList: 'FlashList' }))
 jest.mock('@/src/components/atoms/CameraThumb', () => ({
   CameraThumb: 'CameraThumb',
@@ -69,6 +52,9 @@ jest.mock('@/src/hooks/useSettingsStore', () => ({
 const frame = (uri: string) => ({ uri, width: 100, height: 100 })
 
 beforeEach(async () => {
+  jest
+    .spyOn(Asset, 'create')
+    .mockImplementation((...args) => mockAssetCreate(...args))
   await usePhotoStore.persist.rehydrate()
   usePhotoStore.setState({
     photos: [],

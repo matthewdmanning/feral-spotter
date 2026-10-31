@@ -1,0 +1,17 @@
+{
+  "index": {
+    "phosphor": "camera",
+    "drawable": { "default": "tab_camera", "selected": "tab_camera_fill" },
+    "sf": { "default": "camera", "selected": "camera.fill" }
+  },
+  "feral-reports": {
+    "phosphor": "clipboard-text",
+    "drawable": { "default": "tab_reports", "selected": "tab_reports_fill" },
+    "sf": { "default": "list.clipboard", "selected": "list.clipboard.fill" }
+  },
+  "settings": {
+    "phosphor": "gear",
+    "drawable": { "default": "tab_settings", "selected": "tab_settings_fill" },
+    "sf": { "default": "gearshape", "selected": "gearshape.fill" }
+  }
+}

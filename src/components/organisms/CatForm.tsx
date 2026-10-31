@@ -1,3 +1,4 @@
+import { GlassSurface } from '@/src/components/atoms/GlassSurface'
 import { View } from 'react-native'
 import { HierarchicalSegmentedControl } from '@/src/components/atoms/HierarchicalSegmentedControl'
 import { SegmentedControl } from '@/src/components/atoms/SegmentedControl'
@@ -19,7 +20,7 @@ interface CatFormProps {
 
 export function CatForm({ form }: CatFormProps) {
   return (
-    <View style={styles.card}>
+    <GlassSurface kind="card" style={styles.card}>
       <View style={styles.inner}>
         <View style={styles.section}>
           <SegmentedControl
@@ -77,6 +78,6 @@ export function CatForm({ form }: CatFormProps) {
           />
         </View>
       </View>
-    </View>
+    </GlassSurface>
   )
 }

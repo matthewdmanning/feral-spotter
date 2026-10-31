@@ -1,3 +1,4 @@
+import { GlassSurface } from '@/src/components/atoms/GlassSurface'
 import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { AppButton } from '@/src/components/atoms/AppButton'
 import { TextButton } from '@/src/components/atoms/TextButton'
@@ -174,7 +175,7 @@ export default function CreateSubmissionScreen() {
           </TextButton>
         </View>
 
-        <View style={styles.statusRow}>
+        <GlassSurface kind="card" style={styles.statusRow}>
           <Pressable
             onPress={handleLocationIconPress}
             disabled={!showLocationWarning}
@@ -226,7 +227,7 @@ export default function CreateSubmissionScreen() {
               <Text style={styles.statusItemText}>Date & Time Recorded</Text>
             </View>
           )}
-        </View>
+        </GlassSurface>
 
         <View style={styles.catList}>
           <Text style={styles.catListTitle}>Cats Recorded</Text>
@@ -234,7 +235,11 @@ export default function CreateSubmissionScreen() {
             const label = summarizeCat(cat)
             const isExpanded = expandedCatId === cat.local_id
             return (
-              <View key={cat.local_id} style={styles.catCard}>
+              <GlassSurface
+                kind="card"
+                key={cat.local_id}
+                style={styles.catCard}
+              >
                 <Pressable
                   onPress={() =>
                     setExpandedCatId(isExpanded ? null : cat.local_id)
@@ -291,7 +296,7 @@ export default function CreateSubmissionScreen() {
                     </View>
                   </View>
                 )}
-              </View>
+              </GlassSurface>
             )
           })}
           {/* #299: no cats left. Two ways back in, neither forced — the user
