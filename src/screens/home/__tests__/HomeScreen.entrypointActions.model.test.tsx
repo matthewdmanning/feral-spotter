@@ -3,8 +3,10 @@ import { router } from 'expo-router'
 import React from 'react'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
+import { SUBMISSION_STALE_MS } from '@/src/config/constants'
 import { getAllSubmissionCaches } from '@/src/lib/cache/submissionCache'
 import HomeScreen from '../index'
+import { useDraftStartupStore } from '@/src/hooks/useDraftStartupStore'
 
 /**
  * Model of every button on HomeScreen (src/screens/home/index.tsx) and what
@@ -79,6 +81,7 @@ describe('HomeScreen entrypoint buttons — model-based test', () => {
     queryByLabelText(label, { includeHiddenElements: false })
 
   beforeEach(() => {
+    useDraftStartupStore.setState({ phase: 'ready', task: Promise.resolve() })
     jest.clearAllMocks()
   })
 
@@ -131,7 +134,7 @@ describe('HomeScreen entrypoint buttons — model-based test', () => {
           {
             status: 'In Progress',
             updated_at: new Date(
-              Date.now() - 25 * 60 * 60 * 1000,
+              Date.now() - SUBMISSION_STALE_MS - 60 * 60 * 1000,
             ).toISOString(),
           },
         ])

@@ -5,6 +5,8 @@
  */
 
 import { ErrorBoundary } from '@/src/components/atoms/ErrorBoundary'
+import { GateScreen } from '@/src/components/molecules/GateScreen'
+import { useDraftStartupStore } from '@/src/hooks/useDraftStartupStore'
 import { Stack, router } from 'expo-router'
 import { GearIcon } from 'phosphor-react-native/src/icons/Gear'
 import { Pressable } from 'react-native'
@@ -41,6 +43,22 @@ export default function SubmissionLayout() {
   // useUnistyles with Stack is explicitly allowed — react-navigation
   // does not re-render screens on style prop changes.
   const { theme } = useUnistyles()
+
+  const phase = useDraftStartupStore((s) => s.phase)
+  if (phase !== 'ready') {
+    return (
+      <GateScreen
+        title={
+          phase === 'error'
+            ? 'Could not restore your sighting'
+            : 'Preparing your sighting'
+        }
+        body={phase === 'error' ? 'Restart the app to try again.' : undefined}
+        primaryLabel="Go Home"
+        onPrimary={() => router.replace('/')}
+      />
+    )
+  }
 
   return (
     <ErrorBoundary>

@@ -4,6 +4,7 @@ import { AppState } from 'react-native'
 import { useCameraCapture } from '../useCameraCapture'
 import { usePhotoStore } from '../usePhotoStore'
 import { useSettingsStore } from '../useSettingsStore'
+import { useDraftStartupStore } from '../useDraftStartupStore'
 
 jest.mock('expo-location', () => ({
   ...jest.requireActual('expo-location'),
@@ -92,6 +93,7 @@ beforeEach(() => {
     source: null,
     submissionId: 'test-submission',
   })
+  useDraftStartupStore.setState({ phase: 'ready', task: null })
   useSettingsStore.getState().updateSettings({
     keep_photos_on_device: true,
     improved_camera_capture: false,
@@ -144,10 +146,14 @@ describe('useCameraCapture navigation', () => {
     expect(router.back).toHaveBeenCalledTimes(1)
   })
 
-  it('handleDone navigates to /submission/create', () => {
+  it('handleDone navigates to /submission/create after startup is ready', async () => {
     const { result } = renderHook(() => useCameraCapture())
-    result.current.handleDone()
-    expect(router.navigate).toHaveBeenCalledWith('/submission/create')
+    await act(async () => {
+      result.current.handleDone()
+      await waitFor(() =>
+        expect(router.navigate).toHaveBeenCalledWith('/submission/create'),
+      )
+    })
   })
 })
 

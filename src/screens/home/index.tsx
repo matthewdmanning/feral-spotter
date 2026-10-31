@@ -1,7 +1,13 @@
 import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { AppButton, type ColumnButton } from '@/src/components/atoms/AppButton'
 import { BottomButtonColumn } from '@/src/components/molecules/BottomButtonColumn'
-import { ENTRYPOINT_BUFFER_PERCENT } from '@/src/config/constants'
+import { PhotoDraftNotice } from '@/src/components/molecules/PhotoDraftNotice'
+import {
+  APP_STARTED_AT,
+  ENTRYPOINT_BUFFER_PERCENT,
+} from '@/src/config/constants'
+import { confirmResetSubmission } from '@/src/hooks/confirmResetSubmission'
+import { useDraftStartupStore } from '@/src/hooks/useDraftStartupStore'
 import { useEntryGate } from '@/src/hooks/useEntryGate'
 import { useLibraryPhotoPicker } from '@/src/hooks/useLibraryPhotoPicker'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
@@ -12,7 +18,7 @@ import type { Icon as PhosphorIcon } from 'phosphor-react-native'
 import { CameraIcon } from 'phosphor-react-native/src/icons/Camera'
 import { ImageSquareIcon } from 'phosphor-react-native/src/icons/ImageSquare'
 import { useCallback, useMemo } from 'react'
-import { StyleSheet, Text, useWindowDimensions, View } from 'react-native'
+import { StyleSheet, useWindowDimensions, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
 
@@ -107,7 +113,13 @@ function EntrypointCircle({
   const color =
     variant === 'primary' ? theme.colors.accentText : theme.colors.onSecondary
   return (
-    <View style={{ width: diameter, height: diameter }}>
+    <View
+      style={[
+        { width: diameter, height: diameter },
+        // Grey the whole circle, reticle included, so it reads as inactive.
+        disabled && { opacity: 0.5, filter: [{ grayscale: 1 }] },
+      ]}
+    >
       <AppButton
         onPress={onPress}
         variant={variant}
@@ -141,8 +153,15 @@ export default function HomeScreen() {
   // shared pool holds a photo, the entrypoint for the *other* source is
   // disabled until the draft is submitted or reset (pool cleared).
   const photoSource = usePhotoStore((s) => s.source)
-  const cameraDisabled = photoSource === 'library'
-  const libraryDisabled = photoSource === 'camera'
+  const draftReady = useDraftStartupStore((s) => s.phase === 'ready')
+  const cameraDisabled = draftReady && photoSource === 'library'
+  const libraryDisabled = !draftReady || photoSource === 'camera'
+  // A pool last changed before this process started was restored, not begun here.
+  const draftOrigin = usePhotoStore((s) =>
+    s.updated_at === null || s.updated_at < APP_STARTED_AT
+      ? 'restored'
+      : 'in-session',
+  )
 
   const { pickFromLibrary } = useLibraryPhotoPicker()
 
@@ -221,12 +240,13 @@ export default function HomeScreen() {
           {/* #375: one of the two circles above is dead whenever the pool has
             a source, and nothing said why. Only ever one is disabled, so
             one line covers both cases. */}
-          {photoSource !== null && (
-            <Text style={styles.disabledReason}>
-              {photoSource === 'camera'
-                ? 'This submission uses camera photos. Finish or reset it before you use Upload Photos.'
-                : 'This submission uses library photos. Finish or reset it before you use Take Photos.'}
-            </Text>
+          {draftReady && photoSource !== null && (
+            <PhotoDraftNotice
+              source={photoSource}
+              origin={draftOrigin}
+              onFinish={handleContinue}
+              onReset={confirmResetSubmission}
+            />
           )}
 
           {/* Mounted only while shown: the column's fade-out scales it but

@@ -29,21 +29,9 @@ Big tasks can legitimately match several rows; read each match, don't stop at th
 | Driving or debugging the Android emulator                                                                                                                                                                                                 | [emulator_tools/](../../emulator_tools/)                                                                                                                                                                                                                                                                                                                | `tapd.sh` taps by content-desc (preferred), `drive.sh` dumps on-screen text/desc — read state from those plus Metro's `[nav]` lines, not screenshots. `tap_text.py` targets the last clickable ancestor before the text, so it mis-fires where controls share a container. Don't read `emulator.log` or other run output unless explicitly instructed to                                                                                            |
 | Raw git/GitHub mechanics (squash-merge behavior, CI trigger quirks, reading `gh pr checks`)                                                                                                                                               | [git.md](git.md)                                                                                                                                                                                                                                                                                                                                        | Lessons learned about git/GitHub mechanics, distinct from `gh` issue-tracker conventions and commit/branch/PR hygiene                                                                                                                                                                                                                                                                                                                               |
 
-## Template routing
-
-- New feature or sprint implementation note -> [documentation.md](documentation.md) -> [feature implementation draft](../templates/feature-implementation-draft.md)
-- New or updated UI/UX design decision -> [using-design-decisions.md](ui-ux/reference/using-design-decisions.md) -> [design decision template](ui-ux/reference/design-decision-template.md)
-
-For manual Android MVP QA, read [qa_checklist.md](../qa_checklist.md) for the canonical end-to-end coverage across launch, permissions, capture, annotation, submission, recovery, network, and device conditions.
+For template routing, manual QA, and the `docs/` folder rules, see [routing-notes.md](routing-notes.md).
 
 For branch-commit-PR _hygiene_, use the global CLAUDE.md git-workflow rules; for git/GitHub _mechanics_, see [git.md](git.md).
-
-## The `docs/` folder
-
-`docs/` is a normal folder in this repository. Commit doc changes with the code
-they describe, in the same pull request. A checkout made before the merge of
-the former `feral-spotter-docs` repo still has `docs/` as a submodule; re-clone
-or see the migration pull request for the steps.
 
 ## File Format
 

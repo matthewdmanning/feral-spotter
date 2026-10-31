@@ -67,6 +67,7 @@ export function useNativeCameraCapture(
 
   const {
     isActive,
+    canCapture,
     capturedPhotos,
     listRef,
     renderItem,
@@ -87,6 +88,7 @@ export function useNativeCameraCapture(
   // Mirrors isTakingPhoto so handleTakePhoto does not depend on state it sets
   // itself, which recreated the callback twice per capture.
   const isTakingPhotoRef = useRef(false)
+  const hasStartedLocationCapture = useRef(false)
 
   // The tuning the view actually resolved, reported once per bind. Held in a
   // ref so every capture event can carry it without re-creating the capture
@@ -152,7 +154,14 @@ export function useNativeCameraCapture(
   )
 
   const handleTakePhoto = useCallback(async () => {
-    if (isTakingPhotoRef.current || !isCameraReady || !cameraRef.current) return
+    if (
+      !canCapture ||
+      isTakingPhotoRef.current ||
+      !isCameraReady ||
+      !cameraRef.current
+    ) {
+      return
+    }
     isTakingPhotoRef.current = true
     setIsTakingPhoto(true)
     const shutterTime = new Date().toISOString()
@@ -240,6 +249,7 @@ export function useNativeCameraCapture(
     startPhotoUpload,
     subjectMetering,
     triggerFlash,
+    canCapture,
     user,
   ])
 
@@ -263,8 +273,13 @@ export function useNativeCameraCapture(
         '[location] consent hydrated:',
         useConsentStore.persist.hasHydrated(),
       )
-    void startLocationCapture()
   }, [])
+
+  useEffect(() => {
+    if (!canCapture || hasStartedLocationCapture.current) return
+    hasStartedLocationCapture.current = true
+    void startLocationCapture()
+  }, [canCapture])
 
   return {
     cameraRef,
@@ -279,6 +294,7 @@ export function useNativeCameraCapture(
     handleCameraDiagnostic,
     diagnostics: performanceChecks,
     isActive,
+    canCapture,
     maxDetail,
     motionPriority,
     disableLowLightBoost,

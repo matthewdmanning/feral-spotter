@@ -4,6 +4,7 @@ import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import HomeScreen from '../index'
+import { useDraftStartupStore } from '@/src/hooks/useDraftStartupStore'
 
 /**
  * Model of the photo-source-exclusivity gate (ADR 0002's 2026-07-31
@@ -68,6 +69,7 @@ describe('HomeScreen photo-source-exclusivity gate — model-based test', () => 
   let getByLabelText: ReturnType<typeof render>['getByLabelText']
 
   beforeEach(async () => {
+    useDraftStartupStore.setState({ phase: 'ready', task: Promise.resolve() })
     jest.clearAllMocks()
     await usePhotoStore.persist.rehydrate()
     usePhotoStore.setState({ photos: [], source: null, submissionId: null })

@@ -21,11 +21,4 @@ export const styles = StyleSheet.create((theme, rt) => ({
     paddingHorizontal: theme.layout.gutter,
     paddingBottom: theme.spacing.lg,
   },
-  // #375: the reason a disabled entrypoint is disabled.
-  disabledReason: {
-    ...theme.textVariants.bodySmall,
-    color: theme.colors.muted,
-    textAlign: 'center',
-    paddingHorizontal: theme.layout.gutter,
-  },
 }))
