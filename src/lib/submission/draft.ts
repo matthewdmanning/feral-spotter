@@ -25,6 +25,7 @@
  * the non-atomic window `2357000` fixed. It follows the photo-pool work.
  */
 
+import { SUBMISSION_STALE_MS } from '@/src/config/constants'
 import { useActiveCatFlowStore } from '@/src/hooks/useActiveCatFlowStore'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
@@ -72,6 +73,38 @@ export async function discardDraft(): Promise<void> {
   if (submissionId && uid) void deleteSubmissionUploads(uid, submissionId)
 
   tearDownDraftState()
+}
+
+const draftStores = [
+  useSubmissionStore,
+  usePhotoStore,
+  useBoundingBoxStore,
+  useActiveCatFlowStore,
+]
+
+/** Resolves once a persisted store has read its saved state. */
+function whenHydrated(store: (typeof draftStores)[number]): Promise<void> {
+  return new Promise((resolve) => {
+    if (store.persist.hasHydrated()) resolve()
+    else store.persist.onFinishHydration(() => resolve())
+  })
+}
+
+/**
+ * Start-up survival rule (#424): a draft outlives the app process only while
+ * it holds a photo and was last changed within SUBMISSION_STALE_MS. Anything
+ * else is discarded in full — a draft with no photo has nothing worth keeping,
+ * and a stale one would otherwise lock the other photo entrypoint for good.
+ *
+ * Waits for every draft store to hydrate first: a store that hydrates after
+ * the teardown would write its saved state back over the cleared one.
+ * A pool saved before `updated_at` existed has no age, so it is kept.
+ */
+export async function discardUnsurvivingDraft(now: number): Promise<void> {
+  await Promise.all(draftStores.map(whenHydrated))
+  const { photos, updated_at } = usePhotoStore.getState()
+  const isStale = updated_at != null && now - updated_at > SUBMISSION_STALE_MS
+  if (photos.length === 0 || isStale) await discardDraft()
 }
 
 /**

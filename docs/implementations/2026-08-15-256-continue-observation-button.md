@@ -149,3 +149,8 @@ blurred`) passes against the pre-fix code too — it guards blur cancellation,
 **Verification:** full gates pass. Device-verified on a Pixel 7 — the issue's
 own repro (draft → Settings → Clear Draft → confirm) now leaves Home with only
 Take Photos / Upload Photos, from an already-mounted Home.
+
+## 2026-10-31 — extension
+
+**Purpose:** The photo pool never expired, so a stale pool locked an entrypoint while this button was already hidden (#424).
+**Change:** `SUBMISSION_STALE_MS` is now 48 hours, and the start-up check uses the same constant. See `2026-10-31-424-photo-draft-expiry.md`.

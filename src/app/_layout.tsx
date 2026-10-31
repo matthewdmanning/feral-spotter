@@ -11,6 +11,7 @@
 
 import '@/src/config/unistyles'
 import { useUIStore } from '@/src/hooks'
+import { discardUnsurvivingDraft } from '@/src/lib/submission/draft'
 import { AppProviders } from '@/src/providers/AppProviders'
 import { Nunito_400Regular } from '@expo-google-fonts/nunito/400Regular'
 import { Nunito_500Medium } from '@expo-google-fonts/nunito/500Medium'
@@ -47,6 +48,10 @@ export default function RootLayout() {
     )
     return () => unsub()
   }, [setOnlineStatus])
+
+  useEffect(() => {
+    void discardUnsurvivingDraft(Date.now())
+  }, [])
 
   useEffect(() => {
     if (fontsSettled) SplashScreen.hideAsync().catch(() => {})
