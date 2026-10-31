@@ -43,9 +43,9 @@ import { authProvider } from '@/src/lib/auth'
 import { deleteSubmissionUploads } from '@/src/lib/upload/firebaseUpload'
 
 /** Wipes the four draft-owned stores and stops the draft-scoped GPS watch. */
-function tearDownDraftState(): void {
+function tearDownDraftState(deferFileDeletion = false): void {
   useSubmissionStore.getState().clearDraft()
-  usePhotoStore.getState().clearPhotos()
+  usePhotoStore.getState().clearPhotos(deferFileDeletion)
   useBoundingBoxStore.getState().clearAll()
   useActiveCatFlowStore.getState().setActiveCatId(null)
   stopLocationCapture()
@@ -83,11 +83,14 @@ const draftStores = [
 ]
 
 /** Resolves once a persisted store has read its saved state. */
-function whenHydrated(store: (typeof draftStores)[number]): Promise<void> {
-  return new Promise((resolve) => {
-    if (store.persist.hasHydrated()) resolve()
-    else store.persist.onFinishHydration(() => resolve())
-  })
+async function whenHydrated(
+  store: (typeof draftStores)[number],
+): Promise<void> {
+  if (store.persist.hasHydrated()) return
+  await store.persist.rehydrate()
+  if (!store.persist.hasHydrated()) {
+    throw new Error('Could not restore draft state')
+  }
 }
 
 /**
@@ -98,13 +101,46 @@ function whenHydrated(store: (typeof draftStores)[number]): Promise<void> {
  *
  * Waits for every draft store to hydrate first: a store that hydrates after
  * the teardown would write its saved state back over the cleared one.
- * A pool saved before `updated_at` existed has no age, so it is kept.
+ * A pool saved before `updated_at` existed migrates the current cache row's
+ * age. If that row is missing or unreadable, the pool cannot be dated safely
+ * and is discarded.
  */
-export async function discardUnsurvivingDraft(now: number): Promise<void> {
+export async function discardUnsurvivingDraft(
+  now: number,
+  onCaptureReady?: () => void,
+): Promise<void> {
   await Promise.all(draftStores.map(whenHydrated))
   const { photos, updated_at } = usePhotoStore.getState()
-  const isStale = updated_at != null && now - updated_at > SUBMISSION_STALE_MS
-  if (photos.length === 0 || isStale) await discardDraft()
+  let updatedAt = updated_at
+  let oldCacheId: string | null = null
+  if (photos.length > 0 && updatedAt == null) {
+    oldCacheId = await getCurrentCacheId()
+    const cache = oldCacheId ? await getSubmissionCache(oldCacheId) : null
+    const cacheUpdatedAt = cache ? new Date(cache.updated_at).getTime() : NaN
+    if (!Number.isFinite(cacheUpdatedAt)) {
+      updatedAt = NaN
+    } else {
+      updatedAt = cacheUpdatedAt
+      usePhotoStore.setState({ updated_at: updatedAt })
+    }
+  }
+  const isStale = updatedAt != null && now - updatedAt > SUBMISSION_STALE_MS
+  if (photos.length === 0 || isStale || !Number.isFinite(updatedAt ?? NaN)) {
+    if (oldCacheId === null) oldCacheId = await getCurrentCacheId()
+    const oldSubmissionId = usePhotoStore.getState().submissionId
+    const uid = authProvider.getCurrentUser()?.uid
+
+    tearDownDraftState(true)
+    if (oldCacheId) await clearCurrentCacheId()
+    onCaptureReady?.()
+
+    if (oldCacheId) await deleteSubmissionCache(oldCacheId)
+    if (oldSubmissionId && uid)
+      void deleteSubmissionUploads(uid, oldSubmissionId)
+    return
+  }
+
+  onCaptureReady?.()
 }
 
 /**

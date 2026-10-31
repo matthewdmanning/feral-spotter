@@ -23,6 +23,7 @@ export const useActiveCatFlowStore = create<ActiveCatFlowState>()(
     }),
     {
       name: 'active-cat-flow-store',
+      skipHydration: true,
       storage: createJSONStorage(() => asyncStorage),
     },
   ),

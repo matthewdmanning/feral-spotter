@@ -34,7 +34,7 @@ interface PhotoState {
   addPhotos: (photos: SubmissionPhoto[]) => void
   updatePhoto: (localId: string, patch: Partial<SubmissionPhoto>) => void
   removePhoto: (localId: string) => void
-  clearPhotos: () => void
+  clearPhotos: (deferFileDeletion?: boolean) => void
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -84,9 +84,17 @@ export const usePhotoStore = create<PhotoState>()(
           }
         }),
 
-      clearPhotos: () =>
+      clearPhotos: (deferFileDeletion = false) =>
         set((s) => {
-          s.photos.forEach((p) => deleteCapturedPhotoFile(p.uri))
+          const uris = s.photos.map((p) => p.uri)
+          const schedule =
+            typeof requestIdleCallback === 'function'
+              ? (callback: () => void) => requestIdleCallback(callback)
+              : (callback: () => void) => setTimeout(callback, 0)
+          uris.forEach((uri) => {
+            if (deferFileDeletion) schedule(() => deleteCapturedPhotoFile(uri))
+            else deleteCapturedPhotoFile(uri)
+          })
           return {
             photos: [],
             source: null,
@@ -97,6 +105,8 @@ export const usePhotoStore = create<PhotoState>()(
     }),
     {
       name: 'photo-store',
+      // The shared startup task hydrates draft stores once, after mount.
+      skipHydration: true,
       storage: createJSONStorage(() => asyncStorage),
       // Repairs a persisted `source` left set with no photos to back it (e.g.
       // process death between an add and a clear finishing its async write) —

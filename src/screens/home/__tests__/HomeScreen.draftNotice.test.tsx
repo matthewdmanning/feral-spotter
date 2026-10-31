@@ -5,6 +5,7 @@ import { render, screen, userEvent } from '@testing-library/react-native'
 import { router } from 'expo-router'
 import React from 'react'
 import HomeScreen from '../index'
+import { useDraftStartupStore } from '@/src/hooks/useDraftStartupStore'
 
 /**
  * #424: Home's notice for a photo draft. A draft restored from an earlier
@@ -53,9 +54,21 @@ const seedPool = (updatedAt: number) => {
 
 describe('HomeScreen photo draft notice (#424)', () => {
   beforeEach(() => {
+    useDraftStartupStore.setState({ phase: 'ready', task: Promise.resolve() })
     jest.clearAllMocks()
     usePhotoStore.setState(usePhotoStore.getInitialState(), true)
     useUIStore.setState({ dialog: null })
+  })
+
+  it('opens the camera while restoration is pending without offering stale draft actions', async () => {
+    useDraftStartupStore.setState({ phase: 'restoring' })
+    seedPool(APP_STARTED_AT - 1)
+    render(<HomeScreen />)
+    expect(screen.queryByText('Finish')).toBeNull()
+    expect(screen.queryByText('Reset')).toBeNull()
+    expect(screen.getByLabelText('Upload Photos')).toBeDisabled()
+    await userEvent.setup().press(screen.getByLabelText('Take Photos'))
+    expect(router.navigate).toHaveBeenCalledWith('/camera')
   })
 
   it('shows nothing while the pool is empty', () => {

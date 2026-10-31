@@ -3,6 +3,7 @@ import { File, Paths } from 'expo-file-system'
 import { Asset } from 'expo-media-library'
 import { usePhotoStore } from '../usePhotoStore'
 import { useCapturedPhotoWorkflow } from '../useCapturedPhotoWorkflow'
+import { useDraftStartupStore } from '../useDraftStartupStore'
 
 // The supplied mock helper is outside the package's public exports map.
 const { __resetMockFileSystem } = jest.requireActual(
@@ -61,6 +62,7 @@ beforeEach(async () => {
     source: null,
     submissionId: 'test-submission',
   })
+  useDraftStartupStore.setState({ phase: 'ready', task: null })
   __resetMockFileSystem()
   mockAssetCreate.mockReset()
   mockAssetCreate.mockResolvedValue(undefined)
@@ -71,6 +73,48 @@ beforeEach(async () => {
 
 afterEach(() => {
   jest.restoreAllMocks()
+})
+
+it('keeps preview active during restoration and enables capture before cleanup finishes', () => {
+  useDraftStartupStore.setState({ phase: 'restoring' })
+  const { result } = renderHook(() => useCapturedPhotoWorkflow())
+  expect(result.current.isActive).toBe(true)
+  expect(result.current.canCapture).toBe(false)
+
+  act(() => {
+    useDraftStartupStore.setState({ phase: 'cleaning' })
+  })
+  expect(result.current.isActive).toBe(true)
+  expect(result.current.canCapture).toBe(true)
+  act(() => {
+    result.current.persistCapturedPhoto(
+      frame('file:///tmp/field.jpg'),
+      'capture',
+    )
+  })
+  expect(usePhotoStore.getState().photos).toHaveLength(1)
+
+  act(() => {
+    useDraftStartupStore.setState({ phase: 'ready' })
+  })
+  expect(result.current.canCapture).toBe(true)
+
+  act(() => {
+    usePhotoStore.setState({ source: 'library' })
+  })
+  expect(result.current.canCapture).toBe(false)
+  expect(() =>
+    result.current.persistCapturedPhoto(
+      frame('file:///tmp/blocked.jpg'),
+      'capture',
+    ),
+  ).toThrow('Camera capture is not available')
+
+  act(() => {
+    usePhotoStore.setState({ source: null })
+    useDraftStartupStore.setState({ phase: 'restoring' })
+  })
+  expect(result.current.canCapture).toBe(false)
 })
 
 it('uses the current captured photo count for the last thumbnail badge', () => {

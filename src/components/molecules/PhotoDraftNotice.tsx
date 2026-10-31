@@ -11,7 +11,7 @@ import type { PhotoSource } from '@/src/hooks/usePhotoStore'
 import { Text, View } from 'react-native'
 import { styles } from './PhotoDraftNotice.styles'
 
-export type DraftOrigin = 'restored' | 'in-session'
+type DraftOrigin = 'restored' | 'in-session'
 
 const BLOCKED_ENTRYPOINT: Record<
   NonNullable<PhotoSource>,
@@ -21,7 +21,7 @@ const BLOCKED_ENTRYPOINT: Record<
   library: { used: 'library', blocked: 'Take Photos' },
 }
 
-export function photoDraftNoticeCopy(
+function photoDraftNoticeCopy(
   source: NonNullable<PhotoSource>,
   origin: DraftOrigin,
 ): string {

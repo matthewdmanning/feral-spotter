@@ -227,6 +227,7 @@ export const useBoundingBoxStore = create<BoundingBoxState>()(
     }),
     {
       name: 'bounding-box-store',
+      skipHydration: true,
       storage: createJSONStorage(() => asyncStorage),
       // v1 -> v2: BoundingBox shape changed from x/y/width/height (canvas-relative)
       // to lowerLeft/upperRight corners (image-pixel-relative) — old data is incompatible, drop it.

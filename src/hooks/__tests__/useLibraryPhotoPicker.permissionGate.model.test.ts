@@ -4,6 +4,8 @@ import { Linking } from 'react-native'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import { useLibraryPhotoPicker } from '../useLibraryPhotoPicker'
+import { useDraftStartupStore } from '../useDraftStartupStore'
+import { usePhotoStore } from '../usePhotoStore'
 
 /**
  * Models useLibraryPhotoPicker's explicit permission gate (#249): a decline
@@ -31,13 +33,9 @@ jest.mock('expo-image-picker', () => ({
 jest.mock('expo-router', () => ({ router: { navigate: jest.fn() } }))
 
 jest.mock('@/src/hooks', () => ({
-  usePhotoStore: (sel: (s: object) => unknown) =>
-    sel({ photos: [], addPhotos: jest.fn() }),
-  useSubmissionStore: (sel: (s: object) => unknown) =>
-    sel({
-      setLocationType: jest.fn(),
-      setSubmission: jest.fn(),
-    }),
+  usePhotoStore: jest.requireActual('../usePhotoStore').usePhotoStore,
+  useSubmissionStore: jest.requireActual('../useSubmissionStore')
+    .useSubmissionStore,
 }))
 
 jest.mock('@/src/lib/analytics/analytics', () => ({
@@ -51,6 +49,8 @@ describe('useLibraryPhotoPicker permission gate — model-based test', () => {
   >
 
   beforeEach(() => {
+    useDraftStartupStore.setState({ phase: 'ready', task: Promise.resolve() })
+    usePhotoStore.setState(usePhotoStore.getInitialState(), true)
     jest.clearAllMocks()
     jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
     result = renderHook(() => useLibraryPhotoPicker())

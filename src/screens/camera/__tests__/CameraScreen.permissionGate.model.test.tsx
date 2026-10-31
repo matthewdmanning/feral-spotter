@@ -69,6 +69,7 @@ const baseCaptureResult: ReturnType<typeof useCameraCapture> = {
   cameraRef: { current: null },
   photoOutput: {} as never,
   capturedPhotos: [],
+  canCapture: true,
   flashMode: 'auto',
   isTakingPhoto: false,
   flashOverlayStyle: {},

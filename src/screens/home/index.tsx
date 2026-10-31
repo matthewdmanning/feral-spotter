@@ -7,6 +7,7 @@ import {
   ENTRYPOINT_BUFFER_PERCENT,
 } from '@/src/config/constants'
 import { confirmResetSubmission } from '@/src/hooks/confirmResetSubmission'
+import { useDraftStartupStore } from '@/src/hooks/useDraftStartupStore'
 import { useEntryGate } from '@/src/hooks/useEntryGate'
 import { useLibraryPhotoPicker } from '@/src/hooks/useLibraryPhotoPicker'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
@@ -152,8 +153,9 @@ export default function HomeScreen() {
   // shared pool holds a photo, the entrypoint for the *other* source is
   // disabled until the draft is submitted or reset (pool cleared).
   const photoSource = usePhotoStore((s) => s.source)
-  const cameraDisabled = photoSource === 'library'
-  const libraryDisabled = photoSource === 'camera'
+  const draftReady = useDraftStartupStore((s) => s.phase === 'ready')
+  const cameraDisabled = draftReady && photoSource === 'library'
+  const libraryDisabled = !draftReady || photoSource === 'camera'
   // A pool last changed before this process started was restored, not begun here.
   const draftOrigin = usePhotoStore((s) =>
     s.updated_at === null || s.updated_at < APP_STARTED_AT
@@ -238,7 +240,7 @@ export default function HomeScreen() {
           {/* #375: one of the two circles above is dead whenever the pool has
             a source, and nothing said why. Only ever one is disabled, so
             one line covers both cases. */}
-          {photoSource !== null && (
+          {draftReady && photoSource !== null && (
             <PhotoDraftNotice
               source={photoSource}
               origin={draftOrigin}

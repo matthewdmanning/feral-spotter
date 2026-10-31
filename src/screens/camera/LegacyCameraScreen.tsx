@@ -35,6 +35,7 @@ export function LegacyCameraScreen() {
     cameraRef,
     photoOutput,
     isActive,
+    canCapture,
     enableLowLightBoost,
     capturedPhotos,
     flashMode,
@@ -140,7 +141,7 @@ export function LegacyCameraScreen() {
           onFlip={flipCamera}
           onCapture={handleTakePhoto}
           busy={isTakingPhoto}
-          disabled={captureMode === 'single' && isTakingPhoto}
+          disabled={!canCapture || (captureMode === 'single' && isTakingPhoto)}
           shutterLabel={shutterLabelFor(captureMode, isTakingPhoto)}
         />
       </View>

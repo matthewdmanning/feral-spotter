@@ -8,6 +8,7 @@ import { uploadNewPhoto } from '@/src/lib/upload/uploadNewPhoto'
 import { usePhotoStore } from '../usePhotoStore'
 import { useSubmissionStore } from '../useSubmissionStore'
 import { useLibraryPhotoPicker } from '../useLibraryPhotoPicker'
+import { useDraftStartupStore } from '../useDraftStartupStore'
 
 // Avoid the unrelated hook barrel; keep both persisted stores real.
 jest.mock('@/src/hooks', () => ({
@@ -40,6 +41,7 @@ const assets: ImagePicker.ImagePickerAsset[] = [
 ]
 
 beforeEach(async () => {
+  useDraftStartupStore.setState({ phase: 'ready', task: Promise.resolve() })
   jest.clearAllMocks()
   let nextId = 0
   jest
@@ -64,6 +66,55 @@ beforeEach(async () => {
 afterEach(() => {
   jest.restoreAllMocks()
   useAuthStore.setState({ user: null })
+})
+
+it('waits for cleanup before opening the library picker', async () => {
+  let finishCleanup!: () => void
+  const task = new Promise<void>((resolve) => {
+    finishCleanup = resolve
+  })
+  useDraftStartupStore.setState({ phase: 'cleaning', task })
+  const launch = jest
+    .spyOn(ImagePicker, 'launchImageLibraryAsync')
+    .mockResolvedValue({ canceled: true, assets: null })
+  const { result } = renderHook(() => useLibraryPhotoPicker())
+  let pick!: Promise<void>
+  act(() => {
+    pick = result.current.pickFromLibrary()
+  })
+  expect(launch).not.toHaveBeenCalled()
+
+  await act(async () => {
+    finishCleanup()
+    await pick
+  })
+  expect(launch).toHaveBeenCalledTimes(1)
+})
+
+it('keeps a camera capture that arrives while the library picker is open', async () => {
+  jest
+    .spyOn(ImagePicker, 'launchImageLibraryAsync')
+    .mockImplementationOnce(async () => {
+      usePhotoStore.getState().addPhoto({
+        local_id: 'field-photo',
+        uri: 'file:///camera.jpg',
+        width: 100,
+        height: 100,
+        uploaded: false,
+        upload_progress: 0,
+      })
+      return { canceled: false, assets }
+    })
+  const { result } = renderHook(() => useLibraryPhotoPicker())
+  await act(async () => {
+    await result.current.pickFromLibrary()
+  })
+  expect(usePhotoStore.getState().source).toBe('camera')
+  expect(usePhotoStore.getState().photos.map((p) => p.local_id)).toEqual([
+    'field-photo',
+  ])
+  expect(uploadNewPhoto).not.toHaveBeenCalled()
+  expect(router.navigate).not.toHaveBeenCalled()
 })
 
 it.each(['android', 'ios'] as const)(

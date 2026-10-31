@@ -11,7 +11,7 @@
 
 import '@/src/config/unistyles'
 import { useUIStore } from '@/src/hooks'
-import { discardUnsurvivingDraft } from '@/src/lib/submission/draft'
+import { initializeDraft } from '@/src/hooks/useDraftStartupStore'
 import { AppProviders } from '@/src/providers/AppProviders'
 import { Nunito_400Regular } from '@expo-google-fonts/nunito/400Regular'
 import { Nunito_500Medium } from '@expo-google-fonts/nunito/500Medium'
@@ -50,7 +50,9 @@ export default function RootLayout() {
   }, [setOnlineStatus])
 
   useEffect(() => {
-    void discardUnsurvivingDraft(Date.now())
+    void initializeDraft().catch((error) => {
+      console.error('Could not restore the draft at start-up', error)
+    })
   }, [])
 
   useEffect(() => {

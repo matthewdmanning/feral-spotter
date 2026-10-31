@@ -1,4 +1,5 @@
-import { render, waitFor } from '@testing-library/react-native'
+import { act, render, waitFor } from '@testing-library/react-native'
+import { useDraftStartupStore } from '@/src/hooks/useDraftStartupStore'
 import React from 'react'
 import { getAllSubmissionCaches } from '@/src/lib/cache/submissionCache'
 import HomeScreen from '../index'
@@ -68,9 +69,22 @@ const draftInProgress = [
 
 describe('Home resume entry re-reads on focus (#314)', () => {
   beforeEach(() => {
+    useDraftStartupStore.setState({ phase: 'ready', task: Promise.resolve() })
     jest.clearAllMocks()
     mockFocused = true
     capturedVisible = false
+  })
+
+  it('reads resume state only after startup cleanup finishes', async () => {
+    useDraftStartupStore.setState({ phase: 'cleaning' })
+    mockGetAll.mockResolvedValue([])
+    render(<HomeScreen />)
+    expect(mockGetAll).not.toHaveBeenCalled()
+    expect(capturedVisible).toBe(false)
+
+    act(() => useDraftStartupStore.setState({ phase: 'ready' }))
+    await waitFor(() => expect(mockGetAll).toHaveBeenCalledTimes(1))
+    expect(capturedVisible).toBe(false)
   })
 
   it('drops the resume entry once the draft it referred to is gone', async () => {
