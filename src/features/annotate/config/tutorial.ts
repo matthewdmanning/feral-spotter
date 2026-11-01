@@ -4,7 +4,7 @@
  * Copy is draft — see docs/planning/2026-07-14-annotation-tutorial-spec.md.
  */
 
-import type { TutorialStep } from '@/src/components/organisms/TutorialOverlay'
+import type { TutorialStep } from '@/src/features/annotate/components/TutorialOverlay'
 import {
   getAppVersion,
   isVersionReleased,

@@ -19,7 +19,10 @@ import {
   updateSubmissionCache,
 } from '@/src/features/draft-submission/lib/submissionCache'
 import { useLocationCapture } from '@/src/core/location/liveFix'
-import { buildCacheMetadata, toCachedPhoto } from '@/src/features/draft-submission/lib/payload'
+import {
+  buildCacheMetadata,
+  toCachedPhoto,
+} from '@/src/features/draft-submission/lib/payload'
 import { toCachedCat } from '@/src/features/draft-submission/lib/profilePhoto'
 import type { SubmissionPhoto } from '@/src/shared/types'
 import { randomUUID } from 'expo-crypto'

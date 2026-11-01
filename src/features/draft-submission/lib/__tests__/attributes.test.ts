@@ -1,4 +1,4 @@
-import { CAT_ATTRIBUTES, FIELD_LABELS } from '@/src/features/draft-submission/lib/attributes'
+import { CAT_ATTRIBUTES, FIELD_LABELS } from '../attributes'
 import { CAT_DEFAULTS } from '@/src/features/draft-submission/config/catForm'
 
 /**

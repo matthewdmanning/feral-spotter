@@ -112,7 +112,7 @@ function newSpecifier(spec, importer, hit) {
   if (spec.startsWith('.')) {
     let rel = path.posix.relative(path.posix.dirname(newImporter), base)
     if (!rel.startsWith('.')) rel = './' + rel
-    if (keepRelative || !rel.startsWith('../')) return rel
+    if (rel === spec || keepRelative || !rel.startsWith('../')) return rel
   }
   return '@/' + base
 }

@@ -1,5 +1,5 @@
 import * as ImagePicker from 'expo-image-picker'
-import { isUsable } from '@/src/features/permissions/photo/lib/libraryPermission'
+import { isUsable } from '../libraryPermission'
 
 describe('libraryPermission.isUsable (#358)', () => {
   it('is usable when fully granted', () => {

@@ -13,7 +13,7 @@ import {
 } from '@testing-library/react-native'
 import { AppState, BackHandler, Platform } from 'react-native'
 import React from 'react'
-import ConsentScreen from '@/src/features/permissions/consent/screens/consent/index'
+import ConsentScreen from '../index'
 import consentCopy from '@/src/features/permissions/consent/content/consentDisclosure.json'
 
 const mockRequestCameraPermission = jest.fn()

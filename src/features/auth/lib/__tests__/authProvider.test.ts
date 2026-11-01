@@ -1,4 +1,4 @@
-import { authProvider } from '@/src/features/auth/lib/index'
+import { authProvider } from '../index'
 
 describe('dev authProvider stub (__DEV__ is true under jest)', () => {
   it('starts signed out', async () => {

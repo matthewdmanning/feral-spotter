@@ -6,7 +6,7 @@ import { CatForm } from '@/src/features/draft-submission/components/CatForm'
 import {
   COLLAPSED_DIAMETER,
   InsetCropBubble,
-} from '@/src/components/organisms/InsetCropBubble'
+} from '@/src/features/annotate/components/InsetCropBubble'
 import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
 import { useAbandonCatGuard } from '@/src/features/draft-submission/hooks/useAbandonCatGuard'
 import { useActiveCatFlow } from '@/src/features/draft-submission/hooks/useActiveCatFlow'

@@ -13,7 +13,7 @@ describe('useSettingsStore native camera default', () => {
       delete process.env.EXPO_PUBLIC_NATIVE_CAMERA_CAPTURE
     else process.env.EXPO_PUBLIC_NATIVE_CAMERA_CAPTURE = envValue
 
-    const { useSettingsStore } = require('@/src/features/settings/hooks/useSettingsStore')
+    const { useSettingsStore } = require('../useSettingsStore')
     return useSettingsStore.getState().settings.native_camera_capture
   }
 

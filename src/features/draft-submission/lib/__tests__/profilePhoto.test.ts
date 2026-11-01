@@ -1,6 +1,6 @@
 import { observedCat } from '@/src/test-utils/catFixtures'
 import type { BoundingBox } from '@/src/shared/types/BoundingBox'
-import { resolveProfileBox, toCachedCat } from '@/src/features/draft-submission/lib/profilePhoto'
+import { resolveProfileBox, toCachedCat } from '../profilePhoto'
 
 const box = (photo_local_id: string, x = 0.1): BoundingBox => ({
   id: `box-${photo_local_id}`,

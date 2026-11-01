@@ -1,4 +1,4 @@
-import { COLLAPSED_DIAMETER } from '@/src/components/organisms/InsetCropBubble'
+import { COLLAPSED_DIAMETER } from '@/src/features/annotate/components/InsetCropBubble'
 import { StyleSheet } from 'react-native-unistyles'
 
 export const styles = StyleSheet.create((theme) => ({

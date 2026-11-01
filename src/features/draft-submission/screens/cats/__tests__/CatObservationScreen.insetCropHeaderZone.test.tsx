@@ -12,7 +12,9 @@ jest.mock('expo-router', () => ({
 }))
 
 jest.mock('@/src/features/draft-submission/hooks/useSubmissionStore', () => ({
-  ...jest.requireActual('@/src/features/draft-submission/hooks/useSubmissionStore'),
+  ...jest.requireActual(
+    '@/src/features/draft-submission/hooks/useSubmissionStore',
+  ),
   useSubmissionStore: (sel: (s: { cats: unknown[] }) => unknown) =>
     sel({ cats: [] }),
 }))
@@ -49,7 +51,7 @@ jest.mock('@/src/features/settings/hooks/useSettingsStore', () => ({
 // the screen consumes.
 let latestOnHoldChange: ((held: boolean) => void) | undefined
 
-jest.mock('@/src/components/organisms/InsetCropBubble', () => ({
+jest.mock('@/src/features/annotate/components/InsetCropBubble', () => ({
   DEFAULT_DIAMETER: 68,
   COLLAPSED_DIAMETER: 68,
   InsetCropBubble: ({

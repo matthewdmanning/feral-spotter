@@ -15,9 +15,9 @@ const persisted = (version: number, pinch: boolean) =>
 
 const loadRehydrated = async (stored: string | null) => {
   if (stored !== null) await AsyncStorage.setItem('settings-store', stored)
-  let store: typeof import('@/src/features/settings/hooks/useSettingsStore').useSettingsStore | undefined
+  let store: typeof import('../useSettingsStore').useSettingsStore | undefined
   jest.isolateModules(() => {
-    store = require('@/src/features/settings/hooks/useSettingsStore').useSettingsStore
+    store = require('../useSettingsStore').useSettingsStore
   })
   await store!.persist.rehydrate()
   return store!.getState().settings

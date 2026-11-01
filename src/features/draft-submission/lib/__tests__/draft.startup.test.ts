@@ -10,7 +10,7 @@ import {
   getSubmissionCache,
 } from '@/src/features/draft-submission/lib/submissionCache'
 import { deleteSubmissionUploads } from '@/src/features/draft-submission/lib/upload/firebaseUpload'
-import { discardUnsurvivingDraft } from '@/src/features/draft-submission/lib/draft'
+import { discardUnsurvivingDraft } from '../draft'
 
 /**
  * The start-up survival rule (#424): a draft outlives the process only while

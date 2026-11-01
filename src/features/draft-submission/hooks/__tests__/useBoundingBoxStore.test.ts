@@ -1,4 +1,4 @@
-import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
+import { useBoundingBoxStore } from '../useBoundingBoxStore'
 
 /**
  * Purpose: removeBoxesForPhoto (#177) is the fix for a photo removed

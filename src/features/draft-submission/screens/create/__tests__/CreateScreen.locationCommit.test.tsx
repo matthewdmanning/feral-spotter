@@ -1,7 +1,7 @@
 import { act, render } from '@testing-library/react-native'
 import React from 'react'
 import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
-import CreateSubmissionScreen from '@/src/features/draft-submission/screens/create/index'
+import CreateSubmissionScreen from '../index'
 
 /**
  * Regression test for the reacquire-must-not-clobber invariant (Q5 of the

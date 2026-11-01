@@ -1,6 +1,6 @@
 import { render, screen, userEvent } from '@testing-library/react-native'
 import { StyleSheet } from 'react-native'
-import { AppButton } from '@/src/shared/ui/atoms/AppButton'
+import { AppButton } from '../AppButton'
 
 it.each([
   { disabled: true, loading: false },

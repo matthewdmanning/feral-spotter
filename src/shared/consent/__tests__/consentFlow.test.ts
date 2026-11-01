@@ -1,5 +1,5 @@
-import { nextConsentRoute } from '@/src/shared/consent/consentFlow'
-import { useConsentStore } from '@/src/shared/consent/useConsentStore'
+import { nextConsentRoute } from '../consentFlow'
+import { useConsentStore } from '../useConsentStore'
 
 describe('nextConsentRoute', () => {
   beforeEach(() =>

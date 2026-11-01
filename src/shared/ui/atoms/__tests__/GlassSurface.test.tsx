@@ -8,7 +8,7 @@ import {
 import { isGlassEffectAPIAvailable } from 'expo-glass-effect'
 import { AccessibilityInfo, Platform, StyleSheet } from 'react-native'
 import { UnistylesRuntime } from 'react-native-unistyles'
-import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
+import { GlassSurface } from '../GlassSurface'
 
 // The failure this guards: a surface that should have gone to the theme
 // surface keeps drawing glass (frozen over a native view, missing on old

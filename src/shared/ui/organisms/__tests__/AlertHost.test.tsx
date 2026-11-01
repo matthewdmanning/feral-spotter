@@ -1,5 +1,5 @@
 import { act, userEvent, render, screen } from '@testing-library/react-native'
-import { AlertHost } from '@/src/shared/ui/organisms/AlertHost'
+import { AlertHost } from '../AlertHost'
 import { showAlert, useUIStore } from '@/src/shared/hooks/useUIStore'
 
 /**

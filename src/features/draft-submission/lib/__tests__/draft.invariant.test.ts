@@ -3,7 +3,7 @@ import { useActiveCatFlowStore } from '@/src/features/draft-submission/hooks/use
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
-import { completeDraft, discardDraft } from '@/src/features/draft-submission/lib/draft'
+import { completeDraft, discardDraft } from '../draft'
 
 /**
  * The survival invariant (#292): after either teardown verb, no draft-owned

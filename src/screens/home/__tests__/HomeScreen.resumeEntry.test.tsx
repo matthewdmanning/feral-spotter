@@ -42,7 +42,7 @@ jest.mock('@/src/features/draft-submission/hooks/usePhotoStore', () => ({
   usePhotoStore: (sel: (s: { source: null }) => unknown) =>
     sel({ source: null }),
 }))
-jest.mock('@/src/hooks/useLibraryPhotoPicker', () => ({
+jest.mock('@/src/features/library-picker/hooks/useLibraryPhotoPicker', () => ({
   useLibraryPhotoPicker: () => ({ pickFromLibrary: jest.fn() }),
 }))
 // Same stub as the sibling Home suites: the real column pulls in reanimated,

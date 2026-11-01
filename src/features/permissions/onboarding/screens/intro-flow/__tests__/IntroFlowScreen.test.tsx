@@ -13,7 +13,7 @@ import {
   EXIT_WARNING_TITLE,
   ONBOARDING_SLIDES,
 } from '@/src/features/permissions/onboarding/config/introFlowCopy'
-import IntroFlowScreen from '@/src/features/permissions/onboarding/screens/intro-flow/index'
+import IntroFlowScreen from '../index'
 
 jest.mock('expo-router', () => ({
   router: { replace: jest.fn(), push: jest.fn() },

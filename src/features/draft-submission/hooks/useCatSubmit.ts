@@ -18,7 +18,10 @@ import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBo
 import { EVENTS, captureEvent } from '@/src/shared/analytics/analytics'
 import type { CatFormValues } from '@/src/features/draft-submission/hooks/useCatForm'
 import type { ObservedCat } from '@/src/features/draft-submission/hooks/useSubmissionStore'
-import { CAT_ATTRIBUTES, FIELD_LABELS } from '@/src/features/draft-submission/lib/attributes'
+import {
+  CAT_ATTRIBUTES,
+  FIELD_LABELS,
+} from '@/src/features/draft-submission/lib/attributes'
 import { CAT_DEFAULTS } from '@/src/features/draft-submission/config/catForm'
 import { router } from 'expo-router'
 import { randomUUID } from 'expo-crypto'

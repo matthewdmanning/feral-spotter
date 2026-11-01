@@ -4,7 +4,7 @@ import { router } from 'expo-router'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
-import CreateSubmissionScreen from '@/src/features/draft-submission/screens/create/index'
+import CreateSubmissionScreen from '../index'
 
 /**
  * Model of Android hardware Back on Submission Details. The header back and
@@ -47,7 +47,7 @@ jest.mock('@/src/features/draft-submission/hooks/useSubmissionSubmit', () => ({
   }),
 }))
 
-jest.mock('@/src/hooks/useLibraryPhotoPicker', () => ({
+jest.mock('@/src/features/library-picker/hooks/useLibraryPhotoPicker', () => ({
   useLibraryPhotoPicker: () => ({ pickFromLibrary: jest.fn() }),
 }))
 

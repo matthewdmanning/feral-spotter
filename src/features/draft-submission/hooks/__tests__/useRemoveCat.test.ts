@@ -1,10 +1,10 @@
 import { act, renderHook } from '@testing-library/react-native'
 import * as ui from '@/src/shared/hooks/useUIStore'
-import { useActiveCatFlowStore } from '@/src/features/draft-submission/hooks/useActiveCatFlowStore'
-import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
-import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
-import { useRemoveCat } from '@/src/features/draft-submission/hooks/useRemoveCat'
-import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { useActiveCatFlowStore } from '../useActiveCatFlowStore'
+import { useBoundingBoxStore } from '../useBoundingBoxStore'
+import { usePhotoStore } from '../usePhotoStore'
+import { useRemoveCat } from '../useRemoveCat'
+import { useSubmissionStore } from '../useSubmissionStore'
 
 /**
  * Removing a saved cat (#299) has to clear everything derived from that cat

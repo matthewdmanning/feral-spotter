@@ -1,8 +1,8 @@
 import { BUTTON_ROW_STACK_FONT_SCALE } from '@/src/shared/config/constants'
 import { render, screen } from '@testing-library/react-native'
 import { Text, useWindowDimensions } from 'react-native'
-import { ButtonRow } from '@/src/shared/ui/molecules/ButtonRow'
-import { styles } from '@/src/shared/ui/molecules/ButtonRow.styles'
+import { ButtonRow } from '../ButtonRow'
+import { styles } from '../ButtonRow.styles'
 
 jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
   __esModule: true,

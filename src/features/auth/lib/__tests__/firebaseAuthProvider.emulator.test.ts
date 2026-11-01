@@ -44,9 +44,7 @@ describe('createFirebaseAuthProvider emulator wiring', () => {
     process.env.EXPO_PUBLIC_FIREBASE_EMULATOR_HOST = 'test-host'
 
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- see file-header comment
-    const {
-      createFirebaseAuthProvider,
-    } = require('@/src/features/auth/lib/firebaseAuthProvider')
+    const { createFirebaseAuthProvider } = require('../firebaseAuthProvider')
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- see file-header comment
     const { connectAuthEmulator } = require('@react-native-firebase/auth')
     spyOnFetch()
@@ -63,9 +61,7 @@ describe('createFirebaseAuthProvider emulator wiring', () => {
     process.env.EXPO_PUBLIC_USE_FIREBASE_EMULATOR = 'true'
 
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- see file-header comment
-    const {
-      createFirebaseAuthProvider,
-    } = require('@/src/features/auth/lib/firebaseAuthProvider')
+    const { createFirebaseAuthProvider } = require('../firebaseAuthProvider')
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- see file-header comment
     const { connectAuthEmulator } = require('@react-native-firebase/auth')
     spyOnFetch()
@@ -80,9 +76,7 @@ describe('createFirebaseAuthProvider emulator wiring', () => {
 
   it('does not connect to the emulator when the flag is unset', () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- see file-header comment
-    const {
-      createFirebaseAuthProvider,
-    } = require('@/src/features/auth/lib/firebaseAuthProvider')
+    const { createFirebaseAuthProvider } = require('../firebaseAuthProvider')
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- see file-header comment
     const { connectAuthEmulator } = require('@react-native-firebase/auth')
     const fetchSpy = spyOnFetch()
@@ -98,9 +92,7 @@ describe('createFirebaseAuthProvider emulator wiring', () => {
     process.env.EXPO_PUBLIC_FIREBASE_EMULATOR_HOST = 'test-host'
 
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- see file-header comment
-    const {
-      createFirebaseAuthProvider,
-    } = require('@/src/features/auth/lib/firebaseAuthProvider')
+    const { createFirebaseAuthProvider } = require('../firebaseAuthProvider')
     const fetchSpy = spyOnFetch()
 
     createFirebaseAuthProvider()
@@ -113,9 +105,7 @@ describe('createFirebaseAuthProvider emulator wiring', () => {
     process.env.EXPO_PUBLIC_FIREBASE_EMULATOR_HOST = 'test-host'
 
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- see file-header comment
-    const {
-      createFirebaseAuthProvider,
-    } = require('@/src/features/auth/lib/firebaseAuthProvider')
+    const { createFirebaseAuthProvider } = require('../firebaseAuthProvider')
     jest.spyOn(global, 'fetch').mockRejectedValue(new Error('ECONNREFUSED'))
 
     createFirebaseAuthProvider()

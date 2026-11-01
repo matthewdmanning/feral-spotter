@@ -11,7 +11,7 @@ import { startFreshPass } from '@/src/features/draft-submission/hooks/useActiveC
 import { useBackHandler } from '@/src/shared/hooks/useBackHandler'
 import { useDraftSync } from '@/src/features/draft-submission/hooks/useDraftSync'
 import { useSubmissionSubmit } from '@/src/features/draft-submission/hooks/useSubmissionSubmit'
-import { useLibraryPhotoPicker } from '@/src/hooks/useLibraryPhotoPicker'
+import { useLibraryPhotoPicker } from '@/src/features/library-picker/hooks/useLibraryPhotoPicker'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useRemoveCat } from '@/src/features/draft-submission/hooks/useRemoveCat'
 import { draftWarnings } from '@/src/features/draft-submission/lib/status'
@@ -28,7 +28,10 @@ import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle
 import { useCallback, useEffect, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
-import { describeCat, summarizeCat } from '@/src/features/draft-submission/lib/attributes'
+import {
+  describeCat,
+  summarizeCat,
+} from '@/src/features/draft-submission/lib/attributes'
 import { styles } from './index.styles'
 
 // #97's split: this screen is now the Cats List + Submission Details landing

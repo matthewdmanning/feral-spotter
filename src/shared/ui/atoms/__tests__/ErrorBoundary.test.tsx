@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react-native'
 import React from 'react'
-import { ErrorBoundary } from '@/src/shared/ui/atoms/ErrorBoundary'
+import { ErrorBoundary } from '../ErrorBoundary'
 import { registerCaptureException } from '@/src/shared/analytics/analytics'
 import { useConsentStore } from '@/src/shared/consent/useConsentStore'
 

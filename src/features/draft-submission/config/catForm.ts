@@ -15,7 +15,10 @@ import type {
   HealthLabel,
   Owned,
 } from '@/src/shared/types'
-import { CAT_ATTRIBUTES, type AttributeOption } from '@/src/features/draft-submission/lib/attributes'
+import {
+  CAT_ATTRIBUTES,
+  type AttributeOption,
+} from '@/src/features/draft-submission/lib/attributes'
 
 export { CAT_DEFAULTS } from '@/src/features/draft-submission/lib/attributes'
 

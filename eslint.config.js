@@ -130,9 +130,9 @@ module.exports = defineConfig([
   // React Compiler / Reanimated incompatibility.
   {
     files: [
-      'src/hooks/useBoundingBoxFrame.ts',
-      'src/hooks/useCapturedPhotoWorkflow.tsx',
-      'src/screens/camera/CameraChrome.tsx',
+      'src/features/annotate/hooks/useBoundingBoxFrame.ts',
+      'src/features/camera-control/hooks/useCapturedPhotoWorkflow.tsx',
+      'src/features/camera-control/screens/camera/CameraChrome.tsx',
     ],
     rules: {
       'react-hooks/immutability': 'off',

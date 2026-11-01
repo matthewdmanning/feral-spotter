@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
-jest.mock('@/src/core/location/liveFix', () => ({ stopLocationCapture: jest.fn() }))
+jest.mock('@/src/core/location/liveFix', () => ({
+  stopLocationCapture: jest.fn(),
+}))
 jest.mock('@/src/features/draft-submission/lib/upload/firebaseUpload', () => ({
   deleteSubmissionUploads: jest.fn(),
 }))
@@ -34,7 +36,9 @@ it('defers draft I/O until startup and reads the saved photo pool only once', as
   const reads = jest.spyOn(AsyncStorage, 'getItem')
   try {
     const { discardUnsurvivingDraft } =
-      jest.requireActual<typeof import('@/src/features/draft-submission/lib/draft')>('../draft')
+      jest.requireActual<
+        typeof import('@/src/features/draft-submission/lib/draft')
+      >('../draft')
     const { usePhotoStore } = jest.requireActual<
       typeof import('@/src/features/draft-submission/hooks/usePhotoStore')
     >('@/src/features/draft-submission/hooks/usePhotoStore')

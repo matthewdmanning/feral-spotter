@@ -56,12 +56,12 @@ jest.mock('@/src/shared/lib/appearance', () => ({
   getSystemColorScheme: () => mockColorScheme,
 }))
 
-type ConfigModule = typeof import('@/src/shared/config/unistyles')
+type ConfigModule = typeof import('../unistyles')
 
 /** Import the config fresh, re-running its startup StyleSheet.configure call. */
 const loadConfig = (): ConfigModule => {
   jest.resetModules()
-  return jest.requireActual('@/src/shared/config/unistyles') as ConfigModule
+  return jest.requireActual('../unistyles') as ConfigModule
 }
 
 const lastConfigureCall = () =>

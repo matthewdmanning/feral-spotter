@@ -30,7 +30,7 @@ jest.mock('@/src/features/draft-submission/lib/submissionCache', () => ({
 jest.mock('@/src/shared/ui/molecules/BottomButtonColumn', () => ({
   BottomButtonColumn: () => null,
 }))
-jest.mock('@/src/hooks/useLibraryPhotoPicker', () => ({
+jest.mock('@/src/features/library-picker/hooks/useLibraryPhotoPicker', () => ({
   useLibraryPhotoPicker: () => ({ pickFromLibrary: jest.fn() }),
 }))
 

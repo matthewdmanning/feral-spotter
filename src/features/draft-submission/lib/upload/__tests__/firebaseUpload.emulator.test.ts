@@ -33,7 +33,7 @@ describe('firebaseUpload emulator wiring', () => {
     process.env.EXPO_PUBLIC_FIREBASE_EMULATOR_HOST = 'test-host'
 
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- see file-header comment
-    const { uploadSubmissionMetadata } = require('@/src/features/draft-submission/lib/upload/firebaseUpload')
+    const { uploadSubmissionMetadata } = require('../firebaseUpload')
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- see file-header comment
     const { connectStorageEmulator } = require('@react-native-firebase/storage')
 
@@ -50,7 +50,7 @@ describe('firebaseUpload emulator wiring', () => {
 
   it('does not connect to the emulator when the flag is unset', async () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- see file-header comment
-    const { uploadSubmissionMetadata } = require('@/src/features/draft-submission/lib/upload/firebaseUpload')
+    const { uploadSubmissionMetadata } = require('../firebaseUpload')
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- see file-header comment
     const { connectStorageEmulator } = require('@react-native-firebase/storage')
 
@@ -65,7 +65,7 @@ describe('firebaseUpload emulator wiring', () => {
     process.env.EXPO_PUBLIC_FIREBASE_EMULATOR_HOST = 'test-host'
 
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- see file-header comment
-    const { uploadSubmissionMetadata } = require('@/src/features/draft-submission/lib/upload/firebaseUpload')
+    const { uploadSubmissionMetadata } = require('../firebaseUpload')
 
     await uploadSubmissionMetadata({} as SubmissionApiPayload, 'uid1', 'sub1')
 
@@ -78,7 +78,7 @@ describe('firebaseUpload emulator wiring', () => {
     ;(fetch as jest.Mock).mockRejectedValue(new Error('ECONNREFUSED'))
 
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- see file-header comment
-    const { uploadSubmissionMetadata } = require('@/src/features/draft-submission/lib/upload/firebaseUpload')
+    const { uploadSubmissionMetadata } = require('../firebaseUpload')
 
     await uploadSubmissionMetadata({} as SubmissionApiPayload, 'uid1', 'sub1')
     // The reachability ping is fire-and-forget — let its rejection settle.

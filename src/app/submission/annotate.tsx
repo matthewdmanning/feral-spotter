@@ -1,1 +1,1 @@
-export { default } from '@/src/screens/submission/annotate'
+export { default } from '@/src/features/annotate/screens/annotate'
