@@ -3,6 +3,74 @@ const { defineConfig } = require('eslint/config')
 const expoConfig = require('eslint-config-expo/flat')
 const globals = require('globals')
 
+// Icons come one file per icon. The package root is a barrel that re-exports
+// every icon, and Metro bundles and runs all of them (#406). Type-only imports
+// are erased at build time, so they stay allowed. Shared with the boundary
+// blocks below, which override this rule and must repeat these paths.
+const RESTRICTED_PATHS = [
+  {
+    name: 'phosphor-react-native',
+    message:
+      "Import each icon from 'phosphor-react-native/src/icons/<Name>'. The package root loads every icon.",
+    allowTypeImports: true,
+  },
+  {
+    name: 'lucide-react-native',
+    message:
+      "Replaced by phosphor-react-native (#406). Import from 'phosphor-react-native/src/icons/<Name>'.",
+  },
+]
+
+// Feature-folder boundaries (docs/PROJECT_STRUCTURE.md). Non-screen code in a
+// unit may import its own unit or a lower level only; peers on one level may
+// not import each other. Screens are the composition layer and are exempt.
+const BOUNDARY_LEVELS = [
+  ['shared'],
+  ['auth'],
+  ['permissions'],
+  ['core'],
+  ['settings'],
+  ['draft-submission'],
+  ['camera-control', 'library-picker', 'annotate'],
+  ['history'],
+]
+const unitDir = (unit) =>
+  unit === 'shared' || unit === 'core' ? `src/${unit}` : `src/features/${unit}`
+const boundaryBlocks = BOUNDARY_LEVELS.flatMap((level, i) =>
+  level.map((unit) => {
+    const forbidden = BOUNDARY_LEVELS.slice(i)
+      .flat()
+      .filter((other) => other !== unit)
+    return {
+      files: [`${unitDir(unit)}/**/*.ts`, `${unitDir(unit)}/**/*.tsx`],
+      ignores: ['**/__tests__/**', '**/screens/**'],
+      rules: {
+        '@typescript-eslint/no-restricted-imports': [
+          'error',
+          {
+            paths: RESTRICTED_PATHS,
+            patterns: [
+              ...(forbidden.length
+                ? [
+                    {
+                      group: forbidden.map((other) => `@/${unitDir(other)}/**`),
+                      message: `${unit} may import only lower levels (docs/PROJECT_STRUCTURE.md). Move the shared piece down, or compose in a screen.`,
+                    },
+                  ]
+                : []),
+              {
+                group: ['**/screens/**'],
+                message:
+                  'Only src/app routes and other screens import screens. Move the shared piece out of screens/.',
+              },
+            ],
+          },
+        ],
+      },
+    }
+  }),
+)
+
 module.exports = defineConfig([
   expoConfig,
   // Global ignores. `.claude/worktrees` holds nested git worktrees (duplicate
@@ -94,19 +162,7 @@ module.exports = defineConfig([
       '@typescript-eslint/no-restricted-imports': [
         'error',
         {
-          paths: [
-            {
-              name: 'phosphor-react-native',
-              message:
-                "Import each icon from 'phosphor-react-native/src/icons/<Name>'. The package root loads every icon.",
-              allowTypeImports: true,
-            },
-            {
-              name: 'lucide-react-native',
-              message:
-                "Replaced by phosphor-react-native (#406). Import from 'phosphor-react-native/src/icons/<Name>'.",
-            },
-          ],
+          paths: RESTRICTED_PATHS,
         },
       ],
       // Do not use `#private` fields; do not use `const enum`.
@@ -136,6 +192,18 @@ module.exports = defineConfig([
     ],
     rules: {
       'react-hooks/immutability': 'off',
+    },
+  },
+  ...boundaryBlocks,
+  // No module-level import cycles. The TypeScript resolver follows the @/ alias.
+  {
+    files: ['src/**/*.ts', 'src/**/*.tsx'],
+    ignores: ['**/__tests__/**'],
+    settings: {
+      'import/resolver': { typescript: { project: './tsconfig.json' } },
+    },
+    rules: {
+      'import/no-cycle': ['error', { ignoreExternal: true }],
     },
   },
 ])

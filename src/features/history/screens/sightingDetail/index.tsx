@@ -8,7 +8,10 @@
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
 import { CatCrop } from '@/src/shared/ui/atoms/CatCrop'
-import { STATUS_COLOR_KEY, StatusIcon } from '@/src/features/history/components/StatusIcon'
+import {
+  STATUS_COLOR_KEY,
+  StatusIcon,
+} from '@/src/features/history/components/StatusIcon'
 import { FieldRow } from '@/src/shared/ui/molecules/FieldRow'
 import { useSighting } from '@/src/features/history/hooks/useSighting'
 import {
