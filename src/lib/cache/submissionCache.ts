@@ -59,6 +59,8 @@ export interface CachedPhoto {
   uri: string
   /** Firebase download URL — outlives the draft. */
   cloud_storage_url?: string
+  /** ISO, shutter press. Set for camera captures only. */
+  captured_at?: string
 }
 
 export interface CacheMetadata {

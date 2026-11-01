@@ -80,12 +80,27 @@ export function sightingTime(cache: SubmissionCacheFile): string {
   )
 }
 
+/**
+ * The time a Reports card shows: when the last camera photo was taken, else
+ * when the report was started. Only camera captures record a capture time.
+ */
+export function reportCardTime(cache: SubmissionCacheFile): string {
+  // ISO strings from toISOString() sort as text in time order.
+  const lastShot = cache.photos
+    ?.map((p) => p.captured_at)
+    .reduce<string | undefined>(
+      (last, at) => (at && (!last || at > last) ? at : last),
+      undefined,
+    )
+  return lastShot ?? cache.created_at
+}
+
 /** Newest first by the time each card shows, so the list reads in order. */
 export function sortBySightingTime(
   caches: SubmissionCacheFile[],
 ): SubmissionCacheFile[] {
   return [...caches].sort(
-    (a, b) => Date.parse(sightingTime(b)) - Date.parse(sightingTime(a)),
+    (a, b) => Date.parse(reportCardTime(b)) - Date.parse(reportCardTime(a)),
   )
 }
 

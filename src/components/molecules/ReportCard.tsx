@@ -4,9 +4,9 @@ import { STATUS_COLOR_KEY, StatusIcon } from '@/src/components/atoms/StatusIcon'
 import type { SubmissionCacheFile } from '@/src/lib/cache/submissionCache'
 import { selectionHaptic } from '@/src/lib/haptics'
 import {
+  reportCardTime,
   sightingCardAction,
   sightingPhotoCount,
-  sightingTime,
 } from '@/src/lib/sightings/history'
 import { formatDateTime } from '@/src/utils/formatDateTime'
 import { router } from 'expo-router'
@@ -30,7 +30,7 @@ export const ReportCard = memo(function ReportCard({
   const catCount = cache.cats.length
   const photoCount = sightingPhotoCount(cache)
   const colorKey = STATUS_COLOR_KEY[cache.status]
-  const when = formatDateTime(sightingTime(cache))
+  const when = formatDateTime(reportCardTime(cache))
   const action = sightingCardAction(cache, resumableId)
 
   const row = (

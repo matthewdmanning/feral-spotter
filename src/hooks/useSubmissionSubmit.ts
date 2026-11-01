@@ -39,6 +39,7 @@ import {
   buildSubmissionPayload,
   foldBoxesIntoCat,
   resolvePhotoTime,
+  toCachedPhoto,
 } from '@/src/lib/submission/payload'
 import {
   resolveProfileBox,
@@ -179,11 +180,7 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
                 cats: cats.map((cat) =>
                   toCachedCat(cat, boxesByCat.get(cat.local_id) ?? []),
                 ),
-                photos: freshPhotos.map((p) => ({
-                  local_id: p.local_id,
-                  uri: p.uri,
-                  cloud_storage_url: p.cloud_storage_url,
-                })),
+                photos: freshPhotos.map(toCachedPhoto),
                 user_id: user?.uid,
                 submitted_at: new Date().toISOString(),
                 metadata: buildCacheMetadata(submission),

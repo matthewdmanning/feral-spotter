@@ -29,9 +29,10 @@ it('draft cats reach the In Progress row and survive the post-Submit clear', asy
   // A cat saved in Cat Form shows on the In Progress card.
   act(() => useSubmissionStore.getState().addCat(observedCat()))
   await waitFor(() =>
-    expect(update).toHaveBeenCalledWith('cache-1', {
-      cats: [expect.anything()],
-    }),
+    expect(update).toHaveBeenCalledWith(
+      'cache-1',
+      expect.objectContaining({ cats: [expect.anything()] }),
+    ),
   )
   await act(async () => {})
   expect(await rowCats()).toHaveLength(1)

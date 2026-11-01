@@ -12,7 +12,10 @@
  */
 import type { BoundingBox } from '@/src/types/BoundingBox'
 import type { SubmissionApiPayload, SubmissionPhoto } from '@/src/types'
-import type { CacheMetadata } from '@/src/lib/cache/submissionCache'
+import type {
+  CacheMetadata,
+  CachedPhoto,
+} from '@/src/lib/cache/submissionCache'
 import type { SubmissionDraft } from '@/src/hooks/useSubmissionStore'
 import { parseExifDateTime } from '@/src/utils/libraryPickTime'
 
@@ -31,6 +34,16 @@ export function buildCacheMetadata(submission: SubmissionDraft): CacheMetadata {
     latitude: submission.latitude,
     longitude: submission.longitude,
     accuracy: submission.accuracy,
+  }
+}
+
+/** The part of a draft photo the history row keeps after teardown. */
+export function toCachedPhoto(photo: SubmissionPhoto): CachedPhoto {
+  return {
+    local_id: photo.local_id,
+    uri: photo.uri,
+    cloud_storage_url: photo.cloud_storage_url,
+    captured_at: photo.captured_at,
   }
 }
 

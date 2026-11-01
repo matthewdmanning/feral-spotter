@@ -6,6 +6,7 @@ import {
   ownSightings,
   pinBadge,
   profilePicUri,
+  reportCardTime,
   sightingCardAction,
   sightingTime,
   sortBySightingTime,
@@ -77,16 +78,49 @@ describe('groupSightingsBySpot', () => {
   })
 })
 
+describe('reportCardTime', () => {
+  const shot = (local_id: string, captured_at?: string) => ({
+    local_id,
+    uri: `file://${local_id}.jpg`,
+    captured_at,
+  })
+
+  it('shows the last camera photo, whatever order the photos are in', () => {
+    const row = sighting('cam', '2026-11-01T13:40:00Z', null, 1, {
+      photos: [
+        shot('p1', '2026-11-01T13:30:00Z'),
+        shot('p2', '2026-11-01T13:33:00Z'),
+        shot('p3', '2026-11-01T13:31:00Z'),
+      ],
+    })
+    expect(reportCardTime(row)).toBe('2026-11-01T13:33:00Z')
+  })
+
+  // Library picks carry no capture time; their EXIF time must not leak in.
+  it('shows when the report was started if the camera was not used', () => {
+    const row = sighting('lib', '2026-11-01T13:40:00Z', null, 1, {
+      metadata: {
+        location_method: 'device',
+        time_method: 'device',
+        captured_at: '2026-10-28T21:27:00Z',
+      },
+      photos: [shot('p1')],
+    })
+    expect(reportCardTime(row)).toBe('2026-11-01T13:40:00Z')
+  })
+})
+
 describe('sortBySightingTime', () => {
-  // A Manual time set after the fact must not leave a card out of order.
   it('orders by the time the card shows, not when the row was made', () => {
     const rows = [
       sighting('made-late', '2026-10-20T00:00:00Z', null, 1, {
-        metadata: {
-          location_method: 'device',
-          time_method: 'manual',
-          manual_time: '2026-10-01T00:00:00Z',
-        },
+        photos: [
+          {
+            local_id: 'p1',
+            uri: 'file://p1.jpg',
+            captured_at: '2026-10-01T00:00:00Z',
+          },
+        ],
       }),
       sighting('made-early', '2026-10-10T00:00:00Z', null, 1),
     ]
