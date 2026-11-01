@@ -32,7 +32,7 @@ jest.mock('expo-router', () => ({
 jest.mock('@/src/lib/auth/useAuth', () => ({
   useAuth: () => ({ isReady: true, isAuthenticated: true }),
 }))
-jest.mock('@/src/hooks/useConsentStore', () => ({
+jest.mock('@/src/shared/consent/useConsentStore', () => ({
   hasAcceptedConsent: () => true,
 }))
 jest.mock('@/src/lib/cache/submissionCache', () => ({
@@ -48,7 +48,7 @@ jest.mock('@/src/hooks/useLibraryPhotoPicker', () => ({
 // Same stub as the sibling Home suites: the real column pulls in reanimated,
 // which has no native part under jest. `visible` is the gate under test.
 let capturedVisible = false
-jest.mock('@/src/components/molecules/BottomButtonColumn', () => ({
+jest.mock('@/src/shared/ui/molecules/BottomButtonColumn', () => ({
   // The screen mounts the column only while it is shown.
   BottomButtonColumn: (props: { visible: boolean }) => {
     require('react').useEffect(() => {

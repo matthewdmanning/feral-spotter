@@ -15,7 +15,7 @@ import type {
   CachedProfileBox,
 } from '@/src/lib/cache/submissionCache'
 import type { ObservedCat } from '@/src/hooks/useSubmissionStore'
-import type { BoundingBox } from '@/src/types/BoundingBox'
+import type { BoundingBox } from '@/src/shared/types/BoundingBox'
 
 /** `boxes` in confirmation order — getBoxesForCat's order. */
 export function resolveProfileBox(

@@ -5,8 +5,8 @@ import {
   resolvePhotoTime,
 } from '../payload'
 import type { SubmissionDraft } from '@/src/hooks/useSubmissionStore'
-import type { SubmissionApiPayload, SubmissionPhoto } from '@/src/types'
-import type { BoundingBox } from '@/src/types/BoundingBox'
+import type { SubmissionApiPayload, SubmissionPhoto } from '@/src/shared/types'
+import type { BoundingBox } from '@/src/shared/types/BoundingBox'
 
 const submission: SubmissionDraft = {
   location_type: 'device',

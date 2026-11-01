@@ -68,7 +68,7 @@ jest.mock('expo-media-library', () => ({
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'test-id' }))
 
 const mockCaptureEvent = jest.fn()
-jest.mock('@/src/lib/analytics/analytics', () => ({
+jest.mock('@/src/shared/analytics/analytics', () => ({
   captureEvent: (...args: unknown[]) => mockCaptureEvent(...args),
   EVENTS: {
     CAMERA_OPENED: 'camera_opened',

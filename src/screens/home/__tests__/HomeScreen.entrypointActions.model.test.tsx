@@ -3,7 +3,7 @@ import { router } from 'expo-router'
 import React from 'react'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
-import { SUBMISSION_STALE_MS } from '@/src/config/constants'
+import { SUBMISSION_STALE_MS } from '@/src/shared/config/constants'
 import { getAllSubmissionCaches } from '@/src/lib/cache/submissionCache'
 import HomeScreen from '../index'
 import { useDraftStartupStore } from '@/src/hooks/useDraftStartupStore'
@@ -32,7 +32,7 @@ jest.mock('expo-router', () => ({
 jest.mock('@/src/lib/auth/useAuth', () => ({
   useAuth: () => ({ isReady: true, isAuthenticated: true }),
 }))
-jest.mock('@/src/hooks/useConsentStore', () => ({
+jest.mock('@/src/shared/consent/useConsentStore', () => ({
   hasAcceptedConsent: () => true,
 }))
 jest.mock('@/src/lib/cache/submissionCache', () => ({

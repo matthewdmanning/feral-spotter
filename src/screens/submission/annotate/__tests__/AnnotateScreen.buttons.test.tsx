@@ -24,7 +24,7 @@ jest.mock('expo-router', () => ({
 }))
 
 jest.mock('@/src/hooks/useAnnotatePass', () => ({ useAnnotatePass: jest.fn() }))
-jest.mock('@/src/hooks/useBackHandler', () => ({ useBackHandler: jest.fn() }))
+jest.mock('@/src/shared/hooks/useBackHandler', () => ({ useBackHandler: jest.fn() }))
 jest.mock('@/src/hooks/useTutorialStore', () => ({
   useTutorialStore: (sel: (s: object) => unknown) =>
     sel({

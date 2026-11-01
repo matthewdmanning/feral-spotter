@@ -4,16 +4,16 @@
  * Migrated from NativeWind → Unistyles v3.
  */
 
-import { GlassSurface } from '@/src/components/atoms/GlassSurface'
-import { AppButton } from '@/src/components/atoms/AppButton'
-import { ButtonRow } from '@/src/components/molecules/ButtonRow'
+import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
+import { AppButton } from '@/src/shared/ui/atoms/AppButton'
+import { ButtonRow } from '@/src/shared/ui/molecules/ButtonRow'
 import { useDateTimePicker } from '@/src/hooks/useDateTimePicker'
 import RNDateTimePicker from '@react-native-community/datetimepicker'
 import { CalendarIcon } from 'phosphor-react-native/src/icons/Calendar'
 import { ClockIcon } from 'phosphor-react-native/src/icons/Clock'
 import { Modal, Platform, Pressable, Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
-import { dialogShell } from './dialogShell.styles'
+import { dialogShell } from '@/src/shared/ui/organisms/dialogShell.styles'
 import { styles } from './DateTimePicker.styles'
 
 type PickerMode = 'date' | 'time' | 'datetime'

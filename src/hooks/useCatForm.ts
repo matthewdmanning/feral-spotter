@@ -4,7 +4,7 @@
  * No store, API, or navigation dependencies — pure form state.
  */
 
-import { showAlert } from '@/src/hooks/useUIStore'
+import { showAlert } from '@/src/shared/hooks/useUIStore'
 import type { ObservedCat } from '@/src/hooks/useSubmissionStore'
 import type {
   CatAge,
@@ -15,7 +15,7 @@ import type {
   HairLength,
   HealthLabel,
   Owned,
-} from '@/src/types'
+} from '@/src/shared/types'
 import { useCallback, useState } from 'react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────

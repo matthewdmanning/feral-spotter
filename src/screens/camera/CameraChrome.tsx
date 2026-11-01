@@ -11,8 +11,8 @@
  * preview is backend-specific.
  */
 
-import { GateScreen } from '@/src/components/molecules/GateScreen'
-import type { SubmissionPhoto } from '@/src/types'
+import { GateScreen } from '@/src/shared/ui/molecules/GateScreen'
+import type { SubmissionPhoto } from '@/src/shared/types'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { CameraRotateIcon } from 'phosphor-react-native/src/icons/CameraRotate'
 import { LightningIcon } from 'phosphor-react-native/src/icons/Lightning'

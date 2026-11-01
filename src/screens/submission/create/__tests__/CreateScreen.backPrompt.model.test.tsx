@@ -3,7 +3,7 @@ import React from 'react'
 import { router } from 'expo-router'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
-import { useUIStore } from '@/src/hooks/useUIStore'
+import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import CreateSubmissionScreen from '../index'
 
 /**
@@ -84,7 +84,7 @@ jest.mock('@/src/hooks/useSubmissionStore', () => ({
 // The platform check inside the real hook only registers on Android; the
 // screen's own handler is what this test is about, so capture it directly.
 let mockBackHandler: () => boolean = () => false
-jest.mock('@/src/hooks/useBackHandler', () => ({
+jest.mock('@/src/shared/hooks/useBackHandler', () => ({
   useBackHandler: (handler: () => boolean) => {
     mockBackHandler = handler
   },

@@ -5,11 +5,11 @@
  * selectors, no edit or delete. History is a record, not a draft.
  */
 
-import { GlassSurface } from '@/src/components/atoms/GlassSurface'
-import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
-import { CatCrop } from '@/src/components/atoms/CatCrop'
+import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
+import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
+import { CatCrop } from '@/src/shared/ui/atoms/CatCrop'
 import { STATUS_COLOR_KEY, StatusIcon } from '@/src/components/atoms/StatusIcon'
-import { FieldRow } from '@/src/components/molecules/FieldRow'
+import { FieldRow } from '@/src/shared/ui/molecules/FieldRow'
 import { useSighting } from '@/src/hooks/useSighting'
 import { describeCat, summarizeCat } from '@/src/lib/cats/attributes'
 import {
@@ -17,7 +17,7 @@ import {
   profilePicUri,
   sightingTime,
 } from '@/src/lib/sightings/history'
-import { formatDateTime } from '@/src/utils/formatDateTime'
+import { formatDateTime } from '@/src/shared/utils/formatDateTime'
 import { useLocalSearchParams } from 'expo-router'
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'

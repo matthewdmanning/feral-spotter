@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { CONSENT_VERSION, useConsentStore } from '@/src/hooks/useConsentStore'
-import * as ui from '@/src/hooks/useUIStore'
+import { CONSENT_VERSION, useConsentStore } from '@/src/shared/consent/useConsentStore'
+import * as ui from '@/src/shared/hooks/useUIStore'
 import {
   act,
   userEvent,
@@ -11,7 +11,7 @@ import {
 import { AppState, BackHandler, Platform } from 'react-native'
 import React from 'react'
 import ConsentScreen from '../index'
-import consentCopy from '@/src/content/consentDisclosure.json'
+import consentCopy from '@/src/features/permissions/consent/content/consentDisclosure.json'
 
 const mockRequestCameraPermission = jest.fn()
 let mockCameraPermissionStatus: string
@@ -46,7 +46,7 @@ jest.mock('expo-router', () => ({
   },
 }))
 
-jest.mock('@/src/hooks/useBackHandler', () => ({
+jest.mock('@/src/shared/hooks/useBackHandler', () => ({
   useBackHandler: jest.fn(),
 }))
 

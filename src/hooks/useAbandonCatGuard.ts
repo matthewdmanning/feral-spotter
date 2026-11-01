@@ -27,7 +27,7 @@
  * state to clean up is the boxes and the id.
  */
 
-import { showAlert } from '@/src/hooks/useUIStore'
+import { showAlert } from '@/src/shared/hooks/useUIStore'
 import { useActiveCatFlow } from '@/src/hooks/useActiveCatFlow'
 import { useActiveCatFlowStore } from '@/src/hooks/useActiveCatFlowStore'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'

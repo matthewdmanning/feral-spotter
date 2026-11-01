@@ -11,7 +11,7 @@
  * when a pass starts.
  */
 
-import { showAlert } from '@/src/hooks/useUIStore'
+import { showAlert } from '@/src/shared/hooks/useUIStore'
 import { useState, useCallback, useRef } from 'react'
 
 import type { ICarouselInstance } from 'react-native-reanimated-carousel'
@@ -19,8 +19,8 @@ import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useActiveCatFlow } from '@/src/hooks/useActiveCatFlow'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'
-import { EVENTS, captureEvent } from '@/src/lib/analytics/analytics'
-import type { BoundingBox } from '@/src/types/BoundingBox'
+import { EVENTS, captureEvent } from '@/src/shared/analytics/analytics'
+import type { BoundingBox } from '@/src/shared/types/BoundingBox'
 import type { SubmissionPhoto } from '@/src/hooks/usePhotoStore'
 import type { PhotoPassStatus } from '@/src/hooks/useActiveCatFlow'
 

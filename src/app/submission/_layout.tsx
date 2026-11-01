@@ -4,8 +4,8 @@
  * annotate: fullScreenModal (opened from cats)
  */
 
-import { ErrorBoundary } from '@/src/components/atoms/ErrorBoundary'
-import { GateScreen } from '@/src/components/molecules/GateScreen'
+import { ErrorBoundary } from '@/src/shared/ui/atoms/ErrorBoundary'
+import { GateScreen } from '@/src/shared/ui/molecules/GateScreen'
 import { useDraftStartupStore } from '@/src/hooks/useDraftStartupStore'
 import { Stack, router } from 'expo-router'
 import { GearIcon } from 'phosphor-react-native/src/icons/Gear'

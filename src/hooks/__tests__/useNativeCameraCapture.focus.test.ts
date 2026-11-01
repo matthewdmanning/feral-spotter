@@ -5,7 +5,7 @@ jest.mock('@/src/hooks/useCapturedPhotoWorkflow', () => ({
   useCapturedPhotoWorkflow: jest.fn(() => ({})),
 }))
 
-jest.mock('@/src/hooks/useConsentStore', () => ({
+jest.mock('@/src/shared/consent/useConsentStore', () => ({
   useConsentStore: { persist: { hasHydrated: jest.fn(() => true) } },
 }))
 
@@ -25,7 +25,7 @@ jest.mock('@/src/hooks/useSettingsStore', () => ({
     }),
 }))
 
-jest.mock('@/src/lib/analytics/analytics', () => ({
+jest.mock('@/src/shared/analytics/analytics', () => ({
   captureEvent: jest.fn(),
   EVENTS: { CAMERA_OPENED: 'camera_opened' },
 }))

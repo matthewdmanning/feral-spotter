@@ -4,7 +4,7 @@ import React from 'react'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import { useAuth } from '@/src/lib/auth/useAuth'
-import { hasAcceptedConsent } from '@/src/hooks/useConsentStore'
+import { hasAcceptedConsent } from '@/src/shared/consent/useConsentStore'
 import HomeScreen from '../index'
 
 jest.mock('expo-router', () => ({
@@ -14,13 +14,13 @@ jest.mock('expo-router', () => ({
 }))
 
 jest.mock('@/src/lib/auth/useAuth', () => ({ useAuth: jest.fn() }))
-jest.mock('@/src/hooks/useConsentStore', () => ({
+jest.mock('@/src/shared/consent/useConsentStore', () => ({
   hasAcceptedConsent: jest.fn(),
 }))
 jest.mock('@/src/lib/cache/submissionCache', () => ({
   getAllSubmissionCaches: jest.fn().mockResolvedValue([]),
 }))
-jest.mock('@/src/components/molecules/BottomButtonColumn', () => ({
+jest.mock('@/src/shared/ui/molecules/BottomButtonColumn', () => ({
   BottomButtonColumn: () => null,
 }))
 // This suite covers the auth/consent gate only — the photo-source gate has

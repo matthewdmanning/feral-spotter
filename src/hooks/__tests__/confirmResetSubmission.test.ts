@@ -1,6 +1,6 @@
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'
-import { useUIStore } from '@/src/hooks/useUIStore'
+import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import { confirmResetSubmission } from '../confirmResetSubmission'
 
 /**

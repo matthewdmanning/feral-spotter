@@ -1,5 +1,5 @@
-import { GlassSurface } from '@/src/components/atoms/GlassSurface'
-import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
+import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
+import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
 import { STATUS_COLOR_KEY } from '@/src/components/atoms/StatusIcon'
 import { ReportCard } from '@/src/components/molecules/ReportCard'
 import { SightingsMap } from '@/src/components/organisms/SightingsMap'

@@ -5,9 +5,9 @@
  * Settings app while blocked.
  */
 
-import consentCopy from '@/src/content/consentDisclosure.json'
-import { useConsentStore } from '@/src/hooks/useConsentStore'
-import { showAlert } from '@/src/hooks/useUIStore'
+import consentCopy from '@/src/features/permissions/consent/content/consentDisclosure.json'
+import { useConsentStore } from '@/src/shared/consent/useConsentStore'
+import { showAlert } from '@/src/shared/hooks/useUIStore'
 import { cameraPermission } from '@/src/lib/permissions/cameraPermission'
 import {
   isUsable as isLocationUsable,

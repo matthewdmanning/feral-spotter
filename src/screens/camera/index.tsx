@@ -1,5 +1,5 @@
 import { isNativeIdentificationCameraAvailable } from '@/modules/native-identification-camera'
-import { GateScreen } from '@/src/components/molecules/GateScreen'
+import { GateScreen } from '@/src/shared/ui/molecules/GateScreen'
 import { useDraftStartupStore } from '@/src/hooks/useDraftStartupStore'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'

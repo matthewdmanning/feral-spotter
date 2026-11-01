@@ -24,7 +24,7 @@
  * reasoning `removeBoxesForPhoto` follows in the other direction.
  */
 
-import { showAlert } from '@/src/hooks/useUIStore'
+import { showAlert } from '@/src/shared/hooks/useUIStore'
 import { clearActiveCatIfMatches } from '@/src/hooks/useActiveCatFlow'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'

@@ -1,4 +1,4 @@
-import * as ui from '@/src/hooks/useUIStore'
+import * as ui from '@/src/shared/hooks/useUIStore'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { act, renderHook } from '@testing-library/react-native'
 

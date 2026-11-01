@@ -14,7 +14,7 @@ import type {
   HairLength,
   HealthLabel,
   Owned,
-} from '@/src/types'
+} from '@/src/shared/types'
 import { CAT_ATTRIBUTES, type AttributeOption } from '@/src/lib/cats/attributes'
 
 export { CAT_DEFAULTS } from '@/src/lib/cats/attributes'

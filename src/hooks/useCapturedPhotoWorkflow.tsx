@@ -19,18 +19,18 @@ import {
   useDraftStartupStore,
 } from '@/src/hooks/useDraftStartupStore'
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'
-import { showAlert } from '@/src/hooks/useUIStore'
+import { showAlert } from '@/src/shared/hooks/useUIStore'
 import { gallerySavePermission } from '@/src/lib/permissions/gallerySavePermission'
 import {
   releaseCapturedPhotoFile,
   retainCapturedPhotoFile,
 } from '@/src/lib/camera/capturedPhotoFiles'
 import { uploadNewPhoto } from '@/src/lib/upload/uploadNewPhoto'
-import type { SubmissionPhoto } from '@/src/types'
+import type { SubmissionPhoto } from '@/src/shared/types'
 import {
   buildSubmissionPhotoFromCapture,
   type CapturedFrame,
-} from '@/src/utils/buildSubmissionPhoto'
+} from '@/src/features/draft-submission/lib/buildSubmissionPhoto'
 import { type FlashListRef } from '@shopify/flash-list'
 import { Asset } from 'expo-media-library'
 import { router, useIsFocused } from 'expo-router'

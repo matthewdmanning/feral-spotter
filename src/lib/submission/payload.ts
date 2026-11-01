@@ -10,14 +10,14 @@
  * pure functions of data already in hand but only reachable by running the
  * whole submit flow — architecture review candidate 4 (2026-09-14).
  */
-import type { BoundingBox } from '@/src/types/BoundingBox'
-import type { SubmissionApiPayload, SubmissionPhoto } from '@/src/types'
+import type { BoundingBox } from '@/src/shared/types/BoundingBox'
+import type { SubmissionApiPayload, SubmissionPhoto } from '@/src/shared/types'
 import type {
   CacheMetadata,
   CachedPhoto,
 } from '@/src/lib/cache/submissionCache'
 import type { SubmissionDraft } from '@/src/hooks/useSubmissionStore'
-import { parseExifDateTime } from '@/src/utils/libraryPickTime'
+import { parseExifDateTime } from '@/src/shared/utils/libraryPickTime'
 
 /** The draft's `location_type`/`time_type` become the cache's
  * `location_method`/`time_method` — same fact, different spelling in

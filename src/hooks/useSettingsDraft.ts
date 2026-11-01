@@ -4,12 +4,20 @@
  * Screen receives everything via this hook — no business logic in the component.
  */
 
-import { showAlert, showError, showSuccess } from '@/src/hooks/useUIStore'
+import {
+  showAlert,
+  showError,
+  showSuccess,
+} from '@/src/shared/hooks/useUIStore'
 import { useState, useEffect } from 'react'
 
 import { router } from 'expo-router'
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'
-import { hasPassword, removePassword, verifyPassword } from '@/src/utils/api'
+import {
+  hasPassword,
+  removePassword,
+  verifyPassword,
+} from '@/src/shared/utils/api'
 import type { AppSettings } from '@/src/hooks/useSettingsStore'
 
 export interface SettingsDraftResult {

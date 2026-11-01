@@ -9,11 +9,11 @@
  * Hidden when the cat has no box (a cat described without annotating).
  */
 
-import { GlassSurface } from '@/src/components/atoms/GlassSurface'
-import { CatCrop } from '@/src/components/atoms/CatCrop'
+import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
+import { CatCrop } from '@/src/shared/ui/atoms/CatCrop'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
-import { selectionHaptic } from '@/src/lib/haptics'
+import { selectionHaptic } from '@/src/shared/lib/haptics'
 import { resolveProfileBox } from '@/src/lib/submission/profilePhoto'
 import { StarIcon } from 'phosphor-react-native/src/icons/Star'
 import { Pressable, ScrollView, Text, View } from 'react-native'

@@ -14,11 +14,12 @@
  * as a popup — see its comment for why.
  */
 
-import { showAlert, showError, useUIStore } from '@/src/hooks/useUIStore'
+import { showAlert, showError, useUIStore } from '@/src/shared/hooks/useUIStore'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
-import { EVENTS, fireAnalyticsEvent } from '@/src/lib/analytics/analytics'
+import { EVENTS } from '@/src/shared/analytics/analytics'
+import { fireAnalyticsEvent } from '@/src/lib/submission/analytics'
 import { useAuth } from '@/src/lib/auth/useAuth'
 import {
   getCurrentCacheId,
@@ -45,8 +46,8 @@ import {
   finalizeSubmissionPhotoMetadata,
   uploadSubmissionMetadata,
 } from '@/src/lib/upload/firebaseUpload'
-import type { SubmissionPhoto } from '@/src/types'
-import { validateCatCount, validatePhotos } from '@/src/utils/validation'
+import type { SubmissionPhoto } from '@/src/shared/types'
+import { validateCatCount, validatePhotos } from '@/src/shared/utils/validation'
 import { router } from 'expo-router'
 import { useCallback, useState } from 'react'
 

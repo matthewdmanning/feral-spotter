@@ -9,8 +9,8 @@
  * react-navigation does not re-render screens on screenOptions changes.
  */
 
-import '@/src/config/unistyles'
-import { useUIStore } from '@/src/hooks/useUIStore'
+import '@/src/shared/config/unistyles'
+import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import { initializeDraft } from '@/src/hooks/useDraftStartupStore'
 import { AppProviders } from '@/src/providers/AppProviders'
 import { Nunito_400Regular } from '@expo-google-fonts/nunito/400Regular'

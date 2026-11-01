@@ -3,7 +3,7 @@
  * Whether Home offers "Continue Observation" for a draft.
  */
 
-import { SUBMISSION_STALE_MS } from '@/src/config/constants'
+import { SUBMISSION_STALE_MS } from '@/src/shared/config/constants'
 import type { SubmissionCacheFile } from '@/src/lib/cache/submissionCache'
 
 /**

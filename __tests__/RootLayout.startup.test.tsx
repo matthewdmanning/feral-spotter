@@ -8,7 +8,7 @@ import * as SplashScreen from 'expo-splash-screen'
 import RootLayout from '@/src/app/_layout'
 import SubmissionLayout from '@/src/app/submission/_layout'
 
-jest.mock('@/src/config/unistyles', () => ({}))
+jest.mock('@/src/shared/config/unistyles', () => ({}))
 jest.mock('@react-native-community/netinfo', () =>
   jest.requireActual('@react-native-community/netinfo/jest/netinfo-mock'),
 )

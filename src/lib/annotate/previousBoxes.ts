@@ -5,7 +5,7 @@
  * under the crop frame in each cat's own color. Pure: the stores own state.
  */
 
-import type { BoundingBox } from '@/src/types/BoundingBox'
+import type { BoundingBox } from '@/src/shared/types/BoundingBox'
 
 export interface PreviousBox {
   box: BoundingBox

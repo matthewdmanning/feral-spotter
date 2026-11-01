@@ -6,9 +6,9 @@
  * the actual consent gate.
  */
 
-import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
+import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
 import { DisclosureText } from '@/src/components/molecules/DisclosureText'
-import agreementCopy from '@/src/content/consentDisclosure.json'
+import agreementCopy from '@/src/features/permissions/consent/content/consentDisclosure.json'
 import { ScrollView, Text, View } from 'react-native'
 import { styles } from './index.styles'
 

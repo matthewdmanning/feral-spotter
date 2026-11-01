@@ -1,11 +1,11 @@
-import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
-import { AppButton, type ColumnButton } from '@/src/components/atoms/AppButton'
-import { BottomButtonColumn } from '@/src/components/molecules/BottomButtonColumn'
+import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
+import { AppButton, type ColumnButton } from '@/src/shared/ui/atoms/AppButton'
+import { BottomButtonColumn } from '@/src/shared/ui/molecules/BottomButtonColumn'
 import { PhotoDraftNotice } from '@/src/components/molecules/PhotoDraftNotice'
 import {
   APP_STARTED_AT,
   ENTRYPOINT_BUFFER_PERCENT,
-} from '@/src/config/constants'
+} from '@/src/shared/config/constants'
 import { confirmResetSubmission } from '@/src/hooks/confirmResetSubmission'
 import { useDraftStartupStore } from '@/src/hooks/useDraftStartupStore'
 import { useEntryGate } from '@/src/hooks/useEntryGate'

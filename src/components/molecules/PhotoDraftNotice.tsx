@@ -6,7 +6,7 @@
  * offered. A draft restored from an earlier session also offers Finish (open
  * the report).
  */
-import { AppButton } from '@/src/components/atoms/AppButton'
+import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import type { PhotoSource } from '@/src/hooks/usePhotoStore'
 import { Text, View } from 'react-native'
 import { styles } from './PhotoDraftNotice.styles'

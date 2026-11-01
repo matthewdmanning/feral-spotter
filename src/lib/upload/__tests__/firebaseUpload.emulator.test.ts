@@ -1,4 +1,4 @@
-import type { SubmissionApiPayload } from '@/src/types'
+import type { SubmissionApiPayload } from '@/src/shared/types'
 
 // USE_FIREBASE_EMULATOR is a module-level const baked in at first import, so
 // asserting both the on/off branches needs a fresh module per test —

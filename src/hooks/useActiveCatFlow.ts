@@ -11,7 +11,7 @@
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { useActiveCatFlowStore } from '@/src/hooks/useActiveCatFlowStore'
 import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
-import type { BoundingBox } from '@/src/types/BoundingBox'
+import type { BoundingBox } from '@/src/shared/types/BoundingBox'
 import { randomUUID } from 'expo-crypto'
 import { router } from 'expo-router'
 import { useCallback } from 'react'

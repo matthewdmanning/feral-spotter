@@ -11,11 +11,11 @@
  * cat is no longer "in-progress."
  */
 
-import { showAlert } from '@/src/hooks/useUIStore'
+import { showAlert } from '@/src/shared/hooks/useUIStore'
 import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
 import { useActiveCatFlow } from '@/src/hooks/useActiveCatFlow'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
-import { EVENTS, captureEvent } from '@/src/lib/analytics/analytics'
+import { EVENTS, captureEvent } from '@/src/shared/analytics/analytics'
 import type { CatFormValues } from '@/src/hooks/useCatForm'
 import type { ObservedCat } from '@/src/hooks/useSubmissionStore'
 import { CAT_ATTRIBUTES, FIELD_LABELS } from '@/src/lib/cats/attributes'

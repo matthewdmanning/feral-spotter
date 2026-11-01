@@ -8,9 +8,9 @@
  * sandboxed sample photo) per docs/planning/2026-07-14-annotation-tutorial-spec.md.
  */
 
-import { GlassSurface } from '@/src/components/atoms/GlassSurface'
-import { AppButton } from '@/src/components/atoms/AppButton'
-import { TextButton } from '@/src/components/atoms/TextButton'
+import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
+import { AppButton } from '@/src/shared/ui/atoms/AppButton'
+import { TextButton } from '@/src/shared/ui/atoms/TextButton'
 import { Modal, Text, View } from 'react-native'
 import { useState } from 'react'
 import { useUnistyles } from 'react-native-unistyles'

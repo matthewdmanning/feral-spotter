@@ -5,8 +5,8 @@ import {
   getLocationCaptureState,
   __resetLocationCaptureForTests,
 } from '@/src/lib/location'
-import { CONSENT_VERSION, useConsentStore } from '@/src/hooks/useConsentStore'
-import { LOCATION_STALE_THRESHOLD_MS } from '@/src/config/location'
+import { CONSENT_VERSION, useConsentStore } from '@/src/shared/consent/useConsentStore'
+import { LOCATION_STALE_THRESHOLD_MS } from '@/src/core/location/location'
 
 /**
  * Model of the background Live-fix singleton's reacquire flow

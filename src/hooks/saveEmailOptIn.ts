@@ -1,4 +1,4 @@
-import { useConsentStore } from '@/src/hooks/useConsentStore'
+import { useConsentStore } from '@/src/shared/consent/useConsentStore'
 import { syncEmailSubscription } from '@/src/lib/email/syncEmailSubscription'
 
 /**

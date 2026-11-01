@@ -1,4 +1,4 @@
-import { useUIStore } from '@/src/hooks/useUIStore'
+import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import { act, renderHook } from '@testing-library/react-native'
 
 import * as cache from '@/src/lib/cache/submissionCache'
@@ -25,8 +25,11 @@ jest.mock('@/src/lib/location', () => ({
   stopLocationCapture: jest.fn(),
 }))
 
-jest.mock('@/src/lib/analytics/analytics', () => ({
+jest.mock('@/src/lib/submission/analytics', () => ({
   fireAnalyticsEvent: jest.fn(),
+}))
+
+jest.mock('@/src/shared/analytics/analytics', () => ({
   EVENTS: {
     SUBMISSION_SENDING: 'x',
     SUBMISSION_SUBMITTED: 'y',

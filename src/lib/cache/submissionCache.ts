@@ -15,7 +15,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import type { LocationType, TimeType } from '@/src/types'
+import type { LocationType, TimeType } from '@/src/shared/types'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -87,7 +87,7 @@ export interface SubmissionCacheFile {
   cats: CachedCat[]
   /**
    * @deprecated Rows sent before `photos` existed. No longer written; read
-   * counts through `sightingPhotoCount` (lib/sightings/history.ts).
+   * counts through `sightingPhotoCount` below.
    */
   photo_links?: string[]
   /** Per-photo read paths, keyed by local_id — Profile Pics resolve here. Set on Submit. */
@@ -96,6 +96,11 @@ export interface SubmissionCacheFile {
   user_id?: string
   /** ISO. When Submit was pressed — a camera Sighting's time (ADR 0003). */
   submitted_at?: string
+}
+
+/** Photos in the Sighting. Rows sent before `photos` existed count links. */
+export function sightingPhotoCount(cache: SubmissionCacheFile): number {
+  return cache.photos?.length ?? cache.photo_links?.length ?? 0
 }
 
 // ─── Storage keys ─────────────────────────────────────────────────────────────

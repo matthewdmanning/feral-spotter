@@ -4,7 +4,7 @@
  * signed-out user to sign-in.
  */
 
-import { hasAcceptedConsent } from '@/src/hooks/useConsentStore'
+import { hasAcceptedConsent } from '@/src/shared/consent/useConsentStore'
 import { useAuth } from '@/src/lib/auth/useAuth'
 import { router } from 'expo-router'
 import { useEffect } from 'react'

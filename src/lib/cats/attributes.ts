@@ -18,7 +18,7 @@
  */
 import type { CatFormValues } from '@/src/hooks/useCatForm'
 import type { ObservedCat } from '@/src/hooks/useSubmissionStore'
-import type { CatColor, CatPattern } from '@/src/types'
+import type { CatColor, CatPattern } from '@/src/shared/types'
 
 export interface AttributeOption<T extends string> {
   value: T

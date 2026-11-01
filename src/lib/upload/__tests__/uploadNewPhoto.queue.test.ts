@@ -1,5 +1,5 @@
 /** A burst stays bounded, and a failed upload cannot strand queued photos. */
-import type { PhotoUploadResponse, SubmissionPhoto } from '@/src/types'
+import type { PhotoUploadResponse, SubmissionPhoto } from '@/src/shared/types'
 import { uploadNewPhoto } from '@/src/lib/upload/uploadNewPhoto'
 
 const mockPending: {

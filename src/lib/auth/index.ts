@@ -1,6 +1,6 @@
 import type { AuthUser, IAuthProvider } from './IAuthProvider'
 import { createFirebaseAuthProvider } from './firebaseAuthProvider'
-import { USE_FIREBASE_EMULATOR } from '@/src/config/constants'
+import { USE_FIREBASE_EMULATOR } from '@/src/shared/config/constants'
 
 // Firebase Auth's native module isn't available under Jest, so tests get a
 // stub. Everything else — dev and prod, device and emulator — gets real

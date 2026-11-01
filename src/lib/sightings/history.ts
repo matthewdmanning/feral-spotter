@@ -11,6 +11,7 @@ import type {
   SubmissionCacheFile,
   TimeMethod,
 } from '@/src/lib/cache/submissionCache'
+import { sightingPhotoCount } from '@/src/lib/cache/submissionCache'
 
 export interface SpotCoordinates {
   latitude: number
@@ -102,11 +103,6 @@ export function sortBySightingTime(
   return [...caches].sort(
     (a, b) => Date.parse(reportCardTime(b)) - Date.parse(reportCardTime(a)),
   )
-}
-
-/** Photos in the Sighting. Rows sent before `photos` existed count links. */
-export function sightingPhotoCount(cache: SubmissionCacheFile): number {
-  return cache.photos?.length ?? cache.photo_links?.length ?? 0
 }
 
 /**

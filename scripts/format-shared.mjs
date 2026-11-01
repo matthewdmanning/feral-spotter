@@ -14,10 +14,10 @@ export const SUPPORTED = /\.(tsx?|jsx?|json|md|ya?ml)$/
 // them buries real edits in formatting noise; the whole-repo reformat is its
 // own branch. Drop an entry once that branch lands and the file converts.
 export const COLUMN_ALIGNED = new Set([
-  'src/components/atoms/ErrorBoundary.styles.ts',
-  'src/components/atoms/SegmentedControl.styles.ts',
+  'src/shared/ui/atoms/ErrorBoundary.styles.ts',
+  'src/shared/ui/atoms/SegmentedControl.styles.ts',
   'src/components/molecules/AddAnotherCatDialog.styles.ts',
-  'src/components/molecules/BottomButtonColumn.styles.ts',
+  'src/shared/ui/molecules/BottomButtonColumn.styles.ts',
   'src/components/molecules/PhotoPreviewModal.styles.ts',
   'src/components/molecules/ReportCard.styles.ts',
   'src/components/organisms/DateTimePicker.styles.ts',

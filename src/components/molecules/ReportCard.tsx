@@ -1,14 +1,16 @@
-import { GlassSurface } from '@/src/components/atoms/GlassSurface'
+import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import { memo } from 'react'
 import { STATUS_COLOR_KEY, StatusIcon } from '@/src/components/atoms/StatusIcon'
-import type { SubmissionCacheFile } from '@/src/lib/cache/submissionCache'
-import { selectionHaptic } from '@/src/lib/haptics'
+import {
+  sightingPhotoCount,
+  type SubmissionCacheFile,
+} from '@/src/lib/cache/submissionCache'
+import { selectionHaptic } from '@/src/shared/lib/haptics'
 import {
   reportCardTime,
   sightingCardAction,
-  sightingPhotoCount,
 } from '@/src/lib/sightings/history'
-import { formatDateTime } from '@/src/utils/formatDateTime'
+import { formatDateTime } from '@/src/shared/utils/formatDateTime'
 import { router } from 'expo-router'
 import { CaretRightIcon } from 'phosphor-react-native/src/icons/CaretRight'
 import { Pressable, Text, View } from 'react-native'

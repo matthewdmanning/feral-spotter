@@ -28,19 +28,19 @@
  *     opt-in allow it.
  */
 
-import { AlertHost } from '@/src/components/organisms/AlertHost'
-import { ErrorBoundary } from '@/src/components/atoms/ErrorBoundary'
+import { AlertHost } from '@/src/shared/ui/organisms/AlertHost'
+import { ErrorBoundary } from '@/src/shared/ui/atoms/ErrorBoundary'
 import {
   getThemeMode,
   resolveThemeForAppearanceChange,
-} from '@/src/config/unistyles'
-import { CONSENT_VERSION, useConsentStore } from '@/src/hooks/useConsentStore'
+} from '@/src/shared/config/unistyles'
+import { CONSENT_VERSION, useConsentStore } from '@/src/shared/consent/useConsentStore'
 import { useAuthStore } from '@/src/lib/auth/authStore'
 import {
   IS_PRERELEASE,
   registerCapture,
   registerCaptureException,
-} from '@/src/lib/analytics/analytics'
+} from '@/src/shared/analytics/analytics'
 import Constants from 'expo-constants'
 import * as Device from 'expo-device'
 import { usePathname } from 'expo-router'

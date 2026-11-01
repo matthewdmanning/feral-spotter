@@ -14,11 +14,11 @@
  * works), but location — privileged data per the disclosure — is never
  * touched until the user has accepted it.
  */
-import { hasAcceptedConsent } from '@/src/hooks/useConsentStore'
+import { hasAcceptedConsent } from '@/src/shared/consent/useConsentStore'
 import {
   LOCATION_ACCURACY_THRESHOLD_M,
   LOCATION_STALE_THRESHOLD_MS,
-} from '@/src/config/location'
+} from '@/src/core/location/location'
 import { locationPermission } from '@/src/lib/permissions/locationPermission'
 import * as Device from 'expo-device'
 import * as Location from 'expo-location'

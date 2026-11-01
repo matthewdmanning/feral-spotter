@@ -1,4 +1,4 @@
-import * as ui from '@/src/hooks/useUIStore'
+import * as ui from '@/src/shared/hooks/useUIStore'
 import { act, renderHook } from '@testing-library/react-native'
 import { Linking } from 'react-native'
 import { createMachine } from 'xstate'
@@ -32,7 +32,7 @@ jest.mock('expo-image-picker', () => ({
 
 jest.mock('expo-router', () => ({ router: { navigate: jest.fn() } }))
 
-jest.mock('@/src/lib/analytics/analytics', () => ({
+jest.mock('@/src/shared/analytics/analytics', () => ({
   captureEvent: jest.fn(),
   EVENTS: { LIBRARY_PHOTOS_SELECTED: 'library_photos_selected' },
 }))

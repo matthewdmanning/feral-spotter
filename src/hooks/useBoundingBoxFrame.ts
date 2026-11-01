@@ -23,13 +23,13 @@ import {
 import {
   boxForTransform,
   transformForBox,
-} from '@/src/lib/annotate/cropProjection'
+} from '@/src/shared/lib/geometry/cropProjection'
 import {
   clampTranslate,
   halfExtentOnScreen,
   maxTranslateForScale,
 } from '@/src/lib/annotate/panClamp'
-import type { BoundingBox } from '@/src/types/BoundingBox'
+import type { BoundingBox } from '@/src/shared/types/BoundingBox'
 import { useCallback, useEffect } from 'react'
 import { Gesture } from 'react-native-gesture-handler'
 import {

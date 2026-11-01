@@ -7,19 +7,19 @@
  * EXIF `DateTime` when every picked photo has it, else falls back to manual.
  */
 
-import { showAlert } from '@/src/hooks/useUIStore'
+import { showAlert } from '@/src/shared/hooks/useUIStore'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
 import { useAuth } from '@/src/lib/auth/useAuth'
 import { initializeDraft } from '@/src/hooks/useDraftStartupStore'
-import { EVENTS, captureEvent } from '@/src/lib/analytics/analytics'
+import { EVENTS, captureEvent } from '@/src/shared/analytics/analytics'
 import { libraryPermission } from '@/src/lib/permissions/libraryPermission'
 import { uploadNewPhoto } from '@/src/lib/upload/uploadNewPhoto'
-import { buildSubmissionPhoto } from '@/src/utils/buildSubmissionPhoto'
+import { buildSubmissionPhoto } from '@/src/features/draft-submission/lib/buildSubmissionPhoto'
 import {
   classifyLibraryPickTime,
   parseExifDateTime,
-} from '@/src/utils/libraryPickTime'
+} from '@/src/shared/utils/libraryPickTime'
 import * as ImagePicker from 'expo-image-picker'
 import { router } from 'expo-router'
 import { useCallback } from 'react'

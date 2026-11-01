@@ -15,8 +15,8 @@ jest.mock('expo-router', () => ({ router: { navigate: jest.fn() } }))
 jest.mock('@/src/lib/upload/uploadNewPhoto', () => ({
   uploadNewPhoto: jest.fn(),
 }))
-jest.mock('@/src/lib/analytics/analytics', () => ({
-  ...jest.requireActual('@/src/lib/analytics/analytics'),
+jest.mock('@/src/shared/analytics/analytics', () => ({
+  ...jest.requireActual('@/src/shared/analytics/analytics'),
   captureEvent: jest.fn(),
 }))
 

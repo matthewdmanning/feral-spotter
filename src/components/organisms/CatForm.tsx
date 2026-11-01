@@ -1,7 +1,7 @@
-import { GlassSurface } from '@/src/components/atoms/GlassSurface'
+import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import { View } from 'react-native'
-import { HierarchicalSegmentedControl } from '@/src/components/atoms/HierarchicalSegmentedControl'
-import { SegmentedControl } from '@/src/components/atoms/SegmentedControl'
+import { HierarchicalSegmentedControl } from '@/src/shared/ui/atoms/HierarchicalSegmentedControl'
+import { SegmentedControl } from '@/src/shared/ui/atoms/SegmentedControl'
 import type { CatForm as CatFormValues } from '@/src/hooks/useCatForm'
 import {
   AGE_OPTIONS,

@@ -1,0 +1,119 @@
+/**
+ * utils/analytics.ts
+ *
+ * PostHog analytics, guarded by IS_PRERELEASE.
+ * Events are only fired in pre-release / staging builds.
+ *
+ * Setup:
+ *   npx expo install posthog-react-native
+ *   Wrap app root with <PostHogProvider apiKey="...">
+ *
+ * IS_PRERELEASE is read from Expo's app config extra field.
+ * Set in app.config.js / app.json:
+ *   "extra": { "isPrerelease": true }
+ */
+
+import { IS_PRERELEASE } from '@/src/shared/config/constants'
+import {
+  hasAcceptedAnalytics,
+  hasAcceptedConsent,
+} from '@/src/shared/consent/useConsentStore'
+import type { PostHogEventProperties } from '@posthog/core'
+
+export { IS_PRERELEASE }
+
+// ─── Event names ──────────────────────────────────────────────────────────────
+
+export const EVENTS = {
+  SUBMISSION_SENDING: 'submission_sending',
+  SUBMISSION_SUBMITTED: 'submission_submitted',
+  SUBMISSION_FAILED: 'submission_failed',
+  REPORTS_VIEWED: 'feral_reports_viewed',
+  CAMERA_OPENED: 'camera_opened',
+  CAMERA_DEVICE_READY: 'camera_device_ready',
+  CAMERA_NATIVE_DIAGNOSTIC: 'camera_native_diagnostic',
+  CAMERA_CAPTURE_SEQUENCE_COMPLETED: 'camera_capture_sequence_completed',
+  PHOTO_CAPTURED: 'photo_captured',
+  PHOTO_CAPTURE_FAILED: 'photo_capture_failed',
+  LIBRARY_PHOTOS_SELECTED: 'library_photos_selected',
+  CAT_BOXING_COMPLETED: 'cat_boxing_completed',
+  CAT_OBSERVATION_SAVED: 'cat_observation_saved',
+  TUTORIAL_STARTED: 'tutorial_started',
+  TUTORIAL_STEP_COMPLETED: 'tutorial_step_completed',
+  TUTORIAL_SKIPPED: 'tutorial_skipped',
+  TUTORIAL_COMPLETED: 'tutorial_completed',
+} as const
+
+export type AnalyticsEvent = (typeof EVENTS)[keyof typeof EVENTS]
+
+// ─── PostHog singleton access ─────────────────────────────────────────────────
+// We import usePostHog() at call sites for hook contexts.
+// For non-hook contexts (utils), use the client directly if needed.
+
+let _capture: ((event: string, props?: PostHogEventProperties) => void) | null =
+  null
+
+/** Call once in a component that has PostHog context to register the capturer. */
+export function registerCapture(
+  fn: (event: string, props?: PostHogEventProperties) => void,
+): void {
+  _capture = fn
+}
+
+let _captureException:
+  ((error: unknown, extra?: PostHogEventProperties) => void) | null = null
+
+/** Call once in a component that has PostHog context to register the exception capturer. */
+export function registerCaptureException(
+  fn: (error: unknown, extra?: PostHogEventProperties) => void,
+): void {
+  _captureException = fn
+}
+
+/** Same gate as every capture path: pre-release build, general consent, analytics opt-in. */
+function shouldCapture(): boolean {
+  return IS_PRERELEASE && hasAcceptedConsent() && hasAcceptedAnalytics()
+}
+
+// ─── Fire event ───────────────────────────────────────────────────────────────
+
+/**
+ * Fire a PostHog event that isn't tied to a submission cache file (e.g. a
+ * funnel or failure event from the camera/annotate flow). Same gating as
+ * every capture path. Sighting events go through `fireAnalyticsEvent`
+ * (lib/submission/analytics.ts).
+ */
+export function captureEvent(
+  event: AnalyticsEvent,
+  props?: PostHogEventProperties,
+): void {
+  if (!shouldCapture()) return
+  if (!_capture) {
+    console.warn(
+      '[analytics] capturer not registered — call registerCapture() in a PostHog-wrapped component',
+    )
+    return
+  }
+
+  _capture(event, props)
+}
+
+/**
+ * Report an exception to PostHog, gated identically to every other capture
+ * path (pre-release, consent, analytics opt-in) — a stale registered capturer
+ * must not fire post-revocation.
+ */
+export function captureException(
+  error: unknown,
+  extra?: PostHogEventProperties,
+): void {
+  if (!shouldCapture()) return
+  if (!_captureException) {
+    console.warn(
+      '[analytics] exception capturer not registered — call registerCaptureException() in a PostHog-wrapped component',
+    )
+    return
+  }
+
+  _captureException(error, extra)
+}

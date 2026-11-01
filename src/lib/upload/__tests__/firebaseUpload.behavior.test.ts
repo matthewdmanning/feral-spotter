@@ -6,7 +6,7 @@ import {
   updateMetadata,
   uploadString,
 } from '@react-native-firebase/storage'
-import type { SubmissionApiPayload } from '@/src/types'
+import type { SubmissionApiPayload } from '@/src/shared/types'
 import {
   deleteSubmissionUploads,
   finalizeSubmissionPhotoMetadata,

@@ -1,28 +1,28 @@
-import { GlassSurface } from '@/src/components/atoms/GlassSurface'
+import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import {
   getThemeMode,
   setThemeMode,
   type ThemeMode,
-} from '@/src/config/unistyles'
-import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
-import { AppButton } from '@/src/components/atoms/AppButton'
-import { SegmentedControl } from '@/src/components/atoms/SegmentedControl'
-import { TextButton } from '@/src/components/atoms/TextButton'
-import { TextField } from '@/src/components/atoms/TextField'
-import { ButtonRow } from '@/src/components/molecules/ButtonRow'
-import { ToggleRow } from '@/src/components/molecules/ToggleRow'
-import { visiblePhotoToggles } from '@/src/config/photoToggles'
+} from '@/src/shared/config/unistyles'
+import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
+import { AppButton } from '@/src/shared/ui/atoms/AppButton'
+import { SegmentedControl } from '@/src/shared/ui/atoms/SegmentedControl'
+import { TextButton } from '@/src/shared/ui/atoms/TextButton'
+import { TextField } from '@/src/shared/ui/atoms/TextField'
+import { ButtonRow } from '@/src/shared/ui/molecules/ButtonRow'
+import { ToggleRow } from '@/src/shared/ui/molecules/ToggleRow'
+import { visiblePhotoToggles } from '@/src/features/settings/config/photoToggles'
 import {
   getHapticsEnabled,
   selectionHaptic,
   setHapticsEnabled,
-} from '@/src/lib/haptics'
+} from '@/src/shared/lib/haptics'
 import { saveEmailOptIn } from '@/src/hooks/saveEmailOptIn'
 import { useChangeEmail } from '@/src/hooks/useChangeEmail'
-import { useConsentStore } from '@/src/hooks/useConsentStore'
+import { useConsentStore } from '@/src/shared/consent/useConsentStore'
 import { useAuthStore } from '@/src/lib/auth/authStore'
 import { useSettingsDraft } from '@/src/hooks/useSettingsDraft'
-import { APP_VERSION, FEATURE_FLAGS } from '@/src/config/constants'
+import { APP_VERSION, FEATURE_FLAGS } from '@/src/shared/config/constants'
 import { router } from 'expo-router'
 import { CheckIcon } from 'phosphor-react-native/src/icons/Check'
 import { FileTextIcon } from 'phosphor-react-native/src/icons/FileText'

@@ -25,13 +25,13 @@ jest.mock('expo-router', () => ({
 jest.mock('@/src/lib/auth/useAuth', () => ({
   useAuth: () => ({ isReady: true, isAuthenticated: true }),
 }))
-jest.mock('@/src/hooks/useConsentStore', () => ({
+jest.mock('@/src/shared/consent/useConsentStore', () => ({
   hasAcceptedConsent: () => true,
 }))
 jest.mock('@/src/lib/cache/submissionCache', () => ({
   getAllSubmissionCaches: jest.fn().mockResolvedValue([]),
 }))
-jest.mock('@/src/components/molecules/BottomButtonColumn', () => ({
+jest.mock('@/src/shared/ui/molecules/BottomButtonColumn', () => ({
   BottomButtonColumn: () => null,
 }))
 jest.mock('@/src/hooks/useLibraryPhotoPicker', () => ({

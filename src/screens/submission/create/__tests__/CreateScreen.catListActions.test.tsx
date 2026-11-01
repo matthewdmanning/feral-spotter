@@ -6,12 +6,12 @@ import {
   waitFor,
 } from '@testing-library/react-native'
 import { router } from 'expo-router'
-import { useUIStore } from '@/src/hooks/useUIStore'
+import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import {
   useSubmissionStore,
   type ObservedCat,
 } from '@/src/hooks/useSubmissionStore'
-import { AlertHost } from '@/src/components/organisms/AlertHost'
+import { AlertHost } from '@/src/shared/ui/organisms/AlertHost'
 import React from 'react'
 import CreateSubmissionScreen from '../index'
 

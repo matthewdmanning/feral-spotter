@@ -1,12 +1,12 @@
-import { showAlert } from '@/src/hooks/useUIStore'
+import { showAlert } from '@/src/shared/hooks/useUIStore'
 import { useCallback, useState } from 'react'
 import { View, Text } from 'react-native'
 import { router } from 'expo-router'
-import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
-import { AppButton } from '@/src/components/atoms/AppButton'
-import { TextButton } from '@/src/components/atoms/TextButton'
-import { TextField } from '@/src/components/atoms/TextField'
-import { nextConsentRoute } from '@/src/hooks/consentFlow'
+import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
+import { AppButton } from '@/src/shared/ui/atoms/AppButton'
+import { TextButton } from '@/src/shared/ui/atoms/TextButton'
+import { TextField } from '@/src/shared/ui/atoms/TextField'
+import { nextConsentRoute } from '@/src/shared/consent/consentFlow'
 import { useAuth } from '@/src/lib/auth/useAuth'
 import {
   FEDERATED_PROVIDERS,

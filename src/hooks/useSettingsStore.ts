@@ -3,7 +3,7 @@
  * Persisted Zustand store for user-configurable app settings.
  */
 
-import { asyncStorage } from '@/src/lib/cache/storage'
+import { asyncStorage } from '@/src/shared/lib/storage'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 
