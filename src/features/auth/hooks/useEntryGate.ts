@@ -1,5 +1,5 @@
 /**
- * hooks/useEntryGate.ts
+ * features/auth/hooks/useEntryGate.ts
  * The app-wide gate Home runs: send a new device to the intro flow, a
  * signed-out user to sign-in, and a signed-in user with an unanswered
  * consent step to that step.

@@ -1,6 +1,6 @@
 # Feature-folder migration plan
 
-Last updated: 2026-11-01. Status: **accepted decisions D1–D5** (§8); ready for Phase 0.
+Last updated: 2026-11-01. Status: **executed** 2026-11-01 — see §10. Current rules live in [PROJECT_STRUCTURE.md](../PROJECT_STRUCTURE.md).
 
 Goal: replace the layer-first `src/` (`screens/ components/ hooks/ lib/`) with
 `src/features/<feature>/`, `src/core/` and `src/shared/`. Pure moves; zero
@@ -79,10 +79,10 @@ Paths relative to `src/`. `f/X` = `features/X/`; `c/` = `core/`; `s/` = `shared/
 
 ### core
 
-| From                                               | To            |
-| -------------------------------------------------- | ------------- |
-| `screens/home/*`, `lib/home/entrypointDiameter.ts` | `c/home/`     |
-| `lib/location.ts` (Live fix), `config/location.ts` | `c/location/` |
+| From                                                              | To            |
+| ----------------------------------------------------------------- | ------------- |
+| `screens/home/*`, `lib/home/entrypointDiameter.ts`                | `c/home/`     |
+| `lib/location.ts` (Live fix → `liveFix.ts`), `config/location.ts` | `c/location/` |
 
 ### f/auth
 
@@ -181,14 +181,14 @@ and annotate (`InsetCropBubble`), and lets `core/home` use every entrypoint.
 
 Back edges in today's non-screen graph, and their fixes:
 
-| #   | Edge                                                                            | Fix                                                                                                                                                                 |
-| --- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| E1  | auth screens → `consentFlow`; permissions/communications → auth                 | Consent state (`useConsentStore`, `consentFlow`) → `shared/consent/`. 14 non-test modules across 5 features plus analytics and providers read it — a shared kernel. |
-| E2  | `shared/analytics` → history (`sightingPhotoCount`), draft (type)               | Move `fireAnalyticsEvent(cache)` into `f/history`; shared keeps `captureEvent`. Consent read becomes `shared/consent` (E1).                                         |
-| E3  | `usePhotoStore` → camera (`capturedPhotoFiles`)                                 | `capturedPhotoFiles` → `f/draft-submission` (photo-file lifecycle of the draft).                                                                                    |
-| E4  | `useBoundingBoxStore` → annotate (`catColors`)                                  | `catColors` → `f/draft-submission`.                                                                                                                                 |
-| E5  | `ProfilePicPicker` (draft-submission) → `CatCrop`; `sightingDetail` → `CatCrop` | `CatCrop` → `shared/ui`; its pure geometry deps → `shared/lib/geometry`.                                                                                            |
-| E6  | `CatForm`, `useCatSubmit` → `screens/submission/cats/constants.ts`              | `constants.ts` → `f/draft-submission/config/catForm.ts` (non-screen code may not import `screens/`).                                                                |
+| #   | Edge                                                                            | Fix                                                                                                                                                                                                                                                                            |
+| --- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| E1  | auth screens → `consentFlow`; permissions/communications → auth                 | Consent state (`useConsentStore`, `consentFlow`) → `shared/consent/`. 14 non-test modules across 5 features plus analytics and providers read it — a shared kernel.                                                                                                            |
+| E2  | `shared/analytics` → history (`sightingPhotoCount`), draft (type)               | Move `fireAnalyticsEvent(cache)` into `f/draft-submission/lib/analytics.ts` (draft-submission and history both call it; history would be a back edge) and `sightingPhotoCount` beside the cache type; shared keeps `captureEvent`. Consent read becomes `shared/consent` (E1). |
+| E3  | `usePhotoStore` → camera (`capturedPhotoFiles`)                                 | `capturedPhotoFiles` → `f/draft-submission` (photo-file lifecycle of the draft).                                                                                                                                                                                               |
+| E4  | `useBoundingBoxStore` → annotate (`catColors`)                                  | `catColors` → `f/draft-submission`.                                                                                                                                                                                                                                            |
+| E5  | `ProfilePicPicker` (draft-submission) → `CatCrop`; `sightingDetail` → `CatCrop` | `CatCrop` → `shared/ui`; its pure geometry deps → `shared/lib/geometry`.                                                                                                                                                                                                       |
+| E6  | `CatForm`, `useCatSubmit` → `screens/submission/cats/constants.ts`              | `constants.ts` → `f/draft-submission/config/catForm.ts` (non-screen code may not import `screens/`).                                                                                                                                                                           |
 
 ## 5. Phases
 
@@ -197,15 +197,15 @@ except E1–E6. Checks per PR: `npm run typecheck`, `npm run lint`, `npx jest`,
 `npm run format:check`, plus one Metro bundle (`npx expo export --platform android`)
 since Jest's resolver is not Metro's.
 
-| Phase | Scope                                                                                                                                                                                                                     |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0     | ADR-0008 (feature folders + rules). Move script `scripts/move-module.mjs` (§6). Boundary lint at `warn`. Delete `hooks/index.ts` barrel: rewrite its 10 importers and 5 `jest.mock('@/src/hooks')` calls to direct paths. |
-| 1     | `shared/` moves, including `config/ content/ types/ utils/` + E1 + E2 + E5.                                                                                                                                               |
-| 2     | auth, permissions (incl. onboarding), core/location.                                                                                                                                                                      |
-| 3     | settings, draft-submission + E3 + E4 + E6. Amend ADR-0006's `src/lib/submission/draft.ts` path.                                                                                                                           |
-| 4     | camera-control, library-picker, annotate.                                                                                                                                                                                 |
-| 5     | history, core/home. Remove empty `screens/ components/ hooks/ lib/`. Boundary lint → `error`.                                                                                                                             |
-| 6     | Docs sweep (§7).                                                                                                                                                                                                          |
+| Phase | Scope                                                                                                                                                       |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0     | Move script `scripts/move-module.mjs` (§6).Delete `hooks/index.ts` barrel: rewrite its 10 importers and 5 `jest.mock('@/src/hooks')` calls to direct paths. |
+| 1     | `shared/` moves, including `config/ content/ types/ utils/` + E1 + E2 + E5.                                                                                 |
+| 2     | auth, permissions (incl. onboarding), core/location.                                                                                                        |
+| 3     | settings, draft-submission + E3 + E4 + E6.                                                                                                                  |
+| 4     | camera-control, library-picker, annotate.                                                                                                                   |
+| 5     | history, core/home. Remove empty `screens/ components/ hooks/ lib/`. Boundary lint at `error`.                                                              |
+| 6     | Docs sweep (§7), incl. dated path-update lines in ADRs.                                                                                                     |
 
 Bottom-up order keeps every intermediate commit green: a moved module's
 importers are rewritten in the same commit.
@@ -227,26 +227,26 @@ the test may pass vacuously. Guard: after each phase, assert every
 **Boundary lint.** No new dependency: generated per-unit blocks in
 `eslint.config.js` using `@typescript-eslint/no-restricted-imports` `patterns`
 — ban higher levels per §4, ban `**/screens/**` outside `src/app/`, ban
-`@/src/{core,features}/**` from `src/shared/**`, ban `index` barrels. Cycle
-check: `import/no-cycle` if the expo config ships `eslint-plugin-import`, else
-`npx madge --circular` in CI — verify in Phase 0.
+`@/src/{core,features}/**` from `src/shared/**`, no barrels by convention. Cycle check: `import/no-cycle`
+(`eslint-plugin-import` ships with eslint-config-expo), resolving `@/` through
+the `eslint-import-resolver-typescript` devDependency.
 
 ## 7. Non-code references to update
 
-| Where                                                                 | What                                                                   |
-| --------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `eslint.config.js`                                                    | `react-hooks/immutability` override file list (3 paths)                |
-| `jest.setup.js`                                                       | `require('./src/config/themes')`                                       |
-| `scripts/format-shared.mjs`                                           | 2 `src/components/atoms/*.styles.ts` paths                             |
-| `scripts/generate-cat-pins.py`                                        | reads `src/config/themes.ts`                                           |
-| `functions/src/index.ts`                                              | comments naming `src/lib/upload/firebaseUpload.ts`                     |
-| `docs/PROJECT_STRUCTURE.md`                                           | rewrite to §2 + §4                                                     |
-| `docs/agents/project_instructions.md`                                 | `src/config/unistyles.ts` → `src/shared/config/unistyles.ts`           |
-| `docs/agents/domain.md`                                               | code paths in Box Annotation, Camera screen, Observed Cat entries      |
-| `docs/agents/ui-ux/current-state/*.md`                                | `governs:` frontmatter (staleness audit reads these)                   |
-| `docs/agents/{backend,native-code,testing}.md`, other live agent docs | path mentions                                                          |
-| `docs/adr/0006`, other ADRs naming paths                              | dated amendment line, not rewrite                                      |
-| `docs/implementations/`, `planning/`, `test-drives/`                  | **not rewritten** — historical. ADR-0008 carries the old→new path map. |
+| Where                                                                 | What                                                                                      |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `eslint.config.js`                                                    | `react-hooks/immutability` override file list (3 paths)                                   |
+| `jest.setup.js`                                                       | `require('./src/config/themes')`                                                          |
+| `scripts/format-shared.mjs`                                           | 2 `src/components/atoms/*.styles.ts` paths                                                |
+| `scripts/generate-cat-pins.py`                                        | reads `src/config/themes.ts`                                                              |
+| `functions/src/index.ts`                                              | comments naming `src/lib/upload/firebaseUpload.ts`                                        |
+| `docs/PROJECT_STRUCTURE.md`                                           | rewrite to §2 + §4                                                                        |
+| `docs/agents/project_instructions.md`                                 | `src/config/unistyles.ts` → `src/shared/config/unistyles.ts`                              |
+| `docs/agents/domain.md`                                               | code paths in Box Annotation, Camera screen, Observed Cat entries                         |
+| `docs/agents/ui-ux/current-state/*.md`                                | `governs:` frontmatter (staleness audit reads these)                                      |
+| `docs/agents/{backend,native-code,testing}.md`, other live agent docs | path mentions                                                                             |
+| `docs/adr/` naming paths                                              | paths updated + dated amendment line                                                      |
+| `docs/implementations/`, `planning/`, `test-drives/`                  | **not rewritten** — historical. Old→new map: `git diff -M --name-status fab2e54 fa42026`. |
 
 Scale: ~1,775 `src/{hooks,lib,screens,components}/` mentions across 104 doc
 files; 81 of those files are historical (implementations, planning, test-drives).
@@ -275,3 +275,23 @@ small to be a feature (Home, Live fix).
   Swift change, so no device drive required beyond one smoke launch at Phase 5.
 - **Git history**: `git mv` per file keeps `git log --follow` working; avoid
   mixing moves and edits in one file per commit (rename detection).
+
+## 10. Execution log (2026-11-01)
+
+| Commit    | Phase | Notes                                                                                                             |
+| --------- | ----- | ----------------------------------------------------------------------------------------------------------------- |
+| `0d1fa1a` | 0     | Barrel removed; 3 identity `jest.mock('@/src/hooks')` calls deleted, 2 faking mocks narrowed to the store module. |
+| `ff4d87d` | 1     | E1, E2, E5. `tabIcons.invariant.test.ts` used a `__dirname` path the script cannot see; fixed by hand.            |
+| `223c611` | 2     | Live fix renamed `liveFix.ts`: `config/location.ts` already occupied `core/location/location.ts`.                 |
+| `edfb6e9` | 3     | E3, E4, E6. Script gained support for `jest.requireActual<T>('…')`; one missed specifier fixed by hand.           |
+| `db76c77` | 4     | Also restored 118 relative specifiers earlier phases had needlessly turned into `@/` aliases; script fixed.       |
+| `fa42026` | 5     | Layer folders gone. `npx expo export --platform android` bundles.                                                 |
+| `efbf9e5` | —     | Boundary + `import/no-cycle` lint at `error`; zero violations. Each rule shown to fire on a planted violation.    |
+
+Deviations from §5: no ADR (user decision); one branch instead of one PR per
+phase; boundary lint added once at `error` after the moves rather than at
+`warn` first.
+
+Every commit passed `tsc`, ESLint (6 pre-existing warnings), Jest (100 suites,
+477 tests — same as before) and `format:check`. Not verified: a device or
+emulator launch.

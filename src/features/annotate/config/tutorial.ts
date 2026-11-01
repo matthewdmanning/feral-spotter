@@ -1,5 +1,5 @@
 /**
- * config/tutorial.ts
+ * features/annotate/config/tutorial.ts
  * Step content for the annotation tutorial overlay.
  * Copy is draft — see docs/planning/2026-07-14-annotation-tutorial-spec.md.
  */

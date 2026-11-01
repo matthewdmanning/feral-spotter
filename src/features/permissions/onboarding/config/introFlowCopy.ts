@@ -1,5 +1,5 @@
 /**
- * config/introFlowCopy.ts
+ * features/permissions/onboarding/config/introFlowCopy.ts
  * Single source of truth for the first-run onboarding slides (route: intro-flow).
  * Spec: tutorial_copy.md (2026-07-13) — original filename; content is onboarding copy.
  * Rule: never "tracking" in reference to people — cats only.

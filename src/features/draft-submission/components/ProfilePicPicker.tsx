@@ -1,5 +1,5 @@
 /**
- * components/molecules/ProfilePicPicker.tsx
+ * features/draft-submission/components/ProfilePicPicker.tsx
  * Cat Form row: one crop per photo this cat is boxed in. Tapping a crop makes
  * it the cat's Profile Pic. Until the user taps one, the first box is the
  * Profile Pic and shows as selected — the same boxes and the same rule

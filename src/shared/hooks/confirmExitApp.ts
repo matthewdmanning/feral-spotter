@@ -1,5 +1,5 @@
 /**
- * hooks/confirmExitApp.ts
+ * shared/hooks/confirmExitApp.ts
  * The "leave the app?" dialog shared by the first-run screens (intro flow,
  * consent), which have nowhere to go back to.
  */

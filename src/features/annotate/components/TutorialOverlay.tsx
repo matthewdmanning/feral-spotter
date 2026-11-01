@@ -1,5 +1,5 @@
 /**
- * components/organisms/TutorialOverlay.tsx
+ * features/annotate/components/TutorialOverlay.tsx
  * Step-by-step tutorial overlay shown over the annotate screen.
  * Steps are passed as data so future tutorials can reuse the component.
  *

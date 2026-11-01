@@ -1,5 +1,5 @@
 /**
- * hooks/useUIStore.ts
+ * shared/hooks/useUIStore.ts
  * Cross-screen UI state: connectivity and the
  * single app-owned dialog.
  *

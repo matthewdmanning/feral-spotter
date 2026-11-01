@@ -1,5 +1,5 @@
 /**
- * hooks/useBoundingBoxFrame.ts
+ * features/annotate/hooks/useBoundingBoxFrame.ts
  *
  * Center-anchored, resizable crop frame: the box crosshair stays centered on
  * screen while the user pinches/pans/double-taps the photo underneath it to

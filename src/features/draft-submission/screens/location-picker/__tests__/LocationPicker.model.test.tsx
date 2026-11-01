@@ -16,7 +16,7 @@ import LocationPickerScreen from '../index'
 
 /**
  * Model of the map picker's program flow
- * (src/screens/submission/location-picker/index.tsx), scoped only to this flow.
+ * (src/features/draft-submission/screens/location-picker/index.tsx), scoped only to this flow.
  * Per ADR 0002 the Submission location is the map centre when the user
  * confirms: "Set location" commits the dragged-to point, Cancel returns
  * without changing it. The native map SDK is mocked — an external API is

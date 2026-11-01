@@ -17,7 +17,7 @@ import CreateSubmissionScreen from '../index'
 
 /**
  * Button wiring on the Cat List section of Submission Details
- * (src/screens/submission/create/index.tsx) — mechanical onPress -> handler
+ * (src/features/draft-submission/screens/create/index.tsx) — mechanical onPress -> handler
  * checks, not a stateful flow, so plain cases rather than an xstate model
  * (matching AnnotateScreen.buttons.test.tsx's precedent for screen-level
  * wiring). CreateScreen.autoSkipGate.model.test.tsx and

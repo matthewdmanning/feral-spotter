@@ -1,5 +1,5 @@
 /**
- * lib/cats/attributes.ts
+ * features/draft-submission/lib/attributes.ts
  * Single source of truth for the 8 cat observation fields — the seam between
  * frontend form state (camelCase, CatFormValues) and the persisted shape
  * (snake_case, ObservedCat). CAT_DEFAULTS, FIELD_LABELS, the per-field option

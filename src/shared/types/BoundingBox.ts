@@ -1,5 +1,5 @@
 /**
- * types/BoundingBox.ts
+ * shared/types/BoundingBox.ts
  * Bounding-box annotation types.
  * Corners are normalised (0-1) relative to the original image pixel dimensions
  * (not the screen/canvas — the crop square is fixed on screen, the photo pans/zooms under it).

@@ -1,5 +1,5 @@
 /**
- * lib/submission/status.ts
+ * features/draft-submission/lib/status.ts
  * Which of a draft's location and time need the user's attention, for the
  * warning icons on Submission Details.
  */

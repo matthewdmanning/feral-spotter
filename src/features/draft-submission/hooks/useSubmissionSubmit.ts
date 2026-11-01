@@ -1,9 +1,9 @@
 /**
- * hooks/useSubmissionSubmit.ts
- * Sighting Details' "Submit Sighting", "Reset" and "Discard" actions, as UI:
+ * features/draft-submission/hooks/useSubmissionSubmit.ts
+ * Submission Details' "Finished!", "Reset" and "Discard" actions, as UI:
  * the confirm dialog, the user-facing messages and the navigation. The
  * lifecycle itself (lock, validation, upload wait, send, status moves,
- * teardown) is lib/submission/draft.ts's submitDraft()/discardDraft().
+ * teardown) is features/draft-submission/lib/draft.ts's submitDraft()/discardDraft().
  *
  * The location/time accuracy warning icon stays informational, not a
  * submit gate (ADR-0002/0003). Zero cats and zero photos are hard blocks

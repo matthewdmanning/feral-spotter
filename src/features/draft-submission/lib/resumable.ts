@@ -1,5 +1,5 @@
 /**
- * lib/submission/resumable.ts
+ * features/draft-submission/lib/resumable.ts
  * Whether Home offers "Continue Observation" for a draft.
  */
 

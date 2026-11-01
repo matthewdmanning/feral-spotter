@@ -1,5 +1,5 @@
 /**
- * components/organisms/dialogShell.styles.ts
+ * shared/ui/organisms/dialogShell.styles.ts
  *
  * The centred-dialog shell — backdrop, card, and title — shared by
  * AlertHost and DateTimePickerButton. #328's cluster 2: both declared these

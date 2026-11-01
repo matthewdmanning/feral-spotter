@@ -1,5 +1,5 @@
 /**
- * lib/annotate/cropProjection.ts
+ * shared/lib/geometry/cropProjection.ts
  * Pure math for useBoundingBoxFrame's crop frame <-> normalised BoundingBox
  * projection (#356). Two inverse directions:
  *  - boxForTransform: the live on-screen crop frame -> a normalised

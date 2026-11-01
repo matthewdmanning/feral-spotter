@@ -1,5 +1,5 @@
 /**
- * hooks/useAbandonCatGuard.ts
+ * features/draft-submission/hooks/useAbandonCatGuard.ts
  *
  * Confirms before leaving Cat Observations with a cat still in progress (#304).
  *

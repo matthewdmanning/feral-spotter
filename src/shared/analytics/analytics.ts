@@ -1,5 +1,5 @@
 /**
- * lib/analytics/analytics.ts
+ * shared/analytics/analytics.ts
  *
  * PostHog analytics, guarded by IS_PRERELEASE.
  * Events are only fired in pre-release / staging builds.

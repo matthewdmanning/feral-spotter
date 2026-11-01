@@ -9,7 +9,7 @@ Map tiles are light in both app themes, so one set of pins serves both. Colors
 are read from src/shared/config/themes.ts, never hardcoded: the head and face use
 lightTheme's accent pair; the ears, badge, and badge text use darkTheme's
 pastel selection, highlight, and background, which stand out on light tiles.
-The badge cap is MAX_BADGE_COUNT, read from src/lib/sightings/history.ts.
+The badge cap is MAX_BADGE_COUNT, read from src/features/history/lib/history.ts.
 
 Run from the repo root:  python3 scripts/generate-cat-pins.py
 Needs Pillow and an installed node_modules (for the Nunito font).
@@ -27,7 +27,7 @@ FONT = (
     / "node_modules/@expo-google-fonts/nunito/800ExtraBold/Nunito_800ExtraBold.ttf"
 )
 THEMES = (ROOT / "src/shared/config/themes.ts").read_text(encoding="utf-8")
-HISTORY = (ROOT / "src/lib/sightings/history.ts").read_text(encoding="utf-8")
+HISTORY = (ROOT / "src/features/history/lib/history.ts").read_text(encoding="utf-8")
 
 
 def token(theme: str, name: str) -> str:

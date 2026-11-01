@@ -1,5 +1,5 @@
 /**
- * hooks/consentFlow.ts
+ * shared/consent/consentFlow.ts
  * The one place that orders the consent steps after sign-in or registration.
  * To add, remove or reorder a step, edit CONSENT_STEPS; callers never name the
  * next route themselves.

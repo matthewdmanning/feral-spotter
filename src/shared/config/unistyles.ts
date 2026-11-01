@@ -1,5 +1,5 @@
 /**
- * config/unistyles.ts
+ * shared/config/unistyles.ts
  * Unistyles 3.0 configuration: tokens, themes, breakpoints, and theme mode.
  *
  * MUST be imported before any component that uses StyleSheet.

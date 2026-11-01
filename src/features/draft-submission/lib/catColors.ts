@@ -1,5 +1,5 @@
 /**
- * lib/annotate/catColors.ts
+ * features/draft-submission/lib/catColors.ts
  *
  * Picks the palette slot for a new cat. Pure: the store owns the state.
  *

@@ -1,5 +1,5 @@
 /**
- * hooks/useResumableDraft.ts
+ * features/draft-submission/hooks/useResumableDraft.ts
  * True while the newest draft can be resumed from Home.
  */
 

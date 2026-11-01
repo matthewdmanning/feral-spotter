@@ -10,7 +10,7 @@ import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useD
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
 
 /**
- * Model of every button on HomeScreen (src/screens/home/index.tsx) and what
+ * Model of every button on HomeScreen (src/core/home/screens/home/index.tsx) and what
  * pressing it does — complements HomeScreen.gate.model.test.tsx (auth/consent
  * redirect) and HomeScreen.photoSourceGate.model.test.tsx (camera/library
  * disabled state), neither of which asserts navigation destinations or the
