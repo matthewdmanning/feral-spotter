@@ -21,7 +21,7 @@ jest.mock('expo-router', () => ({
   router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() },
 }))
 
-jest.mock('@/src/lib/location', () => ({
+jest.mock('@/src/core/location/liveFix', () => ({
   stopLocationCapture: jest.fn(),
 }))
 
@@ -42,7 +42,7 @@ jest.mock('@/src/lib/upload/firebaseUpload', () => ({
   finalizeSubmissionPhotoMetadata: jest.fn().mockResolvedValue(undefined),
 }))
 
-jest.mock('@/src/lib/auth/useAuth', () => ({
+jest.mock('@/src/features/auth/lib/useAuth', () => ({
   useAuth: () => ({ user: { uid: 'uid-owner' } }),
 }))
 

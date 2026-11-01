@@ -3,7 +3,7 @@ import { router } from 'expo-router'
 import React from 'react'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
-import { useAuth } from '@/src/lib/auth/useAuth'
+import { useAuth } from '@/src/features/auth/lib/useAuth'
 import { hasAcceptedConsent } from '@/src/shared/consent/useConsentStore'
 import HomeScreen from '../index'
 
@@ -13,7 +13,7 @@ jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
 }))
 
-jest.mock('@/src/lib/auth/useAuth', () => ({ useAuth: jest.fn() }))
+jest.mock('@/src/features/auth/lib/useAuth', () => ({ useAuth: jest.fn() }))
 jest.mock('@/src/shared/consent/useConsentStore', () => ({
   hasAcceptedConsent: jest.fn(),
 }))

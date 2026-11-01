@@ -20,7 +20,7 @@ import {
 } from '@/src/hooks/useDraftStartupStore'
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'
 import { showAlert } from '@/src/shared/hooks/useUIStore'
-import { gallerySavePermission } from '@/src/lib/permissions/gallerySavePermission'
+import { gallerySavePermission } from '@/src/features/permissions/photo/lib/gallerySavePermission'
 import {
   releaseCapturedPhotoFile,
   retainCapturedPhotoFile,

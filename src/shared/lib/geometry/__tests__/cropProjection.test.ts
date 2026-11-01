@@ -1,4 +1,7 @@
-import { boxForTransform, transformForBox } from '@/src/shared/lib/geometry/cropProjection'
+import {
+  boxForTransform,
+  transformForBox,
+} from '@/src/shared/lib/geometry/cropProjection'
 
 /**
  * #356: crop-frame <-> normalised BoundingBox projection, extracted from

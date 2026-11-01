@@ -1,1 +1,1 @@
-export { default } from '@/src/screens/email-opt-in'
+export { default } from '@/src/features/permissions/communications/screens/email-opt-in'

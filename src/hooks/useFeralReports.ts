@@ -6,7 +6,7 @@
 
 import { EVENTS, IS_PRERELEASE } from '@/src/shared/analytics/analytics'
 import { fireAnalyticsEvent } from '@/src/lib/submission/analytics'
-import { useAuth } from '@/src/lib/auth/useAuth'
+import { useAuth } from '@/src/features/auth/lib/useAuth'
 import {
   getAllSubmissionCaches,
   type SubmissionCacheFile,

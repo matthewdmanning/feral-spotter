@@ -8,7 +8,7 @@ import {
 } from '@/src/shared/config/constants'
 import { confirmResetSubmission } from '@/src/hooks/confirmResetSubmission'
 import { useDraftStartupStore } from '@/src/hooks/useDraftStartupStore'
-import { useEntryGate } from '@/src/hooks/useEntryGate'
+import { useEntryGate } from '@/src/features/auth/hooks/useEntryGate'
 import { useLibraryPhotoPicker } from '@/src/hooks/useLibraryPhotoPicker'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useResumableDraft } from '@/src/hooks/useResumableDraft'

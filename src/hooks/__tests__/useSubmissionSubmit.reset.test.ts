@@ -1,7 +1,7 @@
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import { act, renderHook } from '@testing-library/react-native'
 
-import { stopLocationCapture } from '@/src/lib/location'
+import { stopLocationCapture } from '@/src/core/location/liveFix'
 import { useSubmissionSubmit } from '../useSubmissionSubmit'
 import { useSubmissionStore } from '../useSubmissionStore'
 import { usePhotoStore } from '../usePhotoStore'
@@ -25,7 +25,7 @@ jest.mock('@/src/lib/cache/submissionCache', () => ({
   getSubmissionCache: jest.fn().mockResolvedValue(null),
 }))
 
-jest.mock('@/src/lib/location', () => ({
+jest.mock('@/src/core/location/liveFix', () => ({
   stopLocationCapture: jest.fn(),
 }))
 
@@ -45,7 +45,7 @@ jest.mock('@/src/lib/upload/firebaseUpload', () => ({
   uploadSubmissionMetadata: jest.fn(),
 }))
 
-jest.mock('@/src/lib/auth/useAuth', () => ({
+jest.mock('@/src/features/auth/lib/useAuth', () => ({
   useAuth: () => ({ user: { uid: 'uid-owner' } }),
 }))
 

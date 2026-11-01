@@ -15,7 +15,7 @@ import { completeDraft, discardDraft } from '../draft'
  */
 
 const mockStopLocationCapture = jest.fn()
-jest.mock('@/src/lib/location', () => ({
+jest.mock('@/src/core/location/liveFix', () => ({
   stopLocationCapture: () => mockStopLocationCapture(),
 }))
 
@@ -25,7 +25,7 @@ jest.mock('@/src/lib/upload/firebaseUpload', () => ({
     mockDeleteSubmissionUploads(uid, submissionId),
 }))
 
-jest.mock('@/src/lib/auth', () => ({
+jest.mock('@/src/features/auth/lib', () => ({
   authProvider: { getCurrentUser: () => ({ uid: 'uid-test' }) },
 }))
 

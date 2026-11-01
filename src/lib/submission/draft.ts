@@ -38,8 +38,8 @@ import {
   updateSubmissionCache,
   type SubmissionCacheFile,
 } from '@/src/lib/cache/submissionCache'
-import { stopLocationCapture } from '@/src/lib/location'
-import { authProvider } from '@/src/lib/auth'
+import { stopLocationCapture } from '@/src/core/location/liveFix'
+import { authProvider } from '@/src/features/auth/lib'
 import { deleteSubmissionUploads } from '@/src/lib/upload/firebaseUpload'
 
 /** Wipes the four draft-owned stores and stops the draft-scoped GPS watch. */

@@ -17,10 +17,10 @@ import {
   selectionHaptic,
   setHapticsEnabled,
 } from '@/src/shared/lib/haptics'
-import { saveEmailOptIn } from '@/src/hooks/saveEmailOptIn'
-import { useChangeEmail } from '@/src/hooks/useChangeEmail'
+import { saveEmailOptIn } from '@/src/features/permissions/communications/hooks/saveEmailOptIn'
+import { useChangeEmail } from '@/src/features/auth/hooks/useChangeEmail'
 import { useConsentStore } from '@/src/shared/consent/useConsentStore'
-import { useAuthStore } from '@/src/lib/auth/authStore'
+import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { useSettingsDraft } from '@/src/hooks/useSettingsDraft'
 import { APP_VERSION, FEATURE_FLAGS } from '@/src/shared/config/constants'
 import { router } from 'expo-router'

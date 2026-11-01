@@ -4,7 +4,10 @@ import { act, renderHook } from '@testing-library/react-native'
 
 import { useSubmissionSubmit } from '@/src/hooks/useSubmissionSubmit'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
-import { CONSENT_VERSION, useConsentStore } from '@/src/shared/consent/useConsentStore'
+import {
+  CONSENT_VERSION,
+  useConsentStore,
+} from '@/src/shared/consent/useConsentStore'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
@@ -42,12 +45,12 @@ jest.mock('@/src/lib/upload/firebaseUpload', () => ({
   finalizeSubmissionPhotoMetadata: jest.fn(() => Promise.resolve()),
 }))
 
-jest.mock('@/src/lib/auth/useAuth', () => ({
+jest.mock('@/src/features/auth/lib/useAuth', () => ({
   useAuth: () => ({ user: { uid: 'uid-owner' } }),
 }))
 
 const mockStopLocationCapture = jest.fn()
-jest.mock('@/src/lib/location', () => ({
+jest.mock('@/src/core/location/liveFix', () => ({
   stopLocationCapture: () => mockStopLocationCapture(),
 }))
 

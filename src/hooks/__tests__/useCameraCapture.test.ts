@@ -43,7 +43,7 @@ const mockUploadNewPhoto = jest.fn()
 jest.mock('@/src/lib/upload/uploadNewPhoto', () => ({
   uploadNewPhoto: (...args: unknown[]) => mockUploadNewPhoto(...args),
 }))
-jest.mock('@/src/lib/auth/useAuth', () => ({
+jest.mock('@/src/features/auth/lib/useAuth', () => ({
   useAuth: () => ({ user: { uid: 'test-uid' } }),
 }))
 

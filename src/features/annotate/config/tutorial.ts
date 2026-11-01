@@ -5,7 +5,10 @@
  */
 
 import type { TutorialStep } from '@/src/components/organisms/TutorialOverlay'
-import { getAppVersion, isVersionReleased } from '@/src/lib/auth/authProviders'
+import {
+  getAppVersion,
+  isVersionReleased,
+} from '@/src/features/auth/lib/authProviders'
 
 /**
  * Deferred to the Alpha milestone — see

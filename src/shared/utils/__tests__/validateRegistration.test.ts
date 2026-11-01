@@ -4,7 +4,10 @@
  * or a swapped order would let a bad form reach the auth provider.
  */
 
-import { MIN_PASSWORD_LENGTH, validateRegistration } from '@/src/shared/utils/validation'
+import {
+  MIN_PASSWORD_LENGTH,
+  validateRegistration,
+} from '@/src/shared/utils/validation'
 
 const ok = 'a'.repeat(MIN_PASSWORD_LENGTH)
 

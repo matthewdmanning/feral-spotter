@@ -23,7 +23,7 @@ const mockPermissionCheck = jest.fn(async () => true)
 // (A native-module mock broke when SDK 58 moved expo-media-library's native
 // binding, and the hook's contract is this one call, not the binding.) Set
 // in beforeEach, because afterEach's restoreAllMocks removes the spy.
-jest.mock('@/src/lib/permissions/gallerySavePermission', () => ({
+jest.mock('@/src/features/permissions/photo/lib/gallerySavePermission', () => ({
   gallerySavePermission: {
     check: (...args: unknown[]) => mockPermissionCheck(...args),
     request: jest.fn(async () => true),

@@ -18,7 +18,7 @@ import {
   getSubmissionCache,
   updateSubmissionCache,
 } from '@/src/lib/cache/submissionCache'
-import { useLocationCapture } from '@/src/lib/location'
+import { useLocationCapture } from '@/src/core/location/liveFix'
 import { buildCacheMetadata, toCachedPhoto } from '@/src/lib/submission/payload'
 import { toCachedCat } from '@/src/lib/submission/profilePhoto'
 import type { SubmissionPhoto } from '@/src/shared/types'

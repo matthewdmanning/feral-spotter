@@ -20,7 +20,7 @@ import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { EVENTS } from '@/src/shared/analytics/analytics'
 import { fireAnalyticsEvent } from '@/src/lib/submission/analytics'
-import { useAuth } from '@/src/lib/auth/useAuth'
+import { useAuth } from '@/src/features/auth/lib/useAuth'
 import {
   getCurrentCacheId,
   getSubmissionCache,

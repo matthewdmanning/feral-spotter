@@ -6,10 +6,7 @@ import {
   type SubmissionCacheFile,
 } from '@/src/lib/cache/submissionCache'
 import { selectionHaptic } from '@/src/shared/lib/haptics'
-import {
-  reportCardTime,
-  sightingCardAction,
-} from '@/src/lib/sightings/history'
+import { reportCardTime, sightingCardAction } from '@/src/lib/sightings/history'
 import { formatDateTime } from '@/src/shared/utils/formatDateTime'
 import { router } from 'expo-router'
 import { CaretRightIcon } from 'phosphor-react-native/src/icons/CaretRight'

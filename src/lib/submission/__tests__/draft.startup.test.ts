@@ -18,11 +18,13 @@ import { discardUnsurvivingDraft } from '../draft'
  * stores, so a field the teardown forgets would show here.
  */
 
-jest.mock('@/src/lib/location', () => ({ stopLocationCapture: jest.fn() }))
+jest.mock('@/src/core/location/liveFix', () => ({
+  stopLocationCapture: jest.fn(),
+}))
 jest.mock('@/src/lib/upload/firebaseUpload', () => ({
   deleteSubmissionUploads: jest.fn(),
 }))
-jest.mock('@/src/lib/auth', () => ({
+jest.mock('@/src/features/auth/lib', () => ({
   authProvider: { getCurrentUser: () => ({ uid: 'uid-test' }) },
 }))
 
