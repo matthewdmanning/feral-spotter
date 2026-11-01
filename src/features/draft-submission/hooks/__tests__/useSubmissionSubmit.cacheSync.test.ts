@@ -7,7 +7,7 @@ import { useSubmissionSubmit } from '@/src/features/draft-submission/hooks/useSu
 import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
-import { profilePicUri } from '@/src/lib/sightings/history'
+import { profilePicUri } from '@/src/features/history/lib/history'
 
 /**
  * Regression check for #228: updateSubmissionCache replaces `metadata`

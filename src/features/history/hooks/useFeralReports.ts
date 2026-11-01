@@ -16,7 +16,7 @@ import {
   ownSightings,
   sortBySightingTime,
   type SightingSpot,
-} from '@/src/lib/sightings/history'
+} from '@/src/features/history/lib/history'
 import { isResumableDraft } from '@/src/features/draft-submission/lib/resumable'
 import { useFocusEffect } from 'expo-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'

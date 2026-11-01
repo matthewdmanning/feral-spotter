@@ -31,7 +31,7 @@ import {
   type MapSize,
   type PinBadge,
   type SightingSpot,
-} from '@/src/lib/sightings/history'
+} from '@/src/features/history/lib/history'
 import { Image, type ImageRef } from 'expo-image'
 import { AppleMaps, GoogleMaps } from 'expo-maps'
 import { useEffect, useMemo, useState } from 'react'

@@ -1,14 +1,14 @@
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
-import { STATUS_COLOR_KEY } from '@/src/components/atoms/StatusIcon'
-import { ReportCard } from '@/src/components/molecules/ReportCard'
-import { SightingsMap } from '@/src/components/organisms/SightingsMap'
-import { useFeralReports } from '@/src/hooks/useFeralReports'
+import { STATUS_COLOR_KEY } from '@/src/features/history/components/StatusIcon'
+import { ReportCard } from '@/src/features/history/components/ReportCard'
+import { SightingsMap } from '@/src/features/history/components/SightingsMap'
+import { useFeralReports } from '@/src/features/history/hooks/useFeralReports'
 import type {
   CacheStatus,
   SubmissionCacheFile,
 } from '@/src/features/draft-submission/lib/submissionCache'
-import type { SightingSpot } from '@/src/lib/sightings/history'
+import type { SightingSpot } from '@/src/features/history/lib/history'
 import { router, Stack } from 'expo-router'
 import { useCallback, useState } from 'react'
 import { ClockIcon } from 'phosphor-react-native/src/icons/Clock'

@@ -1,7 +1,7 @@
 import '@shopify/flash-list/jestSetup'
 import type { SubmissionCacheFile } from '@/src/features/draft-submission/lib/submissionCache'
-import { useFeralReports } from '@/src/hooks/useFeralReports'
-import { SightingsMap } from '@/src/components/organisms/SightingsMap'
+import { useFeralReports } from '@/src/features/history/hooks/useFeralReports'
+import { SightingsMap } from '@/src/features/history/components/SightingsMap'
 import { FlashList } from '@shopify/flash-list'
 import { router } from 'expo-router'
 import { act, render, screen, userEvent } from '@testing-library/react-native'
@@ -13,9 +13,9 @@ jest.mock('expo-router', () => ({
   router: { push: jest.fn() },
 }))
 // Focus this check on list/card wiring; the history rules have their own suite.
-jest.mock('@/src/hooks/useFeralReports')
+jest.mock('@/src/features/history/hooks/useFeralReports')
 // Native map gestures and markers are driven through the map's screen contract.
-jest.mock('@/src/components/organisms/SightingsMap', () => ({
+jest.mock('@/src/features/history/components/SightingsMap', () => ({
   SightingsMap: jest.fn(() => null),
 }))
 

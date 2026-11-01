@@ -1,1 +1,1 @@
-export { default } from '@/src/screens/sightingDetail'
+export { default } from '@/src/features/history/screens/sightingDetail'

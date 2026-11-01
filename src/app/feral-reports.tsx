@@ -1,1 +1,1 @@
-export { default } from '@/src/screens/feralReports'
+export { default } from '@/src/features/history/screens/feralReports'

@@ -1,9 +1,12 @@
 import { act, renderHook } from '@testing-library/react-native'
 import { useNativeCameraCapture } from '../useNativeCameraCapture'
 
-jest.mock('@/src/features/camera-control/hooks/useCapturedPhotoWorkflow', () => ({
-  useCapturedPhotoWorkflow: jest.fn(() => ({})),
-}))
+jest.mock(
+  '@/src/features/camera-control/hooks/useCapturedPhotoWorkflow',
+  () => ({
+    useCapturedPhotoWorkflow: jest.fn(() => ({})),
+  }),
+)
 
 jest.mock('@/src/shared/consent/useConsentStore', () => ({
   useConsentStore: { persist: { hasHydrated: jest.fn(() => true) } },
