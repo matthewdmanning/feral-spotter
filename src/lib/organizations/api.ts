@@ -1,5 +1,5 @@
-import { useAuthStore } from '@/src/lib/auth/authStore'
-import { authProvider } from '@/src/lib/auth'
+import { useAuthStore } from '@/src/features/auth/lib/authStore'
+import { authProvider } from '@/src/features/auth/lib'
 
 export class OrganizationSyncError extends Error {
   constructor(readonly status: number) {

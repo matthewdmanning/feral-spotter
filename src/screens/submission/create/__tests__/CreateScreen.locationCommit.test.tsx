@@ -35,7 +35,7 @@ let mockCapture: {
   result: { latitude: number; longitude: number; accuracy?: number } | undefined
 }
 
-jest.mock('@/src/lib/location', () => ({
+jest.mock('@/src/core/location/liveFix', () => ({
   useLocationCapture: () => mockCapture,
 }))
 

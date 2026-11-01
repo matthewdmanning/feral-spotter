@@ -30,11 +30,11 @@ jest.mock('@/src/shared/analytics/analytics', () => ({
   EVENTS: { CAMERA_OPENED: 'camera_opened' },
 }))
 
-jest.mock('@/src/lib/auth/useAuth', () => ({
+jest.mock('@/src/features/auth/lib/useAuth', () => ({
   useAuth: () => ({ user: null }),
 }))
 
-jest.mock('@/src/lib/location', () => ({
+jest.mock('@/src/core/location/liveFix', () => ({
   startLocationCapture: jest.fn(async () => undefined),
 }))
 

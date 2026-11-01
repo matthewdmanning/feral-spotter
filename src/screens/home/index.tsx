@@ -12,7 +12,7 @@ import {
   confirmStartNewSighting,
 } from '@/src/hooks/confirmResetSubmission'
 import { useDraftStartupStore } from '@/src/hooks/useDraftStartupStore'
-import { useEntryGate } from '@/src/hooks/useEntryGate'
+import { useEntryGate } from '@/src/features/auth/hooks/useEntryGate'
 import { usePhotoEntrypoints } from '@/src/hooks/usePhotoEntrypoints'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useResumableDraft } from '@/src/hooks/useResumableDraft'

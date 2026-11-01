@@ -1,5 +1,5 @@
 import * as ui from '@/src/shared/hooks/useUIStore'
-import { useAuthStore } from '@/src/lib/auth/authStore'
+import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { act, renderHook } from '@testing-library/react-native'
 
@@ -41,7 +41,7 @@ jest.mock('@/src/lib/upload/firebaseUpload', () => ({
 }))
 
 const mockStopLocationCapture = jest.fn()
-jest.mock('@/src/lib/location', () => ({
+jest.mock('@/src/core/location/liveFix', () => ({
   stopLocationCapture: () => mockStopLocationCapture(),
 }))
 

@@ -46,7 +46,7 @@ jest.mock('@/src/hooks/useLibraryPhotoPicker', () => ({
   useLibraryPhotoPicker: () => ({ pickFromLibrary: mockPickFromLibrary }),
 }))
 
-jest.mock('@/src/lib/location', () => ({
+jest.mock('@/src/core/location/liveFix', () => ({
   useLocationCapture: () => ({
     status: 'idle',
     startedAt: null,

@@ -5,7 +5,7 @@ import { observedCat } from '@/src/test-utils/catFixtures'
 import { useDraftSync } from '../useDraftSync'
 import { useSubmissionStore } from '../useSubmissionStore'
 
-jest.mock('@/src/lib/location', () => ({
+jest.mock('@/src/core/location/liveFix', () => ({
   useLocationCapture: () => ({ status: 'idle', result: null }),
 }))
 

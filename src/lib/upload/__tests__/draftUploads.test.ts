@@ -1,5 +1,5 @@
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
-import { useAuthStore } from '@/src/lib/auth/authStore'
+import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { uploadSubmissionPhoto } from '@/src/lib/upload/firebaseUpload'
 import {
   cancelPhotoUploads,

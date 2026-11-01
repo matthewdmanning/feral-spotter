@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { AppState } from 'react-native'
-import { useAuthStore } from '@/src/lib/auth/authStore'
+import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { useOrganizationsFlag } from '@/src/hooks/useOrganizationsFlag'
 import { useOrganizationSharingStore } from '@/src/hooks/useOrganizationSharingStore'
 import { useOrganizationDirectoryStore } from '@/src/hooks/useOrganizationDirectory'

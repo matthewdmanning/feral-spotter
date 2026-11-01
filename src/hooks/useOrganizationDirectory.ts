@@ -6,7 +6,7 @@ import {
 } from '@/src/lib/organizations/Organizations'
 import { organizationRequest } from '@/src/lib/organizations/api'
 import { type Catalog } from '@/src/types/Organizations'
-import { useAuthStore } from '@/src/lib/auth/authStore'
+import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { useOrganizationsFlag } from './useOrganizationsFlag'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
 

@@ -1,5 +1,5 @@
-import { authProvider } from '@/src/lib/auth'
-import { useAuthStore } from '@/src/lib/auth/authStore'
+import { authProvider } from '@/src/features/auth/lib'
+import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import type { Catalog, PermissionLedger } from '@/src/types/Organizations'
 
 type Body = Record<string, unknown> & { action: string }

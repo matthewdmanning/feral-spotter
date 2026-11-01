@@ -6,7 +6,7 @@
  */
 
 import { useConsentStore } from '@/src/shared/consent/useConsentStore'
-import { useAuthStore } from '@/src/lib/auth/authStore'
+import { useAuthStore } from '@/src/features/auth/lib/authStore'
 
 const CONSENT_STEPS = [
   {

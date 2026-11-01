@@ -22,7 +22,7 @@ jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
 }))
 
-jest.mock('@/src/lib/auth/useAuth', () => ({
+jest.mock('@/src/features/auth/lib/useAuth', () => ({
   useAuth: () => ({ isReady: true, isAuthenticated: true }),
 }))
 // Real consent store, seeded as a returning user who answered every step.

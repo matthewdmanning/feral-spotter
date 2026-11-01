@@ -17,7 +17,7 @@ import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
 import { EVENTS } from '@/src/shared/analytics/analytics'
 import { fireAnalyticsEvent } from '@/src/lib/submission/analytics'
-import { useAuthStore } from '@/src/lib/auth/authStore'
+import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import {
   getCurrentCacheId,
   transitionSubmission,

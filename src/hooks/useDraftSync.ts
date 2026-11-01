@@ -12,14 +12,14 @@ import {
   useSubmissionStore,
   type ObservedCat,
 } from '@/src/hooks/useSubmissionStore'
-import { useAuth } from '@/src/lib/auth/useAuth'
+import { useAuth } from '@/src/features/auth/lib/useAuth'
 import {
   createSubmissionCache,
   getCurrentCacheId,
   UNSENT_STATUSES,
   updateSubmissionCache,
 } from '@/src/lib/cache/submissionCache'
-import { useLocationCapture } from '@/src/lib/location'
+import { useLocationCapture } from '@/src/core/location/liveFix'
 import { syncPhotoUploads } from '@/src/lib/upload/draftUploads'
 import { buildCacheMetadata, toCachedPhoto } from '@/src/lib/submission/payload'
 import { toCachedCat } from '@/src/lib/submission/profilePhoto'

@@ -1,5 +1,5 @@
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
-import { useAuthStore } from '@/src/lib/auth/authStore'
+import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { act, renderHook } from '@testing-library/react-native'
 
 import * as cache from '@/src/lib/cache/submissionCache'
@@ -22,7 +22,7 @@ jest.mock('expo-router', () => ({
   router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() },
 }))
 
-jest.mock('@/src/lib/location', () => ({
+jest.mock('@/src/core/location/liveFix', () => ({
   stopLocationCapture: jest.fn(),
 }))
 

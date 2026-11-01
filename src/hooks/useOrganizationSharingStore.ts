@@ -15,7 +15,7 @@ import {
 } from '@/src/lib/organizations/api'
 import { buildGrant } from '@/src/lib/organizations/sharing'
 import { useOrganizationsFlag } from './useOrganizationsFlag'
-import { useAuthStore } from '@/src/lib/auth/authStore'
+import { useAuthStore } from '@/src/features/auth/lib/authStore'
 
 export type PendingOrganizationAction = {
   organizationName?: string
