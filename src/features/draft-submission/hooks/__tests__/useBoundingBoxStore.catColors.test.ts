@@ -1,4 +1,4 @@
-import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
+import { useBoundingBoxStore } from '../useBoundingBoxStore'
 
 /**
  * A cat's color is fixed for its life. The failure worth catching: removing

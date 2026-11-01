@@ -2,10 +2,10 @@ import { act, renderHook } from '@testing-library/react-native'
 import { router } from 'expo-router'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
-import { useActiveCatFlow } from '@/src/features/draft-submission/hooks/useActiveCatFlow'
-import { useActiveCatFlowStore } from '@/src/features/draft-submission/hooks/useActiveCatFlowStore'
-import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
-import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { useActiveCatFlow } from '../useActiveCatFlow'
+import { useActiveCatFlowStore } from '../useActiveCatFlowStore'
+import { useBoundingBoxStore } from '../useBoundingBoxStore'
+import { useSubmissionStore } from '../useSubmissionStore'
 
 /**
  * Model of useActiveCatFlow (ADR 0004): the seam that survives the

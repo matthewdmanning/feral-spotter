@@ -12,7 +12,7 @@ import {
   useSubmissionStore,
   type SubmissionDraft,
 } from '@/src/features/draft-submission/hooks/useSubmissionStore'
-import LocationPickerScreen from '@/src/features/draft-submission/screens/location-picker/index'
+import LocationPickerScreen from '../index'
 
 /**
  * Model of the map picker's program flow

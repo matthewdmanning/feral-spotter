@@ -3,7 +3,7 @@ import React from 'react'
 import { router } from 'expo-router'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
-import CreateSubmissionScreen from '@/src/features/draft-submission/screens/create/index'
+import CreateSubmissionScreen from '../index'
 
 /**
  * Model of the Cat List zero-friction on-ramp gate (#173): with no cats

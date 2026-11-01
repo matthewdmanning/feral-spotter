@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import tabIcons from '@/src/shared/config/tabIcons.json'
+import tabIcons from '../tabIcons.json'
 
 // The failure this guards: a renamed route file or a mistyped icon key leaves
 // a tab missing or blank, and a Phosphor name that has no SVG fails the

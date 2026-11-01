@@ -4,10 +4,7 @@
  * flag fails here instead of shipping.
  */
 
-import {
-  PHOTO_TOGGLES,
-  visiblePhotoToggles,
-} from '@/src/features/settings/config/photoToggles'
+import { PHOTO_TOGGLES, visiblePhotoToggles } from '../photoToggles'
 
 const FLAGS_OFF = { experimentalCamera: false }
 const FLAGS_ON = { experimentalCamera: true }

@@ -55,7 +55,7 @@ jest.mock('@/src/features/draft-submission/hooks/usePhotoStore', () => ({
   ),
 }))
 const mockPickFromLibrary = jest.fn()
-jest.mock('@/src/hooks/useLibraryPhotoPicker', () => ({
+jest.mock('@/src/features/library-picker/hooks/useLibraryPhotoPicker', () => ({
   useLibraryPhotoPicker: () => ({ pickFromLibrary: mockPickFromLibrary }),
 }))
 const buttonsMachine = createMachine({

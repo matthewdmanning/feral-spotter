@@ -2,8 +2,8 @@ import { act, renderHook, waitFor } from '@testing-library/react-native'
 
 import * as cache from '@/src/features/draft-submission/lib/submissionCache'
 import { observedCat } from '@/src/test-utils/catFixtures'
-import { useDraftSync } from '@/src/features/draft-submission/hooks/useDraftSync'
-import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { useDraftSync } from '../useDraftSync'
+import { useSubmissionStore } from '../useSubmissionStore'
 
 jest.mock('@/src/core/location/liveFix', () => ({
   useLocationCapture: () => ({ status: 'idle', result: null }),

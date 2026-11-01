@@ -2,11 +2,11 @@ import * as ui from '@/src/shared/hooks/useUIStore'
 import { router } from 'expo-router'
 import { act, renderHook } from '@testing-library/react-native'
 
-import { useCatSubmit } from '@/src/features/draft-submission/hooks/useCatSubmit'
-import type { CatFormValues } from '@/src/features/draft-submission/hooks/useCatForm'
-import { useActiveCatFlowStore } from '@/src/features/draft-submission/hooks/useActiveCatFlowStore'
-import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
-import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { useCatSubmit } from '../useCatSubmit'
+import type { CatFormValues } from '../useCatForm'
+import { useActiveCatFlowStore } from '../useActiveCatFlowStore'
+import { useBoundingBoxStore } from '../useBoundingBoxStore'
+import { useSubmissionStore } from '../useSubmissionStore'
 
 /**
  * #205 changed what "unset" means for the missing-field warning: a category
