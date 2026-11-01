@@ -2,8 +2,8 @@ import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import type {
   OrganizationSharingDraft,
   SubmissionDraft,
-} from '@/src/hooks/useSubmissionStore'
-import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
+} from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
 import {
   useOrganizationSharingStore,
   EMPTY_ORGANIZATION_ACCOUNT,

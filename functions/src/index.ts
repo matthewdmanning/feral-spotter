@@ -40,7 +40,7 @@ import {
 
 initializeApp()
 
-// Must match BUCKET_URL in src/lib/upload/firebaseUpload.ts (ADR-0005).
+// Must match BUCKET_URL in src/features/draft-submission/lib/upload/firebaseUpload.ts (ADR-0005).
 const BUCKET_NAME =
   process.env.GCS_BUCKET_NAME ??
   'project-e3d5659d-bc4f-438f-88c.firebasestorage.app'

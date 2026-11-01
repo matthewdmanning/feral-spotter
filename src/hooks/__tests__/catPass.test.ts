@@ -1,9 +1,9 @@
 import { router } from 'expo-router'
 import { observedCat } from '@/src/test-utils/catFixtures'
 import { abandonCatPass, removeCatFromDraft } from '../catPass'
-import { useActiveCatFlowStore } from '../useActiveCatFlowStore'
-import { useBoundingBoxStore } from '../useBoundingBoxStore'
-import { useSubmissionStore } from '../useSubmissionStore'
+import { useActiveCatFlowStore } from '@/src/features/draft-submission/hooks/useActiveCatFlowStore'
+import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
+import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
 
 /**
  * The pass's exit rules, which used to live in five files: an abandoned

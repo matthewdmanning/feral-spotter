@@ -3,9 +3,9 @@ import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { router } from 'expo-router'
 import { AppState } from 'react-native'
 import { useCameraCapture } from '../useCameraCapture'
-import { usePhotoStore } from '../usePhotoStore'
-import { useSettingsStore } from '../useSettingsStore'
-import { useDraftStartupStore } from '../useDraftStartupStore'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
+import { useSettingsStore } from '@/src/features/settings/hooks/useSettingsStore'
+import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
 
 jest.mock('expo-location', () => ({
   ...jest.requireActual('expo-location'),
@@ -41,7 +41,7 @@ jest.mock('react-native-vision-camera', () => ({
 }))
 
 const mockUploadNewPhoto = jest.fn()
-jest.mock('@/src/lib/upload/uploadNewPhoto', () => ({
+jest.mock('@/src/features/draft-submission/lib/upload/uploadNewPhoto', () => ({
   cancelQueuedUploads: jest.fn(),
   cancelPhotoUpload: jest.fn(),
   retryPendingUploads: jest.fn(),

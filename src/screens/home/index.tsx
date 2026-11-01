@@ -2,7 +2,7 @@ import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import type { ColumnButton } from '@/src/shared/ui/molecules/BottomButtonColumn'
 import { BottomButtonColumn } from '@/src/shared/ui/molecules/BottomButtonColumn'
-import { PhotoDraftNotice } from '@/src/components/molecules/PhotoDraftNotice'
+import { PhotoDraftNotice } from '@/src/features/draft-submission/components/PhotoDraftNotice'
 import {
   APP_STARTED_AT,
   ENTRYPOINT_BUFFER_PERCENT,
@@ -10,12 +10,12 @@ import {
 import {
   confirmResetSubmission,
   confirmStartNewSighting,
-} from '@/src/hooks/confirmResetSubmission'
-import { useDraftStartupStore } from '@/src/hooks/useDraftStartupStore'
+} from '@/src/features/draft-submission/hooks/confirmResetSubmission'
+import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
 import { useEntryGate } from '@/src/features/auth/hooks/useEntryGate'
 import { usePhotoEntrypoints } from '@/src/hooks/usePhotoEntrypoints'
-import { usePhotoStore } from '@/src/hooks/usePhotoStore'
-import { useResumableDraft } from '@/src/hooks/useResumableDraft'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
+import { useResumableDraft } from '@/src/features/draft-submission/hooks/useResumableDraft'
 import { computeEntrypointDiameter } from '@/src/lib/home/entrypointDiameter'
 import { Stack, router } from 'expo-router'
 import type { Icon as PhosphorIcon } from 'phosphor-react-native'

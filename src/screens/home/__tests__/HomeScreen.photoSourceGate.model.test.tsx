@@ -2,9 +2,9 @@ import { act, render, waitFor } from '@testing-library/react-native'
 import React from 'react'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
-import { usePhotoStore } from '@/src/hooks/usePhotoStore'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import HomeScreen from '../index'
-import { useDraftStartupStore } from '@/src/hooks/useDraftStartupStore'
+import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
 
 /**
  * Model of the photo-source-exclusivity gate (ADR 0002's 2026-07-31
@@ -36,7 +36,7 @@ jest.mock('@/src/shared/consent/useConsentStore', () => {
   })
   return actual
 })
-jest.mock('@/src/lib/cache/submissionCache', () => ({
+jest.mock('@/src/features/draft-submission/lib/submissionCache', () => ({
   getAllSubmissionCaches: jest.fn().mockResolvedValue([]),
   getCurrentCacheId: jest.fn().mockResolvedValue(null),
 }))

@@ -4,9 +4,9 @@ import React from 'react'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import { SUBMISSION_STALE_MS } from '@/src/shared/config/constants'
-import { getAllSubmissionCaches } from '@/src/lib/cache/submissionCache'
+import { getAllSubmissionCaches } from '@/src/features/draft-submission/lib/submissionCache'
 import HomeScreen from '../index'
-import { useDraftStartupStore } from '@/src/hooks/useDraftStartupStore'
+import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
 
 /**
@@ -44,11 +44,11 @@ jest.mock('@/src/shared/consent/useConsentStore', () => {
   })
   return actual
 })
-jest.mock('@/src/lib/cache/submissionCache', () => ({
+jest.mock('@/src/features/draft-submission/lib/submissionCache', () => ({
   getAllSubmissionCaches: jest.fn(),
   getCurrentCacheId: jest.fn().mockResolvedValue(null),
 }))
-jest.mock('@/src/hooks/usePhotoStore', () => ({
+jest.mock('@/src/features/draft-submission/hooks/usePhotoStore', () => ({
   usePhotoStore: Object.assign(
     (sel: (s: { source: null }) => unknown) => sel({ source: null }),
     { getState: () => ({ source: null }) },

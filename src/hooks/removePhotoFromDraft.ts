@@ -5,11 +5,11 @@
  * store (the camera discard did) left its boxes and cat references behind.
  */
 
-import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
-import { usePhotoStore } from '@/src/hooks/usePhotoStore'
-import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
+import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
+import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
 import { cancelPhotoUpload } from '@/src/lib/upload/draftUploads'
-import { deleteSubmissionPhoto } from '@/src/lib/upload/firebaseUpload'
+import { deleteSubmissionPhoto } from '@/src/features/draft-submission/lib/upload/firebaseUpload'
 
 export function removePhotoFromDraft(localId: string): void {
   const photo = usePhotoStore

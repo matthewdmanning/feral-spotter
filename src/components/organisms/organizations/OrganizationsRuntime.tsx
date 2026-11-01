@@ -4,7 +4,7 @@ import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { useOrganizationsFlag } from '@/src/hooks/useOrganizationsFlag'
 import { useOrganizationSharingStore } from '@/src/hooks/useOrganizationSharingStore'
 import { useOrganizationDirectoryStore } from '@/src/hooks/useOrganizationDirectory'
-import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
+import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
 
 function syncPermissions() {

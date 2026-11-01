@@ -1,5 +1,5 @@
-import { usePhotoStore } from '@/src/hooks/usePhotoStore'
-import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
+import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import { render } from '@testing-library/react-native'
 import { Animated, StyleSheet } from 'react-native'
 import { InsetCropBubble } from '../InsetCropBubble'

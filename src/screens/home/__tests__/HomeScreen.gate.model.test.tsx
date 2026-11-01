@@ -17,7 +17,7 @@ jest.mock('expo-router', () => ({
 }))
 
 jest.mock('@/src/features/auth/lib/useAuth', () => ({ useAuth: jest.fn() }))
-jest.mock('@/src/lib/cache/submissionCache', () => ({
+jest.mock('@/src/features/draft-submission/lib/submissionCache', () => ({
   getAllSubmissionCaches: jest.fn().mockResolvedValue([]),
   getCurrentCacheId: jest.fn().mockResolvedValue(null),
 }))
@@ -26,7 +26,7 @@ jest.mock('@/src/shared/ui/molecules/BottomButtonColumn', () => ({
 }))
 // This suite covers the auth/consent gate only — the photo-source gate has
 // its own model test (HomeScreen.photoSourceGate.model.test.tsx).
-jest.mock('@/src/hooks/usePhotoStore', () => ({
+jest.mock('@/src/features/draft-submission/hooks/usePhotoStore', () => ({
   usePhotoStore: (sel: (s: { source: null }) => unknown) =>
     sel({ source: null }),
 }))

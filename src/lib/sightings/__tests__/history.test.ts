@@ -1,4 +1,4 @@
-import type { SubmissionCacheFile } from '@/src/lib/cache/submissionCache'
+import type { SubmissionCacheFile } from '@/src/features/draft-submission/lib/submissionCache'
 import { observedCat } from '@/src/test-utils/catFixtures'
 import {
   groupSightingsBySpot,

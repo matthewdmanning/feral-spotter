@@ -11,7 +11,7 @@
  * (firebaseUpload.ts) is the Storage seam tests fake.
  */
 
-import { usePhotoStore } from '@/src/hooks/usePhotoStore'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import {
   cancelPhotoUpload as cancelQueuedPhoto,
@@ -19,7 +19,7 @@ import {
   isQueueIdle,
   onQueueChange,
   uploadNewPhoto,
-} from '@/src/lib/upload/uploadNewPhoto'
+} from '@/src/features/draft-submission/lib/upload/uploadNewPhoto'
 
 /**
  * Queues every photo in the draft that is not uploaded yet, using its

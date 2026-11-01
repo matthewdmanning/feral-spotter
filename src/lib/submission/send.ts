@@ -7,22 +7,22 @@
  * failure mark and the teardown after a successful send.
  */
 
-import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
+import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import {
   persistOrganizationSharing,
   useOrganizationSharingStore,
 } from '@/src/hooks/useOrganizationSharingStore'
 import { useOrganizationsFlag } from '@/src/hooks/useOrganizationsFlag'
-import { usePhotoStore } from '@/src/hooks/usePhotoStore'
-import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
+import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
 import { EVENTS } from '@/src/shared/analytics/analytics'
-import { fireAnalyticsEvent } from '@/src/lib/submission/analytics'
+import { fireAnalyticsEvent } from '@/src/features/draft-submission/lib/analytics'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import {
   getCurrentCacheId,
   transitionSubmission,
   updateSubmissionCache,
-} from '@/src/lib/cache/submissionCache'
+} from '@/src/features/draft-submission/lib/submissionCache'
 import { confirmedSharing } from '@/src/lib/organizations/consent'
 import {
   buildCacheMetadata,
@@ -30,15 +30,15 @@ import {
   foldBoxesIntoCat,
   resolvePhotoTime,
   toCachedPhoto,
-} from '@/src/lib/submission/payload'
+} from '@/src/features/draft-submission/lib/payload'
 import {
   resolveProfileBox,
   toCachedCat,
-} from '@/src/lib/submission/profilePhoto'
+} from '@/src/features/draft-submission/lib/profilePhoto'
 import {
   finalizeSubmissionPhotoMetadata,
   uploadSubmissionMetadata,
-} from '@/src/lib/upload/firebaseUpload'
+} from '@/src/features/draft-submission/lib/upload/firebaseUpload'
 import {
   buildGrant,
   FALLBACK_ORGANIZATION_NAME,
