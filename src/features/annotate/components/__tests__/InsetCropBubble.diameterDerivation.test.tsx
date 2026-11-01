@@ -7,7 +7,7 @@ import { computeBubbleDiameter } from '@/src/features/annotate/lib/diameter'
 
 /**
  * Pins the normalized-box -> dp -> diameter derivation, not just the pure
- * formula (src/lib/insetCrop/__tests__/diameter.test.ts covers that in
+ * formula (src/features/annotate/lib/__tests__/diameter.test.ts covers that in
  * isolation). A prior draft scaled the box's width fraction by the
  * window's width and its height fraction by the window's height —
  * anisotropic, since those two dimensions differ on a real phone —

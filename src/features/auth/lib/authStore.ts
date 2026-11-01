@@ -1,5 +1,5 @@
 /**
- * lib/auth/authStore.ts
+ * features/auth/lib/authStore.ts
  * Single source of truth for auth state, reactive across the whole app.
  *
  * Subscribes to authProvider.onAuthStateChanged exactly once at module load

@@ -5,7 +5,7 @@ import { useCameraCapture } from '@/src/features/camera-control/hooks/useCameraC
 
 /**
  * Models the two button-driven cycles on the Camera screen
- * (src/screens/camera/index.tsx) that useCameraCapture.test.ts doesn't
+ * (src/features/camera-control/screens/camera/index.tsx) that useCameraCapture.test.ts doesn't
  * cover: flash-mode cycling (cycleFlash, the flash icon button) and
  * camera-flip (flipCamera, the SwitchCamera button). Both are small,
  * self-contained state cycles with no prior coverage.

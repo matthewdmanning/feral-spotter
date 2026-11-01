@@ -1,5 +1,5 @@
 /**
- * hooks/useActiveCatFlow.ts
+ * features/draft-submission/hooks/useActiveCatFlow.ts
  *
  * Cross-screen active-cat flow (ADR 0004): owns which cat is currently being
  * discovered across an annotate pass, so it survives the annotate -> Cat Form

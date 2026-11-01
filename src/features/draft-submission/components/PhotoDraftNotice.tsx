@@ -1,5 +1,5 @@
 /**
- * components/molecules/PhotoDraftNotice.tsx
+ * features/draft-submission/components/PhotoDraftNotice.tsx
  *
  * Why one photo entrypoint on Home is disabled, and the one action that frees
  * it. Reset (discard, after a confirmation owned by the caller) is always

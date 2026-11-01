@@ -3,12 +3,12 @@ topic: first-run-flow-order
 status: active
 last_reviewed: 2026-08-10
 governs:
-  - src/screens/intro-flow/index.tsx
-  - src/screens/consent/index.tsx
-  - src/screens/sign-in/index.tsx
-  - src/screens/analytics-consent/index.tsx
-  - src/screens/register/index.tsx
-  - src/screens/home/index.tsx
+  - src/features/permissions/onboarding/screens/intro-flow/index.tsx
+  - src/features/permissions/consent/screens/consent/index.tsx
+  - src/features/auth/screens/sign-in/index.tsx
+  - src/features/permissions/consent/screens/analytics-consent/index.tsx
+  - src/features/auth/screens/register/index.tsx
+  - src/core/home/screens/home/index.tsx
 derives_from: ['#162', '#163']
 supersedes:
   - "PR #61's order (2026-07-27 ratified): intro-flow -> sign-in -> analytics-consent -> consent -> home. That order left the data-collection disclosure and camera/location permission priming until after registration."

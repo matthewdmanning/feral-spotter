@@ -74,7 +74,7 @@ const expectConsentAccepted = async (accepted: boolean) => {
 }
 
 /**
- * Model of ConsentScreen's location-permission gate (src/screens/consent/index.tsx),
+ * Model of ConsentScreen's location-permission gate (src/features/permissions/consent/screens/consent/index.tsx),
  * scoped to `expo-location`'s `LocationPermissionResponse` shape (#243 —
  * migrated off react-native-permissions). Camera is held authorized
  * throughout: that permission's gating has its own mirrored model,

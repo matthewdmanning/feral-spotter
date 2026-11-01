@@ -5,7 +5,7 @@ import { useAnnotatePass } from '@/src/features/annotate/hooks/useAnnotatePass'
 import AnnotateScreen from '../index'
 
 /**
- * Button wiring on AnnotateScreen (src/screens/submission/annotate/index.tsx)
+ * Button wiring on AnnotateScreen (src/features/annotate/screens/annotate/index.tsx)
  * — mechanical onPress -> handler checks, not a stateful flow, so plain
  * cases rather than an xstate model (the actual flows these handlers drive
  * are modeled at the hook layer: useAnnotatePass.carouselNav.model.test.ts,

@@ -1,5 +1,5 @@
 /**
- * hooks/useSubmissionStore.ts
+ * features/draft-submission/hooks/useSubmissionStore.ts
  * Persisted Zustand store for the in-progress submission draft and its
  * observed cats.
  */

@@ -1,5 +1,5 @@
 /**
- * hooks/useActiveCatFlowStore.ts
+ * features/draft-submission/hooks/useActiveCatFlowStore.ts
  * Persisted zustand store holding just the in-progress cat's id across the
  * annotate -> Cat Form navigation (ADR 0004). Separate file from
  * useActiveCatFlow so it can be mocked independently in tests, matching

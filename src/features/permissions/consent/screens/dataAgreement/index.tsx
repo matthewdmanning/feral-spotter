@@ -1,5 +1,5 @@
 /**
- * screens/dataAgreement/index.tsx
+ * features/permissions/consent/screens/dataAgreement/index.tsx
  * Read-only full data usage agreement — linked from intro flow's T3 slide.
  * Mirrors /consent's disclosure copy (single source: consentDisclosure.json)
  * rather than duplicating the text. No accept action here — /consent owns

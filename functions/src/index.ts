@@ -56,7 +56,7 @@ const BUCKET_NAME =
 const SWEEP_RETENTION_DAYS = 7
 
 // Sole parser for the tester allowlist. The client-side twin it used to
-// mirror (src/lib/upload/allowlist.ts) was deleted in ed2cdb4.
+// mirror (src/features/draft-submission/lib/upload/allowlist.ts) was deleted in ed2cdb4.
 function parseTesterAllowlist(raw: string | undefined): Set<string> {
   if (!raw) return new Set()
   return new Set(

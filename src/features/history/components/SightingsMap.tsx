@@ -1,5 +1,5 @@
 /**
- * components/organisms/SightingsMap.tsx
+ * features/history/components/SightingsMap.tsx
  * Map overview at the top of the Reports tab: one cat-head pin per spot the
  * user has reported from. A spot with more than one cat carries the count in
  * a badge at the icon's bottom right (9+ past nine). Pressing a pin opens

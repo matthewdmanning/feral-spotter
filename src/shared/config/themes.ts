@@ -1,5 +1,5 @@
 /**
- * config/themes.ts
+ * shared/config/themes.ts
  * Color/spacing/radius/typography token definitions, one theme per export.
  *
  * Add a new theme by adding another export here and wiring it into the

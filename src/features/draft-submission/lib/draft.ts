@@ -1,5 +1,5 @@
 /**
- * lib/submission/draft.ts
+ * features/draft-submission/lib/draft.ts
  *
  * The one owner of Submission draft teardown (#292).
  *

@@ -22,7 +22,7 @@ export const COLUMN_ALIGNED = new Set([
   'src/features/history/components/ReportCard.styles.ts',
   'src/features/draft-submission/components/DateTimePicker.styles.ts',
   'src/components/organisms/ValidationSheet.styles.ts',
-  'src/screens/analytics-consent/index.styles.ts',
+  'src/features/permissions/consent/screens/analytics-consent/index.styles.ts',
   'src/features/settings/screens/settings/index.styles.ts',
 ])
 

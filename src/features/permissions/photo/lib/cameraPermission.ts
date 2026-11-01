@@ -1,5 +1,5 @@
 /**
- * lib/permissions/cameraPermission.ts
+ * features/permissions/photo/lib/cameraPermission.ts
  * Camera permission gate (react-native-vision-camera), for consent's
  * imperative request flow (#358). camera/index.tsx's own live gate uses
  * vision-camera's useCameraPermission() hook directly -- already a single

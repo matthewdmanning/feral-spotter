@@ -1,5 +1,5 @@
 /**
- * hooks/useAnnotatePass.ts
+ * features/annotate/hooks/useAnnotatePass.ts
  *
  * Screen-local state for the annotate screen's carousel: which photo is
  * showing, and per-photo removal. Cross-screen cat-discovery state

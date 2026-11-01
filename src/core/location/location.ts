@@ -1,6 +1,6 @@
 /**
- * config/location.ts
- * Tuning for the background Live-fix acquisition singleton (src/lib/location.ts).
+ * core/location/location.ts
+ * Tuning for the background Live-fix acquisition singleton (src/core/location/liveFix.ts).
  * One threshold does double duty: it's both "accurate enough to stop
  * watching" and the bar the Submission Details warning icon checks against
  * (see docs/adr/0002-location-services-model.md's amendment).

@@ -1,5 +1,5 @@
 /**
- * utils/libraryPickTime.ts
+ * shared/utils/libraryPickTime.ts
  * ADR 0003: a Library pick's time comes from EXIF DateTime when present,
  * else falls back to manual entry. Split into pure functions so the
  * EXIF-format landmine (below) and the multi-select rule are unit-testable

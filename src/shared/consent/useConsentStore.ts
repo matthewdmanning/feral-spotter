@@ -1,19 +1,19 @@
 /**
- * hooks/useConsentStore.ts
+ * shared/consent/useConsentStore.ts
  * Persisted, reactive record of the data-collection disclosure acceptance
- * (src/screens/consent/). Anything that collects or transmits the data
+ * (src/features/permissions/consent/screens/consent/). Anything that collects or transmits the data
  * described in that disclosure — photos, location, entered details —
  * must gate on `hasAcceptedConsent()` (plain check) or the `accepted` field
  * (reactive, for components/providers) rather than assuming the consent
  * screen was shown.
  *
  * Analytics is a separate, narrower opt-in captured on its own screen
- * (src/screens/analytics-consent/): it is `null` until answered, counts as denied, and is only
+ * (src/features/permissions/consent/screens/analytics-consent/): it is `null` until answered, counts as denied, and is only
  * enabled via `setAnalyticsAccepted(true)`, independent of `markAccepted()`.
  * Gate analytics on `hasAcceptedAnalytics()`/`analyticsAccepted` in addition
  * to (not instead of) the overall consent check.
  *
- * Email updates are a third, separate opt-in (src/screens/email-opt-in/,
+ * Email updates are a third, separate opt-in (src/features/permissions/communications/screens/email-opt-in/,
  * asked before the analytics screen; changeable in Settings). It is `null`
  * until the user answers, then true/false; only `setEmailOptIn(true)` enables it.
  * It is not part of the

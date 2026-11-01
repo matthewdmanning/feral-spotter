@@ -1,5 +1,5 @@
 /**
- * hooks/useFeralReports.ts
+ * features/history/hooks/useFeralReports.ts
  * Loads the signed-in user's Sighting history, orders it, groups it into map
  * spots, and handles refresh.
  */

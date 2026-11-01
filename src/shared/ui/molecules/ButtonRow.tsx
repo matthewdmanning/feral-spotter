@@ -1,5 +1,5 @@
 /**
- * components/molecules/ButtonRow.tsx
+ * shared/ui/molecules/ButtonRow.tsx
  *
  * Two or more equal-width buttons side by side, with one gap for every row in
  * the app. At a large OS font size the row stacks instead, so no label is
