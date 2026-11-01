@@ -86,6 +86,8 @@ export default function RootLayout() {
           name="feral-reports"
           options={{ title: 'Feral Reports' }}
         />
+        {/* Read-only past Sighting, from a Reports card or map pin */}
+        <Stack.Screen name="sighting/[id]" options={{ title: 'Sighting' }} />
         <Stack.Screen
           name="intro-flow"
           options={{ headerShown: false, gestureEnabled: false }}

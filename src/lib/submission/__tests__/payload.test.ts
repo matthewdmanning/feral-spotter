@@ -27,6 +27,9 @@ describe('buildCacheMetadata', () => {
       address: '123 Main St',
       manual_time: '2026-08-01T10:00:00.000Z',
       captured_at: '2026-08-01T09:00:00.000Z',
+      latitude: 34.6834,
+      longitude: -82.8374,
+      accuracy: 5,
     })
   })
 })

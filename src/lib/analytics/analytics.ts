@@ -19,6 +19,7 @@ import {
   hasAcceptedConsent,
 } from '@/src/hooks/useConsentStore'
 import type { SubmissionCacheFile } from '@/src/lib/cache/submissionCache'
+import { sightingPhotoCount } from '@/src/lib/sightings/history'
 import type { PostHogEventProperties } from '@posthog/core'
 
 export { IS_PRERELEASE }
@@ -95,7 +96,7 @@ export function fireAnalyticsEvent(
     location_method: cache.metadata.location_method,
     time_method: cache.metadata.time_method,
     cat_count: cache.cats.length,
-    photo_count: cache.photo_links?.length ?? 0,
+    photo_count: sightingPhotoCount(cache),
     ...extra,
   })
 }

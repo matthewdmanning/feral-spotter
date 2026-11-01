@@ -18,10 +18,7 @@ import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { EVENTS, captureEvent } from '@/src/lib/analytics/analytics'
 import type { CatFormValues } from '@/src/hooks/useCatForm'
 import type { ObservedCat } from '@/src/hooks/useSubmissionStore'
-import {
-  CAT_ATTRIBUTES,
-  FIELD_LABELS,
-} from '@/src/screens/submission/cats/attributes'
+import { CAT_ATTRIBUTES, FIELD_LABELS } from '@/src/lib/cats/attributes'
 import { CAT_DEFAULTS } from '@/src/screens/submission/cats/constants'
 import { router } from 'expo-router'
 import { randomUUID } from 'expo-crypto'
@@ -37,7 +34,8 @@ import { useCallback } from 'react'
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface UseCatSubmitParams {
-  form: CatFormValues
+  /** profilePhotoId: the Profile Pic choice, when the caller offers one. */
+  form: CatFormValues & { profilePhotoId?: string }
   existingCat?: ObservedCat
 }
 
@@ -77,6 +75,9 @@ export function useCatSubmit({
             ? boxedPhotoIds
             : (existingCat?.photo_local_ids ?? []),
         photos_reviewed: existingCat?.photos_reviewed ?? false,
+        ...(form.profilePhotoId && {
+          profile_photo_local_id: form.profilePhotoId,
+        }),
       }
     },
     [form, existingCat, getBoxedPhotoIds],

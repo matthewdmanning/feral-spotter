@@ -6,11 +6,13 @@ import { uploadSubmissionMetadata } from '@/src/lib/upload/firebaseUpload'
 import { useSubmissionSubmit } from '../useSubmissionSubmit'
 import { useSubmissionStore } from '../useSubmissionStore'
 import { usePhotoStore } from '../usePhotoStore'
+import { useBoundingBoxStore } from '../useBoundingBoxStore'
+import { profilePicUri } from '@/src/lib/sightings/history'
 
 /**
  * Regression check for #228: updateSubmissionCache replaces `metadata`
  * wholesale (no deep merge — see submissionCache.ts), so a submit that
- * only patched status/cats/photo_links silently dropped manual_time set
+ * only patched status/cats/photos silently dropped manual_time set
  * after the cache's initial creation (the EXIF-less Library-pick path,
  * ADR 0003 / #224).
  */
@@ -117,5 +119,76 @@ describe('useSubmissionSubmit — handleDone cache sync (#228)', () => {
       }),
     )
     expect(await cache.getCurrentCacheId()).toBeNull()
+  })
+})
+
+/**
+ * The Reports history row must still render a Sighting after Submit tears the
+ * draft down: camera files are deleted and the box store is wiped, so the row
+ * itself has to carry the owner, the cloud copies, the Submission location,
+ * and each cat's resolved Profile Pic crop.
+ */
+describe('useSubmissionSubmit — history row survives teardown', () => {
+  const crop = {
+    lowerLeftX: 0.1,
+    lowerLeftY: 0.9,
+    upperRightX: 0.6,
+    upperRightY: 0.2,
+  }
+
+  beforeEach(async () => {
+    jest.clearAllMocks()
+    useUIStore.setState({ dialog: null, isSubmitting: false })
+    useSubmissionStore.getState().clearDraft()
+    useBoundingBoxStore.getState().clearAll()
+    usePhotoStore.setState({ photos: [], source: null, submissionId: 'sub-1' })
+    usePhotoStore.getState().addPhoto(photo('photo-1'))
+    usePhotoStore.getState().addPhoto(photo('photo-2'))
+    useBoundingBoxStore.getState().addBox('cat-1', 'photo-1', crop)
+    useBoundingBoxStore.getState().addBox('cat-1', 'photo-2', crop)
+    useSubmissionStore.getState().addCat({
+      ...cat('cat-1'),
+      photo_local_ids: ['photo-1', 'photo-2'],
+      profile_photo_local_id: 'photo-2',
+    })
+    useSubmissionStore
+      .getState()
+      .setSubmissionLocation({ latitude: 34.68, longitude: -82.84 })
+    await cache.createSubmissionCache('cache-1', {
+      location_method: 'device',
+      time_method: 'device',
+    })
+  })
+
+  it('keeps owner, location, cloud photos, and the chosen Profile Pic', async () => {
+    const { result } = renderHook(() => useSubmissionSubmit())
+    await act(async () => {
+      result.current.handleDone()
+      const confirm = useUIStore
+        .getState()
+        .dialog?.buttons.find((b) => b.text === 'Submit')
+      await confirm!.onPress!()
+    })
+
+    // The draft is gone; only the history row remains.
+    expect(useBoundingBoxStore.getState().getBoxesForCat('cat-1')).toEqual([])
+    const row = await cache.getSubmissionCache('cache-1')
+    expect(row).toEqual(
+      expect.objectContaining({
+        status: 'Submitted',
+        user_id: 'uid-owner',
+        metadata: expect.objectContaining({
+          latitude: 34.68,
+          longitude: -82.84,
+        }),
+      }),
+    )
+    expect(row?.cats[0].profile_box).toEqual({
+      photo_local_id: 'photo-2',
+      ...crop,
+    })
+    expect(profilePicUri(row!, row!.cats[0])).toBe(
+      'https://cdn.example/photo-2.jpg',
+    )
   })
 })

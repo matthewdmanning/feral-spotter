@@ -1,5 +1,5 @@
 import { CAT_ATTRIBUTES, FIELD_LABELS } from '../attributes'
-import { CAT_DEFAULTS } from '../constants'
+import { CAT_DEFAULTS } from '@/src/screens/submission/cats/constants'
 
 /**
  * CAT_ATTRIBUTES is the single source CAT_DEFAULTS, FIELD_LABELS, the

@@ -63,24 +63,6 @@ export const styles = StyleSheet.create((theme, rt) => ({
     paddingHorizontal: theme.layout.cardPadding,
     paddingBottom: theme.layout.cardPadding,
   },
-  // A two-column key/value table: labels left, values right-aligned, and a
-  // long value wraps inside its own column instead of pushing the label.
-  catDetailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-    gap: theme.spacing.lg,
-  },
-  catDetailLabel: {
-    ...theme.textVariants.bodySmall,
-    color: theme.colors.muted,
-  },
-  catDetailValue: {
-    ...theme.textVariants.bodySmall,
-    color: theme.colors.text,
-    flexShrink: 1,
-    textAlign: 'right',
-  },
   catRowText: { ...theme.textVariants.body, flex: 1, color: theme.colors.text },
   // The actions are a group of their own: 8 + 8 = 16dp above, against 8dp
   // between table rows.

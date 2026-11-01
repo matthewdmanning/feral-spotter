@@ -1,6 +1,7 @@
 import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { AppButton } from '@/src/components/atoms/AppButton'
 import { TextButton } from '@/src/components/atoms/TextButton'
+import { ProfilePicPicker } from '@/src/components/molecules/ProfilePicPicker'
 import { CatForm } from '@/src/components/organisms/CatForm'
 import {
   COLLAPSED_DIAMETER,
@@ -106,6 +107,13 @@ export default function CatObservationScreen() {
               />
             )}
           </View>
+          {catId && (
+            <ProfilePicPicker
+              catId={catId}
+              value={form.profilePhotoId}
+              onChange={form.setProfilePhotoId}
+            />
+          )}
           <CatForm form={form} />
           <View style={styles.actions}>
             <AppButton onPress={submit.handleSave}>Save</AppButton>

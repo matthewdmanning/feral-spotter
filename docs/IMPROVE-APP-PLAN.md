@@ -126,7 +126,7 @@ Statuses: pending · in-progress · awaiting-evidence · done · deferred: <reas
       already ruled out: behavior ("Friendly to People" — a dumped pet can be domesticated and too
       scared to approach) and appearance ("Looks Like a Pet" — grooming, body condition, and collars
       do not separate feral from abandoned). The code carries no definition: one label, three values,
-      no help text (`src/screens/submission/cats/attributes.ts:70`). The stored key and values do not
+      no help text (`src/lib/cats/attributes.ts:70`). The stored key and values do not
       change whichever label wins (owner: user).
 - [x] Settled the ear-tipping explanation as a planned drawing of a clipped ear tip beside the field,
       not a sentence of copy (owner: user). (2026-09-26)

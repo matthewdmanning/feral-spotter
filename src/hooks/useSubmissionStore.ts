@@ -36,6 +36,11 @@ export interface ObservedCat {
   health_label: HealthLabel
   photo_local_ids: string[]
   photos_reviewed: boolean
+  /**
+   * The photo whose box the user chose as this cat's Profile Pic. Absent:
+   * the first box stands in (see lib/submission/profilePhoto.ts).
+   */
+  profile_photo_local_id?: string
 }
 
 export interface SubmissionDraft {

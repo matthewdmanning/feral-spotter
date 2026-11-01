@@ -34,6 +34,8 @@ export interface SubmissionApiPayload {
     health_label: string
     photo_local_ids: string[]
     photos_reviewed: boolean
+    /** The photo whose box is the cat's Profile Pic — the user's choice, else the first box's photo. */
+    profile_photo_local_id?: string
     /** Box geometry drawn for this cat — normalised 0-1 image-pixel corners (src/types/BoundingBox.ts). */
     boxes: {
       photo_local_id: string

@@ -2,12 +2,15 @@ import { GlassSurface } from '@/src/components/atoms/GlassSurface'
 import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { STATUS_COLOR_KEY } from '@/src/components/atoms/StatusIcon'
 import { ReportCard } from '@/src/components/molecules/ReportCard'
+import { SightingsMap } from '@/src/components/organisms/SightingsMap'
 import { useFeralReports } from '@/src/hooks/useFeralReports'
 import type {
   CacheStatus,
   SubmissionCacheFile,
 } from '@/src/lib/cache/submissionCache'
-import { Stack } from 'expo-router'
+import type { SightingSpot } from '@/src/lib/sightings/history'
+import { router, Stack } from 'expo-router'
+import { useCallback, useState } from 'react'
 import { ClockIcon } from 'phosphor-react-native/src/icons/Clock'
 import { FlashList } from '@shopify/flash-list'
 import { RefreshControl, Text, View } from 'react-native'
@@ -23,13 +26,28 @@ const STATUSES: CacheStatus[] = [
 
 const Separator = () => <View style={styles.separator} />
 const keyExtractor = (cache: SubmissionCacheFile) => cache.id
-const renderItem = ({ item }: { item: SubmissionCacheFile }) => (
-  <ReportCard cache={item} />
-)
 
 export default function FeralReportsScreen() {
   const { theme } = useUnistyles()
-  const { caches, refreshing, onRefresh } = useFeralReports()
+  const { caches, spots, resumableId, refreshing, onRefresh } =
+    useFeralReports()
+  // Let a map gesture pan the map instead of the surrounding history list.
+  const [scrollEnabled, setScrollEnabled] = useState(true)
+  const handleTouchActiveChange = useCallback((active: boolean) => {
+    setScrollEnabled(!active)
+  }, [])
+  const handleSpotPress = useCallback((spot: SightingSpot) => {
+    router.push({
+      pathname: '/sighting/[id]',
+      params: { id: spot.sightingIds[0] },
+    })
+  }, [])
+  const renderItem = useCallback(
+    ({ item }: { item: SubmissionCacheFile }) => (
+      <ReportCard cache={item} resumableId={resumableId} />
+    ),
+    [resumableId],
+  )
 
   return (
     <>
@@ -53,6 +71,8 @@ export default function FeralReportsScreen() {
         <FlashList
           style={styles.root}
           data={caches}
+          extraData={resumableId}
+          scrollEnabled={scrollEnabled}
           keyExtractor={keyExtractor}
           renderItem={renderItem}
           ItemSeparatorComponent={Separator}
@@ -70,6 +90,11 @@ export default function FeralReportsScreen() {
                 <Text style={styles.title}>Feral Reports</Text>
                 <Text style={styles.total}>{caches.length} total</Text>
               </View>
+              <SightingsMap
+                spots={spots}
+                onSpotPress={handleSpotPress}
+                onTouchActiveChange={handleTouchActiveChange}
+              />
               {caches.length > 0 && (
                 <View style={styles.legend}>
                   {STATUSES.map((s) => (

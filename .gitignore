@@ -89,3 +89,6 @@ _tmp_check_exports.py
 
 # Gradle cache inside a native module
 modules/native-identification-camera/android/.gradle/
+
+# Python bytecode (scripts/)
+__pycache__/
