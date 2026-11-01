@@ -67,11 +67,32 @@ export function ownSightings(
   return caches.filter((c) => c.user_id == null || c.user_id === uid)
 }
 
-/** The Sighting's own time: a user-set or EXIF time, else when it was made. */
+/**
+ * The Sighting's own time: a user-set or EXIF time, else when it was sent
+ * (ADR 0003), else — for a draft not yet sent — when it was made.
+ */
 export function sightingTime(cache: SubmissionCacheFile): string {
   return (
-    cache.metadata.manual_time ?? cache.metadata.captured_at ?? cache.created_at
+    cache.metadata.manual_time ??
+    cache.metadata.captured_at ??
+    cache.submitted_at ??
+    cache.created_at
   )
+}
+
+/**
+ * The time a Reports card shows: when the last camera photo was taken, else
+ * when the report was started. Only camera captures record a capture time.
+ */
+export function reportCardTime(cache: SubmissionCacheFile): string {
+  // ISO strings from toISOString() sort as text in time order.
+  const lastShot = cache.photos
+    ?.map((p) => p.captured_at)
+    .reduce<string | undefined>(
+      (last, at) => (at && (!last || at > last) ? at : last),
+      undefined,
+    )
+  return lastShot ?? cache.created_at
 }
 
 /** Newest first by the time each card shows, so the list reads in order. */
@@ -79,7 +100,7 @@ export function sortBySightingTime(
   caches: SubmissionCacheFile[],
 ): SubmissionCacheFile[] {
   return [...caches].sort(
-    (a, b) => Date.parse(sightingTime(b)) - Date.parse(sightingTime(a)),
+    (a, b) => Date.parse(reportCardTime(b)) - Date.parse(reportCardTime(a)),
   )
 }
 

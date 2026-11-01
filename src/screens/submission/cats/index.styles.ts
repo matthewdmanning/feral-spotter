@@ -1,3 +1,4 @@
+import { COLLAPSED_DIAMETER } from '@/src/components/organisms/InsetCropBubble'
 import { StyleSheet } from 'react-native-unistyles'
 
 export const styles = StyleSheet.create((theme) => ({
@@ -16,6 +17,10 @@ export const styles = StyleSheet.create((theme) => ({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  // The collapsed bubble docks at the right edge of this row. This space
+  // stops it from covering the Clear button.
+  // The bubble's dock inset is spacing.md / 2, so the gap is the same again.
+  headerBesideBubble: { paddingRight: COLLAPSED_DIAMETER + theme.spacing.md },
   title: { ...theme.textVariants.title, color: theme.colors.text },
   // The inset-crop bubble is centered over this title (#186) — fade it
   // significantly rather than trying to dodge the bubble positionally,

@@ -59,6 +59,8 @@ export interface CachedPhoto {
   uri: string
   /** Firebase download URL — outlives the draft. */
   cloud_storage_url?: string
+  /** ISO, shutter press. Set for camera captures only. */
+  captured_at?: string
 }
 
 export interface CacheMetadata {
@@ -92,6 +94,8 @@ export interface SubmissionCacheFile {
   photos?: CachedPhoto[]
   /** Firebase uid of the submitter — scopes the personal history. Set on Submit. */
   user_id?: string
+  /** ISO. When Submit was pressed — a camera Sighting's time (ADR 0003). */
+  submitted_at?: string
 }
 
 // ─── Storage keys ─────────────────────────────────────────────────────────────
