@@ -15,9 +15,12 @@ import type {
   HealthLabel,
   Owned,
 } from '@/src/shared/types'
-import { CAT_ATTRIBUTES, type AttributeOption } from '@/src/lib/cats/attributes'
+import {
+  CAT_ATTRIBUTES,
+  type AttributeOption,
+} from '@/src/features/draft-submission/lib/attributes'
 
-export { CAT_DEFAULTS } from '@/src/lib/cats/attributes'
+export { CAT_DEFAULTS } from '@/src/features/draft-submission/lib/attributes'
 
 // ─── Options ──────────────────────────────────────────────────────────────────
 
@@ -38,7 +41,7 @@ export const COLOR_OPTIONS = optionsFor<CatColor>('color')
 export const SEX_OPTIONS = optionsFor<CatSex>('sex')
 export const HEALTH_OPTIONS = optionsFor<HealthLabel>('healthLabel')
 
-export { COAT_GROUPS } from '@/src/lib/cats/attributes'
+export { COAT_GROUPS } from '@/src/features/draft-submission/lib/attributes'
 
 /**
  * The coat picker has no Unknown group: a saved 'unknown' (the default

@@ -1,9 +1,9 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native'
 import { File, Paths } from 'expo-file-system'
 import { Asset } from 'expo-media-library'
-import { usePhotoStore } from '../usePhotoStore'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useCapturedPhotoWorkflow } from '../useCapturedPhotoWorkflow'
-import { useDraftStartupStore } from '../useDraftStartupStore'
+import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
 
 // The supplied mock helper is outside the package's public exports map.
 const { __resetMockFileSystem } = jest.requireActual(
@@ -38,14 +38,14 @@ jest.mock('@shopify/flash-list', () => ({ FlashList: 'FlashList' }))
 jest.mock('@/src/components/atoms/CameraThumb', () => ({
   CameraThumb: 'CameraThumb',
 }))
-jest.mock('@/src/lib/upload/uploadNewPhoto', () => ({
+jest.mock('@/src/features/draft-submission/lib/upload/uploadNewPhoto', () => ({
   cancelQueuedUploads: jest.fn(),
   cancelPhotoUpload: jest.fn(),
   retryPendingUploads: jest.fn(),
   uploadNewPhoto: jest.fn(),
 }))
 
-jest.mock('@/src/hooks/useSettingsStore', () => ({
+jest.mock('@/src/features/settings/hooks/useSettingsStore', () => ({
   useSettingsStore: (select: (state: object) => unknown) =>
     select({ settings: { keep_photos_on_device: true } }),
 }))

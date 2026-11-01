@@ -7,9 +7,9 @@
  * both render from this, so the rule lives once.
  */
 
-import { useDraftStartupStore } from '@/src/hooks/useDraftStartupStore'
+import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
 import { useLibraryPhotoPicker } from '@/src/hooks/useLibraryPhotoPicker'
-import { usePhotoStore } from '@/src/hooks/usePhotoStore'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { router } from 'expo-router'
 import { useCallback, useMemo } from 'react'
 

@@ -20,10 +20,10 @@ export const COLUMN_ALIGNED = new Set([
   'src/shared/ui/molecules/BottomButtonColumn.styles.ts',
   'src/components/molecules/PhotoPreviewModal.styles.ts',
   'src/components/molecules/ReportCard.styles.ts',
-  'src/components/organisms/DateTimePicker.styles.ts',
+  'src/features/draft-submission/components/DateTimePicker.styles.ts',
   'src/components/organisms/ValidationSheet.styles.ts',
   'src/screens/analytics-consent/index.styles.ts',
-  'src/screens/settings/index.styles.ts',
+  'src/features/settings/screens/settings/index.styles.ts',
 ])
 
 export const isFormattable = (file) => SUPPORTED.test(file) && !COLUMN_ALIGNED.has(file)

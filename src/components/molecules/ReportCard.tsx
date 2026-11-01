@@ -4,7 +4,7 @@ import { StatusIcon, StatusText } from '@/src/components/atoms/StatusIcon'
 import {
   sightingPhotoCount,
   type SubmissionCacheFile,
-} from '@/src/lib/cache/submissionCache'
+} from '@/src/features/draft-submission/lib/submissionCache'
 import { selectionHaptic } from '@/src/shared/lib/haptics'
 import { reportCardTime, sightingCardAction } from '@/src/lib/sightings/history'
 import { formatDateTime } from '@/src/shared/utils/formatDateTime'

@@ -1,4 +1,4 @@
-import { useSettingsStore } from '@/src/hooks/useSettingsStore'
+import { useSettingsStore } from '@/src/features/settings/hooks/useSettingsStore'
 import {
   configureIosCameraForIdentification,
   restoreIosAutomaticCapture,

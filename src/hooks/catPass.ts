@@ -20,9 +20,9 @@
  * a value captured before the user tapped.
  */
 
-import { useActiveCatFlowStore } from '@/src/hooks/useActiveCatFlowStore'
-import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
-import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
+import { useActiveCatFlowStore } from '@/src/features/draft-submission/hooks/useActiveCatFlowStore'
+import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
+import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useEffect, useState } from 'react'
 

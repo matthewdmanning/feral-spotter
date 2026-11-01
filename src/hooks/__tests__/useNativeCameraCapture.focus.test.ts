@@ -9,7 +9,7 @@ jest.mock('@/src/shared/consent/useConsentStore', () => ({
   useConsentStore: { persist: { hasHydrated: jest.fn(() => true) } },
 }))
 
-jest.mock('@/src/hooks/useSettingsStore', () => ({
+jest.mock('@/src/features/settings/hooks/useSettingsStore', () => ({
   useSettingsStore: (
     selector: (state: { settings: Record<string, boolean> }) => unknown,
   ) =>

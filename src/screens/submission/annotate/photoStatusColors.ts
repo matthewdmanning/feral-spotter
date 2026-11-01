@@ -1,4 +1,4 @@
-import type { PhotoPassStatus } from '@/src/hooks/useActiveCatFlow'
+import type { PhotoPassStatus } from '@/src/features/draft-submission/hooks/useActiveCatFlow'
 
 /**
  * Progress-dot color per photo, as a theme color key. The current photo

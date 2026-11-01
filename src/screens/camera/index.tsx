@@ -3,9 +3,9 @@ import {
   GoHomeGate,
   RestoreFailedGate,
 } from '@/src/shared/ui/molecules/GateScreen'
-import { useDraftStartupStore } from '@/src/hooks/useDraftStartupStore'
-import { usePhotoStore } from '@/src/hooks/usePhotoStore'
-import { useSettingsStore } from '@/src/hooks/useSettingsStore'
+import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
+import { useSettingsStore } from '@/src/features/settings/hooks/useSettingsStore'
 import { LegacyCameraScreen } from './LegacyCameraScreen'
 import { NativeCameraScreen } from './NativeCameraScreen'
 

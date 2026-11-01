@@ -10,10 +10,10 @@
 import {
   isAtPhotoLimit,
   showPhotoLimitReached,
-} from '@/src/hooks/usePhotoStore'
+} from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useCapturedPhotoWorkflow } from '@/src/hooks/useCapturedPhotoWorkflow'
 import { useConsentStore } from '@/src/shared/consent/useConsentStore'
-import { useSettingsStore } from '@/src/hooks/useSettingsStore'
+import { useSettingsStore } from '@/src/features/settings/hooks/useSettingsStore'
 import { captureEvent, EVENTS } from '@/src/shared/analytics/analytics'
 import type { ImagePostprocessor } from '@/src/lib/camera/pipeline'
 import { startLocationCapture } from '@/src/core/location/liveFix'

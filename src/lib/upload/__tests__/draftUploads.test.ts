@@ -1,6 +1,6 @@
-import { usePhotoStore } from '@/src/hooks/usePhotoStore'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
-import { uploadSubmissionPhoto } from '@/src/lib/upload/firebaseUpload'
+import { uploadSubmissionPhoto } from '@/src/features/draft-submission/lib/upload/firebaseUpload'
 import {
   cancelPhotoUploads,
   syncPhotoUploads,
@@ -16,7 +16,7 @@ import {
 // jest-expo's expo-crypto mock returns undefined; the draft needs an id.
 let mockId = 0
 jest.mock('expo-crypto', () => ({ randomUUID: () => `id-${++mockId}` }))
-jest.mock('@/src/lib/upload/firebaseUpload', () => ({
+jest.mock('@/src/features/draft-submission/lib/upload/firebaseUpload', () => ({
   uploadSubmissionPhoto: jest.fn(),
 }))
 

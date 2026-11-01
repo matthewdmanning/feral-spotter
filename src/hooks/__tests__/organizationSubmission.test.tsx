@@ -2,9 +2,12 @@ import { act, render, screen, userEvent } from '@testing-library/react-native'
 import { randomUUID } from 'expo-crypto'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { SubmissionOrganizations } from '@/src/components/organisms/organizations/SubmissionOrganizations'
-import { submitDraft, type SubmitOutcome } from '@/src/lib/submission/draft'
-import { useSubmissionStore } from '../useSubmissionStore'
-import { usePhotoStore } from '../usePhotoStore'
+import {
+  submitDraft,
+  type SubmitOutcome,
+} from '@/src/features/draft-submission/lib/draft'
+import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import { useOrganizationSharingStore } from '../useOrganizationSharingStore'
 import { useOrganizationDirectoryStore } from '../useOrganizationDirectory'
@@ -15,9 +18,9 @@ import { fakeOrganizationsService } from '@/src/test-utils/organizationsService'
 import {
   createSubmissionCache,
   getSubmissionCache,
-} from '@/src/lib/cache/submissionCache'
+} from '@/src/features/draft-submission/lib/submissionCache'
 import { DEFAULT_SHARING } from '@/src/types/Organizations'
-import { uploadSubmissionMetadata } from '@/src/lib/upload/firebaseUpload'
+import { uploadSubmissionMetadata } from '@/src/features/draft-submission/lib/upload/firebaseUpload'
 
 jest.mock('expo-router', () => ({
   router: { replace: jest.fn(), push: jest.fn() },
@@ -30,7 +33,7 @@ jest.mock('expo-crypto', () => ({
   ...jest.requireActual('expo-crypto'),
   randomUUID: jest.fn(),
 }))
-jest.mock('@/src/lib/upload/firebaseUpload', () => ({
+jest.mock('@/src/features/draft-submission/lib/upload/firebaseUpload', () => ({
   uploadSubmissionMetadata: jest.fn().mockResolvedValue(undefined),
   finalizeSubmissionPhotoMetadata: jest.fn().mockResolvedValue(undefined),
 }))

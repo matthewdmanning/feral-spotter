@@ -14,9 +14,9 @@ import {
   isAtPhotoLimit,
   photoSlotsLeft,
   showPhotoLimitReached,
-} from '@/src/hooks/usePhotoStore'
-import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
-import { draftReadyOrAlert } from '@/src/hooks/useDraftStartupStore'
+} from '@/src/features/draft-submission/hooks/usePhotoStore'
+import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { draftReadyOrAlert } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
 import { EVENTS, captureEvent } from '@/src/shared/analytics/analytics'
 import { libraryPermission } from '@/src/features/permissions/photo/lib/libraryPermission'
 import { syncPhotoUploads } from '@/src/lib/upload/draftUploads'
