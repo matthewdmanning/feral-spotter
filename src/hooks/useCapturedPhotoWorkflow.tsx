@@ -27,11 +27,11 @@ import {
   retainCapturedPhotoFile,
 } from '@/src/lib/camera/capturedPhotoFiles'
 import { syncPhotoUploads } from '@/src/lib/upload/draftUploads'
-import type { SubmissionPhoto } from '@/src/types'
+import type { SubmissionPhoto } from '@/src/shared/types'
 import {
   buildSubmissionPhotoFromCapture,
   type CapturedFrame,
-} from '@/src/utils/buildSubmissionPhoto'
+} from '@/src/features/draft-submission/lib/buildSubmissionPhoto'
 import { type FlashListRef } from '@shopify/flash-list'
 import { Asset } from 'expo-media-library'
 import { router, useIsFocused } from 'expo-router'

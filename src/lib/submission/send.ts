@@ -15,7 +15,8 @@ import {
 import { useOrganizationsFlag } from '@/src/hooks/useOrganizationsFlag'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
-import { EVENTS, fireAnalyticsEvent } from '@/src/lib/analytics/analytics'
+import { EVENTS } from '@/src/shared/analytics/analytics'
+import { fireAnalyticsEvent } from '@/src/lib/submission/analytics'
 import { useAuthStore } from '@/src/lib/auth/authStore'
 import {
   getCurrentCacheId,
@@ -42,7 +43,7 @@ import {
   buildGrant,
   FALLBACK_ORGANIZATION_NAME,
 } from '@/src/lib/organizations/sharing'
-import type { SubmissionPhoto } from '@/src/types'
+import type { SubmissionPhoto } from '@/src/shared/types'
 
 /** The sharing choice submitDraft confirmed, or null when nothing is shared. */
 export type ConfirmedSharing = ReturnType<typeof confirmedSharing>

@@ -27,7 +27,7 @@
  * state to clean up is the boxes and the id.
  */
 
-import { showAlert } from '@/src/hooks/useUIStore'
+import { showAlert } from '@/src/shared/hooks/useUIStore'
 import { abandonCatPass } from '@/src/hooks/catPass'
 import { useActiveCatFlowStore } from '@/src/hooks/useActiveCatFlowStore'
 import { usePreventRemove } from 'expo-router'

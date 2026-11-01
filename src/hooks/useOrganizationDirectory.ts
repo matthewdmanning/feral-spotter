@@ -8,7 +8,7 @@ import { organizationRequest } from '@/src/lib/organizations/api'
 import { type Catalog } from '@/src/types/Organizations'
 import { useAuthStore } from '@/src/lib/auth/authStore'
 import { useOrganizationsFlag } from './useOrganizationsFlag'
-import { useUIStore } from './useUIStore'
+import { useUIStore } from '@/src/shared/hooks/useUIStore'
 
 export const organizationsDirectory = new Organizations(() =>
   organizationRequest<Catalog & { cacheRadiusKm: number }>({

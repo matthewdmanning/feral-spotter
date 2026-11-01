@@ -16,7 +16,7 @@ import {
 } from '@/src/hooks/confirmResetSubmission'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
-import { showAlert, showError } from '@/src/hooks/useUIStore'
+import { showAlert, showError } from '@/src/shared/hooks/useUIStore'
 import {
   isDraftBusy,
   submitDraft,

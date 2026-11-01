@@ -4,7 +4,7 @@
  * observed cats.
  */
 
-import { asyncStorage } from '@/src/lib/cache/storage'
+import { asyncStorage } from '@/src/shared/lib/storage'
 import type {
   LocationMethod,
   TimeMethod,
@@ -18,7 +18,7 @@ import type {
   HairLength,
   HealthLabel,
   Owned,
-} from '@/src/types'
+} from '@/src/shared/types'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 

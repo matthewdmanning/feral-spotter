@@ -1,8 +1,8 @@
 import { useEffect, useMemo } from 'react'
 import { Text } from 'react-native'
 import { router } from 'expo-router'
-import { GlassSurface } from '@/src/components/atoms/GlassSurface'
-import { TextButton } from '@/src/components/atoms/TextButton'
+import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
+import { TextButton } from '@/src/shared/ui/atoms/TextButton'
 import { useAuth } from '@/src/lib/auth/useAuth'
 import {
   useSubmissionStore,

@@ -1,6 +1,6 @@
-import { APP_STARTED_AT } from '@/src/config/constants'
+import { APP_STARTED_AT } from '@/src/shared/config/constants'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
-import { useUIStore } from '@/src/hooks/useUIStore'
+import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import { render, screen, userEvent } from '@testing-library/react-native'
 import { router } from 'expo-router'
 import React from 'react'
@@ -22,8 +22,8 @@ jest.mock('@/src/lib/auth/useAuth', () => ({
   useAuth: () => ({ isReady: true, isAuthenticated: true }),
 }))
 // Real consent store, seeded as a returning user who answered every step.
-jest.mock('@/src/hooks/useConsentStore', () => {
-  const actual = jest.requireActual('@/src/hooks/useConsentStore')
+jest.mock('@/src/shared/consent/useConsentStore', () => {
+  const actual = jest.requireActual('@/src/shared/consent/useConsentStore')
   actual.useConsentStore.setState({
     accepted: true,
     acceptedVersion: actual.CONSENT_VERSION,
@@ -36,7 +36,7 @@ jest.mock('@/src/lib/cache/submissionCache', () => ({
   getAllSubmissionCaches: jest.fn().mockResolvedValue([]),
   getCurrentCacheId: jest.fn().mockResolvedValue(null),
 }))
-jest.mock('@/src/components/molecules/BottomButtonColumn', () => ({
+jest.mock('@/src/shared/ui/molecules/BottomButtonColumn', () => ({
   BottomButtonColumn: () => null,
 }))
 jest.mock('@/src/hooks/useLibraryPhotoPicker', () => ({

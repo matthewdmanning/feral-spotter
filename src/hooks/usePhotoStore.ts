@@ -3,10 +3,10 @@
  * Persisted Zustand store for photos attached to the in-progress submission.
  */
 
-import { MAX_PHOTOS } from '@/src/config/constants'
-import { showAlert } from '@/src/hooks/useUIStore'
-import { asyncStorage } from '@/src/lib/cache/storage'
-import type { SubmissionPhoto } from '@/src/types'
+import { MAX_PHOTOS } from '@/src/shared/config/constants'
+import { showAlert } from '@/src/shared/hooks/useUIStore'
+import { asyncStorage } from '@/src/shared/lib/storage'
+import type { SubmissionPhoto } from '@/src/shared/types'
 import { deleteCapturedPhotoFile } from '@/src/lib/camera/capturedPhotoFiles'
 import { randomUUID } from 'expo-crypto'
 import { create } from 'zustand'

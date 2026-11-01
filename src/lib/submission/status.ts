@@ -4,7 +4,7 @@
  * warning icons on Submission Details.
  */
 
-import { LOCATION_ACCURACY_THRESHOLD_M } from '@/src/config/location'
+import { LOCATION_ACCURACY_THRESHOLD_M } from '@/src/core/location/location'
 
 /** The draft fields these rules read. */
 interface DraftLocationAndTime {

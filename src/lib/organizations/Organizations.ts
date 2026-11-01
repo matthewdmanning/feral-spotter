@@ -6,7 +6,7 @@ import {
   parseCatalog,
   validLocation,
 } from '@/src/types/Organizations'
-import { asyncStorage } from '@/src/lib/cache/storage'
+import { asyncStorage } from '@/src/shared/lib/storage'
 
 export interface DirectoryCache extends Catalog {
   latitude: number

@@ -1,4 +1,4 @@
-import * as ui from '@/src/hooks/useUIStore'
+import * as ui from '@/src/shared/hooks/useUIStore'
 import { router } from 'expo-router'
 import { act, renderHook } from '@testing-library/react-native'
 
@@ -20,7 +20,7 @@ jest.mock('expo-router', () => ({
   router: { back: jest.fn(), replace: jest.fn() },
 }))
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'new-cat-id' }))
-jest.mock('@/src/lib/analytics/analytics', () => ({
+jest.mock('@/src/shared/analytics/analytics', () => ({
   captureEvent: jest.fn(),
   EVENTS: { CAT_OBSERVATION_SAVED: 'cat_observation_saved' },
 }))

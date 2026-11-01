@@ -2,7 +2,7 @@ import { isNativeIdentificationCameraAvailable } from '@/modules/native-identifi
 import {
   GoHomeGate,
   RestoreFailedGate,
-} from '@/src/components/molecules/GateScreen'
+} from '@/src/shared/ui/molecules/GateScreen'
 import { useDraftStartupStore } from '@/src/hooks/useDraftStartupStore'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'

@@ -5,8 +5,8 @@
  */
 
 import { DialogShell } from '@/src/components/organisms/DialogShell'
-import { AppButton } from '@/src/components/atoms/AppButton'
-import { ButtonRow } from '@/src/components/molecules/ButtonRow'
+import { AppButton } from '@/src/shared/ui/atoms/AppButton'
+import { ButtonRow } from '@/src/shared/ui/molecules/ButtonRow'
 import { useDateTimePicker } from '@/src/hooks/useDateTimePicker'
 import RNDateTimePicker from '@react-native-community/datetimepicker'
 import { CalendarIcon } from 'phosphor-react-native/src/icons/Calendar'

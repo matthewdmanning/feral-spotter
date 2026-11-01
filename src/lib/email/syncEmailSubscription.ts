@@ -1,4 +1,4 @@
-import { EMAIL_SYNC_URL } from '@/src/config/constants'
+import { EMAIL_SYNC_URL } from '@/src/shared/config/constants'
 import { authProvider } from '@/src/lib/auth'
 
 /**

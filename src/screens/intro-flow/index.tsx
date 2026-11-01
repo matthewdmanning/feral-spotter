@@ -5,19 +5,19 @@
  * there, before sign-in — this screen is informational only.
  */
 
-import { confirmExitApp } from '@/src/hooks/confirmExitApp'
+import { confirmExitApp } from '@/src/shared/hooks/confirmExitApp'
 import {
   AGREEMENT_SLIDE_INDEX,
   DATA_AGREEMENT_LINK_LABEL,
   EXIT_WARNING_BODY,
   EXIT_WARNING_TITLE,
   ONBOARDING_SLIDES,
-} from '@/src/config/introFlowCopy'
-import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
-import { AppButton } from '@/src/components/atoms/AppButton'
-import { ButtonRow } from '@/src/components/molecules/ButtonRow'
-import { TextButton } from '@/src/components/atoms/TextButton'
-import { useBackHandler } from '@/src/hooks/useBackHandler'
+} from '@/src/features/permissions/onboarding/config/introFlowCopy'
+import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
+import { AppButton } from '@/src/shared/ui/atoms/AppButton'
+import { ButtonRow } from '@/src/shared/ui/molecules/ButtonRow'
+import { TextButton } from '@/src/shared/ui/atoms/TextButton'
+import { useBackHandler } from '@/src/shared/hooks/useBackHandler'
 import { router } from 'expo-router'
 import { useCallback, useState } from 'react'
 import { Text, View } from 'react-native'

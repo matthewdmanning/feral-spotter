@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { showError, showSuccess } from '@/src/hooks/useUIStore'
+import { showError, showSuccess } from '@/src/shared/hooks/useUIStore'
 import { authProvider } from '@/src/lib/auth'
 
 const LOOKS_LIKE_EMAIL = /^\S+@\S+\.\S+$/

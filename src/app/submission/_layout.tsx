@@ -4,11 +4,11 @@
  * annotate: fullScreenModal (opened from cats)
  */
 
-import { ErrorBoundary } from '@/src/components/atoms/ErrorBoundary'
+import { ErrorBoundary } from '@/src/shared/ui/atoms/ErrorBoundary'
 import {
   GoHomeGate,
   RestoreFailedGate,
-} from '@/src/components/molecules/GateScreen'
+} from '@/src/shared/ui/molecules/GateScreen'
 import { useDraftStartupStore } from '@/src/hooks/useDraftStartupStore'
 import { Stack, router } from 'expo-router'
 import { GearIcon } from 'phosphor-react-native/src/icons/Gear'

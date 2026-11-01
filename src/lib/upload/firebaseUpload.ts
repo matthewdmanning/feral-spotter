@@ -33,12 +33,12 @@ import {
   STORAGE_EMULATOR_PORT,
   UPLOADS_MOCK,
   USE_FIREBASE_EMULATOR,
-} from '@/src/config/constants'
+} from '@/src/shared/config/constants'
 import type {
   PhotoUploadResponse,
   SubmissionApiPayload,
   SubmissionPhoto,
-} from '@/src/types'
+} from '@/src/shared/types'
 import {
   metadataObjectPath,
   photoObjectPath,

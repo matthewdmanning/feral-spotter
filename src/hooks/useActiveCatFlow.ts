@@ -10,7 +10,7 @@
 
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { useActiveCatFlowStore } from '@/src/hooks/useActiveCatFlowStore'
-import type { BoundingBox } from '@/src/types/BoundingBox'
+import type { BoundingBox } from '@/src/shared/types/BoundingBox'
 import { randomUUID } from 'expo-crypto'
 import { abandonCatPass, finishBoxing } from '@/src/hooks/catPass'
 import { useCallback } from 'react'

@@ -24,7 +24,7 @@ import {
   AUTH_EMULATOR_PORT,
   USE_FIREBASE_EMULATOR,
   FIREBASE_EMULATOR_HOST,
-} from '@/src/config/constants'
+} from '@/src/shared/config/constants'
 
 function toAuthUser(user: User | null): AuthUser | null {
   if (!user) return null

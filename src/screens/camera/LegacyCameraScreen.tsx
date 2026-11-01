@@ -2,8 +2,8 @@ import {
   useCameraCapture,
   type CaptureMode,
 } from '@/src/hooks/useCameraCapture'
-import { SegmentedControl } from '@/src/components/atoms/SegmentedControl'
-import { GateScreen } from '@/src/components/molecules/GateScreen'
+import { SegmentedControl } from '@/src/shared/ui/atoms/SegmentedControl'
+import { GateScreen } from '@/src/shared/ui/molecules/GateScreen'
 import { Stack } from 'expo-router'
 import { useMemo } from 'react'
 import { StyleSheet as RNStyleSheet, Text, View } from 'react-native'

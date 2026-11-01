@@ -24,7 +24,7 @@
  * reasoning `removeBoxesForPhoto` follows in the other direction.
  */
 
-import { showAlert } from '@/src/hooks/useUIStore'
+import { showAlert } from '@/src/shared/hooks/useUIStore'
 import { removeCatFromDraft } from '@/src/hooks/catPass'
 import { useCallback } from 'react'
 

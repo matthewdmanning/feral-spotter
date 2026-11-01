@@ -6,7 +6,7 @@ one per badge value (2..9 and "9+"), at 1x/2x/3x. Map markers take a bitmap,
 not a React view, so the count badge is baked into the image.
 
 Map tiles are light in both app themes, so one set of pins serves both. Colors
-are read from src/config/themes.ts, never hardcoded: the head and face use
+are read from src/shared/config/themes.ts, never hardcoded: the head and face use
 lightTheme's accent pair; the ears, badge, and badge text use darkTheme's
 pastel selection, highlight, and background, which stand out on light tiles.
 The badge cap is MAX_BADGE_COUNT, read from src/lib/sightings/history.ts.
@@ -26,7 +26,7 @@ FONT = (
     ROOT
     / "node_modules/@expo-google-fonts/nunito/800ExtraBold/Nunito_800ExtraBold.ttf"
 )
-THEMES = (ROOT / "src/config/themes.ts").read_text(encoding="utf-8")
+THEMES = (ROOT / "src/shared/config/themes.ts").read_text(encoding="utf-8")
 HISTORY = (ROOT / "src/lib/sightings/history.ts").read_text(encoding="utf-8")
 
 

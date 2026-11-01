@@ -1,6 +1,6 @@
-import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
-import { AppButton } from '@/src/components/atoms/AppButton'
-import { TextButton } from '@/src/components/atoms/TextButton'
+import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
+import { AppButton } from '@/src/shared/ui/atoms/AppButton'
+import { TextButton } from '@/src/shared/ui/atoms/TextButton'
 import { ProfilePicPicker } from '@/src/components/molecules/ProfilePicPicker'
 import { CatForm } from '@/src/components/organisms/CatForm'
 import {

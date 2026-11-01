@@ -12,9 +12,9 @@ import {
   showPhotoLimitReached,
 } from '@/src/hooks/usePhotoStore'
 import { useCapturedPhotoWorkflow } from '@/src/hooks/useCapturedPhotoWorkflow'
-import { useConsentStore } from '@/src/hooks/useConsentStore'
+import { useConsentStore } from '@/src/shared/consent/useConsentStore'
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'
-import { captureEvent, EVENTS } from '@/src/lib/analytics/analytics'
+import { captureEvent, EVENTS } from '@/src/shared/analytics/analytics'
 import type { ImagePostprocessor } from '@/src/lib/camera/pipeline'
 import { startLocationCapture } from '@/src/lib/location'
 import type {

@@ -5,7 +5,7 @@ import { useOrganizationsFlag } from '@/src/hooks/useOrganizationsFlag'
 import { useOrganizationSharingStore } from '@/src/hooks/useOrganizationSharingStore'
 import { useOrganizationDirectoryStore } from '@/src/hooks/useOrganizationDirectory'
 import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
-import { useUIStore } from '@/src/hooks/useUIStore'
+import { useUIStore } from '@/src/shared/hooks/useUIStore'
 
 function syncPermissions() {
   const uid = useAuthStore.getState().user?.uid

@@ -14,7 +14,7 @@
  * of a pass is what mints the cat id, so this item can't own that write.
  */
 
-import { AppButton } from '@/src/components/atoms/AppButton'
+import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import {
   DOT_HITBOX_SIZE,
   HANDLE_HITBOX_SIZE,
@@ -23,10 +23,10 @@ import {
 } from '@/src/hooks/useBoundingBoxFrame'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
-import { containFit } from '@/src/lib/annotate/cropProjection'
+import { containFit } from '@/src/shared/lib/geometry/cropProjection'
 import { previousCatBoxes } from '@/src/lib/annotate/previousBoxes'
-import type { BoundingBox } from '@/src/types/BoundingBox'
-import type { SubmissionPhoto } from '@/src/types'
+import type { BoundingBox } from '@/src/shared/types/BoundingBox'
+import type { SubmissionPhoto } from '@/src/shared/types'
 import { useState } from 'react'
 import { View } from 'react-native'
 import { Image } from 'expo-image'

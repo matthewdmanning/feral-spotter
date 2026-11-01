@@ -3,11 +3,11 @@ import { router } from 'expo-router'
 import React from 'react'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
-import { SUBMISSION_STALE_MS } from '@/src/config/constants'
+import { SUBMISSION_STALE_MS } from '@/src/shared/config/constants'
 import { getAllSubmissionCaches } from '@/src/lib/cache/submissionCache'
 import HomeScreen from '../index'
 import { useDraftStartupStore } from '@/src/hooks/useDraftStartupStore'
-import { useUIStore } from '@/src/hooks/useUIStore'
+import { useUIStore } from '@/src/shared/hooks/useUIStore'
 
 /**
  * Model of every button on HomeScreen (src/screens/home/index.tsx) and what
@@ -34,8 +34,8 @@ jest.mock('@/src/lib/auth/useAuth', () => ({
   useAuth: () => ({ isReady: true, isAuthenticated: true }),
 }))
 // Real consent store, seeded as a returning user who answered every step.
-jest.mock('@/src/hooks/useConsentStore', () => {
-  const actual = jest.requireActual('@/src/hooks/useConsentStore')
+jest.mock('@/src/shared/consent/useConsentStore', () => {
+  const actual = jest.requireActual('@/src/shared/consent/useConsentStore')
   actual.useConsentStore.setState({
     accepted: true,
     acceptedVersion: actual.CONSENT_VERSION,

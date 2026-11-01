@@ -5,7 +5,7 @@
  * `skipped` and `completed` suppress it (replay via Settings resets to `unseen`).
  */
 
-import { asyncStorage } from '@/src/lib/cache/storage'
+import { asyncStorage } from '@/src/shared/lib/storage'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 
