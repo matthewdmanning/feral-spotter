@@ -11,7 +11,8 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({}),
 }))
 
-jest.mock('@/src/hooks', () => ({
+jest.mock('@/src/hooks/useSubmissionStore', () => ({
+  ...jest.requireActual('@/src/hooks/useSubmissionStore'),
   useSubmissionStore: (sel: (s: { cats: unknown[] }) => unknown) =>
     sel({ cats: [] }),
 }))

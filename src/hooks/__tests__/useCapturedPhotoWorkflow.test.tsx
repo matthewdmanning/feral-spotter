@@ -42,9 +42,6 @@ jest.mock('@/src/lib/upload/uploadNewPhoto', () => ({
   uploadNewPhoto: jest.fn(),
 }))
 
-jest.mock('@/src/hooks', () => ({
-  usePhotoStore: jest.requireActual('../usePhotoStore').usePhotoStore,
-}))
 jest.mock('@/src/hooks/useSettingsStore', () => ({
   useSettingsStore: (select: (state: object) => unknown) =>
     select({ settings: { keep_photos_on_device: true } }),

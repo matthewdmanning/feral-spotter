@@ -12,7 +12,7 @@
  */
 
 import { showAlert } from '@/src/hooks/useUIStore'
-import { useSubmissionStore } from '@/src/hooks'
+import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
 import { useActiveCatFlow } from '@/src/hooks/useActiveCatFlow'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { EVENTS, captureEvent } from '@/src/lib/analytics/analytics'

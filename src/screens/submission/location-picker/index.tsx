@@ -8,7 +8,7 @@
 
 import { AppButton } from '@/src/components/atoms/AppButton'
 import { ButtonRow } from '@/src/components/molecules/ButtonRow'
-import { useSubmissionStore } from '@/src/hooks'
+import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
 import type { Coordinates } from 'expo-maps'
 import { GoogleMaps } from 'expo-maps'
 import * as Location from 'expo-location'

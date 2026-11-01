@@ -32,12 +32,6 @@ jest.mock('expo-image-picker', () => ({
 
 jest.mock('expo-router', () => ({ router: { navigate: jest.fn() } }))
 
-jest.mock('@/src/hooks', () => ({
-  usePhotoStore: jest.requireActual('../usePhotoStore').usePhotoStore,
-  useSubmissionStore: jest.requireActual('../useSubmissionStore')
-    .useSubmissionStore,
-}))
-
 jest.mock('@/src/lib/analytics/analytics', () => ({
   captureEvent: jest.fn(),
   EVENTS: { LIBRARY_PHOTOS_SELECTED: 'library_photos_selected' },

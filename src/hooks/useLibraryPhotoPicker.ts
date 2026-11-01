@@ -8,7 +8,8 @@
  */
 
 import { showAlert } from '@/src/hooks/useUIStore'
-import { usePhotoStore, useSubmissionStore } from '@/src/hooks'
+import { usePhotoStore } from '@/src/hooks/usePhotoStore'
+import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
 import { useAuth } from '@/src/lib/auth/useAuth'
 import { initializeDraft } from '@/src/hooks/useDraftStartupStore'
 import { EVENTS, captureEvent } from '@/src/lib/analytics/analytics'

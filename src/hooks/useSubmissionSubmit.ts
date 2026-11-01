@@ -14,13 +14,9 @@
  * as a popup — see its comment for why.
  */
 
-import {
-  showAlert,
-  showError,
-  usePhotoStore,
-  useSubmissionStore,
-  useUIStore,
-} from '@/src/hooks'
+import { showAlert, showError, useUIStore } from '@/src/hooks/useUIStore'
+import { usePhotoStore } from '@/src/hooks/usePhotoStore'
+import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { EVENTS, fireAnalyticsEvent } from '@/src/lib/analytics/analytics'
 import { useAuth } from '@/src/lib/auth/useAuth'

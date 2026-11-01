@@ -11,11 +11,6 @@ import { useLibraryPhotoPicker } from '../useLibraryPhotoPicker'
 import { useDraftStartupStore } from '../useDraftStartupStore'
 
 // Avoid the unrelated hook barrel; keep both persisted stores real.
-jest.mock('@/src/hooks', () => ({
-  usePhotoStore: jest.requireActual('../usePhotoStore').usePhotoStore,
-  useSubmissionStore: jest.requireActual('../useSubmissionStore')
-    .useSubmissionStore,
-}))
 jest.mock('expo-router', () => ({ router: { navigate: jest.fn() } }))
 jest.mock('@/src/lib/upload/uploadNewPhoto', () => ({
   uploadNewPhoto: jest.fn(),

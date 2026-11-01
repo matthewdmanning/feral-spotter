@@ -39,7 +39,7 @@
  * sensitive to that ratio (min-side + diagonal).
  */
 
-import { usePhotoStore } from '@/src/hooks'
+import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { computeCollapsedOffset } from '@/src/lib/insetCrop/collapse'
 import { computeBubbleDiameter } from '@/src/lib/insetCrop/diameter'
