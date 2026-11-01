@@ -4,8 +4,8 @@
  * then the consent flow on success or an alert on failure.
  */
 
-import { nextConsentRoute } from '@/src/hooks/consentFlow'
-import { showAlert } from '@/src/hooks/useUIStore'
+import { nextConsentRoute } from '@/src/shared/consent/consentFlow'
+import { showAlert } from '@/src/shared/hooks/useUIStore'
 import { router } from 'expo-router'
 import { useCallback, useRef, useState } from 'react'
 

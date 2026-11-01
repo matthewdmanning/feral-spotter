@@ -1,4 +1,4 @@
-import { useUIStore } from '@/src/hooks/useUIStore'
+import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import { useAuthStore } from '@/src/lib/auth/authStore'
 import { act, renderHook } from '@testing-library/react-native'
 
@@ -25,7 +25,7 @@ jest.mock('expo-router', () => ({
   router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() },
 }))
 jest.mock('@/src/lib/location', () => ({ stopLocationCapture: jest.fn() }))
-jest.mock('@/src/lib/analytics/analytics', () => ({
+jest.mock('@/src/shared/analytics/analytics', () => ({
   fireAnalyticsEvent: jest.fn(),
   EVENTS: {
     SUBMISSION_SENDING: 'x',

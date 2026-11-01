@@ -9,8 +9,8 @@
  * whose own Back must not reach this.
  */
 
-import { useBackHandler } from '@/src/hooks/useBackHandler'
-import { showAlert } from '@/src/hooks/useUIStore'
+import { useBackHandler } from '@/src/shared/hooks/useBackHandler'
+import { showAlert } from '@/src/shared/hooks/useUIStore'
 import { useIsFocused } from 'expo-router'
 import { useCallback } from 'react'
 

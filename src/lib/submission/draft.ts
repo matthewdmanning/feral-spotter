@@ -25,7 +25,7 @@
  * the non-atomic window `2357000` fixed. It follows the photo-pool work.
  */
 
-import { SUBMISSION_STALE_MS } from '@/src/config/constants'
+import { SUBMISSION_STALE_MS } from '@/src/shared/config/constants'
 import { useActiveCatFlowStore } from '@/src/hooks/useActiveCatFlowStore'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
@@ -38,7 +38,8 @@ import {
   transitionSubmission,
   type SubmissionCacheFile,
 } from '@/src/lib/cache/submissionCache'
-import { EVENTS, fireAnalyticsEvent } from '@/src/lib/analytics/analytics'
+import { EVENTS } from '@/src/shared/analytics/analytics'
+import { fireAnalyticsEvent } from '@/src/lib/submission/analytics'
 import { authProvider } from '@/src/lib/auth'
 import { useAuthStore } from '@/src/lib/auth/authStore'
 import { stopLocationCapture } from '@/src/lib/location'
@@ -50,7 +51,7 @@ import {
   whenUploadsSettled,
 } from '@/src/lib/upload/draftUploads'
 import { deleteSubmissionUploads } from '@/src/lib/upload/firebaseUpload'
-import { missingDraftContent } from '@/src/utils/validation'
+import { missingDraftContent } from '@/src/shared/utils/validation'
 
 // ─── The draft lock ──────────────────────────────────────────────────────────
 //

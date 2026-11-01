@@ -5,11 +5,11 @@
  * consent step to that step.
  */
 
-import { nextConsentRoute } from '@/src/hooks/consentFlow'
+import { nextConsentRoute } from '@/src/shared/consent/consentFlow'
 import {
   hasAcceptedConsent,
   useConsentHydrated,
-} from '@/src/hooks/useConsentStore'
+} from '@/src/shared/consent/useConsentStore'
 import { useAuth } from '@/src/lib/auth/useAuth'
 import { router } from 'expo-router'
 import { useEffect } from 'react'

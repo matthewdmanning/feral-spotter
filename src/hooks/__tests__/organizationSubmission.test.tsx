@@ -5,7 +5,7 @@ import { SubmissionOrganizations } from '@/src/components/organisms/organization
 import { submitDraft, type SubmitOutcome } from '@/src/lib/submission/draft'
 import { useSubmissionStore } from '../useSubmissionStore'
 import { usePhotoStore } from '../usePhotoStore'
-import { useUIStore } from '../useUIStore'
+import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import { useOrganizationSharingStore } from '../useOrganizationSharingStore'
 import { useOrganizationDirectoryStore } from '../useOrganizationDirectory'
 import { useOrganizationsFlag } from '../useOrganizationsFlag'

@@ -3,7 +3,7 @@ import {
   getLocationCaptureState,
   __resetLocationCaptureForTests,
 } from '@/src/lib/location'
-import { useConsentStore } from '@/src/hooks/useConsentStore'
+import { useConsentStore } from '@/src/shared/consent/useConsentStore'
 
 const mockGetForegroundPermissionsAsync = jest.fn()
 const mockWatchPositionAsync = jest.fn()

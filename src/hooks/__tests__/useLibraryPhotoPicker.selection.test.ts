@@ -9,7 +9,7 @@ import { usePhotoStore } from '../usePhotoStore'
 import { useSubmissionStore } from '../useSubmissionStore'
 import { useLibraryPhotoPicker } from '../useLibraryPhotoPicker'
 import { useDraftStartupStore } from '../useDraftStartupStore'
-import { useUIStore } from '../useUIStore'
+import { useUIStore } from '@/src/shared/hooks/useUIStore'
 
 // Avoid the unrelated hook barrel; keep both persisted stores real.
 jest.mock('expo-router', () => ({ router: { navigate: jest.fn() } }))
@@ -19,8 +19,8 @@ jest.mock('@/src/lib/upload/uploadNewPhoto', () => ({
   retryPendingUploads: jest.fn(),
   uploadNewPhoto: jest.fn(),
 }))
-jest.mock('@/src/lib/analytics/analytics', () => ({
-  ...jest.requireActual('@/src/lib/analytics/analytics'),
+jest.mock('@/src/shared/analytics/analytics', () => ({
+  ...jest.requireActual('@/src/shared/analytics/analytics'),
   captureEvent: jest.fn(),
 }))
 

@@ -1,4 +1,4 @@
-import * as ui from '@/src/hooks/useUIStore'
+import * as ui from '@/src/shared/hooks/useUIStore'
 import {
   act,
   userEvent,
@@ -13,7 +13,7 @@ import {
   EXIT_WARNING_BODY,
   EXIT_WARNING_TITLE,
   ONBOARDING_SLIDES,
-} from '@/src/config/introFlowCopy'
+} from '@/src/features/permissions/onboarding/config/introFlowCopy'
 import IntroFlowScreen from '../index'
 
 jest.mock('expo-router', () => ({
@@ -21,7 +21,7 @@ jest.mock('expo-router', () => ({
 }))
 
 let backHandler: (() => boolean) | undefined
-jest.mock('@/src/hooks/useBackHandler', () => ({
+jest.mock('@/src/shared/hooks/useBackHandler', () => ({
   useBackHandler: (handler: () => boolean) => {
     backHandler = handler
   },

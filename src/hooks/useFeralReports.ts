@@ -4,11 +4,8 @@
  * spots, and handles refresh.
  */
 
-import {
-  EVENTS,
-  fireAnalyticsEvent,
-  IS_PRERELEASE,
-} from '@/src/lib/analytics/analytics'
+import { EVENTS, IS_PRERELEASE } from '@/src/shared/analytics/analytics'
+import { fireAnalyticsEvent } from '@/src/lib/submission/analytics'
 import { useAuth } from '@/src/lib/auth/useAuth'
 import {
   getAllSubmissionCaches,

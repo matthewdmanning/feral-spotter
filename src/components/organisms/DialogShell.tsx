@@ -7,11 +7,11 @@
  * this each by hand.
  */
 
-import { GlassSurface } from '@/src/components/atoms/GlassSurface'
+import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import type { ReactNode } from 'react'
 import { Modal, ScrollView, Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
-import { dialogShell } from './dialogShell.styles'
+import { dialogShell } from '@/src/shared/ui/organisms/dialogShell.styles'
 
 interface DialogShellProps {
   title: string

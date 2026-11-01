@@ -1,8 +1,8 @@
 import { ConsentChoiceScreen } from '@/src/components/organisms/ConsentChoiceScreen'
 import { router } from 'expo-router'
-import { nextConsentRoute } from '@/src/hooks/consentFlow'
-import { useConsentStore } from '@/src/hooks/useConsentStore'
-import consentCopy from '@/src/content/consentDisclosure.json'
+import { nextConsentRoute } from '@/src/shared/consent/consentFlow'
+import { useConsentStore } from '@/src/shared/consent/useConsentStore'
+import consentCopy from '@/src/features/permissions/consent/content/consentDisclosure.json'
 
 export default function AnalyticsConsentScreen() {
   const setAnalyticsAccepted = useConsentStore((s) => s.setAnalyticsAccepted)

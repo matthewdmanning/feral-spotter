@@ -2,7 +2,7 @@ import {
   draftReadyOrAlert,
   useDraftStartupStore,
 } from '@/src/hooks/useDraftStartupStore'
-import { useUIStore } from '@/src/hooks/useUIStore'
+import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import { discardUnsurvivingDraft } from '@/src/lib/submission/draft'
 
 /**

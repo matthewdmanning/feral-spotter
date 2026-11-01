@@ -1,9 +1,9 @@
 import { userEvent, render, screen } from '@testing-library/react-native'
 import React from 'react'
-import { useConsentStore } from '@/src/hooks/useConsentStore'
+import { useConsentStore } from '@/src/shared/consent/useConsentStore'
 import { useAuthStore } from '@/src/lib/auth/authStore'
 import EmailOptInScreen from '../index'
-import consentCopy from '@/src/content/consentDisclosure.json'
+import consentCopy from '@/src/features/permissions/consent/content/consentDisclosure.json'
 
 const mockRouterReplace = jest.fn()
 

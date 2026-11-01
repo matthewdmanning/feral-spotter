@@ -12,7 +12,7 @@
  * photo already queued or in flight is never queued twice.
  */
 import { uploadSubmissionPhoto } from '@/src/lib/upload/firebaseUpload'
-import type { SubmissionPhoto } from '@/src/types'
+import type { SubmissionPhoto } from '@/src/shared/types'
 import { LogBox } from 'react-native'
 
 // Keeps the failure in Metro's console for debugging without popping an

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Text, View } from 'react-native'
-import { GlassSurface } from '@/src/components/atoms/GlassSurface'
-import { TextButton } from '@/src/components/atoms/TextButton'
+import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
+import { TextButton } from '@/src/shared/ui/atoms/TextButton'
 import { useAuth } from '@/src/lib/auth/useAuth'
-import { showAlert } from '@/src/hooks/useUIStore'
+import { showAlert } from '@/src/shared/hooks/useUIStore'
 import {
   useOrganizationSharingStore,
   EMPTY_ORGANIZATION_ACCOUNT,

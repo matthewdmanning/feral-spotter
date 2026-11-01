@@ -69,7 +69,7 @@ jest.mock('expo-media-library', () => ({
   PermissionStatus: { GRANTED: 'granted', DENIED: 'denied' },
 }))
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'test-id' }))
-jest.mock('@/src/lib/analytics/analytics', () => ({
+jest.mock('@/src/shared/analytics/analytics', () => ({
   captureEvent: jest.fn(),
   EVENTS: { CAMERA_OPENED: 'camera_opened', PHOTO_CAPTURE_FAILED: 'x' },
 }))

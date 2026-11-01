@@ -23,7 +23,7 @@ import { useLocationCapture } from '@/src/lib/location'
 import { syncPhotoUploads } from '@/src/lib/upload/draftUploads'
 import { buildCacheMetadata, toCachedPhoto } from '@/src/lib/submission/payload'
 import { toCachedCat } from '@/src/lib/submission/profilePhoto'
-import type { SubmissionPhoto } from '@/src/types'
+import type { SubmissionPhoto } from '@/src/shared/types'
 import { randomUUID } from 'expo-crypto'
 import { useEffect } from 'react'
 

@@ -3,7 +3,7 @@ import {
   startLocationCapture,
   stopLocationCapture,
 } from '@/src/lib/location'
-import { useConsentStore } from '@/src/hooks/useConsentStore'
+import { useConsentStore } from '@/src/shared/consent/useConsentStore'
 
 /**
  * A GPS watch nobody removes drains the battery for the rest of the

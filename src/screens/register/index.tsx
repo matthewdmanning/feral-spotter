@@ -1,12 +1,12 @@
-import { showAlert } from '@/src/hooks/useUIStore'
+import { showAlert } from '@/src/shared/hooks/useUIStore'
 import { useState } from 'react'
 import { View, Text } from 'react-native'
-import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
-import { AppButton } from '@/src/components/atoms/AppButton'
-import { TextField } from '@/src/components/atoms/TextField'
+import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
+import { AppButton } from '@/src/shared/ui/atoms/AppButton'
+import { TextField } from '@/src/shared/ui/atoms/TextField'
 import { useAuthAttempt } from '@/src/hooks/useAuthAttempt'
 import { useAuth } from '@/src/lib/auth/useAuth'
-import { validateRegistration } from '@/src/utils/validation'
+import { validateRegistration } from '@/src/shared/utils/validation'
 import { styles } from './index.styles'
 
 export default function RegisterScreen() {

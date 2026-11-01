@@ -6,10 +6,10 @@
  * navigation and app restarts.
  */
 
-import { darkTheme } from '@/src/config/themes'
+import { darkTheme } from '@/src/shared/config/themes'
 import { pickCatColorSlot } from '@/src/lib/annotate/catColors'
-import { asyncStorage } from '@/src/lib/cache/storage'
-import type { BoundingBox } from '@/src/types/BoundingBox'
+import { asyncStorage } from '@/src/shared/lib/storage'
+import type { BoundingBox } from '@/src/shared/types/BoundingBox'
 import { randomUUID } from 'expo-crypto'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'

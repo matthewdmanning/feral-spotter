@@ -4,7 +4,7 @@
  * Screen receives everything via this hook — no business logic in the component.
  */
 
-import { showAlert, showSuccess } from '@/src/hooks/useUIStore'
+import { showAlert, showSuccess } from '@/src/shared/hooks/useUIStore'
 import { useState } from 'react'
 
 import { router } from 'expo-router'

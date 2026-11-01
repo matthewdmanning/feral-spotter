@@ -5,7 +5,7 @@
 
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'
-import { showAlert, showError } from '@/src/hooks/useUIStore'
+import { showAlert, showError } from '@/src/shared/hooks/useUIStore'
 import { discardDraft, isDraftBusy } from '@/src/lib/submission/draft'
 import { initializeDraft } from '@/src/hooks/useDraftStartupStore'
 import { router } from 'expo-router'

@@ -33,8 +33,8 @@ jest.mock('@/src/lib/auth/useAuth', () => ({
   useAuth: () => ({ isReady: true, isAuthenticated: true }),
 }))
 // Real consent store, seeded as a returning user who answered every step.
-jest.mock('@/src/hooks/useConsentStore', () => {
-  const actual = jest.requireActual('@/src/hooks/useConsentStore')
+jest.mock('@/src/shared/consent/useConsentStore', () => {
+  const actual = jest.requireActual('@/src/shared/consent/useConsentStore')
   actual.useConsentStore.setState({
     accepted: true,
     acceptedVersion: actual.CONSENT_VERSION,
@@ -57,7 +57,7 @@ jest.mock('@/src/hooks/useLibraryPhotoPicker', () => ({
 // Same stub as the sibling Home suites: the real column pulls in reanimated,
 // which has no native part under jest. `visible` is the gate under test.
 let capturedVisible = false
-jest.mock('@/src/components/molecules/BottomButtonColumn', () => ({
+jest.mock('@/src/shared/ui/molecules/BottomButtonColumn', () => ({
   // The screen mounts the column only while it is shown.
   BottomButtonColumn: (props: { visible: boolean }) => {
     require('react').useEffect(() => {

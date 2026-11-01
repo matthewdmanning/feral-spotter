@@ -11,7 +11,7 @@ import { SharingSettings } from '@/src/components/organisms/organizations/Sharin
 import { useOrganizationSharingStore } from '@/src/hooks/useOrganizationSharingStore'
 import { useOrganizationsFlag } from '@/src/hooks/useOrganizationsFlag'
 import { useAuthStore } from '@/src/lib/auth/authStore'
-import { useUIStore } from '@/src/hooks/useUIStore'
+import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import { buildGrant } from '../sharing'
 import { DEFAULT_SHARING } from '@/src/types/Organizations'
 import { fakeOrganizationsService } from '@/src/test-utils/organizationsService'

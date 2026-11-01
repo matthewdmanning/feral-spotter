@@ -4,7 +4,7 @@
  */
 
 import { discardUnsurvivingDraft } from '@/src/lib/submission/draft'
-import { showAlert } from '@/src/hooks/useUIStore'
+import { showAlert } from '@/src/shared/hooks/useUIStore'
 import { create } from 'zustand'
 
 export type DraftStartupPhase = 'restoring' | 'cleaning' | 'ready' | 'error'

@@ -1,5 +1,5 @@
 import { useAuthAttempt } from '@/src/hooks/useAuthAttempt'
-import { useUIStore } from '@/src/hooks/useUIStore'
+import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import { act, renderHook } from '@testing-library/react-native'
 import { router } from 'expo-router'
 
@@ -8,7 +8,7 @@ import { router } from 'expo-router'
  * A dismissed provider sheet is silent; any other failure alerts.
  */
 jest.mock('expo-router', () => ({ router: { replace: jest.fn() } }))
-jest.mock('@/src/hooks/consentFlow', () => ({
+jest.mock('@/src/shared/consent/consentFlow', () => ({
   nextConsentRoute: () => '/consent',
 }))
 

@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import Constants from 'expo-constants'
 import { randomUUID } from 'expo-crypto'
-import { asyncStorage } from '@/src/lib/cache/storage'
+import { asyncStorage } from '@/src/shared/lib/storage'
 
 interface FlagState {
   enabled: boolean

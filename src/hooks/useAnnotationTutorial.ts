@@ -5,9 +5,9 @@
  * entry only; a replay resets the status to 'unseen'.
  */
 
-import { isTutorialReleased } from '@/src/config/tutorial'
+import { isTutorialReleased } from '@/src/features/annotate/config/tutorial'
 import { useTutorialStore } from '@/src/hooks/useTutorialStore'
-import { EVENTS, captureEvent } from '@/src/lib/analytics/analytics'
+import { EVENTS, captureEvent } from '@/src/shared/analytics/analytics'
 import { useState } from 'react'
 
 export function useAnnotationTutorial() {

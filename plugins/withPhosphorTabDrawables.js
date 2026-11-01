@@ -1,7 +1,7 @@
 const fs = require('fs')
 const path = require('path')
 const { withDangerousMod } = require('expo/config-plugins')
-const tabIcons = require('../src/config/tabIcons.json')
+const tabIcons = require('../src/shared/config/tabIcons.json')
 
 // Writes the native tab bar's Phosphor icons into the Android app as vector
 // drawables, so native tabs load them by name

@@ -5,7 +5,7 @@
  * `skipped` and `completed` suppress it. Settings has no replay action.
  */
 
-import { asyncStorage } from '@/src/lib/cache/storage'
+import { asyncStorage } from '@/src/shared/lib/storage'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 

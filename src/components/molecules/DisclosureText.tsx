@@ -1,4 +1,4 @@
-import consentCopy from '@/src/content/consentDisclosure.json'
+import consentCopy from '@/src/features/permissions/consent/content/consentDisclosure.json'
 import { Text } from 'react-native'
 import { styles } from './DisclosureText.styles'
 

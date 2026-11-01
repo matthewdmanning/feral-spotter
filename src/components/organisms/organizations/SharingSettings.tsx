@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { Text } from 'react-native'
-import { GlassSurface } from '@/src/components/atoms/GlassSurface'
-import { TextField } from '@/src/components/atoms/TextField'
-import { AppButton } from '@/src/components/atoms/AppButton'
+import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
+import { TextField } from '@/src/shared/ui/atoms/TextField'
+import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import { useAuth } from '@/src/lib/auth/useAuth'
 import {
   useOrganizationSharingStore,

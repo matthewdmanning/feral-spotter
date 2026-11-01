@@ -1,4 +1,4 @@
-import * as ui from '@/src/hooks/useUIStore'
+import * as ui from '@/src/shared/hooks/useUIStore'
 import { act, renderHook } from '@testing-library/react-native'
 
 import { useAbandonCatGuard } from '../useAbandonCatGuard'
