@@ -16,7 +16,7 @@ import { useIosIdentificationCapture } from '@/src/hooks/useIosIdentificationCap
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'
 import { useConsentStore } from '@/src/shared/consent/useConsentStore'
 import { captureEvent, EVENTS } from '@/src/shared/analytics/analytics'
-import { startLocationCapture } from '@/src/lib/location'
+import { startLocationCapture } from '@/src/core/location/liveFix'
 import type { SubmissionPhoto } from '@/src/shared/types'
 import { type FlashListRef } from '@shopify/flash-list'
 import { useCallback, useEffect, useRef, useState } from 'react'

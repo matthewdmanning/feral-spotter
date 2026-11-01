@@ -1,5 +1,5 @@
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
-import { useAuthStore } from '@/src/lib/auth/authStore'
+import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { act, renderHook } from '@testing-library/react-native'
 
 import * as cache from '@/src/lib/cache/submissionCache'
@@ -24,7 +24,9 @@ import { observedCat } from '@/src/test-utils/catFixtures'
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() },
 }))
-jest.mock('@/src/lib/location', () => ({ stopLocationCapture: jest.fn() }))
+jest.mock('@/src/core/location/liveFix', () => ({
+  stopLocationCapture: jest.fn(),
+}))
 jest.mock('@/src/shared/analytics/analytics', () => ({
   fireAnalyticsEvent: jest.fn(),
   EVENTS: {
@@ -39,7 +41,7 @@ jest.mock('@/src/lib/upload/firebaseUpload', () => ({
   uploadSubmissionPhoto: jest.fn(),
   deleteSubmissionUploads: jest.fn().mockResolvedValue(undefined),
 }))
-jest.mock('@/src/lib/auth', () => ({
+jest.mock('@/src/features/auth/lib', () => ({
   authProvider: {
     getCurrentUser: () => ({ uid: 'uid-owner' }),
     onAuthStateChanged: () => () => {},

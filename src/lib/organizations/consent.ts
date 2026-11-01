@@ -1,4 +1,4 @@
-import { useAuthStore } from '@/src/lib/auth/authStore'
+import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import type {
   OrganizationSharingDraft,
   SubmissionDraft,

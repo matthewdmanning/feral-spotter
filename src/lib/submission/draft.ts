@@ -40,9 +40,9 @@ import {
 } from '@/src/lib/cache/submissionCache'
 import { EVENTS } from '@/src/shared/analytics/analytics'
 import { fireAnalyticsEvent } from '@/src/lib/submission/analytics'
-import { authProvider } from '@/src/lib/auth'
-import { useAuthStore } from '@/src/lib/auth/authStore'
-import { stopLocationCapture } from '@/src/lib/location'
+import { authProvider } from '@/src/features/auth/lib'
+import { useAuthStore } from '@/src/features/auth/lib/authStore'
+import { stopLocationCapture } from '@/src/core/location/liveFix'
 import { confirmedSharing } from '@/src/lib/organizations/consent'
 import { sendDraft, type ConfirmedSharing } from '@/src/lib/submission/send'
 import {

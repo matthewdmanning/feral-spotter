@@ -9,7 +9,7 @@ import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import { useOrganizationSharingStore } from '../useOrganizationSharingStore'
 import { useOrganizationDirectoryStore } from '../useOrganizationDirectory'
 import { useOrganizationsFlag } from '../useOrganizationsFlag'
-import { useAuthStore } from '@/src/lib/auth/authStore'
+import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { observedCat } from '@/src/test-utils/catFixtures'
 import { fakeOrganizationsService } from '@/src/test-utils/organizationsService'
 import {
@@ -22,7 +22,9 @@ import { uploadSubmissionMetadata } from '@/src/lib/upload/firebaseUpload'
 jest.mock('expo-router', () => ({
   router: { replace: jest.fn(), push: jest.fn() },
 }))
-jest.mock('@/src/lib/location', () => ({ stopLocationCapture: jest.fn() }))
+jest.mock('@/src/core/location/liveFix', () => ({
+  stopLocationCapture: jest.fn(),
+}))
 // The supplied expo-crypto mock returns no UUIDs.
 jest.mock('expo-crypto', () => ({
   ...jest.requireActual('expo-crypto'),

@@ -7,7 +7,7 @@ import { useSubmissionStore } from '../useSubmissionStore'
 
 // jest-expo's expo-crypto mock returns undefined; rows need a real id.
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'row-new' }))
-jest.mock('@/src/lib/location', () => ({
+jest.mock('@/src/core/location/liveFix', () => ({
   useLocationCapture: () => ({ status: 'idle', result: null }),
 }))
 

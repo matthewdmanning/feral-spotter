@@ -161,6 +161,16 @@ for (const [from, to] of moves) {
 for (const [file, contents] of rewritten)
   fs.writeFileSync(path.join(ROOT, moves.get(file) ?? file), contents)
 
+// Drop source directories the moves left empty.
+for (const from of moves.keys()) {
+  let dir = path.posix.dirname(from)
+  while (dir !== '.' && fs.existsSync(path.join(ROOT, dir))) {
+    if (fs.readdirSync(path.join(ROOT, dir)).length) break
+    fs.rmdirSync(path.join(ROOT, dir))
+    dir = path.posix.dirname(dir)
+  }
+}
+
 // ---- 5. Verify: no specifier newly fails to resolve -------------------------
 
 const failures = []

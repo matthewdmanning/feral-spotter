@@ -21,7 +21,7 @@ import {
   useDraftStartupStore,
 } from '@/src/hooks/useDraftStartupStore'
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'
-import { gallerySavePermission } from '@/src/lib/permissions/gallerySavePermission'
+import { gallerySavePermission } from '@/src/features/permissions/photo/lib/gallerySavePermission'
 import {
   releaseCapturedPhotoFile,
   retainCapturedPhotoFile,

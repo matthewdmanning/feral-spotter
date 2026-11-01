@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native'
-import { useAuthStore } from '@/src/lib/auth/authStore'
+import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { router } from 'expo-router'
 import { AppState } from 'react-native'
 import { useCameraCapture } from '../useCameraCapture'
@@ -47,7 +47,7 @@ jest.mock('@/src/lib/upload/uploadNewPhoto', () => ({
   retryPendingUploads: jest.fn(),
   uploadNewPhoto: (...args: unknown[]) => mockUploadNewPhoto(...args),
 }))
-jest.mock('@/src/lib/auth/useAuth', () => ({
+jest.mock('@/src/features/auth/lib/useAuth', () => ({
   useAuth: () => ({ user: { uid: 'test-uid' } }),
 }))
 

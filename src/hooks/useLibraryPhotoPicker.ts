@@ -18,7 +18,7 @@ import {
 import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
 import { draftReadyOrAlert } from '@/src/hooks/useDraftStartupStore'
 import { EVENTS, captureEvent } from '@/src/shared/analytics/analytics'
-import { libraryPermission } from '@/src/lib/permissions/libraryPermission'
+import { libraryPermission } from '@/src/features/permissions/photo/lib/libraryPermission'
 import { syncPhotoUploads } from '@/src/lib/upload/draftUploads'
 import { buildSubmissionPhoto } from '@/src/features/draft-submission/lib/buildSubmissionPhoto'
 import {

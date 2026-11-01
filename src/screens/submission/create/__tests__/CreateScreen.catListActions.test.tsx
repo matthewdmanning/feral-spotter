@@ -56,7 +56,7 @@ jest.mock('@/src/hooks/useSubmissionSubmit', () => ({
   }),
 }))
 
-jest.mock('@/src/lib/location', () => ({
+jest.mock('@/src/core/location/liveFix', () => ({
   useLocationCapture: () => ({
     status: 'idle',
     startedAt: null,
