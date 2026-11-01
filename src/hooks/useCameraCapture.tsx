@@ -9,7 +9,7 @@
 
 import { useCapturedPhotoWorkflow } from '@/src/hooks/useCapturedPhotoWorkflow'
 import { useIosIdentificationCapture } from '@/src/hooks/useIosIdentificationCapture'
-import { useSettingsStore } from '@/src/hooks/useSettingsStore'
+import { useSettingsStore } from '@/src/features/settings/hooks/useSettingsStore'
 import { useConsentStore } from '@/src/shared/consent/useConsentStore'
 import { captureEvent, EVENTS } from '@/src/shared/analytics/analytics'
 import { useAuth } from '@/src/features/auth/lib/useAuth'

@@ -27,7 +27,7 @@ const EXTS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.json']
 const SCAN = /\.(ts|tsx|js|jsx|mjs|cjs)$/
 const SKIP = /^(node_modules|functions|docs|android|ios|\.claude)\//
 const SPEC =
-  /(\b(?:from|import|require|mock|doMock|unmock|requireActual|requireMock|setMock|createMockFromModule)\s*\(?\s*)(['"])([^'"\n]+)\2/g
+  /(\b(?:from|import|require|mock|doMock|unmock|requireActual|requireMock|setMock|createMockFromModule)\s*(?:<[^>]*>)?\s*\(?\s*)(['"])([^'"\n]+)\2/g
 
 const [mappingFile, ...flags] = process.argv.slice(2)
 const dryRun = flags.includes('--dry-run')

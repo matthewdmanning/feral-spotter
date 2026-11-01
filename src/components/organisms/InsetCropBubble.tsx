@@ -39,8 +39,8 @@
  * sensitive to that ratio (min-side + diagonal).
  */
 
-import { usePhotoStore } from '@/src/hooks/usePhotoStore'
-import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
+import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import { computeCollapsedOffset } from '@/src/lib/insetCrop/collapse'
 import { computeBubbleDiameter } from '@/src/lib/insetCrop/diameter'
 import { bubbleImageRect } from '@/src/shared/lib/geometry/imageRect'

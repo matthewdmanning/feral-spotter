@@ -13,19 +13,19 @@
  */
 
 import { CameraThumb } from '@/src/components/atoms/CameraThumb'
-import { usePhotoStore } from '@/src/hooks/usePhotoStore'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import {
   initializeDraft,
   useDraftStartupStore,
-} from '@/src/hooks/useDraftStartupStore'
-import { useSettingsStore } from '@/src/hooks/useSettingsStore'
+} from '@/src/features/draft-submission/hooks/useDraftStartupStore'
+import { useSettingsStore } from '@/src/features/settings/hooks/useSettingsStore'
 import { showAlert } from '@/src/shared/hooks/useUIStore'
 import { gallerySavePermission } from '@/src/features/permissions/photo/lib/gallerySavePermission'
 import {
   releaseCapturedPhotoFile,
   retainCapturedPhotoFile,
-} from '@/src/lib/camera/capturedPhotoFiles'
-import { uploadNewPhoto } from '@/src/lib/upload/uploadNewPhoto'
+} from '@/src/features/draft-submission/lib/capturedPhotoFiles'
+import { uploadNewPhoto } from '@/src/features/draft-submission/lib/upload/uploadNewPhoto'
 import type { SubmissionPhoto } from '@/src/shared/types'
 import {
   buildSubmissionPhotoFromCapture,

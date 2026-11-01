@@ -11,7 +11,10 @@ import { CatCrop } from '@/src/shared/ui/atoms/CatCrop'
 import { STATUS_COLOR_KEY, StatusIcon } from '@/src/components/atoms/StatusIcon'
 import { FieldRow } from '@/src/shared/ui/molecules/FieldRow'
 import { useSighting } from '@/src/hooks/useSighting'
-import { describeCat, summarizeCat } from '@/src/lib/cats/attributes'
+import {
+  describeCat,
+  summarizeCat,
+} from '@/src/features/draft-submission/lib/attributes'
 import {
   describeSighting,
   profilePicUri,

@@ -26,7 +26,7 @@ import {
 
 initializeApp()
 
-// Must match BUCKET_URL in src/lib/upload/firebaseUpload.ts (ADR-0005).
+// Must match BUCKET_URL in src/features/draft-submission/lib/upload/firebaseUpload.ts (ADR-0005).
 const BUCKET_NAME =
   process.env.GCS_BUCKET_NAME ??
   'project-e3d5659d-bc4f-438f-88c.firebasestorage.app'
@@ -34,7 +34,7 @@ const OBJECT_PATH_PATTERN = /^submissions\/([^/]+)\/([^/]+)\/([^/]+)$/
 const METADATA_PATH_PATTERN = /^submissions\/([^/]+)\/([^/]+)\/metadata\.json$/
 
 // metadata.json (the final-submission JSON blob — see storage.rules and
-// src/lib/upload/firebaseUpload.ts) lives under the same
+// src/features/draft-submission/lib/upload/firebaseUpload.ts) lives under the same
 // submissions/{uid}/{submissionId}/{fileName} prefix as photos but isn't
 // one — it must not move the photoCount counter these triggers maintain.
 const METADATA_FILE_NAME = 'metadata.json'

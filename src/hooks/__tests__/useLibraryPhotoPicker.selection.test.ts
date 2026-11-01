@@ -4,15 +4,15 @@ import * as Crypto from 'expo-crypto'
 import { router } from 'expo-router'
 import { Platform } from 'react-native'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
-import { uploadNewPhoto } from '@/src/lib/upload/uploadNewPhoto'
-import { usePhotoStore } from '../usePhotoStore'
-import { useSubmissionStore } from '../useSubmissionStore'
+import { uploadNewPhoto } from '@/src/features/draft-submission/lib/upload/uploadNewPhoto'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
+import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
 import { useLibraryPhotoPicker } from '../useLibraryPhotoPicker'
-import { useDraftStartupStore } from '../useDraftStartupStore'
+import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
 
 // Avoid the unrelated hook barrel; keep both persisted stores real.
 jest.mock('expo-router', () => ({ router: { navigate: jest.fn() } }))
-jest.mock('@/src/lib/upload/uploadNewPhoto', () => ({
+jest.mock('@/src/features/draft-submission/lib/upload/uploadNewPhoto', () => ({
   uploadNewPhoto: jest.fn(),
 }))
 jest.mock('@/src/shared/analytics/analytics', () => ({

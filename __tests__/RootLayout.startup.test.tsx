@@ -1,9 +1,9 @@
 import { act, render, screen, waitFor } from '@testing-library/react-native'
-import { discardUnsurvivingDraft } from '@/src/lib/submission/draft'
+import { discardUnsurvivingDraft } from '@/src/features/draft-submission/lib/draft'
 import {
   initializeDraft,
   useDraftStartupStore,
-} from '@/src/hooks/useDraftStartupStore'
+} from '@/src/features/draft-submission/hooks/useDraftStartupStore'
 import * as SplashScreen from 'expo-splash-screen'
 import RootLayout from '@/src/app/_layout'
 import SubmissionLayout from '@/src/app/submission/_layout'
@@ -12,7 +12,7 @@ jest.mock('@/src/shared/config/unistyles', () => ({}))
 jest.mock('@react-native-community/netinfo', () =>
   jest.requireActual('@react-native-community/netinfo/jest/netinfo-mock'),
 )
-jest.mock('@/src/lib/submission/draft', () => ({
+jest.mock('@/src/features/draft-submission/lib/draft', () => ({
   discardUnsurvivingDraft: jest.fn(),
 }))
 jest.mock('@/src/providers/AppProviders', () => ({

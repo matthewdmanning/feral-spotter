@@ -21,8 +21,8 @@ import {
   HANDLE_INSET,
   useBoundingBoxFrame,
 } from '@/src/hooks/useBoundingBoxFrame'
-import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
-import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
+import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
+import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
 import { containFit } from '@/src/shared/lib/geometry/cropProjection'
 import { previousCatBoxes } from '@/src/lib/annotate/previousBoxes'
 import type { BoundingBox } from '@/src/shared/types/BoundingBox'

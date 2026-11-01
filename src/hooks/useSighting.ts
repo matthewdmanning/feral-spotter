@@ -6,7 +6,7 @@
 import {
   getSubmissionCache,
   type SubmissionCacheFile,
-} from '@/src/lib/cache/submissionCache'
+} from '@/src/features/draft-submission/lib/submissionCache'
 import { useEffect, useState } from 'react'
 
 export interface SightingResult {

@@ -2,11 +2,11 @@ import { act, renderHook } from '@testing-library/react-native'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import { router } from 'expo-router'
-import { useActiveCatFlowStore } from '../useActiveCatFlowStore'
+import { useActiveCatFlowStore } from '@/src/features/draft-submission/hooks/useActiveCatFlowStore'
 import { useAnnotatePass } from '../useAnnotatePass'
-import { useBoundingBoxStore } from '../useBoundingBoxStore'
-import { usePhotoStore } from '../usePhotoStore'
-import { useSubmissionStore } from '../useSubmissionStore'
+import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
+import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
 
 /**
  * Drives carousel position and the final-photo completion against the real

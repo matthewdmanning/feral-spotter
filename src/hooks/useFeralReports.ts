@@ -5,19 +5,19 @@
  */
 
 import { EVENTS, IS_PRERELEASE } from '@/src/shared/analytics/analytics'
-import { fireAnalyticsEvent } from '@/src/lib/submission/analytics'
+import { fireAnalyticsEvent } from '@/src/features/draft-submission/lib/analytics'
 import { useAuth } from '@/src/features/auth/lib/useAuth'
 import {
   getAllSubmissionCaches,
   type SubmissionCacheFile,
-} from '@/src/lib/cache/submissionCache'
+} from '@/src/features/draft-submission/lib/submissionCache'
 import {
   groupSightingsBySpot,
   ownSightings,
   sortBySightingTime,
   type SightingSpot,
 } from '@/src/lib/sightings/history'
-import { isResumableDraft } from '@/src/lib/submission/resumable'
+import { isResumableDraft } from '@/src/features/draft-submission/lib/resumable'
 import { useFocusEffect } from 'expo-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 

@@ -1,5 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { CONSENT_VERSION, useConsentStore } from '@/src/shared/consent/useConsentStore'
+import {
+  CONSENT_VERSION,
+  useConsentStore,
+} from '@/src/shared/consent/useConsentStore'
 import {
   act,
   userEvent,

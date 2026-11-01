@@ -8,13 +8,13 @@
  */
 
 import { showAlert } from '@/src/shared/hooks/useUIStore'
-import { usePhotoStore } from '@/src/hooks/usePhotoStore'
-import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
+import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
 import { useAuth } from '@/src/features/auth/lib/useAuth'
-import { initializeDraft } from '@/src/hooks/useDraftStartupStore'
+import { initializeDraft } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
 import { EVENTS, captureEvent } from '@/src/shared/analytics/analytics'
 import { libraryPermission } from '@/src/features/permissions/photo/lib/libraryPermission'
-import { uploadNewPhoto } from '@/src/lib/upload/uploadNewPhoto'
+import { uploadNewPhoto } from '@/src/features/draft-submission/lib/upload/uploadNewPhoto'
 import { buildSubmissionPhoto } from '@/src/features/draft-submission/lib/buildSubmissionPhoto'
 import {
   classifyLibraryPickTime,

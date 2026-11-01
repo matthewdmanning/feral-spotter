@@ -1,11 +1,11 @@
 import { APP_STARTED_AT } from '@/src/shared/config/constants'
-import { usePhotoStore } from '@/src/hooks/usePhotoStore'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import { render, screen, userEvent } from '@testing-library/react-native'
 import { router } from 'expo-router'
 import React from 'react'
 import HomeScreen from '../index'
-import { useDraftStartupStore } from '@/src/hooks/useDraftStartupStore'
+import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
 
 /**
  * #424: Home's notice for a photo draft. A draft restored from an earlier
@@ -24,7 +24,7 @@ jest.mock('@/src/features/auth/lib/useAuth', () => ({
 jest.mock('@/src/shared/consent/useConsentStore', () => ({
   hasAcceptedConsent: () => true,
 }))
-jest.mock('@/src/lib/cache/submissionCache', () => ({
+jest.mock('@/src/features/draft-submission/lib/submissionCache', () => ({
   getAllSubmissionCaches: jest.fn().mockResolvedValue([]),
 }))
 jest.mock('@/src/shared/ui/molecules/BottomButtonColumn', () => ({

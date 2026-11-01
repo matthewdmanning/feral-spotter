@@ -4,8 +4,8 @@ import { Linking } from 'react-native'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import { useLibraryPhotoPicker } from '../useLibraryPhotoPicker'
-import { useDraftStartupStore } from '../useDraftStartupStore'
-import { usePhotoStore } from '../usePhotoStore'
+import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 
 /**
  * Models useLibraryPhotoPicker's explicit permission gate (#249): a decline

@@ -1,5 +1,5 @@
-import type { ObservedCat } from '@/src/hooks/useSubmissionStore'
-import { summarizeCat } from '../attributes'
+import type { ObservedCat } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { summarizeCat } from '@/src/features/draft-submission/lib/attributes'
 
 /**
  * The one-line title of a cat on Submission Details: the first three known

@@ -1,4 +1,4 @@
-import type { CacheStatus } from '@/src/lib/cache/submissionCache'
+import type { CacheStatus } from '@/src/features/draft-submission/lib/submissionCache'
 import { CheckCircleIcon } from 'phosphor-react-native/src/icons/CheckCircle'
 import { ClockIcon } from 'phosphor-react-native/src/icons/Clock'
 import { PaperPlaneRightIcon } from 'phosphor-react-native/src/icons/PaperPlaneRight'

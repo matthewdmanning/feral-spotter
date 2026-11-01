@@ -7,9 +7,8 @@ const loadWithUrl = (url: string | undefined) => {
   jest.resetModules()
   if (url) process.env.EXPO_PUBLIC_EMAIL_SYNC_URL = url
   else delete process.env.EXPO_PUBLIC_EMAIL_SYNC_URL
-  return require('@/src/features/permissions/communications/lib/syncEmailSubscription').syncEmailSubscription as (
-    subscribed: boolean,
-  ) => Promise<void>
+  return require('@/src/features/permissions/communications/lib/syncEmailSubscription')
+    .syncEmailSubscription as (subscribed: boolean) => Promise<void>
 }
 
 describe('syncEmailSubscription', () => {

@@ -1,1 +1,1 @@
-export { default } from '@/src/screens/submission/create'
+export { default } from '@/src/features/draft-submission/screens/create'

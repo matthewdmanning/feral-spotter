@@ -1,5 +1,5 @@
 import '@shopify/flash-list/jestSetup'
-import type { SubmissionCacheFile } from '@/src/lib/cache/submissionCache'
+import type { SubmissionCacheFile } from '@/src/features/draft-submission/lib/submissionCache'
 import { useFeralReports } from '@/src/hooks/useFeralReports'
 import { SightingsMap } from '@/src/components/organisms/SightingsMap'
 import { FlashList } from '@shopify/flash-list'

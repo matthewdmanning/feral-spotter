@@ -4,8 +4,8 @@
  * CAT_ATTRIBUTES, so a new or renamed field can't leave the fixture stale.
  */
 
-import type { ObservedCat } from '@/src/hooks/useSubmissionStore'
-import { CAT_ATTRIBUTES } from '@/src/lib/cats/attributes'
+import type { ObservedCat } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { CAT_ATTRIBUTES } from '@/src/features/draft-submission/lib/attributes'
 
 export function observedCat(patch: Partial<ObservedCat> = {}): ObservedCat {
   // Same mapping useCatSubmit applies at save time.

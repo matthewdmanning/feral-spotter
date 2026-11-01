@@ -5,7 +5,10 @@ import {
   getLocationCaptureState,
   __resetLocationCaptureForTests,
 } from '@/src/core/location/liveFix'
-import { CONSENT_VERSION, useConsentStore } from '@/src/shared/consent/useConsentStore'
+import {
+  CONSENT_VERSION,
+  useConsentStore,
+} from '@/src/shared/consent/useConsentStore'
 import { LOCATION_STALE_THRESHOLD_MS } from '@/src/core/location/location'
 
 /**
