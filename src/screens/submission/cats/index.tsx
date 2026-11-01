@@ -7,7 +7,7 @@ import {
   BUBBLE_HEADER_RESERVE,
   InsetCropBubble,
 } from '@/src/components/organisms/InsetCropBubble'
-import { useSubmissionStore } from '@/src/hooks'
+import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
 import { useAbandonCatGuard } from '@/src/hooks/useAbandonCatGuard'
 import { useActiveCatFlow } from '@/src/hooks/useActiveCatFlow'
 import { useCatForm } from '@/src/hooks/useCatForm'

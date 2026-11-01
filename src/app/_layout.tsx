@@ -10,7 +10,7 @@
  */
 
 import '@/src/config/unistyles'
-import { useUIStore } from '@/src/hooks'
+import { useUIStore } from '@/src/hooks/useUIStore'
 import { initializeDraft } from '@/src/hooks/useDraftStartupStore'
 import { AppProviders } from '@/src/providers/AppProviders'
 import { Nunito_400Regular } from '@expo-google-fonts/nunito/400Regular'
