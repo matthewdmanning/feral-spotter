@@ -9,9 +9,12 @@ import { OrganizationPermissions } from '@/src/components/organisms/organization
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
 import { CatCrop } from '@/src/shared/ui/atoms/CatCrop'
-import { StatusIcon, StatusText } from '@/src/components/atoms/StatusIcon'
+import {
+  StatusIcon,
+  StatusText,
+} from '@/src/features/history/components/StatusIcon'
 import { FieldRow } from '@/src/shared/ui/molecules/FieldRow'
-import { useSighting } from '@/src/hooks/useSighting'
+import { useSighting } from '@/src/features/history/hooks/useSighting'
 import {
   describeCat,
   summarizeCat,
@@ -20,7 +23,7 @@ import {
   describeSighting,
   profilePicUri,
   sightingTime,
-} from '@/src/lib/sightings/history'
+} from '@/src/features/history/lib/history'
 import { formatDateTime } from '@/src/shared/utils/formatDateTime'
 import { useLocalSearchParams } from 'expo-router'
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native'
