@@ -19,7 +19,7 @@ export const COLUMN_ALIGNED = new Set([
   'src/components/molecules/AddAnotherCatDialog.styles.ts',
   'src/shared/ui/molecules/BottomButtonColumn.styles.ts',
   'src/components/molecules/PhotoPreviewModal.styles.ts',
-  'src/components/molecules/ReportCard.styles.ts',
+  'src/features/history/components/ReportCard.styles.ts',
   'src/features/draft-submission/components/DateTimePicker.styles.ts',
   'src/components/organisms/ValidationSheet.styles.ts',
   'src/screens/analytics-consent/index.styles.ts',
