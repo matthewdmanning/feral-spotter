@@ -1,9 +1,9 @@
 import * as ui from '@/src/shared/hooks/useUIStore'
 import { act, renderHook } from '@testing-library/react-native'
 
-import { useAbandonCatGuard } from '@/src/features/draft-submission/hooks/useAbandonCatGuard'
-import { useActiveCatFlowStore } from '@/src/features/draft-submission/hooks/useActiveCatFlowStore'
-import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
+import { useAbandonCatGuard } from '../useAbandonCatGuard'
+import { useActiveCatFlowStore } from '../useActiveCatFlowStore'
+import { useBoundingBoxStore } from '../useBoundingBoxStore'
 
 /**
  * The guard's value is entirely in *when it fires* (#304). Firing on a save

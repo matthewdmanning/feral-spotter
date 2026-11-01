@@ -2,7 +2,7 @@ import {
   FEDERATED_PROVIDERS,
   isFederatedProviderReleased,
   type FederatedProviderConfig,
-} from '@/src/features/auth/lib/authProviders'
+} from '../authProviders'
 
 const byId = (id: string): FederatedProviderConfig =>
   FEDERATED_PROVIDERS.find((p) => p.id === id) as FederatedProviderConfig

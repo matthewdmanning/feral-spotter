@@ -8,7 +8,7 @@
  */
 
 import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
-import { useLibraryPhotoPicker } from '@/src/hooks/useLibraryPhotoPicker'
+import { useLibraryPhotoPicker } from '@/src/features/library-picker/hooks/useLibraryPhotoPicker'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { router } from 'expo-router'
 import { useCallback, useMemo } from 'react'

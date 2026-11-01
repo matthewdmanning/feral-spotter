@@ -3,7 +3,7 @@ import {
   buildSubmissionPayload,
   foldBoxesIntoCat,
   resolvePhotoTime,
-} from '@/src/features/draft-submission/lib/payload'
+} from '../payload'
 import type { SubmissionDraft } from '@/src/features/draft-submission/hooks/useSubmissionStore'
 import type { SubmissionApiPayload, SubmissionPhoto } from '@/src/shared/types'
 import type { BoundingBox } from '@/src/shared/types/BoundingBox'

@@ -4,7 +4,7 @@ import { router } from 'expo-router'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import type { PhotoSource } from '@/src/features/draft-submission/hooks/usePhotoStore'
-import CreateSubmissionScreen from '@/src/features/draft-submission/screens/create/index'
+import CreateSubmissionScreen from '../index'
 
 /**
  * Model of the bottom "add more photos" action (#156): label and press
@@ -42,7 +42,7 @@ jest.mock('@/src/features/draft-submission/hooks/useSubmissionSubmit', () => ({
   }),
 }))
 
-jest.mock('@/src/hooks/useLibraryPhotoPicker', () => ({
+jest.mock('@/src/features/library-picker/hooks/useLibraryPhotoPicker', () => ({
   useLibraryPhotoPicker: () => ({ pickFromLibrary: mockPickFromLibrary }),
 }))
 

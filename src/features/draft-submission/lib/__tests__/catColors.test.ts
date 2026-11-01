@@ -1,4 +1,4 @@
-import { pickCatColorSlot } from '@/src/features/draft-submission/lib/catColors'
+import { pickCatColorSlot } from '../catColors'
 
 const SIZE = 3
 const fresh = () => Array<number>(SIZE).fill(0)

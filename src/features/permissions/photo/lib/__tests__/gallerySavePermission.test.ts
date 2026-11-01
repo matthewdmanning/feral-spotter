@@ -1,5 +1,5 @@
 import { PermissionStatus } from 'expo-media-library'
-import { isUsable } from '@/src/features/permissions/photo/lib/gallerySavePermission'
+import { isUsable } from '../gallerySavePermission'
 
 describe('gallerySavePermission.isUsable (#358)', () => {
   it('is usable when granted', () => {

@@ -9,7 +9,7 @@ import {
   verifyBeforeUpdateEmail,
   signOut as firebaseSignOut,
 } from '@react-native-firebase/auth'
-import { createFirebaseAuthProvider } from '@/src/features/auth/lib/firebaseAuthProvider'
+import { createFirebaseAuthProvider } from '../firebaseAuthProvider'
 
 jest.mock('expo-constants', () => ({
   __esModule: true,

@@ -3,7 +3,7 @@ import { router } from 'expo-router'
 import React from 'react'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
-import CreateSubmissionScreen from '@/src/features/draft-submission/screens/create/index'
+import CreateSubmissionScreen from '../index'
 
 /**
  * Model of the location-warning icon's gate on Submission Details

@@ -8,7 +8,7 @@ import {
 import { router } from 'expo-router'
 
 import React from 'react'
-import SignInScreen from '@/src/features/auth/screens/sign-in/index'
+import SignInScreen from '../index'
 
 // Pin the app version at/above every provider's release tag so the federated
 // buttons are enabled and pressable in this suite. The gate logic itself is
