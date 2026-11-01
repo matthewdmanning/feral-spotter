@@ -1,5 +1,5 @@
 /**
- * components/organisms/AlertHost.tsx
+ * shared/ui/organisms/AlertHost.tsx
  *
  * Draws the app's dialogs. Mounted once in AppProviders, above every screen.
  *

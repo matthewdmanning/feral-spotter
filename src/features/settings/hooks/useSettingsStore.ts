@@ -1,5 +1,5 @@
 /**
- * hooks/useSettingsStore.ts
+ * features/settings/hooks/useSettingsStore.ts
  * Persisted Zustand store for user-configurable app settings.
  */
 

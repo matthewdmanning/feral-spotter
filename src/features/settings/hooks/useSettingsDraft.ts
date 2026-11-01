@@ -1,5 +1,5 @@
 /**
- * hooks/useSettingsDraft.ts
+ * features/settings/hooks/useSettingsDraft.ts
  * Manages the settings screen draft pattern and password flow.
  * Screen receives everything via this hook — no business logic in the component.
  */

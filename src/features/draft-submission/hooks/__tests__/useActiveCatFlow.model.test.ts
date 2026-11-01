@@ -108,7 +108,7 @@ describe('useActiveCatFlow — model-based test', () => {
         act(() => hook.result.current.handleBoxingComplete())
       },
       // The annotate screen's hardware-back handler calls this directly
-      // (see src/screens/submission/annotate/index.tsx) — #203: must land
+      // (see src/features/annotate/screens/annotate/index.tsx) — #203: must land
       // on Home, never a default pop (which lands on Camera for the
       // very-first-cat path) or Cat List (loops for a zero-cats submission).
       BACK: () => {

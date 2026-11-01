@@ -4,8 +4,8 @@ status: active
 last_reviewed: 2026-10-24
 governs:
   - modules/native-identification-camera/android/src/main/java/expo/modules/nativeidentificationcamera/NativeIdentificationCameraView.kt
-  - src/config/photoToggles.ts
-  - src/hooks/useSettingsStore.ts
+  - src/features/settings/config/photoToggles.ts
+  - src/features/settings/hooks/useSettingsStore.ts
 derives_from: []
 ---
 

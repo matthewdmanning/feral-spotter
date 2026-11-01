@@ -1,5 +1,5 @@
 /**
- * screens/intro-flow/index.tsx
+ * features/permissions/onboarding/screens/intro-flow/index.tsx
  * First-run tutorial: four slides (T1–T4) introducing the app, then on to
  * /consent. Data-collection disclosure and device-permission priming happen
  * there, before sign-in — this screen is informational only.

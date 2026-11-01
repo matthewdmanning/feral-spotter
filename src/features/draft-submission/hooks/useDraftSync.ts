@@ -1,5 +1,5 @@
 /**
- * hooks/useDraftSync.ts
+ * features/draft-submission/hooks/useDraftSync.ts
  * Background work Submission Details runs for the open draft: make sure it
  * has a cache row, keep the row's cats and photos current for its Reports
  * card, and

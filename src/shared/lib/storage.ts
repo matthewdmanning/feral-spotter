@@ -1,5 +1,5 @@
 /**
- * utils/storage.ts
+ * shared/lib/storage.ts
  * AsyncStorage-backed Zustand persist storage adapter.
  *
  * Usage in any Zustand store:
@@ -19,7 +19,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
-// react-native-mmkv backs the theme-mode read in src/config/unistyles.ts, which
+// react-native-mmkv backs the theme-mode read in src/shared/config/unistyles.ts, which
 // has to be synchronous: Unistyles resolves the initial theme before first
 // render, so an AsyncStorage read would paint the wrong theme and then flip it.
 // That read was previously vestigial and slated for removal; it is now the real

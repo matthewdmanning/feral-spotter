@@ -1,5 +1,5 @@
 /**
- * hooks/useAnnotationTutorial.ts
+ * features/annotate/hooks/useAnnotationTutorial.ts
  * The annotation tutorial's show/skip/complete state and its analytics, for
  * the TutorialOverlay on the annotate screen. Shown on first annotation
  * entry only; a replay resets the status to 'unseen'.

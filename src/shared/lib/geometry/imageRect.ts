@@ -1,5 +1,5 @@
 /**
- * lib/insetCrop/imageRect.ts
+ * shared/lib/geometry/imageRect.ts
  *
  * Where to draw the full photo inside the inset-crop bubble so the cat's box
  * fills the bubble, centered. Pure: the bubble component owns layout.

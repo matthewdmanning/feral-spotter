@@ -1,5 +1,5 @@
 /**
- * types/Validation.ts
+ * shared/types/Validation.ts
  * Shared validation result shapes for submission/cat form checks.
  */
 

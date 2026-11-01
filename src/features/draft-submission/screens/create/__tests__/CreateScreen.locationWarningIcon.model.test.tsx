@@ -7,7 +7,7 @@ import CreateSubmissionScreen from '../index'
 
 /**
  * Model of the location-warning icon's gate on Submission Details
- * (src/screens/submission/create/index.tsx) — tappable and pushes to the
+ * (src/features/draft-submission/screens/create/index.tsx) — tappable and pushes to the
  * map picker only while `showLocationWarning` (no fix, or accuracy at/above
  * LOCATION_ACCURACY_THRESHOLD_M); otherwise disabled and shows the acquired
  * state. This is a real toggle no other test exercises — the map picker

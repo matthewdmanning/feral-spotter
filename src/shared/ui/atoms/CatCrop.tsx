@@ -1,5 +1,5 @@
 /**
- * components/atoms/CatCrop.tsx
+ * shared/ui/atoms/CatCrop.tsx
  * A square that shows one cat's box cut out of its photo — the Profile Pic.
  * Same crop math as the inset-crop bubble (lib/insetCrop/imageRect.ts), so a
  * Profile Pic frames the cat the way Cat Form showed it.

@@ -1,5 +1,5 @@
 /**
- * hooks/useSighting.ts
+ * features/history/hooks/useSighting.ts
  * One Sighting from history, for the read-only detail view.
  */
 

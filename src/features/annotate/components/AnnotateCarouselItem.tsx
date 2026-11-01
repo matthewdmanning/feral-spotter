@@ -1,5 +1,5 @@
 /**
- * components/organisms/AnnotateCarouselItem.tsx
+ * features/annotate/components/AnnotateCarouselItem.tsx
  *
  * Single slide in the annotation carousel.
  *

@@ -1,5 +1,5 @@
 /**
- * hooks/useBackHandler.ts
+ * shared/hooks/useBackHandler.ts
  * Registers an Android hardware-back-press handler for the lifetime of the
  * calling component. Return true from the handler to swallow the event
  * (e.g. to run custom navigation) or false to let the default back behavior run.

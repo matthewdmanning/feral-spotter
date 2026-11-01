@@ -1,5 +1,5 @@
 /**
- * hooks/useRemoveCat.ts
+ * features/draft-submission/hooks/useRemoveCat.ts
  *
  * The one owner of removing a *saved* cat (#299).
  *

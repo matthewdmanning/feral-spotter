@@ -1,5 +1,5 @@
 /**
- * lib/haptics.ts
+ * shared/lib/haptics.ts
  * Tap and selection haptics, gated by a user setting that is on by default.
  *
  * Android goes through performAndroidHapticsAsync (View.performHapticFeedback),

@@ -1,5 +1,5 @@
 /**
- * hooks/useConsentPermissions.ts
+ * features/permissions/consent/hooks/useConsentPermissions.ts
  * The consent gate's permission flow: request camera then location, record
  * consent only when both are usable, and re-check on return from the OS
  * Settings app while blocked.

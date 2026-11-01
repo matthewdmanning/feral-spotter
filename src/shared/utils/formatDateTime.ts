@@ -1,5 +1,5 @@
 /**
- * utils/formatDateTime.ts
+ * shared/utils/formatDateTime.ts
  * Pure date formatting utility — no React dependencies.
  */
 

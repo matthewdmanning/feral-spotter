@@ -1,5 +1,5 @@
 /**
- * hooks/useLibraryPhotoPicker.ts
+ * features/library-picker/hooks/useLibraryPhotoPicker.ts
  * "Choose from Library" entrypoint (#104): picks straight into the shared
  * photo pool, no staging/review screen — mirrors the camera's direct-add.
  * Location and time follow ADR 0002/0003: a Library-sourced draft forces

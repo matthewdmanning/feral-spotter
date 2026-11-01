@@ -1,5 +1,5 @@
 /**
- * utils/buildSubmissionPhoto.ts
+ * features/draft-submission/lib/buildSubmissionPhoto.ts
  * Builds a SubmissionPhoto from a picked library asset. Extracted from the
  * now-deleted usePhotoSession.ts so useLibraryPhotoPicker can reuse it.
  */

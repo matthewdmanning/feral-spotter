@@ -6,7 +6,7 @@ status: implemented — issue #266 ("Connect to storage")
 
 Issue #10 built a validation-only Expo API route (`src/app/upload+api.ts`): the client
 POSTs multipart form data, the route verifies a Google ID token against a tester
-allowlist, validates MIME type/size (`src/lib/upload/fileValidation.ts`), enforces a
+allowlist, validates MIME type/size (`src/features/draft-submission/lib/upload/fileValidation.ts`), enforces a
 per-submission photo count cap, then writes to GCS via `@google-cloud/storage` with
 Application Default Credentials. None of this is wired to a screen yet.
 
@@ -42,7 +42,7 @@ against current Firebase docs (`firebase.google.com/docs/storage/security/*`), n
 assumed.
 
 Design landed 2026-08-13, scoped **per submission** (matches `MAX_PHOTOS` in
-`src/config/constants.ts`, not a per-user lifetime total):
+`src/shared/config/constants.ts`, not a per-user lifetime total):
 
 - **Object path**: `submissions/{uid}/{submissionId}/{fileName}` — `uid` is the
   signed-in Firebase Auth uid directly. See the 2026-08-16 amendment below;
@@ -138,7 +138,7 @@ default, so they never ran for real uploads, and the counters that
 `storage.rules` reads were never written
 ([#396](https://github.com/matthewdmanning/feral-spotter/issues/396)). The
 functions default, the rules tests and `backend.md` now name the default
-bucket. `BUCKET_URL` in `src/lib/upload/firebaseUpload.ts` and `BUCKET_NAME` in
+bucket. `BUCKET_URL` in `src/features/draft-submission/lib/upload/firebaseUpload.ts` and `BUCKET_NAME` in
 `functions/src/index.ts` must stay equal.
 
 ## Considered Options
@@ -149,3 +149,5 @@ bucket. `BUCKET_URL` in `src/lib/upload/firebaseUpload.ts` and `BUCKET_NAME` in
   offline-to-online, reuses the Auth investment from ADR-0001. Trade-off: allowlist
   and count-cap enforcement need to be re-homed (see above) before this can fully
   replace the route.
+
+_2026-11-01: code paths updated for the feature-folder layout ([PROJECT_STRUCTURE.md](../PROJECT_STRUCTURE.md)). Decision unchanged._

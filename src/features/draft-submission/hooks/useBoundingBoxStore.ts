@@ -1,5 +1,5 @@
 /**
- * hooks/useBoundingBoxStore.ts
+ * features/draft-submission/hooks/useBoundingBoxStore.ts
  *
  * Persisted Zustand store for bounding-box annotations.
  * Keyed by `${cat_id}:${photo_local_id}` so data survives

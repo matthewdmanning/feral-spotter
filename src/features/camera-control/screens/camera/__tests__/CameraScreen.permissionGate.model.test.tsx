@@ -8,7 +8,7 @@ import { useCameraCapture } from '@/src/features/camera-control/hooks/useCameraC
 import CameraScreen from '../index'
 
 /**
- * Model of CameraScreen's (src/screens/camera/index.tsx) two gate screens —
+ * Model of CameraScreen's (src/features/camera-control/screens/camera/index.tsx) two gate screens —
  * logic that lives directly in the screen's JSX, not delegated to a hook, and
  * has no coverage anywhere else. The main capture view's buttons (shutter,
  * flip, flash, close, done) are thin onPress={handler} wiring onto

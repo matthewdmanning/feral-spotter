@@ -1,5 +1,5 @@
 /**
- * components/molecules/FieldRow.tsx
+ * shared/ui/molecules/FieldRow.tsx
  * One read-only answer: a muted label on the left, its value on the right.
  * Submission Details and the Sighting view list a cat's answers this way.
  */

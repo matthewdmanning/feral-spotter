@@ -1,5 +1,5 @@
 /**
- * hooks/useUIStore.ts
+ * shared/hooks/useUIStore.ts
  * Cross-screen UI state: connectivity, submission-in-flight status, and the
  * single app-owned dialog.
  *

@@ -147,7 +147,7 @@ describe('useSubmissionSubmit submit flow', () => {
       'uid-owner',
       'sub-cloud-1',
     )
-    // The background Live-fix reacquire (src/lib/location.ts) would otherwise
+    // The background Live-fix reacquire (src/core/location/liveFix.ts) would otherwise
     // keep re-watching every 5 minutes for the rest of the app's lifetime.
     expect(mockStopLocationCapture).toHaveBeenCalled()
   })

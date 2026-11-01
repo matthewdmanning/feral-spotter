@@ -1,5 +1,5 @@
 /**
- * lib/annotate/boxResize.ts
+ * features/annotate/lib/boxResize.ts
  * Pure math for useBoundingBoxFrame's edge-handle resize (#286: the crop box
  * is center-anchored — each handle drag changes its own half-extent
  * (half-width for left/right, half-height for top/bottom), and the opposite

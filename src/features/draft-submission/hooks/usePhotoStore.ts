@@ -1,5 +1,5 @@
 /**
- * hooks/usePhotoStore.ts
+ * features/draft-submission/hooks/usePhotoStore.ts
  * Persisted Zustand store for photos attached to the in-progress submission.
  */
 

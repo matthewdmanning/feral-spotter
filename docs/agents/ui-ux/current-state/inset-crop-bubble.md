@@ -3,11 +3,11 @@ topic: inset-crop-bubble
 status: active
 last_reviewed: 2026-08-08
 governs:
-  - src/components/organisms/InsetCropBubble.tsx
-  - src/components/organisms/InsetCropBubble.styles.ts
-  - src/screens/submission/cats/index.tsx
-  - src/screens/submission/cats/index.styles.ts
-  - src/screens/submission/annotate/index.tsx
+  - src/features/annotate/components/InsetCropBubble.tsx
+  - src/features/annotate/components/InsetCropBubble.styles.ts
+  - src/features/draft-submission/screens/cats/index.tsx
+  - src/features/draft-submission/screens/cats/index.styles.ts
+  - src/features/annotate/screens/annotate/index.tsx
 derives_from: ['#168', '#174', '#186']
 ---
 

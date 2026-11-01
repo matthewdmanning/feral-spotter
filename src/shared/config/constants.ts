@@ -1,5 +1,5 @@
 /**
- * config/constants.ts
+ * shared/config/constants.ts
  * App-wide constants and feature flags.
  * Zero React dependencies — safe to import anywhere.
  */
@@ -44,7 +44,7 @@ export const MAX_SUBMISSIONS_PER_UID = 250
  * <AREA>_MOCK convention as EXPO_PUBLIC_AUTH_MOCK). Never on by default
  * (unlike the old __DEV__-based auto-mock) — production and normal dev
  * builds always hit the real backend. Scope matches the old mock exactly:
- * photo uploads (src/lib/upload/firebaseUpload.ts's uploadSubmissionPhoto)
+ * photo uploads (src/features/draft-submission/lib/upload/firebaseUpload.ts's uploadSubmissionPhoto)
  * were never mocked either, and still aren't — this only covers the final
  * metadata write, so it doesn't unblock a full offline test drive on its own.
  */

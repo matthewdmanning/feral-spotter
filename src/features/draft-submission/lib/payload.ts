@@ -1,5 +1,5 @@
 /**
- * lib/submission/payload.ts
+ * features/draft-submission/lib/payload.ts
  * Pure data rules for turning a draft into the upload payload and the cache
  * metadata snapshot — tested as data in, data out, no Firebase/alert/
  * navigation. Sits beside draft.ts (which owns teardown, not assembly) per

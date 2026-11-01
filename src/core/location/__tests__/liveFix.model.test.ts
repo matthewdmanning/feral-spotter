@@ -13,7 +13,7 @@ import { LOCATION_STALE_THRESHOLD_MS } from '@/src/core/location/location'
 
 /**
  * Model of the background Live-fix singleton's reacquire flow
- * (src/lib/location.ts, per docs/adr/0002-location-services-model.md's
+ * (src/core/location/liveFix.ts, per docs/adr/0002-location-services-model.md's
  * 2026-07-31 amendment): it starts once, cannot be restarted while watching,
  * and — once it settles, good fix or not — automatically retries after the
  * stale window without needing another caller to notice.
@@ -70,7 +70,7 @@ describe('Location capture — reacquire flow (model-based)', () => {
   let originalDev: boolean
 
   beforeEach(() => {
-    // The dev-stub short-circuit in src/lib/location.ts bypasses watching
+    // The dev-stub short-circuit in src/core/location/liveFix.ts bypasses watching
     // entirely — this flow is only exercised with __DEV__ off, same as prod.
     originalDev = global.__DEV__
     global.__DEV__ = false

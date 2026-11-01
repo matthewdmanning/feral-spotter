@@ -1,5 +1,5 @@
 /**
- * lib/submission/profilePhoto.ts
+ * features/draft-submission/lib/profilePhoto.ts
  * Which box is a cat's Profile Pic, and the history-cache snapshot of it.
  *
  * Rule: the box on the photo the user chose; else the cat's first box. A

@@ -33,7 +33,7 @@ jest.mock('@/src/features/library-picker/hooks/useLibraryPhotoPicker', () => ({
   useLibraryPhotoPicker: () => ({ pickFromLibrary: jest.fn() }),
 }))
 /**
- * Model of HomeScreen's app-wide auth/consent gate (src/screens/home/index.tsx),
+ * Model of HomeScreen's app-wide auth/consent gate (src/core/home/screens/home/index.tsx),
  * scoped only to this flow — not a project-wide pattern. Guards against #93
  * (registration->consent loop): the gate must never redirect while auth state
  * is indeterminate ("initializing" here, isReady=false in the real code).

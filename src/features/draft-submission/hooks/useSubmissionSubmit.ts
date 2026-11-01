@@ -1,7 +1,7 @@
 /**
- * hooks/useSubmissionSubmit.ts
+ * features/draft-submission/hooks/useSubmissionSubmit.ts
  * Final "Done" and "Reset" actions for the submission, both called from
- * Submission Details (src/screens/submission/create/index.tsx). handleDone
+ * Submission Details (src/features/draft-submission/screens/create/index.tsx). handleDone
  * moved here from the Cat Observations screen (#130); handleReset moved
  * here from useCatSubmit (#153) — it wipes the whole submission, so it
  * belongs on the whole-submission screen, not a single cat's form. Neither
@@ -281,7 +281,7 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
               if (snap) fireAnalyticsEvent(EVENTS.SUBMISSION_SUBMITTED, snap)
               // Navigation deliberately stays in the caller: its ordering
               // against the create screen's auto-skip effect is load-bearing
-              // (#189 — see src/screens/submission/create/index.tsx).
+              // (#189 — see src/features/draft-submission/screens/create/index.tsx).
               router.replace('/')
             } catch (err) {
               if (cId) {

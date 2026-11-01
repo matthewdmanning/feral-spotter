@@ -1,5 +1,5 @@
 /**
- * lib/permissions/libraryPermission.ts
+ * features/permissions/photo/lib/libraryPermission.ts
  * Photo-library read permission gate (expo-image-picker), for
  * useLibraryPhotoPicker's check-then-request flow (#358).
  */

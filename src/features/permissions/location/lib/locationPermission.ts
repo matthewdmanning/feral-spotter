@@ -1,5 +1,5 @@
 /**
- * lib/permissions/locationPermission.ts
+ * features/permissions/location/lib/locationPermission.ts
  * Location permission gate (expo-location) (#358). isUsable is the single
  * source of truth for "is this location grant good enough" -- both
  * consent/index.tsx and lib/location.ts's startLocationCapture call this one

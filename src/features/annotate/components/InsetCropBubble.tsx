@@ -1,5 +1,5 @@
 /**
- * components/organisms/InsetCropBubble.tsx
+ * features/annotate/components/InsetCropBubble.tsx
  *
  * Floating "docked bubble" inset crop (#174, design decided in #168 as
  * Variant B). Renders on both `annotate` (top-right) and Cat Form
@@ -290,7 +290,7 @@ export function InsetCropBubble({
   // edges then converge on the same collapsed offset, computed to land the
   // collapsed (scaled-down) bubble's visual edge back at the anchor rather
   // than short of it or past it off-screen (#202 — see
-  // src/lib/insetCrop/collapse.ts).
+  // src/features/annotate/lib/collapse.ts).
   const collapsedOffset = computeCollapsedOffset(diameter, COLLAPSED_DIAMETER)
   const translateX = slideAnim.interpolate({
     inputRange: [0, 1],

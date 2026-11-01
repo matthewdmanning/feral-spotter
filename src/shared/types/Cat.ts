@@ -1,5 +1,5 @@
 /**
- * types/Cat.ts
+ * shared/types/Cat.ts
  * Enum-like field types for the cat observation form.
  */
 

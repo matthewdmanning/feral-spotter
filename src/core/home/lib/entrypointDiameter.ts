@@ -1,5 +1,5 @@
 /**
- * lib/home/entrypointDiameter.ts
+ * core/home/lib/entrypointDiameter.ts
  *
  * Pure sizing formula for Home's two circular entrypoint buttons (Take
  * Photos / Upload Photos), arranged along the screen's long axis —

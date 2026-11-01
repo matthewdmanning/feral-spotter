@@ -9,10 +9,10 @@ Write a test when it would **catch a failure likely to actually occur**. Never w
 The rule this replaces was "model-based and stateful-flow tests only." That existed to stop slop tests, not to mandate state machines, and it was over-read: it pushed work toward building a machine for logic that has no states, and it discouraged the one check a change genuinely needed when that check wasn't a machine. Relaxed 2026-08-24 (#292) to what it was always trying to say.
 
 - A test earns its place by the failure it would catch. If you can't name that failure, don't write it.
-- Prefer the shape that fits the logic: a state machine for a stateful flow, a plain case for a pure decision on inputs, an invariant asserted against real persisted state for a "nothing must survive this" rule (`src/lib/submission/__tests__/draft.invariant.test.ts`).
+- Prefer the shape that fits the logic: a state machine for a stateful flow, a plain case for a pure decision on inputs, an invariant asserted against real persisted state for a "nothing must survive this" rule (`src/features/draft-submission/lib/__tests__/draft.invariant.test.ts`).
 - Prefer an invariant read from the real thing over an assertion against a hand-maintained list — the list is the part that goes stale, and a test that has to be remembered doesn't catch the case where it was forgotten.
 - Do not default to hand-written, per-case `it()` assertion tests. They repeat setup, assert one shallow thing each, miss transition coverage, and accumulate as bloat.
-- When a model test covers a flow, delete the hand-written tests it subsumes. Example: `src/screens/home/__tests__/HomeScreen.test.tsx` (4 hand cases) was fully covered by the gate model and removed.
+- When a model test covers a flow, delete the hand-written tests it subsumes. Example: `src/core/home/screens/home/__tests__/HomeScreen.test.tsx` (4 hand cases) was fully covered by the gate model and removed.
 - Delete a test when the branch it covers becomes unreachable — an unreachable branch's test passes forever and proves nothing.
 
 ## When to build the model
@@ -22,7 +22,7 @@ Create the machine model **when the design is established — just prior to or a
 ## Tooling
 
 - `xstate` (`createMachine`) for the model; `@xstate/graph` (`createTestModel`) to drive tests.
-- Canonical in-repo example: `src/screens/home/__tests__/HomeScreen.gate.model.test.tsx` — a `gateMachine` plus `testParams` (`states` + `events`). Note: it currently uses `getShortestPaths` (coverage only); upgrade toward journey tests per below.
+- Canonical in-repo example: `src/core/home/screens/home/__tests__/HomeScreen.gate.model.test.tsx` — a `gateMachine` plus `testParams` (`states` + `events`). Note: it currently uses `getShortestPaths` (coverage only); upgrade toward journey tests per below.
 
 ## getShortestPaths is coverage, not user experience
 
@@ -49,7 +49,7 @@ boundary, and configure only the outcomes a test needs. Prefer the resources shi
 | Library               | Resource used by this suite                                                                                                                                                                                                                                                           |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Expo                  | [`jest-expo` and native module mocks](https://docs.expo.dev/modules/mocking/). Preserve real JS exports with `jest.requireActual` when overriding an operation; don't copy enums into a partial module.                                                                               |
-| Unistyles             | `react-native-unistyles/mocks`, configured with `src/config/themes.ts` in `jest.setup.js`. Never use a proxy that accepts arbitrary theme tokens. Nonzero runtime insets exercise safe-area styles.                                                                                   |
+| Unistyles             | `react-native-unistyles/mocks`, configured with `src/shared/config/themes.ts` in `jest.setup.js`. Never use a proxy that accepts arbitrary theme tokens. Nonzero runtime insets exercise safe-area styles.                                                                                   |
 | Expo FileSystem       | `expo-file-system/mocks/FileSystem` supplies in-memory native file behavior through `jest-expo`. Use real public `File`/`Paths`, create fixture files, inspect `exists`, and reset with `__resetMockFileSystem`.                                                                      |
 | MMKV 4                | `createMMKV` automatically selects its supplied in-memory implementation under Jest. No application stub is needed.                                                                                                                                                                   |
 | AsyncStorage          | [`@react-native-async-storage/async-storage/jest/async-storage-mock`](https://react-native-async-storage.github.io/async-storage/docs/advanced/jest/), installed once in `jest.setup.js` and cleared between tests.                                                                   |

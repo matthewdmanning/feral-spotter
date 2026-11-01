@@ -1,5 +1,5 @@
 /**
- * lib/appearance.ts
+ * shared/lib/appearance.ts
  * Thin wrapper around RN's Appearance.getColorScheme(), so config/unistyles.ts
  * can be unit-tested with jest.resetModules() without pulling in the real
  * 'react-native' module (its DevMenu/TurboModule chain doesn't survive a

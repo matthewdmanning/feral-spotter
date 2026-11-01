@@ -1,5 +1,5 @@
 /**
- * config/photoToggles.ts
+ * features/settings/config/photoToggles.ts
  * The Photos card's settings toggles, and which of them a build shows.
  */
 

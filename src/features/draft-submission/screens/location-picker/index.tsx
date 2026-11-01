@@ -80,7 +80,7 @@ export default function LocationPickerScreen() {
 
   const handleSetLocation = useCallback(() => {
     // Mark this as a manual pin first — the background Live-fix reacquire
-    // (src/lib/location.ts) checks this before writing a new fix, so it
+    // (src/core/location/liveFix.ts) checks this before writing a new fix, so it
     // never clobbers a location the user picked by hand.
     setLocationType('pin')
     setSubmissionLocation(centerRef.current)

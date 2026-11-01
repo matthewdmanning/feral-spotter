@@ -1,5 +1,5 @@
 /**
- * types/Photo.ts
+ * shared/types/Photo.ts
  * A photo attached to the in-progress submission, from camera capture
  * or the device library.
  */

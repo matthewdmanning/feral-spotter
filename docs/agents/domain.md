@@ -83,14 +83,14 @@ The first-run flow that explains the app's purpose and why each permission will 
 _Avoid_: tutorial, walkthrough.
 
 **Tutorial**:
-In-feature guidance that shows the user how to operate a _complex_ part of the app. In FeralSpotter the tutorial teaches the Box Annotation operation. Distinct from Onboarding. Implemented, version-gated (see `src/config/tutorial.ts`'s `isTutorialReleased()`). Status is stored per device in `useTutorialStore` as `annotation_tutorial_status`: `unseen` opens the tutorial on the first Box Annotation entry; `skipped` and `completed` keep it closed. No replay path exists yet (matthewdmanning/feral-spotter#386).
+In-feature guidance that shows the user how to operate a _complex_ part of the app. In FeralSpotter the tutorial teaches the Box Annotation operation. Distinct from Onboarding. Implemented, version-gated (see `src/features/annotate/config/tutorial.ts`'s `isTutorialReleased()`). Status is stored per device in `useTutorialStore` as `annotation_tutorial_status`: `unseen` opens the tutorial on the first Box Annotation entry; `skipped` and `completed` keep it closed. No replay path exists yet (matthewdmanning/feral-spotter#386).
 _Avoid_: using this word for anything in the Onboarding flow.
 
 **Box Annotation** ("Box the Cat"):
-Drawing a bounding box around each cat in a photo. The app's one genuinely complex operation — the reason a Tutorial is warranted. User-facing term: "Box the Cat." Implemented (`src/screens/submission/annotate/`).
+Drawing a bounding box around each cat in a photo. The app's one genuinely complex operation — the reason a Tutorial is warranted. User-facing term: "Box the Cat." Implemented (`src/features/annotate/screens/annotate/`).
 
 **Camera screen**:
-The live photo-capture screen (`src/screens/camera/`). Distinct from Box Annotation (`src/screens/submission/annotate/`) — a common colloquial mix-up since both deal with a just-taken photo.
+The live photo-capture screen (`src/features/camera-control/screens/camera/`). Distinct from Box Annotation (`src/features/annotate/screens/annotate/`) — a common colloquial mix-up since both deal with a just-taken photo.
 
 **Camera seam**:
 The boundary between the React Native layer and the Expo native camera views in `modules/native-identification-camera/`. The native side owns the camera session, focus and metering, zoom and capture. The React Native side owns the screen, permissions, settings, captured-photo state, upload and save, and analytics — including anything the native side reports, so there is one analytics-consent gate and one distinct id rather than a second native set of both. `modules/native-identification-camera/src/types.ts` is the contract, and both platforms implement it.
@@ -134,7 +134,7 @@ _Avoid_: sign-up (prefer Registration), onboarding (that is the first-run explai
 ### Cat observation
 
 **Observed Cat / Edit Cat**:
-Two labels for the same screen and code path (`src/screens/submission/cats/index.tsx`), not two screens. The title toggles on whether `existingCat` resolves — i.e. whether the `local_id` being opened is already saved in the Submission's cat list. "Observed Cat": no existing record, `addCat` on save. "Edit Cat": record already exists, `updateCat` on save. Same `useCatForm`, `useCatSubmit`, `CatForm`.
+Two labels for the same screen and code path (`src/features/draft-submission/screens/cats/index.tsx`), not two screens. The title toggles on whether `existingCat` resolves — i.e. whether the `local_id` being opened is already saved in the Submission's cat list. "Observed Cat": no existing record, `addCat` on save. "Edit Cat": record already exists, `updateCat` on save. Same `useCatForm`, `useCatSubmit`, `CatForm`.
 _Avoid_: treating these as separate screens/flows when reasoning about the code — there is one implementation, branched on `existingCat`.
 
 **Unknown / Unsure**:

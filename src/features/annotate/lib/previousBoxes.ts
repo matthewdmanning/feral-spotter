@@ -1,5 +1,5 @@
 /**
- * lib/annotate/previousBoxes.ts
+ * features/annotate/lib/previousBoxes.ts
  *
  * Which boxes on a photo belong to cats already recorded, for drawing them
  * under the crop frame in each cat's own color. Pure: the stores own state.

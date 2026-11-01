@@ -1,5 +1,5 @@
 /**
- * utils/submissionCache.ts
+ * features/draft-submission/lib/submissionCache.ts
  *
  * One AsyncStorage entry per submission, keyed by ID.
  * A separate index key tracks all known IDs for listing.
@@ -43,7 +43,7 @@ export interface CachedCat {
   profile_box?: CachedProfileBox
 }
 
-/** One normalised box (src/types/BoundingBox.ts) — the crop a Profile Pic shows. */
+/** One normalised box (src/shared/types/BoundingBox.ts) — the crop a Profile Pic shows. */
 export interface CachedProfileBox {
   photo_local_id: string
   lowerLeftX: number

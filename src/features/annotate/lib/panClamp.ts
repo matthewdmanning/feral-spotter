@@ -1,5 +1,5 @@
 /**
- * lib/annotate/panClamp.ts
+ * features/annotate/lib/panClamp.ts
  * Pure math for useBoundingBoxFrame's pan-clamp (#204: the photo can't be
  * dragged so far its edge crosses the fixed center crosshair). Kept in its
  * own module with no reanimated/gesture-handler import — worklets aren't

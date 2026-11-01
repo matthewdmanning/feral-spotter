@@ -1,8 +1,8 @@
 /**
- * types/Api.ts
+ * shared/types/Api.ts
  * Shapes for the submission-metadata Cloud Storage upload and the local
  * post-submission cache. Field shapes mirror SubmissionDraft/ObservedCat
- * (src/hooks/useSubmissionStore) structurally rather than importing them,
+ * (src/features/draft-submission/hooks/useSubmissionStore) structurally rather than importing them,
  * since types/ must not depend on hooks/.
  */
 
@@ -36,7 +36,7 @@ export interface SubmissionApiPayload {
     photos_reviewed: boolean
     /** The photo whose box is the cat's Profile Pic — the user's choice, else the first box's photo. */
     profile_photo_local_id?: string
-    /** Box geometry drawn for this cat — normalised 0-1 image-pixel corners (src/types/BoundingBox.ts). */
+    /** Box geometry drawn for this cat — normalised 0-1 image-pixel corners (src/shared/types/BoundingBox.ts). */
     boxes: {
       photo_local_id: string
       /** Undefined only if the box's photo somehow isn't among the uploaded set at submit time. */

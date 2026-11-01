@@ -1,5 +1,5 @@
 /**
- * lib/insetCrop/diameter.ts
+ * features/annotate/lib/diameter.ts
  *
  * Pure sizing formula for the inset-crop bubble (#174, design decided in
  * #168): diameter = (box diagonal + box short side) / 1.6. Larger boxes get

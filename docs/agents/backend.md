@@ -61,8 +61,8 @@ because `10.0.2.2` does not exist on a physical device. The SDK reads
 With the remap off, an Android emulator needs
 `EXPO_PUBLIC_FIREBASE_EMULATOR_HOST=10.0.2.2` set explicitly.
 
-Wired in `src/lib/auth/firebaseAuthProvider.ts` (`connectAuthEmulator`) and
-`src/lib/upload/firebaseUpload.ts` (`connectStorageEmulator`). Both log the
+Wired in `src/features/auth/lib/firebaseAuthProvider.ts` (`connectAuthEmulator`) and
+`src/features/draft-submission/lib/upload/firebaseUpload.ts` (`connectStorageEmulator`). Both log the
 active mode at startup and **fail fast** if the flag is set but the suite
 isn't reachable — they never silently fall through to live Firebase. Read
 that startup line before trusting any auth/upload observation: mock,

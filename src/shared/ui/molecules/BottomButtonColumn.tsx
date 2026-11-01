@@ -1,5 +1,5 @@
 /**
- * components/molecules/BottomButtonColumn.tsx
+ * shared/ui/molecules/BottomButtonColumn.tsx
  *
  * Unistyles v3 + Reanimated best practice:
  *   NEVER spread or merge Unistyles styles into useAnimatedStyle.

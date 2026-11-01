@@ -1,5 +1,5 @@
 /**
- * lib/permissions/types.ts
+ * features/permissions/lib/types.ts
  * Shared port for the four OS-permission adapters (#358). Each adapter wraps
  * a different library's own API shape internally -- the raw status/response
  * types stay adapter-internal, only check()/request() are common, since the

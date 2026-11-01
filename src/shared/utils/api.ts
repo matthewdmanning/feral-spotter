@@ -1,7 +1,7 @@
 /**
  * Legacy shared-password device registration/verification against a Cloud
  * Run endpoint. Submission upload itself moved to Firebase Storage — see
- * src/lib/upload/firebaseUpload.ts.
+ * src/features/draft-submission/lib/upload/firebaseUpload.ts.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage'

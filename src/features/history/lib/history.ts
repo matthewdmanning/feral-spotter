@@ -1,5 +1,5 @@
 /**
- * lib/sightings/history.ts
+ * features/history/lib/history.ts
  * Pure rules for the Reports tab: whose Sightings show, in what order, where
  * each sits on the map, which Sightings share a pin, what a card press does,
  * and what a Profile Pic reads from. Data in, data out — no storage, no React.

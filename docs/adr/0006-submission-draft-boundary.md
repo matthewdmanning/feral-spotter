@@ -13,7 +13,7 @@ A Submission **draft** is exactly four persisted zustand stores:
 | `useBoundingBoxStore`   | `bounding-box-store`    | box geometry and absence markers           |
 | `useActiveCatFlowStore` | `active-cat-flow-store` | the in-progress cat's id                   |
 
-Teardown of all four is owned by one module, `src/lib/submission/draft.ts`,
+Teardown of all four is owned by one module, `src/features/draft-submission/lib/draft.ts`,
 exposing two verbs: `discardDraft()` (Reset semantics) and `completeDraft()`
 (Submit semantics). No caller enumerates the stores itself.
 
@@ -64,7 +64,7 @@ lifetime. It is not optional cleanup, so it is not left to callers.
 
 Navigation. `router.replace('/')` stays in `useSubmissionSubmit`, because its
 ordering against the create screen's auto-skip effect is load-bearing (#189 —
-see the comment in `src/screens/submission/create/index.tsx`). Moving it behind
+see the comment in `src/features/draft-submission/screens/create/index.tsx`). Moving it behind
 the seam re-opens that race. Validation, `waitForUploads`, the metadata upload,
 the `Sending`/`Failed` transitions and their analytics events also stay: they
 are submit-flow concerns, not draft-lifetime ones.
@@ -90,7 +90,7 @@ follows that work — the boundary is defined for teardown first, on purpose.
 ## Consequences
 
 - A fifth draft-owned store must be added to `tearDownDraftState()`; the
-  invariant test in `src/lib/submission/__tests__/draft.invariant.test.ts`
+  invariant test in `src/features/draft-submission/lib/__tests__/draft.invariant.test.ts`
   fails otherwise, since it reads storage rather than a maintained key list.
 - Settings' **Clear Draft** is the third caller, and calls `discardDraft()`.
   It replaces a **Clear Cache** button that was a no-op: it removed
@@ -100,3 +100,5 @@ follows that work — the boundary is defined for teardown first, on purpose.
   what a destructive button actually destroys.
 - `clearAllStores()`, `PERSISTED_STORE_KEYS` and `src/utils/cache.ts` are
   deleted — all zero-caller, all encoding a stale idea of what a draft is.
+
+_2026-11-01: code paths updated for the feature-folder layout ([PROJECT_STRUCTURE.md](../PROJECT_STRUCTURE.md)). Decision unchanged._

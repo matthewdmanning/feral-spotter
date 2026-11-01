@@ -1,5 +1,5 @@
 /**
- * types/Location.ts
+ * shared/types/Location.ts
  * Canonical location payload transmitted to the backend.
  */
 

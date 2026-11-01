@@ -1,5 +1,5 @@
 /**
- * lib/insetCrop/collapse.ts
+ * features/annotate/lib/collapse.ts
  *
  * Pure math for the inset-crop bubble's collapse slide (#202 fix to #174's
  * design). The bubble's wrap is right-anchored (`right: theme.spacing.md`)

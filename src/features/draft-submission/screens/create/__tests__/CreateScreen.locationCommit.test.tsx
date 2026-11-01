@@ -6,7 +6,7 @@ import CreateSubmissionScreen from '../index'
 /**
  * Regression test for the reacquire-must-not-clobber invariant (Q5 of the
  * sprint:location-mvp grilling): the Submission draft's location is only
- * ever written when the background Live-fix singleton (src/lib/location.ts)
+ * ever written when the background Live-fix singleton (src/core/location/liveFix.ts)
  * reports 'resolved' — never while it's mid-reacquire ('pending') — so a
  * worse in-flight candidate can't overwrite the fix already on the draft.
  */

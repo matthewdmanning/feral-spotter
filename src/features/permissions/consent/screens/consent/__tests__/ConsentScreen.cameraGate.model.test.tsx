@@ -75,7 +75,7 @@ const expectConsentAccepted = async (accepted: boolean) => {
 }
 
 /**
- * Model of ConsentScreen's camera-permission gate (src/screens/consent/index.tsx),
+ * Model of ConsentScreen's camera-permission gate (src/features/permissions/consent/screens/consent/index.tsx),
  * mirroring ConsentScreen.locationGate.model.test.tsx but for camera's status
  * — location is held granted+fine throughout, out of scope here. There's no
  * camera equivalent of the location model's LIMITED journey — vision-camera

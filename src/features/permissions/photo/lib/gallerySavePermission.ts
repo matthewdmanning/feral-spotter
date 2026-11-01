@@ -1,5 +1,5 @@
 /**
- * lib/permissions/gallerySavePermission.ts
+ * features/permissions/photo/lib/gallerySavePermission.ts
  * Gallery-save (add-only) permission gate (expo-media-library), for
  * useCameraCapture's "keep captured photos on device" path (#358).
  * writeOnly (true) requests add-only access, matching app.json's
