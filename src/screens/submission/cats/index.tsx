@@ -82,7 +82,9 @@ export default function CatObservationScreen() {
               catId ? { minHeight: COLLAPSED_DIAMETER } : null,
             ]}
           >
-            <View style={styles.header}>
+            <View
+              style={[styles.header, catId ? styles.headerBesideBubble : null]}
+            >
               <Text
                 style={[
                   styles.title,

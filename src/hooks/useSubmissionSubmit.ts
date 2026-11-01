@@ -185,6 +185,7 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
                   cloud_storage_url: p.cloud_storage_url,
                 })),
                 user_id: user?.uid,
+                submitted_at: new Date().toISOString(),
                 metadata: buildCacheMetadata(submission),
               })
               const snap = await getSubmissionCache(cId)

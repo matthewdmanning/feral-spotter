@@ -67,10 +67,16 @@ export function ownSightings(
   return caches.filter((c) => c.user_id == null || c.user_id === uid)
 }
 
-/** The Sighting's own time: a user-set or EXIF time, else when it was made. */
+/**
+ * The Sighting's own time: a user-set or EXIF time, else when it was sent
+ * (ADR 0003), else — for a draft not yet sent — when it was made.
+ */
 export function sightingTime(cache: SubmissionCacheFile): string {
   return (
-    cache.metadata.manual_time ?? cache.metadata.captured_at ?? cache.created_at
+    cache.metadata.manual_time ??
+    cache.metadata.captured_at ??
+    cache.submitted_at ??
+    cache.created_at
   )
 }
 

@@ -7,6 +7,7 @@ import {
   pinBadge,
   profilePicUri,
   sightingCardAction,
+  sightingTime,
   sortBySightingTime,
   type MapSize,
   type SpotCoordinates,
@@ -93,6 +94,17 @@ describe('sortBySightingTime', () => {
       'made-early',
       'made-late',
     ])
+  })
+})
+
+describe('sightingTime', () => {
+  // ADR 0003: a camera Sighting's time is when it was sent, and the Sighting
+  // view labels it "Time of submission". The draft's start is a different time.
+  it('shows a sent camera Sighting at its Submit time, not the draft start', () => {
+    const row = sighting('cam', '2026-11-01T13:32:00Z', null, 1, {
+      submitted_at: '2026-11-01T13:34:00Z',
+    })
+    expect(sightingTime(row)).toBe('2026-11-01T13:34:00Z')
   })
 })
 

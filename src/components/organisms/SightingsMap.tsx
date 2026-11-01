@@ -9,6 +9,9 @@
  * markers take an image, not a view, so the badge is part of the bitmap.
  * Apple Maps markers take no custom image: iOS shows an SF Symbol cat for one
  * cat and the count as the marker's monogram for more (iOS 17+).
+ *
+ * Tiles stay light in both app themes: the pin colours are chosen against
+ * light tiles.
  */
 
 import catPin from '@/assets/images/catPins/cat-pin.png'
@@ -150,6 +153,7 @@ export function SightingsMap({
       {!cameraPosition || !icons ? null : Platform.OS === 'ios' ? (
         <AppleMaps.View
           style={styles.map}
+          colorScheme={AppleMaps.MapColorScheme.LIGHT}
           cameraPosition={cameraPosition}
           onMarkerClick={handleMarkerClick}
           markers={spots.map((spot) => {
@@ -171,6 +175,7 @@ export function SightingsMap({
       ) : (
         <GoogleMaps.View
           style={styles.map}
+          colorScheme={GoogleMaps.MapColorScheme.LIGHT}
           cameraPosition={cameraPosition}
           onMarkerClick={handleMarkerClick}
           uiSettings={{

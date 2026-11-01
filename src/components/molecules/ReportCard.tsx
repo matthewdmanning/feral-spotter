@@ -42,7 +42,9 @@ export const ReportCard = memo(function ReportCard({
         </Text>
       </View>
       <View style={styles.centre}>
-        <Text style={styles.datetime} numberOfLines={1}>
+        {/* Two lines: a narrow centre wraps the time below the date
+            instead of cutting it off. */}
+        <Text style={styles.datetime} numberOfLines={2}>
           {when}
         </Text>
       </View>
