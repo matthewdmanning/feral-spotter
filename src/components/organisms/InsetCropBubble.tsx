@@ -46,11 +46,14 @@ import { computeBubbleDiameter } from '@/src/lib/insetCrop/diameter'
 import { bubbleImageRect } from '@/src/lib/insetCrop/imageRect'
 import { Image } from 'expo-image'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Animated, Dimensions, PanResponder, Pressable } from 'react-native'
+import {
+  Animated,
+  PanResponder,
+  Pressable,
+  useWindowDimensions,
+} from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './InsetCropBubble.styles'
-
-const window = Dimensions.get('window')
 
 // Matches the #168 prototype's `--bubble-d` fallback — used for a
 // degenerate (zero-area) box, and as the pre-report default a host layout
@@ -68,6 +71,10 @@ const BORDER_WIDTH = 1.5
 const GRAB_SLOP = COLLAPSED_DIAMETER / 4
 // Movement past this many dp is a drag, not a tap.
 const DRAG_SLOP = 2
+// A drop is kept this far above the window's bottom edge. The dock sits
+// below the host's header and safe area, so a drop at window height minus
+// one bubble would still land off-screen.
+const DROP_BOTTOM_MARGIN = COLLAPSED_DIAMETER * 3
 
 export type InsetCropEdge = 'top-center' | 'top-right'
 
@@ -120,6 +127,7 @@ export function InsetCropBubble({
   onHoldChange,
 }: InsetCropBubbleProps) {
   const { theme } = useUnistyles()
+  const window = useWindowDimensions()
   const getFirstBox = useBoundingBoxStore((s) => s.getFirstBox)
   // The cat's own color, so the bubble matches its box on the photo.
   const catColor = useBoundingBoxStore(
@@ -166,6 +174,7 @@ export function InsetCropBubble({
       ? theme.spacing.md / 2 - (window.width - diameter) / 2
       : 0
   const snapX = collapsed ? 0 : -centeringOffset
+  const maxDropY = Math.max(0, window.height - DROP_BOTTOM_MARGIN)
   const panResponder = useMemo(() => {
     const settle = () => {
       drag.flattenOffset()
@@ -175,6 +184,16 @@ export function InsetCropBubble({
         duration: COLLAPSE_DURATION_MS,
         useNativeDriver: false,
       }).start()
+      // Keep the drop on screen: not above the dock, not past the bottom.
+      drag.y.stopAnimation((y) => {
+        const clamped = Math.min(Math.max(y, 0), maxDropY)
+        if (clamped === y) return
+        Animated.timing(drag.y, {
+          toValue: clamped,
+          duration: COLLAPSE_DURATION_MS,
+          useNativeDriver: false,
+        }).start()
+      })
       setMoved(true)
     }
     return PanResponder.create({
@@ -192,7 +211,9 @@ export function InsetCropBubble({
         drag.extractOffset()
         onHoldChange?.(true)
       },
-      onPanResponderMove: Animated.event([null, { dx: drag.x, dy: drag.y }], {
+      // Up and down only (inset-crop-bubble.md): the finger's sideways
+      // movement is ignored, so the bubble never leaves its column.
+      onPanResponderMove: Animated.event([null, { dy: drag.y }], {
         useNativeDriver: false,
       }),
       onPanResponderTerminationRequest: () => false,
@@ -202,7 +223,7 @@ export function InsetCropBubble({
       // stranding the bubble where it was dropped.
       onPanResponderTerminate: settle,
     })
-  }, [draggable, collapsed, drag, snapX, onHoldChange])
+  }, [draggable, collapsed, drag, snapX, maxDropY, onHoldChange])
 
   // A dragged bubble keeps its height through collapse and expand, and stays
   // at the right edge: expanded it cancels the centering shift, collapsed it
@@ -311,10 +332,9 @@ export function InsetCropBubble({
   const collapseTransform = [{ translateX }, { translateY }, { scale }]
   // The collapse is a scale transform, which would thin the border and
   // flatten the corners. Pre-scaling them by the inverse keeps both the same
-  // on screen in either state. Annotate's crop is barely rounded; Cat Form's
-  // is clearly rounded.
+  // on screen in either state. Same radius on both screens (inset-crop-bubble.md).
   const edgeScale = collapsed ? diameter / COLLAPSED_DIAMETER : 1
-  const cornerRadius = edge === 'top-center' ? theme.radius.lg : theme.radius.xs
+  const cornerRadius = theme.radius.md
 
   // The wrapper's layout box is the full unscaled bubble, far larger than a
   // collapsed bubble looks. Touches go to the inner view instead: hit-testing
