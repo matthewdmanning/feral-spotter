@@ -52,13 +52,11 @@ export default function FeralReportsScreen() {
   return (
     <>
       {/*
-        This screen is reachable both as a tab ((home-tabs)/feral-reports,
-        where native tabs draw no header — see (home-tabs)/_layout.tsx)
-        and, in principle, as a plain stack push (app/feral-reports.tsx),
-        where the root Stack's default headerShown: true would otherwise
-        apply. Forcing it off here keeps this screen's own in-body title
-        row (below) as the only header on every path — one rendering to
-        keep in sync with the safe-area inset, instead of two.
+        Reached only as a tab ((home-tabs)/feral-reports), where native
+        tabs draw no header — see (home-tabs)/_layout.tsx. The root-stack
+        duplicate route was removed (it made /feral-reports ambiguous).
+        headerShown stays off so this screen's in-body title row (below)
+        is its only header.
       */}
       <Stack.Screen options={{ title: 'Feral Reports', headerShown: false }} />
       <View style={styles.screen}>

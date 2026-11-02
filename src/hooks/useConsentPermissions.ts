@@ -6,6 +6,7 @@
  */
 
 import consentCopy from '@/src/content/consentDisclosure.json'
+import { routeAfterDeviceConsent } from '@/src/hooks/consentFlow'
 import { useConsentStore } from '@/src/hooks/useConsentStore'
 import { showAlert } from '@/src/hooks/useUIStore'
 import { cameraPermission } from '@/src/lib/permissions/cameraPermission'
@@ -56,7 +57,7 @@ export function useConsentPermissions() {
         )
       }
       markAccepted()
-      router.replace('/sign-in')
+      router.replace(routeAfterDeviceConsent())
     } catch (err) {
       console.error('[consent] permission request failed:', err)
       showAlert(
@@ -74,20 +75,35 @@ export function useConsentPermissions() {
   useEffect(() => {
     if (!blocked) return
 
+    // Two quick 'active' events must not accept and navigate twice.
+    let checking = false
+    let done = false
     const recheck = async () => {
-      const cameraUsable = await cameraPermission.check()
-      const locationUsable = await locationPermission.check()
-      if (cameraUsable && locationUsable) {
-        setBlocked(false)
-        markAccepted()
-        router.replace('/sign-in')
+      if (checking || done) return
+      checking = true
+      try {
+        const cameraUsable = await cameraPermission.check()
+        const locationUsable = await locationPermission.check()
+        if (cameraUsable && locationUsable && !done) {
+          done = true
+          setBlocked(false)
+          markAccepted()
+          router.replace(routeAfterDeviceConsent())
+        }
+      } catch (err) {
+        console.error('[consent] permission recheck failed:', err)
+      } finally {
+        checking = false
       }
     }
 
     const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'active') recheck()
+      if (state === 'active') void recheck()
     })
-    return () => sub.remove()
+    return () => {
+      done = true
+      sub.remove()
+    }
   }, [blocked, markAccepted])
 
   return { busy, blocked, handleAgree }

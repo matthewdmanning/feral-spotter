@@ -110,3 +110,18 @@ tags:
 ## Implementation updates
 
 <!-- Append dated entries when modifying this feature after the initial implementation. -->
+
+## 2026-11-02 — fix
+
+**Purpose:** Codebase review: hardware Back escaped the consent steps, a killed chain never resumed, the entry gate could act before consent hydrated, re-consent sent signed-in users to sign-in, and the PostHog wrapper remounted the app when consent flipped.
+**Change:**
+
+- `ConsentChoiceScreen` swallows hardware Back; it also follows a late `defaultChecked` until touched.
+- `useEntryGate` waits for `useConsentHydrated()` and routes a signed-in user to `nextConsentRoute()` when a step is unanswered (spec updated).
+- `routeAfterDeviceConsent()` (consentFlow) replaces the hard-coded `/sign-in` after device consent; the foreground recheck is single-flight and catches errors.
+- `AppProviders`: PostHogProvider is a zero-size sibling of the app, not its parent.
+- `useBackHandler` subscribes once and calls the latest handler via a ref.
+- Google sign-in dismissal throws `SIGN_IN_CANCELLED` (verified against installed v16 `isCancelledResponse`).
+- Every `feralspotter://` system path lands on Home (`+native-intent.ts`), where the gate runs. The duplicate root `feral-reports` route is removed.
+- Cat Form redirects a stale `edit` id instead of saving a new cat; route params are normalized (`utils/routeParam.ts`).
+  Tests: Home tests now use the real consent store; the gate model adds stale-version and unanswered-step journeys. `consentFlow.test.ts` covers `routeAfterDeviceConsent`. Not checked on device.

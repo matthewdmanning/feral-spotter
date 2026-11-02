@@ -152,6 +152,12 @@ function SystemThemeSync() {
   return null
 }
 
+const POSTHOG_HOST_STYLE = {
+  position: 'absolute',
+  width: 0,
+  height: 0,
+} as const
+
 export function AppProviders({ children }: AppProvidersProps) {
   const hasAcceptedConsent = useConsentStore(
     (s) => s.accepted && s.acceptedVersion === CONSENT_VERSION,
@@ -168,13 +174,19 @@ export function AppProviders({ children }: AppProvidersProps) {
       {/* Outside ErrorBoundary's children so a caught render error still
           leaves the app able to raise a dialog. */}
       <AlertHost />
-      <ErrorBoundary>
-        {IS_PRERELEASE &&
+      {/* A sibling of the app, not its parent: wrapping `children` only
+          while consented gave them a different parent each time consent
+          flipped (and on every cold start, as consent hydrates), and React
+          remounted the whole app. Only AnalyticsBridge reads PostHog. */}
+      {IS_PRERELEASE &&
         POSTHOG_KEY &&
         POSTHOG_HOST &&
         hasAcceptedConsent &&
-        hasAcceptedAnalytics ? (
+        hasAcceptedAnalytics && (
           <PostHogProvider
+            // Its wrapper View defaults to flex: 1; as a sibling it must take
+            // no space from the app.
+            style={POSTHOG_HOST_STYLE}
             apiKey={POSTHOG_KEY}
             options={{
               host: POSTHOG_HOST,
@@ -195,12 +207,9 @@ export function AppProviders({ children }: AppProvidersProps) {
             debug={__DEV__}
           >
             <AnalyticsBridge />
-            {children}
           </PostHogProvider>
-        ) : (
-          children
         )}
-      </ErrorBoundary>
+      <ErrorBoundary>{children}</ErrorBoundary>
     </GestureHandlerRootView>
   )
 }

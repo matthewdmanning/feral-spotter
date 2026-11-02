@@ -1,5 +1,6 @@
 import * as ui from '@/src/hooks/useUIStore'
 import {
+  act,
   userEvent,
   render,
   screen,
@@ -106,14 +107,21 @@ describe('IntroFlowScreen', () => {
     expect(exitSpy).toHaveBeenCalledTimes(1)
   })
 
-  it('does not intercept hardware back past T1', async () => {
+  // Slides are local state on the only stack entry: an unhandled Back past
+  // T1 used to exit the app with no confirm.
+  it('steps back one slide on hardware back past T1', async () => {
     const alertSpy = jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
     render(<IntroFlowScreen />)
     await userEvent.press(screen.getByText(ONBOARDING_SLIDES[0].button))
+    expect(screen.getByText(ONBOARDING_SLIDES[1].header)).toBeTruthy()
 
-    const swallowed = backHandler?.()
+    let swallowed: boolean | undefined
+    act(() => {
+      swallowed = backHandler?.()
+    })
 
-    expect(swallowed).toBe(false)
+    expect(swallowed).toBe(true)
     expect(alertSpy).not.toHaveBeenCalled()
+    expect(screen.getByText(ONBOARDING_SLIDES[0].header)).toBeTruthy()
   })
 })

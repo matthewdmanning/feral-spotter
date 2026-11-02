@@ -1,4 +1,7 @@
-import { GoogleSignin } from '@react-native-google-signin/google-signin'
+import {
+  GoogleSignin,
+  isCancelledResponse,
+} from '@react-native-google-signin/google-signin'
 
 GoogleSignin.configure({
   webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
@@ -17,6 +20,9 @@ export interface GoogleTokens {
 export async function getGoogleTokens(): Promise<GoogleTokens | null> {
   await GoogleSignin.hasPlayServices()
   const response = await GoogleSignin.signIn()
+  // v13+: dismissing the account picker resolves 'cancelled' rather than
+  // throwing. Same signal Apple and Facebook give, so sign-in stays quiet.
+  if (isCancelledResponse(response)) throw new Error('SIGN_IN_CANCELLED')
   if (!response.data?.idToken) return null
   const { accessToken } = await GoogleSignin.getTokens()
   return { idToken: response.data.idToken, accessToken }

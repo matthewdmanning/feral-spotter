@@ -1,7 +1,7 @@
 ---
 topic: email-opt-in
 status: active
-last_reviewed: 2026-10-24
+last_reviewed: 2026-11-02
 governs:
   - src/screens/email-opt-in/index.tsx
   - src/screens/settings/index.tsx
@@ -25,6 +25,8 @@ derives_from: []
 - The Settings switch shows the stored choice. A change applies at once. It does not wait for Save.
 - The screen shows the account address masked, for example `j***@example.com`.
 - A user who already chose is not asked again after sign-in.
+- Android hardware Back does nothing on this screen or the analytics step (2026-11-02).
+- A signed-in user with an unanswered step (app killed mid-chain, or signed in before the step shipped) is sent to that step from Home (2026-11-02).
 - Settings shows the account email. It can send a verification link to a new address.
 - Copy states that email goes to the address on the account. It states that the user can turn it off in Settings.
 
