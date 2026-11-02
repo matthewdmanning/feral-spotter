@@ -6,6 +6,8 @@ import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoSto
 import { useRemoveCat } from '@/src/features/draft-submission/hooks/useRemoveCat'
 import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
 import { pressDialogButton } from '@/src/test-utils/dialog'
+import { observedCat } from '@/src/test-utils/catFixtures'
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
 
 /**
  * Removing a saved cat (#299) has to clear everything derived from that cat
@@ -23,19 +25,12 @@ const OTHER_CAT_ID = 'cat-2'
 const PHOTO_ID = 'photo-1'
 const BOX = { lowerLeftX: 1, lowerLeftY: 1, upperRightX: 9, upperRightY: 9 }
 
-const buildCat = (localId: string) => ({
-  local_id: localId,
-  age: 'adult' as const,
-  ear_tipped: 'unsure' as const,
-  owned_domesticated: 'unsure' as const,
-  pattern: 'solid' as const,
-  hair_length: 'short' as const,
-  color: 'black' as const,
-  sex: 'unknown' as const,
-  health_label: 'unknown' as const,
-  photo_local_ids: [PHOTO_ID],
-  photos_reviewed: true,
-})
+const buildCat = (localId: string) =>
+  observedCat({
+    local_id: localId,
+    photo_local_ids: [PHOTO_ID],
+    photos_reviewed: true,
+  })
 
 describe('useRemoveCat (#299)', () => {
   beforeEach(() => {
@@ -50,14 +45,7 @@ describe('useRemoveCat (#299)', () => {
     useSubmissionStore.getState().addCat(buildCat(OTHER_CAT_ID))
     useBoundingBoxStore.getState().addBox(CAT_ID, PHOTO_ID, BOX)
     useBoundingBoxStore.getState().addBox(OTHER_CAT_ID, PHOTO_ID, BOX)
-    usePhotoStore.getState().addPhoto({
-      local_id: PHOTO_ID,
-      uri: `file://${PHOTO_ID}.jpg`,
-      uploaded: false,
-      upload_progress: 0,
-      width: 100,
-      height: 100,
-    })
+    usePhotoStore.getState().addPhoto(submissionPhoto({ local_id: PHOTO_ID }))
   })
 
   it('confirms before removing anything', async () => {
