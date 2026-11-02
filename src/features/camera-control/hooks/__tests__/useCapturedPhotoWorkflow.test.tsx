@@ -4,6 +4,7 @@ import { Asset } from 'expo-media-library'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useCapturedPhotoWorkflow } from '@/src/features/camera-control/hooks/useCapturedPhotoWorkflow'
 import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
+import { useSettingsStore } from '@/src/features/settings/hooks/useSettingsStore'
 
 // The supplied mock helper is outside the package's public exports map.
 const { __resetMockFileSystem } = jest.requireActual(
@@ -45,11 +46,6 @@ jest.mock('@/src/features/draft-submission/lib/upload/uploadNewPhoto', () => ({
   uploadNewPhoto: jest.fn(),
 }))
 
-jest.mock('@/src/features/settings/hooks/useSettingsStore', () => ({
-  useSettingsStore: (select: (state: object) => unknown) =>
-    select({ settings: { keep_photos_on_device: true } }),
-}))
-
 const frame = (uri: string) => ({ uri, width: 100, height: 100 })
 
 beforeEach(async () => {
@@ -63,6 +59,7 @@ beforeEach(async () => {
     submissionId: 'test-submission',
   })
   useDraftStartupStore.setState({ phase: 'ready', task: null })
+  useSettingsStore.getState().updateSettings({ keep_photos_on_device: true })
   __resetMockFileSystem()
   mockAssetCreate.mockReset()
   mockAssetCreate.mockResolvedValue(undefined)

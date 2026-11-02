@@ -33,8 +33,8 @@ jest.mock('expo-image-picker', () => ({
 jest.mock('expo-router', () => ({ router: { navigate: jest.fn() } }))
 
 jest.mock('@/src/shared/analytics/analytics', () => ({
+  ...jest.requireActual('@/src/shared/analytics/analytics'),
   captureEvent: jest.fn(),
-  EVENTS: { LIBRARY_PHOTOS_SELECTED: 'library_photos_selected' },
 }))
 
 describe('useLibraryPhotoPicker permission gate — model-based test', () => {

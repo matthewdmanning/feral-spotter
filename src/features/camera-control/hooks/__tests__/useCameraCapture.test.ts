@@ -73,14 +73,8 @@ jest.mock('expo-crypto', () => ({ randomUUID: () => 'test-id' }))
 
 const mockCaptureEvent = jest.fn()
 jest.mock('@/src/shared/analytics/analytics', () => ({
+  ...jest.requireActual('@/src/shared/analytics/analytics'),
   captureEvent: (...args: unknown[]) => mockCaptureEvent(...args),
-  EVENTS: {
-    CAMERA_OPENED: 'camera_opened',
-    CAMERA_DEVICE_READY: 'camera_device_ready',
-    CAMERA_CAPTURE_SEQUENCE_COMPLETED: 'camera_capture_sequence_completed',
-    PHOTO_CAPTURED: 'photo_captured',
-    PHOTO_CAPTURE_FAILED: 'photo_capture_failed',
-  },
 }))
 
 beforeEach(() => {
