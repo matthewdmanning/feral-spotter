@@ -497,23 +497,28 @@ describe('useSubmissionSubmit submit flow', () => {
     usePhotoStore.setState({
       photos: [photo({ local_id: 'photo-stalled', uploaded: false })],
     })
-    // The wait polls until Date.now() passes its deadline; jumping the clock
-    // past it fails the wait on the first check instead of after 30 real
-    // seconds.
-    jest.spyOn(Date, 'now').mockReturnValueOnce(0).mockReturnValue(999_999)
+    // Fake timers move the clock and the poll together, so the 30 s wait
+    // times out without depending on which code reads Date.now() first.
+    jest.useFakeTimers()
     jest.spyOn(console, 'error').mockImplementation(() => {})
     const errorSpy = jest.spyOn(ui, 'showError').mockImplementation(() => {})
 
     const { result } = renderHook(() => useSubmissionSubmit())
 
-    await act(async () => {
-      result.current.handleDone()
-      const submit = useUIStore
-        .getState()
-        .dialog?.buttons.find((b) => b.text === 'Submit')
-      expect(submit?.onPress).toEqual(expect.any(Function))
-      await submit!.onPress!()
-    })
+    try {
+      await act(async () => {
+        result.current.handleDone()
+        const submit = useUIStore
+          .getState()
+          .dialog?.buttons.find((b) => b.text === 'Submit')
+        expect(submit?.onPress).toEqual(expect.any(Function))
+        const sending = submit!.onPress!() as unknown as Promise<void>
+        await jest.advanceTimersByTimeAsync(31_000)
+        await sending
+      })
+    } finally {
+      jest.useRealTimers()
+    }
 
     expect(errorSpy).toHaveBeenCalledWith(
       'Photos Still Uploading',

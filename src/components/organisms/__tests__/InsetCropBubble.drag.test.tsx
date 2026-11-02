@@ -208,9 +208,14 @@ describe('InsetCropBubble drag', () => {
   it('puts the touch handlers on the drawn bubble, not the larger wrapper', () => {
     // The wrapper's layout box is the full unscaled bubble, far bigger than a
     // collapsed one looks. Handlers there made that whole box draggable.
-    const { wrap, touches } = renderBubble()
+    const onHoldChange = jest.fn()
+    const { wrap, touches } = renderBubble(onHoldChange)
     expect(wrap.props.onResponderGrant).toBeUndefined()
     expect(wrap.props.pointerEvents).toBe('box-none')
-    expect(touches.onResponderGrant).toBeDefined()
+    // The drawn bubble's handler is the real drag: a grant starts a hold.
+    act(() => {
+      touches.onResponderGrant(touch(0, 0))
+    })
+    expect(onHoldChange).toHaveBeenLastCalledWith(true)
   })
 })

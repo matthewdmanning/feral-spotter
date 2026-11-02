@@ -91,7 +91,15 @@ function authEvent(
 // photoCount triggers: see photoCount.test.ts (event-sequence model).
 
 describe('onSubmissionSubmitted', () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockTxGet.mockReset()
+    mockGetFiles.mockReset()
+    // clearAllMocks keeps unconsumed mockResolvedValueOnce queues; a test
+    // that leaves one would feed it to the next.
+    mockTxGet.mockReset()
+    mockGetFiles.mockReset()
+  })
 
   it('#270: increments the per-uid submission count on a new metadata.json', async () => {
     mockTxGet.mockResolvedValueOnce({ exists: false })
@@ -155,6 +163,8 @@ describe('resolveTesterClaim', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    mockTxGet.mockReset()
+    mockGetFiles.mockReset()
     process.env.TESTER_ALLOWLIST_EMAILS =
       'tester@example.com, Other@Example.com'
   })
@@ -226,6 +236,8 @@ describe('orphan-photo retention sweep', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    mockTxGet.mockReset()
+    mockGetFiles.mockReset()
     jest.spyOn(Date, 'now').mockReturnValue(now)
     mockDeleteFile.mockReset().mockResolvedValue(undefined)
     jest.spyOn(console, 'log').mockImplementation(() => {})
