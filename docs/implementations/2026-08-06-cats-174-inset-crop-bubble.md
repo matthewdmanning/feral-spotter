@@ -266,3 +266,8 @@ unchanged from the previous entry's baseline — no new coverage added,
 consistent with this component's existing component-level-only,
 visual-change-untested scope), `prettier --check` (clean). **Not
 verified live on-device** — same outstanding gap as the previous entry.
+
+## 2026-11-02 — fix
+
+**Purpose:** Code had drifted from `inset-crop-bubble.md`: annotate used `radius.xs` (spec `lg`), the drag followed the finger sideways, and a drop could land off-screen.
+**Change:** Both screens use `radius.md` (12dp, user-chosen midpoint; spec updated). Drag maps `dy` only. Release clamps height to `[0, window height − 3 × collapsed size]`. Window size read via `useWindowDimensions`, not at module load. Test: `InsetCropBubble.drag.test.tsx` "moves only up and down mid-drag and keeps a drop on screen". Not checked on device.
