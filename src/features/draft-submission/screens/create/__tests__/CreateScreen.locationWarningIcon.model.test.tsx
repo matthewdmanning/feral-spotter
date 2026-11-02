@@ -145,11 +145,6 @@ describe('Submission Details location-warning icon — model-based test', () => 
       },
     },
   }
-
-  beforeEach(() => {
-    jest.clearAllMocks()
-  })
-
   const journeys = [
     {
       name: 'no fix yet: warning shown, icon tappable',

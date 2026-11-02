@@ -18,7 +18,6 @@ jest.mock('expo-location', () => ({
 
 describe('startLocationCapture', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
     __resetLocationCaptureForTests()
     useConsentStore.setState({ accepted: false, acceptedVersion: null })
     mockWatchPositionAsync.mockResolvedValue({ remove: removeMock })

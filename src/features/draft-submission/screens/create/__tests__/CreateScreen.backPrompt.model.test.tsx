@@ -5,6 +5,7 @@ import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import CreateSubmissionScreen from '@/src/features/draft-submission/screens/create/index'
+import { pressDialogButton } from '@/src/test-utils/dialog'
 
 /**
  * Model of Android hardware Back on Submission Details. The header back and
@@ -111,22 +112,11 @@ const backMachine = createMachine({
 
 const dialog = () => useUIStore.getState().dialog
 
-// Mirrors AlertHost: dismiss first, then run the button's handler.
-const pressDialogButton = async (text: string) => {
-  const button = dialog()?.buttons.find((b) => b.text === text)
-  if (!button) throw new Error(`no dialog button "${text}"`)
-  await act(() => {
-    useUIStore.getState().dismissDialog()
-    button.onPress?.()
-  })
-}
-
 describe('Submission Details hardware Back — model-based test', () => {
   let rerender: (ui: React.ReactElement) => void
   let lastBackHandled: boolean
 
-  beforeEach(async () => {
-    jest.clearAllMocks()
+  beforeEach(() => {
     mockFocused = true
     useUIStore.setState({ dialog: null })
     lastBackHandled = false

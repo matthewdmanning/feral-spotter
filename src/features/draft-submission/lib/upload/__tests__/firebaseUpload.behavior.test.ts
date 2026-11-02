@@ -14,10 +14,6 @@ import {
   uploadSubmissionMetadata,
   uploadSubmissionPhoto,
 } from '@/src/features/draft-submission/lib/upload/firebaseUpload'
-
-beforeEach(() => jest.clearAllMocks())
-afterEach(() => jest.restoreAllMocks())
-
 describe('Firebase submission upload behavior', () => {
   it('writes the serialized submission to its owned metadata object as JSON', async () => {
     const payload = { id: 'sub-7', photos: [{ cloud_storage_path: 'p.jpg' }] }

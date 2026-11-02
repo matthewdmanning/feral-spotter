@@ -5,6 +5,7 @@ import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBo
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useRemoveCat } from '@/src/features/draft-submission/hooks/useRemoveCat'
 import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { pressDialogButton } from '@/src/test-utils/dialog'
 
 /**
  * Removing a saved cat (#299) has to clear everything derived from that cat
@@ -36,16 +37,8 @@ const buildCat = (localId: string) => ({
   photos_reviewed: true,
 })
 
-const pressRemove = async () => {
-  const buttons = jest.mocked(ui.showAlert).mock.calls[0][2]
-  await act(() => {
-    buttons?.find((b) => b.text === 'Remove')?.onPress?.()
-  })
-}
-
 describe('useRemoveCat (#299)', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
     jest.spyOn(ui, 'showAlert')
     ui.useUIStore.setState({ dialog: null })
     useBoundingBoxStore.setState({ boxes: {}, lastBoxes: {}, absences: {} })
@@ -68,8 +61,8 @@ describe('useRemoveCat (#299)', () => {
   })
 
   it('confirms before removing anything', async () => {
-    const { result } = await renderHook(() => useRemoveCat())
-    await act(() => result.current(CAT_ID))
+    const { result } = renderHook(() => useRemoveCat())
+    act(() => result.current(CAT_ID))
 
     expect(ui.showAlert).toHaveBeenCalled()
     // Nothing gone until the destructive button is actually pressed.
@@ -77,13 +70,10 @@ describe('useRemoveCat (#299)', () => {
   })
 
   it('cancelling removes nothing', async () => {
-    const { result } = await renderHook(() => useRemoveCat())
-    await act(() => result.current(CAT_ID))
+    const { result } = renderHook(() => useRemoveCat())
+    act(() => result.current(CAT_ID))
 
-    const buttons = jest.mocked(ui.showAlert).mock.calls[0][2]
-    await act(() => {
-      buttons?.find((b) => b.text === 'Cancel')?.onPress?.()
-    })
+    await pressDialogButton('Cancel')
 
     expect(useSubmissionStore.getState().cats).toHaveLength(2)
     expect(
@@ -92,9 +82,9 @@ describe('useRemoveCat (#299)', () => {
   })
 
   it('removes the cat and its boxes, leaving the other cat intact', async () => {
-    const { result } = await renderHook(() => useRemoveCat())
-    await act(() => result.current(CAT_ID))
-    await pressRemove()
+    const { result } = renderHook(() => useRemoveCat())
+    act(() => result.current(CAT_ID))
+    await pressDialogButton('Remove')
 
     const cats = useSubmissionStore.getState().cats
     expect(cats).toHaveLength(1)
@@ -109,36 +99,36 @@ describe('useRemoveCat (#299)', () => {
   })
 
   it('never deletes photos — the pool is submission-scoped, not cat-scoped', async () => {
-    const { result } = await renderHook(() => useRemoveCat())
-    await act(() => result.current(CAT_ID))
-    await pressRemove()
+    const { result } = renderHook(() => useRemoveCat())
+    act(() => result.current(CAT_ID))
+    await pressDialogButton('Remove')
 
     expect(usePhotoStore.getState().photos).toHaveLength(1)
   })
 
   it('clears activeCatId when the removed cat was the in-progress one', async () => {
     useActiveCatFlowStore.getState().setActiveCatId(CAT_ID)
-    const { result } = await renderHook(() => useRemoveCat())
-    await act(() => result.current(CAT_ID))
-    await pressRemove()
+    const { result } = renderHook(() => useRemoveCat())
+    act(() => result.current(CAT_ID))
+    await pressDialogButton('Remove')
 
     expect(useActiveCatFlowStore.getState().activeCatId).toBeNull()
   })
 
   it('leaves activeCatId alone when a different cat is in progress', async () => {
     useActiveCatFlowStore.getState().setActiveCatId(OTHER_CAT_ID)
-    const { result } = await renderHook(() => useRemoveCat())
-    await act(() => result.current(CAT_ID))
-    await pressRemove()
+    const { result } = renderHook(() => useRemoveCat())
+    act(() => result.current(CAT_ID))
+    await pressDialogButton('Remove')
 
     expect(useActiveCatFlowStore.getState().activeCatId).toBe(OTHER_CAT_ID)
   })
 
   it('runs the onRemoved callback so the caller can navigate away', async () => {
     const onRemoved = jest.fn()
-    const { result } = await renderHook(() => useRemoveCat())
-    await act(() => result.current(CAT_ID, onRemoved))
-    await pressRemove()
+    const { result } = renderHook(() => useRemoveCat())
+    act(() => result.current(CAT_ID, onRemoved))
+    await pressDialogButton('Remove')
 
     expect(onRemoved).toHaveBeenCalled()
   })

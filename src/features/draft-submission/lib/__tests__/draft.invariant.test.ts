@@ -124,7 +124,6 @@ const readPersistedDraft = async () => {
 
 describe('draft teardown — survival invariant (#292)', () => {
   beforeEach(async () => {
-    jest.clearAllMocks()
     useSubmissionStore.setState(useSubmissionStore.getInitialState(), true)
     usePhotoStore.setState(usePhotoStore.getInitialState(), true)
     useBoundingBoxStore.setState(useBoundingBoxStore.getInitialState(), true)

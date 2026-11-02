@@ -3,6 +3,11 @@ module.exports = {
   // Reanimated's resolver forces the web build of Reanimated and Worklets in
   // Jest (Reanimated 4.7 testing guide); it supersedes the Worklets-only one.
   resolver: 'react-native-reanimated/jest/resolver',
+  // Every test starts with empty call history and no leftover spies, so
+  // files need not repeat clearAllMocks/restoreAllMocks. Jest 30's restore
+  // touches spyOn only; module-level jest.fn() implementations survive.
+  clearMocks: true,
+  restoreMocks: true,
   setupFilesAfterEnv: [
     '<rootDir>/node_modules/@react-native-google-signin/google-signin/jest/build/jest/setup.js',
     '<rootDir>/jest.setup.js',

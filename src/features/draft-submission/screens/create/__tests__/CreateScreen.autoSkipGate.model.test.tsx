@@ -98,8 +98,7 @@ describe('Cat List auto-skip gate — model-based test', () => {
   let rerender: (ui: React.ReactElement) => void
   let queryByText: Awaited<ReturnType<typeof render>>['queryByText']
 
-  beforeEach(async () => {
-    jest.clearAllMocks()
+  beforeEach(() => {
     mockCats = []
     const result = await render(<CreateSubmissionScreen />)
     queryByText = result.queryByText

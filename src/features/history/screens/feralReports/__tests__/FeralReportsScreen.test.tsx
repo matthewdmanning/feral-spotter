@@ -47,8 +47,6 @@ const showCaches = (caches: SubmissionCacheFile[], resumableId?: string) =>
 // the list's own header and empty slots, so a list change can drop one of
 // them (or the cards) without any other test noticing.
 describe('Feral Reports screen', () => {
-  beforeEach(() => jest.clearAllMocks())
-
   it('shows the empty state and no legend before any report exists', async () => {
     showCaches([])
     await render(<FeralReportsScreen />)

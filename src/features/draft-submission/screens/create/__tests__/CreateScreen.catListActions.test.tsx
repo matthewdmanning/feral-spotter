@@ -99,7 +99,6 @@ beforeEach(() => {
 
 describe('Cat List actions', () => {
   beforeEach(async () => {
-    jest.clearAllMocks()
     mockParams = {}
     useSubmissionStore.setState({ cats: [...DEFAULT_CATS] })
     await render(
@@ -202,10 +201,6 @@ describe('Cat List actions', () => {
  * The failure worth catching is the second collapsing back into the first.
  */
 describe('Cat List with no cats left (#299)', () => {
-  beforeEach(() => {
-    jest.clearAllMocks()
-  })
-
   // The in-place case: still mounted, trash the last row. Distinct from the
   // two below, which mount already-empty — here the mount-time snapshot was
   // taken while cats existed. Pre-#299 this rendered null, so the user's own

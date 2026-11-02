@@ -4,6 +4,7 @@ import { act, renderHook } from '@testing-library/react-native'
 import { useAbandonCatGuard } from '@/src/features/draft-submission/hooks/useAbandonCatGuard'
 import { useActiveCatFlowStore } from '@/src/features/draft-submission/hooks/useActiveCatFlowStore'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
+import { pressDialogButton } from '@/src/test-utils/dialog'
 
 /**
  * The guard's value is entirely in *when it fires* (#304). Firing on a save
@@ -63,16 +64,8 @@ const attemptLeave = async () => {
   return { blocked }
 }
 
-const pressRemove = async () => {
-  const buttons = jest.mocked(ui.showAlert).mock.calls[0][2]
-  await act(() => {
-    buttons?.find((b) => b.text === 'Remove progress on this cat')?.onPress?.()
-  })
-}
-
 describe('useAbandonCatGuard (#304)', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
     prevented = false
     preventCallback = undefined
     jest.spyOn(ui, 'showAlert')
@@ -139,8 +132,8 @@ describe('useAbandonCatGuard (#304)', () => {
     useActiveCatFlowStore.getState().setActiveCatId(CAT_ID)
     await renderHook(() => useAbandonCatGuard(false))
 
-    await attemptLeave()
-    await pressRemove()
+    attemptLeave()
+    await pressDialogButton('Remove progress on this cat')
 
     const after = useBoundingBoxStore.getState()
     const keysFor = (id: string) =>
@@ -166,10 +159,7 @@ describe('useAbandonCatGuard (#304)', () => {
       .getState()
       .dialog?.buttons.find((button) => button.text === 'Cancel')
     expect(cancel).toEqual(expect.objectContaining({ style: 'cancel' }))
-    await act(async () => {
-      ui.useUIStore.getState().dismissDialog()
-      await cancel?.onPress?.()
-    })
+    await pressDialogButton('Cancel')
 
     expect(useBoundingBoxStore.getState().getBoxesForCat(CAT_ID)).toHaveLength(
       1,

@@ -79,8 +79,7 @@ describe('useAnnotatePass — carousel navigation (model-based test)', () => {
     ReturnType<typeof renderHook<ReturnType<typeof useAnnotatePass>, unknown>>
   >
 
-  beforeEach(async () => {
-    jest.clearAllMocks()
+  beforeEach(() => {
     useActiveCatFlowStore.getState().setActiveCatId(null)
     useBoundingBoxStore.getState().clearAll()
     useSubmissionStore.getState().clearDraft()

@@ -1,6 +1,6 @@
-import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { act, renderHook } from '@testing-library/react-native'
+import { pressDialogButton } from '@/src/test-utils/dialog'
 
 import { stopLocationCapture } from '@/src/core/location/liveFix'
 import { useSubmissionSubmit } from '@/src/features/draft-submission/hooks/useSubmissionSubmit'
@@ -79,14 +79,8 @@ describe('useSubmissionSubmit — handleReset (#189)', () => {
 
     const { result } = await renderHook(() => useSubmissionSubmit())
 
-    await act(async () => {
-      result.current.handleReset()
-      const confirm = useUIStore
-        .getState()
-        .dialog?.buttons.find((b) => b.text === 'Reset')
-      expect(confirm?.onPress).toEqual(expect.any(Function))
-      await confirm!.onPress!()
-    })
+    act(() => result.current.handleReset())
+    await pressDialogButton('Reset')
 
     expect(useSubmissionStore.getState().cats).toEqual([])
     expect(usePhotoStore.getState().photos).toEqual([])

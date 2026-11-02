@@ -68,11 +68,7 @@ beforeEach(async () => {
   mockId = 0
 })
 
-afterEach(() => {
-  jest.restoreAllMocks()
-})
-
-it('keeps preview active during restoration and enables capture before cleanup finishes', async () => {
+it('keeps preview active during restoration and enables capture before cleanup finishes', () => {
   useDraftStartupStore.setState({ phase: 'restoring' })
   const { result } = await renderHook(() => useCapturedPhotoWorkflow())
   expect(result.current.isActive).toBe(true)

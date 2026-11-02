@@ -32,8 +32,6 @@ jest.mock('@/src/features/auth/lib/useAuth', () => ({
 }))
 
 describe('SignInScreen', () => {
-  beforeEach(() => jest.clearAllMocks())
-
   it('signs in with email/password and navigates on success', async () => {
     mockSignInWithEmail.mockResolvedValueOnce({ uid: '123', email: 'a@b.com' })
 

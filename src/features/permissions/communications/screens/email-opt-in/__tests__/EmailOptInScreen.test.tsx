@@ -16,7 +16,6 @@ jest.mock('expo-router', () => ({
 
 describe('EmailOptInScreen', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
     useConsentStore.setState({ emailOptIn: null })
     useAuthStore.setState({ user: { uid: 'u', email: 'jane@example.com' } })
   })

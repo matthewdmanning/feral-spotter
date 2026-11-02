@@ -110,8 +110,7 @@ describe('Submission Details add-more-photos action — model-based test', () =>
   let rerender: (ui: React.ReactElement) => void
   let getByText: Awaited<ReturnType<typeof render>>['getByText']
 
-  beforeEach(async () => {
-    jest.clearAllMocks()
+  beforeEach(() => {
     mockSource = 'camera'
     const result = await render(<CreateSubmissionScreen />)
     getByText = result.getByText

@@ -142,8 +142,7 @@ describe('ConsentScreen location gate — model-based test', () => {
   let foregroundListener: ((state: string) => void) | undefined
   let locationResult: object
 
-  beforeEach(async () => {
-    jest.clearAllMocks()
+  beforeEach(() => {
     Platform.OS = 'android'
     locationResult = grantedLocation
     mockCameraPermissionStatus = 'authorized'

@@ -1,6 +1,7 @@
 import * as ui from '@/src/shared/hooks/useUIStore'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { act, renderHook } from '@testing-library/react-native'
+import { pressDialogButton } from '@/src/test-utils/dialog'
 
 import { useActiveCatFlowStore } from '@/src/features/draft-submission/hooks/useActiveCatFlowStore'
 import { useAnnotatePass } from '@/src/features/annotate/hooks/useAnnotatePass'
@@ -25,17 +26,6 @@ const OTHER_PHOTO = {
 }
 const BOX = { lowerLeftX: 1, lowerLeftY: 1, upperRightX: 9, upperRightY: 9 }
 
-const pressDialogButton = async (text: string) => {
-  const button = ui.useUIStore
-    .getState()
-    .dialog?.buttons.find((b) => b.text === text)
-  expect(button).toBeDefined()
-  await act(async () => {
-    ui.useUIStore.getState().dismissDialog()
-    await button?.onPress?.()
-  })
-}
-
 const expectFirstPhotoRemoved = () => {
   expect(usePhotoStore.getState().photos).toEqual([OTHER_PHOTO])
   const annotations = useBoundingBoxStore.getState()
@@ -52,8 +42,6 @@ const expectFirstPhotoRemoved = () => {
 
 describe('useAnnotatePass — handleLongPressRemove confirmation branching', () => {
   beforeEach(() => {
-    jest.restoreAllMocks()
-    jest.clearAllMocks()
     jest.spyOn(ui, 'showAlert')
     ui.useUIStore.setState({ dialog: null })
     useActiveCatFlowStore.getState().setActiveCatId('active-cat')

@@ -36,7 +36,6 @@ const filledForm: CatFormValues = {
 
 describe('useCatSubmit — save navigation (#203)', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
     useSubmissionStore.getState().clearDraft()
     useBoundingBoxStore.getState().clearAll()
     useActiveCatFlowStore.getState().setActiveCatId('active-cat-id')
