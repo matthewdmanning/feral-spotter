@@ -58,9 +58,9 @@ let setTheme: jest.SpiedFunction<typeof Unistyles.UnistylesRuntime.setTheme>
  */
 const loadConfig = (): ConfigModule => {
   jest.resetModules()
-  const { StyleSheet, UnistylesRuntime } = jest.requireMock<
-    typeof Unistyles
-  >('react-native-unistyles')
+  const { StyleSheet, UnistylesRuntime } = jest.requireMock<typeof Unistyles>(
+    'react-native-unistyles',
+  )
   configure = jest.spyOn(StyleSheet, 'configure')
   setTheme = jest.spyOn(UnistylesRuntime, 'setTheme')
   return jest.requireActual('@/src/shared/config/unistyles') as ConfigModule

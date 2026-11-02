@@ -4,6 +4,7 @@
 // cannot leak into the next. The registry lives on globalThis, and the hook
 // lives in setup, because tests that reload modules re-run this file inside a
 // test, where Jest forbids registering hooks.
+/// <reference types="jest" />
 import type * as ZustandExportedTypes from 'zustand'
 
 export * from 'zustand'

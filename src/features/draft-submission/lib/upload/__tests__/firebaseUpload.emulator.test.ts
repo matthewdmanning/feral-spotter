@@ -72,7 +72,7 @@ describe('firebaseUpload emulator wiring', () => {
   it('logs a loud, clear error when the emulator is unreachable', async () => {
     process.env.EXPO_PUBLIC_USE_FIREBASE_EMULATOR = 'true'
     process.env.EXPO_PUBLIC_FIREBASE_EMULATOR_HOST = 'test-host'
-    ;(fetch as jest.Mock).mockRejectedValue(new Error('ECONNREFUSED'))
+    jest.mocked(fetch).mockRejectedValue(new Error('ECONNREFUSED'))
 
     const { uploadSubmissionMetadata } = loadFirebaseUpload()
 
