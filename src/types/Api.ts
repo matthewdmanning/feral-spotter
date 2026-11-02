@@ -57,22 +57,3 @@ export interface PhotoUploadResponse {
   cloud_storage_path: string
   cloud_storage_url: string
 }
-
-export interface ApiError {
-  message: string
-  code?: string
-}
-
-/** A submitted submission's post-submission shape. Currently unreferenced — the
- * TTL cache that consumed it was removed in #292. */
-export interface SubmittedSubmission {
-  id: string
-  location_type: string
-  time_type: string
-  address?: string
-  cats: SubmissionApiPayload['cats']
-  photo_urls: string[]
-  created_at: string
-  submitted_at: string
-  status: string
-}

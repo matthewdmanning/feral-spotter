@@ -30,7 +30,8 @@ export function useAnnotationTutorial() {
     onComplete: () => {
       setStatus('completed')
       captureEvent(EVENTS.TUTORIAL_COMPLETED, {
-        duration_ms: Date.now() - startedAt,
+        // A completion before onShow has no start: report 0, not epoch time.
+        duration_ms: startedAt ? Date.now() - startedAt : 0,
       })
     },
   }

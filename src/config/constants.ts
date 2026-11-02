@@ -97,9 +97,6 @@ export const AUTOSAVE_TEXT_MS = 800
 /** Autosave debounce for instant selections — segmented controls (ms). */
 export const AUTOSAVE_INSTANT_MS = 400
 
-/** Autosave status display duration after save completes (ms). */
-export const AUTOSAVE_CLEAR_MS = 2000
-
 /** A draft untouched for longer than this is stale: Home stops offering "Continue Observation" and the start-up check discards its photos (ms). */
 export const SUBMISSION_STALE_MS = 48 * 60 * 60 * 1000
 

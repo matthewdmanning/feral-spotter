@@ -48,7 +48,7 @@ export const ANNOTATION_TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: 'done',
     title: "That's it",
-    body: 'Annotations save automatically with your submission. Replay this anytime from Settings.',
+    body: 'Annotations save automatically with your submission.',
     primaryLabel: 'Finish',
   },
 ]

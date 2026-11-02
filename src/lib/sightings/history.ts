@@ -99,9 +99,15 @@ export function reportCardTime(cache: SubmissionCacheFile): string {
 export function sortBySightingTime(
   caches: SubmissionCacheFile[],
 ): SubmissionCacheFile[] {
-  return [...caches].sort(
-    (a, b) => Date.parse(reportCardTime(b)) - Date.parse(reportCardTime(a)),
-  )
+  // An unreadable time sorts last; NaN in a comparator scrambles the order.
+  const time = (cache: SubmissionCacheFile) => {
+    const ms = Date.parse(reportCardTime(cache))
+    return Number.isNaN(ms) ? -Infinity : ms
+  }
+  return [...caches].sort((a, b) => {
+    const diff = time(b) - time(a)
+    return Number.isNaN(diff) ? 0 : diff
+  })
 }
 
 /** Photos in the Sighting. Rows sent before `photos` existed count links. */

@@ -1,5 +1,5 @@
 /**
- * utils/analytics.ts
+ * lib/analytics/analytics.ts
  *
  * PostHog analytics, guarded by IS_PRERELEASE.
  * Events are only fired in pre-release / staging builds.
@@ -52,24 +52,24 @@ export type AnalyticsEvent = (typeof EVENTS)[keyof typeof EVENTS]
 // We import usePostHog() at call sites for hook contexts.
 // For non-hook contexts (utils), use the client directly if needed.
 
-let _capture: ((event: string, props?: PostHogEventProperties) => void) | null =
-  null
+let registeredCapture:
+  ((event: string, props?: PostHogEventProperties) => void) | null = null
 
 /** Call once in a component that has PostHog context to register the capturer. */
 export function registerCapture(
   fn: (event: string, props?: PostHogEventProperties) => void,
 ): void {
-  _capture = fn
+  registeredCapture = fn
 }
 
-let _captureException:
+let registeredCaptureException:
   ((error: unknown, extra?: PostHogEventProperties) => void) | null = null
 
 /** Call once in a component that has PostHog context to register the exception capturer. */
 export function registerCaptureException(
   fn: (error: unknown, extra?: PostHogEventProperties) => void,
 ): void {
-  _captureException = fn
+  registeredCaptureException = fn
 }
 
 /** Same gate as every capture path: pre-release build, general consent, analytics opt-in. */
@@ -111,14 +111,14 @@ export function captureEvent(
   props?: PostHogEventProperties,
 ): void {
   if (!shouldCapture()) return
-  if (!_capture) {
+  if (!registeredCapture) {
     console.warn(
       '[analytics] capturer not registered — call registerCapture() in a PostHog-wrapped component',
     )
     return
   }
 
-  _capture(event, props)
+  registeredCapture(event, props)
 }
 
 /**
@@ -131,12 +131,12 @@ export function captureException(
   extra?: PostHogEventProperties,
 ): void {
   if (!shouldCapture()) return
-  if (!_captureException) {
+  if (!registeredCaptureException) {
     console.warn(
       '[analytics] exception capturer not registered — call registerCaptureException() in a PostHog-wrapped component',
     )
     return
   }
 
-  _captureException(error, extra)
+  registeredCaptureException(error, extra)
 }

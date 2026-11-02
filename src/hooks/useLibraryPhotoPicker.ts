@@ -60,7 +60,12 @@ export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
     // check (#145/#146): a granted/limited check short-circuits every repeat
     // tap, so the native request only ever fires once, on the first
     // undetermined pick.
-    const usable = await libraryPermission.request()
+    let usable = false
+    try {
+      usable = await libraryPermission.request()
+    } catch (error) {
+      console.error('[useLibraryPhotoPicker] permission', error)
+    }
     if (!usable) {
       showAlert(
         'Photo library access needed',
@@ -73,18 +78,25 @@ export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
       return
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      // Bypass the Android Photo Picker's empty Photos tab (#411). The
-      // content chooser also exposes images outside its photo-library index.
-      legacy: Platform.OS === 'android',
-      mediaTypes: ['images'],
-      allowsMultipleSelection: true,
-      // Not honored by every picker (the legacy Android chooser ignores it),
-      // so the result is trimmed below too.
-      selectionLimit: photoSlotsLeft(),
-      quality: 1,
-      exif: true,
-    })
+    let result: ImagePicker.ImagePickerResult
+    try {
+      result = await ImagePicker.launchImageLibraryAsync({
+        // Bypass the Android Photo Picker's empty Photos tab (#411). The
+        // content chooser also exposes images outside its photo-library index.
+        legacy: Platform.OS === 'android',
+        mediaTypes: ['images'],
+        allowsMultipleSelection: true,
+        // Not honored by every picker (the legacy Android chooser ignores it),
+        // so the result is trimmed below too.
+        selectionLimit: photoSlotsLeft(),
+        quality: 1,
+        exif: true,
+      })
+    } catch (error) {
+      console.error('[useLibraryPhotoPicker] picker', error)
+      showAlert('Could not open your photos', 'Try again.')
+      return
+    }
     if (result.canceled || result.assets.length === 0) return
 
     // A camera capture may have arrived while the system picker was open.

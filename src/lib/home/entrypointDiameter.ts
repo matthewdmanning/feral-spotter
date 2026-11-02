@@ -13,14 +13,6 @@
 /** Material/HIG touch-target minimum (docs/agents/ui-ux/reference/ux_principles.md #1) — a floor for narrow screens the buffer formula alone could shrink below tappable. */
 const MIN_TOUCH_TARGET_DP = 48
 
-export function computeEntrypointBuffer(
-  screenWidth: number,
-  screenHeight: number,
-  bufferPercent: number,
-): number {
-  return Math.min(screenWidth, screenHeight) * bufferPercent
-}
-
 export function computeEntrypointDiameter(
   screenWidth: number,
   screenHeight: number,

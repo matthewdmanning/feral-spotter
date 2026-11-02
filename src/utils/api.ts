@@ -24,7 +24,7 @@ async function getDeviceId(): Promise<string> {
   try {
     let deviceId = await AsyncStorage.getItem(DEVICE_ID_STORAGE_KEY)
     if (!deviceId) {
-      deviceId = `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      deviceId = `device_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
       await AsyncStorage.setItem(DEVICE_ID_STORAGE_KEY, deviceId)
     }
     return deviceId
