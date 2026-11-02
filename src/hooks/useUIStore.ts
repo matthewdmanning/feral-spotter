@@ -55,12 +55,12 @@ export const useUIStore = create<UIState>()(
     {
       name: 'ui-store',
       storage: createJSONStorage(() => asyncStorage),
-      // Connectivity and in-flight status are the only durable bits. A
-      // rehydrated `dialog` would pop a stale confirmation on cold start,
-      // with handlers whose closures died with the last process.
+      // Connectivity is the only durable bit. A rehydrated `dialog` would pop
+      // a stale confirmation on cold start, with handlers whose closures died
+      // with the last process. `isSubmitting` is the in-process submit lock:
+      // persisted, a crash mid-submit would leave Submit locked for good.
       partialize: (s) => ({
         isOnline: s.isOnline,
-        isSubmitting: s.isSubmitting,
       }),
     },
   ),

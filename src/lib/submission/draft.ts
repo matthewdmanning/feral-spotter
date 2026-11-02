@@ -41,14 +41,19 @@ import {
 import { stopLocationCapture } from '@/src/lib/location'
 import { authProvider } from '@/src/lib/auth'
 import { deleteSubmissionUploads } from '@/src/lib/upload/firebaseUpload'
+import { cancelQueuedUploads } from '@/src/lib/upload/uploadNewPhoto'
 
-/** Wipes the four draft-owned stores and stops the draft-scoped GPS watch. */
+/**
+ * Wipes the four draft-owned stores, stops the draft-scoped GPS watch and
+ * drops the draft's queued uploads.
+ */
 function tearDownDraftState(deferFileDeletion = false): void {
   useSubmissionStore.getState().clearDraft()
   usePhotoStore.getState().clearPhotos(deferFileDeletion)
   useBoundingBoxStore.getState().clearAll()
   useActiveCatFlowStore.getState().setActiveCatId(null)
   stopLocationCapture()
+  cancelQueuedUploads()
 }
 
 /**
@@ -111,12 +116,21 @@ export async function discardUnsurvivingDraft(
 ): Promise<void> {
   await Promise.all(draftStores.map(whenHydrated))
   const { photos, updated_at } = usePhotoStore.getState()
+  const oldCacheId = await getCurrentCacheId()
+  const row = oldCacheId ? await getSubmissionCache(oldCacheId) : null
+  // The process died mid-send, so whether it landed is unknown. 'Failed'
+  // makes it resumable and tells the user to send it again; a resend
+  // overwrites the same objects.
+  if (row?.status === 'Sending') {
+    await updateSubmissionCache(row.id, { status: 'Failed' }, ['Sending'])
+  }
+  // Once a send started, metadata.json may be in the bucket. Its photos and
+  // row are the user's sent Sighting, not abandoned draft data.
+  const sendStarted = row != null && row.status !== 'In Progress'
+
   let updatedAt = updated_at
-  let oldCacheId: string | null = null
   if (photos.length > 0 && updatedAt == null) {
-    oldCacheId = await getCurrentCacheId()
-    const cache = oldCacheId ? await getSubmissionCache(oldCacheId) : null
-    const cacheUpdatedAt = cache ? new Date(cache.updated_at).getTime() : NaN
+    const cacheUpdatedAt = row ? new Date(row.updated_at).getTime() : NaN
     if (!Number.isFinite(cacheUpdatedAt)) {
       updatedAt = NaN
     } else {
@@ -126,7 +140,6 @@ export async function discardUnsurvivingDraft(
   }
   const isStale = updatedAt != null && now - updatedAt > SUBMISSION_STALE_MS
   if (photos.length === 0 || isStale || !Number.isFinite(updatedAt ?? NaN)) {
-    if (oldCacheId === null) oldCacheId = await getCurrentCacheId()
     const oldSubmissionId = usePhotoStore.getState().submissionId
     const uid = authProvider.getCurrentUser()?.uid
 
@@ -134,6 +147,7 @@ export async function discardUnsurvivingDraft(
     if (oldCacheId) await clearCurrentCacheId()
     onCaptureReady?.()
 
+    if (sendStarted) return
     if (oldCacheId) await deleteSubmissionCache(oldCacheId)
     if (oldSubmissionId && uid)
       void deleteSubmissionUploads(uid, oldSubmissionId)

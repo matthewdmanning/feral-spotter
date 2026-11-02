@@ -85,6 +85,8 @@ interface SubmissionState {
   addCat: (cat: ObservedCat) => void
   updateCat: (localId: string, patch: Partial<ObservedCat>) => void
   removeCat: (localId: string) => void
+  /** Drops a removed photo from every cat's photo references. */
+  forgetPhoto: (photoLocalId: string) => void
   setSubmission: (patch: Partial<SubmissionDraft>) => void
   setLocationType: (v: LocationMethod) => void
   setSubmissionLocation: (loc: SubmissionLocation) => void
@@ -108,7 +110,13 @@ export const useSubmissionStore = create<SubmissionState>()(
       cats: [],
       submission: { ...DEFAULT_SUBMISSION },
 
-      addCat: (cat) => set((s) => ({ cats: [...s.cats, cat] })),
+      // Idempotent by local_id: a double-tapped Save replaces, not duplicates.
+      addCat: (cat) =>
+        set((s) => ({
+          cats: s.cats.some((c) => c.local_id === cat.local_id)
+            ? s.cats.map((c) => (c.local_id === cat.local_id ? cat : c))
+            : [...s.cats, cat],
+        })),
 
       // #299. Removes only the ObservedCat row — the cat's boxes and any
       // stale activeCatId are swept by useRemoveCat, which owns the whole
@@ -117,6 +125,20 @@ export const useSubmissionStore = create<SubmissionState>()(
       // not cat-scoped (ADR-0004), and one photo can show several cats.
       removeCat: (localId) =>
         set((s) => ({ cats: s.cats.filter((c) => c.local_id !== localId) })),
+
+      forgetPhoto: (photoLocalId) =>
+        set((s) => ({
+          cats: s.cats.map((c) => ({
+            ...c,
+            photo_local_ids: c.photo_local_ids.filter(
+              (id) => id !== photoLocalId,
+            ),
+            profile_photo_local_id:
+              c.profile_photo_local_id === photoLocalId
+                ? undefined
+                : c.profile_photo_local_id,
+          })),
+        })),
 
       updateCat: (localId, patch) =>
         set((s) => ({

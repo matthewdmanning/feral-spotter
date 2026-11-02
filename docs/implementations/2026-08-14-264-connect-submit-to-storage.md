@@ -160,3 +160,17 @@ tags:
 - [ ] #265 — submit payload validation
 - Run `__tests__/rules/*.test.ts` against the real Local Emulator Suite once a JDK 21 environment is available, to confirm the rules-side hash verification actually behaves as expected (currently syntax-validated only).
 - First real-device submit should be watched for a 403 on upload, which would indicate a hex/encoding mismatch between `expo-crypto` and the rules' `hashing.sha256()`.
+
+## 2026-11-02 — fix
+
+**Purpose:** Codebase review found the submit path could send a Submission with cats but no photos, send twice, wedge, or lose a sent Sighting at startup.
+**Change:**
+
+- `useUIStore.isSubmitting` is the in-process submit lock (no longer persisted). Finished!, Reset, Take/Select More Photos and Android Back are inert while it is set; `discardDraftAndGoHome` and `confirmResetSubmission` refuse.
+- After the upload wait, Submit re-reads every store and stops if the draft's `submissionId` changed. Cache writes moved inside the try; a failing failure-write no longer skips the error message.
+- `uploadNewPhoto`: dedupes by `local_id`; `retryPendingUploads` (Details open + Submit) re-queues `uploaded: false` photos; `cancelQueuedUploads` (draft teardown) drops queued work and detaches in-flight results.
+- `submissionCache` mutations run on one write chain; `updateSubmissionCache` takes an in-chain status guard used by draft sync.
+- Startup cleanup flips a `Sending` row to `Failed` and never deletes a row or its uploads once a send started. `Failed` current drafts resume; unreadable dates do not.
+- Draft sync skips upload-progress ticks. `addCat` is idempotent; Cat Form save commits once; annotate mints cat ids from fresh state. Removed photos are pruned from cats. A failed startup restore retries on the next draft action. Reports reads ignore stale responses and always clear the refresh spinner.
+
+Tests: `useSubmissionSubmit.inFlight.test.ts` (lock, retry, cleared draft, Failed row), `submissionCache.serial.test.ts` (status and index races; both fail on the old code), `draft.startup.test.ts` (mid-send kill kept), `uploadNewPhoto.queue.test.ts` (dedupe, retry, cancel). Not checked on device.
