@@ -79,7 +79,6 @@ const pickerFlow = createMachine({
 
 describe('Location picker — flow (model-based)', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
     useSubmissionStore.setState({
       submission: { ...INITIAL_SUBMISSION },
     })

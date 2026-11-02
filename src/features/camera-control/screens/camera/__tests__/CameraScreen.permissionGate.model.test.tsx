@@ -85,7 +85,6 @@ const baseCaptureResult: ReturnType<typeof useCameraCapture> = {
 
 describe('CameraScreen permission/device gates — model-based test', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
     jest.spyOn(Linking, 'openSettings').mockResolvedValue()
   })
 

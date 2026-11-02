@@ -81,6 +81,16 @@ export function showAlert(
   })
 }
 
+/**
+ * What pressing a dialog button does. Dismiss first: an onPress that opens
+ * the next dialog (the submit flow chains two) would otherwise be wiped by
+ * the dismiss. Returns the handler's result so a caller can await it.
+ */
+export function pressDialogButton(button: AlertButton): void {
+  useUIStore.getState().dismissDialog()
+  return button.onPress?.()
+}
+
 export function showError(title: string, message: string): void {
   showAlert(title, message)
 }

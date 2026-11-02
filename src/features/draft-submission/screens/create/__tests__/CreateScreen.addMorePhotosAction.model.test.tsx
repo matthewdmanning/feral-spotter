@@ -111,7 +111,6 @@ describe('Submission Details add-more-photos action — model-based test', () =>
   let getByText: ReturnType<typeof render>['getByText']
 
   beforeEach(() => {
-    jest.clearAllMocks()
     mockSource = 'camera'
     const result = render(<CreateSubmissionScreen />)
     getByText = result.getByText

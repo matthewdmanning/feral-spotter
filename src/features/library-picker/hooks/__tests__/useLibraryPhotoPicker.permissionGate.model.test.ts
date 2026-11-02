@@ -6,6 +6,7 @@ import { createTestModel } from '@xstate/graph'
 import { useLibraryPhotoPicker } from '@/src/features/library-picker/hooks/useLibraryPhotoPicker'
 import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
+import { pressDialogButton } from '@/src/test-utils/dialog'
 
 /**
  * Models useLibraryPhotoPicker's explicit permission gate (#249): a decline
@@ -46,7 +47,8 @@ describe('useLibraryPhotoPicker permission gate — model-based test', () => {
     useDraftStartupStore.setState({ phase: 'ready', task: Promise.resolve() })
     usePhotoStore.setState(usePhotoStore.getInitialState(), true)
     jest.clearAllMocks()
-    jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
+    ui.useUIStore.setState({ dialog: null })
+    jest.spyOn(ui, 'showAlert')
     result = renderHook(() => useLibraryPhotoPicker())
   })
 
@@ -156,11 +158,7 @@ describe('useLibraryPhotoPicker permission gate — model-based test', () => {
     })
     await tap()
 
-    const [, , buttons] = (ui.showAlert as jest.Mock).mock.calls[0]
-    const openSettingsButton = buttons.find(
-      (b: { text: string }) => b.text === 'Open Settings',
-    )
-    openSettingsButton.onPress()
+    await pressDialogButton('Open Settings')
     expect(Linking.openSettings).toHaveBeenCalledTimes(1)
   })
 })

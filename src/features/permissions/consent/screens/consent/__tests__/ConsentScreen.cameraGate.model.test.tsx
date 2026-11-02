@@ -116,7 +116,6 @@ describe('ConsentScreen camera gate — model-based test', () => {
   let cameraResult: string
 
   beforeEach(() => {
-    jest.clearAllMocks()
     Platform.OS = 'android'
     cameraResult = 'authorized'
     mockCameraPermissionStatus = 'authorized'

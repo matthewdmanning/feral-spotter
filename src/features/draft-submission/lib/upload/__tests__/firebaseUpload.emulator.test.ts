@@ -24,11 +24,6 @@ describe('firebaseUpload emulator wiring', () => {
       .mockResolvedValue(undefined as unknown as Response)
     jest.spyOn(console, 'error').mockImplementation(() => {})
   })
-
-  afterEach(() => {
-    jest.restoreAllMocks()
-  })
-
   afterAll(() => {
     process.env = ORIGINAL_ENV
   })

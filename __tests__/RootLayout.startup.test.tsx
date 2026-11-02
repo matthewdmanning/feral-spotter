@@ -37,7 +37,6 @@ jest.mock('expo-splash-screen', () => ({
 
 describe('RootLayout draft start-up ordering', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
     useDraftStartupStore.setState(useDraftStartupStore.getInitialState(), true)
   })
 

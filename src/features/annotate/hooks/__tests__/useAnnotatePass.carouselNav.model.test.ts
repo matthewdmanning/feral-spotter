@@ -80,7 +80,6 @@ describe('useAnnotatePass — carousel navigation (model-based test)', () => {
   >
 
   beforeEach(() => {
-    jest.clearAllMocks()
     useActiveCatFlowStore.getState().setActiveCatId(null)
     useBoundingBoxStore.getState().clearAll()
     useSubmissionStore.getState().clearDraft()

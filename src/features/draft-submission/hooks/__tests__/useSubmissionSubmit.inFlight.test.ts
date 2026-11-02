@@ -27,13 +27,8 @@ jest.mock('expo-router', () => ({
 jest.mock('@/src/core/location/liveFix', () => ({
   stopLocationCapture: jest.fn(),
 }))
-jest.mock('@/src/shared/analytics/analytics', () => ({
+jest.mock('@/src/features/draft-submission/lib/analytics', () => ({
   fireAnalyticsEvent: jest.fn(),
-  EVENTS: {
-    SUBMISSION_SENDING: 'x',
-    SUBMISSION_SUBMITTED: 'y',
-    SUBMISSION_FAILED: 'z',
-  },
 }))
 jest.mock('@/src/features/draft-submission/lib/upload/firebaseUpload', () => ({
   uploadSubmissionMetadata: jest.fn(),

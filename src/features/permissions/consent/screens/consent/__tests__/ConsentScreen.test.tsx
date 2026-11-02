@@ -15,6 +15,7 @@ import { AppState, BackHandler, Platform } from 'react-native'
 import React from 'react'
 import ConsentScreen from '@/src/features/permissions/consent/screens/consent/index'
 import consentCopy from '@/src/features/permissions/consent/content/consentDisclosure.json'
+import { pressDialogButton } from '@/src/test-utils/dialog'
 
 const mockRequestCameraPermission = jest.fn()
 let mockCameraPermissionStatus: string
@@ -74,7 +75,6 @@ const expectConsentAccepted = async (accepted: boolean) => {
 
 describe('ConsentScreen decline flow', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
     Platform.OS = 'android'
     mockCameraPermissionStatus = 'authorized'
     // handleAgree's request path reads the boolean requestCameraPermission()
@@ -106,12 +106,10 @@ describe('ConsentScreen decline flow', () => {
     const exitSpy = jest
       .spyOn(BackHandler, 'exitApp')
       .mockImplementation(() => {})
-    jest.spyOn(ui, 'showAlert').mockImplementation((_title, _msg, buttons) => {
-      buttons?.find((b) => b.text === 'Exit')?.onPress?.()
-    })
     render(<ConsentScreen />)
 
     await userEvent.press(screen.getByLabelText(consentCopy.declineLabel))
+    await pressDialogButton('Exit')
 
     expect(exitSpy).toHaveBeenCalledTimes(1)
   })
@@ -120,12 +118,10 @@ describe('ConsentScreen decline flow', () => {
     const exitSpy = jest
       .spyOn(BackHandler, 'exitApp')
       .mockImplementation(() => {})
-    jest.spyOn(ui, 'showAlert').mockImplementation((_title, _msg, buttons) => {
-      buttons?.find((b) => b.text === 'Back')?.onPress?.()
-    })
     render(<ConsentScreen />)
 
     await userEvent.press(screen.getByLabelText(consentCopy.declineLabel))
+    await pressDialogButton('Back')
 
     expect(exitSpy).not.toHaveBeenCalled()
   })
@@ -133,7 +129,6 @@ describe('ConsentScreen decline flow', () => {
 
 describe('ConsentScreen blocked-permission recovery', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
     Platform.OS = 'android'
     mockRequestCameraPermission.mockImplementation(
       async () => mockCameraPermissionStatus === 'authorized',
@@ -178,7 +173,6 @@ describe('ConsentScreen blocked-permission recovery', () => {
 
 describe('ConsentScreen location one-time-grant notice (#225)', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
     Platform.OS = 'android'
     mockCameraPermissionStatus = 'authorized'
     mockRequestCameraPermission.mockImplementation(

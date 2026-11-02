@@ -15,7 +15,6 @@ jest.mock('expo-router', () => ({
 
 describe('AnalyticsConsentScreen', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
     useConsentStore.setState({ analyticsAccepted: false })
   })
 

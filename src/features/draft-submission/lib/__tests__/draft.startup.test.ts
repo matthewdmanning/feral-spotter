@@ -65,8 +65,6 @@ const seedCache = async (updatedAt: string | undefined) => {
 
 describe('discardUnsurvivingDraft (#424)', () => {
   beforeEach(() => {
-    jest.restoreAllMocks()
-    jest.clearAllMocks()
     useSubmissionStore.setState(useSubmissionStore.getInitialState(), true)
     usePhotoStore.setState(usePhotoStore.getInitialState(), true)
     useBoundingBoxStore.setState(useBoundingBoxStore.getInitialState(), true)
