@@ -41,6 +41,14 @@ export function CatCrop({
   const { theme } = useUnistyles()
   const [natural, setNatural] = useState({ w: 0, h: 0 })
   const [failed, setFailed] = useState(false)
+  // A reused CatCrop showing a new photo must not keep the old photo's load
+  // failure or natural size.
+  const [shownUri, setShownUri] = useState(uri)
+  if (shownUri !== uri) {
+    setShownUri(uri)
+    setFailed(false)
+    setNatural({ w: 0, h: 0 })
+  }
   const showPhoto = Boolean(uri && box) && !failed
 
   return (

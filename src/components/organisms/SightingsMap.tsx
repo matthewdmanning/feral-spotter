@@ -34,7 +34,7 @@ import {
 } from '@/src/lib/sightings/history'
 import { Image, type ImageRef } from 'expo-image'
 import { AppleMaps, GoogleMaps } from 'expo-maps'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Platform, View, type LayoutChangeEvent } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './SightingsMap.styles'
@@ -91,6 +91,12 @@ interface SightingsMapProps {
   onTouchActiveChange?: (active: boolean) => void
 }
 
+const GOOGLE_UI_SETTINGS = {
+  mapToolbarEnabled: false,
+  myLocationButtonEnabled: false,
+  zoomControlsEnabled: false,
+}
+
 export function SightingsMap({
   spots,
   onSpotPress,
@@ -129,6 +135,32 @@ export function SightingsMap({
     [latitude, longitude, zoom],
   )
 
+  // Stable across re-renders: the parent re-renders on every map touch
+  // (onTouchActiveChange), and a fresh array re-sends every native marker.
+  const androidMarkers = useMemo(
+    () =>
+      icons
+        ? spots.map((spot) => ({
+            id: spot.id,
+            coordinates: spot,
+            title: catsLabel(spot),
+            // The press opens the Sighting; a callout would only flash.
+            showCallout: false,
+            icon: icons[pinKey(pinBadge(spot.catCount))],
+            anchor: PIN_ANCHOR,
+          }))
+        : [],
+    [spots, icons],
+  )
+
+  // A gesture cut off by unmount never sends its touch end; the parent's
+  // scroll lock must not stay on.
+  const touchActiveChange = useRef(onTouchActiveChange)
+  useEffect(() => {
+    touchActiveChange.current = onTouchActiveChange
+  }, [onTouchActiveChange])
+  useEffect(() => () => touchActiveChange.current?.(false), [])
+
   if (spots.length === 0) return null
 
   const handleLayout = ({ nativeEvent }: LayoutChangeEvent) => {
@@ -145,6 +177,7 @@ export function SightingsMap({
   return (
     <View
       style={styles.frame}
+      accessibilityLabel={`Map of ${spots.length} sighting spot${spots.length === 1 ? '' : 's'}`}
       onLayout={handleLayout}
       onTouchStart={() => onTouchActiveChange?.(true)}
       onTouchEnd={() => onTouchActiveChange?.(false)}
@@ -178,20 +211,8 @@ export function SightingsMap({
           colorScheme={GoogleMaps.MapColorScheme.LIGHT}
           cameraPosition={cameraPosition}
           onMarkerClick={handleMarkerClick}
-          uiSettings={{
-            mapToolbarEnabled: false,
-            myLocationButtonEnabled: false,
-            zoomControlsEnabled: false,
-          }}
-          markers={spots.map((spot) => ({
-            id: spot.id,
-            coordinates: spot,
-            title: catsLabel(spot),
-            // The press opens the Sighting; a callout would only flash.
-            showCallout: false,
-            icon: icons[pinKey(pinBadge(spot.catCount))],
-            anchor: PIN_ANCHOR,
-          }))}
+          uiSettings={GOOGLE_UI_SETTINGS}
+          markers={androidMarkers}
         />
       )}
     </View>

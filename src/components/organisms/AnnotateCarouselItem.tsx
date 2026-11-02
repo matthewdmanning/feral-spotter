@@ -50,11 +50,18 @@ interface AnnotateCarouselItemProps {
   height: number
   /** Called with the confirmed frame — caller persists it and advances */
   onConfirm: (box: BoxInput) => void
-  /** Called when the photo crosses the zoomed-in threshold — disable carousel swipe while true */
+  /** Called when the photo crosses the zoomed-in threshold (box-annotation-crop-frame.md: the carousel never swipes horizontally either way) */
   onZoomChange?: (zoomedIn: boolean) => void
   /** Called on a fast upward flick of the photo (#204) — same effect as the Not in Photo button */
   onNotInPhoto?: () => void
 }
+
+// Per-step resize for the screen-reader actions, in dp per side.
+const A11Y_RESIZE_STEP = 8
+const RESIZE_ACTIONS = [
+  { name: 'increment', label: 'Grow box' },
+  { name: 'decrement', label: 'Shrink box' },
+]
 
 export function AnnotateCarouselItem({
   photo,
@@ -116,6 +123,7 @@ export function AnnotateCarouselItem({
     boxHalfHeight,
     holdProgress,
     confirmNow,
+    resizeBy,
   } = useBoundingBoxFrame({
     canvasWidth: width,
     canvasHeight: height,
@@ -189,24 +197,28 @@ export function AnnotateCarouselItem({
   const handles = [
     {
       label: 'Resize box width, left edge',
+      axis: 'width' as const,
       gesture: leftHandleGesture,
       style: leftHandleStyle,
       barStyle: styles.handleBarVertical,
     },
     {
       label: 'Resize box width, right edge',
+      axis: 'width' as const,
       gesture: rightHandleGesture,
       style: rightHandleStyle,
       barStyle: styles.handleBarVertical,
     },
     {
       label: 'Resize box height, top edge',
+      axis: 'height' as const,
       gesture: topHandleGesture,
       style: topHandleStyle,
       barStyle: styles.handleBarHorizontal,
     },
     {
       label: 'Resize box height, bottom edge',
+      axis: 'height' as const,
       gesture: bottomHandleGesture,
       style: bottomHandleStyle,
       barStyle: styles.handleBarHorizontal,
@@ -273,7 +285,20 @@ export function AnnotateCarouselItem({
               { width: HANDLE_HITBOX_SIZE, height: HANDLE_HITBOX_SIZE },
               handle.style,
             ]}
+            // Dragging is the only gesture, so screen readers get an
+            // adjustable control instead: swipe up or down to grow or shrink.
+            accessible
+            accessibilityRole="adjustable"
             accessibilityLabel={handle.label}
+            accessibilityActions={RESIZE_ACTIONS}
+            onAccessibilityAction={(event) =>
+              resizeBy(
+                handle.axis,
+                event.nativeEvent.actionName === 'increment'
+                  ? A11Y_RESIZE_STEP
+                  : -A11Y_RESIZE_STEP,
+              )
+            }
           >
             <View style={[styles.handleBar, handle.barStyle]} />
           </Animated.View>

@@ -39,7 +39,7 @@
  * sensitive to that ratio (min-side + diagonal).
  */
 
-import { usePhotoStore } from '@/src/hooks'
+import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { computeCollapsedOffset } from '@/src/lib/insetCrop/collapse'
 import { computeBubbleDiameter } from '@/src/lib/insetCrop/diameter'
@@ -66,6 +66,10 @@ export const DEFAULT_DIAMETER = 68
 // not-yet-confirmed-box placeholder vs. a collapsed-state target size).
 export const COLLAPSED_DIAMETER = 68
 const COLLAPSE_DURATION_MS = 220
+// The expanded bubble is its own collapse button: never below the 48dp
+// touch-target minimum (mobile-ux-layout-best-practices.md section 2), even
+// for a distant cat's tiny box.
+const MIN_EXPANDED_DIAMETER = 48
 const BORDER_WIDTH = 1.5
 // Grows the collapsed bubble's grab area by 50% (a quarter of its size per side).
 const GRAB_SLOP = COLLAPSED_DIAMETER / 4
@@ -163,7 +167,10 @@ export function InsetCropBubble({
     : 0
   const diameter =
     boxWidthDp > 0 && boxHeightDp > 0
-      ? computeBubbleDiameter(boxWidthDp, boxHeightDp)
+      ? Math.max(
+          MIN_EXPANDED_DIAMETER,
+          computeBubbleDiameter(boxWidthDp, boxHeightDp),
+        )
       : DEFAULT_DIAMETER
 
   // top-center sits at the horizontal center while expanded; a dropped bubble

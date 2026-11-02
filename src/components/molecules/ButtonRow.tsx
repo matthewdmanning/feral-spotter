@@ -9,7 +9,7 @@
  * equal-width cell here, so a caller cannot make the cells uneven by accident.
  */
 import { BUTTON_ROW_STACK_FONT_SCALE } from '@/src/config/constants'
-import { Children, type ReactNode } from 'react'
+import { Children, isValidElement, type ReactNode } from 'react'
 import { useWindowDimensions, View } from 'react-native'
 import { styles } from './ButtonRow.styles'
 
@@ -25,8 +25,13 @@ export function ButtonRow({ children }: ButtonRowProps) {
 
   return (
     <View style={styles.row}>
+      {/* toArray already gives each child a stable key; an index key moved
+          state between cells when a button was inserted in front. */}
       {Children.toArray(children).map((child, i) => (
-        <View key={i} style={styles.cell}>
+        <View
+          key={isValidElement(child) ? (child.key ?? i) : i}
+          style={styles.cell}
+        >
           {child}
         </View>
       ))}

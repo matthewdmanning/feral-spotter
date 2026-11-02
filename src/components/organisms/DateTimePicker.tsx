@@ -71,7 +71,10 @@ export function DateTimePickerButton({
       <Pressable
         onPress={open}
         style={styles.trigger}
-        accessibilityLabel={label}
+        // The label alone hid the set value from screen readers.
+        accessibilityLabel={[label, formatValue(value, mode)]
+          .filter(Boolean)
+          .join(', ')}
         accessibilityRole="button"
       >
         <Icon size={theme.iconSize.md} color={theme.colors.muted} />

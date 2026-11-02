@@ -31,12 +31,23 @@ export function useDateTimePicker(
     mode === 'datetime' ? 'date' : mode,
   )
 
-  const open = () => setShow(true)
+  const firstStep: StepMode = mode === 'datetime' ? 'date' : mode
+  // Each open starts from the current value at the first step: a cancel on
+  // Android's time dialog used to leave the next open on the time step with
+  // the cancelled date.
+  const open = () => {
+    setTempDate(value)
+    setCurrentMode(firstStep)
+    setShow(true)
+  }
   const setStep = (m: StepMode) => setCurrentMode(m)
 
   const handleChange = (_event: unknown, selectedDate?: Date) => {
     if (Platform.OS === 'android') setShow(false)
-    if (!selectedDate) return
+    if (!selectedDate) {
+      setCurrentMode(firstStep)
+      return
+    }
     setTempDate(selectedDate)
     if (Platform.OS === 'android') {
       if (mode === 'datetime' && currentMode === 'date') {

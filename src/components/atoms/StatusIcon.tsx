@@ -4,7 +4,7 @@ import { ClockIcon } from 'phosphor-react-native/src/icons/Clock'
 import { PaperPlaneRightIcon } from 'phosphor-react-native/src/icons/PaperPlaneRight'
 import { XCircleIcon } from 'phosphor-react-native/src/icons/XCircle'
 import { useUnistyles } from 'react-native-unistyles'
-import { STATUS_COLOR_KEY } from './StatusIcon.styles'
+import { STATUS_COLOR_KEY } from './StatusIcon.constants'
 
 interface StatusIconProps {
   status: CacheStatus
