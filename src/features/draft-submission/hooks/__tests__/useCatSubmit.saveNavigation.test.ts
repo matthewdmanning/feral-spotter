@@ -19,8 +19,8 @@ jest.mock('expo-router', () => ({
 }))
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'new-cat-id' }))
 jest.mock('@/src/shared/analytics/analytics', () => ({
+  ...jest.requireActual('@/src/shared/analytics/analytics'),
   captureEvent: jest.fn(),
-  EVENTS: { CAT_OBSERVATION_SAVED: 'cat_observation_saved' },
 }))
 
 const filledForm: CatFormValues = {
