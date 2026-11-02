@@ -83,6 +83,17 @@ describe('setEmailSubscription', () => {
     expect(provider.unsubscribe).toHaveBeenCalledWith('me@x.com')
   })
 
+  // Anyone can register an email/password account with another person's
+  // address; an unverified token must not unsubscribe that person.
+  it('does not unsubscribe an unverified address', async () => {
+    verify.mockResolvedValueOnce({
+      email: 'victim@x.com',
+      email_verified: false,
+    })
+    expect((await call('Bearer t', { subscribed: false })).status).toBe(204)
+    expect(provider.unsubscribe).not.toHaveBeenCalled()
+  })
+
   it.each([
     ['no token', undefined, { subscribed: true }, 401],
     ['bad body', 'Bearer t', { subscribed: 'yes' }, 400],

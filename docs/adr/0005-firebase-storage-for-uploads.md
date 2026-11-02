@@ -167,6 +167,10 @@ Rules changes in the same pass:
 - An existing `metadata.json` may be rewritten at the 250-Submission cap,
   because it was counted when it first landed.
 
+The no-metadata sweep pages its listing (1,000 objects a page) and deletes ten
+objects at a time, with a 540 s timeout and 512 MiB. A prefix is still judged
+only after every page is read.
+
 ## Considered Options
 
 - **Keep the custom `upload+api.ts` route** — rejected: no resumable/retry story,

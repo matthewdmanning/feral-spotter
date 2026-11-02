@@ -125,3 +125,8 @@ tags:
 - Every `feralspotter://` system path lands on Home (`+native-intent.ts`), where the gate runs. The duplicate root `feral-reports` route is removed.
 - Cat Form redirects a stale `edit` id instead of saving a new cat; route params are normalized (`utils/routeParam.ts`).
   Tests: Home tests now use the real consent store; the gate model adds stale-version and unanswered-step journeys. `consentFlow.test.ts` covers `routeAfterDeviceConsent`. Not checked on device.
+
+## 2026-11-02 — fix (server)
+
+**Purpose:** Anyone can register an email/password account with another person's address; an unverified token could unsubscribe that person.
+**Change:** `setEmailSubscription` skips unsubscribe unless `email_verified` (returns 204, no provider call). Unverified subscribe is unchanged: it stays `pending` and EmailOctopus asks the owner to confirm (ADR-0007). Test: `email.test.ts` "does not unsubscribe an unverified address".
