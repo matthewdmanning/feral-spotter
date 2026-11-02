@@ -5,10 +5,6 @@ import { act, renderHook } from '@testing-library/react-native'
 
 import { useSubmissionSubmit } from '@/src/features/draft-submission/hooks/useSubmissionSubmit'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
-import {
-  CONSENT_VERSION,
-  useConsentStore,
-} from '@/src/shared/consent/useConsentStore'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
@@ -16,8 +12,11 @@ import {
   finalizeSubmissionPhotoMetadata,
   uploadSubmissionMetadata,
 } from '@/src/features/draft-submission/lib/upload/firebaseUpload'
-import type { SubmissionPhoto } from '@/src/shared/types'
+import { observedCat } from '@/src/test-utils/catFixtures'
+import { setConsent } from '@/src/test-utils/consent'
+import { isDraftBusy } from '@/src/features/draft-submission/lib/draft'
 import { pressDialogButton } from '@/src/test-utils/dialog'
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
 
 jest.mock('expo-router', () => ({
   router: {
@@ -46,35 +45,16 @@ jest.mock('@/src/core/location/liveFix', () => ({
   stopLocationCapture: () => mockStopLocationCapture(),
 }))
 
-function photo(overrides: Partial<SubmissionPhoto>): SubmissionPhoto {
-  return {
-    local_id: 'photo-1',
-    uri: 'file:///photo-1.jpg',
-    uploaded: false,
-    upload_progress: 0,
-    width: 100,
-    height: 100,
-    ...overrides,
-  }
-}
+const photo = submissionPhoto
 
 // #265: zero cats is now a hard block, so every test exercising a
 // successful submit needs at least one — this is the default one.
-function defaultCat() {
-  return {
+const defaultCat = () =>
+  observedCat({
     local_id: 'cat-default',
-    age: 'adult',
-    ear_tipped: 'unsure',
-    owned_domesticated: 'unsure',
-    pattern: 'solid',
-    hair_length: 'short',
-    color: 'black',
-    sex: 'unknown',
-    health_label: 'unknown',
     photo_local_ids: ['photo-1'],
     photos_reviewed: true,
-  }
-}
+  })
 
 describe('useSubmissionSubmit submit flow', () => {
   beforeEach(async () => {
@@ -90,18 +70,11 @@ describe('useSubmissionSubmit submit flow', () => {
       submission: { location_type: 'device', time_type: 'device' },
       currentStep: 'create',
     })
-    usePhotoStore.setState({ photos: [], submissionId: 'sub-cloud-1' })
-    useBoundingBoxStore.setState({ boxes: {}, lastBoxes: {}, absences: {} })
-    useUIStore.setState({
-      dialog: null,
-      isOnline: true,
-      sessionPhotos: [],
-      isSubmitting: false,
-    })
-    useConsentStore.setState({
-      accepted: true,
-      acceptedVersion: CONSENT_VERSION,
-    })
+    usePhotoStore.setState(usePhotoStore.getInitialState(), true)
+    usePhotoStore.setState({ submissionId: 'sub-cloud-1' })
+    useBoundingBoxStore.setState(useBoundingBoxStore.getInitialState(), true)
+    useUIStore.setState(useUIStore.getInitialState(), true)
+    setConsent(true)
   })
 
   it('only submits photos with both a cloud path and url, among uploaded photos', async () => {
@@ -288,8 +261,8 @@ describe('useSubmissionSubmit submit flow', () => {
     await pressDialogButton('Submit')
 
     expect(uploadSubmissionMetadata).toHaveBeenCalled()
-    expect(useUIStore.getState().dialog?.title).not.toBe('Sighting Failed')
-    expect(useUIStore.getState().isSubmitting).toBe(false)
+    expect(useUIStore.getState().dialog?.title).not.toBe('Submission Failed')
+    expect(isDraftBusy()).toBe(false)
   })
 
   it("includes each cat's box geometry from useBoundingBoxStore in the uploaded payload", async () => {
@@ -385,7 +358,7 @@ describe('useSubmissionSubmit submit flow', () => {
     expect(useSubmissionStore.getState().cats).toEqual([])
     expect(usePhotoStore.getState().photos).toHaveLength(1)
     expect(result.current.isSubmitting).toBe(false)
-    expect(useUIStore.getState().isSubmitting).toBe(false)
+    expect(isDraftBusy()).toBe(false)
   })
 
   // #265: zero photos is a hard block.
@@ -407,11 +380,11 @@ describe('useSubmissionSubmit submit flow', () => {
     expect(useSubmissionStore.getState().cats).toEqual([defaultCat()])
     expect(usePhotoStore.getState().photos).toEqual([])
     expect(result.current.isSubmitting).toBe(false)
-    expect(useUIStore.getState().isSubmitting).toBe(false)
+    expect(isDraftBusy()).toBe(false)
   })
 
   it('still submits (photos/details are not privileged) when consent has not been accepted', async () => {
-    useConsentStore.setState({ accepted: false, acceptedVersion: null })
+    setConsent(false)
     usePhotoStore.setState({
       photos: [
         photo({

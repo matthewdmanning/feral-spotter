@@ -36,3 +36,11 @@ beforeEach(async () => {
   await AsyncStorage.clear()
   mmkvInstance.clearAll()
 })
+
+// Return every Zustand store to its initial state (__mocks__/zustand.ts).
+const { act } = require('react')
+afterEach(() => {
+  act(() => {
+    globalThis.__zustandStoreResets?.forEach((reset) => reset())
+  })
+})
