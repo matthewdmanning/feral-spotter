@@ -6,6 +6,7 @@
 src/
 ├── app/          # Expo Router routes (thin re-exports only)
 ├── screens/      # Screen-level components and state
+├── providers/    # App-root React providers; imported only by app/_layout
 ├── components/   # Atomic Design: atoms → molecules → organisms
 ├── hooks/        # Zustand stores and feature hooks
 ├── lib/          # Auth, cache, analytics
@@ -13,7 +14,7 @@ src/
 └── config/       # Constants and feature flags
 ```
 
-Dependency direction is strictly one-way: `app/` → `screens/` → `hooks/components/lib/` → `utils/config/`. No upward imports.
+Dependency direction is strictly one-way: `app/` → `screens/`, `providers/` → `hooks/components/lib/` → `utils/config/` → `types/`. No upward imports. `utils/` and `config/` are one tier: `config/` may import `utils/` (e.g. the MMKV instance and app version), never `lib/` or `components/`.
 
 ## Native modules
 
