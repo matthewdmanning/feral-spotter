@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react-native'
+import { render, screen, userEvent } from '@testing-library/react-native'
 import { useState } from 'react'
 import { HierarchicalSegmentedControl } from '@/src/shared/ui/atoms/HierarchicalSegmentedControl'
 
@@ -36,26 +36,24 @@ function Harness() {
 }
 
 describe('HierarchicalSegmentedControl', () => {
-  beforeEach(() => onChange.mockClear())
-
   it('shows a group’s choices only once the group is chosen', async () => {
-    await render(<Harness />)
+    render(<Harness />)
     expect(screen.queryByText('Spotted')).toBeNull()
 
-    await fireEvent.press(screen.getByText('Tabby'))
+    await userEvent.press(screen.getByText('Tabby'))
     expect(screen.getByText('Spotted')).toBeTruthy()
   })
 
   it('drops the choice when another group is chosen, and clears on a second tap', async () => {
-    await render(<Harness />)
-    await fireEvent.press(screen.getByText('Tabby'))
-    await fireEvent.press(screen.getByText('Spotted'))
+    render(<Harness />)
+    await userEvent.press(screen.getByText('Tabby'))
+    await userEvent.press(screen.getByText('Spotted'))
     expect(onChange).toHaveBeenLastCalledWith('tabby', 'spotted')
 
-    await fireEvent.press(screen.getByText('Solid'))
+    await userEvent.press(screen.getByText('Solid'))
     expect(onChange).toHaveBeenLastCalledWith('solid', undefined)
 
-    await fireEvent.press(screen.getByText('Solid'))
+    await userEvent.press(screen.getByText('Solid'))
     expect(onChange).toHaveBeenLastCalledWith(undefined, undefined)
     expect(screen.queryByText('Black')).toBeNull()
   })

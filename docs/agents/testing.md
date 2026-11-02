@@ -56,12 +56,25 @@ boundary, and configure only the outcomes a test needs. Prefer the resources shi
 | Reanimated / Worklets | [`react-native-reanimated/mock`](https://docs.swmansion.com/react-native-reanimated/docs/guides/testing/). The installed Worklets 0.8 package supplies `react-native-worklets/jest/resolver` for resolving its test implementation. Check installed paths when consulting newer docs. |
 | Google Sign-In        | The package's `jest/build/jest/setup.js`, already registered in `jest.config.js`.                                                                                                                                                                                                     |
 | Firebase rules        | [`@firebase/rules-unit-testing`](https://firebase.google.com/docs/rules/unit-tests), already used by `__tests__/rules/`; run through `npm run test:rules` with local emulators.                                                                                                       |
+| Zustand               | [Zustand's Jest recipe](https://zustand.docs.pmnd.rs/guides/testing) in `__mocks__/zustand.ts`; `jest.setup.js` resets every store to initial state after each test. Drive real stores; never fake one with a selector stub. Seed state in `beforeEach`.                              |
+
+`jest.config.js` sets `clearMocks` and `restoreMocks`: don't repeat
+`clearAllMocks`/`restoreAllMocks` per file.
+
+Shared fixtures live in `src/test-utils/`: `observedCat`, `submissionPhoto`,
+`setConsent` (real consent store), `pressDialogButton`. Tests are outside
+`tsc`, so hand-written literals go stale silently; prefer the factories.
 
 Use React Native Testing Library's [User Event API](https://callstack.github.io/react-native-testing-library/docs/api/events/user-event)
 for presses, long presses, and typing, and await each interaction. `userEvent.setup()`
 can share an interaction session; use fake timers for animation timing tests.
 Do not wrap user events in another `act`. Direct responder events remain appropriate
 for drag/termination behavior that User Event does not simulate.
+
+Press app dialog buttons with `pressDialogButton(text)` from
+`src/test-utils/dialog.ts`: it runs AlertHost's own press path
+(`useUIStore`'s `pressDialogButton`: dismiss, then handler) and awaits the
+handler. Don't read `showAlert` mock calls or stub `showAlert` to auto-press.
 
 Await asynchronous dialog callbacks themselves. A fixed number of
 `Promise.resolve()` calls, or an assertion that an operation merely started, does
