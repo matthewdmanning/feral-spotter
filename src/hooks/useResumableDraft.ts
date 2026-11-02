@@ -3,7 +3,10 @@
  * True while the newest draft can be resumed from Home.
  */
 
-import { getAllSubmissionCaches } from '@/src/lib/cache/submissionCache'
+import {
+  getAllSubmissionCaches,
+  getCurrentCacheId,
+} from '@/src/lib/cache/submissionCache'
 import { isResumableDraft } from '@/src/lib/submission/resumable'
 import { useDraftStartupStore } from '@/src/hooks/useDraftStartupStore'
 import { useIsFocused } from 'expo-router'
@@ -23,10 +26,14 @@ export function useResumableDraft(): boolean {
   useEffect(() => {
     if (!isFocused || !draftReady) return
     let cancelled = false
-    getAllSubmissionCaches().then((caches) => {
-      if (cancelled) return
-      setResumable(isResumableDraft(caches[0], Date.now()))
-    })
+    Promise.all([getAllSubmissionCaches(), getCurrentCacheId()])
+      .then(([caches, currentId]) => {
+        if (cancelled) return
+        setResumable(isResumableDraft(caches[0], Date.now(), currentId))
+      })
+      .catch((error) => {
+        console.error('[useResumableDraft]', error)
+      })
     // The read is async, so a blur mid-flight would otherwise land a stale
     // answer on a screen the user has already left.
     return () => {

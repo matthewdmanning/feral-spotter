@@ -22,7 +22,7 @@ import { CAT_ATTRIBUTES, FIELD_LABELS } from '@/src/lib/cats/attributes'
 import { CAT_DEFAULTS } from '@/src/screens/submission/cats/constants'
 import { router } from 'expo-router'
 import { randomUUID } from 'expo-crypto'
-import { useCallback } from 'react'
+import { useCallback, useRef } from 'react'
 
 // ─── Missing-field warning (#152) ──────────────────────────────────────────
 // "Unknown"/"Unsure" is a real value (docs/agents/domain.md), so this warns
@@ -85,6 +85,7 @@ export function useCatSubmit({
 
   // ── Save → warn on unset fields → store + navigate ─────────────────────────
 
+  const committed = useRef(false)
   const handleSave = useCallback(() => {
     // Annotate now runs before Cat Form (ADR 0004) — a new cat's id was
     // already minted there on its first confirmed box; reuse it instead of
@@ -93,6 +94,10 @@ export function useCatSubmit({
     const cat = buildCat(localId)
 
     const commit = () => {
+      // Once per Cat Form visit: a second tap before the replace lands
+      // would add the cat again under a fresh id (commit clears activeCatId).
+      if (committed.current) return
+      committed.current = true
       if (existingCat) updateCat(localId, cat)
       else addCat(cat)
       captureEvent(EVENTS.CAT_OBSERVATION_SAVED, {

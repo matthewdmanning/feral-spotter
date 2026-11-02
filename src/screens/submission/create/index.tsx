@@ -49,7 +49,8 @@ export default function CreateSubmissionScreen() {
   const cats = useSubmissionStore((s) => s.cats)
 
   useDraftSync()
-  const { handleDone, handleReset, handleDiscard } = useSubmissionSubmit()
+  const { handleDone, handleReset, handleDiscard, isSubmitting } =
+    useSubmissionSubmit()
 
   // No back path off this screen (#156) — instead, a bottom action returns
   // the user to whichever entrypoint sourced this draft (ADR 0002
@@ -74,6 +75,9 @@ export default function CreateSubmissionScreen() {
   const isFocused = useIsFocused()
   const handleBackPress = useCallback(() => {
     if (!isFocused) return false
+    // Mid-send there is nothing safe to offer: leaving or discarding would
+    // pull the draft out from under the send. Back waits for it to finish.
+    if (isSubmitting) return true
     showAlert('Leave Submission?', 'Your draft is not sent yet.', [
       { text: 'Stay', style: 'cancel' },
       {
@@ -83,7 +87,13 @@ export default function CreateSubmissionScreen() {
       { text: 'Discard Draft', style: 'destructive', onPress: handleDiscard },
     ])
     return true
-  }, [isFocused, addMorePhotosLabel, handleAddMorePhotos, handleDiscard])
+  }, [
+    isFocused,
+    isSubmitting,
+    addMorePhotosLabel,
+    handleAddMorePhotos,
+    handleDiscard,
+  ])
   useBackHandler(handleBackPress)
 
   // One cat open at a time: a stack of fully open cats would push the bottom
@@ -168,7 +178,11 @@ export default function CreateSubmissionScreen() {
             Clear. It still confirms first (handleReset). */}
         <View style={styles.header}>
           <Text style={styles.title}>Submission</Text>
-          <TextButton onPress={handleReset} tone="danger">
+          <TextButton
+            onPress={handleReset}
+            tone="danger"
+            disabled={isSubmitting}
+          >
             Reset
           </TextButton>
         </View>
@@ -332,10 +346,18 @@ export default function CreateSubmissionScreen() {
           </Text>
         )}
         <ButtonRow>
-          <AppButton variant="secondary" onPress={handleAddMorePhotos}>
+          <AppButton
+            variant="secondary"
+            onPress={handleAddMorePhotos}
+            disabled={isSubmitting}
+          >
             {addMorePhotosLabel}
           </AppButton>
-          <AppButton onPress={handleDone} disabled={cats.length === 0}>
+          <AppButton
+            onPress={handleDone}
+            disabled={cats.length === 0}
+            loading={isSubmitting}
+          >
             Finished!
           </AppButton>
         </ButtonRow>

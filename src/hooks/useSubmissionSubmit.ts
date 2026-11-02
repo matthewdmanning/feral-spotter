@@ -12,16 +12,21 @@
  * blocks instead (#265 product decision). Photos still uploading in the
  * background are waited out silently (waitForUploads below), not surfaced
  * as a popup — see its comment for why.
+ *
+ * One submit runs at a time: `useUIStore.isSubmitting` is the lock, and the
+ * screen disables every draft-changing control while it is set. The send
+ * reads every store fresh after the wait, and stops if the draft it started
+ * for is gone.
  */
 
 import {
-  showAlert,
-  showError,
-  usePhotoStore,
-  useSubmissionStore,
-  useUIStore,
-} from '@/src/hooks'
+  confirmResetSubmission,
+  discardDraftAndGoHome,
+} from '@/src/hooks/confirmResetSubmission'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
+import { usePhotoStore } from '@/src/hooks/usePhotoStore'
+import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
+import { showAlert, showError, useUIStore } from '@/src/hooks/useUIStore'
 import { EVENTS, fireAnalyticsEvent } from '@/src/lib/analytics/analytics'
 import { useAuth } from '@/src/lib/auth/useAuth'
 import {
@@ -29,10 +34,6 @@ import {
   getSubmissionCache,
   updateSubmissionCache,
 } from '@/src/lib/cache/submissionCache'
-import {
-  confirmResetSubmission,
-  discardDraftAndGoHome,
-} from '@/src/hooks/confirmResetSubmission'
 import { completeDraft } from '@/src/lib/submission/draft'
 import {
   buildCacheMetadata,
@@ -49,10 +50,11 @@ import {
   finalizeSubmissionPhotoMetadata,
   uploadSubmissionMetadata,
 } from '@/src/lib/upload/firebaseUpload'
+import { retryPendingUploads } from '@/src/lib/upload/uploadNewPhoto'
 import type { SubmissionPhoto } from '@/src/types'
 import { validateCatCount, validatePhotos } from '@/src/utils/validation'
 import { router } from 'expo-router'
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 
 export interface SubmissionSubmitResult {
   handleDone: () => void
@@ -69,7 +71,7 @@ export interface SubmissionSubmitResult {
 // can act on (there's no "retry" for them to do — the SDK is already
 // retrying), so this waits silently instead of nagging with a popup. Only
 // a genuine stall — no upload progress landing within the timeout — is
-// worth surfacing, via the catch block's "Photos Still Uploading" alert.
+// worth surfacing, via the "Photos Still Uploading" alert.
 const UPLOAD_WAIT_TIMEOUT_MS = 30_000
 const UPLOAD_WAIT_POLL_MS = 500
 
@@ -95,23 +97,215 @@ async function waitForUploads(): Promise<void> {
   }
 }
 
+/** #265 hard blocks, read from the stores as they are now. */
+function hasRequiredContent(): boolean {
+  const requiredErrors = [
+    ...validateCatCount(useSubmissionStore.getState().cats.length),
+    ...validatePhotos(usePhotoStore.getState().photos.length),
+  ]
+  if (requiredErrors.length === 0) return true
+  showError(
+    'Submission Incomplete',
+    requiredErrors.map((e) => e.message).join('\n'),
+  )
+  return false
+}
+
+/**
+ * Sends the current draft. Every store is read here, after the upload wait,
+ * so a cat edited during the wait is sent as edited. `onRow` hands the
+ * history row id back before anything can throw, so the caller can mark it
+ * Failed.
+ */
+async function sendDraft(
+  userId: string,
+  cloudSubmissionId: string,
+  onRow: (cacheId: string) => void,
+): Promise<void> {
+  const freshPhotos = usePhotoStore.getState().photos
+  const { cats, submission } = useSubmissionStore.getState()
+  // Confirmation order — the Profile Pic fallback is the first box.
+  const boxesByCat = new Map(
+    cats.map((cat) => [
+      cat.local_id,
+      useBoundingBoxStore.getState().getBoxesForCat(cat.local_id),
+    ]),
+  )
+
+  const cId = await getCurrentCacheId()
+  if (cId) {
+    onRow(cId)
+    // metadata is replaced wholesale on update (no deep merge), so resend
+    // the full current snapshot here — not just the fields this submit
+    // touches — or fields set after cache creation (e.g. manual_time, filled
+    // in after the initial snapshot on an EXIF-less Library pick) get
+    // silently dropped. The history row must outlive the draft: camera
+    // files are deleted at teardown, so it keeps each photo's cloud URL and
+    // each cat's resolved Profile Pic crop.
+    await updateSubmissionCache(cId, {
+      status: 'Sending',
+      cats: cats.map((cat) =>
+        toCachedCat(cat, boxesByCat.get(cat.local_id) ?? []),
+      ),
+      photos: freshPhotos.map(toCachedPhoto),
+      user_id: userId,
+      submitted_at: new Date().toISOString(),
+      metadata: buildCacheMetadata(submission),
+    })
+    const snap = await getSubmissionCache(cId)
+    if (snap) fireAnalyticsEvent(EVENTS.SUBMISSION_SENDING, snap)
+  }
+
+  const uploadedPhotos = freshPhotos.filter(
+    (
+      p,
+    ): p is SubmissionPhoto & {
+      cloud_storage_path: string
+      cloud_storage_url: string
+    } =>
+      p.uploaded && p.cloud_storage_path != null && p.cloud_storage_url != null,
+  )
+  // #264: box geometry lived only in useBoundingBoxStore's local
+  // AsyncStorage — never left the device. Fold it in per cat here so it's
+  // part of the upload payload.
+  const cloudPathByLocalId = new Map(
+    uploadedPhotos.map((p) => [p.local_id, p.cloud_storage_path]),
+  )
+  const catsWithBoxes = cats.map((cat) => {
+    const boxes = boxesByCat.get(cat.local_id) ?? []
+    return foldBoxesIntoCat(
+      {
+        ...cat,
+        profile_photo_local_id: resolveProfileBox(
+          boxes,
+          cat.profile_photo_local_id,
+        )?.photo_local_id,
+      },
+      boxes,
+      cloudPathByLocalId,
+    )
+  })
+
+  const payload = buildSubmissionPayload({
+    submission,
+    catsWithBoxes,
+    uploadedPhotos,
+  })
+
+  // #264 amendment to ADR-0002/ADR-0003: each photo's Storage object must be
+  // self-describing — images get exported/consumed separately from
+  // metadata.json downstream (ML pipeline), so a fetch back to the
+  // submission record can't be assumed.
+  // One Submission location, shared by every photo (ADR 0002).
+  const { latitude, longitude } = submission
+  // ADR-0003's per-photo time fallback chain — see lib/submission/
+  // payload.ts's resolvePhotoTime for the why.
+  const submitFallbackTime = new Date().toISOString()
+  const photoTimeFor = (p: SubmissionPhoto) =>
+    resolvePhotoTime(p, submission, submitFallbackTime)
+
+  // Best-effort: the P0 this app guards hard against is silently missing
+  // photos (blocked above), not a metadata patch on an already-fully-
+  // uploaded photo — don't fail an otherwise-successful submission over a
+  // flaky-network patch failure.
+  const finalizeResults = await Promise.allSettled(
+    uploadedPhotos.map((p) =>
+      finalizeSubmissionPhotoMetadata(
+        p.cloud_storage_path,
+        userId,
+        photoTimeFor(p),
+        latitude,
+        longitude,
+      ),
+    ),
+  )
+  finalizeResults.forEach((result, i) => {
+    if (result.status === 'rejected') {
+      console.error(
+        '[useSubmissionSubmit] finalizeSubmissionPhotoMetadata',
+        uploadedPhotos[i].local_id,
+        result.reason,
+      )
+    }
+  })
+
+  await uploadSubmissionMetadata(payload, userId, cloudSubmissionId)
+
+  // Flips the history row to 'Submitted', releases the current pointer
+  // (otherwise every later draft's createSubmissionCache() guard sees a
+  // truthy current ID and never creates its own row) and wipes all four
+  // draft stores — see lib/submission/draft.ts.
+  const snap = await completeDraft()
+  if (snap) fireAnalyticsEvent(EVENTS.SUBMISSION_SUBMITTED, snap)
+  // Navigation deliberately stays in the caller: its ordering against the
+  // create screen's auto-skip effect is load-bearing (#189 — see
+  // src/screens/submission/create/index.tsx).
+  router.replace('/')
+}
+
+async function markFailed(cacheId: string | null): Promise<void> {
+  if (!cacheId) return
+  try {
+    await updateSubmissionCache(cacheId, { status: 'Failed' })
+    const snap = await getSubmissionCache(cacheId)
+    if (snap) fireAnalyticsEvent(EVENTS.SUBMISSION_FAILED, snap)
+  } catch (err) {
+    console.error('[useSubmissionSubmit] mark failed', err)
+  }
+}
+
+async function submitCurrentDraft(userId: string | undefined): Promise<void> {
+  const { setSubmitting } = useUIStore.getState()
+  if (useUIStore.getState().isSubmitting) return
+  if (!hasRequiredContent()) return
+
+  // The draft this submit is for. Reset or Discard during the wait clears
+  // it (a later capture mints a new one), and the send must not go on.
+  const startedFor = usePhotoStore.getState().submissionId
+  setSubmitting(true)
+  let cacheId: string | null = null
+  try {
+    if (userId && startedFor) {
+      const { photos, updatePhoto } = usePhotoStore.getState()
+      retryPendingUploads(photos, userId, startedFor, updatePhoto)
+    }
+    // A submission that "succeeds" while silently missing photos is exactly
+    // the P0 map #31 defines — this still guards against that, just without
+    // a popup the user can't act on (see waitForUploads' comment).
+    try {
+      await waitForUploads()
+    } catch (err) {
+      console.error('[useSubmissionSubmit] waitForUploads', err)
+      showError('Photos Still Uploading', UPLOAD_STALLED_MESSAGE)
+      return
+    }
+    if (usePhotoStore.getState().submissionId !== startedFor) return
+    if (!hasRequiredContent()) return
+    if (!userId || !startedFor) {
+      throw new Error('Missing uid/submissionId for submission')
+    }
+    await sendDraft(userId, startedFor, (id) => {
+      cacheId = id
+    })
+  } catch (err) {
+    await markFailed(cacheId)
+    console.error('[useSubmissionSubmit] submit', err)
+    showError('Submission Failed', SUBMIT_FAILED_MESSAGE)
+  } finally {
+    setSubmitting(false)
+  }
+}
+
 export function useSubmissionSubmit(): SubmissionSubmitResult {
-  const cats = useSubmissionStore((s) => s.cats)
-  const submission = useSubmissionStore((s) => s.submission)
-
-  const photos = usePhotoStore((s) => s.photos)
-  const cloudSubmissionId = usePhotoStore((s) => s.submissionId)
-
+  const catCount = useSubmissionStore((s) => s.cats.length)
+  const photoCount = usePhotoStore((s) => s.photos.length)
+  const isSubmitting = useUIStore((s) => s.isSubmitting)
   const { user } = useAuth()
-
-  const setSubmitting = useUIStore((s) => s.setSubmitting)
-
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const userId = user?.uid
 
   const handleDone = useCallback(() => {
-    const catCount = cats.length
-    const photoCount = photos.length
-
+    // One submit at a time; the confirm would be a second chance to tap.
+    if (useUIStore.getState().isSubmitting) return
     showAlert(
       'Submit Submission',
       `Submit ${catCount} cat${catCount !== 1 ? 's' : ''} and ${photoCount} photo${photoCount !== 1 ? 's' : ''}?`,
@@ -120,191 +314,11 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
         {
           text: 'Submit',
           style: 'default',
-          onPress: async () => {
-            // #265: zero cats and zero photos are hard blocks; location/
-            // time accuracy stays informational (the warning icon already
-            // covers that, and the user can submit through it).
-            const requiredErrors = [
-              ...validateCatCount(cats.length),
-              ...validatePhotos(photos.length),
-            ]
-            if (requiredErrors.length > 0) {
-              showError(
-                'Submission Incomplete',
-                requiredErrors.map((e) => e.message).join('\n'),
-              )
-              return
-            }
-
-            setIsSubmitting(true)
-            setSubmitting(true)
-
-            // A submission that "succeeds" while silently missing photos is
-            // exactly the P0 map #31 defines — this still guards against
-            // that, just without a popup the user can't act on (see
-            // waitForUploads' comment).
-            try {
-              await waitForUploads()
-            } catch (err) {
-              console.error('[useSubmissionSubmit] waitForUploads', err)
-              showError('Photos Still Uploading', UPLOAD_STALLED_MESSAGE)
-              setIsSubmitting(false)
-              setSubmitting(false)
-              return
-            }
-
-            // Re-read from the store rather than trust the `photos` closure
-            // above: waitForUploads can resolve with fresher `uploaded`
-            // flags than what was captured when this Alert was built.
-            const freshPhotos = usePhotoStore.getState().photos
-            // Confirmation order — the Profile Pic fallback is the first box.
-            const boxesByCat = new Map(
-              cats.map((cat) => [
-                cat.local_id,
-                useBoundingBoxStore.getState().getBoxesForCat(cat.local_id),
-              ]),
-            )
-
-            const cId = await getCurrentCacheId()
-            if (cId) {
-              // metadata is replaced wholesale on update (no deep merge), so
-              // resend the full current snapshot here — not just the fields
-              // this submit touches — or fields set after cache creation
-              // (e.g. manual_time, filled in after the initial snapshot on
-              // an EXIF-less Library pick) get silently dropped.
-              // The history row must outlive the draft: camera files are
-              // deleted at teardown, so it keeps each photo's cloud URL and
-              // each cat's resolved Profile Pic crop.
-              await updateSubmissionCache(cId, {
-                status: 'Sending',
-                cats: cats.map((cat) =>
-                  toCachedCat(cat, boxesByCat.get(cat.local_id) ?? []),
-                ),
-                photos: freshPhotos.map(toCachedPhoto),
-                user_id: user?.uid,
-                submitted_at: new Date().toISOString(),
-                metadata: buildCacheMetadata(submission),
-              })
-              const snap = await getSubmissionCache(cId)
-              if (snap) fireAnalyticsEvent(EVENTS.SUBMISSION_SENDING, snap)
-            }
-
-            try {
-              const uploadedPhotos = freshPhotos.filter(
-                (
-                  p,
-                ): p is SubmissionPhoto & {
-                  cloud_storage_path: string
-                  cloud_storage_url: string
-                } =>
-                  p.uploaded &&
-                  p.cloud_storage_path != null &&
-                  p.cloud_storage_url != null,
-              )
-              // #264: box geometry lived only in useBoundingBoxStore's local
-              // AsyncStorage — never left the device. Fold it in per cat here
-              // so it's part of the upload payload.
-              const cloudPathByLocalId = new Map(
-                uploadedPhotos.map((p) => [p.local_id, p.cloud_storage_path]),
-              )
-              const catsWithBoxes = cats.map((cat) => {
-                const boxes = boxesByCat.get(cat.local_id) ?? []
-                return foldBoxesIntoCat(
-                  {
-                    ...cat,
-                    profile_photo_local_id: resolveProfileBox(
-                      boxes,
-                      cat.profile_photo_local_id,
-                    )?.photo_local_id,
-                  },
-                  boxes,
-                  cloudPathByLocalId,
-                )
-              })
-
-              const payload = buildSubmissionPayload({
-                submission,
-                catsWithBoxes,
-                uploadedPhotos,
-              })
-
-              if (!user?.uid || !cloudSubmissionId) {
-                throw new Error('Missing uid/submissionId for submission')
-              }
-
-              // #264 amendment to ADR-0002/ADR-0003: each photo's Storage
-              // object must be self-describing — images get exported/consumed
-              // separately from metadata.json downstream (ML pipeline), so a
-              // fetch back to the submission record can't be assumed.
-              const userId = user.uid
-              // One Submission location, shared by every photo (ADR 0002).
-              const { latitude, longitude } = submission
-              // ADR-0003's per-photo time fallback chain — see
-              // lib/submission/payload.ts's resolvePhotoTime for the why.
-              const submitFallbackTime = new Date().toISOString()
-              const photoTimeFor = (p: SubmissionPhoto) =>
-                resolvePhotoTime(p, submission, submitFallbackTime)
-
-              // Best-effort: the P0 this app guards hard against is silently
-              // missing photos (blocked above), not a metadata patch on an
-              // already-fully-uploaded photo — don't fail an otherwise-
-              // successful submission over a flaky-network patch failure.
-              const finalizeResults = await Promise.allSettled(
-                uploadedPhotos.map((p) =>
-                  finalizeSubmissionPhotoMetadata(
-                    p.cloud_storage_path,
-                    userId,
-                    photoTimeFor(p),
-                    latitude,
-                    longitude,
-                  ),
-                ),
-              )
-              finalizeResults.forEach((result, i) => {
-                if (result.status === 'rejected') {
-                  console.error(
-                    '[useSubmissionSubmit] finalizeSubmissionPhotoMetadata',
-                    uploadedPhotos[i].local_id,
-                    result.reason,
-                  )
-                }
-              })
-
-              await uploadSubmissionMetadata(
-                payload,
-                user.uid,
-                cloudSubmissionId,
-              )
-
-              // Flips the history row to 'Submitted', releases the current
-              // pointer (otherwise every later draft's createSubmissionCache()
-              // guard sees a truthy current ID and never creates its own row)
-              // and wipes all four draft stores — see lib/submission/draft.ts.
-              const snap = await completeDraft()
-              if (snap) fireAnalyticsEvent(EVENTS.SUBMISSION_SUBMITTED, snap)
-              // Navigation deliberately stays in the caller: its ordering
-              // against the create screen's auto-skip effect is load-bearing
-              // (#189 — see src/screens/submission/create/index.tsx).
-              router.replace('/')
-            } catch (err) {
-              if (cId) {
-                await updateSubmissionCache(cId, { status: 'Failed' })
-                const snap = await getSubmissionCache(cId)
-                if (snap) fireAnalyticsEvent(EVENTS.SUBMISSION_FAILED, snap)
-              }
-              console.error('[useSubmissionSubmit] submit', err)
-              showError('Submission Failed', SUBMIT_FAILED_MESSAGE)
-            } finally {
-              setIsSubmitting(false)
-              setSubmitting(false)
-            }
-          },
+          onPress: () => submitCurrentDraft(userId),
         },
       ],
     )
-  }, [cats, photos, submission, cloudSubmissionId, user, setSubmitting])
-
-  // ── Reset → confirm → clear all (#153) ─────────────────────────────────────
+  }, [catCount, photoCount, userId])
 
   return {
     handleDone,

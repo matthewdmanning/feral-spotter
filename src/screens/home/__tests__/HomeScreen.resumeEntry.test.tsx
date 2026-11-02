@@ -37,6 +37,7 @@ jest.mock('@/src/hooks/useConsentStore', () => ({
 }))
 jest.mock('@/src/lib/cache/submissionCache', () => ({
   getAllSubmissionCaches: jest.fn(),
+  getCurrentCacheId: jest.fn().mockResolvedValue(null),
 }))
 jest.mock('@/src/hooks/usePhotoStore', () => ({
   usePhotoStore: (sel: (s: { source: null }) => unknown) =>

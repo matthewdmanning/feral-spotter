@@ -12,6 +12,7 @@ import {
 import { useAuth } from '@/src/lib/auth/useAuth'
 import {
   getAllSubmissionCaches,
+  getCurrentCacheId,
   type SubmissionCacheFile,
 } from '@/src/lib/cache/submissionCache'
 import {
@@ -42,11 +43,17 @@ interface History {
 }
 
 /** `all` arrives newest-created first, the order Home's resume check reads. */
-function toHistory(all: SubmissionCacheFile[]): History {
+async function readHistory(): Promise<History> {
+  const [all, currentId] = await Promise.all([
+    getAllSubmissionCaches(),
+    getCurrentCacheId(),
+  ])
   const latest = all[0]
   return {
     all,
-    resumableId: isResumableDraft(latest, Date.now()) ? latest?.id : undefined,
+    resumableId: isResumableDraft(latest, Date.now(), currentId)
+      ? latest?.id
+      : undefined,
   }
 }
 
@@ -65,17 +72,34 @@ export function useFeralReports(): FeralReportsResult {
   })
   const [refreshing, setRefreshing] = useState(false)
 
-  const load = useCallback(async () => {
-    const all = await getAllSubmissionCaches()
-    setHistory(toHistory(all))
-    fireViewed(all)
+  // Reads can overlap (mount, focus, refresh). Only the newest one lands,
+  // so a slow earlier read never overwrites a newer history.
+  const latestRead = useRef(0)
+  const read = useCallback((fire: boolean) => {
+    const readId = ++latestRead.current
+    return readHistory()
+      .then((next) => {
+        if (readId !== latestRead.current) return
+        setHistory(next)
+        if (fire) fireViewed(next.all)
+      })
+      .catch((error) => {
+        console.error('[useFeralReports] read history', error)
+      })
   }, [])
+  const load = useCallback(() => read(true), [read])
 
   useEffect(() => {
-    getAllSubmissionCaches().then((all) => {
-      setHistory(toHistory(all))
-      fireViewed(all)
-    })
+    const readId = ++latestRead.current
+    readHistory()
+      .then((next) => {
+        if (readId !== latestRead.current) return
+        setHistory(next)
+        fireViewed(next.all)
+      })
+      .catch((error) => {
+        console.error('[useFeralReports] read history', error)
+      })
   }, [])
 
   // The tab stays mounted, so a Sighting sent since the last visit would
@@ -88,8 +112,8 @@ export function useFeralReports(): FeralReportsResult {
         focusedOnce.current = true
         return
       }
-      getAllSubmissionCaches().then((all) => setHistory(toHistory(all)))
-    }, []),
+      void read(false)
+    }, [read]),
   )
 
   const caches = useMemo(
@@ -100,8 +124,11 @@ export function useFeralReports(): FeralReportsResult {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
-    await load()
-    setRefreshing(false)
+    try {
+      await load()
+    } finally {
+      setRefreshing(false)
+    }
   }, [load])
 
   return {

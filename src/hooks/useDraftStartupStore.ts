@@ -1,3 +1,8 @@
+/**
+ * hooks/useDraftStartupStore.ts
+ * Process-local readiness of the draft restore and start-up cleanup.
+ */
+
 import { discardUnsurvivingDraft } from '@/src/lib/submission/draft'
 import { create } from 'zustand'
 
@@ -26,9 +31,15 @@ export function initializeDraft(): Promise<void> {
       useDraftStartupStore.setState({ phase: 'ready' })
     })
     .catch((error: unknown) => {
-      useDraftStartupStore.setState({ phase: 'error' })
+      // Drop the cached task so the next draft action retries: one
+      // transient storage failure must not disable the draft until restart.
+      useDraftStartupStore.setState({ phase: 'error', task: null })
       throw error
     })
-  useDraftStartupStore.setState({ task: initialization })
+  // A retry after a failure shows as restoring again while it runs.
+  useDraftStartupStore.setState((s) => ({
+    task: initialization,
+    phase: s.phase === 'error' ? 'restoring' : s.phase,
+  }))
   return initialization
 }

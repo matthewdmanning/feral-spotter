@@ -1,5 +1,5 @@
 /**
- * utils/submissionCache.ts
+ * lib/cache/submissionCache.ts
  *
  * One AsyncStorage entry per submission, keyed by ID.
  * A separate index key tracks all known IDs for listing.
@@ -104,6 +104,20 @@ const INDEX_KEY = 'submission_cache_index' // JSON array of IDs
 const CACHE_PREFIX = 'submission_cache_' // + id
 const CURRENT_KEY = 'submission_cache_current' // active in-progress ID
 
+// ─── Write serialization ──────────────────────────────────────────────────────
+
+// Every mutation below is a read-modify-write across separate AsyncStorage
+// calls. Run concurrently (draft sync during Submit), a later write built on
+// an older read restores the old row or drops an index id. One chain runs
+// them in call order. A failed write rejects its own caller only.
+let writeChain: Promise<unknown> = Promise.resolve()
+
+function serialized<T>(write: () => Promise<T>): Promise<T> {
+  const run = writeChain.then(write, write)
+  writeChain = run.catch(() => undefined)
+  return run
+}
+
 // ─── Index helpers ────────────────────────────────────────────────────────────
 
 async function readIndex(): Promise<string[]> {
@@ -125,7 +139,14 @@ async function writeIndex(ids: string[]): Promise<void> {
  * Create a new cache entry. Status is always 'In Progress' on creation.
  * Also sets the "current" pointer to this ID.
  */
-export async function createSubmissionCache(
+export function createSubmissionCache(
+  id: string,
+  metadata: CacheMetadata,
+): Promise<SubmissionCacheFile> {
+  return serialized(() => writeNewSubmissionCache(id, metadata))
+}
+
+async function writeNewSubmissionCache(
   id: string,
   metadata: CacheMetadata,
 ): Promise<SubmissionCacheFile> {
@@ -160,30 +181,37 @@ export async function getSubmissionCache(
  * Partial update — merges into existing entry and refreshes updated_at.
  * Silently no-ops if the entry doesn't exist.
  */
-export async function updateSubmissionCache(
+export function updateSubmissionCache(
   id: string,
   updates: Partial<Omit<SubmissionCacheFile, 'id' | 'created_at'>>,
+  /** Write only while the row's status is one of these (checked in-chain). */
+  onlyIfStatus?: CacheStatus[],
 ): Promise<void> {
-  const existing = await getSubmissionCache(id)
-  if (!existing) return
-  const updated: SubmissionCacheFile = {
-    ...existing,
-    ...updates,
-    updated_at: new Date().toISOString(),
-  }
-  await AsyncStorage.setItem(CACHE_PREFIX + id, JSON.stringify(updated))
+  return serialized(async () => {
+    const existing = await getSubmissionCache(id)
+    if (!existing) return
+    if (onlyIfStatus && !onlyIfStatus.includes(existing.status)) return
+    const updated: SubmissionCacheFile = {
+      ...existing,
+      ...updates,
+      updated_at: new Date().toISOString(),
+    }
+    await AsyncStorage.setItem(CACHE_PREFIX + id, JSON.stringify(updated))
+  })
 }
 
 /**
  * Hard delete. Removes from index and clears current pointer if it matched.
  * Only called from Reset confirm.
  */
-export async function deleteSubmissionCache(id: string): Promise<void> {
-  await AsyncStorage.removeItem(CACHE_PREFIX + id)
-  await writeIndex((await readIndex()).filter((i) => i !== id))
-  if ((await AsyncStorage.getItem(CURRENT_KEY)) === id) {
-    await AsyncStorage.removeItem(CURRENT_KEY)
-  }
+export function deleteSubmissionCache(id: string): Promise<void> {
+  return serialized(async () => {
+    await AsyncStorage.removeItem(CACHE_PREFIX + id)
+    await writeIndex((await readIndex()).filter((i) => i !== id))
+    if ((await AsyncStorage.getItem(CURRENT_KEY)) === id) {
+      await AsyncStorage.removeItem(CURRENT_KEY)
+    }
+  })
 }
 
 // ─── Listing ──────────────────────────────────────────────────────────────────
@@ -208,6 +236,6 @@ export async function getCurrentCacheId(): Promise<string | null> {
   return (await AsyncStorage.getItem(CURRENT_KEY)) ?? null
 }
 
-export async function clearCurrentCacheId(): Promise<void> {
-  await AsyncStorage.removeItem(CURRENT_KEY)
+export function clearCurrentCacheId(): Promise<void> {
+  return serialized(() => AsyncStorage.removeItem(CURRENT_KEY))
 }

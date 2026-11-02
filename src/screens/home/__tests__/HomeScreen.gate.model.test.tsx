@@ -19,6 +19,7 @@ jest.mock('@/src/hooks/useConsentStore', () => ({
 }))
 jest.mock('@/src/lib/cache/submissionCache', () => ({
   getAllSubmissionCaches: jest.fn().mockResolvedValue([]),
+  getCurrentCacheId: jest.fn().mockResolvedValue(null),
 }))
 jest.mock('@/src/components/molecules/BottomButtonColumn', () => ({
   BottomButtonColumn: () => null,

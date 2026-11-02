@@ -65,6 +65,15 @@ export function startFreshPass(recordedCatIds: string[]): void {
   setActiveCatId(null)
 }
 
+/** The pass's cat, minting and storing one on the pass's first mark. */
+function currentOrNewCatId(setActiveCatId: (id: string) => void): string {
+  const current = useActiveCatFlowStore.getState().activeCatId
+  if (current) return current
+  const minted = randomUUID()
+  setActiveCatId(minted)
+  return minted
+}
+
 export function useActiveCatFlow(): ActiveCatFlow {
   const activeCatId = useActiveCatFlowStore((s) => s.activeCatId)
   const setActiveCatId = useActiveCatFlowStore((s) => s.setActiveCatId)
@@ -89,13 +98,13 @@ export function useActiveCatFlow(): ActiveCatFlow {
   )
 
   // First confirmed box of a pass with no active cat declares a new one.
+  // Reads activeCatId fresh, like handleBoxingComplete below: two events
+  // before a re-render would otherwise each see `null` and mint two cats.
   const handleBoxConfirmed = useCallback(
     (photoId: string, box: BoxInput) => {
-      const catId = activeCatId ?? randomUUID()
-      if (!activeCatId) setActiveCatId(catId)
-      addBox(catId, photoId, box)
+      addBox(currentOrNewCatId(setActiveCatId), photoId, box)
     },
-    [activeCatId, setActiveCatId, addBox],
+    [setActiveCatId, addBox],
   )
 
   // Mirrors handleBoxConfirmed's lazy mint (#203): the very first photo of a
@@ -105,11 +114,9 @@ export function useActiveCatFlow(): ActiveCatFlow {
   // until activeCatId existed, which a box, not an absence mark, produced).
   const handleNotInPhoto = useCallback(
     (photoId: string) => {
-      const catId = activeCatId ?? randomUUID()
-      if (!activeCatId) setActiveCatId(catId)
-      markAbsent(catId, photoId)
+      markAbsent(currentOrNewCatId(setActiveCatId), photoId)
     },
-    [activeCatId, setActiveCatId, markAbsent],
+    [setActiveCatId, markAbsent],
   )
 
   // Clears whichever cat is in-progress, no navigation. Used by a completed

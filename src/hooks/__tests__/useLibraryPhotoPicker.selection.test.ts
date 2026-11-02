@@ -18,6 +18,8 @@ jest.mock('@/src/hooks', () => ({
 }))
 jest.mock('expo-router', () => ({ router: { navigate: jest.fn() } }))
 jest.mock('@/src/lib/upload/uploadNewPhoto', () => ({
+  cancelQueuedUploads: jest.fn(),
+  retryPendingUploads: jest.fn(),
   uploadNewPhoto: jest.fn(),
 }))
 jest.mock('@/src/lib/analytics/analytics', () => ({
