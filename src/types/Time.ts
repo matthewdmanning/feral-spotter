@@ -5,7 +5,3 @@
  */
 
 export type TimeType = string
-
-export function toTimeType(date: Date): TimeType {
-  return date.toISOString()
-}

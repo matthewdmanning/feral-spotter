@@ -73,11 +73,6 @@ export function hasAcceptedAnalytics(): boolean {
   return useConsentStore.getState().analyticsAccepted === true
 }
 
-/** Plain (non-hook) check for use outside React components. */
-export function hasOptedInToEmail(): boolean {
-  return useConsentStore.getState().emailOptIn === true
-}
-
 /**
  * True once the persisted consent choices are read back. Until then every
  * check above reads the defaults, so a gate acting before this sends a

@@ -37,7 +37,15 @@ export function useSettingsDraft(): SettingsDraftResult {
   const [isVerifying, setIsVerifying] = useState(false)
 
   useEffect(() => {
-    hasPassword().then(setPasswordConfigured)
+    let active = true
+    hasPassword()
+      .then((configured) => {
+        if (active) setPasswordConfigured(configured)
+      })
+      .catch((error) => console.error('[useSettingsDraft] hasPassword', error))
+    return () => {
+      active = false
+    }
   }, [])
 
   const patch = (key: keyof AppSettings, value: unknown) =>
@@ -54,8 +62,14 @@ export function useSettingsDraft(): SettingsDraftResult {
         return
       }
       setIsVerifying(true)
-      const valid = await verifyPassword(newPassword)
-      setIsVerifying(false)
+      let valid = false
+      try {
+        valid = await verifyPassword(newPassword)
+      } catch (error) {
+        console.error('[useSettingsDraft] verifyPassword', error)
+      } finally {
+        setIsVerifying(false)
+      }
       if (!valid) {
         showError('Error', 'Invalid password')
         return
@@ -86,8 +100,13 @@ export function useSettingsDraft(): SettingsDraftResult {
   }
 
   const handleRemovePassword = async () => {
-    await removePassword()
-    setPasswordConfigured(false)
+    try {
+      await removePassword()
+      setPasswordConfigured(false)
+    } catch (error) {
+      console.error('[useSettingsDraft] removePassword', error)
+      showError('Error', 'Could not remove the password. Try again.')
+    }
   }
 
   return {

@@ -49,10 +49,12 @@ let storageInstance: FirebaseStorage | null = null
 // once, regardless of how many of this file's functions run.
 function getSubmissionRef(path: string): StorageReference {
   if (!storageInstance) {
-    storageInstance = getStorage(getApp(), BUCKET_URL)
+    // Memoized only once the emulator is connected: if connecting throws,
+    // the next call retries instead of silently using the live bucket.
+    const instance = getStorage(getApp(), BUCKET_URL)
     if (USE_FIREBASE_EMULATOR) {
       connectStorageEmulator(
-        storageInstance,
+        instance,
         FIREBASE_EMULATOR_HOST,
         STORAGE_EMULATOR_PORT,
       )
@@ -68,6 +70,7 @@ function getSubmissionRef(path: string): StorageReference {
         )
       })
     }
+    storageInstance = instance
   }
   return ref(storageInstance, path)
 }

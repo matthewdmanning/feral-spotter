@@ -1,7 +1,7 @@
 name: CI
+# No step writes to the PR; keep the token read-only.
 permissions:
   contents: read
-  pull-requests: write
 on:
   push:
     branches: [main]
