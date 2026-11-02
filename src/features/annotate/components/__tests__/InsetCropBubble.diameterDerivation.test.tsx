@@ -2,7 +2,7 @@ import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoSto
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import { render } from '@testing-library/react-native'
 import { StyleSheet, Dimensions } from 'react-native'
-import { InsetCropBubble } from '../InsetCropBubble'
+import { InsetCropBubble } from '@/src/features/annotate/components/InsetCropBubble'
 import { computeBubbleDiameter } from '@/src/features/annotate/lib/diameter'
 
 /**

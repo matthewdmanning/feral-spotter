@@ -7,6 +7,11 @@ import type { SubmissionApiPayload } from '@/src/shared/types'
 // CJS setup) after each process.env change.
 const ORIGINAL_ENV = process.env
 
+// A fresh copy of the module under test; call after jest.resetModules().
+const loadFirebaseUpload = () =>
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- see file-header comment
+  require('@/src/features/draft-submission/lib/upload/firebaseUpload')
+
 describe('firebaseUpload emulator wiring', () => {
   beforeEach(() => {
     jest.resetModules()
@@ -32,8 +37,7 @@ describe('firebaseUpload emulator wiring', () => {
     process.env.EXPO_PUBLIC_USE_FIREBASE_EMULATOR = 'true'
     process.env.EXPO_PUBLIC_FIREBASE_EMULATOR_HOST = 'test-host'
 
-    // eslint-disable-next-line @typescript-eslint/no-require-imports -- see file-header comment
-    const { uploadSubmissionMetadata } = require('../firebaseUpload')
+    const { uploadSubmissionMetadata } = loadFirebaseUpload()
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- see file-header comment
     const { connectStorageEmulator } = require('@react-native-firebase/storage')
 
@@ -49,8 +53,7 @@ describe('firebaseUpload emulator wiring', () => {
   })
 
   it('does not connect to the emulator when the flag is unset', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports -- see file-header comment
-    const { uploadSubmissionMetadata } = require('../firebaseUpload')
+    const { uploadSubmissionMetadata } = loadFirebaseUpload()
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- see file-header comment
     const { connectStorageEmulator } = require('@react-native-firebase/storage')
 
@@ -64,8 +67,7 @@ describe('firebaseUpload emulator wiring', () => {
     process.env.EXPO_PUBLIC_USE_FIREBASE_EMULATOR = 'true'
     process.env.EXPO_PUBLIC_FIREBASE_EMULATOR_HOST = 'test-host'
 
-    // eslint-disable-next-line @typescript-eslint/no-require-imports -- see file-header comment
-    const { uploadSubmissionMetadata } = require('../firebaseUpload')
+    const { uploadSubmissionMetadata } = loadFirebaseUpload()
 
     await uploadSubmissionMetadata({} as SubmissionApiPayload, 'uid1', 'sub1')
 
@@ -77,8 +79,7 @@ describe('firebaseUpload emulator wiring', () => {
     process.env.EXPO_PUBLIC_FIREBASE_EMULATOR_HOST = 'test-host'
     ;(fetch as jest.Mock).mockRejectedValue(new Error('ECONNREFUSED'))
 
-    // eslint-disable-next-line @typescript-eslint/no-require-imports -- see file-header comment
-    const { uploadSubmissionMetadata } = require('../firebaseUpload')
+    const { uploadSubmissionMetadata } = loadFirebaseUpload()
 
     await uploadSubmissionMetadata({} as SubmissionApiPayload, 'uid1', 'sub1')
     // The reachability ping is fire-and-forget — let its rejection settle.

@@ -5,7 +5,7 @@ import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import { SUBMISSION_STALE_MS } from '@/src/shared/config/constants'
 import { getAllSubmissionCaches } from '@/src/features/draft-submission/lib/submissionCache'
-import HomeScreen from '../index'
+import HomeScreen from '@/src/core/home/screens/home/index'
 import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
 
 /**

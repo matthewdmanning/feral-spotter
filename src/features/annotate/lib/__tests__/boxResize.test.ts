@@ -2,7 +2,7 @@ import {
   clampAspectRatio,
   clampHalfExtent,
   maxHalfExtentForBox,
-} from '../boxResize'
+} from '@/src/features/annotate/lib/boxResize'
 
 /**
  * #286: edge-handle box resize. These three pure functions are the worklet

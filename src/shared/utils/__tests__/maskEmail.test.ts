@@ -1,4 +1,4 @@
-import { maskEmail } from '../maskEmail'
+import { maskEmail } from '@/src/shared/utils/maskEmail'
 
 describe('maskEmail', () => {
   it.each([

@@ -1,5 +1,5 @@
 import { Platform } from 'react-native'
-import { isUsable } from '../locationPermission'
+import { isUsable } from '@/src/features/permissions/location/lib/locationPermission'
 
 describe('locationPermission.isUsable (#358)', () => {
   const originalOS = Platform.OS

@@ -5,7 +5,7 @@ import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import { useAuth } from '@/src/features/auth/lib/useAuth'
 import { hasAcceptedConsent } from '@/src/shared/consent/useConsentStore'
-import HomeScreen from '../index'
+import HomeScreen from '@/src/core/home/screens/home/index'
 
 jest.mock('expo-router', () => ({
   useIsFocused: () => true,

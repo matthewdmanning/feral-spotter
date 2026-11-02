@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react-native'
 import { useState } from 'react'
-import { HierarchicalSegmentedControl } from '../HierarchicalSegmentedControl'
+import { HierarchicalSegmentedControl } from '@/src/shared/ui/atoms/HierarchicalSegmentedControl'
 
 const groups = [
   {

@@ -3,7 +3,7 @@ import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBo
 import { act, userEvent, render } from '@testing-library/react-native'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
-import { InsetCropBubble } from '../InsetCropBubble'
+import { InsetCropBubble } from '@/src/features/annotate/components/InsetCropBubble'
 
 /**
  * Models the bubble's own collapse/expand flow (#202): defaults collapsed

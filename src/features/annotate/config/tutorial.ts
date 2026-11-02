@@ -5,10 +5,7 @@
  */
 
 import type { TutorialStep } from '@/src/features/annotate/components/TutorialOverlay'
-import {
-  getAppVersion,
-  isVersionReleased,
-} from '@/src/features/auth/lib/authProviders'
+import { getAppVersion, isVersionReleased } from '@/src/shared/lib/appVersion'
 
 /**
  * Deferred to the Alpha milestone — see

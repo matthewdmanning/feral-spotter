@@ -980,17 +980,20 @@ import { Bar, Foo } from './messages.proto'
 
 ### Use sensible import paths
 
-Prefer relative paths within the same logical project. Limit long parent traversal.
+Import through the `@/` alias. Only a same-folder sibling stays relative
+(`./X`). Never use `../`; ESLint rejects it. (Project rule, replacing the Google
+monorepo default of relative paths. Reason: `@/` paths survive moves, and the
+feature-boundary lint reads them — see [PROJECT_STRUCTURE.md](../PROJECT_STRUCTURE.md).)
 
 ```ts
 // Good
-import { Config } from './config'
-import { Logger } from '../logging/logger'
+import { styles } from './index.styles'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 ```
 
 ```ts
 // Bad
-import { Config } from 'application/features/config'
+import { usePhotoStore } from '../hooks/usePhotoStore'
 import { Logger } from '../../../../../../logging/logger'
 ```
 

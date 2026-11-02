@@ -1,4 +1,4 @@
-import { usePhotoStore } from '../usePhotoStore'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 
 /**
  * Purpose: this reducer logic is what the Home screen's photo-source-

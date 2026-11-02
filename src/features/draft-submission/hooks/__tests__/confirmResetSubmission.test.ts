@@ -1,7 +1,7 @@
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useSettingsStore } from '@/src/features/settings/hooks/useSettingsStore'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
-import { confirmResetSubmission } from '../confirmResetSubmission'
+import { confirmResetSubmission } from '@/src/features/draft-submission/hooks/confirmResetSubmission'
 
 /**
  * Reset never deletes camera-roll copies, so its dialog must say they stay

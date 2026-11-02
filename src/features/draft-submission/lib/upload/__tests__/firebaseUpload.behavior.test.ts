@@ -11,7 +11,7 @@ import {
   deleteSubmissionUploads,
   finalizeSubmissionPhotoMetadata,
   uploadSubmissionMetadata,
-} from '../firebaseUpload'
+} from '@/src/features/draft-submission/lib/upload/firebaseUpload'
 
 beforeEach(() => jest.clearAllMocks())
 afterEach(() => jest.restoreAllMocks())

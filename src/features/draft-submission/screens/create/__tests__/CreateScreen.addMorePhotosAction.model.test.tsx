@@ -4,7 +4,7 @@ import { router } from 'expo-router'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import type { PhotoSource } from '@/src/features/draft-submission/hooks/usePhotoStore'
-import CreateSubmissionScreen from '../index'
+import CreateSubmissionScreen from '@/src/features/draft-submission/screens/create/index'
 
 /**
  * Model of the bottom "add more photos" action (#156): label and press

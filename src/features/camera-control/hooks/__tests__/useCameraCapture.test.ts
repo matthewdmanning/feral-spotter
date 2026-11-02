@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native'
 import { router } from 'expo-router'
 import { AppState } from 'react-native'
-import { useCameraCapture } from '../useCameraCapture'
+import { useCameraCapture } from '@/src/features/camera-control/hooks/useCameraCapture'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useSettingsStore } from '@/src/features/settings/hooks/useSettingsStore'
 import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'

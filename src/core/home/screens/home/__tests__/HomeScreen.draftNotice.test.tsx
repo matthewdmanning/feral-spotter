@@ -4,7 +4,7 @@ import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import { render, screen, userEvent } from '@testing-library/react-native'
 import { router } from 'expo-router'
 import React from 'react'
-import HomeScreen from '../index'
+import HomeScreen from '@/src/core/home/screens/home/index'
 import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
 
 /**

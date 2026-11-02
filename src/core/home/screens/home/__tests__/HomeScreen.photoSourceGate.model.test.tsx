@@ -3,7 +3,7 @@ import React from 'react'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
-import HomeScreen from '../index'
+import HomeScreen from '@/src/core/home/screens/home/index'
 import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
 
 /**

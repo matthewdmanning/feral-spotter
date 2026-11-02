@@ -2,7 +2,7 @@ import { userEvent, render, screen } from '@testing-library/react-native'
 import { router } from 'expo-router'
 import React from 'react'
 import { useAnnotatePass } from '@/src/features/annotate/hooks/useAnnotatePass'
-import AnnotateScreen from '../index'
+import AnnotateScreen from '@/src/features/annotate/screens/annotate/index'
 
 /**
  * Button wiring on AnnotateScreen (src/features/annotate/screens/annotate/index.tsx)
