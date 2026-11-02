@@ -1,4 +1,5 @@
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
 
 /**
  * Purpose: this reducer logic is what the Home screen's photo-source-
@@ -9,14 +10,7 @@ import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoSto
  * once the pool is genuinely empty).
  */
 
-const photo = (id: string) => ({
-  local_id: id,
-  uri: `file://${id}.jpg`,
-  uploaded: false,
-  upload_progress: 0,
-  width: 100,
-  height: 100,
-})
+const photo = (id: string) => submissionPhoto({ local_id: id })
 
 describe('usePhotoStore — photo-source tracking', () => {
   beforeEach(() => {

@@ -9,6 +9,8 @@ import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoSto
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import { profilePicUri } from '@/src/features/history/lib/history'
 import { pressDialogButton } from '@/src/test-utils/dialog'
+import { observedCat } from '@/src/test-utils/catFixtures'
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
 
 /**
  * Regression check for #228: updateSubmissionCache replaces `metadata`
@@ -39,30 +41,21 @@ jest.mock('@/src/features/auth/lib/useAuth', () => ({
   useAuth: () => ({ user: { uid: 'uid-owner' } }),
 }))
 
-const cat = (id: string) => ({
-  local_id: id,
-  age: 'adult' as const,
-  ear_tipped: 'unsure' as const,
-  owned_domesticated: 'unsure' as const,
-  pattern: 'solid' as const,
-  hair_length: 'short' as const,
-  color: 'black' as const,
-  sex: 'unknown' as const,
-  health_label: 'unknown' as const,
-  photo_local_ids: ['photo-1'],
-  photos_reviewed: true,
-})
+const cat = (id: string) =>
+  observedCat({
+    local_id: id,
+    photo_local_ids: ['photo-1'],
+    photos_reviewed: true,
+  })
 
-const photo = (id: string) => ({
-  local_id: id,
-  uri: `file://${id}.jpg`,
-  cloud_storage_path: `submissions/uid-owner/sub-1/${id}.jpg`,
-  cloud_storage_url: `https://cdn.example/${id}.jpg`,
-  uploaded: true,
-  upload_progress: 100,
-  width: 100,
-  height: 100,
-})
+const photo = (id: string) =>
+  submissionPhoto({
+    local_id: id,
+    cloud_storage_path: `submissions/uid-owner/sub-1/${id}.jpg`,
+    cloud_storage_url: `https://cdn.example/${id}.jpg`,
+    uploaded: true,
+    upload_progress: 100,
+  })
 
 describe('useSubmissionSubmit — handleDone cache sync (#228)', () => {
   beforeEach(async () => {

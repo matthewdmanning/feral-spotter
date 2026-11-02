@@ -5,6 +5,8 @@ import { stopLocationCapture } from '@/src/core/location/liveFix'
 import { useSubmissionSubmit } from '@/src/features/draft-submission/hooks/useSubmissionSubmit'
 import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
+import { observedCat } from '@/src/test-utils/catFixtures'
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
 
 /**
  * Regression check for #189 (Reset button reported not to clear the
@@ -41,28 +43,14 @@ jest.mock('@/src/features/auth/lib/useAuth', () => ({
   useAuth: () => ({ user: { uid: 'uid-owner' } }),
 }))
 
-const cat = (id: string) => ({
-  local_id: id,
-  age: 'adult' as const,
-  ear_tipped: 'unsure' as const,
-  owned_domesticated: 'unsure' as const,
-  pattern: 'solid' as const,
-  hair_length: 'short' as const,
-  color: 'black' as const,
-  sex: 'unknown' as const,
-  health_label: 'unknown' as const,
-  photo_local_ids: ['p1'],
-  photos_reviewed: true,
-})
+const cat = (id: string) =>
+  observedCat({
+    local_id: id,
+    photo_local_ids: ['p1'],
+    photos_reviewed: true,
+  })
 
-const photo = (id: string) => ({
-  local_id: id,
-  uri: `file://${id}.jpg`,
-  uploaded: false,
-  upload_progress: 0,
-  width: 100,
-  height: 100,
-})
+const photo = (id: string) => submissionPhoto({ local_id: id })
 
 describe('useSubmissionSubmit — handleReset (#189)', () => {
   beforeEach(() => {
