@@ -10,5 +10,5 @@
     "expo-env.d.ts",
     ".expo/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "functions", "ts-ailiot", "__tests__/rules"]
+  "exclude": ["node_modules", "functions", "ts-ailiot"]
 }

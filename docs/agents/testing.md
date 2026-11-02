@@ -65,7 +65,10 @@ Shared fixtures live in `src/test-utils/`: `observedCat`, `submissionPhoto`,
 `setConsent` (real consent store), `pressDialogButton`. Prefer the factories:
 one place to add a new required field.
 
-Tests type-check through `tsconfig.test.json` (part of `npm run typecheck`).
+Tests type-check through `tsconfig.test.json` (part of `npm run typecheck`),
+rules tests included. Jest runs TypeScript through Babel, which only strips
+types; [Jest's docs](https://jestjs.io/docs/getting-started#using-typescript)
+say to run `tsc` separately for type checking.
 A seeded store field or fake hook result that no longer exists fails there.
 Type fakes against the real return type, e.g. `ReturnType<typeof useX>`.
 
