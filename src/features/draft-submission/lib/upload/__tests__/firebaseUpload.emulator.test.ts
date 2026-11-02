@@ -7,6 +7,11 @@ import type { SubmissionApiPayload } from '@/src/shared/types'
 // CJS setup) after each process.env change.
 const ORIGINAL_ENV = process.env
 
+// A fresh copy of the module under test; call after jest.resetModules().
+const loadFirebaseUpload = () =>
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- see file-header comment
+  require('@/src/features/draft-submission/lib/upload/firebaseUpload')
+
 describe('firebaseUpload emulator wiring', () => {
   beforeEach(() => {
     jest.resetModules()

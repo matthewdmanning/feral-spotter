@@ -115,8 +115,29 @@ subjects. Test edits:
 
 ## Follow-ups and known limitations
 
-- [ ] Boundary lint checks `@/` imports only; a relative import across units
-      passes it. None exists today (checked by a one-off graph script).
+- [x] Boundary lint checks `@/` imports only — closed 2026-11-02: `../`
+      imports are now banned.
 - [ ] Prune the 3 stale entries in `scripts/format-shared.mjs`.
 - `.githooks/*` are not executable in this clone, so local hooks did not run;
   checks were run by hand.
+
+## Implementation updates
+
+### 2026-11-02 — refactor
+
+**Purpose:** follow the small-app feature-folder convention (Bulletproof
+React: always use absolute imports), and stop `../` paths evading the
+boundary lint.
+**Change:**
+
+- `getAppVersion`/`isVersionReleased` moved from `auth/lib/authProviders.ts`
+  to `shared/utils/appVersion.ts`; removes the annotate → auth import.
+- 115 `../` specifiers rewritten to `@/` (imports, `require`, `jest.mock`
+  family). Same-folder `./` imports kept.
+- ESLint `PARENT_RELATIVE` pattern bans `../` imports in source and tests.
+- The two emulator tests gained a `load…()` helper holding the one `require`,
+  so its `eslint-disable-next-line` stays on the right line after prettier.
+- Style guide "Use sensible import paths" rewritten to the project rule.
+
+Verified: `tsc`, ESLint (6 pre-existing warnings), Jest, `format:check`; the
+new rule shown to fire on planted `../` imports in source and tests.

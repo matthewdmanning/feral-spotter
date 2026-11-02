@@ -1,4 +1,4 @@
-import { computeBubbleDiameter } from '../diameter'
+import { computeBubbleDiameter } from '@/src/features/annotate/lib/diameter'
 
 describe('computeBubbleDiameter', () => {
   it('matches the #168 prototype readouts for its mock box sizes', () => {

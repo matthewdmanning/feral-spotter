@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { act, renderHook } from '@testing-library/react-native'
 
 import { useActiveCatFlowStore } from '@/src/features/draft-submission/hooks/useActiveCatFlowStore'
-import { useAnnotatePass } from '../useAnnotatePass'
+import { useAnnotatePass } from '@/src/features/annotate/hooks/useAnnotatePass'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useSettingsStore } from '@/src/features/settings/hooks/useSettingsStore'

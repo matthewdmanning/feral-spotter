@@ -2,7 +2,7 @@ import { act, render, waitFor } from '@testing-library/react-native'
 import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
 import React from 'react'
 import { getAllSubmissionCaches } from '@/src/features/draft-submission/lib/submissionCache'
-import HomeScreen from '../index'
+import HomeScreen from '@/src/core/home/screens/home/index'
 
 /**
  * #314. Home's "Continue Observation" entry is read from the submission cache

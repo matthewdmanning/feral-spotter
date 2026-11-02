@@ -1,6 +1,9 @@
 import { router } from 'expo-router'
 import { observedCat } from '@/src/test-utils/catFixtures'
-import { abandonCatPass, removeCatFromDraft } from '../catPass'
+import {
+  abandonCatPass,
+  removeCatFromDraft,
+} from '@/src/features/draft-submission/hooks/catPass'
 import { useActiveCatFlowStore } from '@/src/features/draft-submission/hooks/useActiveCatFlowStore'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'

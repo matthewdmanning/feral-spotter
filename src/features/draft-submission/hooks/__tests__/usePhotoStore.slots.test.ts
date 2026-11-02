@@ -1,4 +1,4 @@
-import { usePhotoStore } from '../usePhotoStore'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 
 /**
  * storage.rules accepts only photo-0 … photo-9 in a Submission, so every

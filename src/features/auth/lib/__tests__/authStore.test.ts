@@ -4,7 +4,7 @@
  * that first report sent a signed-in user through sign-in and consent again.
  */
 import * as auth from '@/src/features/auth/lib'
-import { useAuthStore } from '../authStore'
+import { useAuthStore } from '@/src/features/auth/lib/authStore'
 
 type Listener = (user: { uid: string } | null) => void
 

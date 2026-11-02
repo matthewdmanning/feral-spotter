@@ -16,6 +16,11 @@
 // earlier.
 const ORIGINAL_ENV = process.env
 
+// A fresh copy of the module under test; call after jest.resetModules().
+const loadAuthProvider = () =>
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- see file-header comment
+  require('@/src/features/auth/lib/firebaseAuthProvider')
+
 function spyOnFetch() {
   return jest
     .spyOn(global, 'fetch')
@@ -43,8 +48,7 @@ describe('createFirebaseAuthProvider emulator wiring', () => {
     process.env.EXPO_PUBLIC_USE_FIREBASE_EMULATOR = 'true'
     process.env.EXPO_PUBLIC_FIREBASE_EMULATOR_HOST = 'test-host'
 
-    // eslint-disable-next-line @typescript-eslint/no-require-imports -- see file-header comment
-    const { createFirebaseAuthProvider } = require('../firebaseAuthProvider')
+    const { createFirebaseAuthProvider } = loadAuthProvider()
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- see file-header comment
     const { connectAuthEmulator } = require('@react-native-firebase/auth')
     spyOnFetch()
@@ -60,8 +64,7 @@ describe('createFirebaseAuthProvider emulator wiring', () => {
   it('defaults to localhost when no host override is set', () => {
     process.env.EXPO_PUBLIC_USE_FIREBASE_EMULATOR = 'true'
 
-    // eslint-disable-next-line @typescript-eslint/no-require-imports -- see file-header comment
-    const { createFirebaseAuthProvider } = require('../firebaseAuthProvider')
+    const { createFirebaseAuthProvider } = loadAuthProvider()
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- see file-header comment
     const { connectAuthEmulator } = require('@react-native-firebase/auth')
     spyOnFetch()
@@ -75,8 +78,7 @@ describe('createFirebaseAuthProvider emulator wiring', () => {
   })
 
   it('does not connect to the emulator when the flag is unset', () => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports -- see file-header comment
-    const { createFirebaseAuthProvider } = require('../firebaseAuthProvider')
+    const { createFirebaseAuthProvider } = loadAuthProvider()
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- see file-header comment
     const { connectAuthEmulator } = require('@react-native-firebase/auth')
     const fetchSpy = spyOnFetch()
@@ -91,8 +93,7 @@ describe('createFirebaseAuthProvider emulator wiring', () => {
     process.env.EXPO_PUBLIC_USE_FIREBASE_EMULATOR = 'true'
     process.env.EXPO_PUBLIC_FIREBASE_EMULATOR_HOST = 'test-host'
 
-    // eslint-disable-next-line @typescript-eslint/no-require-imports -- see file-header comment
-    const { createFirebaseAuthProvider } = require('../firebaseAuthProvider')
+    const { createFirebaseAuthProvider } = loadAuthProvider()
     const fetchSpy = spyOnFetch()
 
     createFirebaseAuthProvider()
@@ -104,8 +105,7 @@ describe('createFirebaseAuthProvider emulator wiring', () => {
     process.env.EXPO_PUBLIC_USE_FIREBASE_EMULATOR = 'true'
     process.env.EXPO_PUBLIC_FIREBASE_EMULATOR_HOST = 'test-host'
 
-    // eslint-disable-next-line @typescript-eslint/no-require-imports -- see file-header comment
-    const { createFirebaseAuthProvider } = require('../firebaseAuthProvider')
+    const { createFirebaseAuthProvider } = loadAuthProvider()
     jest.spyOn(global, 'fetch').mockRejectedValue(new Error('ECONNREFUSED'))
 
     createFirebaseAuthProvider()

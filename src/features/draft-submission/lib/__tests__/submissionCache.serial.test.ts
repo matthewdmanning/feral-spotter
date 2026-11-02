@@ -5,7 +5,7 @@ import {
   getSubmissionCache,
   transitionSubmission,
   updateSubmissionCache,
-} from '../submissionCache'
+} from '@/src/features/draft-submission/lib/submissionCache'
 
 /**
  * Each cache mutation is a read-modify-write across separate storage calls.

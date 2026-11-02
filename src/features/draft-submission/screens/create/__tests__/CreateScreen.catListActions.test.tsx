@@ -13,7 +13,7 @@ import {
 } from '@/src/features/draft-submission/hooks/useSubmissionStore'
 import { AlertHost } from '@/src/shared/ui/organisms/AlertHost'
 import React from 'react'
-import CreateSubmissionScreen from '../index'
+import CreateSubmissionScreen from '@/src/features/draft-submission/screens/create/index'
 
 /**
  * Button wiring on the Cat List section of Submission Details

@@ -1,5 +1,8 @@
 import { render, screen, userEvent } from '@testing-library/react-native'
-import { TutorialOverlay, type TutorialStep } from '../TutorialOverlay'
+import {
+  TutorialOverlay,
+  type TutorialStep,
+} from '@/src/features/annotate/components/TutorialOverlay'
 
 /**
  * The overlay's Modal stays mounted between opens. Its step index used to

@@ -1,5 +1,5 @@
 /**
- * utils/appVersion.ts
+ * shared/utils/appVersion.ts
  * The running app version and the release-gate check every gated feature
  * shares (federated sign-in providers, the annotation tutorial).
  */

@@ -1,4 +1,4 @@
-import { computeCollapsedOffset } from '../collapse'
+import { computeCollapsedOffset } from '@/src/features/annotate/lib/collapse'
 
 describe('computeCollapsedOffset', () => {
   it('is zero when the bubble never expands past the collapsed size', () => {

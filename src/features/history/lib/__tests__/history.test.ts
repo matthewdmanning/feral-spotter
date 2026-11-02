@@ -12,7 +12,7 @@ import {
   sortBySightingTime,
   type MapSize,
   type SpotCoordinates,
-} from '../history'
+} from '@/src/features/history/lib/history'
 
 function sighting(
   id: string,

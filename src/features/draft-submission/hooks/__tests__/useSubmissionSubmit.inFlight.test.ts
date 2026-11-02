@@ -7,10 +7,10 @@ import {
   uploadSubmissionMetadata,
   uploadSubmissionPhoto,
 } from '@/src/features/draft-submission/lib/upload/firebaseUpload'
-import { discardDraftAndGoHome } from '../confirmResetSubmission'
-import { useSubmissionSubmit } from '../useSubmissionSubmit'
-import { useSubmissionStore } from '../useSubmissionStore'
-import { usePhotoStore } from '../usePhotoStore'
+import { discardDraftAndGoHome } from '@/src/features/draft-submission/hooks/confirmResetSubmission'
+import { useSubmissionSubmit } from '@/src/features/draft-submission/hooks/useSubmissionSubmit'
+import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { observedCat } from '@/src/test-utils/catFixtures'
 
 /**
