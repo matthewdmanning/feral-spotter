@@ -8,6 +8,21 @@ import type { SubmissionPhoto } from '@/src/types'
 import type * as ImagePicker from 'expo-image-picker'
 import { randomUUID } from 'expo-crypto'
 
+/**
+ * EXIF stores GPS magnitudes with a separate hemisphere ref ('N'/'S',
+ * 'E'/'W'). Some platforms report the magnitude unsigned, so a western or
+ * southern position needs the ref applied. Already-signed values pass
+ * through unchanged.
+ */
+function signedCoordinate(
+  value: unknown,
+  ref: unknown,
+  negativeRef: 'S' | 'W',
+): number | undefined {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return undefined
+  return ref === negativeRef ? -Math.abs(value) : value
+}
+
 export function buildSubmissionPhoto(
   asset: ImagePicker.ImagePickerAsset,
 ): SubmissionPhoto {
@@ -20,8 +35,16 @@ export function buildSubmissionPhoto(
     height: asset.height,
     exif: asset.exif
       ? {
-          latitude: asset.exif.GPSLatitude,
-          longitude: asset.exif.GPSLongitude,
+          latitude: signedCoordinate(
+            asset.exif.GPSLatitude,
+            asset.exif.GPSLatitudeRef,
+            'S',
+          ),
+          longitude: signedCoordinate(
+            asset.exif.GPSLongitude,
+            asset.exif.GPSLongitudeRef,
+            'W',
+          ),
           timestamp: asset.exif.DateTime,
           camera_make: asset.exif.Make,
           camera_model: asset.exif.Model,

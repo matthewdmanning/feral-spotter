@@ -62,9 +62,12 @@ const pickerFlow = createMachine({
   id: 'locationPicker',
   initial: 'ready',
   states: {
+    // No last-known fix: the pin sits on the placeholder region, and Set
+    // location must not save it as the Sighting's location.
     ready: {
       on: {
         MOVE: 'moved',
+        SET: 'ready',
         CANCEL: 'cancelled',
       },
     },
@@ -143,6 +146,10 @@ describe('Location picker — flow (model-based)', () => {
     {
       name: 'cancelling without moving preserves the original Submission draft',
       events: [{ type: 'CANCEL' }],
+    },
+    {
+      name: 'Set location saves nothing until the map has a real centre',
+      events: [{ type: 'SET' }, { type: 'MOVE' }, { type: 'SET' }],
     },
   ] as const
 

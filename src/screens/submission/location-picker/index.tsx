@@ -27,9 +27,21 @@ const DEFAULT_REGION: Required<Coordinates> = {
 }
 const DEFAULT_ZOOM = 15
 
+// The default region is a placeholder, not a place the user chose. A centre
+// within this many degrees of it (about 1 m) still counts as the placeholder.
+const PLACEHOLDER_TOLERANCE_DEG = 1e-5
+
+function isPlaceholder({ latitude, longitude }: Required<Coordinates>) {
+  return (
+    Math.abs(latitude - DEFAULT_REGION.latitude) < PLACEHOLDER_TOLERANCE_DEG &&
+    Math.abs(longitude - DEFAULT_REGION.longitude) < PLACEHOLDER_TOLERANCE_DEG
+  )
+}
+
 // Seed order (ADR 0002): last-known device position → default region. The
 // photo-EXIF seed applies only to the library-upload path, which is deferred.
-async function resolveSeedRegion(): Promise<Required<Coordinates>> {
+// null means no real position: the map opens on the placeholder.
+async function resolveSeedRegion(): Promise<Required<Coordinates> | null> {
   try {
     const last = await Location.getLastKnownPositionAsync()
     if (last) {
@@ -41,7 +53,7 @@ async function resolveSeedRegion(): Promise<Required<Coordinates>> {
   } catch {
     // fall through to the default region
   }
-  return DEFAULT_REGION
+  return null
 }
 
 export default function LocationPickerScreen() {
@@ -55,13 +67,19 @@ export default function LocationPickerScreen() {
   // Latest map centre, updated as the user drags. A ref (not state) so every
   // camera move doesn't re-render the map.
   const centerRef = useRef<Required<Coordinates>>(DEFAULT_REGION)
+  // Set location stays off while the pin sits on the placeholder: saving it
+  // would record the study area as where this Sighting happened.
+  const [centerKnown, setCenterKnown] = useState(false)
+  const moved = useRef(false)
 
   useEffect(() => {
     let active = true
     resolveSeedRegion().then((region) => {
-      if (!active) return
+      // A drag that beat the seed wins: re-centring would throw it away.
+      if (!active || !region || moved.current) return
       setSeed(region)
       centerRef.current = region
+      setCenterKnown(true)
     })
     return () => {
       active = false
@@ -71,9 +89,12 @@ export default function LocationPickerScreen() {
   const handleCameraMove = useCallback(
     (event: { coordinates: Coordinates }) => {
       const { latitude, longitude } = event.coordinates
-      if (latitude != null && longitude != null) {
-        centerRef.current = { latitude, longitude }
-      }
+      if (latitude == null || longitude == null) return
+      const center = { latitude, longitude }
+      centerRef.current = center
+      if (isPlaceholder(center)) return
+      moved.current = true
+      setCenterKnown(true)
     },
     [],
   )
@@ -111,12 +132,18 @@ export default function LocationPickerScreen() {
       </View>
 
       <View style={styles.footer}>
-        <Text style={styles.hint}>Drag the map to place the pin</Text>
+        <Text style={styles.hint}>
+          {centerKnown
+            ? 'Drag the map to place the pin'
+            : 'No location yet. Drag the map to where you saw the cat.'}
+        </Text>
         <ButtonRow>
           <AppButton variant="secondary" onPress={handleCancel}>
             Cancel
           </AppButton>
-          <AppButton onPress={handleSetLocation}>Set location</AppButton>
+          <AppButton onPress={handleSetLocation} disabled={!centerKnown}>
+            Set location
+          </AppButton>
         </ButtonRow>
       </View>
     </View>

@@ -55,6 +55,14 @@ let state: LocationCaptureState = {
 let watchSubscription: { remove: () => void } | null = null
 let settleTimer: ReturnType<typeof setTimeout> | null = null
 let recheckTimer: ReturnType<typeof setTimeout> | null = null
+// Bumped by stopLocationCapture. A start still awaiting the OS when the
+// draft is torn down sees a newer generation and stops, instead of starting
+// a watch nobody will ever remove.
+let captureGeneration = 0
+// True across a start's awaits, before `status` turns 'pending': a second
+// caller in that window (recheck timer, second screen) must not start a
+// second watch.
+let startInFlight = false
 const listeners = new Set<() => void>()
 
 function setState(patch: Partial<LocationCaptureState>) {
@@ -105,7 +113,18 @@ export async function startLocationCapture(): Promise<void> {
     return
   }
 
-  if (!(await locationPermission.check())) {
+  if (startInFlight) return
+  const generation = captureGeneration
+  const isCurrent = () => generation === captureGeneration
+  startInFlight = true
+  let usable = false
+  try {
+    usable = await locationPermission.check()
+  } finally {
+    startInFlight = false
+  }
+  if (!isCurrent()) return
+  if (!usable) {
     if (__DEV__) console.log('[location] permission not usable — not starting')
     return
   }
@@ -130,13 +149,15 @@ export async function startLocationCapture(): Promise<void> {
     const servicesEnabled = await Location.hasServicesEnabledAsync()
     console.log('[location] OS location services enabled:', servicesEnabled)
   }
+  if (!isCurrent()) return
 
   if (__DEV__) console.log('[location] starting watchPositionAsync')
 
   try {
-    watchSubscription = await Location.watchPositionAsync(
+    const subscription = await Location.watchPositionAsync(
       { accuracy: Location.Accuracy.High, timeInterval: 1000 },
       (fix) => {
+        if (!isCurrent()) return
         const candidate: CapturedLocation = {
           latitude: fix.coords.latitude,
           longitude: fix.coords.longitude,
@@ -156,11 +177,19 @@ export async function startLocationCapture(): Promise<void> {
         }
       },
     )
+    // Stopped, or already settled by an early fix or the settle timer,
+    // while the subscription was being created: nothing will remove it.
+    if (!isCurrent() || getLocationCaptureState().status !== 'pending') {
+      subscription.remove()
+      return
+    }
+    watchSubscription?.remove()
+    watchSubscription = subscription
     if (__DEV__)
       console.log('[location] watchPositionAsync resolved, subscription live')
   } catch (err) {
     if (__DEV__) console.log('[location] watchPositionAsync threw:', err)
-    resolve()
+    if (isCurrent()) resolve()
   }
 }
 
@@ -190,6 +219,7 @@ export function useLocationCapture(): LocationCaptureState {
  * that.
  */
 export function stopLocationCapture(): void {
+  captureGeneration += 1
   stopWatching()
   if (recheckTimer) {
     clearTimeout(recheckTimer)
