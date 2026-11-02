@@ -23,6 +23,7 @@
 import { asyncStorage } from '@/src/lib/cache/storage'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
+import { useSyncExternalStore } from 'react'
 
 export const CONSENT_VERSION = 1 // bump when disclosure copy changes materially
 
@@ -75,4 +76,16 @@ export function hasAcceptedAnalytics(): boolean {
 /** Plain (non-hook) check for use outside React components. */
 export function hasOptedInToEmail(): boolean {
   return useConsentStore.getState().emailOptIn === true
+}
+
+/**
+ * True once the persisted consent choices are read back. Until then every
+ * check above reads the defaults, so a gate acting before this sends a
+ * consented user back through onboarding.
+ */
+export function useConsentHydrated(): boolean {
+  return useSyncExternalStore(
+    (onChange) => useConsentStore.persist.onFinishHydration(onChange),
+    () => useConsentStore.persist.hasHydrated(),
+  )
 }

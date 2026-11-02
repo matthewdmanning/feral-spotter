@@ -4,7 +4,7 @@ import React from 'react'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import { useAuth } from '@/src/lib/auth/useAuth'
-import { hasAcceptedConsent } from '@/src/hooks/useConsentStore'
+import { CONSENT_VERSION, useConsentStore } from '@/src/hooks/useConsentStore'
 import HomeScreen from '../index'
 
 jest.mock('expo-router', () => ({
@@ -14,9 +14,6 @@ jest.mock('expo-router', () => ({
 }))
 
 jest.mock('@/src/lib/auth/useAuth', () => ({ useAuth: jest.fn() }))
-jest.mock('@/src/hooks/useConsentStore', () => ({
-  hasAcceptedConsent: jest.fn(),
-}))
 jest.mock('@/src/lib/cache/submissionCache', () => ({
   getAllSubmissionCaches: jest.fn().mockResolvedValue([]),
   getCurrentCacheId: jest.fn().mockResolvedValue(null),
@@ -43,8 +40,8 @@ jest.mock('@/src/hooks/useLibraryPhotoPicker', () => ({
  * on /sign-in, never back on /intro-flow.
  *
  * Transitions are restricted to changes in `isAuthenticated` — the gate
- * effect's only real reactive dependency (`hasAcceptedConsent()` is a plain
- * snapshot read, not subscribed). This also matches reality: in the actual
+ * effect's only real reactive dependency (consent is read as a snapshot
+ * from the real consent store, not subscribed). This also matches reality: in the actual
  * app Home is never mounted between /consent and /sign-in — each screen
  * navigates explicitly — so a live Home instance never witnesses consent
  * changing underneath it. The "no consent" states are dead ends for the
@@ -66,8 +63,13 @@ const gateMachine = createMachine({
         // Consent already on file for this device, no active session.
         AUTH_READY_CONSENTED_UNAUTHENTICATED: 'consentedUnauthenticated',
         AUTH_READY_WITH_CONSENT: 'ready',
+        // Accepted an older disclosure: CONSENT_VERSION was bumped since.
+        AUTH_READY_STALE_CONSENT_VERSION: 'noConsentAuthenticated',
+        // The app was killed on email opt-in: the chain resumes there.
+        AUTH_READY_WITH_UNANSWERED_STEP: 'unansweredStep',
       },
     },
+    unansweredStep: {},
     noConsentUnauthenticated: {},
     noConsentAuthenticated: {},
     consentedUnauthenticated: {
@@ -87,10 +89,11 @@ const gateMachine = createMachine({
 describe('HomeScreen gate — model-based test', () => {
   let rerender: (ui: React.ReactElement) => void
 
+  type Consent = boolean | 'stale-version' | 'unanswered'
   const setMocks = (
     isReady: boolean,
     isAuthenticated: boolean,
-    consent: boolean,
+    consent: Consent,
   ) => {
     ;(useAuth as jest.Mock).mockReturnValue({
       isReady,
@@ -98,7 +101,17 @@ describe('HomeScreen gate — model-based test', () => {
       signIn: jest.fn(),
       signOut: jest.fn(),
     })
-    ;(hasAcceptedConsent as jest.Mock).mockReturnValue(consent)
+    useConsentStore.setState({
+      accepted: consent !== false,
+      acceptedVersion:
+        consent === false
+          ? null
+          : consent === 'stale-version'
+            ? CONSENT_VERSION - 1
+            : CONSENT_VERSION,
+      emailOptIn: consent === 'unanswered' ? null : false,
+      analyticsAccepted: consent === 'unanswered' ? null : false,
+    })
   }
 
   beforeEach(() => {
@@ -136,6 +149,11 @@ describe('HomeScreen gate — model-based test', () => {
       ready: () => {
         expect(router.replace).not.toHaveBeenCalled()
       },
+      unansweredStep: async () => {
+        await waitFor(() =>
+          expect(router.replace).toHaveBeenCalledWith('/email-opt-in'),
+        )
+      },
     },
     events: {
       AUTH_READY_UNAUTHENTICATED_NO_CONSENT: () => {
@@ -152,6 +170,14 @@ describe('HomeScreen gate — model-based test', () => {
       },
       AUTH_READY_WITH_CONSENT: () => {
         setMocks(true, true, true)
+        rerender(<HomeScreen />)
+      },
+      AUTH_READY_STALE_CONSENT_VERSION: () => {
+        setMocks(true, true, 'stale-version')
+        rerender(<HomeScreen />)
+      },
+      AUTH_READY_WITH_UNANSWERED_STEP: () => {
+        setMocks(true, true, 'unanswered')
         rerender(<HomeScreen />)
       },
       SIGN_IN: () => {
@@ -189,6 +215,14 @@ describe('HomeScreen gate — model-based test', () => {
     {
       name: 'signed-in consented user signs out → sign-in, not intro-flow',
       events: [{ type: 'AUTH_READY_WITH_CONSENT' }, { type: 'SIGN_OUT' }],
+    },
+    {
+      name: 'consent given to an older disclosure version → intro-flow again',
+      events: [{ type: 'AUTH_READY_STALE_CONSENT_VERSION' }],
+    },
+    {
+      name: 'signed in with an unanswered consent step → that step',
+      events: [{ type: 'AUTH_READY_WITH_UNANSWERED_STEP' }],
     },
     {
       name: 'consented, signed out, then signs back in → home',

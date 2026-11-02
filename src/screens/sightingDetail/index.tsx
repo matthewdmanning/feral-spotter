@@ -22,14 +22,15 @@ import { useLocalSearchParams } from 'expo-router'
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
+import { firstParam } from '@/src/utils/routeParam'
 
 /** Larger than Cat Form's picker crops: here the photo is the cat's header. */
 const CAT_PHOTO_SIZE = 96
 
 export default function SightingDetailScreen() {
   const { theme } = useUnistyles()
-  const { id } = useLocalSearchParams<{ id: string }>()
-  const { sighting } = useSighting(id)
+  const params = useLocalSearchParams<{ id: string | string[] }>()
+  const { sighting } = useSighting(firstParam(params.id) ?? '')
 
   if (sighting === undefined) {
     return (
