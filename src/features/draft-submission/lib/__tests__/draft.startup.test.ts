@@ -4,6 +4,7 @@ import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBo
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { waitFor } from '@testing-library/react-native'
 import { File, Paths } from 'expo-file-system'
 import {
   createSubmissionCache,
@@ -72,10 +73,6 @@ describe('discardUnsurvivingDraft (#424)', () => {
       useActiveCatFlowStore.getInitialState(),
       true,
     )
-  })
-
-  afterEach(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0))
   })
 
   it('keeps a draft with a photo changed inside the window', async () => {
@@ -154,18 +151,12 @@ describe('discardUnsurvivingDraft (#424)', () => {
     })
     await seedCache(new Date(NOW - SUBMISSION_STALE_MS - HOUR_MS).toISOString())
 
-    let releaseDelete!: () => void
-    let signalDeleteStarted!: () => void
-    const deleteStarted = new Promise<void>((resolve) => {
-      signalDeleteStarted = resolve
-    })
-    const deleteGate = new Promise<void>((resolve) => {
-      releaseDelete = resolve
-    })
+    const deleteStarted = Promise.withResolvers<void>()
+    const deleteGate = Promise.withResolvers<void>()
     jest.spyOn(AsyncStorage, 'removeItem').mockImplementation(async (key) => {
       if (key === `submission_cache_${CACHE_ID}`) {
-        signalDeleteStarted()
-        await deleteGate
+        deleteStarted.resolve()
+        await deleteGate.promise
       }
     })
 
@@ -181,19 +172,19 @@ describe('discardUnsurvivingDraft (#424)', () => {
       })
     })
 
-    await deleteStarted
+    await deleteStarted.promise
     expect(usePhotoStore.getState().photos.map((p) => p.local_id)).toEqual([
       'photo-new',
     ])
-    releaseDelete()
+    deleteGate.resolve()
     await startup
 
     expect(deleteSubmissionUploads).toHaveBeenCalledWith(
       'uid-test',
       'old-submission',
     )
-    await new Promise((resolve) => setTimeout(resolve, 0))
-    expect(oldFile.exists).toBe(false)
+    // The old file's delete is fire-and-forget after startup resolves.
+    await waitFor(() => expect(oldFile.exists).toBe(false))
     expect(newFile.exists).toBe(true)
   })
 
