@@ -252,13 +252,22 @@ export const gateTesterAllowlist = beforeUserSignedIn(resolveTesterClaim)
 // deliberate: it fires onSubmissionPhotoDeleted per object, which keeps
 // photoCount consistent instead of stranding a counter doc at a count the
 // bucket no longer backs.
+// The default 60 s would cut a large sweep off silently, and the next run
+// would repeat the same listing. Listing is paged so the whole bucket's
+// metadata is never held at once; deletes run a few at a time.
+const SWEEP_PAGE_SIZE = 1000
+const SWEEP_DELETE_CONCURRENCY = 10
+
 export const sweepPhotosWithoutMetadata = onSchedule(
-  { schedule: 'every 24 hours', timeZone: 'Etc/UTC' },
+  {
+    schedule: 'every 24 hours',
+    timeZone: 'Etc/UTC',
+    timeoutSeconds: 540,
+    memory: '512MiB',
+  },
   async () => {
     const bucket = getStorage().bucket(BUCKET_NAME)
     const cutoff = Date.now() - SWEEP_RETENTION_DAYS * 24 * 60 * 60 * 1000
-
-    const [files] = await bucket.getFiles({ prefix: 'submissions/' })
 
     // Group by submissions/{uid}/{submissionId}/ prefix. A prefix is swept
     // only when it has no metadata.json AND every object in it predates the
@@ -268,35 +277,54 @@ export const sweepPhotosWithoutMetadata = onSchedule(
       { hasMetadata: boolean; newestMs: number; names: string[] }
     >()
 
-    for (const file of files) {
-      const match = OBJECT_PATH_PATTERN.exec(file.name)
-      if (!match) continue
-      const prefix = `submissions/${match[1]}/${match[2]}/`
+    let pageToken: string | undefined
+    do {
+      const [files, nextQuery] = await bucket.getFiles({
+        prefix: 'submissions/',
+        autoPaginate: false,
+        maxResults: SWEEP_PAGE_SIZE,
+        pageToken,
+      })
+      pageToken = (nextQuery as { pageToken?: string } | undefined)?.pageToken
+      for (const file of files) {
+        const match = OBJECT_PATH_PATTERN.exec(file.name)
+        if (!match) continue
+        const prefix = `submissions/${match[1]}/${match[2]}/`
 
-      const entry = prefixes.get(prefix) ?? {
-        hasMetadata: false,
-        newestMs: 0,
-        names: [],
+        const entry = prefixes.get(prefix) ?? {
+          hasMetadata: false,
+          newestMs: 0,
+          names: [],
+        }
+        if (match[3] === METADATA_FILE_NAME) entry.hasMetadata = true
+        // updated/timeCreated are ISO strings on the metadata payload; a
+        // missing value must not read as "ancient" and trigger a delete, so
+        // it falls back to now.
+        const updated = file.metadata?.updated ?? file.metadata?.timeCreated
+        const updatedMs = updated ? Date.parse(String(updated)) : Date.now()
+        entry.newestMs = Math.max(
+          entry.newestMs,
+          Number.isNaN(updatedMs) ? Date.now() : updatedMs,
+        )
+        entry.names.push(file.name)
+        prefixes.set(prefix, entry)
       }
-      if (match[3] === METADATA_FILE_NAME) entry.hasMetadata = true
-      // updated/timeCreated are ISO strings on the metadata payload; a
-      // missing value must not read as "ancient" and trigger a delete, so
-      // it falls back to now.
-      const updated = file.metadata?.updated ?? file.metadata?.timeCreated
-      const updatedMs = updated ? Date.parse(String(updated)) : Date.now()
-      entry.newestMs = Math.max(
-        entry.newestMs,
-        Number.isNaN(updatedMs) ? Date.now() : updatedMs,
-      )
-      entry.names.push(file.name)
-      prefixes.set(prefix, entry)
-    }
+    } while (pageToken)
 
+    const doomed: string[] = []
     for (const [prefix, entry] of prefixes) {
       if (entry.hasMetadata) continue
       if (entry.newestMs >= cutoff) continue
+      doomed.push(...entry.names)
+      console.log(
+        `[sweep] deleting ${entry.names.length} object(s) under ${prefix} (no metadata.json, older than ${SWEEP_RETENTION_DAYS}d)`,
+      )
+    }
 
-      for (const name of entry.names) {
+    let next = 0
+    const worker = async () => {
+      while (next < doomed.length) {
+        const name = doomed[next++]
         // One failure must not abandon the rest of the sweep.
         try {
           await bucket.file(name).delete()
@@ -304,10 +332,10 @@ export const sweepPhotosWithoutMetadata = onSchedule(
           console.error(`[sweep] failed to delete ${name}`, error)
         }
       }
-      console.log(
-        `[sweep] deleted ${entry.names.length} object(s) under ${prefix} (no metadata.json, older than ${SWEEP_RETENTION_DAYS}d)`,
-      )
     }
+    await Promise.all(
+      Array.from({ length: SWEEP_DELETE_CONCURRENCY }, () => worker()),
+    )
   },
 )
 

@@ -233,6 +233,34 @@ describe('orphan-photo retention sweep', () => {
 
   afterEach(() => jest.restoreAllMocks())
 
+  // A prefix split across listing pages must be judged as a whole: its
+  // metadata.json on page 2 still protects its photo on page 1.
+  it('reads every listing page before deciding a prefix', async () => {
+    mockGetFiles
+      .mockResolvedValueOnce([
+        [object('submissions/u/kept/photo.jpg', old)],
+        { pageToken: 'p2' },
+      ])
+      .mockResolvedValueOnce([
+        [
+          object('submissions/u/kept/metadata.json', old),
+          object('submissions/u/orphan/photo.jpg', old),
+        ],
+      ])
+
+    await sweepPhotosWithoutMetadata.run({
+      scheduleTime: new Date(now).toISOString(),
+    })
+
+    expect(mockGetFiles).toHaveBeenCalledTimes(2)
+    expect(mockGetFiles).toHaveBeenLastCalledWith(
+      expect.objectContaining({ pageToken: 'p2' }),
+    )
+    expect(mockDeleteFile.mock.calls.map(([name]) => name)).toEqual([
+      'submissions/u/orphan/photo.jpg',
+    ])
+  })
+
   it('deletes only old orphan prefixes even when another user has submitted the same id', async () => {
     mockGetFiles.mockResolvedValueOnce([
       [
@@ -248,7 +276,9 @@ describe('orphan-photo retention sweep', () => {
       scheduleTime: new Date(now).toISOString(),
     })
 
-    expect(mockGetFiles).toHaveBeenCalledWith({ prefix: 'submissions/' })
+    expect(mockGetFiles).toHaveBeenCalledWith(
+      expect.objectContaining({ prefix: 'submissions/' }),
+    )
     expect(mockDeleteFile.mock.calls.map(([name]) => name)).toEqual([
       'submissions/user-b/shared/one.jpg',
       'submissions/user-b/shared/two.jpg',
