@@ -3,6 +3,8 @@
  * Persisted Zustand store for photos attached to the in-progress submission.
  */
 
+import { MAX_PHOTOS } from '@/src/config/constants'
+import { showAlert } from '@/src/hooks/useUIStore'
 import { asyncStorage } from '@/src/lib/cache/storage'
 import type { SubmissionPhoto } from '@/src/types'
 import { deleteCapturedPhotoFile } from '@/src/lib/camera/capturedPhotoFiles'
@@ -120,3 +122,20 @@ export const usePhotoStore = create<PhotoState>()(
     },
   ),
 )
+
+/** Photos the current draft can still take before MAX_PHOTOS. */
+export function photoSlotsLeft(): number {
+  return Math.max(0, MAX_PHOTOS - usePhotoStore.getState().photos.length)
+}
+
+export function isAtPhotoLimit(): boolean {
+  return photoSlotsLeft() === 0
+}
+
+/** Shown at either entrypoint when the pool is full. */
+export function showPhotoLimitReached(): void {
+  showAlert(
+    'Photo limit reached',
+    `A Sighting holds up to ${MAX_PHOTOS} photos. Remove one to add another.`,
+  )
+}

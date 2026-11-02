@@ -141,6 +141,32 @@ functions default, the rules tests and `backend.md` now name the default
 bucket. `BUCKET_URL` in `src/lib/upload/firebaseUpload.ts` and `BUCKET_NAME` in
 `functions/src/index.ts` must stay equal.
 
+## Amendment 2026-11-02: the photo cap is soft; the counter is idempotent
+
+The 10-photo cap is a soft limit. `photoCount` is written by an async trigger,
+so uploads that land before the counter doc exists, or inside the trigger's
+latency window, all see the old count. Rules cannot count siblings
+synchronously, so this is accepted rather than fixed. The hard limit is on the
+client: `MAX_PHOTOS` (fixed at 10, no env override) is enforced at the camera
+shutter, the camera burst loop and the library picker.
+
+The counter itself is now exact under at-least-once, out-of-order delivery.
+Each photo object has a marker doc,
+`submissions/{submissionId}/photos/{encodedObjectName}`, recording the counted
+generation and a tombstone for a delete that arrives first. A duplicate event,
+an overwrite (new-generation finalize plus old-generation delete) and a
+delete-before-finalize each move the count once at most. The delete floors at
+0 and skips a colliding uid (#268). Both triggers set `retry: true`, which is
+safe only because they are idempotent.
+
+Rules changes in the same pass:
+
+- The metadata-only patch branch requires the same size, content type and
+  `md5Hash`. Size alone let a same-size overwrite with any type through.
+- A photo's `customMetadata.user_id`, when present, must equal the path uid.
+- An existing `metadata.json` may be rewritten at the 250-Submission cap,
+  because it was counted when it first landed.
+
 ## Considered Options
 
 - **Keep the custom `upload+api.ts` route** — rejected: no resumable/retry story,

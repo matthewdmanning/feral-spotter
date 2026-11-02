@@ -174,3 +174,8 @@ tags:
 - Draft sync skips upload-progress ticks. `addCat` is idempotent; Cat Form save commits once; annotate mints cat ids from fresh state. Removed photos are pruned from cats. A failed startup restore retries on the next draft action. Reports reads ignore stale responses and always clear the refresh spinner.
 
 Tests: `useSubmissionSubmit.inFlight.test.ts` (lock, retry, cleared draft, Failed row), `submissionCache.serial.test.ts` (status and index races; both fail on the old code), `draft.startup.test.ts` (mid-send kill kept), `uploadNewPhoto.queue.test.ts` (dedupe, retry, cancel). Not checked on device.
+
+## 2026-11-02 — fix (photo cap and counter)
+
+**Purpose:** `MAX_PHOTOS` was never enforced, so an 11th photo failed its upload silently; `photoCount` drifted under duplicate, overwrite and out-of-order Storage events; a same-size overwrite skipped the content-type check.
+**Change:** See ADR-0005's 2026-11-02 amendment. Client cap at shutter, burst loop and library picker (`photoSlotsLeft`, `showPhotoLimitReached` in `usePhotoStore`); library time classified over the whole pool. Per-object marker docs make both count triggers idempotent, with `retry: true`. Rules: patch branch needs equal size, type and md5; `user_id` must match the path; metadata retries pass the 250 cap. Tests: `functions/src/__tests__/photoCount.test.ts` (event-sequence model; replaces the call-shape cases), three new cases in `__tests__/rules/storage.test.ts` (emulator run: 39 passed), library cap case in `useLibraryPhotoPicker.selection.test.ts`.

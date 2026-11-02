@@ -25,8 +25,12 @@ export type FeatureFlag = keyof typeof FEATURE_FLAGS
 /** App version from Expo config. */
 export const APP_VERSION: string = Constants.expoConfig?.version ?? '1.0.0'
 
-/** Maximum photos per submission. Override via EXPO_PUBLIC_MAX_PHOTOS. */
-export const MAX_PHOTOS = Number(process.env.EXPO_PUBLIC_MAX_PHOTOS) || 10
+/**
+ * Maximum photos per submission. Fixed, not env-overridable: storage.rules
+ * hard-codes the same 10 (rules cannot read app config), so any other value
+ * here only desyncs the two. Enforced at both photo entrypoints.
+ */
+export const MAX_PHOTOS = 10
 
 /**
  * Maximum distinct submissions per uid (#270), enforced by
