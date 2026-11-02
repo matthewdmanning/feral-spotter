@@ -4,8 +4,9 @@ import React from 'react'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import { useAuth } from '@/src/features/auth/lib/useAuth'
-import { hasAcceptedConsent } from '@/src/shared/consent/useConsentStore'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import HomeScreen from '@/src/core/home/screens/home/index'
+import { setConsent } from '@/src/test-utils/consent'
 
 jest.mock('expo-router', () => ({
   useIsFocused: () => true,
@@ -14,20 +15,11 @@ jest.mock('expo-router', () => ({
 }))
 
 jest.mock('@/src/features/auth/lib/useAuth', () => ({ useAuth: jest.fn() }))
-jest.mock('@/src/shared/consent/useConsentStore', () => ({
-  hasAcceptedConsent: jest.fn(),
-}))
 jest.mock('@/src/features/draft-submission/lib/submissionCache', () => ({
   getAllSubmissionCaches: jest.fn().mockResolvedValue([]),
 }))
 jest.mock('@/src/shared/ui/molecules/BottomButtonColumn', () => ({
   BottomButtonColumn: () => null,
-}))
-// This suite covers the auth/consent gate only — the photo-source gate has
-// its own model test (HomeScreen.photoSourceGate.model.test.tsx).
-jest.mock('@/src/features/draft-submission/hooks/usePhotoStore', () => ({
-  usePhotoStore: (sel: (s: { source: null }) => unknown) =>
-    sel({ source: null }),
 }))
 jest.mock('@/src/features/library-picker/hooks/useLibraryPhotoPicker', () => ({
   useLibraryPhotoPicker: () => ({ pickFromLibrary: jest.fn() }),
@@ -91,17 +83,20 @@ describe('HomeScreen gate — model-based test', () => {
     isAuthenticated: boolean,
     consent: boolean,
   ) => {
-    ;(useAuth as jest.Mock).mockReturnValue({
+    jest.mocked(useAuth).mockReturnValue({
       isReady,
       isAuthenticated,
       signIn: jest.fn(),
       signOut: jest.fn(),
-    })
-    ;(hasAcceptedConsent as jest.Mock).mockReturnValue(consent)
+    } as unknown as ReturnType<typeof useAuth>)
+    setConsent(consent)
   }
 
   beforeEach(() => {
     jest.clearAllMocks()
+    // This suite covers the auth/consent gate only — the photo-source gate
+    // has its own model test (HomeScreen.photoSourceGate.model.test.tsx).
+    usePhotoStore.setState(usePhotoStore.getInitialState(), true)
     setMocks(false, false, false)
     const result = render(<HomeScreen />)
     rerender = result.rerender
@@ -118,19 +113,19 @@ describe('HomeScreen gate — model-based test', () => {
         await waitFor(() =>
           expect(router.replace).toHaveBeenCalledWith('/intro-flow'),
         )
-        ;(router.replace as jest.Mock).mockClear()
+        jest.mocked(router.replace).mockClear()
       },
       noConsentAuthenticated: async () => {
         await waitFor(() =>
           expect(router.replace).toHaveBeenCalledWith('/intro-flow'),
         )
-        ;(router.replace as jest.Mock).mockClear()
+        jest.mocked(router.replace).mockClear()
       },
       consentedUnauthenticated: async () => {
         await waitFor(() =>
           expect(router.replace).toHaveBeenCalledWith('/sign-in'),
         )
-        ;(router.replace as jest.Mock).mockClear()
+        jest.mocked(router.replace).mockClear()
       },
       ready: () => {
         expect(router.replace).not.toHaveBeenCalled()

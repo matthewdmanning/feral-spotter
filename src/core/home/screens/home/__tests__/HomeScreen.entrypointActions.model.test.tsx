@@ -7,6 +7,8 @@ import { SUBMISSION_STALE_MS } from '@/src/shared/config/constants'
 import { getAllSubmissionCaches } from '@/src/features/draft-submission/lib/submissionCache'
 import HomeScreen from '@/src/core/home/screens/home/index'
 import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
+import { setConsent } from '@/src/test-utils/consent'
 
 /**
  * Model of every button on HomeScreen (src/core/home/screens/home/index.tsx) and what
@@ -32,15 +34,8 @@ jest.mock('expo-router', () => ({
 jest.mock('@/src/features/auth/lib/useAuth', () => ({
   useAuth: () => ({ isReady: true, isAuthenticated: true }),
 }))
-jest.mock('@/src/shared/consent/useConsentStore', () => ({
-  hasAcceptedConsent: () => true,
-}))
 jest.mock('@/src/features/draft-submission/lib/submissionCache', () => ({
   getAllSubmissionCaches: jest.fn(),
-}))
-jest.mock('@/src/features/draft-submission/hooks/usePhotoStore', () => ({
-  usePhotoStore: (sel: (s: { source: null }) => unknown) =>
-    sel({ source: null }),
 }))
 const mockPickFromLibrary = jest.fn()
 jest.mock('@/src/features/library-picker/hooks/useLibraryPhotoPicker', () => ({
@@ -82,6 +77,8 @@ describe('HomeScreen entrypoint buttons — model-based test', () => {
 
   beforeEach(() => {
     useDraftStartupStore.setState({ phase: 'ready', task: Promise.resolve() })
+    usePhotoStore.setState(usePhotoStore.getInitialState(), true)
+    setConsent(true)
     jest.clearAllMocks()
   })
 
