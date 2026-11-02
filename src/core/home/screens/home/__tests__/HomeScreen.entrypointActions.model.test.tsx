@@ -8,6 +8,8 @@ import { getAllSubmissionCaches } from '@/src/features/draft-submission/lib/subm
 import HomeScreen from '@/src/core/home/screens/home/index'
 import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
+import { setConsent } from '@/src/test-utils/consent'
 
 /**
  * Model of every button on HomeScreen (src/core/home/screens/home/index.tsx) and what
@@ -47,12 +49,6 @@ jest.mock('@/src/shared/consent/useConsentStore', () => {
 jest.mock('@/src/features/draft-submission/lib/submissionCache', () => ({
   getAllSubmissionCaches: jest.fn(),
   getCurrentCacheId: jest.fn().mockResolvedValue(null),
-}))
-jest.mock('@/src/features/draft-submission/hooks/usePhotoStore', () => ({
-  usePhotoStore: Object.assign(
-    (sel: (s: { source: null }) => unknown) => sel({ source: null }),
-    { getState: () => ({ source: null }) },
-  ),
 }))
 const mockPickFromLibrary = jest.fn()
 jest.mock('@/src/features/library-picker/hooks/useLibraryPhotoPicker', () => ({
@@ -94,6 +90,8 @@ describe('HomeScreen entrypoint buttons — model-based test', () => {
 
   beforeEach(() => {
     useDraftStartupStore.setState({ phase: 'ready', task: Promise.resolve() })
+    usePhotoStore.setState(usePhotoStore.getInitialState(), true)
+    setConsent(true)
     jest.clearAllMocks()
     useUIStore.setState({ dialog: null })
   })
