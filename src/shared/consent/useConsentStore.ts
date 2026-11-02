@@ -73,6 +73,7 @@ export function hasAcceptedAnalytics(): boolean {
   return useConsentStore.getState().analyticsAccepted === true
 }
 
+
 /**
  * True once the persisted consent choices are read back. Until then every
  * check above reads the defaults, so a gate acting before this sends a
