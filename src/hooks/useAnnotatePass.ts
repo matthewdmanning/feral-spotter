@@ -15,7 +15,7 @@ import { showAlert } from '@/src/hooks/useUIStore'
 import { useState, useCallback, useRef } from 'react'
 
 import type { ICarouselInstance } from 'react-native-reanimated-carousel'
-import { usePhotoStore } from '@/src/hooks'
+import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useActiveCatFlow } from '@/src/hooks/useActiveCatFlow'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'

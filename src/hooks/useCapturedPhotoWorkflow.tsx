@@ -13,8 +13,7 @@
  */
 
 import { CameraThumb } from '@/src/components/atoms/CameraThumb'
-import { usePhotoStore } from '@/src/hooks'
-import { isAtPhotoLimit } from '@/src/hooks/usePhotoStore'
+import { usePhotoStore, isAtPhotoLimit } from '@/src/hooks/usePhotoStore'
 import {
   initializeDraft,
   useDraftStartupStore,

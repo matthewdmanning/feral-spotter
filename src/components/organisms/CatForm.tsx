@@ -11,7 +11,7 @@ import {
   SEX_OPTIONS,
   HEALTH_OPTIONS,
   COAT_GROUPS,
-} from '@/src/screens/submission/cats/constants'
+} from '@/src/lib/cats/formOptions'
 import { styles } from './CatForm.styles'
 
 interface CatFormProps {

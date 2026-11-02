@@ -1,5 +1,5 @@
 /**
- * screens/submission/cats/constants.ts
+ * lib/cats/formOptions.ts
  * Options arrays, default values, and pure utilities for the cat observation
  * form — derived from attributes.ts's single per-field table. No React
  * imports — safe to import from hooks and non-component contexts.

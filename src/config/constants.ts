@@ -5,6 +5,7 @@
  */
 
 import Constants from 'expo-constants'
+import { getAppVersion } from '@/src/utils/appVersion'
 
 /** True in development or pre-release builds. Gates analytics events. */
 export const IS_PRERELEASE: boolean =
@@ -22,8 +23,11 @@ export const FEATURE_FLAGS = {
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS
 
-/** App version from Expo config. */
-export const APP_VERSION: string = Constants.expoConfig?.version ?? '1.0.0'
+/**
+ * App version from Expo config. Same source and fallback as the release
+ * gates, so Settings never shows a version the gates disagree with.
+ */
+export const APP_VERSION: string = getAppVersion()
 
 /**
  * Maximum photos per submission. Fixed, not env-overridable: storage.rules

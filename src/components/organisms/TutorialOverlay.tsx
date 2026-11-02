@@ -18,13 +18,8 @@ import { styles } from './TutorialOverlay.styles'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export interface TutorialStep {
-  id: string
-  title: string
-  body: string
-  /** Label for the primary (advance) button on this step */
-  primaryLabel: string
-}
+import type { TutorialStep } from '@/src/types/Tutorial'
+export type { TutorialStep }
 
 interface TutorialOverlayProps {
   open: boolean

@@ -1,5 +1,7 @@
-import Constants from 'expo-constants'
-import { gte as semverGte, valid as semverValid } from 'semver'
+import { getAppVersion, isVersionReleased } from '@/src/utils/appVersion'
+
+// Re-exported: callers predating utils/appVersion.ts import them from here.
+export { getAppVersion, isVersionReleased }
 
 /**
  * The federated identity providers the app can sign in with. Email/password
@@ -38,24 +40,6 @@ export const FEDERATED_PROVIDERS: readonly FederatedProviderConfig[] = [
     releasedInVersion: '1.0.0',
   },
 ]
-
-/** The running app's version, e.g. "0.1.0", from the bundled app config. */
-export function getAppVersion(): string {
-  const version = Constants.expoConfig?.version
-  return semverValid(version ?? '') ? (version as string) : '0.0.0'
-}
-
-/**
- * Whether a target version's release/version gate has been reached against
- * the running app version. Shared by any feature using the release-gate
- * pattern (federated auth providers, the annotation tutorial, etc.).
- */
-export function isVersionReleased(
-  targetVersion: string,
-  appVersion: string = getAppVersion(),
-): boolean {
-  return semverGte(appVersion, targetVersion)
-}
 
 /**
  * Whether a provider's release/version gate has been reached, so its button
