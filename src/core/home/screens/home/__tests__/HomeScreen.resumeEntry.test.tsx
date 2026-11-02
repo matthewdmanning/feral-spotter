@@ -3,6 +3,8 @@ import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useD
 import React from 'react'
 import { getAllSubmissionCaches } from '@/src/features/draft-submission/lib/submissionCache'
 import HomeScreen from '@/src/core/home/screens/home/index'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
+import { setConsent } from '@/src/test-utils/consent'
 
 /**
  * #314. Home's "Continue Observation" entry is read from the submission cache
@@ -47,10 +49,6 @@ jest.mock('@/src/features/draft-submission/lib/submissionCache', () => ({
   getAllSubmissionCaches: jest.fn(),
   getCurrentCacheId: jest.fn().mockResolvedValue(null),
 }))
-jest.mock('@/src/features/draft-submission/hooks/usePhotoStore', () => ({
-  usePhotoStore: (sel: (s: { source: null }) => unknown) =>
-    sel({ source: null }),
-}))
 jest.mock('@/src/features/library-picker/hooks/useLibraryPhotoPicker', () => ({
   useLibraryPhotoPicker: () => ({ pickFromLibrary: jest.fn() }),
 }))
@@ -79,6 +77,8 @@ const draftInProgress = [
 describe('Home resume entry re-reads on focus (#314)', () => {
   beforeEach(() => {
     useDraftStartupStore.setState({ phase: 'ready', task: Promise.resolve() })
+    usePhotoStore.setState(usePhotoStore.getInitialState(), true)
+    setConsent(true)
     jest.clearAllMocks()
     mockFocused = true
     capturedVisible = false

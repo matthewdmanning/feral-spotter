@@ -5,6 +5,7 @@ import { createTestModel } from '@xstate/graph'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import HomeScreen from '@/src/core/home/screens/home/index'
 import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
+import { setConsent } from '@/src/test-utils/consent'
 
 /**
  * Model of the photo-source-exclusivity gate (ADR 0002's 2026-07-31
@@ -81,7 +82,8 @@ describe('HomeScreen photo-source-exclusivity gate — model-based test', () => 
     useDraftStartupStore.setState({ phase: 'ready', task: Promise.resolve() })
     jest.clearAllMocks()
     await usePhotoStore.persist.rehydrate()
-    usePhotoStore.setState({ photos: [], source: null, submissionId: null })
+    usePhotoStore.setState(usePhotoStore.getInitialState(), true)
+    setConsent(true)
     const result = render(<HomeScreen />)
     getByLabelText = result.getByLabelText
   })
