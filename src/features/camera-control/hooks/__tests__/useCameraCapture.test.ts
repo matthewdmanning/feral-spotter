@@ -56,8 +56,10 @@ jest.mock('@/src/features/camera-control/components/CameraThumb', () => ({
   CameraThumb: 'CameraThumb',
 }))
 const mockAssetCreate = jest.fn()
-const mockGetPermissionsAsync = jest.fn(async () => ({ status: 'granted' }))
-const mockRequestPermissionsAsync = jest.fn(async () => ({
+const mockGetPermissionsAsync = jest.fn(async (..._args: unknown[]) => ({
+  status: 'granted',
+}))
+const mockRequestPermissionsAsync = jest.fn(async (..._args: unknown[]) => ({
   status: 'granted',
 }))
 jest.mock('expo-media-library', () => ({

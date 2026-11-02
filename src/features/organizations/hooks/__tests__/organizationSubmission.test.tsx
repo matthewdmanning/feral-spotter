@@ -74,7 +74,7 @@ beforeEach(async () => {
       },
     ],
   })
-  useUIStore.setState({ dialog: null, isSubmitting: false })
+  useUIStore.setState({ dialog: null })
   await createSubmissionCache('local-history', {
     location_method: 'device',
     time_method: 'device',

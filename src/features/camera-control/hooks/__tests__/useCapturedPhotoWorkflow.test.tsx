@@ -19,7 +19,7 @@ jest.mock('expo-crypto', () => ({
 }))
 
 const mockAssetCreate = jest.fn()
-const mockPermissionCheck = jest.fn(async () => true)
+const mockPermissionCheck = jest.fn(async (..._args: unknown[]) => true)
 // The gallery save is external: stub the public Asset.create the hook calls.
 // (A native-module mock broke when SDK 58 moved expo-media-library's native
 // binding, and the hook's contract is this one call, not the binding.) Set

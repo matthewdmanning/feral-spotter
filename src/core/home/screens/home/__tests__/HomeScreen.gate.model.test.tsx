@@ -98,7 +98,7 @@ describe('HomeScreen gate — model-based test', () => {
       isAuthenticated,
       signIn: jest.fn(),
       signOut: jest.fn(),
-    })
+    } as unknown as ReturnType<typeof useAuth>)
     useConsentStore.setState({
       accepted: consent !== false,
       acceptedVersion:
@@ -231,7 +231,7 @@ describe('HomeScreen gate — model-based test', () => {
         { type: 'SIGN_IN' },
       ],
     },
-  ] as const
+  ]
 
   journeys.forEach(({ name, events }) => {
     it(name, async () => {

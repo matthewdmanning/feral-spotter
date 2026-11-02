@@ -154,7 +154,7 @@ describe('HomeScreen photo-source-exclusivity gate — model-based test', () => 
       name: 'clearing the library photo pool re-enables both entrypoints',
       events: [{ type: 'LIBRARY_PICK' }, { type: 'CLEAR_PHOTO_POOL' }],
     },
-  ] as const
+  ]
 
   journeys.forEach(({ name, events }) => {
     it(name, async () => {

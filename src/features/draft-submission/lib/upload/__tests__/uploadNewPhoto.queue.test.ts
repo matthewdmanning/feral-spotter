@@ -41,7 +41,7 @@ const photo = (n: number): SubmissionPhoto => ({
   height: 100,
 })
 
-const drainTasks = () => new Promise((resolve) => setImmediate(resolve))
+const drainTasks = () => new Promise<void>((resolve) => setImmediate(resolve))
 
 // Module-level fakes: each test starts with nothing in flight.
 beforeEach(() => {

@@ -52,7 +52,10 @@ beforeEach(async () => {
   await useSubmissionStore.persist.rehydrate()
   usePhotoStore.setState({ photos: [], source: null, submissionId: null })
   useSubmissionStore.getState().clearDraft()
-  useAuthStore.setState({ user: { uid: 'picker-user' }, isReady: true })
+  useAuthStore.setState({
+    user: { uid: 'picker-user', email: null },
+    isReady: true,
+  })
   jest.spyOn(ImagePicker, 'getMediaLibraryPermissionsAsync').mockResolvedValue({
     status: ImagePicker.PermissionStatus.GRANTED,
     granted: true,

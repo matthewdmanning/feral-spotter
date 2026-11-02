@@ -196,7 +196,7 @@ describe('HomeScreen entrypoint buttons — model-based test', () => {
       name: 'New Sighting asks before clearing the draft',
       events: [{ type: 'MOUNT_IN_PROGRESS' }, { type: 'PRESS_NEW' }],
     },
-  ] as const
+  ]
 
   journeys.forEach(({ name, events }) => {
     it(name, async () => {
