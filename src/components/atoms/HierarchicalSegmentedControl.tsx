@@ -40,7 +40,6 @@ export function HierarchicalSegmentedControl<
   const chosen = groups.find((g) => g.value === group)
   return (
     <View style={styles.container}>
-      {/* <Text style={styles.label}>{label}</Text> */}
       <SegmentedRow
         options={groups}
         value={group}

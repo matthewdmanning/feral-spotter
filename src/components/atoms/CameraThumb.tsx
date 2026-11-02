@@ -20,12 +20,15 @@ interface CameraThumbProps {
   uri: string
   badgeCount: number
   onRemove: () => void
+  /** Spoken name, e.g. "Photo 2 of 5": identical names made thumbs indistinguishable. */
+  label?: string
 }
 
 export const CameraThumb = memo(function CameraThumb({
   uri,
   badgeCount,
   onRemove,
+  label = 'Photo',
 }: CameraThumbProps) {
   const translateY = useSharedValue(0)
   const opacity = useSharedValue(1)
@@ -46,7 +49,12 @@ export const CameraThumb = memo(function CameraThumb({
       if (e.translationY < REMOVE_THRESHOLD) {
         opacity.value = withTiming(0, { duration: 150 })
         translateY.value = withTiming(-120, { duration: 150 }, (finished) => {
-          if (finished) runOnJS(onRemove)()
+          if (!finished) return
+          runOnJS(onRemove)()
+          // If the parent keeps this thumb (the removal was refused), it must
+          // not stay invisible but still touchable.
+          translateY.value = withTiming(0)
+          opacity.value = withTiming(1)
         })
       } else {
         translateY.value = withTiming(0)
@@ -63,8 +71,10 @@ export const CameraThumb = memo(function CameraThumb({
       <Animated.View
         style={[styles.wrap, animatedStyle]}
         accessible
-        accessibilityRole="button"
-        accessibilityLabel="Photo"
+        // An image with a discard action: double-tap has nothing to do, so it
+        // is not announced as a button.
+        accessibilityRole="image"
+        accessibilityLabel={label}
         accessibilityActions={[{ name: 'discard', label: 'Discard photo' }]}
         onAccessibilityAction={(event) => {
           if (event.nativeEvent.actionName === 'discard') onRemove()

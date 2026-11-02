@@ -13,7 +13,7 @@ import { GlassSurface } from '@/src/components/atoms/GlassSurface'
 import { AppButton } from '@/src/components/atoms/AppButton'
 import { ButtonRow } from '@/src/components/molecules/ButtonRow'
 import { useUIStore, type AlertButton } from '@/src/hooks/useUIStore'
-import { Modal, Text, View } from 'react-native'
+import { Modal, ScrollView, Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { dialogShell } from './dialogShell.styles'
 import { styles } from './AlertHost.styles'
@@ -60,9 +60,10 @@ export function AlertHost() {
   // stack, because side-by-side would push each under the 48dp floor.
   const sideBySide = dialog.buttons.length === 2
 
-  const buttons = dialog.buttons.map((button) => (
+  const buttons = dialog.buttons.map((button, index) => (
     <AppButton
-      key={button.text}
+      // Index too: two buttons may share a label.
+      key={`${index}-${button.text}`}
       onPress={() => press(button)}
       variant={variantFor(button.style)}
     >
@@ -80,15 +81,20 @@ export function AlertHost() {
     >
       <View style={dialogShell.backdrop}>
         <GlassSurface kind="raised" style={dialogShell.sheet}>
-          <Text style={dialogShell.title}>{dialog.title}</Text>
-          {dialog.message ? (
-            <Text style={styles.message}>{dialog.message}</Text>
-          ) : null}
-          {sideBySide ? (
-            <ButtonRow>{buttons}</ButtonRow>
-          ) : (
-            <View style={styles.buttonColumn}>{buttons}</View>
-          )}
+          <ScrollView
+            style={dialogShell.scroll}
+            contentContainerStyle={dialogShell.scrollContent}
+          >
+            <Text style={dialogShell.title}>{dialog.title}</Text>
+            {dialog.message ? (
+              <Text style={styles.message}>{dialog.message}</Text>
+            ) : null}
+            {sideBySide ? (
+              <ButtonRow>{buttons}</ButtonRow>
+            ) : (
+              <View style={styles.buttonColumn}>{buttons}</View>
+            )}
+          </ScrollView>
         </GlassSurface>
       </View>
     </Modal>

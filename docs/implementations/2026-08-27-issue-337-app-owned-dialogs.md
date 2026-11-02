@@ -61,3 +61,17 @@ One consequence worth knowing: every screen that raises a dialog now pulls `useU
 ## Known gap
 
 Not run on a device. The defect this fixes is invisible to CI by construction — the same class that hid `ValidationSheet`'s unreadable error cards. #337 stays `needs-verification` until one dialog of each shape (confirm, destructive, error, success) has been seen in both Light and Dark, and #329's sweep is now blocked by it.
+
+## 2026-11-02 — fix (accessibility pass)
+
+**Purpose:** Codebase review: dialogs and the tutorial card clipped at the largest font size, and several controls misreported themselves to screen readers.
+**Change:**
+
+- `dialogShell.sheet` caps at 90% height; AlertHost content scrolls. Button keys include the index.
+- TutorialOverlay: card scrolls and starts below Skip; reopening starts at step 1; index clamps to the steps array.
+- DateTimePicker trigger announces its value; each open starts from the current value at the first step.
+- AppButton reports `busy` while loading. CameraThumb is an `image` named "Photo N of M" and resets after a refused swipe-discard. CatCrop resets on a new `uri`. ButtonRow uses the children's own keys. PhotoDraftNotice actions wrap.
+- SightingsMap: memoized Android markers and UI settings, a map label, touch state released on unmount.
+- InsetCropBubble expanded size floors at 48dp.
+- Cleanup: StatusIcon's empty stylesheet became `StatusIcon.constants.ts`; HierarchicalSegmentedControl's commented label removed; ReportCard braces.
+  Test: `TutorialOverlay.reopen.test.tsx` (both cases fail on the old code). iOS-only paths (date step toggle, Apple map markers) not changed. Not checked on device.

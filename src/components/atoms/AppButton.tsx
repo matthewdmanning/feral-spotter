@@ -1,4 +1,4 @@
-import { Pressable, Text, View, ActivityIndicator } from 'react-native'
+import { Pressable, Text, ActivityIndicator } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { LABEL_COLOR_KEY, styles } from './AppButton.styles'
 import { tapHaptic } from '@/src/lib/haptics'
@@ -61,7 +61,7 @@ export function AppButton({
       disabled={isDisabled}
       accessibilityLabel={accessibilityLabel ?? children}
       accessibilityRole="button"
-      accessibilityState={{ disabled: isDisabled }}
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
       style={({ pressed }) => [
         styles.base,
         flex1 && styles.flex1,
@@ -84,9 +84,9 @@ export function AppButton({
         <ActivityIndicator size="small" color={spinnerColor} />
       ) : (
         <>
-          {icon && <View>{icon}</View>}
+          {icon}
           <Text style={styles.label}>{children}</Text>
-          {iconAfter && <View>{iconAfter}</View>}
+          {iconAfter}
         </>
       )}
     </Pressable>

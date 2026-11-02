@@ -21,7 +21,12 @@ export const dialogShell = StyleSheet.create((theme) => ({
     padding: theme.spacing.xxl,
     width: '100%',
     maxWidth: 360,
-    gap: theme.spacing.lg,
+    // At the largest font size a dialog can outgrow the screen; its body
+    // scrolls inside this cap instead of being clipped.
+    maxHeight: '90%',
   },
+  /** Wraps the sheet's content so it scrolls when it cannot fit. */
+  scroll: { flexGrow: 0 },
+  scrollContent: { gap: theme.spacing.lg },
   title: { ...theme.textVariants.heading, color: theme.colors.text },
 }))

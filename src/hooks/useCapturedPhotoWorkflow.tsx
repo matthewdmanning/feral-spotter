@@ -221,6 +221,7 @@ export function useCapturedPhotoWorkflow({
           index === capturedPhotos.length - 1 ? capturedPhotos.length : 0
         }
         onRemove={() => handleDiscardPhoto(item.local_id)}
+        label={`Photo ${index + 1} of ${capturedPhotos.length}`}
       />
     ),
     [capturedPhotos.length, handleDiscardPhoto],

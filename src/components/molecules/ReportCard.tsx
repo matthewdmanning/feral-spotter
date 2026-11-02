@@ -77,9 +77,11 @@ export const ReportCard = memo(function ReportCard({
       style={({ pressed }) => pressed && styles.pressed}
       onPress={() => {
         selectionHaptic()
-        if (action === 'resume') router.push('/submission/create')
-        else
+        if (action === 'resume') {
+          router.push('/submission/create')
+        } else {
           router.push({ pathname: '/sighting/[id]', params: { id: cache.id } })
+        }
       }}
       accessibilityRole="button"
       accessibilityLabel={`Sighting, ${cache.status}, ${when}`}
