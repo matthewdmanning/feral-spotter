@@ -1,8 +1,8 @@
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import { render } from '@testing-library/react-native'
-import { StyleSheet } from 'react-native'
-import { InsetCropBubble } from '../InsetCropBubble'
+import { Animated, StyleSheet } from 'react-native'
+import { InsetCropBubble } from '@/src/features/annotate/components/InsetCropBubble'
 
 /**
  * The collapsed bubble docks in its zone's top corner. Collapsing is a scale

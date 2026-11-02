@@ -5,7 +5,7 @@ import { useCameraPermission } from 'react-native-vision-camera'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import { useCameraCapture } from '@/src/features/camera-control/hooks/useCameraCapture'
-import CameraScreen from '../index'
+import CameraScreen from '@/src/features/camera-control/screens/camera/index'
 
 /**
  * Model of CameraScreen's (src/features/camera-control/screens/camera/index.tsx) two gate screens —

@@ -38,10 +38,9 @@ it('defers draft I/O until startup and reads the saved photo pool only once', as
   )
   const reads = jest.spyOn(AsyncStorage, 'getItem')
   try {
-    const { discardUnsurvivingDraft } =
-      jest.requireActual<
-        typeof import('@/src/features/draft-submission/lib/draft')
-      >('../draft')
+    const { discardUnsurvivingDraft } = jest.requireActual<
+      typeof import('@/src/features/draft-submission/lib/draft')
+    >('@/src/features/draft-submission/lib/draft')
     const { usePhotoStore } = jest.requireActual<
       typeof import('@/src/features/draft-submission/hooks/usePhotoStore')
     >('@/src/features/draft-submission/hooks/usePhotoStore')

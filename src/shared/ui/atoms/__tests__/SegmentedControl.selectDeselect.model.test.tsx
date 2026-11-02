@@ -2,7 +2,7 @@ import { render, screen, userEvent } from '@testing-library/react-native'
 import React, { useState } from 'react'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
-import { SegmentedControl } from '../SegmentedControl'
+import { SegmentedControl } from '@/src/shared/ui/atoms/SegmentedControl'
 
 /**
  * Model of the toggle-to-deselect behavior added for #205: a segmented

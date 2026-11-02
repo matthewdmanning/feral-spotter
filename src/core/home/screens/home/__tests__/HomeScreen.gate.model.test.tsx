@@ -8,7 +8,7 @@ import {
   CONSENT_VERSION,
   useConsentStore,
 } from '@/src/shared/consent/useConsentStore'
-import HomeScreen from '../index'
+import HomeScreen from '@/src/core/home/screens/home/index'
 
 jest.mock('expo-router', () => ({
   useIsFocused: () => true,

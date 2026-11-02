@@ -1,7 +1,7 @@
 import { deleteSubmissionPhoto } from '@/src/features/draft-submission/lib/upload/firebaseUpload'
 import { cancelPhotoUpload } from '@/src/features/draft-submission/lib/upload/uploadNewPhoto'
 import { observedCat } from '@/src/test-utils/catFixtures'
-import { removePhotoFromDraft } from '../removePhotoFromDraft'
+import { removePhotoFromDraft } from '@/src/features/draft-submission/hooks/removePhotoFromDraft'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'

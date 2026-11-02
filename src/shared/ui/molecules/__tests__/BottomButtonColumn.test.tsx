@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react-native'
-import { BottomButtonColumn } from '../BottomButtonColumn'
+import { BottomButtonColumn } from '@/src/shared/ui/molecules/BottomButtonColumn'
 
 const buttons = [
   {

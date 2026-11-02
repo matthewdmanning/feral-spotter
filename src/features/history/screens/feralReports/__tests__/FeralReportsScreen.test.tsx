@@ -5,7 +5,7 @@ import { SightingsMap } from '@/src/features/history/components/SightingsMap'
 import { FlashList } from '@shopify/flash-list'
 import { router } from 'expo-router'
 import { act, render, screen, userEvent } from '@testing-library/react-native'
-import FeralReportsScreen from '../index'
+import FeralReportsScreen from '@/src/features/history/screens/feralReports/index'
 
 // Stack.Screen needs a navigator; only the header options live there.
 jest.mock('expo-router', () => ({

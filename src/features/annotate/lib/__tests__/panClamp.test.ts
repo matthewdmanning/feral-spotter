@@ -2,7 +2,7 @@ import {
   clampTranslate,
   halfExtentOnScreen,
   maxTranslateForScale,
-} from '../panClamp'
+} from '@/src/features/annotate/lib/panClamp'
 
 /**
  * #204: the photo can no longer be panned so far its edge crosses the fixed

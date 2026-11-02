@@ -1,4 +1,4 @@
-import { computeEntrypointDiameter } from '../entrypointDiameter'
+import { computeEntrypointDiameter } from '@/src/core/home/lib/entrypointDiameter'
 
 describe('computeEntrypointDiameter', () => {
   it('sizes off the short axis (width), in portrait', () => {

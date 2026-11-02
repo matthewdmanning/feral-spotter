@@ -5,7 +5,7 @@ import {
   cancelPhotoUploads,
   syncPhotoUploads,
   whenUploadsSettled,
-} from '../draftUploads'
+} from '@/src/features/draft-submission/lib/upload/draftUploads'
 
 /**
  * Submit waits on these outcomes. A failed upload used to be noticed only

@@ -18,7 +18,7 @@ import {
 } from '@/src/features/organizations/hooks/useOrganizationDirectory'
 import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
-import { confirmedSharing } from '../consent'
+import { confirmedSharing } from '@/src/features/organizations/lib/consent'
 import { DEFAULT_SHARING, type Catalog } from '@/src/shared/types/Organizations'
 import { fakeOrganizationsService } from '@/src/test-utils/organizationsService'
 

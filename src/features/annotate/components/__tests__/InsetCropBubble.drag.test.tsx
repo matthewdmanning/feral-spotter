@@ -1,8 +1,8 @@
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import { act, userEvent, render } from '@testing-library/react-native'
-import { StyleSheet } from 'react-native'
-import { InsetCropBubble } from '../InsetCropBubble'
+import { Animated, StyleSheet } from 'react-native'
+import { InsetCropBubble } from '@/src/features/annotate/components/InsetCropBubble'
 
 /**
  * A drag owns the touch from the pan responder's grant to its release. The

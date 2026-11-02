@@ -21,6 +21,15 @@ const RESTRICTED_PATHS = [
   },
 ]
 
+// Import style (docs/PROJECT_STRUCTURE.md): `@/` for everything except a
+// same-folder sibling (`./X`). A `../` path breaks when either file moves and
+// slips past the boundary patterns below, which match `@/` paths only.
+const PARENT_RELATIVE = {
+  group: ['../*', '../**'],
+  message:
+    "Import through the @/ alias, e.g. '@/src/features/<unit>/…'. Only same-folder './' imports stay relative.",
+}
+
 // Feature-folder boundaries (docs/PROJECT_STRUCTURE.md). Non-screen code in a
 // unit may import its own unit or a lower level only; peers on one level may
 // not import each other. Screens are the composition layer and are exempt.
@@ -50,6 +59,7 @@ const boundaryBlocks = BOUNDARY_LEVELS.flatMap((level, i) =>
           {
             paths: RESTRICTED_PATHS,
             patterns: [
+              PARENT_RELATIVE,
               ...(forbidden.length
                 ? [
                     {
@@ -163,6 +173,7 @@ module.exports = defineConfig([
         'error',
         {
           paths: RESTRICTED_PATHS,
+          patterns: [PARENT_RELATIVE],
         },
       ],
       // Do not use `#private` fields; do not use `const enum`.
@@ -192,6 +203,16 @@ module.exports = defineConfig([
     ],
     rules: {
       'react-hooks/immutability': 'off',
+    },
+  },
+  // Tests skip the strict block above; they still follow the import style.
+  {
+    files: ['**/__tests__/**/*.ts', '**/__tests__/**/*.tsx'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        { patterns: [PARENT_RELATIVE] },
+      ],
     },
   },
   ...boundaryBlocks,

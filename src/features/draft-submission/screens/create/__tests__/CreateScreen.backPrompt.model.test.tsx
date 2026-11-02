@@ -4,7 +4,7 @@ import { router } from 'expo-router'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
-import CreateSubmissionScreen from '../index'
+import CreateSubmissionScreen from '@/src/features/draft-submission/screens/create/index'
 
 /**
  * Model of Android hardware Back on Submission Details. The header back and

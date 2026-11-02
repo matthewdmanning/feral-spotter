@@ -54,9 +54,13 @@ never import each other.
 - No barrel (`index.ts` re-export) files: import the defining module. Metro
   bundles every re-export (#406), and barrels invite init-order cycles.
 - No module-level import cycles.
+- **Import style:** `@/` for everything; only a same-folder sibling stays
+  relative (`./index.styles`). No `../` — such paths break on moves and evade
+  the boundary check.
 
-`eslint.config.js` enforces all three for `@/` imports (`BOUNDARY_LEVELS`,
-`import/no-cycle`). To move code, use `node scripts/move-module.mjs
+`eslint.config.js` enforces the level rule, the screens rule, cycles and the
+`../` ban (`BOUNDARY_LEVELS`, `import/no-cycle`, `PARENT_RELATIVE`). The
+no-barrel rule is convention only. To move code, use `node scripts/move-module.mjs
 <mapping-file>`: it runs `git mv` and rewrites import and `jest.mock`
 specifiers.
 

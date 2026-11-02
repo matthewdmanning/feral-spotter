@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react-native'
-import { useNativeCameraCapture } from '../useNativeCameraCapture'
+import { useNativeCameraCapture } from '@/src/features/camera-control/hooks/useNativeCameraCapture'
 
 jest.mock(
   '@/src/features/camera-control/hooks/useCapturedPhotoWorkflow',
