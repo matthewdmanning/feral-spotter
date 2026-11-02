@@ -26,22 +26,13 @@
  * this file does not cover.
  */
 
+import type * as Unistyles from 'react-native-unistyles'
+
 const mockStore = new Map<string, string>()
 
-const mockRuntime = {
-  themeName: 'dark' as 'dark' | 'light',
-  setTheme(name: 'dark' | 'light') {
-    this.themeName = name
-  },
-}
-
-const mockConfigure = jest.fn()
-
-jest.mock('react-native-unistyles', () => ({
-  StyleSheet: { configure: mockConfigure },
-  UnistylesRuntime: mockRuntime,
-}))
-
+// Narrow storage fake, by the testing policy's MMKV exception: each reload
+// below (jest.resetModules) builds a fresh in-memory MMKV, so the supplied
+// test implementation cannot carry a stored mode across a cold start.
 jest.mock('@/src/shared/lib/storage', () => ({
   mmkvInstance: {
     getString: (key: string) => mockStore.get(key),
@@ -58,19 +49,27 @@ jest.mock('@/src/shared/lib/appearance', () => ({
 
 type ConfigModule = typeof import('@/src/shared/config/unistyles')
 
-/** Import the config fresh, re-running its startup StyleSheet.configure call. */
+let configure: jest.SpiedFunction<typeof Unistyles.StyleSheet.configure>
+let setTheme: jest.SpiedFunction<typeof Unistyles.UnistylesRuntime.setTheme>
+
+/**
+ * Import the config fresh, re-running its startup StyleSheet.configure call.
+ * Spies go on the library mock's fresh instance, which the config then uses.
+ */
 const loadConfig = (): ConfigModule => {
   jest.resetModules()
+  const { StyleSheet, UnistylesRuntime } = jest.requireMock<
+    typeof Unistyles
+  >('react-native-unistyles')
+  configure = jest.spyOn(StyleSheet, 'configure')
+  setTheme = jest.spyOn(UnistylesRuntime, 'setTheme')
   return jest.requireActual('@/src/shared/config/unistyles') as ConfigModule
 }
 
-const lastConfigureCall = () =>
-  mockConfigure.mock.calls[mockConfigure.mock.calls.length - 1][0]
+const lastConfigureCall = () => configure.mock.lastCall![0]
 
 beforeEach(() => {
   mockStore.clear()
-  mockConfigure.mockClear()
-  mockRuntime.themeName = 'dark'
   mockColorScheme = 'dark'
 })
 
@@ -83,7 +82,7 @@ describe('setThemeMode', () => {
 
       expect(getThemeMode()).toBe(mode)
       if (mode !== 'system') {
-        expect(mockRuntime.themeName).toBe(mode)
+        expect(setTheme).toHaveBeenLastCalledWith(mode)
       }
     }
   })
@@ -94,7 +93,7 @@ describe('setThemeMode', () => {
 
     setThemeMode('system')
 
-    expect(mockRuntime.themeName).toBe('light')
+    expect(setTheme).toHaveBeenLastCalledWith('light')
   })
 
   it('survives a cold start on the mode that was chosen', () => {
