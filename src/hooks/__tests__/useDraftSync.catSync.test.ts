@@ -23,7 +23,7 @@ it('draft cats reach the In Progress row and survive the post-Submit clear', asy
     time_method: 'device',
   })
   const update = jest.spyOn(cache, 'updateSubmissionCache')
-  renderHook(() => useDraftSync())
+  const { unmount } = renderHook(() => useDraftSync())
 
   // A cat saved in Cat Form shows on the In Progress card.
   act(() => useSubmissionStore.getState().addCat(observedCat()))
@@ -48,4 +48,6 @@ it('draft cats reach the In Progress row and survive the post-Submit clear', asy
     await update.mock.results[0].value
   })
   expect(await rowCats()).toHaveLength(1)
+  unmount()
+  update.mockRestore()
 })

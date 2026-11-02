@@ -44,6 +44,12 @@ const photo = (n: number): SubmissionPhoto => ({
 
 const drainTasks = () => new Promise((resolve) => setImmediate(resolve))
 
+// Module-level fakes: each test starts with nothing in flight.
+beforeEach(() => {
+  mockPending.length = 0
+  mockInFlight = 0
+  mockPeakInFlight = 0
+})
 afterEach(() => jest.restoreAllMocks())
 
 it('caps a burst at two uploads and drains queued photos after one fails', async () => {
@@ -90,7 +96,6 @@ it('caps a burst at two uploads and drains queued photos after one fails', async
 
 it('retries a failed photo once, and a torn-down draft gets no results', async () => {
   jest.spyOn(console, 'error').mockImplementation(() => {})
-  mockPending.length = 0
   const updatePhoto = jest.fn()
 
   // Queued twice (Details opened, then Submit): one upload, not two.
