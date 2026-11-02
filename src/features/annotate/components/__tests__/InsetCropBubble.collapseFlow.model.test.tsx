@@ -158,7 +158,7 @@ describe('InsetCropBubble — collapse/expand flow (#202)', () => {
         { type: 'FINISH' },
       ],
     },
-  ] as const
+  ]
 
   journeys.forEach(({ name, events }) => {
     it(name, async () => {

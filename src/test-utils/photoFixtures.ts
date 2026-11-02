@@ -1,7 +1,7 @@
 /**
  * test-utils/photoFixtures.ts
- * One not-yet-uploaded submission photo for tests. Tests are outside tsc,
- * so a shared factory is where a new required field gets added once.
+ * One not-yet-uploaded submission photo for tests. A new required field
+ * gets added here once.
  */
 
 import type { SubmissionPhoto } from '@/src/shared/types'

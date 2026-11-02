@@ -68,12 +68,13 @@ const reacquireFlow = createMachine({
 
 describe('Location capture — reacquire flow (model-based)', () => {
   let originalDev: boolean
+  const devGlobal = globalThis as unknown as { __DEV__: boolean }
 
   beforeEach(() => {
     // The dev-stub short-circuit in src/core/location/liveFix.ts bypasses watching
     // entirely — this flow is only exercised with __DEV__ off, same as prod.
-    originalDev = global.__DEV__
-    global.__DEV__ = false
+    originalDev = devGlobal.__DEV__
+    devGlobal.__DEV__ = false
     jest.useFakeTimers()
     jest.clearAllMocks()
     __resetLocationCaptureForTests()
@@ -95,7 +96,7 @@ describe('Location capture — reacquire flow (model-based)', () => {
   afterEach(() => {
     __resetLocationCaptureForTests()
     jest.useRealTimers()
-    global.__DEV__ = originalDev
+    devGlobal.__DEV__ = originalDev
   })
 
   const model = createTestModel(reacquireFlow)

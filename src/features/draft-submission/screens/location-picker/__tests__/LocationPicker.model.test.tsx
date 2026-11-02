@@ -143,7 +143,7 @@ describe('Location picker — flow (model-based)', () => {
       name: 'cancelling without moving preserves the original Submission draft',
       events: [{ type: 'CANCEL' }],
     },
-  ] as const
+  ]
 
   journeys.forEach(({ name, events }) => {
     it(name, async () => {

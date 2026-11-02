@@ -232,7 +232,7 @@ describe('ConsentScreen camera gate — model-based test', () => {
       name: 'camera UNAVAILABLE stays gated',
       events: [{ type: 'AGREE_UNAVAILABLE' }],
     },
-  ] as const
+  ]
 
   journeys.forEach(({ name, events }) => {
     it(name, async () => {

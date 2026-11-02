@@ -167,9 +167,7 @@ describe('startup configuration', () => {
     loadConfig()
 
     const { breakpoints } = lastConfigureCall()
-    expect(
-      Math.min(...Object.values(breakpoints as Record<string, number>)),
-    ).toBe(0)
-    expect(Object.values(breakpoints as Record<string, number>)).toContain(0)
+    expect(Math.min(...Object.values(breakpoints ?? {}))).toBe(0)
+    expect(Object.values(breakpoints ?? {})).toContain(0)
   })
 })

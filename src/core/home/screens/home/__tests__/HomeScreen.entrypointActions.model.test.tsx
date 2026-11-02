@@ -182,7 +182,7 @@ describe('HomeScreen entrypoint buttons — model-based test', () => {
       name: 'New Sighting also goes to Submission Details',
       events: [{ type: 'MOUNT_IN_PROGRESS' }, { type: 'PRESS_NEW' }],
     },
-  ] as const
+  ]
 
   journeys.forEach(({ name, events }) => {
     it(name, async () => {

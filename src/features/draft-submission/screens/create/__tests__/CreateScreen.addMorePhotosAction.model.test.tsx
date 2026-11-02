@@ -144,13 +144,13 @@ describe('Submission Details add-more-photos action — model-based test', () =>
   const journeys = [
     {
       name: 'camera-sourced draft shows Take More Photos and reopens the camera',
-      events: [] as const,
+      events: [],
     },
     {
       name: 'library-sourced draft shows Select More Photos and reopens the library picker',
       events: [{ type: 'SWITCH_TO_LIBRARY' }],
     },
-  ] as const
+  ]
 
   journeys.forEach(({ name, events }) => {
     it(name, async () => {

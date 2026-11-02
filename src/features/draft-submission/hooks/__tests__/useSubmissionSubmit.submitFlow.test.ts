@@ -69,7 +69,6 @@ describe('useSubmissionSubmit submit flow', () => {
     useSubmissionStore.setState({
       cats: [defaultCat()],
       submission: { location_type: 'device', time_type: 'device' },
-      currentStep: 'create',
     })
     usePhotoStore.setState(usePhotoStore.getInitialState(), true)
     usePhotoStore.setState({ submissionId: 'sub-cloud-1' })

@@ -190,7 +190,7 @@ describe('HomeScreen gate — model-based test', () => {
         { type: 'SIGN_IN' },
       ],
     },
-  ] as const
+  ]
 
   journeys.forEach(({ name, events }) => {
     it(name, async () => {
