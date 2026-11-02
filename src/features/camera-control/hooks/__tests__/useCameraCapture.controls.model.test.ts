@@ -17,7 +17,6 @@ jest.mock('expo-location', () => ({
     Promise.resolve({ status: 'denied' }),
   ),
   getCurrentPositionAsync: jest.fn(),
-  Accuracy: { Balanced: 3 },
 }))
 
 jest.mock('expo-router', () => ({
@@ -45,17 +44,6 @@ jest.mock('react-native-vision-camera', () => ({
   Camera: 'Camera',
 }))
 
-jest.mock('@/src/features/draft-submission/hooks/usePhotoStore', () => ({
-  ...jest.requireActual('@/src/features/draft-submission/hooks/usePhotoStore'),
-  usePhotoStore: (sel: (s: object) => unknown) =>
-    sel({ addPhoto: jest.fn(), photos: [] }),
-}))
-
-jest.mock('@/src/features/settings/hooks/useSettingsStore', () => ({
-  useSettingsStore: (sel: (s: object) => unknown) =>
-    sel({ settings: { keep_photos_on_device: true } }),
-}))
-
 jest.mock('@shopify/flash-list', () => ({ FlashList: 'FlashList' }))
 jest.mock('@/src/features/camera-control/components/CameraThumb', () => ({
   CameraThumb: 'CameraThumb',
@@ -66,12 +54,12 @@ jest.mock('expo-media-library', () => ({
   },
   getPermissionsAsync: jest.fn(async () => ({ status: 'granted' })),
   requestPermissionsAsync: jest.fn(async () => ({ status: 'granted' })),
-  PermissionStatus: { GRANTED: 'granted', DENIED: 'denied' },
+  PermissionStatus: jest.requireActual('expo-modules-core').PermissionStatus,
 }))
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'test-id' }))
 jest.mock('@/src/shared/analytics/analytics', () => ({
+  ...jest.requireActual('@/src/shared/analytics/analytics'),
   captureEvent: jest.fn(),
-  EVENTS: { CAMERA_OPENED: 'camera_opened', PHOTO_CAPTURE_FAILED: 'x' },
 }))
 
 describe('useCameraCapture — flash-mode cycle (model-based test)', () => {

@@ -30,14 +30,6 @@ jest.mock('@/src/features/draft-submission/lib/analytics', () => ({
   fireAnalyticsEvent: jest.fn(),
 }))
 
-jest.mock('@/src/shared/analytics/analytics', () => ({
-  EVENTS: {
-    SUBMISSION_SENDING: 'x',
-    SUBMISSION_SUBMITTED: 'y',
-    SUBMISSION_FAILED: 'z',
-  },
-}))
-
 jest.mock('@/src/features/draft-submission/lib/upload/firebaseUpload', () => ({
   uploadSubmissionMetadata: jest.fn().mockResolvedValue(undefined),
   finalizeSubmissionPhotoMetadata: jest.fn().mockResolvedValue(undefined),
