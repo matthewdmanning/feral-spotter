@@ -14,6 +14,7 @@
 
 import { CameraThumb } from '@/src/components/atoms/CameraThumb'
 import { usePhotoStore } from '@/src/hooks'
+import { isAtPhotoLimit } from '@/src/hooks/usePhotoStore'
 import {
   initializeDraft,
   useDraftStartupStore,
@@ -117,6 +118,8 @@ export function useCapturedPhotoWorkflow({
       ) {
         throw new Error('Camera capture is not available')
       }
+      // Backstop for a burst frame already in flight at the cap.
+      if (isAtPhotoLimit()) throw new Error('Photo limit reached')
       const submission = buildSubmissionPhotoFromCapture(frame, shutterTime)
 
       if (keepOnDevice) {

@@ -70,14 +70,38 @@ function parseTesterAllowlist(raw: string | undefined): Set<string> {
   )
 }
 
+// Per-object marker under the submission's counter doc, keyed by object
+// name. Storage events arrive at least once and in any order, and an
+// overwrite emits a finalize for the new generation plus a delete for the
+// old one. The marker records which generation is counted, so a duplicate,
+// an overwrite or a delete-before-finalize never moves the count twice.
+// Clients cannot read it (no firestore.rules match = closed).
+function photoMarker(submissionId: string, objectName: string) {
+  return getFirestore()
+    .collection('submissions')
+    .doc(submissionId)
+    .collection('photos')
+    .doc(encodeURIComponent(objectName))
+}
+
+interface PhotoMarker {
+  generation: string
+  /** A delete handled before its finalize: that finalize must not count. */
+  deleted?: boolean
+}
+
+// `retry: true`: a transient Firestore error must not lose a count. Safe
+// only because both handlers are idempotent per object generation.
 export const onSubmissionPhotoUploaded = onObjectFinalized(
-  { bucket: BUCKET_NAME },
+  { bucket: BUCKET_NAME, retry: true },
   async (event) => {
     const parsed = parseSubmissionPath(event.data.name)
     if (!parsed) return
+    const generation = String(event.data.generation)
 
     const firestore = getFirestore()
     const doc = firestore.collection('submissions').doc(parsed.submissionId)
+    const marker = photoMarker(parsed.submissionId, event.data.name)
 
     // #268: submissionId is client-generated, so two different uids can
     // collide on the same id. The Storage write already landed by the time
@@ -87,10 +111,22 @@ export const onSubmissionPhotoUploaded = onObjectFinalized(
     // doesn't get counted.
     await firestore.runTransaction(async (tx) => {
       const snapshot = await tx.get(doc)
+      const markerSnapshot = await tx.get(marker)
       const existingOwner = snapshot.get('ownerUid') as string | undefined
 
       if (existingOwner != null && existingOwner !== parsed.uid) return
 
+      const counted = markerSnapshot.data() as PhotoMarker | undefined
+      // Duplicate delivery, or its delete already ran.
+      if (counted?.generation === generation) return
+      if (counted && !counted.deleted) {
+        // Overwrite of an object already counted: track the new
+        // generation; the old one's delete event will be ignored.
+        tx.set(marker, { generation })
+        return
+      }
+
+      tx.set(marker, { generation })
       tx.set(
         doc,
         { ownerUid: parsed.uid, photoCount: FieldValue.increment(1) },
@@ -101,17 +137,37 @@ export const onSubmissionPhotoUploaded = onObjectFinalized(
 )
 
 export const onSubmissionPhotoDeleted = onObjectDeleted(
-  { bucket: BUCKET_NAME },
+  { bucket: BUCKET_NAME, retry: true },
   async (event) => {
     const parsed = parseSubmissionPath(event.data.name)
     if (!parsed) return
+    const generation = String(event.data.generation)
 
-    // ponytail: decrement can't go below 0 if a doc is ever cleared out of
-    // band; add a floor if that happens in practice.
-    await getFirestore()
-      .collection('submissions')
-      .doc(parsed.submissionId)
-      .set({ photoCount: FieldValue.increment(-1) }, { merge: true })
+    const firestore = getFirestore()
+    const doc = firestore.collection('submissions').doc(parsed.submissionId)
+    const marker = photoMarker(parsed.submissionId, event.data.name)
+
+    await firestore.runTransaction(async (tx) => {
+      const snapshot = await tx.get(doc)
+      const markerSnapshot = await tx.get(marker)
+      const existingOwner = snapshot.get('ownerUid') as string | undefined
+      // #268: a colliding uid's delete must not move the owner's count.
+      if (existingOwner != null && existingOwner !== parsed.uid) return
+
+      const counted = markerSnapshot.data() as PhotoMarker | undefined
+      if (!counted) {
+        // Arrived before its finalize: leave a tombstone so that finalize
+        // does not count an object that is already gone.
+        tx.set(marker, { generation, deleted: true })
+        return
+      }
+      // Duplicate delivery, or the old generation of an overwrite.
+      if (counted.deleted || counted.generation !== generation) return
+
+      tx.set(marker, { generation, deleted: true })
+      const current = (snapshot.get('photoCount') as number | undefined) ?? 0
+      tx.set(doc, { photoCount: Math.max(0, current - 1) }, { merge: true })
+    })
   },
 )
 
@@ -146,15 +202,13 @@ export const onSubmissionSubmitted = onObjectFinalized(
   },
 )
 
-// #267: gates sign-in on the tester allowlist by setting a custom claim
-// (request.auth.token.allowedTester), checked in storage.rules' allow
-// write. Runs on every sign-in (not just account creation) so an
-// already-registered tester's very next sign-in picks up the claim —
-// no separate backfill script needed. Requires Identity Platform to be
-// enabled for this project (Firebase console > Authentication > Settings);
-// blocking functions don't run without it, which means uploads are denied
-// for everyone until it's enabled and each tester has signed in at least
-// once post-deploy. See the PR notes for deploy sequencing.
+// #267: sets the tester-allowlist custom claim
+// (request.auth.token.allowedTester) on every sign-in. storage.rules does
+// not check it yet: enforcement is deferred while it is dev friction, so
+// any signed-in user can upload today. Runs on every sign-in (not just
+// account creation) so a registered tester's claim is current once
+// enforcement lands. Requires Identity Platform (Firebase console >
+// Authentication > Settings); blocking functions don't run without it.
 // Exported separately from the beforeUserSignedIn wrapper below: the SDK's
 // BlockingFunction type is an Express (req, resp) handler, not something
 // that takes an AuthBlockingEvent directly, so this is the piece tests can

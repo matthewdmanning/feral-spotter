@@ -9,6 +9,11 @@
 
 import { showAlert } from '@/src/hooks/useUIStore'
 import { usePhotoStore, useSubmissionStore } from '@/src/hooks'
+import {
+  isAtPhotoLimit,
+  photoSlotsLeft,
+  showPhotoLimitReached,
+} from '@/src/hooks/usePhotoStore'
 import { useAuth } from '@/src/lib/auth/useAuth'
 import { initializeDraft } from '@/src/hooks/useDraftStartupStore'
 import { EVENTS, captureEvent } from '@/src/lib/analytics/analytics'
@@ -46,6 +51,10 @@ export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
       return
     }
     if (usePhotoStore.getState().source === 'camera') return
+    if (isAtPhotoLimit()) {
+      showPhotoLimitReached()
+      return
+    }
     // Check-then-request, mirroring useCameraCapture's write-only gallery-save
     // check (#145/#146): a granted/limited check short-circuits every repeat
     // tap, so the native request only ever fires once, on the first
@@ -69,6 +78,9 @@ export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
       legacy: Platform.OS === 'android',
       mediaTypes: ['images'],
       allowsMultipleSelection: true,
+      // Not honored by every picker (the legacy Android chooser ignores it),
+      // so the result is trimmed below too.
+      selectionLimit: photoSlotsLeft(),
       quality: 1,
       exif: true,
     })
@@ -77,7 +89,11 @@ export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
     // A camera capture may have arrived while the system picker was open.
     if (usePhotoStore.getState().source === 'camera') return
     const isFirstPick = usePhotoStore.getState().photos.length === 0
-    const newPhotos = result.assets.map(buildSubmissionPhoto)
+    const slots = photoSlotsLeft()
+    const kept = result.assets.slice(0, slots)
+    if (kept.length < result.assets.length) showPhotoLimitReached()
+    if (kept.length === 0) return
+    const newPhotos = kept.map(buildSubmissionPhoto)
     addPhotos(newPhotos)
     captureEvent(EVENTS.LIBRARY_PHOTOS_SELECTED, {
       photo_count: newPhotos.length,
@@ -100,9 +116,12 @@ export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
     // Home screen guard guarantees the pool was empty before this pick.
     if (isFirstPick) setLocationType('pin')
 
-    const capturedAts = result.assets.map((asset) =>
-      parseExifDateTime(asset.exif?.DateTime),
-    )
+    // Classified over the whole pool, not this batch: "Select More Photos"
+    // must not let a batch with EXIF time override a manual time the first
+    // batch needed.
+    const capturedAts = usePhotoStore
+      .getState()
+      .photos.map((photo) => parseExifDateTime(photo.exif?.timestamp))
     const { time_type, captured_at } = classifyLibraryPickTime(capturedAts)
     setSubmission({ time_type, captured_at })
 

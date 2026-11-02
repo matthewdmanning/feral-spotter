@@ -9,6 +9,7 @@ import { usePhotoStore } from '../usePhotoStore'
 import { useSubmissionStore } from '../useSubmissionStore'
 import { useLibraryPhotoPicker } from '../useLibraryPhotoPicker'
 import { useDraftStartupStore } from '../useDraftStartupStore'
+import { useUIStore } from '../useUIStore'
 
 // Avoid the unrelated hook barrel; keep both persisted stores real.
 jest.mock('@/src/hooks', () => ({
@@ -137,6 +138,7 @@ it.each(['android', 'ios'] as const)(
       legacy: platform === 'android',
       mediaTypes: ['images'],
       allowsMultipleSelection: true,
+      selectionLimit: 10,
       quality: 1,
       exif: true,
     })
@@ -210,4 +212,35 @@ it('Android: cancel leaves the draft intact; a subsequent pick can add a photo w
   )
   expect(uploadNewPhoto).toHaveBeenCalledTimes(1)
   expect(router.navigate).toHaveBeenCalledTimes(1)
+})
+
+it('keeps a Library draft at 10 photos and classifies time over the whole pool', async () => {
+  const many = Array.from({ length: 12 }, (_, n) => ({
+    uri: `file:///picker/${n}.jpg`,
+    width: 100,
+    height: 100,
+    // The first pick lacks EXIF time; the second has it.
+    exif: n < 8 ? undefined : { DateTime: '2026:10:22 09:00:00' },
+  }))
+  jest
+    .spyOn(ImagePicker, 'launchImageLibraryAsync')
+    .mockResolvedValueOnce({ canceled: false, assets: many.slice(0, 8) })
+    .mockResolvedValueOnce({ canceled: false, assets: many.slice(8) })
+  const { result } = renderHook(() => useLibraryPhotoPicker())
+
+  await act(async () => result.current.pickFromLibrary())
+  await act(async () => result.current.pickFromLibrary())
+
+  // storage.rules rejects an 11th upload; the app must not queue one.
+  expect(usePhotoStore.getState().photos).toHaveLength(10)
+  expect(uploadNewPhoto).toHaveBeenCalledTimes(10)
+  expect(useUIStore.getState().dialog?.title).toBe('Photo limit reached')
+  // Batch 1 had no EXIF time, so the Submission still needs a manual one.
+  expect(useSubmissionStore.getState().submission.time_type).toBe('manual')
+
+  // A full pool does not open the picker at all.
+  useUIStore.setState({ dialog: null })
+  await act(async () => result.current.pickFromLibrary())
+  expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalledTimes(2)
+  expect(useUIStore.getState().dialog?.title).toBe('Photo limit reached')
 })

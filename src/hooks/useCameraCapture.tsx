@@ -7,6 +7,10 @@
  * state, navigation — comes from useCapturedPhotoWorkflow.
  */
 
+import {
+  isAtPhotoLimit,
+  showPhotoLimitReached,
+} from '@/src/hooks/usePhotoStore'
 import { useCapturedPhotoWorkflow } from '@/src/hooks/useCapturedPhotoWorkflow'
 import { useIosIdentificationCapture } from '@/src/hooks/useIosIdentificationCapture'
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'
@@ -139,6 +143,10 @@ export function useCameraCapture(): CameraCaptureResult {
       return
     }
     if (isTakingPhotoRef.current) return
+    if (isAtPhotoLimit()) {
+      showPhotoLimitReached()
+      return
+    }
 
     isTakingPhotoRef.current = true
     setIsTakingPhoto(true)
@@ -202,7 +210,11 @@ export function useCameraCapture(): CameraCaptureResult {
         })
 
         startPhotoUpload(submission, user?.uid)
-      } while (captureMode === 'burst' && !burstStopRequested.current)
+      } while (
+        captureMode === 'burst' &&
+        !burstStopRequested.current &&
+        !isAtPhotoLimit()
+      )
 
       if (captureMode === 'burst') {
         captureEvent(EVENTS.CAMERA_CAPTURE_SEQUENCE_COMPLETED, {

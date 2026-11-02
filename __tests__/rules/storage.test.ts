@@ -397,6 +397,74 @@ describe('storage.rules — submissions/{uid}/{submissionId}/{fileName}', () => 
       }),
     )
   })
+
+  it('rejects a same-size overwrite with different bytes or a different type', async () => {
+    const owner = testEnv.authenticatedContext(OWNER_UID)
+    const object = ref(
+      owner.storage(BUCKET_URL),
+      `submissions/${OWNER_UID}/same-size/photo.jpg`,
+    )
+    await assertSucceeds(
+      uploadBytes(object, SMALL_IMAGE, { contentType: 'image/jpeg' }),
+    )
+    await assertFails(
+      uploadBytes(object, new Uint8Array([4, 3, 2, 1]), {
+        contentType: 'image/jpeg',
+      }),
+    )
+    await assertFails(
+      uploadBytes(object, SMALL_IMAGE, { contentType: 'text/html' }),
+    )
+  })
+
+  it('rejects a photo whose user_id metadata names someone else', async () => {
+    const owner = testEnv.authenticatedContext(OWNER_UID)
+    const object = ref(
+      owner.storage(BUCKET_URL),
+      `submissions/${OWNER_UID}/forged/photo.jpg`,
+    )
+    await assertFails(
+      uploadBytes(object, SMALL_IMAGE, {
+        contentType: 'image/jpeg',
+        customMetadata: { user_id: 'uid-other' },
+      }),
+    )
+    await assertSucceeds(
+      uploadBytes(object, SMALL_IMAGE, {
+        contentType: 'image/jpeg',
+        customMetadata: { user_id: OWNER_UID },
+      }),
+    )
+    await assertFails(
+      updateMetadata(object, { customMetadata: { user_id: 'uid-other' } }),
+    )
+  })
+
+  it('lets a counted Submission resend its metadata.json at the 250 cap', async () => {
+    const owner = testEnv.authenticatedContext(OWNER_UID)
+    const object = ref(
+      owner.storage(BUCKET_URL),
+      `submissions/${OWNER_UID}/sub-retry/metadata.json`,
+    )
+    await assertSucceeds(
+      uploadBytes(object, SMALL_JSON, { contentType: 'application/json' }),
+    )
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'submissionCounts', OWNER_UID), {
+        count: 250,
+      })
+    })
+    await assertSucceeds(
+      uploadBytes(object, SMALL_JSON, { contentType: 'application/json' }),
+    )
+    const fresh = ref(
+      owner.storage(BUCKET_URL),
+      `submissions/${OWNER_UID}/sub-new/metadata.json`,
+    )
+    await assertFails(
+      uploadBytes(fresh, SMALL_JSON, { contentType: 'application/json' }),
+    )
+  })
 })
 
 describe('organization service objects remain server-only', () => {

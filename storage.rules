@@ -55,6 +55,10 @@ service firebase.storage {
                // 'application/json; charset=utf-8', which exact match denies.
                && request.resource.contentType.matches('application/json(;.*)?')
                && (
+                 // A metadata.json already in place was counted when it
+                 // first landed: a retry of that Submission must not be
+                 // blocked by the cap it already counts toward.
+                 resource != null
                  // #270: caps distinct submissions per uid (counted by
                  // functions/src/index.ts's onSubmissionSubmitted at
                  // metadata.json write, not per-photo — isValidPhotoWrite
@@ -63,15 +67,24 @@ service firebase.storage {
                  // budget). MAX_SUBMISSIONS_PER_UID in
                  // src/config/constants.ts documents the same number —
                  // rules can't read it.
-                 !firestore.exists(/databases/(default)/documents/submissionCounts/$(uid))
+                 || !firestore.exists(/databases/(default)/documents/submissionCounts/$(uid))
                  || firestore.get(/databases/(default)/documents/submissionCounts/$(uid)).data.count < 250
                );
+      }
+
+      // A user_id in an object's customMetadata must name the path's owner:
+      // the downstream export reads it, so it must not be forgeable.
+      function hasOwnUserId(uid) {
+        return request.resource.metadata == null
+               || !('user_id' in request.resource.metadata)
+               || request.resource.metadata.user_id == uid;
       }
 
       function isValidPhotoWrite() {
         let docExists = firestore.exists(/databases/(default)/documents/submissions/$(submissionId));
         let doc = firestore.get(/databases/(default)/documents/submissions/$(submissionId));
-        return (
+        return hasOwnUserId(uid) && (
+               (
                  // #264: finalizeSubmissionPhotoMetadata patches an already-
                  // uploaded, already-counted photo's customMetadata at Submit
                  // (location/time/upload-time/user id) — same bytes, not
@@ -79,15 +92,13 @@ service firebase.storage {
                  // checks below, not nested inside them — those describe a
                  // fresh image upload and shouldn't gate a metadata-only
                  // patch even if it doesn't echo them back identically.
-                 // size-only check, not md5Hash — that field's exact casing
-                 // in the rules resource schema (vs the client SDK's
-                 // FullMetadata.md5Hash) is unverified. The rules suite CAN
-                 // run locally (`npm run test:rules` — needs JDK 21+; this
-                 // machine's default is 17, override JAVA_HOME to a newer
-                 // JDK if present rather than assuming it's blocked), it
-                 // just hasn't been used to confirm this specific field
-                 // yet.
-                 (resource != null && resource.size == request.resource.size)
+                 // Same bytes means same size, type and md5Hash. Size alone
+                 // let a same-size overwrite with any content type through,
+                 // re-firing the finalize trigger on a non-image.
+                 (resource != null
+                   && resource.size == request.resource.size
+                   && resource.contentType == request.resource.contentType
+                   && resource.md5Hash == request.resource.md5Hash)
                )
                || (
                  // #269: create-only. A same-fileName overwrite with
@@ -112,9 +123,15 @@ service firebase.storage {
                    // else's submission.
                    // 10 must match MAX_PHOTOS in src/config/constants.ts —
                    // rules can't read it, so keep the two in sync by hand.
+                   //
+                   // Soft limit: photoCount is written by an async trigger,
+                   // so uploads inside its latency window (or before the
+                   // doc exists) all see the old count. The client caps at
+                   // MAX_PHOTOS; this bounds a slow drift, not a scripted
+                   // burst. See ADR-0005's 2026-11-02 amendment.
                    || (doc.data.ownerUid == uid && doc.data.photoCount < 10)
                  )
-               );
+               ));
       }
     }
   }

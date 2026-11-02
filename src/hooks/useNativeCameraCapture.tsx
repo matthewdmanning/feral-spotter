@@ -7,6 +7,10 @@
  * application workflow exists once rather than once per backend.
  */
 
+import {
+  isAtPhotoLimit,
+  showPhotoLimitReached,
+} from '@/src/hooks/usePhotoStore'
 import { useCapturedPhotoWorkflow } from '@/src/hooks/useCapturedPhotoWorkflow'
 import { useConsentStore } from '@/src/hooks/useConsentStore'
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'
@@ -160,6 +164,10 @@ export function useNativeCameraCapture(
       !isCameraReady ||
       !cameraRef.current
     ) {
+      return
+    }
+    if (isAtPhotoLimit()) {
+      showPhotoLimitReached()
       return
     }
     isTakingPhotoRef.current = true

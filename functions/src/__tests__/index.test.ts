@@ -66,8 +66,6 @@ jest.mock('firebase-admin/storage', () => ({
 
 import {
   resolveTesterClaim,
-  onSubmissionPhotoDeleted,
-  onSubmissionPhotoUploaded,
   onSubmissionSubmitted,
   sweepPhotosWithoutMetadata,
 } from '../index'
@@ -90,106 +88,7 @@ function authEvent(
   return { data } as AuthBlockingEvent
 }
 
-describe('onSubmissionPhotoUploaded', () => {
-  beforeEach(() => jest.clearAllMocks())
-
-  it('increments photoCount and sets ownerUid for a well-formed path', async () => {
-    mockTxGet.mockResolvedValueOnce({ get: () => undefined })
-
-    await onSubmissionPhotoUploaded.run(
-      event('submissions/uid-owner/sub-1/photo.jpg'),
-    )
-
-    expect(mockCollection).toHaveBeenCalledWith('submissions')
-    expect(mockDoc).toHaveBeenCalledWith('submissions/sub-1')
-    expect(mockIncrement).toHaveBeenCalledWith(1)
-    expect(mockTxSet).toHaveBeenCalledWith(
-      expect.objectContaining({ path: 'submissions/sub-1' }),
-      { ownerUid: 'uid-owner', photoCount: { __increment: 1 } },
-      { merge: true },
-    )
-  })
-
-  it('increments when the existing doc is owned by the same uid', async () => {
-    mockTxGet.mockResolvedValueOnce({
-      get: (field: string) => (field === 'ownerUid' ? 'uid-owner' : undefined),
-    })
-
-    await onSubmissionPhotoUploaded.run(
-      event('submissions/uid-owner/sub-1/photo.jpg'),
-    )
-
-    expect(mockTxSet).toHaveBeenCalledWith(
-      expect.objectContaining({ path: 'submissions/sub-1' }),
-      { ownerUid: 'uid-owner', photoCount: { __increment: 1 } },
-      { merge: true },
-    )
-  })
-
-  it('#268: does not increment or flip ownership when submissionId collides with a different uid', async () => {
-    mockTxGet.mockResolvedValueOnce({
-      get: (field: string) => (field === 'ownerUid' ? 'uid-other' : undefined),
-    })
-
-    await onSubmissionPhotoUploaded.run(
-      event('submissions/uid-owner/sub-1/photo.jpg'),
-    )
-
-    expect(mockTxSet).not.toHaveBeenCalled()
-  })
-
-  it('no-ops on a malformed path (no uid/submissionId segments)', async () => {
-    await onSubmissionPhotoUploaded.run(event('not-a-submission-path.jpg'))
-
-    expect(mockCollection).not.toHaveBeenCalled()
-  })
-
-  it('no-ops on a path missing the fileName segment', async () => {
-    await onSubmissionPhotoUploaded.run(event('submissions/uid-owner/sub-1'))
-
-    expect(mockCollection).not.toHaveBeenCalled()
-  })
-
-  it('no-ops on metadata.json — not a photo, must not move the counter', async () => {
-    await onSubmissionPhotoUploaded.run(
-      event('submissions/uid-owner/sub-1/metadata.json'),
-    )
-
-    expect(mockCollection).not.toHaveBeenCalled()
-  })
-})
-
-describe('onSubmissionPhotoDeleted', () => {
-  beforeEach(() => jest.clearAllMocks())
-
-  it('decrements photoCount for a well-formed path', async () => {
-    await onSubmissionPhotoDeleted.run(
-      event('submissions/uid-owner/sub-1/photo.jpg'),
-    )
-
-    expect(mockDoc).toHaveBeenCalledWith('submissions/sub-1')
-    expect(mockIncrement).toHaveBeenCalledWith(-1)
-    expect(mockSet).toHaveBeenCalledWith(
-      'submissions/sub-1',
-      { photoCount: { __increment: -1 } },
-      { merge: true },
-    )
-  })
-
-  it('no-ops on a malformed path', async () => {
-    await onSubmissionPhotoDeleted.run(event('junk'))
-
-    expect(mockCollection).not.toHaveBeenCalled()
-  })
-
-  it('no-ops on metadata.json deletion', async () => {
-    await onSubmissionPhotoDeleted.run(
-      event('submissions/uid-owner/sub-1/metadata.json'),
-    )
-
-    expect(mockCollection).not.toHaveBeenCalled()
-  })
-})
+// photoCount triggers: see photoCount.test.ts (event-sequence model).
 
 describe('onSubmissionSubmitted', () => {
   beforeEach(() => jest.clearAllMocks())
