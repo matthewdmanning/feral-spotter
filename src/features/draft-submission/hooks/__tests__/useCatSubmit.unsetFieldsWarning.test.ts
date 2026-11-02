@@ -1,6 +1,7 @@
 import * as ui from '@/src/shared/hooks/useUIStore'
 import { router } from 'expo-router'
 import { act, renderHook } from '@testing-library/react-native'
+import { pressDialogButton } from '@/src/test-utils/dialog'
 
 import { useCatSubmit } from '@/src/features/draft-submission/hooks/useCatSubmit'
 import type { CatFormValues } from '@/src/features/draft-submission/hooks/useCatForm'
@@ -47,21 +48,8 @@ const deliberatelyUnknownForm: CatFormValues = {
   healthLabel: 'unknown',
 }
 
-const pressDialogButton = async (text: string) => {
-  const button = ui.useUIStore
-    .getState()
-    .dialog?.buttons.find((b) => b.text === text)
-  expect(button).toBeDefined()
-  await act(async () => {
-    ui.useUIStore.getState().dismissDialog()
-    await button?.onPress?.()
-  })
-}
-
 describe('useCatSubmit — missing-field warning (#205)', () => {
   beforeEach(() => {
-    jest.restoreAllMocks()
-    jest.clearAllMocks()
     jest.spyOn(ui, 'showAlert')
     ui.useUIStore.setState({ dialog: null })
     useSubmissionStore.getState().clearDraft()

@@ -17,10 +17,6 @@ beforeEach(() => {
   __resetMockFileSystem()
 })
 
-afterEach(() => {
-  jest.restoreAllMocks()
-})
-
 it('deletes a captured file inside the cache directory', () => {
   const file = new File(Paths.cache, 'capture.jpg')
   file.create()

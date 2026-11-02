@@ -8,6 +8,7 @@ import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSub
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import { profilePicUri } from '@/src/features/history/lib/history'
+import { pressDialogButton } from '@/src/test-utils/dialog'
 
 /**
  * Regression check for #228: updateSubmissionCache replaces `metadata`
@@ -65,8 +66,6 @@ const photo = (id: string) => ({
 
 describe('useSubmissionSubmit — handleDone cache sync (#228)', () => {
   beforeEach(async () => {
-    jest.restoreAllMocks()
-    jest.clearAllMocks()
     jest.spyOn(cache, 'updateSubmissionCache')
     useUIStore.setState({ dialog: null, isSubmitting: false })
     jest.mocked(uploadSubmissionMetadata).mockResolvedValue(undefined)
@@ -86,14 +85,8 @@ describe('useSubmissionSubmit — handleDone cache sync (#228)', () => {
 
     const { result } = renderHook(() => useSubmissionSubmit())
 
-    await act(async () => {
-      result.current.handleDone()
-      const confirm = useUIStore
-        .getState()
-        .dialog?.buttons.find((b) => b.text === 'Submit')
-      expect(confirm?.onPress).toEqual(expect.any(Function))
-      await confirm!.onPress!()
-    })
+    act(() => result.current.handleDone())
+    await pressDialogButton('Submit')
 
     expect(cache.updateSubmissionCache).toHaveBeenCalledWith(
       'cache-1',
@@ -132,7 +125,6 @@ describe('useSubmissionSubmit — history row survives teardown', () => {
   }
 
   beforeEach(async () => {
-    jest.clearAllMocks()
     useUIStore.setState({ dialog: null, isSubmitting: false })
     useSubmissionStore.getState().clearDraft()
     useBoundingBoxStore.getState().clearAll()
@@ -157,13 +149,8 @@ describe('useSubmissionSubmit — history row survives teardown', () => {
 
   it('keeps owner, location, cloud photos, and the chosen Profile Pic', async () => {
     const { result } = renderHook(() => useSubmissionSubmit())
-    await act(async () => {
-      result.current.handleDone()
-      const confirm = useUIStore
-        .getState()
-        .dialog?.buttons.find((b) => b.text === 'Submit')
-      await confirm!.onPress!()
-    })
+    act(() => result.current.handleDone())
+    await pressDialogButton('Submit')
 
     // The draft is gone; only the history row remains.
     expect(useBoundingBoxStore.getState().getBoxesForCat('cat-1')).toEqual([])

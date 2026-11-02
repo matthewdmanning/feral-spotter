@@ -16,6 +16,7 @@ import {
   uploadSubmissionMetadata,
 } from '@/src/features/draft-submission/lib/upload/firebaseUpload'
 import type { SubmissionPhoto } from '@/src/shared/types'
+import { pressDialogButton } from '@/src/test-utils/dialog'
 
 jest.mock('expo-router', () => ({
   router: {
@@ -86,8 +87,6 @@ function defaultCat() {
 
 describe('useSubmissionSubmit submit flow', () => {
   beforeEach(async () => {
-    jest.restoreAllMocks()
-    jest.clearAllMocks()
     await AsyncStorage.clear()
     useSubmissionStore.setState({
       cats: [defaultCat()],
@@ -127,18 +126,12 @@ describe('useSubmissionSubmit submit flow', () => {
         }),
       ],
     })
-    ;(uploadSubmissionMetadata as jest.Mock).mockResolvedValue(undefined)
+    jest.mocked(uploadSubmissionMetadata).mockResolvedValue(undefined)
 
     const { result } = renderHook(() => useSubmissionSubmit())
 
-    await act(async () => {
-      result.current.handleDone()
-      const submit = useUIStore
-        .getState()
-        .dialog?.buttons.find((b) => b.text === 'Submit')
-      expect(submit?.onPress).toEqual(expect.any(Function))
-      await submit!.onPress!()
-    })
+    act(() => result.current.handleDone())
+    await pressDialogButton('Submit')
 
     expect(uploadSubmissionMetadata).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -174,18 +167,12 @@ describe('useSubmissionSubmit submit flow', () => {
         }),
       ],
     })
-    ;(uploadSubmissionMetadata as jest.Mock).mockResolvedValue(undefined)
+    jest.mocked(uploadSubmissionMetadata).mockResolvedValue(undefined)
 
     const { result } = renderHook(() => useSubmissionSubmit())
 
-    await act(async () => {
-      result.current.handleDone()
-      const submit = useUIStore
-        .getState()
-        .dialog?.buttons.find((b) => b.text === 'Submit')
-      expect(submit?.onPress).toEqual(expect.any(Function))
-      await submit!.onPress!()
-    })
+    act(() => result.current.handleDone())
+    await pressDialogButton('Submit')
 
     expect(finalizeSubmissionPhotoMetadata).toHaveBeenCalledWith(
       'gs://bucket/uploaded.jpg',
@@ -215,18 +202,12 @@ describe('useSubmissionSubmit submit flow', () => {
         }),
       ],
     })
-    ;(uploadSubmissionMetadata as jest.Mock).mockResolvedValue(undefined)
+    jest.mocked(uploadSubmissionMetadata).mockResolvedValue(undefined)
 
     const { result } = renderHook(() => useSubmissionSubmit())
 
-    await act(async () => {
-      result.current.handleDone()
-      const submit = useUIStore
-        .getState()
-        .dialog?.buttons.find((b) => b.text === 'Submit')
-      expect(submit?.onPress).toEqual(expect.any(Function))
-      await submit!.onPress!()
-    })
+    act(() => result.current.handleDone())
+    await pressDialogButton('Submit')
 
     expect(finalizeSubmissionPhotoMetadata).toHaveBeenCalledWith(
       'gs://bucket/uploaded.jpg',
@@ -261,18 +242,12 @@ describe('useSubmissionSubmit submit flow', () => {
         }),
       ],
     })
-    ;(uploadSubmissionMetadata as jest.Mock).mockResolvedValue(undefined)
+    jest.mocked(uploadSubmissionMetadata).mockResolvedValue(undefined)
 
     const { result } = renderHook(() => useSubmissionSubmit())
 
-    await act(async () => {
-      result.current.handleDone()
-      const submit = useUIStore
-        .getState()
-        .dialog?.buttons.find((b) => b.text === 'Submit')
-      expect(submit?.onPress).toEqual(expect.any(Function))
-      await submit!.onPress!()
-    })
+    act(() => result.current.handleDone())
+    await pressDialogButton('Submit')
 
     expect(finalizeSubmissionPhotoMetadata).toHaveBeenCalledWith(
       'gs://bucket/later.jpg',
@@ -304,21 +279,16 @@ describe('useSubmissionSubmit submit flow', () => {
         }),
       ],
     })
-    ;(finalizeSubmissionPhotoMetadata as jest.Mock)
+    jest
+      .mocked(finalizeSubmissionPhotoMetadata)
       .mockRejectedValueOnce(new Error('network blip'))
       .mockResolvedValueOnce(undefined)
-    ;(uploadSubmissionMetadata as jest.Mock).mockResolvedValue(undefined)
+    jest.mocked(uploadSubmissionMetadata).mockResolvedValue(undefined)
 
     const { result } = renderHook(() => useSubmissionSubmit())
 
-    await act(async () => {
-      result.current.handleDone()
-      const submit = useUIStore
-        .getState()
-        .dialog?.buttons.find((b) => b.text === 'Submit')
-      expect(submit?.onPress).toEqual(expect.any(Function))
-      await submit!.onPress!()
-    })
+    act(() => result.current.handleDone())
+    await pressDialogButton('Submit')
 
     expect(uploadSubmissionMetadata).toHaveBeenCalled()
     expect(useUIStore.getState().dialog?.title).not.toBe('Submission Failed')
@@ -359,18 +329,12 @@ describe('useSubmissionSubmit submit flow', () => {
         }),
       ],
     })
-    ;(uploadSubmissionMetadata as jest.Mock).mockResolvedValue(undefined)
+    jest.mocked(uploadSubmissionMetadata).mockResolvedValue(undefined)
 
     const { result } = renderHook(() => useSubmissionSubmit())
 
-    await act(async () => {
-      result.current.handleDone()
-      const submit = useUIStore
-        .getState()
-        .dialog?.buttons.find((b) => b.text === 'Submit')
-      expect(submit?.onPress).toEqual(expect.any(Function))
-      await submit!.onPress!()
-    })
+    act(() => result.current.handleDone())
+    await pressDialogButton('Submit')
 
     expect(uploadSubmissionMetadata).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -411,14 +375,8 @@ describe('useSubmissionSubmit submit flow', () => {
 
     const { result } = renderHook(() => useSubmissionSubmit())
 
-    await act(async () => {
-      result.current.handleDone()
-      const submit = useUIStore
-        .getState()
-        .dialog?.buttons.find((b) => b.text === 'Submit')
-      expect(submit?.onPress).toEqual(expect.any(Function))
-      await submit!.onPress!()
-    })
+    act(() => result.current.handleDone())
+    await pressDialogButton('Submit')
 
     expect(uploadSubmissionMetadata).not.toHaveBeenCalled()
     expect(useUIStore.getState().dialog).toEqual(
@@ -439,14 +397,8 @@ describe('useSubmissionSubmit submit flow', () => {
 
     const { result } = renderHook(() => useSubmissionSubmit())
 
-    await act(async () => {
-      result.current.handleDone()
-      const submit = useUIStore
-        .getState()
-        .dialog?.buttons.find((b) => b.text === 'Submit')
-      expect(submit?.onPress).toEqual(expect.any(Function))
-      await submit!.onPress!()
-    })
+    act(() => result.current.handleDone())
+    await pressDialogButton('Submit')
 
     expect(uploadSubmissionMetadata).not.toHaveBeenCalled()
     expect(useUIStore.getState().dialog).toEqual(
@@ -473,18 +425,12 @@ describe('useSubmissionSubmit submit flow', () => {
         }),
       ],
     })
-    ;(uploadSubmissionMetadata as jest.Mock).mockResolvedValue(undefined)
+    jest.mocked(uploadSubmissionMetadata).mockResolvedValue(undefined)
 
     const { result } = renderHook(() => useSubmissionSubmit())
 
-    await act(async () => {
-      result.current.handleDone()
-      const submit = useUIStore
-        .getState()
-        .dialog?.buttons.find((b) => b.text === 'Submit')
-      expect(submit?.onPress).toEqual(expect.any(Function))
-      await submit!.onPress!()
-    })
+    act(() => result.current.handleDone())
+    await pressDialogButton('Submit')
 
     expect(uploadSubmissionMetadata).toHaveBeenCalledWith(
       expect.objectContaining({ photo_paths: ['gs://bucket/uploaded.jpg'] }),
@@ -509,14 +455,8 @@ describe('useSubmissionSubmit submit flow', () => {
 
     const { result } = renderHook(() => useSubmissionSubmit())
 
-    await act(async () => {
-      result.current.handleDone()
-      const submit = useUIStore
-        .getState()
-        .dialog?.buttons.find((b) => b.text === 'Submit')
-      expect(submit?.onPress).toEqual(expect.any(Function))
-      await submit!.onPress!()
-    })
+    act(() => result.current.handleDone())
+    await pressDialogButton('Submit')
 
     expect(errorSpy).toHaveBeenCalledWith(
       'Photos Still Uploading',
@@ -542,22 +482,16 @@ describe('useSubmissionSubmit submit flow', () => {
         }),
       ],
     })
-    ;(uploadSubmissionMetadata as jest.Mock).mockRejectedValue(
-      new Error('PERMISSION_DENIED: storage/unauthorized'),
-    )
+    jest
+      .mocked(uploadSubmissionMetadata)
+      .mockRejectedValue(new Error('PERMISSION_DENIED: storage/unauthorized'))
     jest.spyOn(console, 'error').mockImplementation(() => {})
     const errorSpy = jest.spyOn(ui, 'showError').mockImplementation(() => {})
 
     const { result } = renderHook(() => useSubmissionSubmit())
 
-    await act(async () => {
-      result.current.handleDone()
-      const submit = useUIStore
-        .getState()
-        .dialog?.buttons.find((b) => b.text === 'Submit')
-      expect(submit?.onPress).toEqual(expect.any(Function))
-      await submit!.onPress!()
-    })
+    act(() => result.current.handleDone())
+    await pressDialogButton('Submit')
 
     expect(errorSpy).toHaveBeenCalledWith(
       'Submission Failed',

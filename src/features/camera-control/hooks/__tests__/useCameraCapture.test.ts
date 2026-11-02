@@ -74,8 +74,6 @@ jest.mock('@/src/shared/analytics/analytics', () => ({
 }))
 
 beforeEach(() => {
-  jest.restoreAllMocks()
-  jest.clearAllMocks()
   mockIsFocused = true
   mockCapturePhoto.mockReset()
   mockAssetCreate.mockReset()
@@ -98,7 +96,6 @@ beforeEach(() => {
 
 describe('useCameraCapture isActive (#253)', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
     mockIsFocused = true
   })
 
@@ -132,8 +129,6 @@ describe('useCameraCapture isActive (#253)', () => {
 })
 
 describe('useCameraCapture navigation', () => {
-  beforeEach(() => jest.clearAllMocks())
-
   it('handleClose calls router.back()', () => {
     const { result } = renderHook(() => useCameraCapture())
     result.current.handleClose()
@@ -152,8 +147,6 @@ describe('useCameraCapture navigation', () => {
 })
 
 describe('useCameraCapture handleTakePhoto', () => {
-  beforeEach(() => jest.clearAllMocks())
-
   it('reports PHOTO_CAPTURE_FAILED when capturePhoto throws', async () => {
     mockCapturePhoto.mockRejectedValueOnce(new Error('device busy'))
 

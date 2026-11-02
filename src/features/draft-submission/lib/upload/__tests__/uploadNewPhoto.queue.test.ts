@@ -39,9 +39,6 @@ const photo = (n: number): SubmissionPhoto => ({
 })
 
 const drainTasks = () => new Promise((resolve) => setImmediate(resolve))
-
-afterEach(() => jest.restoreAllMocks())
-
 it('caps a burst at two uploads and drains queued photos after one fails', async () => {
   const failure = new Error('connection lost')
   const logError = jest.spyOn(console, 'error').mockImplementation(() => {})

@@ -35,11 +35,6 @@ describe('createFirebaseAuthProvider emulator wiring', () => {
     delete process.env.EXPO_PUBLIC_FIREBASE_EMULATOR_HOST
     jest.spyOn(console, 'error').mockImplementation(() => {})
   })
-
-  afterEach(() => {
-    jest.restoreAllMocks()
-  })
-
   afterAll(() => {
     process.env = ORIGINAL_ENV
   })

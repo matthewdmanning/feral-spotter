@@ -14,7 +14,6 @@ const loadWithUrl = (url: string | undefined) => {
 describe('syncEmailSubscription', () => {
   const fetchMock = jest.fn()
   beforeEach(() => {
-    jest.clearAllMocks()
     global.fetch = fetchMock
   })
 

@@ -41,7 +41,6 @@ jest.mock('@/src/core/location/liveFix', () => ({
 
 describe('Create screen — location-commit invariant', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
     useSubmissionStore.setState({
       cats: [],
       submission: { location_type: 'device', time_type: 'device' },

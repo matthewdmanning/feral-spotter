@@ -4,6 +4,7 @@ import { act, renderHook } from '@testing-library/react-native'
 import { useAbandonCatGuard } from '@/src/features/draft-submission/hooks/useAbandonCatGuard'
 import { useActiveCatFlowStore } from '@/src/features/draft-submission/hooks/useActiveCatFlowStore'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
+import { pressDialogButton } from '@/src/test-utils/dialog'
 
 /**
  * The guard's value is entirely in *when it fires* (#304). Firing on a save
@@ -63,16 +64,8 @@ const attemptLeave = () => {
   return { blocked }
 }
 
-const pressRemove = () => {
-  const buttons = jest.mocked(ui.showAlert).mock.calls[0][2]
-  act(() => {
-    buttons?.find((b) => b.text === 'Remove progress on this cat')?.onPress?.()
-  })
-}
-
 describe('useAbandonCatGuard (#304)', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
     prevented = false
     preventCallback = undefined
     jest.spyOn(ui, 'showAlert')
@@ -81,7 +74,7 @@ describe('useAbandonCatGuard (#304)', () => {
     useActiveCatFlowStore.getState().setActiveCatId(null)
   })
 
-  it('prompts and blocks the exit when an unsaved cat is in progress', () => {
+  it('prompts and blocks the exit when an unsaved cat is in progress', async () => {
     useActiveCatFlowStore.getState().setActiveCatId(CAT_ID)
     renderHook(() => useAbandonCatGuard(false))
 
@@ -91,7 +84,7 @@ describe('useAbandonCatGuard (#304)', () => {
     expect(ui.showAlert).toHaveBeenCalledTimes(1)
   })
 
-  it('lets the exit through after a save has cleared the active cat', () => {
+  it('lets the exit through after a save has cleared the active cat', async () => {
     useActiveCatFlowStore.getState().setActiveCatId(CAT_ID)
     renderHook(() => useAbandonCatGuard(false))
     act(() => {
@@ -104,7 +97,7 @@ describe('useAbandonCatGuard (#304)', () => {
     expect(ui.showAlert).not.toHaveBeenCalled()
   })
 
-  it('lets a save through that navigates before the guard re-renders', () => {
+  it('lets a save through that navigates before the guard re-renders', async () => {
     // handleSave clears the id and navigates in the same tick, so the guard
     // is still armed when the router asks. It must read the id fresh and
     // repeat the navigation — a stale read would popup on every save.
@@ -120,7 +113,7 @@ describe('useAbandonCatGuard (#304)', () => {
     expect(mockRepeat).toHaveBeenCalledTimes(1)
   })
 
-  it('lets the exit through when editing an already-saved cat', () => {
+  it('lets the exit through when editing an already-saved cat', async () => {
     useActiveCatFlowStore.getState().setActiveCatId(CAT_ID)
     renderHook(() => useAbandonCatGuard(true))
 
@@ -130,7 +123,7 @@ describe('useAbandonCatGuard (#304)', () => {
     expect(ui.showAlert).not.toHaveBeenCalled()
   })
 
-  it('removing clears the abandoned cat’s boxes, absences and id — and nothing else', () => {
+  it('removing clears the abandoned cat’s boxes, absences and id — and nothing else', async () => {
     const store = useBoundingBoxStore.getState()
     store.addBox(CAT_ID, PHOTO_ID, BOX)
     store.addBox(CAT_ID, PHOTO_ID, BOX) // second box populates lastBoxes
@@ -140,7 +133,7 @@ describe('useAbandonCatGuard (#304)', () => {
     renderHook(() => useAbandonCatGuard(false))
 
     attemptLeave()
-    pressRemove()
+    await pressDialogButton('Remove progress on this cat')
 
     const after = useBoundingBoxStore.getState()
     const keysFor = (id: string) =>
@@ -166,10 +159,7 @@ describe('useAbandonCatGuard (#304)', () => {
       .getState()
       .dialog?.buttons.find((button) => button.text === 'Cancel')
     expect(cancel).toEqual(expect.objectContaining({ style: 'cancel' }))
-    await act(async () => {
-      ui.useUIStore.getState().dismissDialog()
-      await cancel?.onPress?.()
-    })
+    await pressDialogButton('Cancel')
 
     expect(useBoundingBoxStore.getState().getBoxesForCat(CAT_ID)).toHaveLength(
       1,

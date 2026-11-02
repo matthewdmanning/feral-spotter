@@ -12,7 +12,11 @@
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import { ButtonRow } from '@/src/shared/ui/molecules/ButtonRow'
-import { useUIStore, type AlertButton } from '@/src/shared/hooks/useUIStore'
+import {
+  pressDialogButton,
+  useUIStore,
+  type AlertButton,
+} from '@/src/shared/hooks/useUIStore'
 import { Modal, Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { dialogShell } from './dialogShell.styles'
@@ -44,11 +48,9 @@ export function AlertHost() {
 
   if (!dialog) return null
 
+  // Shared with tests, so they press buttons exactly as this host does.
   const press = (button: AlertButton) => {
-    // Dismiss first: an onPress that opens the next dialog (the submit flow
-    // chains two) would otherwise be wiped by this dismiss.
-    dismissDialog()
-    button.onPress?.()
+    pressDialogButton(button)
   }
 
   // Android's back button dismisses a native alert without running any
