@@ -62,8 +62,12 @@ boundary, and configure only the outcomes a test needs. Prefer the resources shi
 `clearAllMocks`/`restoreAllMocks` per file.
 
 Shared fixtures live in `src/test-utils/`: `observedCat`, `submissionPhoto`,
-`setConsent` (real consent store), `pressDialogButton`. Tests are outside
-`tsc`, so hand-written literals go stale silently; prefer the factories.
+`setConsent` (real consent store), `pressDialogButton`. Prefer the factories:
+one place to add a new required field.
+
+Tests type-check through `tsconfig.test.json` (part of `npm run typecheck`).
+A seeded store field or fake hook result that no longer exists fails there.
+Type fakes against the real return type, e.g. `ReturnType<typeof useX>`.
 
 Use React Native Testing Library's [User Event API](https://callstack.github.io/react-native-testing-library/docs/api/events/user-event)
 for presses, long presses, and typing, and await each interaction. `userEvent.setup()`

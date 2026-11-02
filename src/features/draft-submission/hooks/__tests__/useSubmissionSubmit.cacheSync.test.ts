@@ -63,7 +63,7 @@ describe('useSubmissionSubmit — handleDone cache sync (#228)', () => {
     jest.restoreAllMocks()
     jest.clearAllMocks()
     jest.spyOn(cache, 'updateSubmissionCache')
-    useUIStore.setState({ dialog: null, isSubmitting: false })
+    useUIStore.setState({ dialog: null })
     jest.mocked(uploadSubmissionMetadata).mockResolvedValue(undefined)
     useSubmissionStore.getState().clearDraft()
     usePhotoStore.setState({ photos: [], source: null, submissionId: 'sub-1' })
@@ -119,7 +119,7 @@ describe('useSubmissionSubmit — history row survives teardown', () => {
       isReady: true,
     })
     jest.clearAllMocks()
-    useUIStore.setState({ dialog: null, isSubmitting: false })
+    useUIStore.setState({ dialog: null })
     useSubmissionStore.getState().clearDraft()
     useBoundingBoxStore.getState().clearAll()
     usePhotoStore.setState({ photos: [], source: null, submissionId: 'sub-1' })

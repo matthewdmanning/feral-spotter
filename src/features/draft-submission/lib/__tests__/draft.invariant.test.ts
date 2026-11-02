@@ -106,7 +106,7 @@ const buildFullDraft = () => {
 }
 
 /** Lets zustand's persist middleware finish its async writes. */
-const flushPersist = () => new Promise((resolve) => setImmediate(resolve))
+const flushPersist = () => new Promise<void>((resolve) => setImmediate(resolve))
 
 /** Read complete JSON payloads, including unexpected draft-owned keys. */
 const readPersistedDraft = async () => {

@@ -20,7 +20,9 @@ import { pressDialogButton } from '@/src/test-utils/dialog'
  */
 const mockGetMediaLibraryPermissionsAsync = jest.fn()
 const mockRequestMediaLibraryPermissionsAsync = jest.fn()
-const mockLaunchImageLibraryAsync = jest.fn(async () => ({ canceled: true }))
+const mockLaunchImageLibraryAsync = jest.fn(async (..._args: unknown[]) => ({
+  canceled: true,
+}))
 jest.mock('expo-image-picker', () => ({
   ...jest.requireActual('expo-image-picker'),
   getMediaLibraryPermissionsAsync: (...args: unknown[]) =>
@@ -135,7 +137,7 @@ describe('useLibraryPhotoPicker permission gate — model-based test', () => {
       name: 'first tap: undetermined, user denies, Settings-recovery message shown, picker never opens',
       events: [{ type: 'TAP_NOT_DETERMINED_THEN_DENY' }],
     },
-  ] as const
+  ]
 
   journeys.forEach(({ name, events }) => {
     it(name, async () => {
@@ -151,7 +153,7 @@ describe('useLibraryPhotoPicker permission gate — model-based test', () => {
   })
 
   it('denial message offers Open Settings, wired to Linking.openSettings', async () => {
-    jest.spyOn(Linking, 'openSettings').mockImplementation(() => {})
+    jest.spyOn(Linking, 'openSettings').mockResolvedValue()
     mockGetMediaLibraryPermissionsAsync.mockResolvedValue({
       status: 'undetermined',
     })

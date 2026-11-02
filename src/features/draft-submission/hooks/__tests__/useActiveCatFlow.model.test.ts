@@ -6,6 +6,7 @@ import { useActiveCatFlow } from '@/src/features/draft-submission/hooks/useActiv
 import { useActiveCatFlowStore } from '@/src/features/draft-submission/hooks/useActiveCatFlowStore'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { observedCat } from '@/src/test-utils/catFixtures'
 
 /**
  * Model of useActiveCatFlow (ADR 0004): the seam that survives the
@@ -143,7 +144,7 @@ describe('useActiveCatFlow — model-based test', () => {
         { type: 'BOXING_COMPLETE' },
       ],
     },
-  ] as const
+  ]
 
   journeys.forEach(({ name, events }) => {
     it(name, async () => {
@@ -217,9 +218,11 @@ describe('useActiveCatFlow — model-based test', () => {
     expect(router.replace).not.toHaveBeenCalledWith('/')
   })
 
-  it('abandoning with cats already recorded lands on Cat List, not Home (#203)', async () => {
-    await act(() => {
-      useSubmissionStore.setState({ cats: [{ local_id: 'existing-cat' }] })
+  it('abandoning with cats already recorded lands on Cat List, not Home (#203)', () => {
+    act(() => {
+      useSubmissionStore.setState({
+        cats: [observedCat({ local_id: 'existing-cat' })],
+      })
     })
 
     await act(() => hook.result.current.handleAbandonPass())

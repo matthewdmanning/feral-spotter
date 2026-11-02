@@ -150,7 +150,7 @@ describe('Location picker — flow (model-based)', () => {
       name: 'Set location saves nothing until the map has a real centre',
       events: [{ type: 'SET' }, { type: 'MOVE' }, { type: 'SET' }],
     },
-  ] as const
+  ]
 
   journeys.forEach(({ name, events }) => {
     it(name, async () => {

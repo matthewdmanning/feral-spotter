@@ -19,7 +19,7 @@
     "web": "expo start --web",
     "compat": "npx rn-compatibility-checker ./package.json",
     "lint": "npx expo customize tsconfig.json && expo lint src __tests__",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.server.json",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.server.json && tsc --noEmit -p tsconfig.test.json",
     "test": "jest",
     "test:rules": "node scripts/run-rules-tests.mjs",
     "test:functions": "cd functions && npm test",

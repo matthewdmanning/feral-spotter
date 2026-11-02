@@ -65,14 +65,19 @@ const gateMachine = createMachine({
 })
 
 const baseCaptureResult: ReturnType<typeof useCameraCapture> = {
-  device: null,
+  device: undefined,
   cameraRef: { current: null },
   photoOutput: {} as never,
+  isActive: true,
+  enableLowLightBoost: false,
+  captureMode: 'single',
+  handleCameraConfigured: jest.fn(),
+  setCaptureMode: jest.fn(),
   capturedPhotos: [],
   canCapture: true,
   flashMode: 'auto',
   isTakingPhoto: false,
-  flashOverlayStyle: {},
+  flashOverlayStyle: {} as never,
   listRef: { current: null },
   renderItem: jest.fn(),
   keyExtractor: jest.fn(),
@@ -90,11 +95,14 @@ describe('CameraScreen permission/device gates — model-based test', () => {
 
   const model = createTestModel(gateMachine)
 
-  const mount = async (hasPermission: boolean, device: object | null) => {
+  const mount = (
+    hasPermission: boolean,
+    device: ReturnType<typeof useCameraCapture>['device'],
+  ) => {
     jest.mocked(useCameraPermission).mockReturnValue({
       hasPermission,
       requestPermission,
-      status: hasPermission ? 'granted' : 'not-determined',
+      status: hasPermission ? 'authorized' : 'not-determined',
       canRequestPermission: !hasPermission,
     })
     jest.mocked(useCameraCapture).mockReturnValue({
@@ -117,8 +125,8 @@ describe('CameraScreen permission/device gates — model-based test', () => {
       },
     },
     events: {
-      MOUNT_NO_PERMISSION: async () => await mount(false, null),
-      MOUNT_NO_DEVICE: async () => await mount(true, null),
+      MOUNT_NO_PERMISSION: () => mount(false, undefined),
+      MOUNT_NO_DEVICE: () => mount(true, undefined),
       PRESS_ALLOW: async () =>
         await userEvent.press(screen.getByText('Allow Camera')),
       PRESS_OPEN_SETTINGS: async () =>
@@ -152,7 +160,7 @@ describe('CameraScreen permission/device gates — model-based test', () => {
       name: 'Go Back closes the camera screen',
       events: [{ type: 'MOUNT_NO_DEVICE' }, { type: 'PRESS_GO_BACK' }],
     },
-  ] as const
+  ]
 
   journeys.forEach(({ name, events }) => {
     it(name, async () => {

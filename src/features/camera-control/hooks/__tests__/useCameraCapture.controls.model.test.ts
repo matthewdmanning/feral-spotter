@@ -110,7 +110,7 @@ describe('useCameraCapture — flash-mode cycle (model-based test)', () => {
         { type: 'PRESS_FLASH' },
       ],
     },
-  ] as const
+  ]
 
   journeys.forEach(({ name, events }) => {
     it(name, async () => {
@@ -163,7 +163,7 @@ describe('useCameraCapture — camera-flip toggle (model-based test)', () => {
       name: 'two presses flips back to the back camera',
       events: [{ type: 'PRESS_FLIP' }, { type: 'PRESS_FLIP' }],
     },
-  ] as const
+  ]
 
   journeys.forEach(({ name, events }) => {
     it(name, async () => {

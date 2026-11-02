@@ -7,6 +7,7 @@ import {
   uploadSubmissionMetadata,
   uploadSubmissionPhoto,
 } from '@/src/features/draft-submission/lib/upload/firebaseUpload'
+import { isDraftBusy } from '@/src/features/draft-submission/lib/draft'
 import { discardDraftAndGoHome } from '@/src/features/draft-submission/hooks/confirmResetSubmission'
 import { useSubmissionSubmit } from '@/src/features/draft-submission/hooks/useSubmissionSubmit'
 import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
@@ -76,7 +77,7 @@ beforeEach(async () => {
   // The upload never finishes on its own; each test decides when it lands.
   jest.mocked(uploadSubmissionPhoto).mockReturnValue(new Promise(() => {}))
   jest.mocked(uploadSubmissionMetadata).mockResolvedValue(undefined)
-  useUIStore.setState({ dialog: null, isSubmitting: false })
+  useUIStore.setState({ dialog: null })
   useSubmissionStore.getState().clearDraft()
   usePhotoStore.setState({ photos: [], source: null, submissionId: 'sub-1' })
   usePhotoStore.getState().addPhoto(pendingPhoto)
@@ -138,7 +139,7 @@ it('does not send when the draft is cleared during the wait', async () => {
   expect((await cache.getSubmissionCache('cache-1'))?.status).toBe(
     'In Progress',
   )
-  expect(useUIStore.getState().isSubmitting).toBe(false)
+  expect(isDraftBusy()).toBe(false)
 })
 
 it('marks the row Failed and unlocks when the send is rejected', async () => {
@@ -150,8 +151,8 @@ it('marks the row Failed and unlocks when the send is rejected', async () => {
     await confirmSubmit()
   })
   expect((await cache.getSubmissionCache('cache-1'))?.status).toBe('Failed')
-  expect(useUIStore.getState().dialog?.title).toBe('Sighting Failed')
-  expect(useUIStore.getState().isSubmitting).toBe(false)
+  expect(useUIStore.getState().dialog?.title).toBe('Submission Failed')
+  expect(isDraftBusy()).toBe(false)
   // The draft is intact for the retry the message promises.
   expect(usePhotoStore.getState().photos).toHaveLength(1)
 })

@@ -196,7 +196,7 @@ describe('Submission Details hardware Back — model-based test', () => {
         { type: 'BACK' },
       ],
     },
-  ] as const
+  ]
 
   journeys.forEach(({ name, events }) => {
     it(name, async () => {

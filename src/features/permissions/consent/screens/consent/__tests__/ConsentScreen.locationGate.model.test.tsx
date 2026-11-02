@@ -285,7 +285,7 @@ describe('ConsentScreen location gate — model-based test', () => {
       name: 'Don’t allow, then Settings reports LIMITED, gate clears to sign-in',
       events: [{ type: 'AGREE_DENIED' }, { type: 'FOREGROUND_LIMITED' }],
     },
-  ] as const
+  ]
 
   journeys.forEach(({ name, events }) => {
     it(name, async () => {

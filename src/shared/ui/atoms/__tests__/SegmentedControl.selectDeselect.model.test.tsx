@@ -77,7 +77,7 @@ describe('SegmentedControl select/deselect — model-based test', () => {
       name: 'select, deselect, then select the other option',
       events: [{ type: 'TAP_A' }, { type: 'TAP_A' }, { type: 'TAP_B' }],
     },
-  ] as const
+  ]
 
   journeys.forEach(({ name, events }) => {
     it(name, async () => {
