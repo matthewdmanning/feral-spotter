@@ -44,12 +44,12 @@ interface AttributeConfig<
 export const COAT_GROUPS: {
   value: Exclude<CatPattern, 'unknown'>
   label: string
-  colors: AttributeOption<Exclude<CatColor, 'unknown'>>[]
+  children: AttributeOption<Exclude<CatColor, 'unknown'>>[]
 }[] = [
   {
     value: 'tabby',
     label: 'Tabby',
-    colors: [
+    children: [
       { value: 'mackerel', label: 'Striped Tabby' },
       { value: 'classic', label: 'Swirled Tabby' },
       { value: 'spotted', label: 'Spotted Tabby' },
@@ -60,7 +60,7 @@ export const COAT_GROUPS: {
   {
     value: 'solid',
     label: 'Solid',
-    colors: [
+    children: [
       { value: 'black', label: 'Black' },
       { value: 'blue', label: 'Blue / Gray' },
       { value: 'white', label: 'White' },
@@ -69,7 +69,7 @@ export const COAT_GROUPS: {
   {
     value: 'bicolor',
     label: 'Two-Color',
-    colors: [
+    children: [
       { value: 'low_white', label: 'Mitted/Locket' },
       { value: 'medium_white', label: 'Tuxedo' },
       { value: 'high_white', label: 'Harlequin/Van' },
@@ -78,7 +78,7 @@ export const COAT_GROUPS: {
   {
     value: 'calico_tortie',
     label: 'Calico & Tortie',
-    colors: [
+    children: [
       { value: 'tortoiseshell', label: 'Tortoiseshell' },
       { value: 'calico', label: 'Calico' },
       { value: 'dilute_tortie_calico', label: 'Dilute Tortie/Calico' },
@@ -87,7 +87,7 @@ export const COAT_GROUPS: {
   {
     value: 'colorpoint',
     label: 'Siamese-Style',
-    colors: [
+    children: [
       { value: 'seal_point', label: 'Seal Point' },
       { value: 'lynx_point', label: 'Lynx Point' },
     ],
@@ -160,7 +160,7 @@ export const CAT_ATTRIBUTES = [
     backendKey: 'color',
     label: 'Color',
     default: 'unknown',
-    options: COAT_GROUPS.flatMap((g) => g.colors),
+    options: COAT_GROUPS.flatMap((g) => g.children),
   }),
   attribute({
     key: 'sex',
