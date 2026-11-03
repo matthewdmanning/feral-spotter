@@ -8,7 +8,7 @@
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
-import { cancelPhotoUpload } from '@/src/lib/upload/uploadNewPhoto'
+import { cancelPhotoUpload } from '@/src/lib/upload/draftUploads'
 import { deleteSubmissionPhoto } from '@/src/lib/upload/firebaseUpload'
 
 export function removePhotoFromDraft(localId: string): void {

@@ -5,7 +5,10 @@ jest.mock('@/src/lib/upload/firebaseUpload', () => ({
   deleteSubmissionUploads: jest.fn(),
 }))
 jest.mock('@/src/lib/auth', () => ({
-  authProvider: { getCurrentUser: () => null },
+  authProvider: {
+    getCurrentUser: () => null,
+    onAuthStateChanged: () => () => {},
+  },
 }))
 
 it('defers draft I/O until startup and reads the saved photo pool only once', async () => {

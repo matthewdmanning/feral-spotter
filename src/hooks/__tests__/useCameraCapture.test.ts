@@ -1,4 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native'
+import { useAuthStore } from '@/src/lib/auth/authStore'
 import { router } from 'expo-router'
 import { AppState } from 'react-native'
 import { useCameraCapture } from '../useCameraCapture'
@@ -316,6 +317,8 @@ describe('useCameraCapture handleTakePhoto', () => {
     expect(mockAssetCreate).not.toHaveBeenCalled()
   })
   it('hands each captured photo to the uploader', async () => {
+    // The upload facade reads the signed-in user from the auth store.
+    useAuthStore.setState({ user: { uid: 'test-uid' } as never, isReady: true })
     mockCapturePhoto.mockResolvedValueOnce({
       width: 4032,
       height: 3024,

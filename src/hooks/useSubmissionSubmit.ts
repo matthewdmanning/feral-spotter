@@ -10,7 +10,7 @@
  * accuracy warning icon stays informational, not a submit gate (ADR-0002/
  * 0003) — the user can submit anyway. Zero cats and zero photos are hard
  * blocks instead (#265 product decision). Photos still uploading in the
- * background are waited out silently (waitForUploads below), not surfaced
+ * background are waited out silently (whenUploadsSettled), not surfaced
  * as a popup — see its comment for why.
  *
  * One submit runs at a time: `useUIStore.isSubmitting` is the lock, and the
@@ -57,7 +57,10 @@ import {
   finalizeSubmissionPhotoMetadata,
   uploadSubmissionMetadata,
 } from '@/src/lib/upload/firebaseUpload'
-import { retryPendingUploads } from '@/src/lib/upload/uploadNewPhoto'
+import {
+  syncPhotoUploads,
+  whenUploadsSettled,
+} from '@/src/lib/upload/draftUploads'
 import type { SubmissionPhoto } from '@/src/types'
 import { validateCatCount, validatePhotos } from '@/src/utils/validation'
 import { router } from 'expo-router'
@@ -78,9 +81,9 @@ export interface SubmissionSubmitResult {
 // can act on (there's no "retry" for them to do — the SDK is already
 // retrying), so this waits silently instead of nagging with a popup. Only
 // a genuine stall — no upload progress landing within the timeout — is
-// worth surfacing, via the "Photos Still Uploading" alert.
+// worth surfacing, via the "Photos Still Uploading" alert. A failed upload
+// (nothing left uploading, photo still not uploaded) surfaces at once.
 const UPLOAD_WAIT_TIMEOUT_MS = 30_000
-const UPLOAD_WAIT_POLL_MS = 500
 
 // #377: both failure paths leave every draft store intact, so both messages
 // say so — a user who just lost 30 seconds has no other reason to believe it.
@@ -91,18 +94,6 @@ const UPLOAD_STALLED_MESSAGE =
   'Your photos did not finish uploading. This Submission is saved on this device. Check your connection, then tap Finished! to send it again.'
 const SUBMIT_FAILED_MESSAGE =
   'The Submission did not reach the server. It is saved on this device. Tap Finished! to send it again.'
-
-async function waitForUploads(): Promise<void> {
-  const deadline = Date.now() + UPLOAD_WAIT_TIMEOUT_MS
-  while (usePhotoStore.getState().photos.some((p) => !p.uploaded)) {
-    if (Date.now() >= deadline) {
-      throw new Error(
-        `Upload wait timed out after ${UPLOAD_WAIT_TIMEOUT_MS} ms`,
-      )
-    }
-    await new Promise((resolve) => setTimeout(resolve, UPLOAD_WAIT_POLL_MS))
-  }
-}
 
 /** #265 hard blocks, read from the stores as they are now. */
 function hasRequiredContent(): boolean {
@@ -272,17 +263,13 @@ async function submitCurrentDraft(userId: string | undefined): Promise<void> {
   setSubmitting(true)
   let cacheId: string | null = null
   try {
-    if (userId && startedFor) {
-      const { photos, updatePhoto } = usePhotoStore.getState()
-      retryPendingUploads(photos, userId, startedFor, updatePhoto)
-    }
     // A submission that "succeeds" while silently missing photos is exactly
     // the P0 map #31 defines — this still guards against that, just without
-    // a popup the user can't act on (see waitForUploads' comment).
-    try {
-      await waitForUploads()
-    } catch (err) {
-      console.error('[useSubmissionSubmit] waitForUploads', err)
+    // a popup the user can't act on (see UPLOAD_WAIT_TIMEOUT_MS).
+    syncPhotoUploads()
+    const outcome = await whenUploadsSettled(UPLOAD_WAIT_TIMEOUT_MS)
+    if (outcome !== 'uploaded') {
+      console.error('[useSubmissionSubmit] uploads', outcome)
       showError('Photos Still Uploading', UPLOAD_STALLED_MESSAGE)
       return
     }

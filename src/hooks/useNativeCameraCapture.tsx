@@ -15,7 +15,6 @@ import { useCapturedPhotoWorkflow } from '@/src/hooks/useCapturedPhotoWorkflow'
 import { useConsentStore } from '@/src/hooks/useConsentStore'
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'
 import { captureEvent, EVENTS } from '@/src/lib/analytics/analytics'
-import { useAuth } from '@/src/lib/auth/useAuth'
 import type { ImagePostprocessor } from '@/src/lib/camera/pipeline'
 import { startLocationCapture } from '@/src/lib/location'
 import type {
@@ -54,8 +53,6 @@ export function useNativeCameraCapture(
   const performanceChecks = useSettingsStore(
     (s) => s.settings.camera_performance_checks === true,
   )
-
-  const { user } = useAuth()
 
   const cameraRef = useRef<NativeIdentificationCameraRef>(null)
   const cameraOpenedAt = useRef<number | null>(null)
@@ -215,7 +212,7 @@ export function useNativeCameraCapture(
           : {}),
       })
 
-      startPhotoUpload(submission, user?.uid)
+      startPhotoUpload()
     } catch (error) {
       console.error('[useNativeCameraCapture] capture:', error)
       captureEvent(EVENTS.PHOTO_CAPTURE_FAILED, {
@@ -258,7 +255,6 @@ export function useNativeCameraCapture(
     subjectMetering,
     triggerFlash,
     canCapture,
-    user,
   ])
 
   const applySubjectRegion = useCallback(

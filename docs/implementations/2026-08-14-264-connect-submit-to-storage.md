@@ -189,3 +189,8 @@ Tests: `useSubmissionSubmit.inFlight.test.ts` (lock, retry, cleared draft, Faile
 
 **Purpose:** Design review found three photo bugs: a library pick in a format storage.rules refuses (e.g. webp, gif) sat un-uploaded with no message; the camera's discard cleared only the photo store, leaving the photo's boxes and cat references; and a removed photo's upload kept running.
 **Change:** `utils/photoFormat.ts` holds the accepted formats; the library picker skips others and says so. `removePhotoFromDraft` (hooks) is the one removal path for annotate and camera: cancels the photo's upload (`cancelPhotoUpload`), clears its boxes and cat references, removes it, and best-effort deletes its uploaded copy (`deleteSubmissionPhoto`). ADR-0006 amended: its Settings "Clear Draft" caller was removed in `9c2084a`. Tests: `removePhotoFromDraft.test.ts`, format case in `useLibraryPhotoPicker.selection.test.ts`.
+
+## 2026-11-03 — refactor (upload facade)
+
+**Purpose:** Five call sites each assembled uid, Submission id and `updatePhoto` and had to upload the store's slotted copy (one didn't); Submit polled the store for 30 s, so a failed upload surfaced only at the timeout.
+**Change:** `lib/upload/draftUploads.ts`: `syncPhotoUploads()` (no arguments; reads auth store and photo store), `cancelPhotoUpload(localId)`, `cancelPhotoUploads()`, `whenUploadsSettled(timeoutMs)` → `'uploaded' | 'failed' | 'timeout'`, event-driven from the photo store and a new queue idle signal. `uploadNewPhoto.ts` is now the queue only; `retryPendingUploads` and the Submit poll are gone. Camera, library, Details, Submit and teardown use the facade. Test: `draftUploads.test.ts` (slotted copy, immediate failure, timeout).

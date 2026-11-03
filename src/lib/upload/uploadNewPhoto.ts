@@ -1,21 +1,15 @@
 /**
- * Background upload for a just-captured or just-picked photo, called right
- * after it's added to usePhotoStore. Updates the photo's uploaded/progress/
- * cloud_storage_* fields via the caller-supplied updatePhoto — callers pass
- * their own usePhotoStore((s) => s.updatePhoto) selector, so this file never
- * imports the store and stays easy to drive from a test. Failures are logged
- * and leave `uploaded: false` so useSubmissionSubmit's pre-submit guard
- * catches them.
+ * The upload queue under lib/upload/draftUploads.ts. App code calls the
+ * draft-level facade there; this file knows nothing about drafts or stores.
+ * Updates a photo's uploaded/progress/cloud_storage_* fields through the
+ * supplied updatePhoto. Failures are logged and leave `uploaded: false`.
  *
  * Uploads are queued rather than started immediately. A burst calls this once
  * per frame, and an uncapped fan-out puts every frame's upload in competition
  * with the capture path and with each other on a slow connection.
  *
- * A failed upload is not retried on its own. `retryPendingUploads` re-queues
- * every photo still `uploaded: false`: Submission Details calls it on open
- * (covers a draft restored after a kill) and Submit calls it before waiting,
- * so a failure is recoverable without re-adding the photo. A photo already
- * queued or in flight is never queued twice.
+ * A failed upload is not retried on its own; the facade re-queues it. A
+ * photo already queued or in flight is never queued twice.
  */
 import { uploadSubmissionPhoto } from '@/src/lib/upload/firebaseUpload'
 import type { SubmissionPhoto } from '@/src/types'
@@ -52,6 +46,22 @@ let activeUploadCount = 0
 let generation = 0
 // Photos removed from their draft: their upload must not write a result.
 const cancelled = new Set<string>()
+const idleListeners = new Set<() => void>()
+
+/** True when nothing is queued or in flight. */
+export function isQueueIdle(): boolean {
+  return pending.size === 0
+}
+
+/** Calls `listener` each time an upload ends or is dropped. */
+export function onQueueChange(listener: () => void): () => void {
+  idleListeners.add(listener)
+  return () => idleListeners.delete(listener)
+}
+
+function notifyQueueChange(): void {
+  idleListeners.forEach((listener) => listener())
+}
 
 function startNextUpload(): void {
   if (activeUploadCount >= MAX_CONCURRENT_UPLOADS) return
@@ -63,6 +73,7 @@ function startNextUpload(): void {
     activeUploadCount -= 1
     pending.delete(next.localId)
     startNextUpload()
+    notifyQueueChange()
   })
 }
 
@@ -107,18 +118,6 @@ export function uploadNewPhoto(
   startNextUpload()
 }
 
-/** Re-queues every photo not yet uploaded. Safe to call repeatedly. */
-export function retryPendingUploads(
-  photos: SubmissionPhoto[],
-  uid: string,
-  submissionId: string,
-  updatePhoto: (localId: string, patch: Partial<SubmissionPhoto>) => void,
-): void {
-  for (const photo of photos) {
-    if (!photo.uploaded) uploadNewPhoto(photo, uid, submissionId, updatePhoto)
-  }
-}
-
 /**
  * Drops one photo's queued upload, or detaches it if in flight, so a
  * removed photo's result never reaches the store.
@@ -129,6 +128,7 @@ export function cancelPhotoUpload(localId: string): void {
   if (index >= 0) {
     queued.splice(index, 1)
     pending.delete(localId)
+    notifyQueueChange()
   }
 }
 
@@ -142,4 +142,5 @@ export function cancelQueuedUploads(): void {
   generation += 1
   for (const item of queued) pending.delete(item.localId)
   queued.length = 0
+  notifyQueueChange()
 }

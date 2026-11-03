@@ -16,7 +16,6 @@ import { useIosIdentificationCapture } from '@/src/hooks/useIosIdentificationCap
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'
 import { useConsentStore } from '@/src/hooks/useConsentStore'
 import { captureEvent, EVENTS } from '@/src/lib/analytics/analytics'
-import { useAuth } from '@/src/lib/auth/useAuth'
 import { startLocationCapture } from '@/src/lib/location'
 import type { SubmissionPhoto } from '@/src/types'
 import { type FlashListRef } from '@shopify/flash-list'
@@ -69,8 +68,6 @@ export function useCameraCapture(): CameraCaptureResult {
     (s) => s.settings.camera_performance_checks === true,
   )
   const improvedCapture = Platform.OS === 'android' && improvedCaptureSetting
-
-  const { user } = useAuth()
 
   const {
     isActive,
@@ -209,7 +206,7 @@ export function useCameraCapture(): CameraCaptureResult {
             : {}),
         })
 
-        startPhotoUpload(submission, user?.uid)
+        startPhotoUpload()
       } while (
         captureMode === 'burst' &&
         !burstStopRequested.current &&
@@ -275,7 +272,6 @@ export function useCameraCapture(): CameraCaptureResult {
     startPhotoUpload,
     triggerFlash,
     canCapture,
-    user,
   ])
 
   useEffect(() => {

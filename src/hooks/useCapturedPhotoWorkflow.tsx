@@ -26,7 +26,7 @@ import {
   releaseCapturedPhotoFile,
   retainCapturedPhotoFile,
 } from '@/src/lib/camera/capturedPhotoFiles'
-import { uploadNewPhoto } from '@/src/lib/upload/uploadNewPhoto'
+import { syncPhotoUploads } from '@/src/lib/upload/draftUploads'
 import type { SubmissionPhoto } from '@/src/types'
 import {
   buildSubmissionPhotoFromCapture,
@@ -63,7 +63,6 @@ export function useCapturedPhotoWorkflow({
   )
 
   const addPhoto = usePhotoStore((s) => s.addPhoto)
-  const updatePhoto = usePhotoStore((s) => s.updatePhoto)
   const photoSource = usePhotoStore((s) => s.source)
   const draftPhase = useDraftStartupStore((s) => s.phase)
   const canCapture =
@@ -140,23 +139,10 @@ export function useCapturedPhotoWorkflow({
   )
 
   /**
-   * Starts the background upload for a photo persistCapturedPhoto returned.
-   * Kept separate so the caller supplies the authenticated user without this
-   * hook reaching for auth state it does not otherwise need.
+   * Starts the background upload for every photo persistCapturedPhoto has
+   * stored. The facade reads the user, the draft and each slotted copy.
    */
-  const startPhotoUpload = useCallback(
-    (submission: SubmissionPhoto, uid: string | undefined) => {
-      const { submissionId } = usePhotoStore.getState()
-      if (!uid || !submissionId) {
-        console.error(
-          '[useCapturedPhotoWorkflow] missing uid/submissionId for upload',
-        )
-        return
-      }
-      uploadNewPhoto(submission, uid, submissionId, updatePhoto)
-    },
-    [updatePhoto],
-  )
+  const startPhotoUpload = useCallback(() => syncPhotoUploads(), [])
 
   /**
    * Writes every collected capture to the gallery. Called once after a capture
