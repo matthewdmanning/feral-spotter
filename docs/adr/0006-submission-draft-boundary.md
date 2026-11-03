@@ -109,3 +109,17 @@ and its **Clear Draft** handler. The "escape pod" paragraph and the
 now has one caller, `discardDraftAndGoHome` (`hooks/confirmResetSubmission.ts`),
 used by Reset and by the create screen's Back → Discard Draft. Both refuse
 while a submit runs.
+
+## Amendment 2026-11-03: the boundary owns the whole lifecycle
+
+`draft.ts` now owns submit as well as teardown. `submitDraft()` returns a
+`SubmitOutcome` (`sent`, `busy`, `incomplete`, `uploads-unfinished`,
+`superseded`, `failed`) and runs validation, the upload wait, the send
+(`send.ts`), the status moves and the teardown under one lock.
+`discardDraft()` refuses while that lock is held. The UI reads the lock
+through `isDraftBusy()`/`subscribeDraftBusy()`; `useUIStore` no longer
+carries it. Status moves go through `transitionSubmission()`, which refuses
+any move outside In Progress/Failed → Sending → Submitted/Failed. The
+earlier rule that Submit's validation, upload wait and status transitions
+stay with the caller is superseded; navigation still stays with the caller
+(#189).

@@ -5,22 +5,21 @@
 
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'
-import { showAlert, showError, useUIStore } from '@/src/hooks/useUIStore'
-import { discardDraft } from '@/src/lib/submission/draft'
+import { showAlert, showError } from '@/src/hooks/useUIStore'
+import { discardDraft, isDraftBusy } from '@/src/lib/submission/draft'
 import { initializeDraft } from '@/src/hooks/useDraftStartupStore'
 import { router } from 'expo-router'
 
 /**
- * Clear the whole draft and return Home. Refused while a submit is running:
- * clearing the photo pool mid-send would send the cats with no photos.
- * Stays on the screen with a message if storage fails, so the user is not
- * told the draft is gone when it is not.
+ * Clear the whole draft and return Home. discardDraft() refuses while a
+ * submit is running, and then nothing happens here either. Stays on the
+ * screen with a message if storage fails, so the user is not told the
+ * draft is gone when it is not.
  */
 export async function discardDraftAndGoHome(): Promise<void> {
-  if (useUIStore.getState().isSubmitting) return
   try {
     await initializeDraft()
-    await discardDraft()
+    if (!(await discardDraft())) return
   } catch (error) {
     console.error('[discardDraftAndGoHome]', error)
     showError(
@@ -37,7 +36,7 @@ export async function discardDraftAndGoHome(): Promise<void> {
  * copies, so when "Keep Photos on Device" saved some, the dialog says they stay.
  */
 export function confirmResetSubmission(): void {
-  if (useUIStore.getState().isSubmitting) return
+  if (isDraftBusy()) return
   const keptInCameraRoll =
     useSettingsStore.getState().settings.keep_photos_on_device !== false &&
     usePhotoStore.getState().source === 'camera'

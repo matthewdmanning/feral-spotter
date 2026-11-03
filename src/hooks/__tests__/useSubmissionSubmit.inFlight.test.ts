@@ -1,4 +1,5 @@
 import { useUIStore } from '@/src/hooks/useUIStore'
+import { useAuthStore } from '@/src/lib/auth/authStore'
 import { act, renderHook } from '@testing-library/react-native'
 
 import * as cache from '@/src/lib/cache/submissionCache'
@@ -38,9 +39,6 @@ jest.mock('@/src/lib/upload/firebaseUpload', () => ({
   uploadSubmissionPhoto: jest.fn(),
   deleteSubmissionUploads: jest.fn().mockResolvedValue(undefined),
 }))
-jest.mock('@/src/lib/auth/useAuth', () => ({
-  useAuth: () => ({ user: { uid: 'uid-owner' } }),
-}))
 jest.mock('@/src/lib/auth', () => ({
   authProvider: {
     getCurrentUser: () => ({ uid: 'uid-owner' }),
@@ -75,6 +73,7 @@ function confirmSubmit(): Promise<void> | void {
 }
 
 beforeEach(async () => {
+  useAuthStore.setState({ user: { uid: 'uid-owner' } as never, isReady: true })
   jest.useFakeTimers()
   jest.clearAllMocks()
   // The upload never finishes on its own; each test decides when it lands.
