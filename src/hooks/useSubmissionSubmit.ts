@@ -72,8 +72,9 @@ function report(outcome: SubmitOutcome): void {
     case 'failed':
       showError('Submission Failed', SUBMIT_FAILED_MESSAGE)
       return
-    case 'busy':
-    case 'superseded':
+    // 'busy' and 'superseded' need no message: another submit is running,
+    // or the draft it started for is gone.
+    default:
       return
   }
 }
