@@ -28,12 +28,6 @@ jest.mock('expo-crypto', () => ({
   randomUUID: jest.fn(() => 'cat-1'),
 }))
 
-jest.mock('expo-secure-store', () => ({
-  getItemAsync: jest.fn(),
-  setItemAsync: jest.fn(),
-  deleteItemAsync: jest.fn(),
-}))
-
 jest.mock('posthog-react-native', () => ({
   usePostHog: () => null,
 }))
