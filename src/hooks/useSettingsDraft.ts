@@ -1,29 +1,21 @@
 /**
  * hooks/useSettingsDraft.ts
- * Manages the settings screen draft pattern and password flow.
+ * Manages the settings screen draft pattern.
  * Screen receives everything via this hook — no business logic in the component.
  */
 
-import { showAlert, showError, showSuccess } from '@/src/hooks/useUIStore'
-import { useState, useEffect } from 'react'
+import { showAlert, showSuccess } from '@/src/hooks/useUIStore'
+import { useState } from 'react'
 
 import { router } from 'expo-router'
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'
-import { hasPassword, removePassword, verifyPassword } from '@/src/utils/api'
 import type { AppSettings } from '@/src/hooks/useSettingsStore'
 
 export interface SettingsDraftResult {
   draft: AppSettings
   patch: (key: keyof AppSettings, value: unknown) => void
-  passwordConfigured: boolean
-  newPassword: string
-  confirmPassword: string
-  isVerifying: boolean
-  setNewPassword: (v: string) => void
-  setConfirmPassword: (v: string) => void
-  handleSave: () => Promise<void>
+  handleSave: () => void
   handleDiscard: () => void
-  handleRemovePassword: () => Promise<void>
 }
 
 export function useSettingsDraft(): SettingsDraftResult {
@@ -31,53 +23,11 @@ export function useSettingsDraft(): SettingsDraftResult {
   const updateSettings = useSettingsStore((s) => s.updateSettings)
 
   const [draft, setDraft] = useState<AppSettings>({ ...savedSettings })
-  const [passwordConfigured, setPasswordConfigured] = useState(false)
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [isVerifying, setIsVerifying] = useState(false)
-
-  useEffect(() => {
-    let active = true
-    hasPassword()
-      .then((configured) => {
-        if (active) setPasswordConfigured(configured)
-      })
-      .catch((error) => console.error('[useSettingsDraft] hasPassword', error))
-    return () => {
-      active = false
-    }
-  }, [])
 
   const patch = (key: keyof AppSettings, value: unknown) =>
     setDraft((d) => ({ ...d, [key]: value }))
 
-  const handleSave = async () => {
-    if (newPassword) {
-      if (newPassword !== confirmPassword) {
-        showError('Error', 'Passwords do not match')
-        return
-      }
-      if (newPassword.length < 6) {
-        showError('Error', 'Password must be at least 6 characters')
-        return
-      }
-      setIsVerifying(true)
-      let valid = false
-      try {
-        valid = await verifyPassword(newPassword)
-      } catch (error) {
-        console.error('[useSettingsDraft] verifyPassword', error)
-      } finally {
-        setIsVerifying(false)
-      }
-      if (!valid) {
-        showError('Error', 'Invalid password')
-        return
-      }
-      setPasswordConfigured(true)
-      setNewPassword('')
-      setConfirmPassword('')
-    }
+  const handleSave = () => {
     updateSettings(draft)
     showSuccess('Saved', 'Settings saved')
     router.back()
@@ -91,35 +41,11 @@ export function useSettingsDraft(): SettingsDraftResult {
         style: 'destructive',
         onPress: () => {
           setDraft({ ...savedSettings })
-          setNewPassword('')
-          setConfirmPassword('')
           router.back()
         },
       },
     ])
   }
 
-  const handleRemovePassword = async () => {
-    try {
-      await removePassword()
-      setPasswordConfigured(false)
-    } catch (error) {
-      console.error('[useSettingsDraft] removePassword', error)
-      showError('Error', 'Could not remove the password. Try again.')
-    }
-  }
-
-  return {
-    draft,
-    patch,
-    passwordConfigured,
-    newPassword,
-    confirmPassword,
-    isVerifying,
-    setNewPassword,
-    setConfirmPassword,
-    handleSave,
-    handleDiscard,
-    handleRemovePassword,
-  }
+  return { draft, patch, handleSave, handleDiscard }
 }
