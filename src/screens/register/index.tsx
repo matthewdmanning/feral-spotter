@@ -1,11 +1,10 @@
 import { showAlert } from '@/src/hooks/useUIStore'
-import { useCallback, useState } from 'react'
+import { useState } from 'react'
 import { View, Text } from 'react-native'
-import { router } from 'expo-router'
 import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { AppButton } from '@/src/components/atoms/AppButton'
 import { TextField } from '@/src/components/atoms/TextField'
-import { nextConsentRoute } from '@/src/hooks/consentFlow'
+import { useAuthAttempt } from '@/src/hooks/useAuthAttempt'
 import { useAuth } from '@/src/lib/auth/useAuth'
 import { validateRegistration } from '@/src/utils/validation'
 import { styles } from './index.styles'
@@ -15,27 +14,20 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
-  const [busy, setBusy] = useState(false)
+  const { busy, attempt } = useAuthAttempt()
 
-  const handleRegister = useCallback(async () => {
+  const handleRegister = () => {
     const problem = validateRegistration(email, password, confirm)
     if (problem) {
       showAlert(problem.title, problem.message)
       return
     }
-    setBusy(true)
-    try {
-      await registerWithEmail(email.trim(), password)
-      router.replace(nextConsentRoute())
-    } catch (err) {
-      console.error('[register] failed:', err)
-      setBusy(false)
-      showAlert(
-        'Registration failed',
-        'Could not create the account. Try a different email.',
-      )
-    }
-  }, [email, password, confirm, registerWithEmail])
+    void attempt(() => registerWithEmail(email.trim(), password), {
+      tag: '[register]',
+      title: 'Registration failed',
+      message: 'Could not create the account. Try a different email.',
+    })
+  }
 
   return (
     <View style={styles.root}>
