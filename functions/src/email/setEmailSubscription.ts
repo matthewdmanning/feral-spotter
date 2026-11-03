@@ -13,7 +13,7 @@ export interface EmailSubscriptionRequest {
 /**
  * Opt the signed-in user's own address in or out. The address comes from the
  * verified ID token, never from the request, so a caller cannot subscribe
- * anyone else. Unsubscribe also needs a verified address (see below).
+ * anyone else.
  */
 export async function setEmailSubscription(
   { authorization, body }: EmailSubscriptionRequest,
@@ -37,13 +37,13 @@ export async function setEmailSubscription(
     await provider.subscribe(claims.email, {
       emailVerified: claims.email_verified === true,
     })
-  } else if (claims.email_verified === true) {
+  } else {
+    // Verified or not: an account has exactly one address, so the token's
+    // address is the caller's own list entry. An unverified opt-out must
+    // land, or a later confirmation of the earlier `pending` signup would
+    // subscribe someone who opted out. This only stops email; it never
+    // deletes the account.
     await provider.unsubscribe(claims.email)
   }
-  // An unverified address may not be the caller's: anyone can register an
-  // email/password account with someone else's address. Unsubscribing it
-  // would act on that person's list entry, so it is skipped. Nothing is
-  // lost for a real owner: an unverified signup stays `pending` and gets
-  // no list mail until they confirm (ADR-0007).
   return { status: 204 }
 }
