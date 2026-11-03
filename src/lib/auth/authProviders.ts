@@ -1,8 +1,5 @@
 import { getAppVersion, isVersionReleased } from '@/src/utils/appVersion'
 
-// Re-exported: callers predating utils/appVersion.ts import them from here.
-export { getAppVersion, isVersionReleased }
-
 /**
  * The federated identity providers the app can sign in with. Email/password
  * sign-in is deliberately not in this list — it is a separate, non-federated

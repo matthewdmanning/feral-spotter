@@ -1,7 +1,4 @@
 export type * from './Api'
 export type * from './BoundingBox'
 export type * from './Cat'
-export type * from './Location'
 export type * from './Photo'
-export type * from './Time'
-export type * from './Validation'

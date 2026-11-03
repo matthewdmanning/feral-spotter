@@ -15,7 +15,6 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import type { LocationType, TimeType } from '@/src/types'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -77,8 +76,6 @@ export interface CachedPhoto {
 export interface CacheMetadata {
   location_method: LocationMethod
   time_method: TimeMethod
-  location_type?: LocationType
-  time_type?: TimeType
   address?: string
   manual_time?: string // ISO string, set when time_method === 'manual'
   captured_at?: string // ISO string, set for a Library pick with trusted EXIF DateTime
