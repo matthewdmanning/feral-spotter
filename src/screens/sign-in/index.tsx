@@ -1,12 +1,12 @@
 import { showAlert } from '@/src/hooks/useUIStore'
-import { useCallback, useState } from 'react'
+import { useState } from 'react'
 import { View, Text } from 'react-native'
 import { router } from 'expo-router'
 import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { AppButton } from '@/src/components/atoms/AppButton'
 import { TextButton } from '@/src/components/atoms/TextButton'
 import { TextField } from '@/src/components/atoms/TextField'
-import { nextConsentRoute } from '@/src/hooks/consentFlow'
+import { useAuthAttempt } from '@/src/hooks/useAuthAttempt'
 import { useAuth } from '@/src/lib/auth/useAuth'
 import {
   FEDERATED_PROVIDERS,
@@ -15,57 +15,30 @@ import {
 } from '@/src/lib/auth/authProviders'
 import { styles } from './index.styles'
 
-// A user dismissing a provider sheet is not a failure — don't alert.
-const isCancellation = (err: unknown) =>
-  err instanceof Error && err.message === 'SIGN_IN_CANCELLED'
-
 export default function SignInScreen() {
   const { signInWithEmail, signInWithProvider } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [busy, setBusy] = useState(false)
+  const { busy, attempt } = useAuthAttempt()
 
-  const advance = () => router.replace(nextConsentRoute())
-
-  const handleEmailSignIn = useCallback(async () => {
+  const handleEmailSignIn = () => {
     if (!email.trim() || !password) {
       showAlert('Missing details', 'Enter your email and password.')
       return
     }
-    setBusy(true)
-    try {
-      await signInWithEmail(email.trim(), password)
-      advance()
-    } catch (err) {
-      console.error('[sign-in] email failed:', err)
-      showAlert(
-        'Sign-in failed',
-        'Check your email and password, then try again.',
-      )
-    } finally {
-      setBusy(false)
-    }
-  }, [email, password, signInWithEmail])
+    void attempt(() => signInWithEmail(email.trim(), password), {
+      tag: '[sign-in] email',
+      title: 'Sign-in failed',
+      message: 'Check your email and password, then try again.',
+    })
+  }
 
-  const handleFederated = useCallback(
-    async (providerId: FederatedProviderId) => {
-      setBusy(true)
-      try {
-        await signInWithProvider(providerId)
-        advance()
-      } catch (err) {
-        if (isCancellation(err)) return
-        console.error(`[sign-in] ${providerId} failed:`, err)
-        showAlert(
-          'Sign-in failed',
-          'Something went wrong signing in. Please try again.',
-        )
-      } finally {
-        setBusy(false)
-      }
-    },
-    [signInWithProvider],
-  )
+  const handleFederated = (providerId: FederatedProviderId) =>
+    void attempt(() => signInWithProvider(providerId), {
+      tag: `[sign-in] ${providerId}`,
+      title: 'Sign-in failed',
+      message: 'Something went wrong signing in. Please try again.',
+    })
 
   return (
     <View style={styles.root}>
