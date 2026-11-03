@@ -130,3 +130,8 @@ tags:
 
 **Purpose:** Anyone can register an email/password account with another person's address; an unverified token could unsubscribe that person.
 **Change:** `setEmailSubscription` skips unsubscribe unless `email_verified` (returns 204, no provider call). Unverified subscribe is unchanged: it stays `pending` and EmailOctopus asks the owner to confirm (ADR-0007). Test: `email.test.ts` "does not unsubscribe an unverified address".
+
+## 2026-11-03 — fix (reverts the 2026-11-02 server entry)
+
+**Purpose:** Owner clarification: an account has exactly one email address, the email itself unsubscribes with a single button (no text input), and the subscription covers email only, never account deletion. A stranger cannot hold another person's address, so the unverified-unsubscribe guard protected nothing. It also broke a real case: an unverified user's in-app opt-out was dropped, and confirming the earlier `pending` signup would then subscribe them.
+**Change:** Unsubscribe always acts on the token's address. Test: `email.test.ts` "unsubscribes an unverified address too". Account deletion is tracked separately (sub-issue of #401).
