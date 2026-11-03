@@ -1,7 +1,12 @@
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'
 import { useUIStore } from '@/src/hooks/useUIStore'
-import { confirmResetSubmission } from '../confirmResetSubmission'
+import {
+  confirmResetSubmission,
+  confirmStartNewSighting,
+} from '../confirmResetSubmission'
+import { discardDraft } from '@/src/lib/submission/draft'
+import { router } from 'expo-router'
 
 /**
  * Reset never deletes camera-roll copies, so its dialog must say they stay
@@ -11,6 +16,7 @@ import { confirmResetSubmission } from '../confirmResetSubmission'
 jest.mock('expo-router', () => ({ router: { replace: jest.fn() } }))
 jest.mock('@/src/lib/submission/draft', () => ({
   discardDraft: jest.fn(),
+  discardUnsurvivingDraft: jest.fn().mockResolvedValue(undefined),
   isDraftBusy: () => false,
 }))
 
@@ -54,5 +60,23 @@ describe('confirmResetSubmission dialog', () => {
   it('stays silent about the camera roll for library photos', () => {
     seedPhotos('library')
     expect(dialogMessage()).not.toContain('camera roll')
+  })
+})
+
+describe('confirmStartNewSighting', () => {
+  beforeEach(() => {
+    usePhotoStore.setState(usePhotoStore.getInitialState(), true)
+    jest.mocked(discardDraft).mockResolvedValue(true)
+  })
+
+  it('clears the draft and remounts Home only after Start New', async () => {
+    seedPhotos('library')
+    confirmStartNewSighting()
+    const dialog = useUIStore.getState().dialog
+    expect(dialog?.title).toBe('Start a New Sighting?')
+    expect(discardDraft).not.toHaveBeenCalled()
+    await dialog?.buttons.find((b) => b.text === 'Start New')?.onPress?.()
+    expect(discardDraft).toHaveBeenCalledTimes(1)
+    expect(router.replace).toHaveBeenCalledWith('/')
   })
 })

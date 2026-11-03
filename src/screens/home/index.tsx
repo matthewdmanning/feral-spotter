@@ -7,7 +7,10 @@ import {
   APP_STARTED_AT,
   ENTRYPOINT_BUFFER_PERCENT,
 } from '@/src/config/constants'
-import { confirmResetSubmission } from '@/src/hooks/confirmResetSubmission'
+import {
+  confirmResetSubmission,
+  confirmStartNewSighting,
+} from '@/src/hooks/confirmResetSubmission'
 import { useDraftStartupStore } from '@/src/hooks/useDraftStartupStore'
 import { useEntryGate } from '@/src/hooks/useEntryGate'
 import { usePhotoEntrypoints } from '@/src/hooks/usePhotoEntrypoints'
@@ -160,7 +163,6 @@ export default function HomeScreen() {
       : 'in-session',
   )
 
-  const handleNew = useCallback(() => router.push('/submission/create'), [])
   const handleContinue = useCallback(
     () => router.push('/submission/create'),
     [],
@@ -177,11 +179,11 @@ export default function HomeScreen() {
       {
         key: 'new',
         label: 'New Sighting',
-        onPress: handleNew,
+        onPress: confirmStartNewSighting,
         variant: 'secondary',
       },
     ],
-    [handleContinue, handleNew],
+    [handleContinue],
   )
 
   return (

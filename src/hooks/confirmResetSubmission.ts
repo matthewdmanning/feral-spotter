@@ -31,26 +31,39 @@ export async function discardDraftAndGoHome(): Promise<void> {
   router.replace('/')
 }
 
-/**
- * Ask first, then discard the draft (#153). Reset never touches camera-roll
- * copies, so when "Keep Photos on Device" saved some, the dialog says they stay.
- */
-export function confirmResetSubmission(): void {
-  if (isDraftBusy()) return
+/** Reset never touches camera-roll copies; say so when some were saved. */
+function cameraRollNote(): string {
   const keptInCameraRoll =
     useSettingsStore.getState().settings.keep_photos_on_device !== false &&
     usePhotoStore.getState().source === 'camera'
-  showAlert(
+  return keptInCameraRoll ? ' Copies saved to your camera roll stay there.' : ''
+}
+
+function confirmDiscard(title: string, message: string, action: string): void {
+  if (isDraftBusy()) return
+  showAlert(title, message + cameraRollNote(), [
+    { text: 'Cancel', style: 'cancel' },
+    { text: action, style: 'destructive', onPress: discardDraftAndGoHome },
+  ])
+}
+
+/** Ask first, then discard the draft (#153). */
+export function confirmResetSubmission(): void {
+  confirmDiscard(
     'Reset Submission',
-    'This will permanently clear all cats, photos and submission data.' +
-      (keptInCameraRoll ? ' Copies saved to your camera roll stay there.' : ''),
-    [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Reset',
-        style: 'destructive',
-        onPress: discardDraftAndGoHome,
-      },
-    ],
+    'This will permanently clear all cats, photos and submission data.',
+    'Reset',
+  )
+}
+
+/**
+ * Home's New Sighting: clear the current draft so a fresh one can start.
+ * Home remounts empty, with Take Photos and Upload Photos enabled.
+ */
+export function confirmStartNewSighting(): void {
+  confirmDiscard(
+    'Start a New Sighting?',
+    'This clears the cats, photos and details of your current sighting.',
+    'Start New',
   )
 }
