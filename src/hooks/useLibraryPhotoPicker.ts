@@ -16,7 +16,7 @@ import {
   showPhotoLimitReached,
 } from '@/src/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
-import { initializeDraft } from '@/src/hooks/useDraftStartupStore'
+import { draftReadyOrAlert } from '@/src/hooks/useDraftStartupStore'
 import { EVENTS, captureEvent } from '@/src/lib/analytics/analytics'
 import { libraryPermission } from '@/src/lib/permissions/libraryPermission'
 import { syncPhotoUploads } from '@/src/lib/upload/draftUploads'
@@ -40,15 +40,7 @@ export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
   const setSubmission = useSubmissionStore((s) => s.setSubmission)
 
   const pickFromLibrary = useCallback(async () => {
-    try {
-      await initializeDraft()
-    } catch {
-      showAlert(
-        'Could not restore your sighting',
-        'Restart the app to try again.',
-      )
-      return
-    }
+    if (!(await draftReadyOrAlert())) return
     if (usePhotoStore.getState().source === 'camera') return
     if (isAtPhotoLimit()) {
       showPhotoLimitReached()

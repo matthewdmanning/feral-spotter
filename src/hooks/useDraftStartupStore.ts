@@ -4,10 +4,13 @@
  */
 
 import { discardUnsurvivingDraft } from '@/src/lib/submission/draft'
+import { showAlert } from '@/src/hooks/useUIStore'
 import { create } from 'zustand'
 
+export type DraftStartupPhase = 'restoring' | 'cleaning' | 'ready' | 'error'
+
 interface DraftStartupState {
-  phase: 'restoring' | 'cleaning' | 'ready' | 'error'
+  phase: DraftStartupPhase
   task: Promise<void> | null
 }
 
@@ -42,4 +45,29 @@ export function initializeDraft(): Promise<void> {
     phase: s.phase === 'error' ? 'restoring' : s.phase,
   }))
   return initialization
+}
+
+/**
+ * Whether new photos may join the draft in this phase. Cleanup only
+ * removes rows older than the restored draft, so capture may run beside it.
+ */
+export function acceptsNewPhotos(phase: DraftStartupPhase): boolean {
+  return phase === 'cleaning' || phase === 'ready'
+}
+
+/**
+ * Waits for the draft to be ready before a user action. On failure it
+ * tells the user and resolves false, so callers just return.
+ */
+export async function draftReadyOrAlert(): Promise<boolean> {
+  try {
+    await initializeDraft()
+    return true
+  } catch {
+    showAlert(
+      'Could not restore your sighting',
+      'Restart the app to try again.',
+    )
+    return false
+  }
 }
