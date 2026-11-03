@@ -75,3 +75,8 @@ Not run on a device. The defect this fixes is invisible to CI by construction â€
 - InsetCropBubble expanded size floors at 48dp.
 - Cleanup: StatusIcon's empty stylesheet became `StatusIcon.constants.ts`; HierarchicalSegmentedControl's commented label removed; ReportCard braces.
   Test: `TutorialOverlay.reopen.test.tsx` (both cases fail on the old code). iOS-only paths (date step toggle, Apple map markers) not changed. Not checked on device.
+
+## 2026-11-03 â€” refactor (dialog shell, bubble props)
+
+**Purpose:** AlertHost and DateTimePickerButton each hand-built the same Modal, backdrop, sheet, title and #342 theme subscription; InsetCropBubble carried props no screen used.
+**Change:** `organisms/DialogShell.tsx` (title, onRequestClose, children) owns the Modal, the scrolling sheet and the theme subscription; both dialogs render inside it. TutorialOverlay keeps its own bottom-anchored layout. InsetCropBubble drops `onDiameterChange`, `onCollapsedChange` and `draggable` (always on) and exports `BUBBLE_HEADER_RESERVE` for Cat Form's header instead of `COLLAPSED_DIAMETER`. No visual change intended; not checked on device.

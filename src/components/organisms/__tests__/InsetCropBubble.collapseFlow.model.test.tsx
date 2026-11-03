@@ -64,19 +64,16 @@ const collapseFlowMachine = createMachine({
 })
 
 describe('InsetCropBubble — collapse/expand flow (#202)', () => {
-  let onCollapsedChange: jest.Mock
   let onSettledChange: jest.Mock
   let getByTestId: ReturnType<typeof render>['getByTestId']
 
   beforeEach(() => {
     jest.useFakeTimers()
-    onCollapsedChange = jest.fn()
     onSettledChange = jest.fn()
     const result = render(
       <InsetCropBubble
         catId="cat-1"
         edge="top-right"
-        onCollapsedChange={onCollapsedChange}
         onSettledChange={onSettledChange}
       />,
     )
@@ -92,7 +89,6 @@ describe('InsetCropBubble — collapse/expand flow (#202)', () => {
   const press = () => userEvent.press(getByTestId('inset-crop-bubble'))
 
   const expectSignals = (collapsed: boolean, settled: boolean) => {
-    expect(onCollapsedChange).toHaveBeenLastCalledWith(collapsed)
     expect(onSettledChange).toHaveBeenLastCalledWith(settled)
     expect(getByTestId('inset-crop-bubble').props.accessibilityLabel).toBe(
       collapsed && settled
@@ -102,9 +98,8 @@ describe('InsetCropBubble — collapse/expand flow (#202)', () => {
   }
 
   const expectCollapsing = () => {
-    // The button immediately offers expansion again, but the host must keep
-    // its expanded reservation and title fade until the slide finishes.
-    expect(onCollapsedChange).toHaveBeenLastCalledWith(false)
+    // The button immediately offers expansion again, but the host keeps its
+    // title fade until the slide finishes.
     expect(onSettledChange).toHaveBeenLastCalledWith(false)
     expect(getByTestId('inset-crop-bubble').props.accessibilityLabel).toBe(
       'Expand cat photo preview',

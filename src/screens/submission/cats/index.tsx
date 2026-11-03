@@ -4,7 +4,7 @@ import { TextButton } from '@/src/components/atoms/TextButton'
 import { ProfilePicPicker } from '@/src/components/molecules/ProfilePicPicker'
 import { CatForm } from '@/src/components/organisms/CatForm'
 import {
-  COLLAPSED_DIAMETER,
+  BUBBLE_HEADER_RESERVE,
   InsetCropBubble,
 } from '@/src/components/organisms/InsetCropBubble'
 import { useSubmissionStore } from '@/src/hooks'
@@ -91,7 +91,7 @@ export default function CatObservationScreen() {
             testID="cat-form-header-zone"
             style={[
               styles.headerZone,
-              catId ? { minHeight: COLLAPSED_DIAMETER } : null,
+              catId ? { minHeight: BUBBLE_HEADER_RESERVE } : null,
             ]}
           >
             <View
@@ -117,7 +117,6 @@ export default function CatObservationScreen() {
                 edge="top-center"
                 onSettledChange={setBubbleSettledCollapsed}
                 onHoldChange={setBubbleHeld}
-                draggable
               />
             )}
           </View>

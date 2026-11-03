@@ -79,7 +79,7 @@ function renderBubble(onHoldChange?: (held: boolean) => void) {
     <InsetCropBubble
       catId="cat-1"
       edge="top-center"
-      draggable
+
       onHoldChange={onHoldChange}
     />,
   )

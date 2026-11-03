@@ -9,13 +9,11 @@
  * that has to know how a dialog looks.
  */
 
-import { GlassSurface } from '@/src/components/atoms/GlassSurface'
 import { AppButton } from '@/src/components/atoms/AppButton'
 import { ButtonRow } from '@/src/components/molecules/ButtonRow'
 import { useUIStore, type AlertButton } from '@/src/hooks/useUIStore'
-import { Modal, ScrollView, Text, View } from 'react-native'
-import { useUnistyles } from 'react-native-unistyles'
-import { dialogShell } from './dialogShell.styles'
+import { Text, View } from 'react-native'
+import { DialogShell } from './DialogShell'
 import { styles } from './AlertHost.styles'
 
 /** Alert.alert's button styles, mapped onto the ones AppButton has. */
@@ -26,19 +24,6 @@ function variantFor(style: AlertButton['style']) {
 }
 
 export function AlertHost() {
-  // Subscribes this component to theme changes. Required, not decorative:
-  // AlertHost mounts once at the app root and never re-mounts, so without it
-  // its Text styles stay at whatever the theme was at first mount — a Dark
-  // switch left near-black title and message on the dark card (found on
-  // device 2026-08-27). The buttons hid it, since AppButton re-resolves
-  // through styles.useVariants() on every render.
-  //
-  // `theme` must be destructured, not just called for its side effect
-  // (#342) — Unistyles only registers the subscription when `theme` is
-  // read from the hook's return value; calling useUnistyles() bare
-  // subscribes to nothing, which is why f197051's original fix here didn't
-  // actually hold.
-  const { theme } = useUnistyles()
   const dialog = useUIStore((s) => s.dialog)
   const dismissDialog = useUIStore((s) => s.dismissDialog)
 
@@ -72,31 +57,15 @@ export function AlertHost() {
   ))
 
   return (
-    <Modal
-      visible
-      transparent
-      animationType="fade"
-      statusBarTranslucent
-      onRequestClose={onRequestClose}
-    >
-      <View style={dialogShell.backdrop}>
-        <GlassSurface kind="raised" style={dialogShell.sheet}>
-          <ScrollView
-            style={dialogShell.scroll}
-            contentContainerStyle={dialogShell.scrollContent}
-          >
-            <Text style={dialogShell.title}>{dialog.title}</Text>
-            {dialog.message ? (
-              <Text style={styles.message}>{dialog.message}</Text>
-            ) : null}
-            {sideBySide ? (
-              <ButtonRow>{buttons}</ButtonRow>
-            ) : (
-              <View style={styles.buttonColumn}>{buttons}</View>
-            )}
-          </ScrollView>
-        </GlassSurface>
-      </View>
-    </Modal>
+    <DialogShell title={dialog.title} onRequestClose={onRequestClose}>
+      {dialog.message ? (
+        <Text style={styles.message}>{dialog.message}</Text>
+      ) : null}
+      {sideBySide ? (
+        <ButtonRow>{buttons}</ButtonRow>
+      ) : (
+        <View style={styles.buttonColumn}>{buttons}</View>
+      )}
+    </DialogShell>
   )
 }
