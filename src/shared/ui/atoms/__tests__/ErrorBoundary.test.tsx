@@ -17,11 +17,6 @@ describe('ErrorBoundary crash reporting', () => {
     useConsentStore.setState(useConsentStore.getInitialState())
     jest.spyOn(console, 'error').mockImplementation(() => {})
   })
-
-  afterEach(() => {
-    jest.restoreAllMocks()
-  })
-
   it.each([
     { accepted: false, analyticsAccepted: false },
     { accepted: true, analyticsAccepted: false },

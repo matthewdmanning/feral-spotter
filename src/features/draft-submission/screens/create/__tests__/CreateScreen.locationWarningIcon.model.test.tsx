@@ -145,11 +145,6 @@ describe('Submission Details location-warning icon — model-based test', () => 
       },
     },
   }
-
-  beforeEach(() => {
-    jest.clearAllMocks()
-  })
-
   const journeys = [
     {
       name: 'no fix yet: warning shown, icon tappable',
@@ -163,7 +158,7 @@ describe('Submission Details location-warning icon — model-based test', () => 
       name: 'good fix acquired: warning clears, icon disabled',
       events: [{ type: 'MOUNT_GOOD_FIX' }],
     },
-  ] as const
+  ]
 
   journeys.forEach(({ name, events }) => {
     it(name, async () => {

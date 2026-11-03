@@ -81,10 +81,6 @@ const baseAnnotatePass: ReturnType<typeof useAnnotatePass> = {
 }
 
 describe('AnnotateScreen buttons', () => {
-  beforeEach(() => {
-    jest.clearAllMocks()
-  })
-
   it('empty photo pool: Go back clears the active cat and pops the screen', async () => {
     jest
       .mocked(useAnnotatePass)

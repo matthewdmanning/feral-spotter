@@ -80,7 +80,6 @@ describe('useAnnotatePass — carousel navigation (model-based test)', () => {
   >
 
   beforeEach(() => {
-    jest.clearAllMocks()
     useActiveCatFlowStore.getState().setActiveCatId(null)
     useBoundingBoxStore.getState().clearAll()
     useSubmissionStore.getState().clearDraft()
@@ -156,7 +155,7 @@ describe('useAnnotatePass — carousel navigation (model-based test)', () => {
       name: 'Previous on the first photo is a no-op',
       events: [{ type: 'PREV' }],
     },
-  ] as const
+  ]
 
   journeys.forEach(({ name, events }) => {
     it(name, async () => {

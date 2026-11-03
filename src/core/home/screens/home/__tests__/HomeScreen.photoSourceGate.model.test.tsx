@@ -5,6 +5,7 @@ import { createTestModel } from '@xstate/graph'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import HomeScreen from '@/src/core/home/screens/home/index'
 import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
+import { setConsent } from '@/src/test-utils/consent'
 
 /**
  * Model of the photo-source-exclusivity gate (ADR 0002's 2026-07-31
@@ -24,9 +25,6 @@ jest.mock('expo-router', () => ({
 
 jest.mock('@/src/features/auth/lib/useAuth', () => ({
   useAuth: () => ({ isReady: true, isAuthenticated: true }),
-}))
-jest.mock('@/src/shared/consent/useConsentStore', () => ({
-  hasAcceptedConsent: () => true,
 }))
 jest.mock('@/src/features/draft-submission/lib/submissionCache', () => ({
   getAllSubmissionCaches: jest.fn().mockResolvedValue([]),
@@ -72,7 +70,8 @@ describe('HomeScreen photo-source-exclusivity gate — model-based test', () => 
     useDraftStartupStore.setState({ phase: 'ready', task: Promise.resolve() })
     jest.clearAllMocks()
     await usePhotoStore.persist.rehydrate()
-    usePhotoStore.setState({ photos: [], source: null, submissionId: null })
+    usePhotoStore.setState(usePhotoStore.getInitialState(), true)
+    setConsent(true)
     const result = render(<HomeScreen />)
     getByLabelText = result.getByLabelText
   })
@@ -143,7 +142,7 @@ describe('HomeScreen photo-source-exclusivity gate — model-based test', () => 
       name: 'clearing the library photo pool re-enables both entrypoints',
       events: [{ type: 'LIBRARY_PICK' }, { type: 'CLEAR_PHOTO_POOL' }],
     },
-  ] as const
+  ]
 
   journeys.forEach(({ name, events }) => {
     it(name, async () => {

@@ -6,6 +6,7 @@ import { createTestModel } from '@xstate/graph'
 import { useLibraryPhotoPicker } from '@/src/features/library-picker/hooks/useLibraryPhotoPicker'
 import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
+import { pressDialogButton } from '@/src/test-utils/dialog'
 
 /**
  * Models useLibraryPhotoPicker's explicit permission gate (#249): a decline
@@ -19,7 +20,9 @@ import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoSto
  */
 const mockGetMediaLibraryPermissionsAsync = jest.fn()
 const mockRequestMediaLibraryPermissionsAsync = jest.fn()
-const mockLaunchImageLibraryAsync = jest.fn(async () => ({ canceled: true }))
+const mockLaunchImageLibraryAsync = jest.fn(async (..._args: unknown[]) => ({
+  canceled: true,
+}))
 jest.mock('expo-image-picker', () => ({
   ...jest.requireActual('expo-image-picker'),
   getMediaLibraryPermissionsAsync: (...args: unknown[]) =>
@@ -33,8 +36,8 @@ jest.mock('expo-image-picker', () => ({
 jest.mock('expo-router', () => ({ router: { navigate: jest.fn() } }))
 
 jest.mock('@/src/shared/analytics/analytics', () => ({
+  ...jest.requireActual('@/src/shared/analytics/analytics'),
   captureEvent: jest.fn(),
-  EVENTS: { LIBRARY_PHOTOS_SELECTED: 'library_photos_selected' },
 }))
 
 describe('useLibraryPhotoPicker permission gate — model-based test', () => {
@@ -46,7 +49,8 @@ describe('useLibraryPhotoPicker permission gate — model-based test', () => {
     useDraftStartupStore.setState({ phase: 'ready', task: Promise.resolve() })
     usePhotoStore.setState(usePhotoStore.getInitialState(), true)
     jest.clearAllMocks()
-    jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
+    ui.useUIStore.setState({ dialog: null })
+    jest.spyOn(ui, 'showAlert')
     result = renderHook(() => useLibraryPhotoPicker())
   })
 
@@ -131,7 +135,7 @@ describe('useLibraryPhotoPicker permission gate — model-based test', () => {
       name: 'first tap: undetermined, user denies, Settings-recovery message shown, picker never opens',
       events: [{ type: 'TAP_NOT_DETERMINED_THEN_DENY' }],
     },
-  ] as const
+  ]
 
   journeys.forEach(({ name, events }) => {
     it(name, async () => {
@@ -147,7 +151,7 @@ describe('useLibraryPhotoPicker permission gate — model-based test', () => {
   })
 
   it('denial message offers Open Settings, wired to Linking.openSettings', async () => {
-    jest.spyOn(Linking, 'openSettings').mockImplementation(() => {})
+    jest.spyOn(Linking, 'openSettings').mockResolvedValue()
     mockGetMediaLibraryPermissionsAsync.mockResolvedValue({
       status: 'undetermined',
     })
@@ -156,11 +160,7 @@ describe('useLibraryPhotoPicker permission gate — model-based test', () => {
     })
     await tap()
 
-    const [, , buttons] = (ui.showAlert as jest.Mock).mock.calls[0]
-    const openSettingsButton = buttons.find(
-      (b: { text: string }) => b.text === 'Open Settings',
-    )
-    openSettingsButton.onPress()
+    await pressDialogButton('Open Settings')
     expect(Linking.openSettings).toHaveBeenCalledTimes(1)
   })
 })

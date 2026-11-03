@@ -15,10 +15,6 @@ jest.mock('expo-constants', () => ({
   __esModule: true,
   default: { expoConfig: { version: '0.1.0' } },
 }))
-
-beforeEach(() => jest.clearAllMocks())
-afterEach(() => jest.restoreAllMocks())
-
 const firebaseUser = { uid: 'user-4', email: 'cat@example.com' }
 
 describe('Firebase auth provider', () => {

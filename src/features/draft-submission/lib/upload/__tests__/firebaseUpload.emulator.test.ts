@@ -20,15 +20,10 @@ describe('firebaseUpload emulator wiring', () => {
     delete process.env.EXPO_PUBLIC_FIREBASE_EMULATOR_HOST
     delete process.env.EXPO_PUBLIC_UPLOADS_MOCK
     jest
-      .spyOn(global, 'fetch')
+      .spyOn(globalThis, 'fetch')
       .mockResolvedValue(undefined as unknown as Response)
     jest.spyOn(console, 'error').mockImplementation(() => {})
   })
-
-  afterEach(() => {
-    jest.restoreAllMocks()
-  })
-
   afterAll(() => {
     process.env = ORIGINAL_ENV
   })
@@ -77,13 +72,13 @@ describe('firebaseUpload emulator wiring', () => {
   it('logs a loud, clear error when the emulator is unreachable', async () => {
     process.env.EXPO_PUBLIC_USE_FIREBASE_EMULATOR = 'true'
     process.env.EXPO_PUBLIC_FIREBASE_EMULATOR_HOST = 'test-host'
-    ;(fetch as jest.Mock).mockRejectedValue(new Error('ECONNREFUSED'))
+    jest.mocked(fetch).mockRejectedValue(new Error('ECONNREFUSED'))
 
     const { uploadSubmissionMetadata } = loadFirebaseUpload()
 
     await uploadSubmissionMetadata({} as SubmissionApiPayload, 'uid1', 'sub1')
     // The reachability ping is fire-and-forget — let its rejection settle.
-    await new Promise((resolve) => setImmediate(resolve))
+    await new Promise<void>((resolve) => setImmediate(resolve))
 
     expect(console.error).toHaveBeenCalledWith(
       expect.stringContaining('unreachable'),

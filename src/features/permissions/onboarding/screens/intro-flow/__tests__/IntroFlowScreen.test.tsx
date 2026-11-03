@@ -14,6 +14,7 @@ import {
   ONBOARDING_SLIDES,
 } from '@/src/features/permissions/onboarding/config/introFlowCopy'
 import IntroFlowScreen from '@/src/features/permissions/onboarding/screens/intro-flow/index'
+import { pressDialogButton } from '@/src/test-utils/dialog'
 
 jest.mock('expo-router', () => ({
   router: { replace: jest.fn(), push: jest.fn() },
@@ -28,7 +29,6 @@ jest.mock('@/src/shared/hooks/useBackHandler', () => ({
 
 describe('IntroFlowScreen', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
     backHandler = undefined
     Platform.OS = 'android'
   })
@@ -92,16 +92,14 @@ describe('IntroFlowScreen', () => {
     )
   })
 
-  it('exits the app on Android when Exit is confirmed at T1', () => {
+  it('exits the app on Android when Exit is confirmed at T1', async () => {
     const exitSpy = jest
       .spyOn(BackHandler, 'exitApp')
       .mockImplementation(() => {})
-    jest.spyOn(ui, 'showAlert').mockImplementation((_title, _msg, buttons) => {
-      buttons?.find((b) => b.text === 'Exit')?.onPress?.()
-    })
     render(<IntroFlowScreen />)
 
     backHandler?.()
+    await pressDialogButton('Exit')
 
     expect(exitSpy).toHaveBeenCalledTimes(1)
   })

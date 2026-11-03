@@ -6,6 +6,7 @@ import { router } from 'expo-router'
 import React from 'react'
 import HomeScreen from '@/src/core/home/screens/home/index'
 import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
+import { setConsent } from '@/src/test-utils/consent'
 
 /**
  * #424: Home's notice for a photo draft. A draft restored from an earlier
@@ -20,9 +21,6 @@ jest.mock('expo-router', () => ({
 }))
 jest.mock('@/src/features/auth/lib/useAuth', () => ({
   useAuth: () => ({ isReady: true, isAuthenticated: true }),
-}))
-jest.mock('@/src/shared/consent/useConsentStore', () => ({
-  hasAcceptedConsent: () => true,
 }))
 jest.mock('@/src/features/draft-submission/lib/submissionCache', () => ({
   getAllSubmissionCaches: jest.fn().mockResolvedValue([]),
@@ -58,6 +56,7 @@ describe('HomeScreen photo draft notice (#424)', () => {
     jest.clearAllMocks()
     usePhotoStore.setState(usePhotoStore.getInitialState(), true)
     useUIStore.setState({ dialog: null })
+    setConsent(true)
   })
 
   it('opens the camera while restoration is pending without offering stale draft actions', async () => {

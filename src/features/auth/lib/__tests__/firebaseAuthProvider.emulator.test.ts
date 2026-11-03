@@ -11,7 +11,7 @@
 //
 // The fetch spy is (re-)installed after each require(), not in beforeEach —
 // this file's module graph pulls in @react-native-google-signin/google-signin,
-// which re-registers global.fetch's lazy polyfill getter as a side effect of
+// which re-registers globalThis.fetch's lazy polyfill getter as a side effect of
 // being freshly required post-resetModules(), clobbering a spy set up any
 // earlier.
 const ORIGINAL_ENV = process.env
@@ -23,7 +23,7 @@ const loadAuthProvider = () =>
 
 function spyOnFetch() {
   return jest
-    .spyOn(global, 'fetch')
+    .spyOn(globalThis, 'fetch')
     .mockResolvedValue(undefined as unknown as Response)
 }
 
@@ -35,11 +35,6 @@ describe('createFirebaseAuthProvider emulator wiring', () => {
     delete process.env.EXPO_PUBLIC_FIREBASE_EMULATOR_HOST
     jest.spyOn(console, 'error').mockImplementation(() => {})
   })
-
-  afterEach(() => {
-    jest.restoreAllMocks()
-  })
-
   afterAll(() => {
     process.env = ORIGINAL_ENV
   })
@@ -106,11 +101,11 @@ describe('createFirebaseAuthProvider emulator wiring', () => {
     process.env.EXPO_PUBLIC_FIREBASE_EMULATOR_HOST = 'test-host'
 
     const { createFirebaseAuthProvider } = loadAuthProvider()
-    jest.spyOn(global, 'fetch').mockRejectedValue(new Error('ECONNREFUSED'))
+    jest.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('ECONNREFUSED'))
 
     createFirebaseAuthProvider()
     // The reachability ping is fire-and-forget — let its rejection settle.
-    await new Promise((resolve) => setImmediate(resolve))
+    await new Promise<void>((resolve) => setImmediate(resolve))
 
     expect(console.error).toHaveBeenCalledWith(
       expect.stringContaining('unreachable'),

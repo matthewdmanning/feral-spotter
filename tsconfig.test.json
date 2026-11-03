@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "types": ["jest", "node"] },
+  "include": [
+    "**/__tests__/**/*.ts",
+    "**/__tests__/**/*.tsx",
+    "src/test-utils/**/*.ts",
+    "__mocks__/**/*.ts",
+    "src/**/*.d.ts",
+    "expo-env.d.ts",
+    ".expo/types/**/*.ts"
+  ],
+  "exclude": ["node_modules", "functions", "ts-ailiot"]
+}

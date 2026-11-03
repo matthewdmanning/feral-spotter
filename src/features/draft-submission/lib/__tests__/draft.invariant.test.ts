@@ -103,7 +103,7 @@ const buildFullDraft = () => {
 }
 
 /** Lets zustand's persist middleware finish its async writes. */
-const flushPersist = () => new Promise((resolve) => setImmediate(resolve))
+const flushPersist = () => new Promise<void>((resolve) => setImmediate(resolve))
 
 /** Read complete JSON payloads, including unexpected draft-owned keys. */
 const readPersistedDraft = async () => {
@@ -121,7 +121,6 @@ const readPersistedDraft = async () => {
 
 describe('draft teardown — survival invariant (#292)', () => {
   beforeEach(async () => {
-    jest.clearAllMocks()
     useSubmissionStore.setState(useSubmissionStore.getInitialState(), true)
     usePhotoStore.setState(usePhotoStore.getInitialState(), true)
     useBoundingBoxStore.setState(useBoundingBoxStore.getInitialState(), true)

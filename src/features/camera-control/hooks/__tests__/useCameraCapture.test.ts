@@ -52,8 +52,10 @@ jest.mock('@/src/features/camera-control/components/CameraThumb', () => ({
   CameraThumb: 'CameraThumb',
 }))
 const mockAssetCreate = jest.fn()
-const mockGetPermissionsAsync = jest.fn(async () => ({ status: 'granted' }))
-const mockRequestPermissionsAsync = jest.fn(async () => ({
+const mockGetPermissionsAsync = jest.fn(async (..._args: unknown[]) => ({
+  status: 'granted',
+}))
+const mockRequestPermissionsAsync = jest.fn(async (..._args: unknown[]) => ({
   status: 'granted',
 }))
 jest.mock('expo-media-library', () => ({
@@ -69,19 +71,11 @@ jest.mock('expo-crypto', () => ({ randomUUID: () => 'test-id' }))
 
 const mockCaptureEvent = jest.fn()
 jest.mock('@/src/shared/analytics/analytics', () => ({
+  ...jest.requireActual('@/src/shared/analytics/analytics'),
   captureEvent: (...args: unknown[]) => mockCaptureEvent(...args),
-  EVENTS: {
-    CAMERA_OPENED: 'camera_opened',
-    CAMERA_DEVICE_READY: 'camera_device_ready',
-    CAMERA_CAPTURE_SEQUENCE_COMPLETED: 'camera_capture_sequence_completed',
-    PHOTO_CAPTURED: 'photo_captured',
-    PHOTO_CAPTURE_FAILED: 'photo_capture_failed',
-  },
 }))
 
 beforeEach(() => {
-  jest.restoreAllMocks()
-  jest.clearAllMocks()
   mockIsFocused = true
   mockCapturePhoto.mockReset()
   mockAssetCreate.mockReset()
@@ -104,7 +98,6 @@ beforeEach(() => {
 
 describe('useCameraCapture isActive (#253)', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
     mockIsFocused = true
   })
 
@@ -138,8 +131,6 @@ describe('useCameraCapture isActive (#253)', () => {
 })
 
 describe('useCameraCapture navigation', () => {
-  beforeEach(() => jest.clearAllMocks())
-
   it('handleClose calls router.back()', () => {
     const { result } = renderHook(() => useCameraCapture())
     result.current.handleClose()
@@ -158,8 +149,6 @@ describe('useCameraCapture navigation', () => {
 })
 
 describe('useCameraCapture handleTakePhoto', () => {
-  beforeEach(() => jest.clearAllMocks())
-
   it('reports PHOTO_CAPTURE_FAILED when capturePhoto throws', async () => {
     mockCapturePhoto.mockRejectedValueOnce(new Error('device busy'))
 
