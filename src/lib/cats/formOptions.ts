@@ -39,3 +39,13 @@ export const SEX_OPTIONS = optionsFor<CatSex>('sex')
 export const HEALTH_OPTIONS = optionsFor<HealthLabel>('healthLabel')
 
 export { COAT_GROUPS } from '@/src/lib/cats/attributes'
+
+/**
+ * The coat picker has no Unknown group: a saved 'unknown' (the default
+ * filled in at save) shows as nothing picked, like a never-touched field.
+ */
+export function shownCoatValue<T extends string>(
+  value: T | undefined,
+): Exclude<T, 'unknown'> | undefined {
+  return value === 'unknown' ? undefined : (value as Exclude<T, 'unknown'>)
+}
