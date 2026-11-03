@@ -16,11 +16,11 @@ import { CameraThumb } from '@/src/components/atoms/CameraThumb'
 import { usePhotoStore, isAtPhotoLimit } from '@/src/hooks/usePhotoStore'
 import { removePhotoFromDraft } from '@/src/hooks/removePhotoFromDraft'
 import {
-  initializeDraft,
+  acceptsNewPhotos,
+  draftReadyOrAlert,
   useDraftStartupStore,
 } from '@/src/hooks/useDraftStartupStore'
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'
-import { showAlert } from '@/src/hooks/useUIStore'
 import { gallerySavePermission } from '@/src/lib/permissions/gallerySavePermission'
 import {
   releaseCapturedPhotoFile,
@@ -65,9 +65,7 @@ export function useCapturedPhotoWorkflow({
   const addPhoto = usePhotoStore((s) => s.addPhoto)
   const photoSource = usePhotoStore((s) => s.source)
   const draftPhase = useDraftStartupStore((s) => s.phase)
-  const canCapture =
-    (draftPhase === 'cleaning' || draftPhase === 'ready') &&
-    photoSource !== 'library'
+  const canCapture = acceptsNewPhotos(draftPhase) && photoSource !== 'library'
 
   const [capturedPhotos, setCapturedPhotos] = useState<SubmissionPhoto[]>([])
   const [flashMode, setFlashMode] = useState<FlashMode>('auto')
@@ -109,9 +107,8 @@ export function useCapturedPhotoWorkflow({
    */
   const persistCapturedPhoto = useCallback(
     (frame: CapturedFrame, shutterTime: string): SubmissionPhoto => {
-      const currentPhase = useDraftStartupStore.getState().phase
       if (
-        (currentPhase !== 'cleaning' && currentPhase !== 'ready') ||
+        !acceptsNewPhotos(useDraftStartupStore.getState().phase) ||
         usePhotoStore.getState().source === 'library'
       ) {
         throw new Error('Camera capture is not available')
@@ -189,14 +186,9 @@ export function useCapturedPhotoWorkflow({
   }, [onBeforeFlip])
 
   const handleDone = useCallback(() => {
-    void initializeDraft()
-      .then(() => router.navigate('/submission/create'))
-      .catch(() => {
-        showAlert(
-          'Could not restore your sighting',
-          'Restart the app to try again.',
-        )
-      })
+    void draftReadyOrAlert().then((ready) => {
+      if (ready) router.navigate('/submission/create')
+    })
   }, [])
   const handleClose = useCallback(() => router.back(), [])
 
