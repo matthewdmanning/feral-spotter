@@ -71,6 +71,5 @@ it.each([
       code,
     })
     expect(calls).toEqual([])
-    expect(HttpsError).toBeDefined()
   },
 )
