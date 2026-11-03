@@ -6,20 +6,19 @@ import { TextButton } from '@/src/components/atoms/TextButton'
 import { ButtonRow } from '@/src/components/molecules/ButtonRow'
 import { FieldRow } from '@/src/components/molecules/FieldRow'
 import { DateTimePickerButton } from '@/src/components/organisms/DateTimePicker'
-import { showAlert, useSubmissionStore } from '@/src/hooks'
+import { useSubmissionStore } from '@/src/hooks'
 import {
   openCatForm,
   startCatPass,
   useCatListLanding,
 } from '@/src/hooks/catPass'
-import { useBackHandler } from '@/src/hooks/useBackHandler'
+import { useDraftExitPrompt } from '@/src/hooks/useDraftExitPrompt'
 import { useDraftSync } from '@/src/hooks/useDraftSync'
 import { useSubmissionSubmit } from '@/src/hooks/useSubmissionSubmit'
-import { useLibraryPhotoPicker } from '@/src/hooks/useLibraryPhotoPicker'
-import { usePhotoStore } from '@/src/hooks/usePhotoStore'
+import { usePhotoEntrypoints } from '@/src/hooks/usePhotoEntrypoints'
 import { useRemoveCat } from '@/src/hooks/useRemoveCat'
 import { draftWarnings } from '@/src/lib/submission/status'
-import { router, useIsFocused, type Href } from 'expo-router'
+import { router, type Href } from 'expo-router'
 import { CaretDownIcon } from 'phosphor-react-native/src/icons/CaretDown'
 import { CaretUpIcon } from 'phosphor-react-native/src/icons/CaretUp'
 import { CheckCircleIcon } from 'phosphor-react-native/src/icons/CheckCircle'
@@ -48,49 +47,10 @@ export default function CreateSubmissionScreen() {
   const { handleDone, handleReset, handleDiscard, isSubmitting } =
     useSubmissionSubmit()
 
-  // No back path off this screen (#156) — instead, a bottom action returns
-  // the user to whichever entrypoint sourced this draft (ADR 0002
-  // amendment's single-source-by-construction `source`).
-  const photoSource = usePhotoStore((s) => s.source)
-  const { pickFromLibrary } = useLibraryPhotoPicker()
-  const addMorePhotosLabel =
-    photoSource === 'camera' ? 'Take More Photos' : 'Select More Photos'
-  const handleAddMorePhotos = useCallback(() => {
-    if (photoSource === 'camera') {
-      router.navigate('/camera')
-    } else {
-      pickFromLibrary()
-    }
-  }, [photoSource, pickFromLibrary])
-
-  // The header back and swipe-back are off here, but Android's hardware Back
-  // still pops to Home, which offers a draft's owner nothing: they either
-  // keep adding photos or drop the draft. Ask which. Gated on focus because
-  // this screen stays mounted under Cat Form and the map picker, whose own
-  // Back must not reach this handler.
-  const isFocused = useIsFocused()
-  const handleBackPress = useCallback(() => {
-    if (!isFocused) return false
-    // Mid-send there is nothing safe to offer: leaving or discarding would
-    // pull the draft out from under the send. Back waits for it to finish.
-    if (isSubmitting) return true
-    showAlert('Leave Submission?', 'Your draft is not sent yet.', [
-      { text: 'Stay', style: 'cancel' },
-      {
-        text: addMorePhotosLabel,
-        onPress: handleAddMorePhotos,
-      },
-      { text: 'Discard Draft', style: 'destructive', onPress: handleDiscard },
-    ])
-    return true
-  }, [
-    isFocused,
-    isSubmitting,
-    addMorePhotosLabel,
-    handleAddMorePhotos,
-    handleDiscard,
-  ])
-  useBackHandler(handleBackPress)
+  // No back path off this screen (#156): a bottom action reopens the
+  // source that started the draft, and Back asks what to do.
+  const { addMore } = usePhotoEntrypoints()
+  useDraftExitPrompt({ isSubmitting, addMore, onDiscard: handleDiscard })
 
   // One cat open at a time: a stack of fully open cats would push the bottom
   // actions off a phone screen.
@@ -303,10 +263,10 @@ export default function CreateSubmissionScreen() {
         <ButtonRow>
           <AppButton
             variant="secondary"
-            onPress={handleAddMorePhotos}
+            onPress={addMore.open}
             disabled={isSubmitting}
           >
-            {addMorePhotosLabel}
+            {addMore.label}
           </AppButton>
           <AppButton
             onPress={handleDone}
