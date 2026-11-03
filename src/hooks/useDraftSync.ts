@@ -16,6 +16,7 @@ import { useAuth } from '@/src/lib/auth/useAuth'
 import {
   createSubmissionCache,
   getCurrentCacheId,
+  UNSENT_STATUSES,
   updateSubmissionCache,
 } from '@/src/lib/cache/submissionCache'
 import { useLocationCapture } from '@/src/lib/location'
@@ -46,7 +47,7 @@ async function syncDraftToRow(
       cats: cats.map((cat) => toCachedCat(cat, getBoxesForCat(cat.local_id))),
       photos: photos.map(toCachedPhoto),
     },
-    ['In Progress', 'Failed'],
+    UNSENT_STATUSES,
   )
 }
 

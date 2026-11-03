@@ -194,3 +194,8 @@ Tests: `useSubmissionSubmit.inFlight.test.ts` (lock, retry, cleared draft, Faile
 
 **Purpose:** Five call sites each assembled uid, Submission id and `updatePhoto` and had to upload the store's slotted copy (one didn't); Submit polled the store for 30 s, so a failed upload surfaced only at the timeout.
 **Change:** `lib/upload/draftUploads.ts`: `syncPhotoUploads()` (no arguments; reads auth store and photo store), `cancelPhotoUpload(localId)`, `cancelPhotoUploads()`, `whenUploadsSettled(timeoutMs)` → `'uploaded' | 'failed' | 'timeout'`, event-driven from the photo store and a new queue idle signal. `uploadNewPhoto.ts` is now the queue only; `retryPendingUploads` and the Submit poll are gone. Camera, library, Details, Submit and teardown use the facade. Test: `draftUploads.test.ts` (slotted copy, immediate failure, timeout).
+
+## 2026-11-03 — refactor (draft lifecycle)
+
+**Purpose:** The submit lock was checked by hand in four places, and the In Progress → Sending → Submitted/Failed status machine was written by bare cache updates in three files.
+**Change:** See ADR-0006's 2026-11-03 amendment. `submitDraft()`/`discardDraft()`/`isDraftBusy()` in `lib/submission/draft.ts`; the send pipeline moved to `lib/submission/send.ts`; `transitionSubmission()` and `UNSENT_STATUSES` in `submissionCache.ts`. `useSubmissionSubmit` keeps only the confirm, the messages and navigation. Test: transition table in `submissionCache.serial.test.ts`; the submit-flow tests now seed the auth store.

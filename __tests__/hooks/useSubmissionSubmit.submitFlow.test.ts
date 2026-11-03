@@ -1,4 +1,5 @@
 import * as ui from '@/src/hooks/useUIStore'
+import { useAuthStore } from '@/src/lib/auth/authStore'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { act, renderHook } from '@testing-library/react-native'
 
@@ -42,10 +43,6 @@ jest.mock('@/src/lib/upload/firebaseUpload', () => ({
   finalizeSubmissionPhotoMetadata: jest.fn(() => Promise.resolve()),
 }))
 
-jest.mock('@/src/lib/auth/useAuth', () => ({
-  useAuth: () => ({ user: { uid: 'uid-owner' } }),
-}))
-
 const mockStopLocationCapture = jest.fn()
 jest.mock('@/src/lib/location', () => ({
   stopLocationCapture: () => mockStopLocationCapture(),
@@ -83,6 +80,10 @@ function defaultCat() {
 
 describe('useSubmissionSubmit submit flow', () => {
   beforeEach(async () => {
+    useAuthStore.setState({
+      user: { uid: 'uid-owner' } as never,
+      isReady: true,
+    })
     jest.restoreAllMocks()
     jest.clearAllMocks()
     await AsyncStorage.clear()

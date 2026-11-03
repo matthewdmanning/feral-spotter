@@ -1,4 +1,5 @@
 import { useUIStore } from '@/src/hooks/useUIStore'
+import { useAuthStore } from '@/src/lib/auth/authStore'
 import { act, renderHook } from '@testing-library/react-native'
 
 import * as cache from '@/src/lib/cache/submissionCache'
@@ -39,10 +40,6 @@ jest.mock('@/src/lib/upload/firebaseUpload', () => ({
   finalizeSubmissionPhotoMetadata: jest.fn().mockResolvedValue(undefined),
 }))
 
-jest.mock('@/src/lib/auth/useAuth', () => ({
-  useAuth: () => ({ user: { uid: 'uid-owner' } }),
-}))
-
 const cat = (id: string) => ({
   local_id: id,
   age: 'adult' as const,
@@ -70,9 +67,12 @@ const photo = (id: string) => ({
 
 describe('useSubmissionSubmit — handleDone cache sync (#228)', () => {
   beforeEach(async () => {
+    useAuthStore.setState({
+      user: { uid: 'uid-owner' } as never,
+      isReady: true,
+    })
     jest.restoreAllMocks()
     jest.clearAllMocks()
-    jest.spyOn(cache, 'updateSubmissionCache')
     useUIStore.setState({ dialog: null, isSubmitting: false })
     jest.mocked(uploadSubmissionMetadata).mockResolvedValue(undefined)
     useSubmissionStore.getState().clearDraft()
@@ -100,15 +100,8 @@ describe('useSubmissionSubmit — handleDone cache sync (#228)', () => {
       await confirm!.onPress!()
     })
 
-    expect(cache.updateSubmissionCache).toHaveBeenCalledWith(
-      'cache-1',
-      expect.objectContaining({
-        metadata: expect.objectContaining({
-          time_method: 'manual',
-          manual_time: '2026-08-01T12:00:00.000Z',
-        }),
-      }),
-    )
+    // The persisted row is the proof: the Sending write resent the full
+    // metadata, so manual_time survived to the Submitted row.
     expect(await cache.getSubmissionCache('cache-1')).toEqual(
       expect.objectContaining({
         status: 'Submitted',
@@ -137,6 +130,10 @@ describe('useSubmissionSubmit — history row survives teardown', () => {
   }
 
   beforeEach(async () => {
+    useAuthStore.setState({
+      user: { uid: 'uid-owner' } as never,
+      isReady: true,
+    })
     jest.clearAllMocks()
     useUIStore.setState({ dialog: null, isSubmitting: false })
     useSubmissionStore.getState().clearDraft()

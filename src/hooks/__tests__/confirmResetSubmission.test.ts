@@ -9,7 +9,10 @@ import { confirmResetSubmission } from '../confirmResetSubmission'
  */
 
 jest.mock('expo-router', () => ({ router: { replace: jest.fn() } }))
-jest.mock('@/src/lib/submission/draft', () => ({ discardDraft: jest.fn() }))
+jest.mock('@/src/lib/submission/draft', () => ({
+  discardDraft: jest.fn(),
+  isDraftBusy: () => false,
+}))
 
 const seedPhotos = (source: 'camera' | 'library') =>
   usePhotoStore.setState({

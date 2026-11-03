@@ -5,11 +5,11 @@
  * A separate index key tracks all known IDs for listing.
  * A "current" key tracks the active in-progress submission.
  *
- * Status lifecycle:
+ * Status lifecycle (enforced by transitionSubmission):
  *   'In Progress' → created when submission begins
- *   'Sending'     → set immediately on Submit press
- *   'Submitted'   → set on API success confirmation
- *   'Failed'      → set on API error
+ *   'Sending'     → set on Submit, from 'In Progress' or 'Failed'
+ *   'Submitted'   → set when the send lands, from 'Sending'
+ *   'Failed'      → set when the send fails, or found 'Sending' at launch
  *
  * Deletion: only on explicit Reset confirm (never on app restart or nav).
  */
@@ -20,6 +20,17 @@ import type { LocationType, TimeType } from '@/src/types'
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type CacheStatus = 'In Progress' | 'Submitted' | 'Sending' | 'Failed'
+
+/** Statuses of a row whose Submission has not been sent: the draft still owns it. */
+export const UNSENT_STATUSES: readonly CacheStatus[] = ['In Progress', 'Failed']
+
+/** The only legal status moves. Anything else is refused. */
+const TRANSITIONS: Record<CacheStatus, readonly CacheStatus[]> = {
+  'In Progress': ['Sending'],
+  Failed: ['Sending'],
+  Sending: ['Submitted', 'Failed'],
+  Submitted: [],
+}
 
 /** How the location/time fields were captured, as chosen on the Create screen. */
 export type LocationMethod = 'device' | 'pin' | 'address'
@@ -185,7 +196,7 @@ export function updateSubmissionCache(
   id: string,
   updates: Partial<Omit<SubmissionCacheFile, 'id' | 'created_at'>>,
   /** Write only while the row's status is one of these (checked in-chain). */
-  onlyIfStatus?: CacheStatus[],
+  onlyIfStatus?: readonly CacheStatus[],
 ): Promise<void> {
   return serialized(async () => {
     const existing = await getSubmissionCache(id)
@@ -197,6 +208,34 @@ export function updateSubmissionCache(
       updated_at: new Date().toISOString(),
     }
     await AsyncStorage.setItem(CACHE_PREFIX + id, JSON.stringify(updated))
+  })
+}
+
+/**
+ * Moves a row to `to`, writing `patch` with it, only if the move is legal
+ * from the row's current status (checked inside the write chain). Returns
+ * the row as written, or null when the row is missing or the move is
+ * illegal. Callers fire their analytics from the returned snapshot, so
+ * the snapshot is always the post-move row.
+ */
+export function transitionSubmission(
+  id: string,
+  to: CacheStatus,
+  patch: Partial<
+    Omit<SubmissionCacheFile, 'id' | 'created_at' | 'status'>
+  > = {},
+): Promise<SubmissionCacheFile | null> {
+  return serialized(async () => {
+    const existing = await getSubmissionCache(id)
+    if (!existing || !TRANSITIONS[existing.status].includes(to)) return null
+    const updated: SubmissionCacheFile = {
+      ...existing,
+      ...patch,
+      status: to,
+      updated_at: new Date().toISOString(),
+    }
+    await AsyncStorage.setItem(CACHE_PREFIX + id, JSON.stringify(updated))
+    return updated
   })
 }
 
