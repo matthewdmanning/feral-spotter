@@ -49,7 +49,7 @@ import {
   whenUploadsSettled,
 } from '@/src/lib/upload/draftUploads'
 import { deleteSubmissionUploads } from '@/src/lib/upload/firebaseUpload'
-import { validateCatCount, validatePhotos } from '@/src/utils/validation'
+import { missingDraftContent } from '@/src/utils/validation'
 
 // ─── The draft lock ──────────────────────────────────────────────────────────
 //
@@ -229,10 +229,10 @@ export type SubmitOutcome =
 
 /** #265 hard blocks, read from the stores as they are now. */
 function missingContent(): string[] {
-  return [
-    ...validateCatCount(useSubmissionStore.getState().cats.length),
-    ...validatePhotos(usePhotoStore.getState().photos.length),
-  ].map((e) => e.message)
+  return missingDraftContent(
+    useSubmissionStore.getState().cats.length,
+    usePhotoStore.getState().photos.length,
+  )
 }
 
 /**
