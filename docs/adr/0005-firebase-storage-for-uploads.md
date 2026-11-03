@@ -171,6 +171,35 @@ The no-metadata sweep pages its listing (1,000 objects a page) and deletes ten
 objects at a time, with a 540 s timeout and 512 MiB. A prefix is still judged
 only after every page is read.
 
+## Amendment 2026-11-03: no Firestore; limits move to object names and a claim
+
+Supersedes "Resolved: photo-count enforcement moves to a Firestore counter"
+and the counter half of the 2026-11-02 amendment. Owner decision: the
+project does not use Firestore at all. `firestore.rules`, the Firestore
+emulator and every Firestore read and write are removed.
+
+- **10 photos per Submission, exact.** `storage.rules` accepts a photo only
+  under the names `photo-0` … `photo-9` (with an image extension). A
+  Submission folder therefore cannot hold an eleventh photo, with no counter
+  and no latency window, so the burst gap of the 2026-11-02 amendment is
+  closed. Each photo's `upload_slot` (assigned by `usePhotoStore`, fresh
+  slots before freed ones) is its name. Overwriting a slot is allowed: it
+  replaces a photo rather than adding one, and Submit's `customMetadata` patch
+  is such an update.
+- **250 Submissions per uid, soft.** On each `metadata.json` write or delete,
+  `functions/` counts the uid's `metadata.json` objects in Storage and sets
+  the Auth custom claim `submissionCapReached` to match, keeping the uid's
+  other claims. `storage.rules` refuses a new `metadata.json` while the claim
+  is set; an existing one may always be rewritten. A client sees the claim
+  after its token refreshes (at most an hour).
+- The #268 submissionId collision existed only in the Firestore counter,
+  which was keyed by submissionId. Storage paths include the uid, so two
+  uids can no longer collide.
+
+Existing Firestore data in the deployed project (`submissions/*`,
+`submissionCounts/*`) is no longer read or written. Deleting it, and the
+Firestore database, is a console step.
+
 ## Considered Options
 
 - **Keep the custom `upload+api.ts` route** — rejected: no resumable/retry story,

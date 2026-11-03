@@ -114,9 +114,11 @@ export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
     })
 
     const uid = user?.uid
-    const submissionId = usePhotoStore.getState().submissionId
+    const { submissionId, photos: pool } = usePhotoStore.getState()
     if (uid && submissionId) {
-      for (const photo of newPhotos) {
+      // The stored copies carry their upload slots; the uploads need them.
+      const added = new Set(newPhotos.map((p) => p.local_id))
+      for (const photo of pool.filter((p) => added.has(p.local_id))) {
         uploadNewPhoto(photo, uid, submissionId, updatePhoto)
       }
     } else {

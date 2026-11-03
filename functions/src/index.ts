@@ -1,8 +1,8 @@
 /**
- * Maintains per-submission and per-uid Firestore counters so Storage
- * Security Rules can gate uploads on them (rules can't count sibling
- * objects directly — see docs/adr/0005-firebase-storage-for-uploads.md),
- * and gates sign-in on the tester allowlist via a custom claim (#267).
+ * Storage-side upkeep with no database: keeps the per-uid Submission cap
+ * claim in step with the uid's metadata.json objects (#270), sweeps photos
+ * that never got metadata (#293), sets the tester-allowlist claim (#267)
+ * and syncs the email list. See docs/adr/0005-firebase-storage-for-uploads.md.
  *
  * Object path convention: submissions/{uid}/{submissionId}/{fileName} —
  * uid is the signed-in Firebase Auth uid directly (previously a salted
@@ -10,7 +10,6 @@
  */
 import { getAuth } from 'firebase-admin/auth'
 import { initializeApp } from 'firebase-admin/app'
-import { FieldValue, getFirestore } from 'firebase-admin/firestore'
 import { getStorage } from 'firebase-admin/storage'
 import { createEmailListProvider, DEFAULT_EMAIL_PROVIDER } from './email'
 import { setEmailSubscription } from './email/setEmailSubscription'
@@ -35,8 +34,8 @@ const METADATA_PATH_PATTERN = /^submissions\/([^/]+)\/([^/]+)\/metadata\.json$/
 
 // metadata.json (the final-submission JSON blob — see storage.rules and
 // src/lib/upload/firebaseUpload.ts) lives under the same
-// submissions/{uid}/{submissionId}/{fileName} prefix as photos but isn't
-// one — it must not move the photoCount counter these triggers maintain.
+// submissions/{uid}/{submissionId}/{fileName} prefix as photos. Its
+// presence is what makes a prefix a Submission.
 const METADATA_FILE_NAME = 'metadata.json'
 
 // #293 ("no metadata ⇒ no photo"). A photo with no location, time or
@@ -48,15 +47,6 @@ const METADATA_FILE_NAME = 'metadata.json'
 // keeps their photos, short enough that abandoned uploads don't accumulate
 // indefinitely. Product decision, 2026-08-24.
 const SWEEP_RETENTION_DAYS = 7
-
-function parseSubmissionPath(
-  objectName: string,
-): { uid: string; submissionId: string } | null {
-  const match = OBJECT_PATH_PATTERN.exec(objectName)
-  if (!match) return null
-  if (match[3] === METADATA_FILE_NAME) return null
-  return { uid: match[1], submissionId: match[2] }
-}
 
 // Sole parser for the tester allowlist. The client-side twin it used to
 // mirror (src/lib/upload/allowlist.ts) was deleted in ed2cdb4.
@@ -70,136 +60,55 @@ function parseTesterAllowlist(raw: string | undefined): Set<string> {
   )
 }
 
-// Per-object marker under the submission's counter doc, keyed by object
-// name. Storage events arrive at least once and in any order, and an
-// overwrite emits a finalize for the new generation plus a delete for the
-// old one. The marker records which generation is counted, so a duplicate,
-// an overwrite or a delete-before-finalize never moves the count twice.
-// Clients cannot read it (no firestore.rules match = closed).
-function photoMarker(submissionId: string, objectName: string) {
-  return getFirestore()
-    .collection('submissions')
-    .doc(submissionId)
-    .collection('photos')
-    .doc(encodeURIComponent(objectName))
+// #270, without Firestore: caps distinct Submissions per uid. The count is
+// the uid's metadata.json objects in Storage, the same thing a Submission
+// is. Rules cannot count objects, so this keeps an Auth custom claim in
+// step with the count, and storage.rules refuses a new metadata.json
+// while the claim is set. Recounted on every metadata.json write and
+// delete, so it is idempotent under at-least-once delivery and clears
+// itself once Submissions are deleted.
+//
+// Soft at the edge: a client's token carries the claim only after it
+// refreshes (at most an hour). The 10-photo cap needs no such step: it is
+// enforced by object name in storage.rules.
+export const MAX_SUBMISSIONS_PER_UID = 250
+export const SUBMISSION_CAP_CLAIM = 'submissionCapReached'
+
+export async function syncSubmissionCapClaim(uid: string): Promise<void> {
+  const [files] = await getStorage()
+    .bucket(BUCKET_NAME)
+    .getFiles({ prefix: `submissions/${uid}/`, matchGlob: '**/metadata.json' })
+  const capReached = files.length >= MAX_SUBMISSIONS_PER_UID
+
+  const user = await getAuth().getUser(uid)
+  const claims = user.customClaims ?? {}
+  if (Boolean(claims[SUBMISSION_CAP_CLAIM]) === capReached) return
+  await getAuth().setCustomUserClaims(uid, {
+    ...claims,
+    [SUBMISSION_CAP_CLAIM]: capReached,
+  })
 }
 
-interface PhotoMarker {
-  generation: string
-  /** A delete handled before its finalize: that finalize must not count. */
-  deleted?: boolean
+async function syncCapForObject(name: string): Promise<void> {
+  const match = METADATA_PATH_PATTERN.exec(name)
+  if (!match) return
+  try {
+    await syncSubmissionCapClaim(match[1])
+  } catch (error) {
+    // A deleted account has nothing left to cap.
+    if ((error as { code?: string }).code === 'auth/user-not-found') return
+    throw error
+  }
 }
 
-// `retry: true`: a transient Firestore error must not lose a count. Safe
-// only because both handlers are idempotent per object generation.
-export const onSubmissionPhotoUploaded = onObjectFinalized(
-  { bucket: BUCKET_NAME, retry: true },
-  async (event) => {
-    const parsed = parseSubmissionPath(event.data.name)
-    if (!parsed) return
-    const generation = String(event.data.generation)
-
-    const firestore = getFirestore()
-    const doc = firestore.collection('submissions').doc(parsed.submissionId)
-    const marker = photoMarker(parsed.submissionId, event.data.name)
-
-    // #268: submissionId is client-generated, so two different uids can
-    // collide on the same id. The Storage write already landed by the time
-    // this trigger runs — it can't retroactively deny it — but it must not
-    // flip ownerUid or inflate another uid's photoCount. Transaction guards
-    // against a same-id race between two first-writers; the loser simply
-    // doesn't get counted.
-    await firestore.runTransaction(async (tx) => {
-      const snapshot = await tx.get(doc)
-      const markerSnapshot = await tx.get(marker)
-      const existingOwner = snapshot.get('ownerUid') as string | undefined
-
-      if (existingOwner != null && existingOwner !== parsed.uid) return
-
-      const counted = markerSnapshot.data() as PhotoMarker | undefined
-      // Duplicate delivery, or its delete already ran.
-      if (counted?.generation === generation) return
-      if (counted && !counted.deleted) {
-        // Overwrite of an object already counted: track the new
-        // generation; the old one's delete event will be ignored.
-        tx.set(marker, { generation })
-        return
-      }
-
-      tx.set(marker, { generation })
-      tx.set(
-        doc,
-        { ownerUid: parsed.uid, photoCount: FieldValue.increment(1) },
-        { merge: true },
-      )
-    })
-  },
-)
-
-export const onSubmissionPhotoDeleted = onObjectDeleted(
-  { bucket: BUCKET_NAME, retry: true },
-  async (event) => {
-    const parsed = parseSubmissionPath(event.data.name)
-    if (!parsed) return
-    const generation = String(event.data.generation)
-
-    const firestore = getFirestore()
-    const doc = firestore.collection('submissions').doc(parsed.submissionId)
-    const marker = photoMarker(parsed.submissionId, event.data.name)
-
-    await firestore.runTransaction(async (tx) => {
-      const snapshot = await tx.get(doc)
-      const markerSnapshot = await tx.get(marker)
-      const existingOwner = snapshot.get('ownerUid') as string | undefined
-      // #268: a colliding uid's delete must not move the owner's count.
-      if (existingOwner != null && existingOwner !== parsed.uid) return
-
-      const counted = markerSnapshot.data() as PhotoMarker | undefined
-      if (!counted) {
-        // Arrived before its finalize: leave a tombstone so that finalize
-        // does not count an object that is already gone.
-        tx.set(marker, { generation, deleted: true })
-        return
-      }
-      // Duplicate delivery, or the old generation of an overwrite.
-      if (counted.deleted || counted.generation !== generation) return
-
-      tx.set(marker, { generation, deleted: true })
-      const current = (snapshot.get('photoCount') as number | undefined) ?? 0
-      tx.set(doc, { photoCount: Math.max(0, current - 1) }, { merge: true })
-    })
-  },
-)
-
-// #270: counts distinct submissions per uid so storage.rules can cap
-// them (isValidMetadataWrite — checked at metadata.json write, not per
-// photo, because isValidPhotoWrite already spends the rules' 2-Firestore-
-// read budget on the photoCount check; metadata.json's own rule evaluation
-// starts fresh with its own budget). Caps submissions that reach Submit,
-// not photos uploaded into an abandoned draft — see the amendment to
-// ADR-0005 for the residual gap that leaves open.
 export const onSubmissionSubmitted = onObjectFinalized(
-  { bucket: BUCKET_NAME },
-  async (event) => {
-    const match = METADATA_PATH_PATTERN.exec(event.data.name)
-    if (!match) return
-    const [, uid, submissionId] = match
+  { bucket: BUCKET_NAME, retry: true },
+  (event) => syncCapForObject(event.data.name),
+)
 
-    const firestore = getFirestore()
-    const counterDoc = firestore.collection('submissionCounts').doc(uid)
-    const marker = counterDoc.collection('items').doc(submissionId)
-
-    // metadata.json can be re-uploaded on retry (isValidMetadataWrite has
-    // no create-only restriction) — dedupe via a per-submission marker so
-    // a retry doesn't double-count against the cap.
-    await firestore.runTransaction(async (tx) => {
-      const markerSnapshot = await tx.get(marker)
-      if (markerSnapshot.exists) return
-
-      tx.set(marker, {})
-      tx.set(counterDoc, { count: FieldValue.increment(1) }, { merge: true })
-    })
-  },
+export const onSubmissionDeleted = onObjectDeleted(
+  { bucket: BUCKET_NAME, retry: true },
+  (event) => syncCapForObject(event.data.name),
 )
 
 // #267: sets the tester-allowlist custom claim
@@ -247,11 +156,6 @@ export const gateTesterAllowlist = beforeUserSignedIn(resolveTesterClaim)
 //
 // Runs under the Admin SDK, which bypasses Security Rules entirely, so it
 // is unaffected by storage.rules' delete branch.
-//
-// Deleting each object individually (rather than a bulk prefix delete) is
-// deliberate: it fires onSubmissionPhotoDeleted per object, which keeps
-// photoCount consistent instead of stranding a counter doc at a count the
-// bucket no longer backs.
 // The default 60 s would cut a large sweep off silently, and the next run
 // would repeat the same listing. Listing is paged so the whole bucket's
 // metadata is never held at once; deletes run a few at a time.

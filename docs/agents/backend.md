@@ -5,31 +5,29 @@ and which Firebase MCP resources and skills are approved to use. Ratified
 design decisions live in `docs/adr/`; this file is the map to them plus the
 bits not yet ratified.
 
-Firestore is **not** a backend surface of this project — see "Firestore
-skills are off-limits" below before touching anything Firestore-shaped.
+This project does not use Firestore at all — see "Firestore skills are
+off-limits" below before touching anything Firestore-shaped.
 
 ## Current architecture
 
 - **Auth**: Firebase Auth, Google + email/password live, Apple/Facebook
   version-gated off. See [ADR-0001](../adr/0001-firebase-auth-over-google-signin.md).
 - **Photo uploads**: direct client upload via `@react-native-firebase/storage`
-  to the default bucket `gs://project-e3d5659d-bc4f-438f-88c.firebasestorage.app`
-  (ADR-0005's 2026-10-04 amendment), path
+  to the project's default bucket (ADR-0005's 2026-10-04 amendment), path
   `submissions/{uid}/{submissionId}/{fileName}` (raw Firebase Auth uid, not
   a hash — see ADR-0005's 2026-08-16 amendment). See
   [ADR-0005](../adr/0005-firebase-storage-for-uploads.md).
-- **Firestore counter doc**: `/submissions/{submissionId}.photoCount`,
-  written only by `functions/src/index.ts`'s Storage-trigger Cloud Functions
-  (Admin SDK) to satisfy Storage Rules' need for a sibling-object count —
-  not an application database. `firestore.rules` gives the owning uid
-  read-only access; all client writes are `allow write: if false`. Don't
-  extend this into a general Firestore data model — see below.
+- **Upload limits, no database** (ADR-0005's 2026-11-03 amendment):
+  - 10 photos per Submission: `storage.rules` accepts only the object
+    names `photo-0` … `photo-9`; each photo's `upload_slot` names it.
+  - 250 Submissions per uid: `functions/` counts the uid's `metadata.json`
+    objects and sets the Auth custom claim `submissionCapReached`, which
+    `storage.rules` checks.
 - **Final submission (cats + metadata)**: uploaded to Cloud Storage as
   `metadata.json` alongside the photos — see
-  [ADR-0005](../adr/0005-firebase-storage-for-uploads.md). Not a Firestore
+  [ADR-0005](../adr/0005-firebase-storage-for-uploads.md). Not a database
   write, not a separate Cloud Run/Functions endpoint.
-- **Tester allowlist / abuse limits on uploads**: not enforced yet — open
-  follow-up issues #267–#270 from the PR #271 security-rules audit.
+- **Tester allowlist**: not enforced yet (#267).
 
 ## Test-drive posture: emulator by default
 
@@ -39,7 +37,7 @@ infrastructure-level errors that have nothing to do with the code under
 test — a 412 bucket-permission error once cost a session's debugging time
 at the wrong layer. Ports come from `firebase.json` as-is (Auth `9099`,
 Storage `9199`); emulator mode needs **no change** to
-`storage.rules`/`firestore.rules`, so it exercises the actually-deployed
+`storage.rules`, so it exercises the actually-deployed
 rules.
 
 Start the suite (`firebase emulators:start`), then set:
@@ -94,11 +92,10 @@ checks), see [test-driving.md](test-driving.md).
 ## Firestore skills are off-limits
 
 Never load `firebase:firebase-firestore` or any other skill scoped to
-Firestore schema/query/index design in this project. The only Firestore
-surface that exists is the single Admin-SDK-written counter doc above —
-it is not, and must not become, a general-purpose data store. If a task
-seems to call for a Firestore skill, that's a signal to stop and confirm
-scope with the user rather than loading it.
+Firestore schema/query/index design in this project. The project has no
+Firestore surface: counts and limits live in Storage object names and Auth
+custom claims. If a task seems to call for Firestore, that's a signal to
+stop and confirm scope with the user rather than loading it.
 
 ## Approved resources
 

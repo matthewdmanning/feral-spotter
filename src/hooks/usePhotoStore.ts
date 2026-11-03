@@ -31,12 +31,44 @@ interface PhotoState {
   // the draft counts as restored from an earlier session. null while the pool
   // is empty, and for a pool persisted before this field existed.
   updated_at: number | null
+  // Slots this draft has uploaded into. A freed slot is reused only when no
+  // fresh one is left: an upload still running for a removed photo could
+  // otherwise land on its replacement's object.
+  usedSlots: number[]
 
   addPhoto: (photo: SubmissionPhoto) => void
   addPhotos: (photos: SubmissionPhoto[]) => void
   updatePhoto: (localId: string, patch: Partial<SubmissionPhoto>) => void
   removePhoto: (localId: string) => void
   clearPhotos: (deferFileDeletion?: boolean) => void
+}
+
+// ─── Slots ────────────────────────────────────────────────────────────────────
+
+/**
+ * Gives each incoming photo the lowest slot no current photo holds,
+ * preferring slots this draft never used. Photos past the last free slot
+ * are dropped: the entrypoints cap at MAX_PHOTOS first, so this is only a
+ * backstop.
+ */
+function assignSlots(
+  current: SubmissionPhoto[],
+  usedSlots: number[],
+  incoming: SubmissionPhoto[],
+): { photos: SubmissionPhoto[]; usedSlots: number[] } {
+  const held = new Set(current.map((p) => p.upload_slot))
+  const used = new Set(usedSlots)
+  const all = Array.from({ length: MAX_PHOTOS }, (_, slot) => slot)
+  const photos: SubmissionPhoto[] = []
+  for (const photo of incoming) {
+    const free = all.filter((slot) => !held.has(slot))
+    const slot = free.find((s) => !used.has(s)) ?? free[0]
+    if (slot === undefined) break
+    held.add(slot)
+    used.add(slot)
+    photos.push({ ...photo, upload_slot: slot })
+  }
+  return { photos, usedSlots: [...used] }
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -48,24 +80,35 @@ export const usePhotoStore = create<PhotoState>()(
       source: null,
       submissionId: null,
       updated_at: null,
+      usedSlots: [],
 
       // Camera-only call site (useCameraCapture.tsx) — pins source: 'camera'.
       addPhoto: (photo) =>
-        set((s) => ({
-          photos: [...s.photos, photo],
-          source: 'camera',
-          submissionId: s.submissionId ?? randomUUID(),
-          updated_at: Date.now(),
-        })),
+        set((s) => {
+          const slotted = assignSlots(s.photos, s.usedSlots, [photo])
+          if (slotted.photos.length === 0) return s
+          return {
+            ...slotted,
+            photos: [...s.photos, ...slotted.photos],
+            source: 'camera',
+            submissionId: s.submissionId ?? randomUUID(),
+            updated_at: Date.now(),
+          }
+        }),
 
       // Library-only call site (useLibraryPhotoPicker.ts) — pins source: 'library'.
       addPhotos: (photos) =>
-        set((s) => ({
-          photos: [...s.photos, ...photos],
-          source: 'library',
-          submissionId: s.submissionId ?? randomUUID(),
-          updated_at: Date.now(),
-        })),
+        set((s) => {
+          const slotted = assignSlots(s.photos, s.usedSlots, photos)
+          if (slotted.photos.length === 0) return s
+          return {
+            ...slotted,
+            photos: [...s.photos, ...slotted.photos],
+            source: 'library',
+            submissionId: s.submissionId ?? randomUUID(),
+            updated_at: Date.now(),
+          }
+        }),
 
       updatePhoto: (localId, patch) =>
         set((s) => ({
@@ -102,6 +145,7 @@ export const usePhotoStore = create<PhotoState>()(
             source: null,
             submissionId: null,
             updated_at: null,
+            usedSlots: [],
           }
         }),
     }),
@@ -117,6 +161,22 @@ export const usePhotoStore = create<PhotoState>()(
       onRehydrateStorage: () => (state) => {
         if (state && state.photos.length === 0 && state.source !== null) {
           usePhotoStore.setState({ source: null })
+        }
+        // A pool saved before slots existed: give its photos slots so
+        // their uploads can still pass storage.rules.
+        if (state && state.photos.some((p) => p.upload_slot == null)) {
+          const kept = state.photos.filter((p) => p.upload_slot != null)
+          const slotted = assignSlots(
+            kept,
+            state.usedSlots ?? [],
+            state.photos.filter((p) => p.upload_slot == null),
+          )
+          usePhotoStore.setState({
+            photos: state.photos.map(
+              (p) => slotted.photos.find((s) => s.local_id === p.local_id) ?? p,
+            ),
+            usedSlots: slotted.usedSlots,
+          })
         }
       },
     },

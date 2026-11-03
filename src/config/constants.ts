@@ -31,17 +31,17 @@ export const APP_VERSION: string = getAppVersion()
 
 /**
  * Maximum photos per submission. Fixed, not env-overridable: storage.rules
- * hard-codes the same 10 (rules cannot read app config), so any other value
- * here only desyncs the two. Enforced at both photo entrypoints.
+ * accepts only the names photo-0 … photo-9 (rules cannot read app config),
+ * so any other value here only desyncs the two. Enforced at both photo
+ * entrypoints; usePhotoStore assigns each photo one of those slots.
  */
 export const MAX_PHOTOS = 10
 
 /**
- * Maximum distinct submissions per uid (#270), enforced by
- * storage.rules' isValidMetadataWrite against the
- * submissionCounts/{uid} doc functions/src/index.ts maintains.
- * Documentation only — rules can't read this constant, so the literal in
- * storage.rules must be kept in sync by hand.
+ * Maximum distinct submissions per uid (#270). Enforced server-side:
+ * functions/src/index.ts (its own MAX_SUBMISSIONS_PER_UID) sets the
+ * submissionCapReached claim that storage.rules checks. Documentation
+ * only here; keep the two numbers equal.
  */
 export const MAX_SUBMISSIONS_PER_UID = 250
 

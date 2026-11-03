@@ -179,3 +179,8 @@ Tests: `useSubmissionSubmit.inFlight.test.ts` (lock, retry, cleared draft, Faile
 
 **Purpose:** `MAX_PHOTOS` was never enforced, so an 11th photo failed its upload silently; `photoCount` drifted under duplicate, overwrite and out-of-order Storage events; a same-size overwrite skipped the content-type check.
 **Change:** See ADR-0005's 2026-11-02 amendment. Client cap at shutter, burst loop and library picker (`photoSlotsLeft`, `showPhotoLimitReached` in `usePhotoStore`); library time classified over the whole pool. Per-object marker docs make both count triggers idempotent, with `retry: true`. Rules: patch branch needs equal size, type and md5; `user_id` must match the path; metadata retries pass the 250 cap. Tests: `functions/src/__tests__/photoCount.test.ts` (event-sequence model; replaces the call-shape cases), three new cases in `__tests__/rules/storage.test.ts` (emulator run: 39 passed), library cap case in `useLibraryPhotoPicker.selection.test.ts`.
+
+## 2026-11-03 — refactor (no Firestore)
+
+**Purpose:** Owner decision: the project does not use Firestore. The photo and Submission caps depended on Firestore counters.
+**Change:** See ADR-0005's 2026-11-03 amendment. Photos are named by `upload_slot` (`photo-0` … `photo-9`), which `storage.rules` enforces; `usePhotoStore` assigns slots, and the pickers upload the stored, slotted copy. The 250-Submission cap is an Auth claim kept in step with the uid's `metadata.json` count. `firestore.rules`, its emulator and tests, and the photo-count triggers are removed. Rules tests run on a `demo-` emulator project. Tests: `usePhotoStore.slots.test.ts`, `functions/src/__tests__/submissionCap.test.ts`, rewritten `__tests__/rules/storage.test.ts` (emulator: 17 passed).
