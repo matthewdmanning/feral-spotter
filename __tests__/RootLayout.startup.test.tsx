@@ -45,7 +45,7 @@ describe('RootLayout draft start-up ordering', () => {
     useDraftStartupStore.setState({ phase: 'cleaning' })
     render(<SubmissionLayout />)
     expect(screen.queryByText('Routes mounted')).toBeNull()
-    expect(screen.getByText('Preparing your sighting')).toBeOnTheScreen()
+    expect(screen.getByText('Preparing Your Sighting')).toBeOnTheScreen()
     act(() => useDraftStartupStore.setState({ phase: 'ready' }))
     expect(screen.getByText('Routes mounted')).toBeOnTheScreen()
   })

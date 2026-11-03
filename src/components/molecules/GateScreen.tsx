@@ -1,5 +1,6 @@
 import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { AppButton } from '@/src/components/atoms/AppButton'
+import { router } from 'expo-router'
 import { Linking, Text, View } from 'react-native'
 import { styles } from './GateScreen.styles'
 
@@ -37,5 +38,27 @@ export function GateScreen({
         ) : null}
       </View>
     </View>
+  )
+}
+
+/** A gate whose one way on is Home. */
+export function GoHomeGate({ title, body }: { title: string; body?: string }) {
+  return (
+    <GateScreen
+      title={title}
+      body={body}
+      primaryLabel="Go Home"
+      onPrimary={() => router.replace('/')}
+    />
+  )
+}
+
+/** Shown where the draft could not be restored at startup. */
+export function RestoreFailedGate() {
+  return (
+    <GoHomeGate
+      title="Could Not Restore Your Sighting"
+      body="Restart the app to try again."
+    />
   )
 }

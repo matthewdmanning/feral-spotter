@@ -1,4 +1,4 @@
-import { render, userEvent } from '@testing-library/react-native'
+import { render, screen, userEvent } from '@testing-library/react-native'
 import React, { useState } from 'react'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
@@ -85,4 +85,26 @@ describe('SegmentedControl select/deselect — model-based test', () => {
       await path.test(testParams)
     })
   })
+})
+
+// A required choice (Settings' theme) must never clear: callers used to
+// guard against the undefined themselves.
+it('keeps a required choice when its selected option is tapped again', async () => {
+  const onChange = jest.fn()
+  render(
+    <SegmentedControl
+      label="Theme"
+      options={[
+        { value: 'light', label: 'Light' },
+        { value: 'dark', label: 'Dark' },
+      ]}
+      value="light"
+      onChange={onChange}
+      required
+    />,
+  )
+  await userEvent.press(screen.getByLabelText('Light'))
+  expect(onChange).not.toHaveBeenCalled()
+  await userEvent.press(screen.getByLabelText('Dark'))
+  expect(onChange).toHaveBeenCalledWith('dark')
 })

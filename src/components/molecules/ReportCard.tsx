@@ -1,6 +1,6 @@
 import { GlassSurface } from '@/src/components/atoms/GlassSurface'
 import { memo } from 'react'
-import { STATUS_COLOR_KEY, StatusIcon } from '@/src/components/atoms/StatusIcon'
+import { StatusIcon, StatusText } from '@/src/components/atoms/StatusIcon'
 import type { SubmissionCacheFile } from '@/src/lib/cache/submissionCache'
 import { selectionHaptic } from '@/src/lib/haptics'
 import {
@@ -29,7 +29,6 @@ export const ReportCard = memo(function ReportCard({
   const { theme } = useUnistyles()
   const catCount = cache.cats.length
   const photoCount = sightingPhotoCount(cache)
-  const colorKey = STATUS_COLOR_KEY[cache.status]
   const when = formatDateTime(reportCardTime(cache))
   const action = sightingCardAction(cache, resumableId)
 
@@ -54,9 +53,7 @@ export const ReportCard = memo(function ReportCard({
             {photoCount} photo{photoCount !== 1 ? 's' : ''}
           </Text>
         )}
-        <Text style={[styles.status, { color: theme.colors[colorKey] }]}>
-          {cache.status}
-        </Text>
+        <StatusText status={cache.status} style={styles.status} />
       </View>
       {action && (
         <CaretRightIcon size={theme.iconSize.sm} color={theme.colors.muted} />

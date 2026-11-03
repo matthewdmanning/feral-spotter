@@ -8,7 +8,7 @@
 import { GlassSurface } from '@/src/components/atoms/GlassSurface'
 import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { CatCrop } from '@/src/components/atoms/CatCrop'
-import { STATUS_COLOR_KEY, StatusIcon } from '@/src/components/atoms/StatusIcon'
+import { StatusIcon, StatusText } from '@/src/components/atoms/StatusIcon'
 import { FieldRow } from '@/src/components/molecules/FieldRow'
 import { useSighting } from '@/src/hooks/useSighting'
 import { describeCat, summarizeCat } from '@/src/lib/cats/attributes'
@@ -66,14 +66,7 @@ export default function SightingDetailScreen() {
             <Text style={styles.datetime}>
               {formatDateTime(sightingTime(sighting))}
             </Text>
-            <Text
-              style={[
-                styles.status,
-                { color: theme.colors[STATUS_COLOR_KEY[sighting.status]] },
-              ]}
-            >
-              {sighting.status}
-            </Text>
+            <StatusText status={sighting.status} style={styles.status} />
           </View>
         </View>
 

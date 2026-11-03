@@ -119,3 +119,15 @@ The touch-target guard from #325 keeps its value here — with buttons routed th
 **Verification:** the shared mock was mutation-checked rather than assumed to matter — removing `useVariants` fails 5 suites and 22 tests; stubbing the numeric tokens out of the theme fails 5 suites and 20 tests. Full run stays at 56 suites and 257 tests, with typecheck and lint unchanged.
 
 The mock is plain JavaScript, matching the other files in `__mocks__/`. A `.tsx` version was written first and rejected: tsconfig includes every `.ts`/`.tsx` outside `__tests__`, so it entered the typecheck without jest's globals in scope and produced eight `Cannot use namespace 'jest' as a value` errors.
+
+## 2026-11-03 — refactor (component interfaces)
+
+**Purpose:** Design review: callers repeated rules the components could own.
+**Change:**
+
+- `SegmentedControl required`: tapping the selected option keeps it (Settings' theme).
+- `StatusText` / `StatusDot` own status colour; `STATUS_COLOR_KEY` is no longer re-exported to screens.
+- `ColumnButton` lives with `BottomButtonColumn`; `AppButton diameter` implies the circle shape.
+- `GoHomeGate` / `RestoreFailedGate` presets. The restore-failed copy is one string, and gate titles are Title Case ("Preparing Your Sighting").
+
+Test: required case in `SegmentedControl.selectDeselect.model.test.tsx`.
