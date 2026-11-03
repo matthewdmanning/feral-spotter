@@ -18,7 +18,7 @@ import { useSubmissionSubmit } from '@/src/hooks/useSubmissionSubmit'
 import { usePhotoEntrypoints } from '@/src/hooks/usePhotoEntrypoints'
 import { useRemoveCat } from '@/src/hooks/useRemoveCat'
 import { draftWarnings } from '@/src/lib/submission/status'
-import { router, type Href } from 'expo-router'
+import { router } from 'expo-router'
 import { CaretDownIcon } from 'phosphor-react-native/src/icons/CaretDown'
 import { CaretUpIcon } from 'phosphor-react-native/src/icons/CaretUp'
 import { CheckCircleIcon } from 'phosphor-react-native/src/icons/CheckCircle'
@@ -33,7 +33,7 @@ import { styles } from './index.styles'
 // view. Location/Time have no editable fields anymore — a Live fix runs in
 // the background from camera-open (#128) and is only ever corrected through
 // the map picker, reached by tapping the warning icon below.
-const LOCATION_PICKER_ROUTE = '/submission/location-picker' as Href
+const LOCATION_PICKER_ROUTE = '/submission/location-picker'
 
 export default function CreateSubmissionScreen() {
   const { theme } = useUnistyles()
