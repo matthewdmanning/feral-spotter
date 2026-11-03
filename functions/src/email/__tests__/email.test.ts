@@ -37,6 +37,31 @@ describe('EmailOctopus provider', () => {
     expect(sentBody(fetchImpl).status).toBe('unsubscribed')
   })
 
+  // Account deletion removes the contact, keyed by the MD5 of the lowercase
+  // address; a contact already gone (404) is a finished deletion.
+  it('deletes the contact by the MD5 of the lowercase address', async () => {
+    const fetchImpl = fakeFetch(true, 204)
+    await createEmailOctopusProvider(config, fetchImpl).remove('A@B.com')
+    expect(fetchImpl).toHaveBeenCalledWith(
+      // md5('a@b.com')
+      'https://api.emailoctopus.com/lists/L/contacts/357a20e8c56e69d6f9734d23ef9517e8',
+      expect.objectContaining({ method: 'DELETE' }),
+    )
+  })
+
+  it('treats a contact that is already gone as removed', async () => {
+    await expect(
+      createEmailOctopusProvider(config, fakeFetch(false, 404)).remove(
+        'a@b.com',
+      ),
+    ).resolves.toBeUndefined()
+    await expect(
+      createEmailOctopusProvider(config, fakeFetch(false, 500)).remove(
+        'a@b.com',
+      ),
+    ).rejects.toThrow('500')
+  })
+
   it('throws when the service rejects the request', async () => {
     await expect(
       createEmailOctopusProvider(config, fakeFetch(false, 401)).unsubscribe(
@@ -58,6 +83,7 @@ describe('setEmailSubscription', () => {
   const provider: jest.Mocked<EmailListProvider> = {
     subscribe: jest.fn().mockResolvedValue(undefined),
     unsubscribe: jest.fn().mockResolvedValue(undefined),
+    remove: jest.fn().mockResolvedValue(undefined),
   }
   const verify = jest
     .fn()
