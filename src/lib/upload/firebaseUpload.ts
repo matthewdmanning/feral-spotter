@@ -39,7 +39,11 @@ import type {
   SubmissionApiPayload,
   SubmissionPhoto,
 } from '@/src/types'
-import { extensionOf } from '@/src/utils/photoFormat'
+import {
+  metadataObjectPath,
+  photoObjectPath,
+  submissionFolder,
+} from '@/src/lib/upload/submissionLayout'
 
 const BUCKET_URL = 'gs://project-e3d5659d-bc4f-438f-88c.firebasestorage.app'
 
@@ -76,10 +80,6 @@ function getSubmissionRef(path: string): StorageReference {
   return ref(storageInstance, path)
 }
 
-function extensionFromUri(uri: string): string {
-  return extensionOf(uri) ?? 'jpg'
-}
-
 export async function uploadSubmissionPhoto(
   photo: SubmissionPhoto,
   uid: string,
@@ -90,7 +90,12 @@ export async function uploadSubmissionPhoto(
   if (photo.upload_slot == null) {
     throw new Error(`[uploadSubmissionPhoto] ${photo.local_id} has no slot`)
   }
-  const objectPath = `submissions/${uid}/${submissionId}/photo-${photo.upload_slot}.${extensionFromUri(photo.uri)}`
+  const objectPath = photoObjectPath(
+    uid,
+    submissionId,
+    photo.upload_slot,
+    photo.uri,
+  )
   const reference = getSubmissionRef(objectPath)
 
   const task = putFile(reference, photo.uri)
@@ -123,7 +128,7 @@ export async function uploadSubmissionMetadata(
 ): Promise<void> {
   if (UPLOADS_MOCK) return
 
-  const objectPath = `submissions/${uid}/${submissionId}/metadata.json`
+  const objectPath = metadataObjectPath(uid, submissionId)
   const reference = getSubmissionRef(objectPath)
 
   await uploadString(reference, JSON.stringify(payload), 'raw', {
@@ -191,7 +196,7 @@ export async function deleteSubmissionUploads(
   submissionId: string,
 ): Promise<void> {
   try {
-    const prefix = getSubmissionRef(`submissions/${uid}/${submissionId}`)
+    const prefix = getSubmissionRef(submissionFolder(uid, submissionId))
     const listing = await listAll(prefix)
     await Promise.all(
       listing.items.map((item) =>
@@ -207,7 +212,7 @@ export async function deleteSubmissionUploads(
     // Listing itself failed (offline, permissions, emulator down). The
     // scheduled sweep is the backstop; Reset carries on regardless.
     console.warn(
-      `[firebaseUpload] best-effort cleanup skipped for submissions/${uid}/${submissionId}`,
+      `[firebaseUpload] best-effort cleanup skipped for ${submissionFolder(uid, submissionId)}`,
       error,
     )
   }

@@ -4,6 +4,8 @@
 module.exports = {
   testEnvironment: 'node',
   testMatch: ['<rootDir>/__tests__/rules/**/*.test.ts'],
+  // The contract test loads the app's and functions' pure layout modules.
+  moduleNameMapper: { '^@/(.*)$': '<rootDir>/$1' },
   transform: {
     '^.+\\.tsx?$': ['babel-jest', { presets: ['babel-preset-expo'] }],
   },

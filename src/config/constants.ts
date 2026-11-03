@@ -29,21 +29,11 @@ export type FeatureFlag = keyof typeof FEATURE_FLAGS
  */
 export const APP_VERSION: string = getAppVersion()
 
-/**
- * Maximum photos per submission. Fixed, not env-overridable: storage.rules
- * accepts only the names photo-0 … photo-9 (rules cannot read app config),
- * so any other value here only desyncs the two. Enforced at both photo
- * entrypoints; usePhotoStore assigns each photo one of those slots.
- */
-export const MAX_PHOTOS = 10
-
-/**
- * Maximum distinct submissions per uid (#270). Enforced server-side:
- * functions/src/index.ts (its own MAX_SUBMISSIONS_PER_UID) sets the
- * submissionCapReached claim that storage.rules checks. Documentation
- * only here; keep the two numbers equal.
- */
-export const MAX_SUBMISSIONS_PER_UID = 250
+// Shared with storage.rules and functions/ (see config/submissionLimits.ts).
+export {
+  MAX_PHOTOS,
+  MAX_SUBMISSIONS_PER_UID,
+} from '@/src/config/submissionLimits'
 
 /**
  * Explicit opt-in tag for test-drive builds with no real Firebase project

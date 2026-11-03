@@ -13,6 +13,15 @@ import { initializeApp } from 'firebase-admin/app'
 import { getStorage } from 'firebase-admin/storage'
 import { createEmailListProvider, DEFAULT_EMAIL_PROVIDER } from './email'
 import { setEmailSubscription } from './email/setEmailSubscription'
+import {
+  MAX_SUBMISSIONS_PER_UID,
+  METADATA_FILE_NAME,
+  SUBMISSION_CAP_CLAIM,
+  SUBMISSIONS_ROOT,
+  parseSubmissionObject,
+  submissionPrefix,
+  userPrefix,
+} from './submissionLayout'
 import { defineSecret, defineString } from 'firebase-functions/params'
 import { onRequest } from 'firebase-functions/v2/https'
 import { onSchedule } from 'firebase-functions/v2/scheduler'
@@ -29,14 +38,6 @@ initializeApp()
 const BUCKET_NAME =
   process.env.GCS_BUCKET_NAME ??
   'project-e3d5659d-bc4f-438f-88c.firebasestorage.app'
-const OBJECT_PATH_PATTERN = /^submissions\/([^/]+)\/([^/]+)\/([^/]+)$/
-const METADATA_PATH_PATTERN = /^submissions\/([^/]+)\/([^/]+)\/metadata\.json$/
-
-// metadata.json (the final-submission JSON blob — see storage.rules and
-// src/lib/upload/firebaseUpload.ts) lives under the same
-// submissions/{uid}/{submissionId}/{fileName} prefix as photos. Its
-// presence is what makes a prefix a Submission.
-const METADATA_FILE_NAME = 'metadata.json'
 
 // #293 ("no metadata ⇒ no photo"). A photo with no location, time or
 // annotation is useless to the wider project, so if the metadata never
@@ -71,13 +72,15 @@ function parseTesterAllowlist(raw: string | undefined): Set<string> {
 // Soft at the edge: a client's token carries the claim only after it
 // refreshes (at most an hour). The 10-photo cap needs no such step: it is
 // enforced by object name in storage.rules.
-export const MAX_SUBMISSIONS_PER_UID = 250
-export const SUBMISSION_CAP_CLAIM = 'submissionCapReached'
+export { MAX_SUBMISSIONS_PER_UID, SUBMISSION_CAP_CLAIM }
 
 export async function syncSubmissionCapClaim(uid: string): Promise<void> {
   const [files] = await getStorage()
     .bucket(BUCKET_NAME)
-    .getFiles({ prefix: `submissions/${uid}/`, matchGlob: '**/metadata.json' })
+    .getFiles({
+      prefix: userPrefix(uid),
+      matchGlob: `**/${METADATA_FILE_NAME}`,
+    })
   const capReached = files.length >= MAX_SUBMISSIONS_PER_UID
 
   const user = await getAuth().getUser(uid)
@@ -90,10 +93,10 @@ export async function syncSubmissionCapClaim(uid: string): Promise<void> {
 }
 
 async function syncCapForObject(name: string): Promise<void> {
-  const match = METADATA_PATH_PATTERN.exec(name)
-  if (!match) return
+  const object = parseSubmissionObject(name)
+  if (!object?.isMetadata) return
   try {
-    await syncSubmissionCapClaim(match[1])
+    await syncSubmissionCapClaim(object.uid)
   } catch (error) {
     // A deleted account has nothing left to cap.
     if ((error as { code?: string }).code === 'auth/user-not-found') return
@@ -184,23 +187,23 @@ export const sweepPhotosWithoutMetadata = onSchedule(
     let pageToken: string | undefined
     do {
       const [files, nextQuery] = await bucket.getFiles({
-        prefix: 'submissions/',
+        prefix: SUBMISSIONS_ROOT,
         autoPaginate: false,
         maxResults: SWEEP_PAGE_SIZE,
         pageToken,
       })
       pageToken = (nextQuery as { pageToken?: string } | undefined)?.pageToken
       for (const file of files) {
-        const match = OBJECT_PATH_PATTERN.exec(file.name)
-        if (!match) continue
-        const prefix = `submissions/${match[1]}/${match[2]}/`
+        const object = parseSubmissionObject(file.name)
+        if (!object) continue
+        const prefix = submissionPrefix(object.uid, object.submissionId)
 
         const entry = prefixes.get(prefix) ?? {
           hasMetadata: false,
           newestMs: 0,
           names: [],
         }
-        if (match[3] === METADATA_FILE_NAME) entry.hasMetadata = true
+        if (object.isMetadata) entry.hasMetadata = true
         // updated/timeCreated are ISO strings on the metadata payload; a
         // missing value must not read as "ancient" and trigger a delete, so
         // it falls back to now.

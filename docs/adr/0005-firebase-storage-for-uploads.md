@@ -208,3 +208,14 @@ Firestore database, is a console step.
   offline-to-online, reuses the Auth investment from ADR-0001. Trade-off: allowlist
   and count-cap enforcement need to be re-homed (see above) before this can fully
   replace the route.
+
+## Amendment 2026-11-03: one layout contract, pinned by a test
+
+The Submission storage layout (folder, `photo-N` names, `metadata.json`,
+the caps, the cap claim name) is defined once per codebase:
+`src/lib/upload/submissionLayout.ts` with `src/config/submissionLimits.ts`
+for the app, and `functions/src/submissionLayout.ts` for functions/.
+`__tests__/rules/submissionLayout.contract.test.ts` writes every path the
+app can produce against `storage.rules` in the emulator, parses it with the
+functions module, and checks the shared numbers agree. A change to one copy
+that the others miss fails that test instead of reaching a device.
