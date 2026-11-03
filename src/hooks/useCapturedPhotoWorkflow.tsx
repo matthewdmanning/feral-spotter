@@ -127,9 +127,14 @@ export function useCapturedPhotoWorkflow({
       }
 
       addPhoto(submission)
-      setCapturedPhotos((prev) => [...prev, submission])
+      // The stored copy carries its upload slot; the upload needs it.
+      const stored = usePhotoStore
+        .getState()
+        .photos.find((p) => p.local_id === submission.local_id)
+      if (!stored) throw new Error('Photo limit reached')
+      setCapturedPhotos((prev) => [...prev, stored])
 
-      return submission
+      return stored
     },
     [addPhoto, keepOnDevice],
   )

@@ -93,12 +93,11 @@ const { status, error } = spawnSync(
     require.resolve('firebase-tools/lib/bin/firebase.js'),
     'emulators:exec',
     '--project',
-    'project-e3d5659d-bc4f-438f-88c',
+    // A demo- project needs no real project: emulators only.
+    'demo-feral-spotter',
     '--only',
-    'firestore,storage,auth',
-    organizationsOnly
-      ? 'npm --prefix functions run test:organizations:emulator'
-      : 'jest -c jest.rules.config.js --runInBand',
+    'storage,auth',
+    'jest -c jest.rules.config.js --runInBand',
   ],
   { stdio: 'inherit', cwd: repoRoot, env },
 )

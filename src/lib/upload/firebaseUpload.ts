@@ -86,7 +86,11 @@ export async function uploadSubmissionPhoto(
   submissionId: string,
   onProgress?: (percent: number) => void,
 ): Promise<PhotoUploadResponse> {
-  const objectPath = `submissions/${uid}/${submissionId}/${photo.local_id}.${extensionFromUri(photo.uri)}`
+  // storage.rules accepts only photo-0 … photo-9: the slot is the name.
+  if (photo.upload_slot == null) {
+    throw new Error(`[uploadSubmissionPhoto] ${photo.local_id} has no slot`)
+  }
+  const objectPath = `submissions/${uid}/${submissionId}/photo-${photo.upload_slot}.${extensionFromUri(photo.uri)}`
   const reference = getSubmissionRef(objectPath)
 
   const task = putFile(reference, photo.uri)
