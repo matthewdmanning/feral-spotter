@@ -8,6 +8,7 @@
  */
 
 import { showAlert } from '@/src/hooks/useUIStore'
+import { isUploadablePhoto } from '@/src/utils/photoFormat'
 import {
   usePhotoStore,
   isAtPhotoLimit,
@@ -102,9 +103,19 @@ export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
     // A camera capture may have arrived while the system picker was open.
     if (usePhotoStore.getState().source === 'camera') return
     const isFirstPick = usePhotoStore.getState().photos.length === 0
+    // Only formats storage.rules accepts: anything else would be refused on
+    // upload and sit un-uploaded, blocking Submit.
+    const accepted = result.assets.filter(isUploadablePhoto)
+    const skippedFormat = accepted.length < result.assets.length
     const slots = photoSlotsLeft()
-    const kept = result.assets.slice(0, slots)
-    if (kept.length < result.assets.length) showPhotoLimitReached()
+    const kept = accepted.slice(0, slots)
+    if (kept.length < accepted.length) showPhotoLimitReached()
+    else if (skippedFormat) {
+      showAlert(
+        'Some photos were skipped',
+        'Only JPEG, PNG and HEIC photos can be added.',
+      )
+    }
     if (kept.length === 0) return
     const newPhotos = kept.map(buildSubmissionPhoto)
     addPhotos(newPhotos)

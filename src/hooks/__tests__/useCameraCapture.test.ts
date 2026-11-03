@@ -42,6 +42,7 @@ jest.mock('react-native-vision-camera', () => ({
 const mockUploadNewPhoto = jest.fn()
 jest.mock('@/src/lib/upload/uploadNewPhoto', () => ({
   cancelQueuedUploads: jest.fn(),
+  cancelPhotoUpload: jest.fn(),
   retryPendingUploads: jest.fn(),
   uploadNewPhoto: (...args: unknown[]) => mockUploadNewPhoto(...args),
 }))

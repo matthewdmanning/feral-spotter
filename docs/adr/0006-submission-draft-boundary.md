@@ -100,3 +100,12 @@ follows that work — the boundary is defined for teardown first, on purpose.
   what a destructive button actually destroys.
 - `clearAllStores()`, `PERSISTED_STORE_KEYS` and `src/utils/cache.ts` are
   deleted — all zero-caller, all encoding a stale idea of what a draft is.
+
+## Amendment 2026-11-03: Settings' Clear Draft is gone
+
+Commit `9c2084a` (the 2026-10-06 visual refresh) removed Settings' Draft card
+and its **Clear Draft** handler. The "escape pod" paragraph and the
+"third caller" consequence above describe that removed path. `discardDraft()`
+now has one caller, `discardDraftAndGoHome` (`hooks/confirmResetSubmission.ts`),
+used by Reset and by the create screen's Back → Discard Draft. Both refuse
+while a submit runs.
