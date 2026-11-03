@@ -23,7 +23,13 @@ import {
   userPrefix,
 } from './submissionLayout'
 import { defineSecret, defineString } from 'firebase-functions/params'
-import { onRequest } from 'firebase-functions/v2/https'
+import { onCall, onRequest } from 'firebase-functions/v2/https'
+import {
+  authAccountStore,
+  createPostHogEraser,
+  createStorageSubmissionStore,
+} from './erasure/adapters'
+import { handleDeleteAccount } from './erasure/deleteAccount'
 import { onSchedule } from 'firebase-functions/v2/scheduler'
 import type { AuthBlockingEvent } from 'firebase-functions/v2/identity'
 import { beforeUserSignedIn } from 'firebase-functions/v2/identity'
@@ -277,4 +283,29 @@ export const syncEmailSubscription = onRequest(
       res.status(502).end()
     }
   },
+)
+
+// #433: account deletion behind the app's deletion guard. PostHog's host
+// and project come from deployment parameters; its personal API key is a
+// secret. Not wired to any screen until the guard's decision record lands.
+const POSTHOG_HOST = defineString('POSTHOG_HOST')
+const POSTHOG_PROJECT_ID = defineString('POSTHOG_PROJECT_ID')
+const POSTHOG_PERSONAL_API_KEY = defineSecret('POSTHOG_PERSONAL_API_KEY')
+
+export const deleteAccount = onCall(
+  { secrets: [EMAIL_API_KEY, POSTHOG_PERSONAL_API_KEY] },
+  (request) =>
+    handleDeleteAccount(request, {
+      email: createEmailListProvider(EMAIL_PROVIDER.value(), {
+        apiKey: EMAIL_API_KEY.value(),
+        listId: EMAIL_LIST_ID.value(),
+      }),
+      analytics: createPostHogEraser({
+        host: POSTHOG_HOST.value(),
+        projectId: POSTHOG_PROJECT_ID.value(),
+        personalApiKey: POSTHOG_PERSONAL_API_KEY.value(),
+      }),
+      submissions: createStorageSubmissionStore(BUCKET_NAME),
+      accounts: authAccountStore,
+    }),
 )
