@@ -10,10 +10,9 @@
 
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { useActiveCatFlowStore } from '@/src/hooks/useActiveCatFlowStore'
-import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
 import type { BoundingBox } from '@/src/types/BoundingBox'
 import { randomUUID } from 'expo-crypto'
-import { router } from 'expo-router'
+import { abandonCatPass, finishBoxing } from '@/src/hooks/catPass'
 import { useCallback } from 'react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -34,36 +33,9 @@ export interface ActiveCatFlow {
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
-/**
- * Clears the in-progress cat, but only if it is the one named.
- *
- * Not a hook, and deliberately non-reactive: the caller fires this from an
- * Alert's confirm handler, where a value subscribed at render time may
- * already be stale by the time the user taps.
- *
- * Lives here rather than in the caller so `activeCatId` keeps one owner
- * (#292's rule) — reaching into `useActiveCatFlowStore` from elsewhere makes
- * that caller a second owner of the same state.
- */
-export function clearActiveCatIfMatches(catId: string): void {
-  const { activeCatId, setActiveCatId } = useActiveCatFlowStore.getState()
-  if (activeCatId === catId) setActiveCatId(null)
-}
-
-/**
- * Readies Annotate for a new cat's pass: nothing left over from an earlier
- * pass may show or carry into it. An unfinished pass's cat and boxes are
- * dropped, unless that cat is already recorded.
- *
- * Not a hook, for the same reason as clearActiveCatIfMatches.
- */
-export function startFreshPass(recordedCatIds: string[]): void {
-  const { activeCatId, setActiveCatId } = useActiveCatFlowStore.getState()
-  if (activeCatId && !recordedCatIds.includes(activeCatId)) {
-    useBoundingBoxStore.getState().clearForCat(activeCatId)
-  }
-  setActiveCatId(null)
-}
+// The in-progress cat's id and every navigation of the pass live in
+// hooks/catPass.ts; re-exported here for existing callers.
+export { clearActiveCatIfMatches, startFreshPass } from '@/src/hooks/catPass'
 
 /** The pass's cat, minting and storing one on the pass's first mark. */
 function currentOrNewCatId(setActiveCatId: (id: string) => void): string {
@@ -80,7 +52,6 @@ export function useActiveCatFlow(): ActiveCatFlow {
   const addBox = useBoundingBoxStore((s) => s.addBox)
   const markAbsent = useBoundingBoxStore((s) => s.markAbsent)
   const getBoxedPhotoIds = useBoundingBoxStore((s) => s.getBoxedPhotoIds)
-  const hasRecordedCats = useSubmissionStore((s) => s.cats.length > 0)
   // Subscribed directly (not via the stable getBoxes function ref) so a
   // confirmed box re-renders callers, e.g. the dots strip.
   const boxes = useBoundingBoxStore((s) => s.boxes)
@@ -126,25 +97,9 @@ export function useActiveCatFlow(): ActiveCatFlow {
     setActiveCatId(null)
   }, [setActiveCatId])
 
-  // Leaving Annotate before Cat Form (hardware back, or Boxing Complete on a
-  // pass with no photo evidence — see handleBoxingComplete) — boxes already
-  // drawn stay in useBoundingBoxStore untouched (cleanup deferred), a later
-  // "Add a Cat" mints a fresh cat rather than resuming this one. Explicit
-  // destination, not router.back() (#203): for the very first cat of a
-  // submission Annotate sits directly on top of Camera (Cat List's
-  // zero-cats auto-skip replaces itself with Annotate), so a plain pop
-  // landed there.
-  //
-  // Destination depends on whether any cats are already recorded: with zero
-  // cats, Cat List's own auto-skip effect would immediately replace itself
-  // back into Annotate (a loop), so Home is the only safe landing. With at
-  // least one cat already recorded, that risk doesn't exist — landing on
-  // Home anyway would eject the user from a submission they were actively
-  // building, so Cat List is correct there instead.
-  const handleAbandonPass = useCallback(() => {
-    setActiveCatId(null)
-    router.replace(hasRecordedCats ? '/submission/create' : '/')
-  }, [setActiveCatId, hasRecordedCats])
+  // Leaving Annotate before Cat Form: see abandonCatPass (hooks/catPass.ts)
+  // for the destination rule and the cleanup.
+  const handleAbandonPass = useCallback(() => abandonCatPass(), [])
 
   // Callable at any point in the pass. Gated on an actual box, not just
   // activeCatId (#203): handleNotInPhoto now mints a catId too (so the
@@ -168,7 +123,7 @@ export function useActiveCatFlow(): ActiveCatFlow {
       handleAbandonPass()
       return
     }
-    router.replace('/submission/cats')
+    finishBoxing()
   }, [getBoxedPhotoIds, handleAbandonPass])
 
   return {
