@@ -23,7 +23,7 @@ import {
   FIELD_LABELS,
   CAT_DEFAULTS,
 } from '@/src/lib/cats/attributes'
-import { router } from 'expo-router'
+import { returnToCatList } from '@/src/hooks/catPass'
 import { randomUUID } from 'expo-crypto'
 import { useCallback, useRef } from 'react'
 
@@ -117,7 +117,7 @@ export function useCatSubmit({
       // cat of a submission, Cat Form was reached via a chain of `replace`s
       // (create's zero-cats auto-skip -> annotate -> here), which strips
       // Cat List entirely off the stack — back() landed on Camera instead.
-      router.replace('/submission/create')
+      returnToCatList()
     }
 
     const unsetFields = (

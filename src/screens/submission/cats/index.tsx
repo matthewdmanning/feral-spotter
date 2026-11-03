@@ -13,7 +13,11 @@ import { useActiveCatFlow } from '@/src/hooks/useActiveCatFlow'
 import { useCatForm } from '@/src/hooks/useCatForm'
 import { useCatSubmit } from '@/src/hooks/useCatSubmit'
 import { useRemoveCat } from '@/src/hooks/useRemoveCat'
-import { router, useLocalSearchParams } from 'expo-router'
+import { useLocalSearchParams } from 'expo-router'
+import {
+  returnToCatList,
+  returnToCatListAfterRemoval,
+} from '@/src/hooks/catPass'
 import { useEffect, useState } from 'react'
 import { ScrollView, Text, View } from 'react-native'
 import { styles } from './index.styles'
@@ -34,7 +38,7 @@ export default function CatObservationScreen() {
     () => editId !== undefined && !cats.some((c) => c.local_id === editId),
   )
   useEffect(() => {
-    if (staleEdit) router.replace('/submission/create')
+    if (staleEdit) returnToCatList()
   }, [staleEdit])
   const { activeCatId } = useActiveCatFlow()
 
@@ -55,13 +59,9 @@ export default function CatObservationScreen() {
   const handleRemove = existingCat
     ? () =>
         removeCatWithConfirm(existingCat.local_id, () =>
-          // `removed` tells Cat List this emptiness came from a removal, so it
-          // offers the annotate-or-describe choice instead of auto-skipping
+          // Cat List offers annotate-or-describe instead of auto-skipping
           // straight back to annotate (#299).
-          router.replace({
-            pathname: '/submission/create',
-            params: { removed: '1' },
-          }),
+          returnToCatListAfterRemoval(),
         )
     : undefined
 

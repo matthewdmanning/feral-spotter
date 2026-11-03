@@ -89,3 +89,8 @@ unit tests only. Submit end-to-end was never pressed, so no upload happened.
 - The buttons added here are hand-rolled next to the `AppButton` atom that
   already covers them. Tracked as #315, deliberately deferred: adopting the
   atom changes button metrics app-wide.
+
+## 2026-11-03 — refactor (cat pass module)
+
+**Purpose:** The Cat List → Annotate → Cat Form rules (#173 auto-skip, #189 mount-time snapshot, #203 explicit destinations, #299 `removed=1`, #304 stale id) were spread across five files with the route strings and the param repeated.
+**Change:** `hooks/catPass.ts` owns them: `startCatPass`, `openCatForm`, `finishBoxing`, `abandonCatPass`, `returnToCatList`, `returnToCatListAfterRemoval`, `removeCatFromDraft`, `useCatListLanding`, plus the in-progress cat helpers (`startFreshPass`, `clearActiveCatIfMatches`, re-exported from `useActiveCatFlow`). `abandonCatPass` now always drops the unfinished cat's boxes (the guard used to do it by hand). Test: `catPass.test.ts`.
