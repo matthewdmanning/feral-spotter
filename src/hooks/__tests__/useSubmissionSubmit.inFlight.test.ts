@@ -42,7 +42,10 @@ jest.mock('@/src/lib/auth/useAuth', () => ({
   useAuth: () => ({ user: { uid: 'uid-owner' } }),
 }))
 jest.mock('@/src/lib/auth', () => ({
-  authProvider: { getCurrentUser: () => ({ uid: 'uid-owner' }) },
+  authProvider: {
+    getCurrentUser: () => ({ uid: 'uid-owner' }),
+    onAuthStateChanged: () => () => {},
+  },
 }))
 
 const pendingPhoto = {

@@ -2,7 +2,6 @@
 import type { PhotoUploadResponse, SubmissionPhoto } from '@/src/types'
 import {
   cancelQueuedUploads,
-  retryPendingUploads,
   uploadNewPhoto,
 } from '@/src/lib/upload/uploadNewPhoto'
 
@@ -100,18 +99,13 @@ it('retries a failed photo once, and a torn-down draft gets no results', async (
 
   // Queued twice (Details opened, then Submit): one upload, not two.
   uploadNewPhoto(photo(10), 'uid', 'submission', updatePhoto)
-  retryPendingUploads([photo(10)], 'uid', 'submission', updatePhoto)
+  uploadNewPhoto(photo(10), 'uid', 'submission', updatePhoto)
   expect(mockPending).toHaveLength(1)
   mockPending.shift()!.reject(new Error('offline'))
   await drainTasks()
 
   // After the failure, a retry runs it again.
-  retryPendingUploads(
-    [photo(10), { ...photo(11), uploaded: true }],
-    'uid',
-    'submission',
-    updatePhoto,
-  )
+  uploadNewPhoto(photo(10), 'uid', 'submission', updatePhoto)
   expect(mockPending).toHaveLength(1)
 
   // Reset lands mid-upload: the late result must not reach the next draft.

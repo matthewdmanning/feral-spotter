@@ -234,7 +234,12 @@ it('keeps a Library draft at 10 photos and classifies time over the whole pool',
 
   // storage.rules rejects an 11th upload; the app must not queue one.
   expect(usePhotoStore.getState().photos).toHaveLength(10)
-  expect(uploadNewPhoto).toHaveBeenCalledTimes(10)
+  // The second pick re-queues un-uploaded photos too (the real queue
+  // dedupes); the point is that no eleventh photo is ever queued.
+  const queued = new Set(
+    jest.mocked(uploadNewPhoto).mock.calls.map(([p]) => p.local_id),
+  )
+  expect(queued.size).toBe(10)
   expect(useUIStore.getState().dialog?.title).toBe('Photo limit reached')
   // Batch 1 had no EXIF time, so the Submission still needs a manual one.
   expect(useSubmissionStore.getState().submission.time_type).toBe('manual')

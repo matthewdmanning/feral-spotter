@@ -16,11 +16,10 @@ import {
   showPhotoLimitReached,
 } from '@/src/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
-import { useAuth } from '@/src/lib/auth/useAuth'
 import { initializeDraft } from '@/src/hooks/useDraftStartupStore'
 import { EVENTS, captureEvent } from '@/src/lib/analytics/analytics'
 import { libraryPermission } from '@/src/lib/permissions/libraryPermission'
-import { uploadNewPhoto } from '@/src/lib/upload/uploadNewPhoto'
+import { syncPhotoUploads } from '@/src/lib/upload/draftUploads'
 import { buildSubmissionPhoto } from '@/src/utils/buildSubmissionPhoto'
 import {
   classifyLibraryPickTime,
@@ -37,10 +36,8 @@ export interface LibraryPhotoPickerResult {
 
 export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
   const addPhotos = usePhotoStore((s) => s.addPhotos)
-  const updatePhoto = usePhotoStore((s) => s.updatePhoto)
   const setLocationType = useSubmissionStore((s) => s.setLocationType)
   const setSubmission = useSubmissionStore((s) => s.setSubmission)
-  const { user } = useAuth()
 
   const pickFromLibrary = useCallback(async () => {
     try {
@@ -124,19 +121,7 @@ export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
       is_first_pick: isFirstPick,
     })
 
-    const uid = user?.uid
-    const { submissionId, photos: pool } = usePhotoStore.getState()
-    if (uid && submissionId) {
-      // The stored copies carry their upload slots; the uploads need them.
-      const added = new Set(newPhotos.map((p) => p.local_id))
-      for (const photo of pool.filter((p) => added.has(p.local_id))) {
-        uploadNewPhoto(photo, uid, submissionId, updatePhoto)
-      }
-    } else {
-      console.error(
-        '[useLibraryPhotoPicker] missing uid/submissionId for upload',
-      )
-    }
+    syncPhotoUploads()
 
     // A draft is single-source by construction (ADR 0002 amendment): the
     // Home screen guard guarantees the pool was empty before this pick.
@@ -152,7 +137,7 @@ export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
     setSubmission({ time_type, captured_at })
 
     router.navigate('/submission/create')
-  }, [addPhotos, updatePhoto, setLocationType, setSubmission, user])
+  }, [addPhotos, setLocationType, setSubmission])
 
   return { pickFromLibrary }
 }

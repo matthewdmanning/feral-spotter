@@ -26,7 +26,10 @@ jest.mock('@/src/lib/upload/firebaseUpload', () => ({
 }))
 
 jest.mock('@/src/lib/auth', () => ({
-  authProvider: { getCurrentUser: () => ({ uid: 'uid-test' }) },
+  authProvider: {
+    getCurrentUser: () => ({ uid: 'uid-test' }),
+    onAuthStateChanged: () => () => {},
+  },
 }))
 
 /** Not draft-owned: history rows and their index/pointer, plus stores outside the boundary. */

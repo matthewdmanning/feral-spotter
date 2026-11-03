@@ -41,7 +41,7 @@ import {
 import { stopLocationCapture } from '@/src/lib/location'
 import { authProvider } from '@/src/lib/auth'
 import { deleteSubmissionUploads } from '@/src/lib/upload/firebaseUpload'
-import { cancelQueuedUploads } from '@/src/lib/upload/uploadNewPhoto'
+import { cancelPhotoUploads } from '@/src/lib/upload/draftUploads'
 
 /**
  * Wipes the four draft-owned stores, stops the draft-scoped GPS watch and
@@ -53,7 +53,7 @@ function tearDownDraftState(deferFileDeletion = false): void {
   useBoundingBoxStore.getState().clearAll()
   useActiveCatFlowStore.getState().setActiveCatId(null)
   stopLocationCapture()
-  cancelQueuedUploads()
+  cancelPhotoUploads()
 }
 
 /**

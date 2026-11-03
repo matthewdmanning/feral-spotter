@@ -19,7 +19,7 @@ import {
   updateSubmissionCache,
 } from '@/src/lib/cache/submissionCache'
 import { useLocationCapture } from '@/src/lib/location'
-import { retryPendingUploads } from '@/src/lib/upload/uploadNewPhoto'
+import { syncPhotoUploads } from '@/src/lib/upload/draftUploads'
 import { buildCacheMetadata, toCachedPhoto } from '@/src/lib/submission/payload'
 import { toCachedCat } from '@/src/lib/submission/profilePhoto'
 import type { SubmissionPhoto } from '@/src/types'
@@ -109,10 +109,9 @@ export function useDraftSync(): void {
   // A photo whose upload failed, or a draft restored after the app was
   // killed mid-upload, has nothing uploading it. Re-queue on open so Submit
   // is not left waiting on an upload that never runs.
+  // Keyed on uid: a sign-in that lands after mount still starts them.
   useEffect(() => {
-    const { photos, submissionId, updatePhoto } = usePhotoStore.getState()
-    if (!uid || !submissionId) return
-    retryPendingUploads(photos, uid, submissionId, updatePhoto)
+    if (uid) syncPhotoUploads()
   }, [uid])
 
   // Commit the background Live fix into the Submission draft only once it

@@ -24,7 +24,10 @@ jest.mock('@/src/lib/upload/firebaseUpload', () => ({
   deleteSubmissionUploads: jest.fn(),
 }))
 jest.mock('@/src/lib/auth', () => ({
-  authProvider: { getCurrentUser: () => ({ uid: 'uid-test' }) },
+  authProvider: {
+    getCurrentUser: () => ({ uid: 'uid-test' }),
+    onAuthStateChanged: () => () => {},
+  },
 }))
 
 const NOW = Date.UTC(2026, 9, 31, 12)
