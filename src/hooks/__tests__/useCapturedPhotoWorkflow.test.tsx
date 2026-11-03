@@ -40,6 +40,7 @@ jest.mock('@/src/components/atoms/CameraThumb', () => ({
 }))
 jest.mock('@/src/lib/upload/uploadNewPhoto', () => ({
   cancelQueuedUploads: jest.fn(),
+  cancelPhotoUpload: jest.fn(),
   retryPendingUploads: jest.fn(),
   uploadNewPhoto: jest.fn(),
 }))

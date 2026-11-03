@@ -50,6 +50,8 @@ let activeUploadCount = 0
 // Bumped by cancelQueuedUploads. An upload started under an older draft
 // never writes its result into the next draft's photo store.
 let generation = 0
+// Photos removed from their draft: their upload must not write a result.
+const cancelled = new Set<string>()
 
 function startNextUpload(): void {
   if (activeUploadCount >= MAX_CONCURRENT_UPLOADS) return
@@ -73,7 +75,9 @@ export function uploadNewPhoto(
   if (pending.has(photo.local_id)) return
   pending.add(photo.local_id)
   const startedIn = generation
-  const isCurrent = () => startedIn === generation
+  cancelled.delete(photo.local_id)
+  const isCurrent = () =>
+    startedIn === generation && !cancelled.has(photo.local_id)
   queued.push({
     localId: photo.local_id,
     run: async () => {
@@ -112,6 +116,19 @@ export function retryPendingUploads(
 ): void {
   for (const photo of photos) {
     if (!photo.uploaded) uploadNewPhoto(photo, uid, submissionId, updatePhoto)
+  }
+}
+
+/**
+ * Drops one photo's queued upload, or detaches it if in flight, so a
+ * removed photo's result never reaches the store.
+ */
+export function cancelPhotoUpload(localId: string): void {
+  cancelled.add(localId)
+  const index = queued.findIndex((item) => item.localId === localId)
+  if (index >= 0) {
+    queued.splice(index, 1)
+    pending.delete(localId)
   }
 }
 

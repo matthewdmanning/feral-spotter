@@ -14,6 +14,7 @@
 
 import { CameraThumb } from '@/src/components/atoms/CameraThumb'
 import { usePhotoStore, isAtPhotoLimit } from '@/src/hooks/usePhotoStore'
+import { removePhotoFromDraft } from '@/src/hooks/removePhotoFromDraft'
 import {
   initializeDraft,
   useDraftStartupStore,
@@ -62,7 +63,6 @@ export function useCapturedPhotoWorkflow({
   )
 
   const addPhoto = usePhotoStore((s) => s.addPhoto)
-  const removePhoto = usePhotoStore((s) => s.removePhoto)
   const updatePhoto = usePhotoStore((s) => s.updatePhoto)
   const photoSource = usePhotoStore((s) => s.source)
   const draftPhase = useDraftStartupStore((s) => s.phase)
@@ -188,13 +188,10 @@ export function useCapturedPhotoWorkflow({
     }
   }, [])
 
-  const handleDiscardPhoto = useCallback(
-    (localId: string) => {
-      setCapturedPhotos((prev) => prev.filter((p) => p.local_id !== localId))
-      removePhoto(localId)
-    },
-    [removePhoto],
-  )
+  const handleDiscardPhoto = useCallback((localId: string) => {
+    setCapturedPhotos((prev) => prev.filter((p) => p.local_id !== localId))
+    removePhotoFromDraft(localId)
+  }, [])
 
   const cycleFlash = useCallback(() => {
     setFlashMode((m) => (m === 'auto' ? 'on' : m === 'on' ? 'off' : 'auto'))

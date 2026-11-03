@@ -184,3 +184,8 @@ Tests: `useSubmissionSubmit.inFlight.test.ts` (lock, retry, cleared draft, Faile
 
 **Purpose:** Owner decision: the project does not use Firestore. The photo and Submission caps depended on Firestore counters.
 **Change:** See ADR-0005's 2026-11-03 amendment. Photos are named by `upload_slot` (`photo-0` … `photo-9`), which `storage.rules` enforces; `usePhotoStore` assigns slots, and the pickers upload the stored, slotted copy. The 250-Submission cap is an Auth claim kept in step with the uid's `metadata.json` count. `firestore.rules`, its emulator and tests, and the photo-count triggers are removed. Rules tests run on a `demo-` emulator project. Tests: `usePhotoStore.slots.test.ts`, `functions/src/__tests__/submissionCap.test.ts`, rewritten `__tests__/rules/storage.test.ts` (emulator: 17 passed).
+
+## 2026-11-03 — fix (photo formats and removal)
+
+**Purpose:** Design review found three photo bugs: a library pick in a format storage.rules refuses (e.g. webp, gif) sat un-uploaded with no message; the camera's discard cleared only the photo store, leaving the photo's boxes and cat references; and a removed photo's upload kept running.
+**Change:** `utils/photoFormat.ts` holds the accepted formats; the library picker skips others and says so. `removePhotoFromDraft` (hooks) is the one removal path for annotate and camera: cancels the photo's upload (`cancelPhotoUpload`), clears its boxes and cat references, removes it, and best-effort deletes its uploaded copy (`deleteSubmissionPhoto`). ADR-0006 amended: its Settings "Clear Draft" caller was removed in `9c2084a`. Tests: `removePhotoFromDraft.test.ts`, format case in `useLibraryPhotoPicker.selection.test.ts`.

@@ -39,6 +39,7 @@ import type {
   SubmissionApiPayload,
   SubmissionPhoto,
 } from '@/src/types'
+import { extensionOf } from '@/src/utils/photoFormat'
 
 const BUCKET_URL = 'gs://project-e3d5659d-bc4f-438f-88c.firebasestorage.app'
 
@@ -76,8 +77,7 @@ function getSubmissionRef(path: string): StorageReference {
 }
 
 function extensionFromUri(uri: string): string {
-  const match = /\.([a-zA-Z0-9]+)$/.exec(uri)
-  return match ? match[1].toLowerCase() : 'jpg'
+  return extensionOf(uri) ?? 'jpg'
 }
 
 export async function uploadSubmissionPhoto(
@@ -208,6 +208,25 @@ export async function deleteSubmissionUploads(
     // scheduled sweep is the backstop; Reset carries on regardless.
     console.warn(
       `[firebaseUpload] best-effort cleanup skipped for submissions/${uid}/${submissionId}`,
+      error,
+    )
+  }
+}
+
+/**
+ * Best-effort delete of one uploaded photo, for a photo removed from its
+ * draft. Never throws: the object is overwritten if its slot is reused,
+ * and metadata.json lists only the photos still in the Submission.
+ */
+export async function deleteSubmissionPhoto(
+  cloudStoragePath: string,
+): Promise<void> {
+  if (UPLOADS_MOCK) return
+  try {
+    await deleteObject(getSubmissionRef(cloudStoragePath))
+  } catch (error) {
+    console.warn(
+      `[firebaseUpload] best-effort delete failed for ${cloudStoragePath}`,
       error,
     )
   }

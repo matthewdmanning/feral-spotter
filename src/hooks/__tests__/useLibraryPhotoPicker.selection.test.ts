@@ -20,6 +20,7 @@ jest.mock('@/src/hooks', () => ({
 jest.mock('expo-router', () => ({ router: { navigate: jest.fn() } }))
 jest.mock('@/src/lib/upload/uploadNewPhoto', () => ({
   cancelQueuedUploads: jest.fn(),
+  cancelPhotoUpload: jest.fn(),
   retryPendingUploads: jest.fn(),
   uploadNewPhoto: jest.fn(),
 }))
@@ -243,4 +244,37 @@ it('keeps a Library draft at 10 photos and classifies time over the whole pool',
   await act(async () => result.current.pickFromLibrary())
   expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalledTimes(2)
   expect(useUIStore.getState().dialog?.title).toBe('Photo limit reached')
+})
+
+// storage.rules accepts only JPEG, PNG and HEIC/HEIF. Any other format would
+// be refused on upload and sit un-uploaded, blocking Submit with no reason.
+it('skips photos in formats the bucket refuses, and says so', async () => {
+  jest.spyOn(ImagePicker, 'launchImageLibraryAsync').mockResolvedValueOnce({
+    canceled: false,
+    assets: [
+      {
+        uri: 'file:///picker/a.jpg',
+        width: 1,
+        height: 1,
+        mimeType: 'image/jpeg',
+      },
+      {
+        uri: 'file:///picker/b.webp',
+        width: 1,
+        height: 1,
+        mimeType: 'image/webp',
+      },
+      { uri: 'file:///picker/c.gif', width: 1, height: 1 },
+      { uri: 'file:///picker/d.HEIC', width: 1, height: 1 },
+    ],
+  })
+  const { result } = renderHook(() => useLibraryPhotoPicker())
+  await act(async () => result.current.pickFromLibrary())
+
+  expect(usePhotoStore.getState().photos.map((p) => p.uri)).toEqual([
+    'file:///picker/a.jpg',
+    'file:///picker/d.HEIC',
+  ])
+  expect(uploadNewPhoto).toHaveBeenCalledTimes(2)
+  expect(useUIStore.getState().dialog?.title).toBe('Some photos were skipped')
 })
