@@ -9,15 +9,6 @@ export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
 // compact: tighter side padding for rows that hold three buttons.
 export type ButtonSize = 'circle' | 'compact'
 
-export interface ColumnButton {
-  key: string
-  label: string
-  onPress: () => void
-  variant?: ButtonVariant
-  disabled?: boolean
-  accessibilityLabel?: string
-}
-
 interface AppButtonProps {
   onPress: () => void
   children: string
@@ -29,7 +20,10 @@ interface AppButtonProps {
   iconAfter?: ReactNode
   accessibilityLabel?: string
   flex1?: boolean
-  /** Fixed diameter (dp) for size="circle" — screen-dependent, so it's computed by the caller, not a style variant. */
+  /**
+   * Makes the button a circle of this diameter (dp). Screen-dependent, so
+   * the caller computes it; it implies size="circle".
+   */
   diameter?: number
 }
 
@@ -46,7 +40,10 @@ export function AppButton({
   flex1 = false,
   diameter,
 }: AppButtonProps) {
-  styles.useVariants({ variant, size })
+  styles.useVariants({
+    variant,
+    size: diameter != null ? 'circle' : size,
+  })
   const { theme } = useUnistyles()
   const isDisabled = disabled || loading
   // The label's own color, so the spinner reads as the same "text" the

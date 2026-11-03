@@ -1,5 +1,6 @@
 import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
-import { AppButton, type ColumnButton } from '@/src/components/atoms/AppButton'
+import { AppButton } from '@/src/components/atoms/AppButton'
+import type { ColumnButton } from '@/src/components/molecules/BottomButtonColumn'
 import { BottomButtonColumn } from '@/src/components/molecules/BottomButtonColumn'
 import { PhotoDraftNotice } from '@/src/components/molecules/PhotoDraftNotice'
 import {
@@ -123,7 +124,6 @@ function EntrypointCircle({
       <AppButton
         onPress={onPress}
         variant={variant}
-        size="circle"
         diameter={diameter}
         disabled={disabled}
         icon={<Icon size={theme.iconSize.xxl} color={color} />}

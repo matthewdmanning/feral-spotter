@@ -91,8 +91,9 @@ export default function SettingsScreen() {
               label="Theme"
               options={THEME_OPTIONS}
               value={themeMode}
+              required
               onChange={(next) => {
-                if (!next) return
+                if (!next) return // never: required
                 setThemeMode(next)
                 setSelectedThemeMode(next)
               }}

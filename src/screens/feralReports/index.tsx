@@ -1,6 +1,6 @@
 import { GlassSurface } from '@/src/components/atoms/GlassSurface'
 import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
-import { STATUS_COLOR_KEY } from '@/src/components/atoms/StatusIcon'
+import { StatusDot } from '@/src/components/atoms/StatusIcon'
 import { ReportCard } from '@/src/components/molecules/ReportCard'
 import { SightingsMap } from '@/src/components/organisms/SightingsMap'
 import { useFeralReports } from '@/src/hooks/useFeralReports'
@@ -97,14 +97,7 @@ export default function FeralReportsScreen() {
                 <View style={styles.legend}>
                   {STATUSES.map((s) => (
                     <View key={s} style={styles.legendItem}>
-                      <View
-                        style={[
-                          styles.legendDot,
-                          {
-                            backgroundColor: theme.colors[STATUS_COLOR_KEY[s]],
-                          },
-                        ]}
-                      />
+                      <StatusDot status={s} style={styles.legendDot} />
                       <Text style={styles.legendLabel}>{s}</Text>
                     </View>
                   ))}
