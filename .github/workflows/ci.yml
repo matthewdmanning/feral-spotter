@@ -83,3 +83,5 @@ jobs:
           java-version: 21
       - run: npm ci --legacy-peer-deps
       - run: npm run test:rules
+      - run: npm ci --prefix functions
+      - run: npm run test:organizations:emulator

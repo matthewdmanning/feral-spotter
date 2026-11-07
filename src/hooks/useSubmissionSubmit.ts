@@ -59,6 +59,9 @@ function report(outcome: SubmitOutcome): void {
     case 'incomplete':
       showError('Submission Incomplete', outcome.messages.join('\n'))
       return
+    case 'sharing-unconfirmed':
+      showError('Confirm organization sharing', outcome.message)
+      return
     case 'uploads-unfinished':
       showError('Photos Still Uploading', UPLOAD_STALLED_MESSAGE)
       return

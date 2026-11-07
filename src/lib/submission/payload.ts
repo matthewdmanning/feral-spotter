@@ -26,6 +26,7 @@ import { parseExifDateTime } from '@/src/utils/libraryPickTime'
  * the submit-time cache-update site (useSubmissionSubmit.ts). */
 export function buildCacheMetadata(submission: SubmissionDraft): CacheMetadata {
   return {
+    ...(submission.report_injured === true ? { report_injured: true } : {}),
     location_method: submission.location_type,
     time_method: submission.time_type,
     address: submission.address,

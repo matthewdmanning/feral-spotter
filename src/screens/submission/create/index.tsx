@@ -1,3 +1,4 @@
+import { SubmissionOrganizations } from '@/src/components/organisms/organizations/SubmissionOrganizations'
 import { GlassSurface } from '@/src/components/atoms/GlassSurface'
 import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { AppButton } from '@/src/components/atoms/AppButton'
@@ -246,6 +247,7 @@ export default function CreateSubmissionScreen() {
             </AppButton>
           )}
         </View>
+        <SubmissionOrganizations />
       </ScrollView>
 
       {/* Actions pinned to the bottom. The primary action is last, on the

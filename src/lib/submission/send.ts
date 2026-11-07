@@ -8,13 +8,21 @@
  */
 
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
+import {
+  persistOrganizationSharing,
+  useOrganizationSharingStore,
+} from '@/src/hooks/useOrganizationSharingStore'
+import { useOrganizationsFlag } from '@/src/hooks/useOrganizationsFlag'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
 import { EVENTS, fireAnalyticsEvent } from '@/src/lib/analytics/analytics'
+import { useAuthStore } from '@/src/lib/auth/authStore'
 import {
   getCurrentCacheId,
   transitionSubmission,
+  updateSubmissionCache,
 } from '@/src/lib/cache/submissionCache'
+import { confirmedSharing } from '@/src/lib/organizations/consent'
 import {
   buildCacheMetadata,
   buildSubmissionPayload,
@@ -30,7 +38,14 @@ import {
   finalizeSubmissionPhotoMetadata,
   uploadSubmissionMetadata,
 } from '@/src/lib/upload/firebaseUpload'
+import {
+  buildGrant,
+  FALLBACK_ORGANIZATION_NAME,
+} from '@/src/lib/organizations/sharing'
 import type { SubmissionPhoto } from '@/src/types'
+
+/** The sharing choice submitDraft confirmed, or null when nothing is shared. */
+export type ConfirmedSharing = ReturnType<typeof confirmedSharing>
 
 /**
  * Sends the current draft. Every store is read here, after the upload wait,
@@ -42,6 +57,7 @@ export async function sendDraft(
   userId: string,
   cloudSubmissionId: string,
   onRow: (cacheId: string) => void,
+  sharing: ConfirmedSharing = null,
 ): Promise<void> {
   const freshPhotos = usePhotoStore.getState().photos
   const { cats, submission } = useSubmissionStore.getState()
@@ -105,8 +121,19 @@ export async function sendDraft(
     )
   })
 
+  if (
+    sharing &&
+    confirmedSharing(userId)?.draft.confirmedSignature !==
+      sharing.draft.confirmedSignature
+  ) {
+    throw new Error(
+      'Sharing choices changed during submission; review and try again',
+    )
+  }
   const payload = buildSubmissionPayload({
-    submission,
+    submission: useOrganizationsFlag.getState().enabled
+      ? submission
+      : { ...submission, report_injured: undefined },
     catsWithBoxes,
     uploadedPhotos,
   })
@@ -149,4 +176,36 @@ export async function sendDraft(
   })
 
   await uploadSubmissionMetadata(payload, userId, cloudSubmissionId)
+
+  // The durable outbox survives draft teardown and has its own sync status.
+  if (sharing) {
+    const sharingState = useOrganizationSharingStore.getState()
+    const email = useAuthStore.getState().user?.email ?? null
+    sharingState.remember(userId, sharing.draft.selectedIds)
+    for (const organizationId of sharing.draft.selectedIds) {
+      sharingState.enqueue(userId, {
+        action: 'grant',
+        organizationId,
+        organizationName:
+          sharing.draft.organizationNames?.[organizationId] ??
+          FALLBACK_ORGANIZATION_NAME,
+        grant: buildGrant({
+          submissionId: cloudSubmissionId,
+          organizationId,
+          catalogVersion: sharing.draft.catalogVersion,
+          epoch: sharing.epochs[organizationId] ?? 0,
+          anonymous: sharing.draft.anonymous,
+          settings: sharing.settings,
+          email,
+        }),
+      })
+    }
+    await persistOrganizationSharing()
+    void sharingState.sync(userId)
+  }
+  if (cId) {
+    await updateSubmissionCache(cId, {
+      cloud_submission_id: cloudSubmissionId,
+    })
+  }
 }

@@ -1,3 +1,5 @@
+import { SharingSettings } from '@/src/components/organisms/organizations/SharingSettings'
+import { OrganizationPermissions } from '@/src/components/organisms/organizations/OrganizationPermissions'
 import { GlassSurface } from '@/src/components/atoms/GlassSurface'
 import {
   getThemeMode,
@@ -126,6 +128,9 @@ export default function SettingsScreen() {
               Send verification link
             </TextButton>
           </GlassSurface>
+
+          <SharingSettings />
+          <OrganizationPermissions />
 
           {[
             { title: 'Photos', toggles: PHOTO_TOGGLES },

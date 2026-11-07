@@ -57,6 +57,7 @@ export interface SubmissionDraft {
   latitude?: number
   longitude?: number
   accuracy?: number | null
+  report_injured?: boolean
 }
 
 /** The one geographic point a submission is tagged with. */
@@ -66,7 +67,18 @@ export interface SubmissionLocation {
   accuracy?: number | null
 }
 
+export interface OrganizationSharingDraft {
+  organizationNames?: Record<string, string>
+  ownerUid: string
+  selectedIds: string[]
+  anonymous: boolean
+  catalogVersion: string
+  confirmedSignature: string | null
+}
+
 interface SubmissionState {
+  organizationSharing: OrganizationSharingDraft | null
+  setOrganizationSharing: (value: OrganizationSharingDraft | null) => void
   cats: ObservedCat[]
   submission: SubmissionDraft
 
@@ -92,6 +104,9 @@ const DEFAULT_SUBMISSION: SubmissionDraft = {
 export const useSubmissionStore = create<SubmissionState>()(
   persist(
     (set) => ({
+      organizationSharing: null,
+      setOrganizationSharing: (organizationSharing) =>
+        set({ organizationSharing }),
       cats: [],
       submission: { ...DEFAULT_SUBMISSION },
 
@@ -168,12 +183,20 @@ export const useSubmissionStore = create<SubmissionState>()(
 
       clearDraft: () =>
         set({
+          organizationSharing: null,
           cats: [],
           submission: { ...DEFAULT_SUBMISSION },
         }),
     }),
     {
       name: 'submission-store',
+      onRehydrateStorage: () => (state) => {
+        if (state?.organizationSharing)
+          state.setOrganizationSharing({
+            ...state.organizationSharing,
+            confirmedSignature: null,
+          })
+      },
       skipHydration: true,
       storage: createJSONStorage(() => asyncStorage),
     },
