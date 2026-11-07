@@ -1,51 +1,43 @@
-import { organizationsDirectory } from '@/src/hooks/useOrganizationDirectory'
 import { useEffect } from 'react'
 import { AppState } from 'react-native'
-import NetInfo from '@react-native-community/netinfo'
-import { useAuth } from '@/src/lib/auth/useAuth'
+import { useAuthStore } from '@/src/lib/auth/authStore'
 import { useOrganizationsFlag } from '@/src/hooks/useOrganizationsFlag'
 import { useOrganizationSharingStore } from '@/src/hooks/useOrganizationSharingStore'
+import { useOrganizationDirectoryStore } from '@/src/hooks/useOrganizationDirectory'
+import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
+import { useUIStore } from '@/src/hooks/useUIStore'
 
-/** Flags run independently of analytics. Existing revocations sync even with the flag off. */
+function syncPermissions() {
+  const uid = useAuthStore.getState().user?.uid
+  if (uid && useOrganizationSharingStore.getState().hydrated)
+    void useOrganizationSharingStore.getState().sync(uid)
+}
+/** Flag, then directory around the open draft's location (or the saved center), then permissions. */
+async function refreshAll() {
+  await useOrganizationsFlag.getState().refresh()
+  const { latitude, longitude } = useSubmissionStore.getState().submission
+  await useOrganizationDirectoryStore.getState().refresh(latitude, longitude)
+  syncPermissions()
+}
+
+/**
+ * The one owner of foreground and reconnection refreshes. Flags run
+ * independently of analytics. Existing revocations sync even with the flag off.
+ */
 export function OrganizationsRuntime() {
-  const { user } = useAuth()
-  const enabled = useOrganizationsFlag((s) => s.enabled)
+  const online = useUIStore((s) => s.isOnline)
+  const uid = useAuthStore((s) => s.user?.uid)
   const hydrated = useOrganizationSharingStore((s) => s.hydrated)
+  const enabled = useOrganizationsFlag((s) => s.enabled)
   useEffect(() => {
-    const refresh = () => {
-      void useOrganizationsFlag
-        .getState()
-        .refresh()
-        .then(async () => {
-          if (!user || !useOrganizationsFlag.getState().enabled) return
-          const cache = await organizationsDirectory.cached()
-          if (cache)
-            await organizationsDirectory.refresh(
-              cache.latitude,
-              cache.longitude,
-            )
-        })
-        .catch(() => {
-          /* Retain cached coverage until the next online refresh. */
-        })
-      if (user && hydrated)
-        void useOrganizationSharingStore.getState().sync(user.uid)
-    }
-    refresh()
-    const unsubscribe = NetInfo.addEventListener((state) => {
-      if (state.isConnected && state.isInternetReachable !== false) refresh()
-    })
+    if (!online) return
+    void refreshAll()
     const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active') refresh()
+      if (state === 'active') void refreshAll()
     })
-    return () => {
-      unsubscribe()
-      subscription.remove()
-    }
-  }, [user, hydrated])
-  useEffect(() => {
-    if (enabled && user && hydrated)
-      void useOrganizationSharingStore.getState().sync(user.uid)
-  }, [enabled, user, hydrated])
+    return () => subscription.remove()
+  }, [online])
+  // Sign-in, restored storage and a flag change can each release pending items.
+  useEffect(() => syncPermissions(), [uid, hydrated, enabled])
   return null
 }

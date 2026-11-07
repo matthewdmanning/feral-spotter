@@ -19,18 +19,4 @@ export const styles = StyleSheet.create((theme) => ({
     minHeight: 48,
     paddingVertical: theme.spacing.sm,
   },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderWidth: 2,
-    borderColor: theme.colors.borderStrong,
-    borderRadius: theme.radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checked: {
-    backgroundColor: theme.colors.accent,
-    borderColor: theme.colors.accent,
-  },
-  mark: { color: theme.colors.background, fontWeight: 'bold' },
 }))

@@ -15,7 +15,7 @@ import {
 } from '@/src/hooks/useOrganizationSharingStore'
 import { useOrganizationsFlag } from '@/src/hooks/useOrganizationsFlag'
 import { sharingSignature } from '@/src/lib/organizations/consent'
-import { FIELD_LABELS } from './SharingSettings'
+import { includedSummary } from '@/src/lib/organizations/sharing'
 import { SharingCheckbox } from './SharingCheckbox'
 import { styles } from './styles'
 
@@ -72,31 +72,11 @@ export function SubmissionOrganizations() {
   ])
   if (!enabled || !user || !hydrated) return null
   const signature = draft
-    ? sharingSignature(
-        draft,
-        account.settings,
-        submission.latitude,
-        submission.longitude,
-        submission.report_injured,
-        user.email,
-        [
-          account.ledger.epochs,
-          account.outbox
-            .filter((item) => item.action !== 'grant')
-            .map((item) => item.mutationId),
-        ],
-      )
+    ? sharingSignature(draft, account, submission, user.email)
     : null
   const patch = (value: Partial<OrganizationSharingDraft>) => {
     if (draft) setDraft({ ...draft, ...value, confirmedSignature: null })
   }
-  const optional = Object.entries(FIELD_LABELS)
-    .filter(
-      ([key]) =>
-        account.settings.fields[key as keyof typeof FIELD_LABELS] &&
-        (!draft?.anonymous || !['name', 'email', 'phone'].includes(key)),
-    )
-    .map(([, label]) => label)
   return (
     <GlassSurface kind="card" style={styles.card}>
       <Text style={styles.title}>Share with organizations</Text>
@@ -172,8 +152,7 @@ export function SubmissionOrganizations() {
             onChange={(anonymous) => patch({ anonymous })}
           />
           <Text style={styles.body}>
-            Included: cat count, approximate area
-            {optional.length ? `, ${optional.join(', ')}` : ''}.
+            Included: {includedSummary(account.settings, draft.anonymous)}.
           </Text>
           {!draft.anonymous && account.settings.fields.email && (
             <Text style={styles.hint}>

@@ -12,19 +12,22 @@ import { useOrganizationSharingStore } from '@/src/hooks/useOrganizationSharingS
 import { useOrganizationsFlag } from '@/src/hooks/useOrganizationsFlag'
 import { useAuthStore } from '@/src/lib/auth/authStore'
 import { useUIStore } from '@/src/hooks/useUIStore'
-import { organizationRequest } from '../api'
-import { DEFAULT_SHARING, type GrantRequest } from '@/src/types/Organizations'
+import { buildGrant } from '../sharing'
+import { DEFAULT_SHARING } from '@/src/types/Organizations'
+import { fakeOrganizationsService } from '@/src/test-utils/organizationsService'
 
+// The supplied expo-crypto mock returns no UUIDs.
 jest.mock('expo-crypto', () => ({
   ...jest.requireActual('expo-crypto'),
   randomUUID: jest.fn(),
 }))
-jest.mock('@/src/lib/organizations/api', () => ({
-  ...jest.requireActual('@/src/lib/organizations/api'),
-  organizationRequest: jest.fn(),
-}))
-const request = jest.mocked(organizationRequest)
 let nextId = 0
+const pressDialogButton = async (text: string) =>
+  act(async () => {
+    await useUIStore
+      .getState()
+      .dialog!.buttons.find((button) => button.text === text)!.onPress!()
+  })
 beforeEach(() => {
   jest
     .mocked(randomUUID)
@@ -38,7 +41,6 @@ beforeEach(() => {
   useOrganizationsFlag.setState({ enabled: true })
   useOrganizationSharingStore.setState({ accounts: {}, hydrated: true })
   useUIStore.setState({ dialog: null })
-  request.mockReset()
 })
 
 test('settings values are saved explicitly and stay scoped to the current user', async () => {
@@ -68,53 +70,46 @@ test('review uses the current email and global settings; cancellation still work
     ...DEFAULT_SHARING,
     fields: { ...DEFAULT_SHARING.fields, email: true },
   })
-  const grant: GrantRequest = {
-    organizationId: 'rescue',
-    submissionId: 'sighting',
-    catalogVersion: 'old',
-    epoch: 0,
-    anonymous: false,
-    settings: {
-      ...DEFAULT_SHARING,
-      fields: { ...DEFAULT_SHARING.fields, photos: true },
-    },
-    contactEmail: 'outdated@example.test',
-    injured: false,
-    disclosureVersion: 1,
-  }
   state.enqueue('owner', {
     action: 'grant',
     organizationId: 'rescue',
     organizationName: 'Rescue',
     requiresConfirmation: true,
-    grant,
+    grant: buildGrant({
+      organizationId: 'rescue',
+      submissionId: 'sighting',
+      catalogVersion: 'old',
+      epoch: 0,
+      anonymous: false,
+      settings: {
+        ...DEFAULT_SHARING,
+        fields: { ...DEFAULT_SHARING.fields, email: true, photos: true },
+      },
+      email: 'outdated@example.test',
+    }),
   })
-  request.mockImplementation(async (body) => {
-    if (body.action === 'catalog')
+  const service = await fakeOrganizationsService(({ action }) => {
+    if (action === 'catalog')
       return {
         version: 'current',
-        organizations: [{ id: 'rescue', name: 'Rescue', active: true }],
+        organizations: [
+          { id: 'rescue', name: 'Rescue', active: true, coverage: null! },
+        ],
       }
-    if (body.action === 'list')
-      return { epochs: { rescue: 1 }, permissions: [] }
-    throw new Error('offline mutation')
+    if (action === 'list') return { epochs: { rescue: 1 }, permissions: [] }
+    return { status: 503 }
   })
   render(<OrganizationPermissions />)
   await user.press(screen.getByRole('button', { name: 'Review sharing' }))
   await waitFor(() =>
     expect(useUIStore.getState().dialog?.title).toBe('Confirm sharing again'),
   )
-  const dialog = useUIStore.getState().dialog!
-  expect(dialog.message).toContain('current@example.test')
-  expect(dialog.message).not.toContain('outdated@example.test')
-  expect(dialog.message).not.toContain('Photos')
-  await act(async () => {
-    await dialog.buttons.find(
-      (button) => button.text === 'Share this sighting',
-    )!.onPress!()
-  })
+  expect(useUIStore.getState().dialog!.message).toBe(
+    'Rescue: cat count, approximate area, Email. Contact: current@example.test. Current coverage will be checked before permission is saved.',
+  )
+  await pressDialogButton('Share this sighting')
   await waitFor(() =>
-    expect(request).toHaveBeenCalledWith(
+    expect(service.requests).toContainEqual(
       expect.objectContaining({
         action: 'grant',
         grant: expect.objectContaining({
@@ -126,7 +121,6 @@ test('review uses the current email and global settings; cancellation still work
           }),
         }),
       }),
-      'owner',
     ),
   )
   await act(async () => {
@@ -136,11 +130,7 @@ test('review uses the current email and global settings; cancellation still work
   await user.press(
     screen.getByRole('button', { name: 'Cancel sharing permission' }),
   )
-  await act(async () => {
-    await useUIStore
-      .getState()
-      .dialog!.buttons.find((button) => button.text === 'Revoke')!.onPress!()
-  })
+  await pressDialogButton('Revoke')
   await waitFor(() =>
     expect(
       useOrganizationSharingStore
@@ -149,5 +139,4 @@ test('review uses the current email and global settings; cancellation still work
     ).toEqual(['revoke']),
   )
   expect(screen.getByText(/Revocation pending connection/)).toBeTruthy()
-  await state.sync('owner')
 })

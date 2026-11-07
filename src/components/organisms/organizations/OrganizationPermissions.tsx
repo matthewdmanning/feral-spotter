@@ -8,17 +8,29 @@ import {
   useOrganizationSharingStore,
   EMPTY_ORGANIZATION_ACCOUNT,
   type PendingOrganizationAction,
+  type ReviewedGrant,
   persistOrganizationSharing,
 } from '@/src/hooks/useOrganizationSharingStore'
 import { useOrganizationsFlag } from '@/src/hooks/useOrganizationsFlag'
-import { organizationRequest } from '@/src/lib/organizations/api'
 import {
-  effectiveSharingSettings,
-  type Catalog,
-  type PermissionLedger,
-} from '@/src/types/Organizations'
-import { FIELD_LABELS } from './SharingSettings'
+  FALLBACK_ORGANIZATION_NAME,
+  includedSummary,
+} from '@/src/lib/organizations/sharing'
 import { styles } from './styles'
+
+function reviewMessage({ grant, organizationName }: ReviewedGrant): string {
+  const contact = [
+    grant.settings.name,
+    grant.contactEmail,
+    grant.settings.phone,
+  ].filter(Boolean)
+  const contactSummary = grant.anonymous
+    ? 'Anonymous.'
+    : contact.length
+      ? `Contact: ${contact.join(', ')}.`
+      : 'No contact information selected.'
+  return `${organizationName}: ${includedSummary(grant.settings, grant.anonymous)}. ${contactSummary} Current coverage will be checked before permission is saved.`
+}
 
 /** Existing permissions stay manageable even after a flag is turned off. */
 export function OrganizationPermissions({
@@ -47,9 +59,9 @@ export function OrganizationPermissions({
   const pending = account.outbox.filter(
     (p) =>
       !submissionId ||
-      p.submissionId === submissionId ||
-      p.grant?.submissionId === submissionId ||
-      p.action === 'revokeOrganization',
+      p.action === 'revokeOrganization' ||
+      (p.action === 'revoke' && p.submissionId === submissionId) ||
+      (p.action === 'grant' && p.grant.submissionId === submissionId),
   )
   if (!permissions.length && !pending.length) return null
   const revoke = (organizationId: string, sightingId?: string) =>
@@ -69,81 +81,38 @@ export function OrganizationPermissions({
       ],
     )
   const review = async (item: PendingOrganizationAction) => {
-    if (!item.grant || !enabled) return
+    const state = useOrganizationSharingStore.getState()
+    let reviewed: ReviewedGrant | null
     try {
-      const [catalog, ledger] = await Promise.all([
-        organizationRequest<Catalog>({ action: 'catalog' }),
-        organizationRequest<PermissionLedger>({ action: 'list' }),
-      ])
-      const organization = catalog.organizations.find(
-        (org) => org.id === item.organizationId && org.active,
-      )
-      if (!organization) {
-        setMessage(
-          'This organization is no longer available. No permission was granted.',
-        )
-        return
-      }
-      const grant = {
-        ...item.grant,
-        settings: effectiveSharingSettings(
-          account.settings,
-          item.grant.anonymous,
-        ),
-        contactEmail:
-          !item.grant.anonymous && account.settings.fields.email
-            ? user.email
-            : null,
-        catalogVersion: catalog.version,
-        epoch: ledger.epochs[item.organizationId] ?? 0,
-      }
-      const fields = Object.entries(FIELD_LABELS)
-        .filter(
-          ([key]) =>
-            grant.settings.fields[key as keyof typeof FIELD_LABELS] &&
-            (!grant.anonymous || !['name', 'email', 'phone'].includes(key)),
-        )
-        .map(([, label]) => label)
-      const contactValues = [
-        grant.settings.name,
-        grant.contactEmail,
-        grant.settings.phone,
-      ].filter(Boolean)
-      const contactSummary = grant.anonymous
-        ? 'Anonymous.'
-        : contactValues.length
-          ? `Contact: ${contactValues.join(', ')}.`
-          : 'No contact information selected.'
-      showAlert(
-        'Confirm sharing again',
-        `${organization.name}: cat count, approximate area${fields.length ? `, ${fields.join(', ')}` : ''}. ${contactSummary} Current coverage will be checked before permission is saved.`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Share this sighting',
-            onPress: async () => {
-              const state = useOrganizationSharingStore.getState()
-              if (
-                !state.reconfirm(uid, item.mutationId, grant, organization.name)
-              ) {
-                setMessage(
-                  'Sharing choices changed. Review this permission again.',
-                )
-                return
-              }
-              try {
-                await persistOrganizationSharing()
-                void state.sync(uid)
-              } catch {
-                setMessage('Permission remains pending. Try syncing again.')
-              }
-            },
-          },
-        ],
-      )
+      reviewed = await state.prepareReview(uid, item.mutationId)
     } catch {
       setMessage('Connect to review the current organization coverage.')
+      return
     }
+    if (!reviewed) {
+      setMessage(
+        'This organization is no longer available. No permission was granted.',
+      )
+      return
+    }
+    showAlert('Confirm sharing again', reviewMessage(reviewed), [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Share this sighting',
+        onPress: async () => {
+          if (!state.reconfirm(uid, item.mutationId, reviewed)) {
+            setMessage('Sharing choices changed. Review this permission again.')
+            return
+          }
+          try {
+            await persistOrganizationSharing()
+            void state.sync(uid)
+          } catch {
+            setMessage('Permission remains pending. Try syncing again.')
+          }
+        },
+      },
+    ])
   }
   const organizations = [
     ...new Map(
@@ -187,12 +156,11 @@ export function OrganizationPermissions({
           </View>
         )
       })}
-      {pending
-        .filter((item) => item.action === 'grant')
-        .map((item) => (
+      {pending.map((item) =>
+        item.action === 'grant' ? (
           <View key={item.mutationId}>
             <Text style={styles.body}>
-              {item.organizationName ?? 'Selected organization'}:{' '}
+              {item.organizationName ?? FALLBACK_ORGANIZATION_NAME}:{' '}
               {item.requiresConfirmation
                 ? 'Not shared — review required'
                 : 'Permission pending connection'}
@@ -209,13 +177,14 @@ export function OrganizationPermissions({
             <TextButton
               tone="danger"
               onPress={() =>
-                revoke(item.organizationId, item.grant?.submissionId)
+                revoke(item.organizationId, item.grant.submissionId)
               }
             >
               Cancel sharing permission
             </TextButton>
           </View>
-        ))}
+        ) : null,
+      )}
       {!submissionId &&
         organizations.map(([id, name]) => (
           <TextButton

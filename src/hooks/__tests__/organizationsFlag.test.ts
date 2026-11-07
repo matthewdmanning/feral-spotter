@@ -2,29 +2,44 @@ import { randomUUID } from 'expo-crypto'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useOrganizationsFlag } from '../useOrganizationsFlag'
 
+// The supplied expo-crypto mock returns no UUIDs.
 jest.mock('expo-crypto', () => ({
   ...jest.requireActual('expo-crypto'),
   randomUUID: jest.fn(),
 }))
-let mockNextId = 0
-jest.mock('expo-constants', () => ({
-  __esModule: true,
-  default: {
-    expoConfig: {
-      extra: {
-        posthogProjectToken: 'public-project-token',
-        posthogHost: 'https://flags.example.com',
+let nextId = 0
+jest.mock('expo-constants', () => {
+  const actual = jest.requireActual('expo-constants')
+  return {
+    ...actual,
+    __esModule: true,
+    default: {
+      ...actual.default,
+      expoConfig: {
+        ...actual.default.expoConfig,
+        extra: {
+          posthogProjectToken: 'public-project-token',
+          posthogHost: 'https://flags.example.com',
+        },
       },
     },
-  },
-}))
+  }
+})
 const originalFetch = global.fetch
 const fetchMock = jest.fn()
+/** A fresh, enabled evaluation, so each case must actively turn it off. */
+async function startEnabled() {
+  useOrganizationsFlag.setState({ enabled: true })
+  await AsyncStorage.setItem(
+    'organizations-flag-v1',
+    JSON.stringify({ enabled: true, checkedAt: Date.now() }),
+  )
+}
 beforeEach(() => {
   jest
     .mocked(randomUUID)
     .mockImplementation(
-      () => `mutation-${++mockNextId}` as ReturnType<typeof randomUUID>,
+      () => `installation-${++nextId}` as ReturnType<typeof randomUUID>,
     )
   global.fetch = fetchMock
   fetchMock.mockReset()
@@ -68,19 +83,31 @@ test('evaluates Organizations without analytics, identity or location; a fresh c
   expect(useOrganizationsFlag.getState().enabled).toBe(false)
 })
 
-test('unknown, off and failed evaluation results never enable the feature', async () => {
-  for (const result of [
-    {},
-    { flags: { Organizations: { enabled: false } } },
-    {
+test.each<[string, () => Promise<unknown>]>([
+  ['an unknown flag', async () => ({})],
+  [
+    'an off flag',
+    async () => ({ flags: { Organizations: { enabled: false } } }),
+  ],
+  [
+    'an evaluation error',
+    async () => ({
       flags: { Organizations: { enabled: true } },
       errorsWhileComputingFlags: true,
+    }),
+  ],
+  ['a null body', async () => null],
+  [
+    'invalid JSON',
+    async () => {
+      throw new Error('invalid JSON')
     },
-  ]) {
-    fetchMock.mockResolvedValue({ ok: true, json: async () => result })
-    await useOrganizationsFlag.getState().refresh()
-    expect(useOrganizationsFlag.getState().enabled).toBe(false)
-  }
+  ],
+])('%s turns off a previously enabled flag', async (_name, json) => {
+  await startEnabled()
+  fetchMock.mockResolvedValue({ ok: true, json })
+  await useOrganizationsFlag.getState().refresh()
+  expect(useOrganizationsFlag.getState().enabled).toBe(false)
 })
 
 test('corrupt cached evaluation does not prevent an online refresh', async () => {
@@ -91,24 +118,4 @@ test('corrupt cached evaluation does not prevent an online refresh', async () =>
   })
   await useOrganizationsFlag.getState().refresh()
   expect(useOrganizationsFlag.getState().enabled).toBe(true)
-})
-
-test('malformed successful responses disable a previously cached enabled flag', async () => {
-  for (const response of [
-    { ok: true, json: async () => null },
-    {
-      ok: true,
-      json: async () => {
-        throw new Error('invalid JSON')
-      },
-    },
-  ]) {
-    await AsyncStorage.setItem(
-      'organizations-flag-v1',
-      JSON.stringify({ enabled: true, checkedAt: Date.now() }),
-    )
-    fetchMock.mockResolvedValue(response)
-    await useOrganizationsFlag.getState().refresh()
-    expect(useOrganizationsFlag.getState().enabled).toBe(false)
-  }
 })

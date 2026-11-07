@@ -38,19 +38,6 @@ export const styles = StyleSheet.create((theme, rt) => ({
     flexShrink: 1,
   },
   itemLabel: { fontFamily: theme.fonts.bold },
-  checkbox: {
-    width: theme.iconSize.lg,
-    height: theme.iconSize.lg,
-    borderRadius: theme.radius.sm,
-    borderWidth: 1.5,
-    borderColor: theme.colors.borderStrong,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkboxChecked: {
-    backgroundColor: theme.colors.accent,
-    borderColor: theme.colors.accent,
-  },
 
   footnote: {
     ...theme.textVariants.bodySmall,

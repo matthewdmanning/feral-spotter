@@ -24,7 +24,7 @@ Organizations receive permission only for explicitly selected Sightings within t
 
 The existing Settings screen had no name/phone sharing configuration, so this feature adds it. Sharing preferences have their own explicit Save action; the existing authentication/settings Save/Discard workflow is retained.
 
-Remembered organizations are suggestions, never consent for another Submission. Confirmation binds location, organizations, catalog version, settings, Anonymous, injury intent, account email, and revocation revision. Restoring a draft resets confirmation. Changing a relevant value makes the checkbox unchecked. Reset/completion clears sharing with the existing Submission draft store; the permission outbox survives teardown.
+Remembered organizations are suggestions, never consent for another Submission. Confirmation binds location, organizations, catalog version, settings, Anonymous, injury intent, account email, and the revocation epoch of each selected organization. Revoking an unselected organization leaves the confirmation intact. Restoring a draft resets confirmation. Changing a relevant value makes the checkbox unchecked. Reset/completion clears sharing with the existing Submission draft store; the permission outbox survives teardown.
 
 Revocation stops subsequent access; copies already received cannot be recalled. The current phase delivers no copies. Both the form and permission management explain this limitation. The injury checkbox records intent and explicitly states that it neither contacts an organization nor requests rescue.
 
@@ -79,17 +79,18 @@ No new project IDs, bucket identifiers, or credentials are committed.
 
 ## Tests
 
-| Test                                                       | Load-bearing behavior                                                                                                                      |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `functions/src/organizations/__tests__/domain.test.ts`     | Boundaries, holes, overlaps through containment, dateline regression, malformed catalog, minimized projections, tombstones, epochs, replay |
-| `functions/src/organizations/__tests__/api.test.ts`        | Authentication, ownership, coverage/catalog rejection, projection, generation conflict retry, mutation idempotency, empty catalog          |
-| `src/lib/organizations/__tests__/sharing.journey.test.tsx` | Actual form controls, overlapping selection, Anonymous, changed settings, draft restore/new Submission, account isolation, cache failure   |
-| `src/hooks/__tests__/organizationSubmission.test.ts`       | Cloud ID mapping, durable anonymous grant after real submission teardown, history linkage                                                  |
-| `src/hooks/__tests__/organizationOutbox.test.ts`           | Durable retry, deduplication, review-required state, flag-off revocation, user isolation                                                   |
-| `src/hooks/__tests__/organizationsFlag.test.ts`            | Flags-only request, no identity/location/events, offline TTL, fail-closed evaluations                                                      |
-| `__tests__/rules/storage.test.ts` additions                | Owner, another user, and unauthenticated clients cannot read/write/delete service catalog or ledger objects                                |
+| Test                                                              | Load-bearing behavior                                                                                                                                                 |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `functions/src/organizations/__tests__/domain.test.ts`            | Boundaries, holes, overlaps through containment, dateline regression, malformed catalog, minimized projections, tombstones, epochs, replay                            |
+| `functions/src/organizations/emulator-tests/api.test.ts`          | Real HTTP/Auth/Storage: authentication, ownership (404), 409 confirm-again cases, permanent 400s, minimization, revocation, replay, empty catalog, 429 limit          |
+| `functions/src/organizations/__tests__/ledgerConcurrency.test.ts` | Concurrent first grants retry the generation conflict; narrow fake because the Storage emulator ignores `ifGenerationMatch`                                           |
+| `src/lib/organizations/__tests__/sharing.journey.test.tsx`        | Actual form controls, overlapping selection, Anonymous, changed settings, draft restore/new Submission, selected-only epoch binding, account isolation, cache failure |
+| `src/hooks/__tests__/organizationSubmission.test.tsx`             | Form-confirmed sharing → cloud ID grant, durable anonymous outbox after real submission teardown, history linkage                                                     |
+| `src/hooks/__tests__/organizationOutbox.test.ts`                  | Store-written persistence, deduplication, cold-start drain, 409 review vs 400 pending, flag-off revocation, user isolation, review rebuild                            |
+| `src/hooks/__tests__/organizationsFlag.test.ts`                   | Flags-only request, no identity/location/events, offline TTL, every non-enabled result turns an enabled flag off                                                      |
+| `__tests__/rules/storage.test.ts` additions                       | Owner, another user, and unauthenticated clients cannot read/write/delete service catalog or ledger objects                                                           |
 
-Native/external boundaries use existing SDK mocks. NetInfo's official Jest mock is registered globally because native reachability callbacks are unavailable under the React Native preset. Expo Crypto UUID generation is explicitly controlled in the new outbox/flag tests because its supplied mock does not return UUIDs.
+Client tests fake the organizations service at `fetch` (`src/test-utils/organizationsService.ts`), so the app's request wrapper and status mapping run. Expo Crypto UUID generation is explicitly controlled because its supplied mock does not return UUIDs.
 
 ## Verification status
 
@@ -127,3 +128,37 @@ Native/external boundaries use existing SDK mocks. NetInfo's official Jest mock 
 **Still external/unverified:** physical layout, large text, assistive technology, remote Organizations flag creation and enabled-rollout behavior, live deployment, and real organization catalog data. The earlier decisions to defer organization management and data delivery remain in force.
 
 **Read-only live check:** The configured PostHog `/flags/?v=2` endpoint returned HTTP 200 with the expected `flags` response shape. `Organizations` was absent, and evaluation therefore stayed disabled. The request used an opaque random ID with GeoIP disabled and sent no capture/identify event or user/contact/location data. Remote flag creation still requires a PostHog management credential.
+
+### 2026-11-07 — extension: review fixes
+
+**Purpose:** Fix review findings 3 (status classification) and 4 (confirmation reset by unrelated revocations), plus duplicated code, smells and weak tests.
+
+**Service statuses** (`functions/src/organizations/errors.ts`, `RequestError`):
+
+| Status | Cause                                                                     | Client effect                 |
+| ------ | ------------------------------------------------------------------------- | ----------------------------- |
+| 400    | Invalid grant, settings, IDs, action, organization mismatch, bad metadata | Stays pending; not for review |
+| 404    | Sighting metadata absent for the verified user                            | Stays pending; not for review |
+| 409    | Catalog/email/epoch changed, organization inactive, outside coverage      | Marked for review             |
+| 429    | Grant admission limit reached                                             | Stays pending; not for review |
+| 503    | Anything unclassified, including repeated generation conflicts            | Retried                       |
+
+The 400/404/429 retry loop (finding 2) is unchanged.
+
+**Confirmation binding:** the signature carries only the selected organizations' epochs. Pending revocation mutation IDs are no longer part of it.
+
+**Structure:**
+
+- One directory store (`useOrganizationDirectoryStore`) owns refreshes and the single staleness guard; `OrganizationsRuntime` alone handles foreground/reconnection, using the app's existing online status. Feature code no longer uses NetInfo, so the global NetInfo Jest mock was removed.
+- `buildGrant` (`src/lib/organizations/sharing.ts`) is the only grant builder. The store's `prepareReview` loads catalog/epoch; `reconfirm` accepts a reviewed grant only if current choices rebuild it exactly.
+- `effectiveSharingSettings`, `SHARING_FIELD_KEYS`, `CONTACT_FIELDS` and `offeredFields` are the single sources for contact suppression and field lists, server and client.
+- `persistOrganizationSharing` writes through the store's own persist storage and partialize.
+- `CheckboxBox` atom is shared by consent screens and organization checkboxes.
+- The client grant no longer sends the unused `injured` field; the server derives injury from stored metadata.
+
+**Found while fixing tests:**
+
+- Adjacent repeated ring vertices were reported as self-intersection; the repeated-vertex check now runs first.
+- The Firebase Storage emulator ignores `ifGenerationMatch`. The former emulator "concurrent grants" assertion passed by timing; ledger concurrency is now tested with a narrow generation fake.
+
+**Run and passing:** client suite 105 suites / 496 tests, Functions 60, rules 39, organizations emulator lane 14, `npm run typecheck`, Functions build, ESLint on changed files, Prettier, `git diff --check`.
