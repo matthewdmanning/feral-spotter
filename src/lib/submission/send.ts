@@ -38,8 +38,11 @@ import {
   finalizeSubmissionPhotoMetadata,
   uploadSubmissionMetadata,
 } from '@/src/lib/upload/firebaseUpload'
+import {
+  buildGrant,
+  FALLBACK_ORGANIZATION_NAME,
+} from '@/src/lib/organizations/sharing'
 import type { SubmissionPhoto } from '@/src/types'
-import { effectiveSharingSettings } from '@/src/types/Organizations'
 
 /** The sharing choice submitDraft confirmed, or null when nothing is shared. */
 export type ConfirmedSharing = ReturnType<typeof confirmedSharing>
@@ -185,24 +188,16 @@ export async function sendDraft(
         organizationId,
         organizationName:
           sharing.draft.organizationNames?.[organizationId] ??
-          'Selected organization',
-        grant: {
+          FALLBACK_ORGANIZATION_NAME,
+        grant: buildGrant({
           submissionId: cloudSubmissionId,
           organizationId,
           catalogVersion: sharing.draft.catalogVersion,
           epoch: sharing.epochs[organizationId] ?? 0,
           anonymous: sharing.draft.anonymous,
-          settings: effectiveSharingSettings(
-            sharing.settings,
-            sharing.draft.anonymous,
-          ),
-          contactEmail:
-            !sharing.draft.anonymous && sharing.settings.fields.email
-              ? email
-              : null,
-          injured: submission.report_injured === true,
-          disclosureVersion: 1,
-        },
+          settings: sharing.settings,
+          email,
+        }),
       })
     }
     await persistOrganizationSharing()

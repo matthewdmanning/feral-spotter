@@ -96,33 +96,36 @@ describe('organization boundaries and data minimization', () => {
     ).toBe(false)
   })
 
-  test.each([
-    null,
-    {},
-    { version: 'v1', organizations: [{ id: 'x' }] },
-    {
-      version: 'v1',
-      organizations: [
-        {
-          id: 'x',
-          name: 'X',
-          active: true,
-          coverage: {
-            type: 'Polygon',
-            coordinates: [
-              [
-                [0, 0],
-                [1, 1],
-                [2, 2],
-                [0, 0],
+  test.each<[unknown, string]>([
+    [null, 'Invalid organization catalog'],
+    [{}, 'Invalid organization catalog'],
+    [{ version: 'v1', organizations: [{ id: 'x' }] }, 'Invalid organization'],
+    [
+      {
+        version: 'v1',
+        organizations: [
+          {
+            id: 'x',
+            name: 'X',
+            active: true,
+            coverage: {
+              type: 'Polygon',
+              coordinates: [
+                [
+                  [0, 0],
+                  [1, 1],
+                  [2, 2],
+                  [0, 0],
+                ],
               ],
-            ],
+            },
           },
-        },
-      ],
-    },
-  ])('rejects invalid catalog %j', (catalog) =>
-    expect(() => parseCatalog(catalog)).toThrow(),
+        ],
+      },
+      'Degenerate ring',
+    ],
+  ])('rejects invalid catalog %j', (catalog, message) =>
+    expect(() => parseCatalog(catalog)).toThrow(message),
   )
 
   test('optional fields cannot leak through cat objects, addresses or account identity', () => {
@@ -136,19 +139,22 @@ describe('organization boundaries and data minimization', () => {
           address: 'Exact street',
         },
       ],
-      latitude: 34.683456,
-      longitude: -82.837456,
+      location: { latitude: 34.683456, longitude: -82.837456 },
       photoPaths: ['private/photo.jpg'],
-      fields: {
-        name: true,
-        email: true,
-        phone: true,
-        catDetails: true,
-        preciseLocation: false,
-        photos: false,
+      settings: {
+        fields: {
+          name: true,
+          email: true,
+          phone: true,
+          catDetails: true,
+          preciseLocation: false,
+          photos: false,
+        },
+        name: 'Person',
+        phone: '123',
       },
       anonymous: true,
-      contact: { name: 'Person', email: 'private@example.com', phone: '123' },
+      email: 'private@example.com',
     }
     const anonymous = projectData(input)
     expect(anonymous).toEqual({
@@ -161,7 +167,7 @@ describe('organization boundaries and data minimization', () => {
       },
       cats: [{ health_label: 'poor' }],
     })
-    expect(projectData({ ...input, fields: DEFAULT_SHARING.fields })).toEqual({
+    expect(projectData({ ...input, settings: DEFAULT_SHARING })).toEqual({
       catCount: 1,
       generalLocation: anonymous.generalLocation,
     })
@@ -169,17 +175,23 @@ describe('organization boundaries and data minimization', () => {
       projectData({
         ...input,
         anonymous: false,
-        fields: {
-          ...input.fields,
-          name: false,
-          phone: false,
-          preciseLocation: true,
-          photos: true,
+        settings: {
+          ...input.settings,
+          fields: {
+            ...input.settings.fields,
+            name: false,
+            phone: false,
+            preciseLocation: true,
+            photos: true,
+          },
         },
       }),
-    ).toMatchObject({
+    ).toEqual({
+      catCount: 1,
+      generalLocation: anonymous.generalLocation,
       contact: { email: 'private@example.com' },
-      preciseLocation: { latitude: input.latitude, longitude: input.longitude },
+      preciseLocation: input.location,
+      cats: [{ health_label: 'poor' }],
       photoPaths: input.photoPaths,
     })
   })
@@ -283,7 +295,7 @@ describe('coverage geometry validation', () => {
     [0, 4],
     [0, 0],
   ]
-  test.each<[string, [number, number][][]]>([
+  test.each<[string, [number, number][][], string]>([
     [
       'crossed exterior',
       [
@@ -295,6 +307,7 @@ describe('coverage geometry validation', () => {
           [0, 0],
         ],
       ],
+      'Self-intersecting ring',
     ],
     [
       'repeated edge',
@@ -308,6 +321,7 @@ describe('coverage geometry validation', () => {
           [0, 0],
         ],
       ],
+      'Repeated ring vertex',
     ],
     [
       'outside hole',
@@ -321,6 +335,7 @@ describe('coverage geometry validation', () => {
           [5, 5],
         ],
       ],
+      'Hole outside coverage',
     ],
     [
       'crossing hole',
@@ -334,6 +349,7 @@ describe('coverage geometry validation', () => {
           [3, 3],
         ],
       ],
+      'Intersecting coverage rings',
     ],
     [
       'overlapping holes',
@@ -354,9 +370,10 @@ describe('coverage geometry validation', () => {
           [2, 2],
         ],
       ],
+      'Overlapping coverage holes',
     ],
-  ])('rejects %s', (_name, coordinates) =>
-    expect(() => parse(coordinates)).toThrow(),
+  ])('rejects %s', (_name, coordinates, message) =>
+    expect(() => parse(coordinates)).toThrow(message),
   )
   test('accepts valid dateline coverage with a hole and normal coverage independent of winding', () => {
     expect(() =>

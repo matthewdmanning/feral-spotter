@@ -1,6 +1,7 @@
 import type { Catalog, Organization } from '@/src/types/Organizations'
 import {
   covers,
+  DEFAULT_CACHE_RADIUS_KM,
   nearby,
   parseCatalog,
   validLocation,
@@ -13,21 +14,22 @@ export interface DirectoryCache extends Catalog {
   radiusKm: number
   fetchedAt: string
 }
+const CACHE_KEY = 'organizations-directory-v1'
+
 /** Read-only organization directory; owns geographic filtering and offline persistence. */
 export class Organizations {
-  private refreshSequence = 0
   constructor(
     private readonly load: () => Promise<Catalog & { cacheRadiusKm?: number }>,
   ) {}
 
   async cached(): Promise<DirectoryCache | null> {
     try {
-      const raw = await asyncStorage.getItem('organizations-directory-v1')
+      const raw = await asyncStorage.getItem(CACHE_KEY)
       if (!raw) return null
       const cache = JSON.parse(raw) as DirectoryCache
       parseCatalog(cache)
       if (
-        !validLocation(cache.latitude, cache.longitude) ||
+        !validLocation(cache) ||
         !Number.isFinite(cache.radiusKm) ||
         cache.radiusKm <= 0 ||
         !Number.isFinite(Date.parse(cache.fetchedAt))
@@ -39,14 +41,14 @@ export class Organizations {
     }
   }
 
-  async refresh(latitude: number, longitude: number): Promise<DirectoryCache> {
-    if (!validLocation(latitude, longitude))
+  /** Fetches the catalog and keeps active coverage near the center. Does not persist. */
+  async fetch(latitude: number, longitude: number): Promise<DirectoryCache> {
+    if (!validLocation({ latitude, longitude }))
       throw new Error('Invalid cache center')
-    const sequence = ++this.refreshSequence
     const response = await this.load()
     const catalog = parseCatalog(response)
-    const radiusKm = response.cacheRadiusKm ?? 50
-    const cache: DirectoryCache = {
+    const radiusKm = response.cacheRadiusKm ?? DEFAULT_CACHE_RADIUS_KM
+    return {
       ...catalog,
       organizations: catalog.organizations.filter(
         (org) => org.active && nearby(org, latitude, longitude, radiusKm),
@@ -56,14 +58,13 @@ export class Organizations {
       radiusKm,
       fetchedAt: new Date().toISOString(),
     }
-    if (sequence === this.refreshSequence)
-      await asyncStorage.setItem(
-        'organizations-directory-v1',
-        JSON.stringify(cache),
-      )
-    return cache
   }
 
+  async save(cache: DirectoryCache): Promise<void> {
+    await asyncStorage.setItem(CACHE_KEY, JSON.stringify(cache))
+  }
+
+  /** The cache holds active organizations only, so containment is the whole test. */
   eligible(
     catalog: Catalog | null,
     latitude?: number,
@@ -71,7 +72,7 @@ export class Organizations {
   ): Organization[] {
     if (!catalog || latitude == null || longitude == null) return []
     return catalog.organizations
-      .filter((org) => org.active && covers(org.coverage, latitude, longitude))
+      .filter((org) => covers(org.coverage, latitude, longitude))
       .sort((a, b) => a.name.localeCompare(b.name))
   }
 }

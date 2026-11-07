@@ -6,22 +6,31 @@ import { onRequest } from 'firebase-functions/v2/https'
 import { defineString } from 'firebase-functions/params'
 import {
   covers,
+  DEFAULT_CACHE_RADIUS_KM,
+  effectiveSharingSettings,
   parseCatalog,
   projectData,
+  SHARING_FIELD_KEYS,
   validId,
   validLocation,
+  type Catalog,
   type GrantRequest,
   type Permission,
   type PermissionLedger,
 } from './domain'
 import { mutateLedger, type LedgerMutation } from './ledger'
+import { errorCode, RequestError } from './errors'
 
 const CATALOG_PATH = defineString('ORGANIZATIONS_CATALOG_PATH', {
   default: 'organizations/catalog.json',
 })
 const CACHE_RADIUS_KM = defineString('ORGANIZATIONS_CACHE_RADIUS_KM', {
-  default: '50',
+  default: String(DEFAULT_CACHE_RADIUS_KM),
 })
+const MAX_PERMISSIONS = 5000
+const MAX_APPLIED_MUTATIONS = 20000
+const LEDGER_WRITE_ATTEMPTS = 6
+
 interface StoredLedger extends PermissionLedger {
   applied: string[]
 }
@@ -30,16 +39,20 @@ const emptyLedger = (): StoredLedger => ({
   permissions: [],
   applied: [],
 })
+const ledgerPath = (uid: string) =>
+  `organization-permissions/${uid}/ledger.json`
+const bucket = () => getStorage().bucket()
+const publicLedger = ({ epochs, permissions }: PermissionLedger) => ({
+  epochs,
+  permissions,
+})
 
-async function readCatalog() {
+async function readCatalog(): Promise<Catalog> {
   try {
-    const [bytes] = await getStorage()
-      .bucket()
-      .file(CATALOG_PATH.value())
-      .download()
+    const [bytes] = await bucket().file(CATALOG_PATH.value()).download()
     return parseCatalog(JSON.parse(bytes.toString()))
   } catch (error) {
-    if ((error as { code?: number }).code === 404)
+    if (errorCode(error) === 404)
       return { version: 'empty-v1', organizations: [] }
     throw error
   }
@@ -47,41 +60,42 @@ async function readCatalog() {
 async function readLedger(
   uid: string,
 ): Promise<{ value: StoredLedger; generation: number }> {
-  const bucket = getStorage().bucket()
-  const path = `organization-permissions/${uid}/ledger.json`
+  const path = ledgerPath(uid)
   try {
-    const [metadata] = await bucket.file(path).getMetadata()
+    const [metadata] = await bucket().file(path).getMetadata()
     const generation = Number(metadata.generation)
-    const [bytes] = await bucket.file(path, { generation }).download()
+    const [bytes] = await bucket().file(path, { generation }).download()
     return { value: JSON.parse(bytes.toString()) as StoredLedger, generation }
   } catch (error) {
-    if ((error as { code?: number }).code === 404)
-      return { value: emptyLedger(), generation: 0 }
+    if (errorCode(error) === 404) return { value: emptyLedger(), generation: 0 }
     throw error
   }
 }
+/** Compare-and-swap on the ledger generation. A replayed mutation ID is answered without rebuilding it. */
 async function updateLedger(
   uid: string,
   id: string,
-  mutation: LedgerMutation,
+  build: () => Promise<LedgerMutation>,
 ): Promise<PermissionLedger> {
-  for (let attempt = 0; attempt < 6; attempt++) {
+  let mutation: LedgerMutation | undefined
+  for (let attempt = 0; attempt < LEDGER_WRITE_ATTEMPTS; attempt++) {
     const { value, generation } = await readLedger(uid)
     if (value.applied.includes(id)) return value
+    mutation ??= await build()
     const next = {
       ...mutateLedger(value, mutation, new Date().toISOString()),
       applied: [...value.applied, id],
     }
-    // Bound one user's ledger independently of the upload cap.
+    // Bound one user's ledger independently of the upload cap; revocations stay available.
     if (
       mutation.type === 'grant' &&
-      (next.permissions.length > 5000 || next.applied.length > 20000)
+      (next.permissions.length > MAX_PERMISSIONS ||
+        next.applied.length > MAX_APPLIED_MUTATIONS)
     )
-      throw new Error('Permission limit reached')
+      throw new RequestError(429, 'Permission limit reached')
     try {
-      await getStorage()
-        .bucket()
-        .file(`organization-permissions/${uid}/ledger.json`)
+      await bucket()
+        .file(ledgerPath(uid))
         .save(JSON.stringify(next), {
           resumable: false,
           contentType: 'application/json',
@@ -89,7 +103,7 @@ async function updateLedger(
         })
       return next
     } catch (error) {
-      if ((error as { code?: number }).code !== 412) throw error
+      if (errorCode(error) !== 412) throw error
     }
   }
   throw new Error('Concurrent update; retry')
@@ -104,10 +118,9 @@ function validateGrant(input: unknown): GrantRequest {
     !Number.isSafeInteger(request.epoch) ||
     request.epoch < 0 ||
     typeof request.anonymous !== 'boolean' ||
-    typeof request.injured !== 'boolean' ||
     request.disclosureVersion !== 1
   )
-    throw new Error('Invalid sharing confirmation')
+    throw new RequestError(400, 'Invalid sharing confirmation')
   const settings = request.settings
   if (
     !settings ||
@@ -116,39 +129,21 @@ function validateGrant(input: unknown): GrantRequest {
     typeof settings.phone !== 'string' ||
     settings.phone.length > 50 ||
     !settings.fields ||
-    ['name', 'email', 'phone', 'catDetails', 'preciseLocation', 'photos'].some(
-      (key) =>
-        typeof settings.fields[key as keyof typeof settings.fields] !==
-        'boolean',
-    )
+    SHARING_FIELD_KEYS.some((key) => typeof settings.fields[key] !== 'boolean')
   )
-    throw new Error('Invalid sharing settings')
+    throw new RequestError(400, 'Invalid sharing settings')
   return request
 }
-async function makePermission(
-  uid: string,
-  email: string | undefined,
-  input: unknown,
-): Promise<Permission> {
-  const request = validateGrant(input)
-  if (
-    !request.anonymous &&
-    request.settings.fields.email &&
-    request.contactEmail !== (email ?? null)
-  )
-    throw new Error('Contact email changed; confirm again')
-  const catalog = await readCatalog()
-  if (catalog.version !== request.catalogVersion)
-    throw new Error('Directory changed; confirm again')
-  const org = catalog.organizations.find(
-    (o) => o.id === request.organizationId && o.active,
-  )
-  if (!org) throw new Error('Organization unavailable; confirm again')
-  const prefix = `submissions/${uid}/${request.submissionId}/`
-  const [bytes] = await getStorage()
-    .bucket()
-    .file(`${prefix}metadata.json`)
-    .download()
+async function readSubmission(uid: string, submissionId: string) {
+  const prefix = `submissions/${uid}/${submissionId}/`
+  let bytes: Buffer
+  try {
+    ;[bytes] = await bucket().file(`${prefix}metadata.json`).download()
+  } catch (error) {
+    if (errorCode(error) === 404)
+      throw new RequestError(404, 'Sighting not found')
+    throw error
+  }
   const metadata = JSON.parse(bytes.toString()) as {
     submission: {
       latitude?: number
@@ -158,12 +153,6 @@ async function makePermission(
     cats: Record<string, unknown>[]
     photo_paths: string[]
   }
-  const { latitude, longitude } = metadata.submission
-  if (
-    !validLocation(latitude, longitude) ||
-    !covers(org.coverage, latitude, longitude!)
-  )
-    throw new Error('Sighting outside organization coverage')
   if (
     !Array.isArray(metadata.cats) ||
     metadata.cats.length < 1 ||
@@ -176,7 +165,35 @@ async function makePermission(
         path.endsWith('metadata.json'),
     )
   )
-    throw new Error('Invalid submitted sighting')
+    throw new RequestError(400, 'Invalid submitted sighting')
+  return metadata
+}
+async function makePermission(
+  uid: string,
+  email: string | undefined,
+  request: GrantRequest,
+): Promise<Permission> {
+  if (
+    !request.anonymous &&
+    request.settings.fields.email &&
+    request.contactEmail !== (email ?? null)
+  )
+    throw RequestError.confirmAgain('Contact email changed; confirm again')
+  const catalog = await readCatalog()
+  if (catalog.version !== request.catalogVersion)
+    throw RequestError.confirmAgain('Directory changed; confirm again')
+  const org = catalog.organizations.find(
+    (o) => o.id === request.organizationId && o.active,
+  )
+  if (!org)
+    throw RequestError.confirmAgain('Organization unavailable; confirm again')
+  const metadata = await readSubmission(uid, request.submissionId)
+  const location = metadata.submission
+  if (
+    !validLocation(location) ||
+    !covers(org.coverage, location.latitude, location.longitude)
+  )
+    throw RequestError.confirmAgain('Sighting outside organization coverage')
   return {
     submissionId: request.submissionId,
     organizationId: org.id,
@@ -185,26 +202,43 @@ async function makePermission(
     epoch: request.epoch,
     confirmedAt: new Date().toISOString(),
     anonymous: request.anonymous,
-    fields: {
-      ...request.settings.fields,
-      ...(request.anonymous ? { name: false, email: false, phone: false } : {}),
-    },
+    fields: effectiveSharingSettings(request.settings, request.anonymous)
+      .fields,
     injured: metadata.submission.report_injured === true,
     disclosureVersion: 1,
     data: projectData({
       cats: metadata.cats,
-      latitude,
-      longitude: longitude!,
+      location,
       photoPaths: metadata.photo_paths,
-      fields: request.settings.fields,
+      settings: request.settings,
       anonymous: request.anonymous,
-      contact: {
-        name: request.settings.name,
-        phone: request.settings.phone,
-        email,
-      },
+      email,
     }),
   }
+}
+function parseMutation(
+  uid: string,
+  email: string | undefined,
+  body: Record<string, unknown>,
+): () => Promise<LedgerMutation> {
+  const { action, organizationId, submissionId } = body
+  if (!validId(organizationId))
+    throw new RequestError(400, 'Invalid organization')
+  if (action === 'grant') {
+    const grant = validateGrant(body.grant)
+    if (grant.organizationId !== organizationId)
+      throw new RequestError(400, 'Organization mismatch')
+    return async () => ({
+      type: 'grant',
+      organizationId,
+      permission: await makePermission(uid, email, grant),
+    })
+  }
+  if (action === 'revoke' && validId(submissionId))
+    return async () => ({ type: 'revoke', organizationId, submissionId })
+  if (action === 'revokeOrganization')
+    return async () => ({ type: 'revokeOrganization', organizationId })
+  throw new RequestError(400, 'Invalid action')
 }
 /** Owner-only catalog/consent API. No endpoint grants organizations access to app data. */
 export async function handleOrganizationsRequest(
@@ -229,59 +263,32 @@ export async function handleOrganizationsRequest(
     return
   }
   try {
-    const { action, mutationId, organizationId, submissionId } = req.body ?? {}
-    if (action === 'catalog') {
+    const body = (req.body ?? {}) as Record<string, unknown>
+    if (body.action === 'catalog') {
       const radius = Number(CACHE_RADIUS_KM.value())
       res.json({
         ...(await readCatalog()),
-        cacheRadiusKm: Number.isFinite(radius) && radius > 0 ? radius : 50,
+        cacheRadiusKm:
+          Number.isFinite(radius) && radius > 0
+            ? radius
+            : DEFAULT_CACHE_RADIUS_KM,
       })
       return
     }
-    if (action === 'list') {
-      const { value } = await readLedger(identity.uid)
-      res.json({ epochs: value.epochs, permissions: value.permissions })
+    if (body.action === 'list') {
+      res.json(publicLedger((await readLedger(identity.uid)).value))
       return
     }
-    if (!validId(mutationId) || !validId(organizationId)) {
-      res.status(400).end()
-      return
-    }
-    const previous = await readLedger(identity.uid)
-    if (previous.value.applied.includes(mutationId)) {
-      res.json({
-        epochs: previous.value.epochs,
-        permissions: previous.value.permissions,
-      })
-      return
-    }
-    let mutation: LedgerMutation
-    if (action === 'grant') {
-      const permission = await makePermission(
-        identity.uid,
-        identity.email,
-        req.body.grant,
-      )
-      if (permission.organizationId !== organizationId)
-        throw new Error('Organization mismatch')
-      mutation = { type: 'grant', organizationId, permission }
-    } else if (action === 'revoke' && validId(submissionId)) {
-      mutation = { type: 'revoke', organizationId, submissionId }
-    } else if (action === 'revokeOrganization') {
-      mutation = { type: 'revokeOrganization', organizationId }
-    } else {
-      res.status(400).end()
-      return
-    }
-    const result = await updateLedger(identity.uid, mutationId, mutation)
-    res.json({ epochs: result.epochs, permissions: result.permissions })
+    if (!validId(body.mutationId))
+      throw new RequestError(400, 'Invalid mutation')
+    const build = parseMutation(identity.uid, identity.email, body)
+    res.json(
+      publicLedger(await updateLedger(identity.uid, body.mutationId, build)),
+    )
   } catch (error) {
     // Do not log tokens, submission contents or contact values.
-    const message =
-      error instanceof Error ? error.message : 'Permission sync failed'
-    const requiresConfirmation =
-      /confirm again|outside organization|revoked/.test(message)
-    res.status(requiresConfirmation ? 409 : 503).json({ requiresConfirmation })
+    const status = error instanceof RequestError ? error.status : 503
+    res.status(status).json({ requiresConfirmation: status === 409 })
   }
 }
 

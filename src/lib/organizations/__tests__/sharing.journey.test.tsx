@@ -12,56 +12,67 @@ import {
   useOrganizationSharingStore,
   EMPTY_ORGANIZATION_ACCOUNT,
 } from '@/src/hooks/useOrganizationSharingStore'
+import {
+  organizationsDirectory,
+  useOrganizationDirectoryStore,
+} from '@/src/hooks/useOrganizationDirectory'
 import { useOrganizationsFlag } from '@/src/hooks/useOrganizationsFlag'
 import { useAuthStore } from '@/src/lib/auth/authStore'
 import { confirmedSharing } from '../consent'
-import { Organizations } from '../Organizations'
 import { DEFAULT_SHARING, type Catalog } from '@/src/types/Organizations'
+import { fakeOrganizationsService } from '@/src/test-utils/organizationsService'
 
 jest.mock('expo-router', () => ({ router: { push: jest.fn() } }))
-const coverage = {
-  type: 'Polygon' as const,
-  coordinates: [
-    [
-      [0, 0],
-      [2, 0],
-      [2, 2],
-      [0, 2],
-      [0, 0],
-    ],
-  ] as [number, number][][],
-}
+const square = (x: number): [number, number][][] => [
+  [
+    [x, x],
+    [x + 2, x],
+    [x + 2, x + 2],
+    [x, x + 2],
+    [x, x],
+  ],
+]
 const catalog: Catalog = {
   version: 'v1',
   organizations: [
-    { id: 'a', name: 'First rescue', active: true, coverage },
-    { id: 'b', name: 'Second rescue', active: true, coverage },
+    {
+      id: 'a',
+      name: 'First rescue',
+      active: true,
+      coverage: { type: 'Polygon', coordinates: square(0) },
+    },
+    {
+      id: 'b',
+      name: 'Second rescue',
+      active: true,
+      coverage: { type: 'Polygon', coordinates: square(0) },
+    },
     {
       id: 'far',
       name: 'Distant rescue',
       active: true,
-      coverage: {
-        type: 'Polygon',
-        coordinates: [
-          [
-            [10, 10],
-            [11, 10],
-            [11, 11],
-            [10, 11],
-            [10, 10],
-          ],
-        ],
-      },
+      coverage: { type: 'Polygon', coordinates: square(10) },
     },
   ],
 }
+const shareBox = () =>
+  screen.getByRole('checkbox', { name: 'Share this sighting' })
+const setLocation = (latitude: number, longitude: number) =>
+  act(async () => {
+    useSubmissionStore.getState().setSubmissionLocation({ latitude, longitude })
+  })
 
-beforeEach(async () => {
+beforeEach(() => {
   useAuthStore.setState({
     user: { uid: 'owner', email: 'owner@example.com' },
     isReady: true,
   })
   useOrganizationsFlag.setState({ enabled: true })
+  useOrganizationDirectoryStore.setState({
+    cache: null,
+    loading: false,
+    refreshFailed: false,
+  })
   useSubmissionStore.getState().clearDraft()
   useSubmissionStore
     .getState()
@@ -71,14 +82,16 @@ beforeEach(async () => {
     ...DEFAULT_SHARING,
     fields: { ...DEFAULT_SHARING.fields, email: true },
   })
-  await new Organizations(async () => catalog).refresh(1, 1)
 })
 
 test('submission journey: overlapping organizations, anonymous override, changed settings, restart and a fresh sighting', async () => {
+  const service = await fakeOrganizationsService(() => catalog)
   const user = userEvent.setup()
   const view = render(<SubmissionOrganizations />)
   await screen.findByRole('checkbox', { name: 'First rescue' })
+  expect(service.actions()).toEqual(['catalog'])
   expect(screen.queryByText('Distant rescue')).toBeNull()
+  expect(screen.queryByText(/saved coverage|unavailable/)).toBeNull()
   await user.press(screen.getByRole('checkbox', { name: 'First rescue' }))
   await user.press(screen.getByRole('checkbox', { name: 'Second rescue' }))
   expect(screen.getByRole('checkbox', { name: 'Anonymous' })).toBeChecked()
@@ -86,37 +99,28 @@ test('submission journey: overlapping organizations, anonymous override, changed
     screen.getByText('Included: cat count, approximate area.'),
   ).toBeTruthy()
   expect(() => confirmedSharing('owner')).toThrow('confirm')
-  await user.press(
-    screen.getByRole('checkbox', { name: 'Share this sighting' }),
-  )
+  await user.press(shareBox())
   expect(confirmedSharing('owner')?.draft.selectedIds).toEqual(['a', 'b'])
   await user.press(screen.getByRole('checkbox', { name: 'Anonymous' }))
   expect(
     screen.getByText('Included: cat count, approximate area, Email.'),
   ).toBeTruthy()
-  expect(
-    screen.getByRole('checkbox', { name: 'Share this sighting' }),
-  ).not.toBeChecked()
-  await user.press(
-    screen.getByRole('checkbox', { name: 'Share this sighting' }),
-  )
+  expect(shareBox()).not.toBeChecked()
+  await user.press(shareBox())
   await act(async () => {
     useOrganizationSharingStore.getState().configure('owner', {
       ...DEFAULT_SHARING,
       fields: { ...DEFAULT_SHARING.fields, photos: true },
     })
   })
+  expect(shareBox()).not.toBeChecked()
   expect(() => confirmedSharing('owner')).toThrow('confirm')
-  await user.press(
-    screen.getByRole('checkbox', { name: 'Share this sighting' }),
-  )
+  await user.press(shareBox())
   // A cold-start restore cannot silently reuse the checked confirmation.
   await act(async () => {
     await useSubmissionStore.persist.rehydrate()
   })
-  expect(
-    screen.getByRole('checkbox', { name: 'Share this sighting' }),
-  ).not.toBeChecked()
+  expect(shareBox()).not.toBeChecked()
   await act(async () => {
     useOrganizationSharingStore.getState().remember('owner', ['a'])
     useSubmissionStore.getState().clearDraft()
@@ -130,9 +134,7 @@ test('submission journey: overlapping organizations, anonymous override, changed
     ).toBeChecked(),
   )
   expect(screen.getByRole('checkbox', { name: 'Anonymous' })).toBeChecked()
-  expect(
-    screen.getByRole('checkbox', { name: 'Share this sighting' }),
-  ).not.toBeChecked()
+  expect(shareBox()).not.toBeChecked()
   await user.press(
     screen.getByRole('checkbox', { name: 'Report an injured cat' }),
   )
@@ -145,17 +147,40 @@ test('submission journey: overlapping organizations, anonymous override, changed
   view.unmount()
 })
 
-test('cached coverage filters by the sighting and account changes never reuse another user’s choices', async () => {
+test('only a revocation of a selected organization withdraws the confirmation', async () => {
+  await fakeOrganizationsService(() => catalog)
   const user = userEvent.setup()
   render(<SubmissionOrganizations />)
   await user.press(
     await screen.findByRole('checkbox', { name: 'First rescue' }),
   )
-  await act(async () => {
-    useSubmissionStore
-      .getState()
-      .setSubmissionLocation({ latitude: 15, longitude: 15 })
-  })
+  await user.press(shareBox())
+  const setEpochs = (epochs: Record<string, number>) =>
+    act(async () => {
+      useOrganizationSharingStore.setState((state) => ({
+        accounts: {
+          owner: {
+            ...state.accounts.owner,
+            ledger: { epochs, permissions: [] },
+          },
+        },
+      }))
+    })
+  await setEpochs({ far: 1 })
+  expect(shareBox()).toBeChecked()
+  expect(confirmedSharing('owner')?.draft.selectedIds).toEqual(['a'])
+  await setEpochs({ far: 1, a: 1 })
+  expect(shareBox()).not.toBeChecked()
+})
+
+test('cached coverage filters by the sighting and account changes never reuse another user’s choices', async () => {
+  await fakeOrganizationsService(() => catalog)
+  const user = userEvent.setup()
+  render(<SubmissionOrganizations />)
+  await user.press(
+    await screen.findByRole('checkbox', { name: 'First rescue' }),
+  )
+  await setLocation(15, 15)
   await waitFor(() =>
     expect(screen.queryByRole('checkbox', { name: 'First rescue' })).toBeNull(),
   )
@@ -164,10 +189,8 @@ test('cached coverage filters by the sighting and account changes never reuse an
   ).toEqual([])
   await act(async () => {
     useAuthStore.setState({ user: { uid: 'other', email: null } })
-    useSubmissionStore
-      .getState()
-      .setSubmissionLocation({ latitude: 1, longitude: 1 })
   })
+  await setLocation(1, 1)
   await waitFor(() =>
     expect(useSubmissionStore.getState().organizationSharing?.ownerUid).toBe(
       'other',
@@ -186,12 +209,16 @@ test('cached coverage filters by the sighting and account changes never reuse an
   expect(screen.queryByText('Share with organizations')).toBeNull()
 })
 
-test('bad cache is ignored and a failed refresh preserves the last offline directory', async () => {
-  const directory = new Organizations(async () => {
-    throw new Error('offline')
-  })
-  await expect(directory.refresh(1, 1)).rejects.toThrow('offline')
-  expect((await directory.cached())?.version).toBe('v1')
+test('a failed refresh keeps the saved directory usable; a corrupt cache is ignored', async () => {
+  await fakeOrganizationsService(() => catalog)
+  await organizationsDirectory.save(await organizationsDirectory.fetch(1, 1))
+  await fakeOrganizationsService(() => ({ status: 503 }))
+  render(<SubmissionOrganizations />)
+  expect(await screen.findByText(/Using saved coverage/)).toBeTruthy()
+  expect(
+    screen.getByRole('checkbox', { name: 'First rescue' }),
+  ).not.toBeChecked()
+  expect(screen.getByText('Retry organization coverage')).toBeTruthy()
   await AsyncStorage.setItem('organizations-directory-v1', '{bad json')
-  expect(await directory.cached()).toBeNull()
+  expect(await organizationsDirectory.cached()).toBeNull()
 })
