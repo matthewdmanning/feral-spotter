@@ -58,7 +58,7 @@ let capturedVisible = false
 jest.mock('@/src/shared/ui/molecules/BottomButtonColumn', () => ({
   // The screen mounts the column only while it is shown.
   BottomButtonColumn: (props: { visible: boolean }) => {
-    require('react').useEffect(() => {
+    jest.requireActual<typeof import('react')>('react').useEffect(() => {
       capturedVisible = props.visible
       return () => {
         capturedVisible = false

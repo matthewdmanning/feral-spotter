@@ -11,7 +11,7 @@ src/
 ├── providers/     # AppProviders (app layer)
 ├── features/
 │   ├── auth/              # sign-in, Registration, auth providers, entry gate
-│   ├── permissions/       # onboarding/ consent/ photo/ location/ communications/
+│   ├── permissions/       # onboarding, consent, photo, location, email opt-in
 │   ├── settings/          # settings screen + store, photo toggles
 │   ├── draft-submission/  # the draft (ADR-0006), create/cats/Map picker screens, upload + cache
 │   ├── camera-control/    # Camera screen and capture hooks (JS side of the Camera seam)
