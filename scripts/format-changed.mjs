@@ -18,6 +18,7 @@
  * write without the caller exporting an env var (awkward in PowerShell).
  */
 import { execSync } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import { createPrettierRunner, isFormattable } from './format-shared.mjs'
 
 const check = process.argv.includes('--check')
@@ -37,7 +38,9 @@ try {
 
 const files = sh(`git diff --name-only --diff-filter=ACMR ${base} HEAD`)
   .split('\n')
-  .filter((f) => f && isFormattable(f))
+  // Prettier reads the working tree, so a file an uncommitted rename moved
+  // away from its committed path is not there for it to read.
+  .filter((f) => f && isFormattable(f) && existsSync(f))
 
 if (files.length === 0) {
   console.log('prettier: no changed files to format')

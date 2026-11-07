@@ -1,1 +1,1 @@
-export { default } from '@/src/features/permissions/consent/screens/dataAgreement'
+export { default } from '@/src/features/permissions/screens/dataAgreement'
