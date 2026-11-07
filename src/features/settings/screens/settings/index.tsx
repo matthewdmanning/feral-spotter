@@ -17,7 +17,7 @@ import {
   selectionHaptic,
   setHapticsEnabled,
 } from '@/src/shared/lib/haptics'
-import { saveEmailOptIn } from '@/src/features/permissions/communications/hooks/saveEmailOptIn'
+import { saveEmailOptIn } from '@/src/features/permissions/hooks/saveEmailOptIn'
 import { useChangeEmail } from '@/src/features/auth/hooks/useChangeEmail'
 import { useConsentStore } from '@/src/shared/consent/useConsentStore'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'

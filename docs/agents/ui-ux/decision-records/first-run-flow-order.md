@@ -3,10 +3,10 @@ topic: first-run-flow-order
 status: active
 last_reviewed: 2026-08-10
 governs:
-  - src/features/permissions/onboarding/screens/intro-flow/index.tsx
-  - src/features/permissions/consent/screens/consent/index.tsx
+  - src/features/permissions/screens/intro-flow/index.tsx
+  - src/features/permissions/screens/consent/index.tsx
   - src/features/auth/screens/sign-in/index.tsx
-  - src/features/permissions/consent/screens/analytics-consent/index.tsx
+  - src/features/permissions/screens/analytics-consent/index.tsx
   - src/features/auth/screens/register/index.tsx
   - src/core/home/screens/home/index.tsx
 derives_from: ['#162', '#163']

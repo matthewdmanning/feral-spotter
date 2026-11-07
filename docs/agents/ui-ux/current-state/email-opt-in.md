@@ -3,7 +3,7 @@ topic: email-opt-in
 status: active
 last_reviewed: 2026-10-24
 governs:
-  - src/features/permissions/communications/screens/email-opt-in/index.tsx
+  - src/features/permissions/screens/email-opt-in/index.tsx
   - src/features/settings/screens/settings/index.tsx
   - src/shared/consent/useConsentStore.ts
 derives_from: []

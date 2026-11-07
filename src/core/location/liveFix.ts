@@ -19,7 +19,7 @@ import {
   LOCATION_ACCURACY_THRESHOLD_M,
   LOCATION_STALE_THRESHOLD_MS,
 } from '@/src/core/location/location'
-import { locationPermission } from '@/src/features/permissions/location/lib/locationPermission'
+import { locationPermission } from '@/src/features/permissions/lib/locationPermission'
 import * as Device from 'expo-device'
 import * as Location from 'expo-location'
 import { useSyncExternalStore } from 'react'
