@@ -1,39 +1,36 @@
 {
-  "title": "Before you start",
-  "intro": "FeralSpotter collects the following when you add photos and record a sighting:",
+  "title": "",
+  "intro": "FeralSpotter gather the following when you:",
   "items": [
+    { "label": "Photos", "text": "" },
     {
-      "label": "Photos",
-      "text": "that you take in the app or select from your library. Only photos you add are uploaded; uploads can begin before you submit the sighting."
+      "label": "Location",
+      "text": ""
     },
     {
-      "label": "Location and time",
-      "text": "from the device when you take a photo, from available metadata on selected library photos, or from corrections you enter."
+      "label": "Cat descriptions",
+      "text": ""
     },
     {
-      "label": "Cat details",
-      "text": "and annotations you enter, sent when you submit the sighting."
-    },
-    {
-      "label": "Your account",
-      "text": "including your account identifier and email address, to associate your data with your account."
+      "label": "Your Google account",
+      "text": ""
     }
   ],
   "body": [
-    "Photos and sighting details are uploaded to private project cloud storage. Choosing an organization in the sighting form records your sharing permissions; it does not currently deliver the sighting to that organization.",
-    "By continuing, you agree to this collection and upload, including photo uploads while a sighting is unfinished. Email updates and usage analytics are optional and have separate choices."
+    "The app will only ever gather location data while you're using the app. Only photos that you select will be uploaded.",
+    "By continuing, you agree to photos and location being captured when you take a photo, and to all of this data being uploaded as described above."
   ],
   "agreeLabel": "I Agree — Continue",
   "declineLabel": "Decline",
-  "declineWarningTitle": "FeralSpotter needs this to work",
-  "declineWarningBody": "Photos, location, and the details you enter are what make a sighting submittable. Without agreeing to collect and upload them, the app has nothing to do — you won't be able to use FeralSpotter at all.",
+  "declineWarningTitle": "Permissions Required",
+  "declineWarningBody": "Without permissions, you won't be able to use FeralSpotter.",
   "locationOnceWarningTitle": "About location access",
   "locationOnceWarningBody": "If you chose \"Only this time\" for location, Android revokes that access as soon as the app closes. Location may not be captured next time you open FeralSpotter until you grant access again.",
   "analytics": {
-    "title": "One more thing",
-    "intro": "Optional usage analytics helps us understand app behavior and investigate errors.",
-    "label": "Usage analytics",
-    "text": "app events and error information linked to your account identifier, to help us improve FeralSpotter",
+    "title": "Usage Data",
+    "intro": "FeralSpotter is still a little feral. Anonymous usage data helps us improve your experience.",
+    "label": "Anonymous usage analytics",
+    "text": "such as app events and crash data, to help us improve FeralSpotter",
     "continueLabel": "Continue"
   },
   "emailOptIn": {
