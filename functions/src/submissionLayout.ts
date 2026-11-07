@@ -1,6 +1,6 @@
 /**
  * The server's half of the Submission storage contract. The app's half is
- * src/lib/upload/submissionLayout.ts and storage.rules enforces it; the
+ * src/features/draft-submission/lib/upload/submissionLayout.ts and storage.rules enforces it; the
  * rules-lane contract test pins all three together. Separate files because
  * functions/ is its own TypeScript project.
  */

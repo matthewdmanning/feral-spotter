@@ -10,14 +10,14 @@ import { ref, uploadBytes } from 'firebase/storage'
 import {
   MAX_PHOTOS,
   MAX_SUBMISSIONS_PER_UID as APP_MAX_SUBMISSIONS,
-} from '@/src/config/submissionLimits'
+} from '@/src/shared/config/submissionLimits'
 import {
   METADATA_FILE_NAME as APP_METADATA,
   metadataObjectPath,
   photoObjectPath,
   submissionPrefix as appSubmissionPrefix,
-} from '@/src/lib/upload/submissionLayout'
-import { UPLOAD_PHOTO_EXTENSIONS } from '@/src/utils/photoFormat'
+} from '@/src/features/draft-submission/lib/upload/submissionLayout'
+import { UPLOAD_PHOTO_EXTENSIONS } from '@/src/shared/utils/photoFormat'
 import {
   MAX_SUBMISSIONS_PER_UID as SERVER_MAX_SUBMISSIONS,
   METADATA_FILE_NAME as SERVER_METADATA,

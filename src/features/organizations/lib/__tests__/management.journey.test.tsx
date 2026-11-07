@@ -6,14 +6,14 @@ import {
   waitFor,
 } from '@testing-library/react-native'
 import { randomUUID } from 'expo-crypto'
-import { OrganizationPermissions } from '@/src/components/organisms/organizations/OrganizationPermissions'
-import { SharingSettings } from '@/src/components/organisms/organizations/SharingSettings'
-import { useOrganizationSharingStore } from '@/src/hooks/useOrganizationSharingStore'
-import { useOrganizationsFlag } from '@/src/hooks/useOrganizationsFlag'
+import { OrganizationPermissions } from '@/src/features/organizations/components/OrganizationPermissions'
+import { SharingSettings } from '@/src/features/organizations/components/SharingSettings'
+import { useOrganizationSharingStore } from '@/src/features/organizations/hooks/useOrganizationSharingStore'
+import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import { buildGrant } from '../sharing'
-import { DEFAULT_SHARING } from '@/src/types/Organizations'
+import { DEFAULT_SHARING } from '@/src/shared/types/Organizations'
 import { fakeOrganizationsService } from '@/src/test-utils/organizationsService'
 
 // The supplied expo-crypto mock returns no UUIDs.

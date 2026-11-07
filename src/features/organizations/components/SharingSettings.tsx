@@ -7,13 +7,13 @@ import { useAuth } from '@/src/features/auth/lib/useAuth'
 import {
   useOrganizationSharingStore,
   EMPTY_ORGANIZATION_ACCOUNT,
-} from '@/src/hooks/useOrganizationSharingStore'
-import { useOrganizationsFlag } from '@/src/hooks/useOrganizationsFlag'
-import { FIELD_LABELS } from '@/src/lib/organizations/sharing'
+} from '@/src/features/organizations/hooks/useOrganizationSharingStore'
+import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
+import { FIELD_LABELS } from '@/src/features/organizations/lib/sharing'
 import {
   SHARING_FIELD_KEYS,
   type SharingSettings as SharingConfiguration,
-} from '@/src/types/Organizations'
+} from '@/src/shared/types/Organizations'
 import { SharingCheckbox } from './SharingCheckbox'
 import { styles } from './styles'
 

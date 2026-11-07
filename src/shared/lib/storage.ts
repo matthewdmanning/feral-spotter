@@ -24,7 +24,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 // render, so an AsyncStorage read would paint the wrong theme and then flip it.
 // That read was previously vestigial and slated for removal; it is now the real
 // persistence path behind the System/Light/Dark control, so MMKV stays.
-export { mmkvInstance } from '@/src/utils/mmkv'
+export { mmkvInstance } from '@/src/shared/utils/mmkv'
 
 export const asyncStorage = {
   getItem: (key: string) => AsyncStorage.getItem(key),

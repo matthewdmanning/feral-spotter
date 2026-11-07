@@ -20,7 +20,7 @@ import {
   updateSubmissionCache,
 } from '@/src/features/draft-submission/lib/submissionCache'
 import { useLocationCapture } from '@/src/core/location/liveFix'
-import { syncPhotoUploads } from '@/src/lib/upload/draftUploads'
+import { syncPhotoUploads } from '@/src/features/draft-submission/lib/upload/draftUploads'
 import {
   buildCacheMetadata,
   toCachedPhoto,

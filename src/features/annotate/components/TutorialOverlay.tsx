@@ -18,7 +18,7 @@ import { styles } from './TutorialOverlay.styles'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-import type { TutorialStep } from '@/src/types/Tutorial'
+import type { TutorialStep } from '@/src/shared/types/Tutorial'
 export type { TutorialStep }
 
 interface TutorialOverlayProps {

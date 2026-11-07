@@ -1,9 +1,9 @@
 import { useEffect } from 'react'
 import { AppState } from 'react-native'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
-import { useOrganizationsFlag } from '@/src/hooks/useOrganizationsFlag'
-import { useOrganizationSharingStore } from '@/src/hooks/useOrganizationSharingStore'
-import { useOrganizationDirectoryStore } from '@/src/hooks/useOrganizationDirectory'
+import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
+import { useOrganizationSharingStore } from '@/src/features/organizations/hooks/useOrganizationSharingStore'
+import { useOrganizationDirectoryStore } from '@/src/features/organizations/hooks/useOrganizationDirectory'
 import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
 

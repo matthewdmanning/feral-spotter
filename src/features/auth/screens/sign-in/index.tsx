@@ -6,7 +6,7 @@ import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import { TextButton } from '@/src/shared/ui/atoms/TextButton'
 import { TextField } from '@/src/shared/ui/atoms/TextField'
-import { useAuthAttempt } from '@/src/hooks/useAuthAttempt'
+import { useAuthAttempt } from '@/src/features/auth/hooks/useAuthAttempt'
 import { useAuth } from '@/src/features/auth/lib/useAuth'
 import {
   FEDERATED_PROVIDERS,

@@ -5,7 +5,7 @@
  */
 
 import Constants from 'expo-constants'
-import { getAppVersion } from '@/src/utils/appVersion'
+import { getAppVersion } from '@/src/shared/utils/appVersion'
 
 /** True in development or pre-release builds. Gates analytics events. */
 export const IS_PRERELEASE: boolean =
@@ -33,7 +33,7 @@ export const APP_VERSION: string = getAppVersion()
 export {
   MAX_PHOTOS,
   MAX_SUBMISSIONS_PER_UID,
-} from '@/src/config/submissionLimits'
+} from '@/src/shared/config/submissionLimits'
 
 /**
  * Explicit opt-in tag for test-drive builds with no real Firebase project

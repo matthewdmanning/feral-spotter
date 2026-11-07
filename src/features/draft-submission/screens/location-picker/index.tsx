@@ -19,7 +19,7 @@ import { styles } from './index.styles'
 import {
   DEFAULT_ZOOM,
   usePinCenter,
-} from '@/src/screens/submission/location-picker/usePinCenter'
+} from '@/src/features/draft-submission/screens/location-picker/usePinCenter'
 
 export default function LocationPickerScreen() {
   const { theme } = useUnistyles()

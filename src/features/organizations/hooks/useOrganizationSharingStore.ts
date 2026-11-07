@@ -8,12 +8,12 @@ import {
   type GrantRequest,
   type PermissionLedger,
   type SharingSettings,
-} from '@/src/types/Organizations'
+} from '@/src/shared/types/Organizations'
 import {
   organizationRequest,
   OrganizationSyncError,
-} from '@/src/lib/organizations/api'
-import { buildGrant } from '@/src/lib/organizations/sharing'
+} from '@/src/features/organizations/lib/api'
+import { buildGrant } from '@/src/features/organizations/lib/sharing'
 import { useOrganizationsFlag } from './useOrganizationsFlag'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 

@@ -6,20 +6,20 @@ import {
   waitFor,
 } from '@testing-library/react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { SubmissionOrganizations } from '@/src/components/organisms/organizations/SubmissionOrganizations'
+import { SubmissionOrganizations } from '@/src/features/organizations/components/SubmissionOrganizations'
 import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
 import {
   useOrganizationSharingStore,
   EMPTY_ORGANIZATION_ACCOUNT,
-} from '@/src/hooks/useOrganizationSharingStore'
+} from '@/src/features/organizations/hooks/useOrganizationSharingStore'
 import {
   organizationsDirectory,
   useOrganizationDirectoryStore,
-} from '@/src/hooks/useOrganizationDirectory'
-import { useOrganizationsFlag } from '@/src/hooks/useOrganizationsFlag'
+} from '@/src/features/organizations/hooks/useOrganizationDirectory'
+import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { confirmedSharing } from '../consent'
-import { DEFAULT_SHARING, type Catalog } from '@/src/types/Organizations'
+import { DEFAULT_SHARING, type Catalog } from '@/src/shared/types/Organizations'
 import { fakeOrganizationsService } from '@/src/test-utils/organizationsService'
 
 jest.mock('expo-router', () => ({ router: { push: jest.fn() } }))

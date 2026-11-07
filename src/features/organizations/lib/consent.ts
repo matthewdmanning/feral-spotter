@@ -8,8 +8,8 @@ import {
   useOrganizationSharingStore,
   EMPTY_ORGANIZATION_ACCOUNT,
   type AccountSharing,
-} from '@/src/hooks/useOrganizationSharingStore'
-import { useOrganizationsFlag } from '@/src/hooks/useOrganizationsFlag'
+} from '@/src/features/organizations/hooks/useOrganizationSharingStore'
+import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 
 /**
  * Binds confirmation to exactly the location, organizations and disclosure the

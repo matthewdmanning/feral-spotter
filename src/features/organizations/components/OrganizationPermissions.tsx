@@ -10,12 +10,12 @@ import {
   type PendingOrganizationAction,
   type ReviewedGrant,
   persistOrganizationSharing,
-} from '@/src/hooks/useOrganizationSharingStore'
-import { useOrganizationsFlag } from '@/src/hooks/useOrganizationsFlag'
+} from '@/src/features/organizations/hooks/useOrganizationSharingStore'
+import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 import {
   FALLBACK_ORGANIZATION_NAME,
   includedSummary,
-} from '@/src/lib/organizations/sharing'
+} from '@/src/features/organizations/lib/sharing'
 import { styles } from './styles'
 
 function reviewMessage({ grant, organizationName }: ReviewedGrant): string {

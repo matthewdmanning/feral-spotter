@@ -8,8 +8,8 @@
  * v3 API: StyleSheet.configure (replaces UnistylesRegistry)
  */
 
-import { getSystemColorScheme } from '@/src/utils/appearance'
-import { mmkvInstance } from '@/src/utils/mmkv'
+import { getSystemColorScheme } from '@/src/shared/utils/appearance'
+import { mmkvInstance } from '@/src/shared/utils/mmkv'
 import { StyleSheet, UnistylesRuntime } from 'react-native-unistyles'
 
 import { darkTheme, lightTheme } from './themes'

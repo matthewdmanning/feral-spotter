@@ -1,4 +1,4 @@
-import { getAppVersion, isVersionReleased } from '@/src/utils/appVersion'
+import { getAppVersion, isVersionReleased } from '@/src/shared/utils/appVersion'
 
 /**
  * The federated identity providers the app can sign in with. Email/password

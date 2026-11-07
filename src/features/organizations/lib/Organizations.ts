@@ -1,11 +1,11 @@
-import type { Catalog, Organization } from '@/src/types/Organizations'
+import type { Catalog, Organization } from '@/src/shared/types/Organizations'
 import {
   covers,
   DEFAULT_CACHE_RADIUS_KM,
   nearby,
   parseCatalog,
   validLocation,
-} from '@/src/types/Organizations'
+} from '@/src/shared/types/Organizations'
 import { asyncStorage } from '@/src/shared/lib/storage'
 
 export interface DirectoryCache extends Catalog {

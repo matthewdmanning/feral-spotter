@@ -4,7 +4,7 @@ import {
   type GrantRequest,
   type SharingFields,
   type SharingSettings,
-} from '@/src/types/Organizations'
+} from '@/src/shared/types/Organizations'
 
 export const FIELD_LABELS: Record<keyof SharingFields, string> = {
   name: 'Name',

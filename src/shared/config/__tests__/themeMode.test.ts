@@ -42,7 +42,7 @@ jest.mock('react-native-unistyles', () => ({
   UnistylesRuntime: mockRuntime,
 }))
 
-jest.mock('@/src/utils/mmkv', () => ({
+jest.mock('@/src/shared/utils/mmkv', () => ({
   mmkvInstance: {
     getString: (key: string) => mockStore.get(key),
     set: (key: string, value: string) => {
@@ -52,7 +52,7 @@ jest.mock('@/src/utils/mmkv', () => ({
 }))
 
 let mockColorScheme: 'light' | 'dark' | null = 'dark'
-jest.mock('@/src/utils/appearance', () => ({
+jest.mock('@/src/shared/utils/appearance', () => ({
   getSystemColorScheme: () => mockColorScheme,
 }))
 

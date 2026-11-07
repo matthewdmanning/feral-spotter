@@ -1,5 +1,5 @@
-import { SharingSettings } from '@/src/components/organisms/organizations/SharingSettings'
-import { OrganizationPermissions } from '@/src/components/organisms/organizations/OrganizationPermissions'
+import { SharingSettings } from '@/src/features/organizations/components/SharingSettings'
+import { OrganizationPermissions } from '@/src/features/organizations/components/OrganizationPermissions'
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import {
   getThemeMode,

@@ -5,7 +5,7 @@
  * separately from the historical record.
  */
 
-import { OrganizationPermissions } from '@/src/components/organisms/organizations/OrganizationPermissions'
+import { OrganizationPermissions } from '@/src/features/organizations/components/OrganizationPermissions'
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
 import { CatCrop } from '@/src/shared/ui/atoms/CatCrop'
@@ -29,7 +29,7 @@ import { useLocalSearchParams } from 'expo-router'
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
-import { firstParam } from '@/src/utils/routeParam'
+import { firstParam } from '@/src/shared/utils/routeParam'
 
 /** Larger than Cat Form's picker crops: here the photo is the cat's header. */
 const CAT_PHOTO_SIZE = 96

@@ -23,7 +23,7 @@ import {
   FIELD_LABELS,
   CAT_DEFAULTS,
 } from '@/src/features/draft-submission/lib/attributes'
-import { returnToCatList } from '@/src/hooks/catPass'
+import { returnToCatList } from '@/src/features/draft-submission/hooks/catPass'
 import { randomUUID } from 'expo-crypto'
 import { useCallback, useRef } from 'react'
 

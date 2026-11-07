@@ -16,7 +16,7 @@ import { useState, useCallback, useRef } from 'react'
 
 import type { ICarouselInstance } from 'react-native-reanimated-carousel'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
-import { removePhotoFromDraft } from '@/src/hooks/removePhotoFromDraft'
+import { removePhotoFromDraft } from '@/src/features/draft-submission/hooks/removePhotoFromDraft'
 import { useActiveCatFlow } from '@/src/features/draft-submission/hooks/useActiveCatFlow'
 import { useSettingsStore } from '@/src/features/settings/hooks/useSettingsStore'
 import { EVENTS, captureEvent } from '@/src/shared/analytics/analytics'

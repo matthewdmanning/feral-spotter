@@ -1,4 +1,4 @@
-import { useAuthAttempt } from '@/src/hooks/useAuthAttempt'
+import { useAuthAttempt } from '@/src/features/auth/hooks/useAuthAttempt'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import { act, renderHook } from '@testing-library/react-native'
 import { router } from 'expo-router'
