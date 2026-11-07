@@ -23,7 +23,10 @@ function fakePorts(failAt?: string) {
       remove: step('email'),
     },
     analytics: { erasePerson: step('analytics') },
-    submissions: { deleteUserSubmissions: step('sightings') },
+    submissions: {
+      deleteUserSubmissions: step('sightings'),
+      deleteUserOrganizationPermissions: step('permissions'),
+    },
     accounts: { deleteUser: step('auth') },
   }
   return { ports, calls }
@@ -35,21 +38,24 @@ const request = (data: unknown, authTime = NOW - 60) => ({
 })
 
 it.each([
-  [true, ['email', 'analytics', 'sightings', 'auth']],
-  [false, ['email', 'analytics', 'auth']],
+  [true, ['email', 'analytics', 'permissions', 'sightings', 'auth']],
+  [false, ['email', 'analytics', 'permissions', 'auth']],
 ])('deleteSightings=%s erases in order: %j', async (deleteSightings, order) => {
   const { ports, calls } = fakePorts()
   await handleDeleteAccount(request({ deleteSightings }), ports, NOW)
   expect(calls).toEqual(order)
 })
 
-it('keeps the Auth user when an earlier step fails', async () => {
-  const { ports, calls } = fakePorts('analytics')
-  await expect(
-    handleDeleteAccount(request({ deleteSightings: true }), ports, NOW),
-  ).rejects.toThrow('analytics down')
-  expect(calls).not.toContain('auth')
-})
+it.each(['analytics', 'permissions'])(
+  'keeps the Auth user when %s fails',
+  async (failAt) => {
+    const { ports, calls } = fakePorts(failAt)
+    await expect(
+      handleDeleteAccount(request({ deleteSightings: true }), ports, NOW),
+    ).rejects.toThrow(`${failAt} down`)
+    expect(calls).not.toContain('auth')
+  },
+)
 
 it.each([
   [

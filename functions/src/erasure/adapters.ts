@@ -52,6 +52,12 @@ export function createStorageSubmissionStore(bucket: string): SubmissionStore {
       getStorage()
         .bucket(bucket)
         .deleteFiles({ prefix: userPrefix(uid) }),
+    // The trailing slash keeps one uid's permissions separate from another's.
+    // This removes the ledger and any future per-user organization snapshots.
+    deleteUserOrganizationPermissions: (uid) =>
+      getStorage()
+        .bucket(bucket)
+        .deleteFiles({ prefix: `organization-permissions/${uid}/` }),
   }
 }
 

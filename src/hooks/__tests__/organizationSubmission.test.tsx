@@ -1,14 +1,8 @@
-import {
-  act,
-  render,
-  renderHook,
-  screen,
-  userEvent,
-} from '@testing-library/react-native'
+import { act, render, screen, userEvent } from '@testing-library/react-native'
 import { randomUUID } from 'expo-crypto'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { SubmissionOrganizations } from '@/src/components/organisms/organizations/SubmissionOrganizations'
-import { useSubmissionSubmit } from '../useSubmissionSubmit'
+import { submitDraft, type SubmitOutcome } from '@/src/lib/submission/draft'
 import { useSubmissionStore } from '../useSubmissionStore'
 import { usePhotoStore } from '../usePhotoStore'
 import { useUIStore } from '../useUIStore'
@@ -82,74 +76,106 @@ beforeEach(async () => {
   })
 })
 
-test('a sighting confirmed in the form leaves a durable anonymous grant under its cloud ID after teardown', async () => {
-  // Sync after submission fails offline, so the persisted outbox is what remains.
-  await fakeOrganizationsService(({ action }) =>
-    action === 'catalog'
-      ? {
-          version: 'v1',
-          organizations: [
-            {
-              id: 'rescue',
-              name: 'Rescue',
-              active: true,
-              coverage: {
-                type: 'Polygon',
-                coordinates: [
-                  [
-                    [0, 0],
-                    [2, 0],
-                    [2, 2],
-                    [0, 2],
-                    [0, 0],
+test.each(['unchanged', 'withdrawn', 'anonymous'] as const)(
+  'a confirmed sighting finishes without stale grants when consent is %s during upload',
+  async (choice) => {
+    // Sync after submission fails offline, so the persisted outbox is what remains.
+    await fakeOrganizationsService(({ action }) =>
+      action === 'catalog'
+        ? {
+            version: 'v1',
+            organizations: [
+              {
+                id: 'rescue',
+                name: 'Rescue',
+                active: true,
+                coverage: {
+                  type: 'Polygon',
+                  coordinates: [
+                    [
+                      [0, 0],
+                      [2, 0],
+                      [2, 2],
+                      [0, 2],
+                      [0, 0],
+                    ],
                   ],
-                ],
+                },
+              },
+            ],
+          }
+        : { status: 503 },
+    )
+    const user = userEvent.setup()
+    const form = render(<SubmissionOrganizations />)
+    await user.press(await screen.findByRole('checkbox', { name: 'Rescue' }))
+    if (choice === 'anonymous')
+      await user.press(screen.getByRole('checkbox', { name: 'Anonymous' }))
+    await user.press(
+      screen.getByRole('checkbox', { name: 'Share this sighting' }),
+    )
+    let releaseUpload!: () => void
+    let uploadStarted!: () => void
+    const started = new Promise<void>((resolve) => {
+      uploadStarted = resolve
+    })
+    jest.mocked(uploadSubmissionMetadata).mockImplementationOnce(async () => {
+      uploadStarted()
+      await new Promise<void>((resolve) => {
+        releaseUpload = resolve
+      })
+    })
+    let sending!: Promise<SubmitOutcome>
+    await act(async () => {
+      sending = submitDraft()
+      await started
+    })
+    if (choice === 'withdrawn')
+      await user.press(
+        form.getByRole('button', { name: 'Don’t share this sighting' }),
+      )
+    if (choice === 'anonymous')
+      await user.press(form.getByRole('checkbox', { name: 'Anonymous' }))
+    // The real screen leaves after completion; avoid starting a new draft here.
+    form.unmount()
+    await act(async () => {
+      releaseUpload()
+      expect(await sending).toEqual({ kind: 'sent' })
+    })
+    expect(uploadSubmissionMetadata).toHaveBeenCalled()
+    expect(useSubmissionStore.getState().organizationSharing).toBeNull()
+    const persisted = JSON.parse(
+      (await AsyncStorage.getItem('organization-sharing-v1'))!,
+    )
+    expect(persisted.state.accounts.owner.outbox).toEqual(
+      choice === 'unchanged'
+        ? [
+            {
+              action: 'grant',
+              mutationId: 'test-mutation',
+              organizationId: 'rescue',
+              organizationName: 'Rescue',
+              grant: {
+                submissionId: 'cloud-sighting',
+                organizationId: 'rescue',
+                catalogVersion: 'v1',
+                epoch: 0,
+                anonymous: true,
+                settings: {
+                  fields: DEFAULT_SHARING.fields,
+                  name: '',
+                  phone: '',
+                },
+                contactEmail: null,
+                disclosureVersion: 1,
               },
             },
-          ],
-        }
-      : { status: 503 },
-  )
-  const user = userEvent.setup()
-  const form = render(<SubmissionOrganizations />)
-  await user.press(await screen.findByRole('checkbox', { name: 'Rescue' }))
-  await user.press(
-    screen.getByRole('checkbox', { name: 'Share this sighting' }),
-  )
-  // Submitting leaves the form; a mounted form would start the next draft.
-  form.unmount()
-  const { result } = renderHook(() => useSubmissionSubmit())
-  await act(async () => {
-    result.current.handleDone()
-    await useUIStore
-      .getState()
-      .dialog!.buttons.find((button) => button.text === 'Submit')!.onPress!()
-  })
-  expect(uploadSubmissionMetadata).toHaveBeenCalled()
-  expect(useSubmissionStore.getState().organizationSharing).toBeNull()
-  const persisted = JSON.parse(
-    (await AsyncStorage.getItem('organization-sharing-v1'))!,
-  )
-  expect(persisted.state.accounts.owner.outbox).toEqual([
-    {
-      action: 'grant',
-      mutationId: 'test-mutation',
-      organizationId: 'rescue',
-      organizationName: 'Rescue',
-      grant: {
-        submissionId: 'cloud-sighting',
-        organizationId: 'rescue',
-        catalogVersion: 'v1',
-        epoch: 0,
-        anonymous: true,
-        settings: { fields: DEFAULT_SHARING.fields, name: '', phone: '' },
-        contactEmail: null,
-        disclosureVersion: 1,
-      },
-    },
-  ])
-  expect(await getSubmissionCache('local-history')).toMatchObject({
-    status: 'Submitted',
-    cloud_submission_id: 'cloud-sighting',
-  })
-})
+          ]
+        : [],
+    )
+    expect(await getSubmissionCache('local-history')).toMatchObject({
+      status: 'Submitted',
+      cloud_submission_id: 'cloud-sighting',
+    })
+  },
+)

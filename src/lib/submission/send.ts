@@ -177,8 +177,22 @@ export async function sendDraft(
 
   await uploadSubmissionMetadata(payload, userId, cloudSubmissionId)
 
+  // Uploads yield to editable sharing controls. A withdrawn or changed choice
+  // must not grant access, but the uploaded sighting still completed normally.
+  let currentSharing: ConfirmedSharing = null
+  if (sharing && useAuthStore.getState().user?.uid === userId) {
+    try {
+      currentSharing = confirmedSharing(userId)
+    } catch {
+      // Changed settings need fresh consent on the form, never the old grant.
+    }
+  }
   // The durable outbox survives draft teardown and has its own sync status.
-  if (sharing) {
+  if (
+    sharing &&
+    currentSharing?.draft.confirmedSignature ===
+      sharing.draft.confirmedSignature
+  ) {
     const sharingState = useOrganizationSharingStore.getState()
     const email = useAuthStore.getState().user?.email ?? null
     sharingState.remember(userId, sharing.draft.selectedIds)
