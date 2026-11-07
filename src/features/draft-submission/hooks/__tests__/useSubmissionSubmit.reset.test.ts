@@ -4,7 +4,7 @@ import { pressDialogButton } from '@/src/test-utils/dialog'
 
 import { stopLocationCapture } from '@/src/core/location/liveFix'
 import { useSubmissionSubmit } from '@/src/features/draft-submission/hooks/useSubmissionSubmit'
-import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { observedCat } from '@/src/test-utils/catFixtures'
 import { submissionPhoto } from '@/src/test-utils/photoFixtures'
@@ -21,7 +21,7 @@ jest.mock('expo-router', () => ({
   router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() },
 }))
 
-jest.mock('@/src/features/draft-submission/lib/submissionCache', () => ({
+jest.mock('@/src/shared/lib/submissionCache', () => ({
   getCurrentCacheId: jest.fn().mockResolvedValue('cache-1'),
   deleteSubmissionCache: jest.fn().mockResolvedValue(undefined),
   updateSubmissionCache: jest.fn().mockResolvedValue(undefined),

@@ -22,7 +22,7 @@ import {
   useBoundingBoxFrame,
 } from '@/src/features/annotate/hooks/useBoundingBoxFrame'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
-import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import { containFit } from '@/src/shared/lib/geometry/cropProjection'
 import { previousCatBoxes } from '@/src/features/annotate/lib/previousBoxes'
 import type { BoundingBox } from '@/src/shared/types/BoundingBox'

@@ -22,7 +22,7 @@ import {
   discardDraftAndGoHome,
 } from '@/src/features/draft-submission/hooks/confirmResetSubmission'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
-import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import { showAlert, showError } from '@/src/shared/hooks/useUIStore'
 import {
   isDraftBusy,

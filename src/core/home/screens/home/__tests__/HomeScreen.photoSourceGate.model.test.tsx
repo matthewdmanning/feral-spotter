@@ -37,7 +37,7 @@ jest.mock('@/src/shared/consent/useConsentStore', () => {
   })
   return actual
 })
-jest.mock('@/src/features/draft-submission/lib/submissionCache', () => ({
+jest.mock('@/src/shared/lib/submissionCache', () => ({
   getAllSubmissionCaches: jest.fn().mockResolvedValue([]),
   getCurrentCacheId: jest.fn().mockResolvedValue(null),
 }))

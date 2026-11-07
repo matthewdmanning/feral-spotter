@@ -1,5 +1,5 @@
 /**
- * features/draft-submission/lib/submissionCache.ts
+ * shared/lib/submissionCache.ts
  *
  * One AsyncStorage entry per submission, keyed by ID.
  * A separate index key tracks all known IDs for listing.

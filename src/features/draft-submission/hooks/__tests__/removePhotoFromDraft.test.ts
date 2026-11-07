@@ -4,7 +4,7 @@ import { observedCat } from '@/src/test-utils/catFixtures'
 import { removePhotoFromDraft } from '@/src/features/draft-submission/hooks/removePhotoFromDraft'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
-import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 
 /**
  * A photo lives in three stores and an upload. The camera's discard used to

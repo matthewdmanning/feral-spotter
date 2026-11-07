@@ -7,7 +7,7 @@ import {
 import {
   sightingPhotoCount,
   type SubmissionCacheFile,
-} from '@/src/features/draft-submission/lib/submissionCache'
+} from '@/src/shared/lib/submissionCache'
 import { selectionHaptic } from '@/src/shared/lib/haptics'
 import {
   reportCardTime,

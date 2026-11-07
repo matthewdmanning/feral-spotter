@@ -29,7 +29,7 @@ import { SUBMISSION_STALE_MS } from '@/src/shared/config/constants'
 import { useActiveCatFlowStore } from '@/src/features/draft-submission/hooks/useActiveCatFlowStore'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
-import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import {
   clearCurrentCacheId,
   deleteSubmissionCache,
@@ -37,7 +37,7 @@ import {
   getSubmissionCache,
   transitionSubmission,
   type SubmissionCacheFile,
-} from '@/src/features/draft-submission/lib/submissionCache'
+} from '@/src/shared/lib/submissionCache'
 import { EVENTS } from '@/src/shared/analytics/analytics'
 import { fireAnalyticsEvent } from '@/src/features/draft-submission/lib/analytics'
 import { authProvider } from '@/src/features/auth/lib'

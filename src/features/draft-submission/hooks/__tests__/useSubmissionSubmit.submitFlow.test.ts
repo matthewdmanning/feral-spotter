@@ -6,7 +6,7 @@ import { act, renderHook } from '@testing-library/react-native'
 import { useSubmissionSubmit } from '@/src/features/draft-submission/hooks/useSubmissionSubmit'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
-import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import {
   finalizeSubmissionPhotoMetadata,

@@ -11,7 +11,7 @@ import { createTestModel } from '@xstate/graph'
 import {
   useSubmissionStore,
   type SubmissionDraft,
-} from '@/src/features/draft-submission/hooks/useSubmissionStore'
+} from '@/src/shared/hooks/useSubmissionStore'
 import LocationPickerScreen from '@/src/features/draft-submission/screens/location-picker/index'
 
 /**

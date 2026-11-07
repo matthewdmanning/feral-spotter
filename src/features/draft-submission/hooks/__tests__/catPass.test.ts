@@ -6,7 +6,7 @@ import {
 } from '@/src/features/draft-submission/hooks/catPass'
 import { useActiveCatFlowStore } from '@/src/features/draft-submission/hooks/useActiveCatFlowStore'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
-import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 
 /**
  * The pass's exit rules, which used to live in five files: an abandoned

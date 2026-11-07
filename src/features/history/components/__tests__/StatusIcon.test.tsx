@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react-native'
 import React from 'react'
 import { StatusIcon } from '@/src/features/history/components/StatusIcon'
-import type { CacheStatus } from '@/src/features/draft-submission/lib/submissionCache'
+import type { CacheStatus } from '@/src/shared/lib/submissionCache'
 
 // The real Phosphor icons render here. Each one sets a default testID of
 // `phosphor-react-native-<name>-<weight prop>`, so the name identifies the icon

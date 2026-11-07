@@ -15,8 +15,8 @@ import type { SubmissionApiPayload, SubmissionPhoto } from '@/src/shared/types'
 import type {
   CacheMetadata,
   CachedPhoto,
-} from '@/src/features/draft-submission/lib/submissionCache'
-import type { SubmissionDraft } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+} from '@/src/shared/lib/submissionCache'
+import type { SubmissionDraft } from '@/src/shared/hooks/useSubmissionStore'
 import { parseExifDateTime } from '@/src/shared/utils/libraryPickTime'
 
 /** The draft's `location_type`/`time_type` become the cache's

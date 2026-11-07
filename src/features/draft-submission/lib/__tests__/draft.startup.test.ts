@@ -2,7 +2,7 @@ import { SUBMISSION_STALE_MS } from '@/src/shared/config/constants'
 import { useActiveCatFlowStore } from '@/src/features/draft-submission/hooks/useActiveCatFlowStore'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
-import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { waitFor } from '@testing-library/react-native'
 import { File, Paths } from 'expo-file-system'
@@ -10,7 +10,7 @@ import {
   createSubmissionCache,
   getSubmissionCache,
   updateSubmissionCache,
-} from '@/src/features/draft-submission/lib/submissionCache'
+} from '@/src/shared/lib/submissionCache'
 import { deleteSubmissionUploads } from '@/src/features/draft-submission/lib/upload/firebaseUpload'
 import { discardUnsurvivingDraft } from '@/src/features/draft-submission/lib/draft'
 

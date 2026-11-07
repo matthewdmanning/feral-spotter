@@ -10,7 +10,7 @@ import { captureEvent } from '@/src/shared/analytics/analytics'
 import {
   sightingPhotoCount,
   type SubmissionCacheFile,
-} from '@/src/features/draft-submission/lib/submissionCache'
+} from '@/src/shared/lib/submissionCache'
 
 /**
  * Fire a PostHog event, but only when IS_PRERELEASE is true and the user has

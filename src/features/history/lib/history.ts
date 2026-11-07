@@ -10,8 +10,8 @@ import type {
   LocationMethod,
   SubmissionCacheFile,
   TimeMethod,
-} from '@/src/features/draft-submission/lib/submissionCache'
-import { sightingPhotoCount } from '@/src/features/draft-submission/lib/submissionCache'
+} from '@/src/shared/lib/submissionCache'
+import { sightingPhotoCount } from '@/src/shared/lib/submissionCache'
 
 export interface SpotCoordinates {
   latitude: number

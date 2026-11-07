@@ -17,7 +17,7 @@
  * two layers agree by construction.
  */
 import type { CatFormValues } from '@/src/features/draft-submission/hooks/useCatForm'
-import type { ObservedCat } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import type { ObservedCat } from '@/src/shared/hooks/useSubmissionStore'
 import type { CatColor, CatPattern } from '@/src/shared/types'
 
 export interface AttributeOption<T extends string> {

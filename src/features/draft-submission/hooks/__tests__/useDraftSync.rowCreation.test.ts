@@ -1,9 +1,9 @@
 import { act, renderHook } from '@testing-library/react-native'
 
-import * as cache from '@/src/features/draft-submission/lib/submissionCache'
+import * as cache from '@/src/shared/lib/submissionCache'
 import { useDraftSync } from '@/src/features/draft-submission/hooks/useDraftSync'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
-import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 
 // jest-expo's expo-crypto mock returns undefined; rows need a real id.
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'row-new' }))

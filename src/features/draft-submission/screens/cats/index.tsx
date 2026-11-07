@@ -7,7 +7,7 @@ import {
   BUBBLE_HEADER_RESERVE,
   InsetCropBubble,
 } from '@/src/features/annotate/components/InsetCropBubble'
-import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import { useAbandonCatGuard } from '@/src/features/draft-submission/hooks/useAbandonCatGuard'
 import { useActiveCatFlow } from '@/src/features/draft-submission/hooks/useActiveCatFlow'
 import { useCatForm } from '@/src/features/draft-submission/hooks/useCatForm'

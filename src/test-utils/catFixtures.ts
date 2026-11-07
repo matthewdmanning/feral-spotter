@@ -4,7 +4,7 @@
  * CAT_ATTRIBUTES, so a new or renamed field can't leave the fixture stale.
  */
 
-import type { ObservedCat } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import type { ObservedCat } from '@/src/shared/hooks/useSubmissionStore'
 import { CAT_ATTRIBUTES } from '@/src/features/draft-submission/lib/attributes'
 
 export function observedCat(patch: Partial<ObservedCat> = {}): ObservedCat {

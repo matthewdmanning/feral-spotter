@@ -2,7 +2,7 @@ import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { act, renderHook } from '@testing-library/react-native'
 
-import * as cache from '@/src/features/draft-submission/lib/submissionCache'
+import * as cache from '@/src/shared/lib/submissionCache'
 import {
   uploadSubmissionMetadata,
   uploadSubmissionPhoto,
@@ -10,7 +10,7 @@ import {
 import { isDraftBusy } from '@/src/features/draft-submission/lib/draft'
 import { discardDraftAndGoHome } from '@/src/features/draft-submission/hooks/confirmResetSubmission'
 import { useSubmissionSubmit } from '@/src/features/draft-submission/hooks/useSubmissionSubmit'
-import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { observedCat } from '@/src/test-utils/catFixtures'
 

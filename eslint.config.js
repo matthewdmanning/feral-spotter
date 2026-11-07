@@ -39,6 +39,7 @@ const BOUNDARY_LEVELS = [
   ['permissions'],
   ['core'],
   ['settings'],
+  ['organizations'],
   ['draft-submission'],
   ['camera-control', 'library-picker', 'annotate'],
   ['history'],

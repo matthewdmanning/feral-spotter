@@ -7,7 +7,7 @@ import { useAuth } from '@/src/features/auth/lib/useAuth'
 import {
   useSubmissionStore,
   type OrganizationSharingDraft,
-} from '@/src/features/draft-submission/hooks/useSubmissionStore'
+} from '@/src/shared/hooks/useSubmissionStore'
 import { useOrganizationDirectory } from '@/src/features/organizations/hooks/useOrganizationDirectory'
 import {
   useOrganizationSharingStore,

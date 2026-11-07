@@ -6,7 +6,6 @@
  */
 
 import { useConsentStore } from '@/src/shared/consent/useConsentStore'
-import { useAuthStore } from '@/src/features/auth/lib/authStore'
 
 const CONSENT_STEPS = [
   {
@@ -29,13 +28,4 @@ export function nextConsentRoute(after?: ConsentRoute) {
     CONSENT_STEPS.slice(from).find((s) => !s.isAnswered())?.route ??
     '/(home-tabs)'
   )
-}
-
-/**
- * Where device consent leads. A user already signed in (consent re-asked
- * after a CONSENT_VERSION bump) goes on to their consent steps or home;
- * sign-in would ask for credentials their session does not need.
- */
-export function routeAfterDeviceConsent() {
-  return useAuthStore.getState().user ? nextConsentRoute() : '/sign-in'
 }

@@ -11,7 +11,7 @@ import {
   getAllSubmissionCaches,
   getCurrentCacheId,
   type SubmissionCacheFile,
-} from '@/src/features/draft-submission/lib/submissionCache'
+} from '@/src/shared/lib/submissionCache'
 import {
   groupSightingsBySpot,
   ownSightings,

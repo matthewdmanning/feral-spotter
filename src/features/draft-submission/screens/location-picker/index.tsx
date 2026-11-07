@@ -8,7 +8,7 @@
 
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import { ButtonRow } from '@/src/shared/ui/molecules/ButtonRow'
-import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import { GoogleMaps } from 'expo-maps'
 import { router } from 'expo-router'
 import { MapPinIcon } from 'phosphor-react-native/src/icons/MapPin'

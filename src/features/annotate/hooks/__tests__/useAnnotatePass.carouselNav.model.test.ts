@@ -6,7 +6,7 @@ import { useActiveCatFlowStore } from '@/src/features/draft-submission/hooks/use
 import { useAnnotatePass } from '@/src/features/annotate/hooks/useAnnotatePass'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
-import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 
 /**
  * Drives carousel position and the final-photo completion against the real

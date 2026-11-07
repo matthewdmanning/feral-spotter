@@ -1,5 +1,5 @@
 /**
- * features/draft-submission/hooks/useSubmissionStore.ts
+ * shared/hooks/useSubmissionStore.ts
  * Persisted Zustand store for the in-progress submission draft and its
  * observed cats.
  */
@@ -8,7 +8,7 @@ import { asyncStorage } from '@/src/shared/lib/storage'
 import type {
   LocationMethod,
   TimeMethod,
-} from '@/src/features/draft-submission/lib/submissionCache'
+} from '@/src/shared/lib/submissionCache'
 import type {
   CatAge,
   CatColor,

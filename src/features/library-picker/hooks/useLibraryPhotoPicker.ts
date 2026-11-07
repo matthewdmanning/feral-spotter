@@ -15,7 +15,7 @@ import {
   photoSlotsLeft,
   showPhotoLimitReached,
 } from '@/src/features/draft-submission/hooks/usePhotoStore'
-import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import { draftReadyOrAlert } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
 import { EVENTS, captureEvent } from '@/src/shared/analytics/analytics'
 import { libraryPermission } from '@/src/features/permissions/lib/libraryPermission'
