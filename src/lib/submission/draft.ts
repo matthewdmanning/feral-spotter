@@ -42,7 +42,8 @@ import { EVENTS, fireAnalyticsEvent } from '@/src/lib/analytics/analytics'
 import { authProvider } from '@/src/lib/auth'
 import { useAuthStore } from '@/src/lib/auth/authStore'
 import { stopLocationCapture } from '@/src/lib/location'
-import { sendDraft } from '@/src/lib/submission/send'
+import { confirmedSharing } from '@/src/lib/organizations/consent'
+import { sendDraft, type ConfirmedSharing } from '@/src/lib/submission/send'
 import {
   cancelPhotoUploads,
   syncPhotoUploads,
@@ -223,6 +224,7 @@ export type SubmitOutcome =
   | { kind: 'sent' }
   | { kind: 'busy' }
   | { kind: 'incomplete'; messages: string[] }
+  | { kind: 'sharing-unconfirmed'; message: string }
   | { kind: 'uploads-unfinished' }
   | { kind: 'superseded' }
   | { kind: 'failed' }
@@ -250,6 +252,20 @@ export async function submitDraft(): Promise<SubmitOutcome> {
   const missing = missingContent()
   if (missing.length > 0) return { kind: 'incomplete', messages: missing }
 
+  // Organization sharing must be confirmed as it stands now; a changed
+  // choice needs the user, so it is reported before the lock is taken.
+  let sharing: ConfirmedSharing = null
+  const uid = useAuthStore.getState().user?.uid
+  try {
+    if (uid) sharing = confirmedSharing(uid)
+  } catch (error) {
+    return {
+      kind: 'sharing-unconfirmed',
+      message:
+        error instanceof Error ? error.message : 'Review sharing choices.',
+    }
+  }
+
   // The draft this submit is for. Reset or Discard cannot run while busy,
   // but a teardown from elsewhere mints a new id (or none).
   const startedFor = usePhotoStore.getState().submissionId
@@ -273,9 +289,14 @@ export async function submitDraft(): Promise<SubmitOutcome> {
     if (!userId || !startedFor) {
       throw new Error('Missing uid/submissionId for submission')
     }
-    await sendDraft(userId, startedFor, (id) => {
-      cacheId = id
-    })
+    await sendDraft(
+      userId,
+      startedFor,
+      (id) => {
+        cacheId = id
+      },
+      sharing,
+    )
     const snapshot = await completeDraft()
     if (snapshot) fireAnalyticsEvent(EVENTS.SUBMISSION_SUBMITTED, snapshot)
     return { kind: 'sent' }

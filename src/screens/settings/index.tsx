@@ -129,6 +129,9 @@ export default function SettingsScreen() {
             </TextButton>
           </GlassSurface>
 
+          <SharingSettings />
+          <OrganizationPermissions />
+
           {[
             { title: 'Photos', toggles: PHOTO_TOGGLES },
             { title: 'Developer Mode', toggles: DEVELOPER_TOGGLES },

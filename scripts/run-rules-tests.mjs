@@ -97,7 +97,9 @@ const { status, error } = spawnSync(
     'demo-feral-spotter',
     '--only',
     'storage,auth',
-    'jest -c jest.rules.config.js --runInBand',
+    organizationsOnly
+      ? 'npm --prefix functions run test:organizations:emulator'
+      : 'jest -c jest.rules.config.js --runInBand',
   ],
   { stdio: 'inherit', cwd: repoRoot, env },
 )
