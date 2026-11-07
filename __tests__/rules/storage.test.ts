@@ -8,6 +8,7 @@ import {
 } from '@firebase/rules-unit-testing'
 import {
   deleteObject,
+  getMetadata,
   listAll,
   type StorageReference,
   ref,
@@ -206,4 +207,34 @@ describe('storage.rules — deletes (#293)', () => {
     await assertSucceeds(deleteObject(photoOf(OWNER_UID)))
     await assertSucceeds(deleteObject(metadataOf()))
   })
+})
+
+describe('organization service objects remain server-only', () => {
+  it.each(['owner', 'other', 'anonymous'])(
+    'denies direct catalog and ledger reads/writes for %s',
+    async (actor) => {
+      const paths = [
+        'organizations/catalog.json',
+        'organization-permissions/owner/ledger.json',
+      ]
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        for (const objectPath of paths)
+          await uploadBytes(
+            ref(context.storage(BUCKET_URL), objectPath),
+            SMALL_JSON,
+            JSON_TYPE,
+          )
+      })
+      const context =
+        actor === 'anonymous'
+          ? testEnv.unauthenticatedContext()
+          : testEnv.authenticatedContext(actor)
+      for (const objectPath of paths) {
+        const object = ref(context.storage(BUCKET_URL), objectPath)
+        await assertFails(getMetadata(object))
+        await assertFails(uploadBytes(object, SMALL_JSON, JSON_TYPE))
+        await assertFails(deleteObject(object))
+      }
+    },
+  )
 })

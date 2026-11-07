@@ -74,6 +74,7 @@ export interface CachedPhoto {
 }
 
 export interface CacheMetadata {
+  report_injured?: boolean
   location_method: LocationMethod
   time_method: TimeMethod
   address?: string
@@ -87,6 +88,8 @@ export interface CacheMetadata {
 }
 
 export interface SubmissionCacheFile {
+  /** Server submission ID used by the organization permission ledger. */
+  cloud_submission_id?: string
   id: string
   created_at: string // ISO — used for ordering in Feral Reports
   updated_at: string // ISO

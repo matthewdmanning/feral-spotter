@@ -297,6 +297,7 @@ export function describeSighting(
       value: `±${Math.round(metadata.accuracy)} m`,
     })
   }
+  if (metadata.report_injured) rows.push({ label: 'Injured cat', value: 'Yes' })
   rows.push(
     { label: 'Photos', value: String(sightingPhotoCount(cache)) },
     { label: 'Cats', value: String(cache.cats.length) },

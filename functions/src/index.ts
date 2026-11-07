@@ -309,3 +309,5 @@ export const deleteAccount = onCall(
       accounts: authAccountStore,
     }),
 )
+
+export { organizationsApi } from './organizations/api'
