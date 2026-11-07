@@ -13,7 +13,6 @@ import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import { TextButton } from '@/src/shared/ui/atoms/TextButton'
 import { Modal, Text, View } from 'react-native'
 import { useState } from 'react'
-import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './TutorialOverlay.styles'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -49,18 +48,6 @@ export function TutorialOverlay({
   onSkip,
   onComplete,
 }: TutorialOverlayProps) {
-  // Subscribes this component to theme changes. Required: content inside RN's
-  // Modal renders on a separate native surface that Unistyles' direct
-  // ShadowTree patching doesn't reach (same class as AlertHost, fixed in
-  // f197051) — without this, a theme switch while the tutorial is open
-  // leaves it in the theme active when it was last (re)mounted.
-  //
-  // `theme` must be destructured/read, not just called for its side effect
-  // (#342) — Unistyles only subscribes when `theme` is read from the hook's
-  // return value; a bare useUnistyles() call subscribes to nothing, which is
-  // why this fix (added alongside AlertHost's, in the same sweep) didn't
-  // actually hold either.
-  const { theme } = useUnistyles()
   const [index, setIndex] = useState(0)
 
   if (steps.length === 0) return null
