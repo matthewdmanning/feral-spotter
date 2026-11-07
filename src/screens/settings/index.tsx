@@ -24,9 +24,7 @@ import { useAuthStore } from '@/src/lib/auth/authStore'
 import { useSettingsDraft } from '@/src/hooks/useSettingsDraft'
 import { APP_VERSION, FEATURE_FLAGS } from '@/src/config/constants'
 import { router } from 'expo-router'
-import { CheckIcon } from 'phosphor-react-native/src/icons/Check'
 import { FileTextIcon } from 'phosphor-react-native/src/icons/FileText'
-import { KeyIcon } from 'phosphor-react-native/src/icons/Key'
 import { Fragment, useState } from 'react'
 import { Platform, ScrollView, Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
@@ -57,19 +55,7 @@ export default function SettingsScreen() {
   const emailOptIn = useConsentStore((s) => s.emailOptIn === true)
   const accountEmail = useAuthStore((s) => s.user?.email)
   const changeEmail = useChangeEmail()
-  const {
-    draft,
-    patch,
-    passwordConfigured,
-    newPassword,
-    confirmPassword,
-    isVerifying,
-    setNewPassword,
-    setConfirmPassword,
-    handleSave,
-    handleDiscard,
-    handleRemovePassword,
-  } = useSettingsDraft()
+  const { draft, patch, handleSave, handleDiscard } = useSettingsDraft()
 
   return (
     <View style={styles.root}>
@@ -89,8 +75,9 @@ export default function SettingsScreen() {
               label="Theme"
               options={THEME_OPTIONS}
               value={themeMode}
+              required
               onChange={(next) => {
-                if (!next) return
+                if (!next) return // never: required
                 setThemeMode(next)
                 setSelectedThemeMode(next)
               }}
@@ -138,51 +125,6 @@ export default function SettingsScreen() {
             >
               Send verification link
             </TextButton>
-          </GlassSurface>
-
-          <GlassSurface kind="card" style={styles.card}>
-            <Text style={styles.cardTitle}>Authentication</Text>
-            {passwordConfigured ? (
-              <View style={styles.gap}>
-                <View style={styles.configuredRow}>
-                  <CheckIcon
-                    size={theme.iconSize.md}
-                    color={theme.colors.accentSoftText}
-                  />
-                  <Text style={styles.configuredText}>Password configured</Text>
-                </View>
-                <TextButton
-                  onPress={handleRemovePassword}
-                  tone="danger"
-                  icon={
-                    <KeyIcon
-                      size={theme.iconSize.md}
-                      color={theme.colors.danger}
-                    />
-                  }
-                >
-                  Remove Password
-                </TextButton>
-              </View>
-            ) : (
-              <View style={styles.gap}>
-                <Text style={styles.hint}>Required to submit observations</Text>
-                <TextField
-                  label="Password"
-                  placeholder="Password"
-                  secureTextEntry
-                  value={newPassword}
-                  onChangeText={setNewPassword}
-                />
-                <TextField
-                  label="Confirm Password"
-                  placeholder="Confirm Password"
-                  secureTextEntry
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                />
-              </View>
-            )}
           </GlassSurface>
 
           {[
@@ -233,16 +175,10 @@ export default function SettingsScreen() {
 
       <View style={styles.footer}>
         <ButtonRow>
-          <AppButton
-            variant="danger"
-            onPress={handleDiscard}
-            disabled={isVerifying}
-          >
+          <AppButton variant="danger" onPress={handleDiscard}>
             Discard
           </AppButton>
-          <AppButton onPress={handleSave} loading={isVerifying}>
-            Save
-          </AppButton>
+          <AppButton onPress={handleSave}>Save</AppButton>
         </ButtonRow>
       </View>
     </View>

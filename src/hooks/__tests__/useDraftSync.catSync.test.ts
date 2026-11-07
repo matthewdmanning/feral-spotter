@@ -22,9 +22,8 @@ it('draft cats reach the In Progress row and survive the post-Submit clear', asy
     location_method: 'device',
     time_method: 'device',
   })
-  const read = jest.spyOn(cache, 'getSubmissionCache')
   const update = jest.spyOn(cache, 'updateSubmissionCache')
-  renderHook(() => useDraftSync())
+  const { unmount } = renderHook(() => useDraftSync())
 
   // A cat saved in Cat Form shows on the In Progress card.
   act(() => useSubmissionStore.getState().addCat(observedCat()))
@@ -32,6 +31,7 @@ it('draft cats reach the In Progress row and survive the post-Submit clear', asy
     expect(update).toHaveBeenCalledWith(
       'cache-1',
       expect.objectContaining({ cats: [expect.anything()] }),
+      expect.anything(),
     ),
   )
   await act(async () => {})
@@ -39,13 +39,15 @@ it('draft cats reach the In Progress row and survive the post-Submit clear', asy
 
   // Submit sends the row, then clears the draft.
   await cache.updateSubmissionCache('cache-1', { status: 'Submitted' })
-  read.mockClear()
   update.mockClear()
   act(() => useSubmissionStore.getState().clearDraft())
 
-  // The sync has read the row and decided; only then is "no write" proof.
-  await waitFor(() => expect(read).toHaveBeenCalled())
-  await act(async () => {})
-  expect(update).not.toHaveBeenCalled()
+  // The sync's write has run to completion; only then is the row proof.
+  await waitFor(() => expect(update).toHaveBeenCalled())
+  await act(async () => {
+    await update.mock.results[0].value
+  })
   expect(await rowCats()).toHaveLength(1)
+  unmount()
+  update.mockRestore()
 })

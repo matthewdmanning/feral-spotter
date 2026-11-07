@@ -11,20 +11,15 @@
 import { GlassSurface } from '@/src/components/atoms/GlassSurface'
 import { AppButton } from '@/src/components/atoms/AppButton'
 import { TextButton } from '@/src/components/atoms/TextButton'
-import { Modal, Text, View } from 'react-native'
+import { Modal, ScrollView, Text, View } from 'react-native'
 import { useState } from 'react'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './TutorialOverlay.styles'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export interface TutorialStep {
-  id: string
-  title: string
-  body: string
-  /** Label for the primary (advance) button on this step */
-  primaryLabel: string
-}
+import type { TutorialStep } from '@/src/types/Tutorial'
+export type { TutorialStep }
 
 interface TutorialOverlayProps {
   open: boolean
@@ -61,9 +56,18 @@ export function TutorialOverlay({
   // why this fix (added alongside AlertHost's, in the same sweep) didn't
   // actually hold either.
   const { theme } = useUnistyles()
-  const [index, setIndex] = useState(0)
+  const [rawIndex, setIndex] = useState(0)
+  // Reopening starts from step 1: the Modal stays mounted between opens, so
+  // the index would otherwise resume where the last run stopped.
+  const [wasOpen, setWasOpen] = useState(open)
+  if (wasOpen !== open) {
+    setWasOpen(open)
+    if (open) setIndex(0)
+  }
 
   if (steps.length === 0) return null
+  // A shorter steps array must not index past its end.
+  const index = Math.min(rawIndex, steps.length - 1)
   const step = steps[index]
   const isLast = index === steps.length - 1
 
@@ -94,12 +98,18 @@ export function TutorialOverlay({
           Skip
         </TextButton>
         <GlassSurface kind="raised" style={styles.card}>
-          <Text style={styles.counter}>
-            {index + 1} / {steps.length}
-          </Text>
-          <Text style={styles.title}>{step.title}</Text>
-          <Text style={styles.body}>{step.body}</Text>
-          <AppButton onPress={handlePrimary}>{step.primaryLabel}</AppButton>
+          {/* Scrolls at the largest font size instead of running under Skip. */}
+          <ScrollView
+            style={styles.cardScroll}
+            contentContainerStyle={styles.cardContent}
+          >
+            <Text style={styles.counter}>
+              {index + 1} / {steps.length}
+            </Text>
+            <Text style={styles.title}>{step.title}</Text>
+            <Text style={styles.body}>{step.body}</Text>
+            <AppButton onPress={handlePrimary}>{step.primaryLabel}</AppButton>
+          </ScrollView>
         </GlassSurface>
       </View>
     </Modal>

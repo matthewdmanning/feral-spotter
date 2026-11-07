@@ -13,19 +13,20 @@
  */
 
 import { CameraThumb } from '@/src/components/atoms/CameraThumb'
-import { usePhotoStore } from '@/src/hooks'
+import { usePhotoStore, isAtPhotoLimit } from '@/src/hooks/usePhotoStore'
+import { removePhotoFromDraft } from '@/src/hooks/removePhotoFromDraft'
 import {
-  initializeDraft,
+  acceptsNewPhotos,
+  draftReadyOrAlert,
   useDraftStartupStore,
 } from '@/src/hooks/useDraftStartupStore'
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'
-import { showAlert } from '@/src/hooks/useUIStore'
 import { gallerySavePermission } from '@/src/lib/permissions/gallerySavePermission'
 import {
   releaseCapturedPhotoFile,
   retainCapturedPhotoFile,
 } from '@/src/lib/camera/capturedPhotoFiles'
-import { uploadNewPhoto } from '@/src/lib/upload/uploadNewPhoto'
+import { syncPhotoUploads } from '@/src/lib/upload/draftUploads'
 import type { SubmissionPhoto } from '@/src/types'
 import {
   buildSubmissionPhotoFromCapture,
@@ -62,13 +63,9 @@ export function useCapturedPhotoWorkflow({
   )
 
   const addPhoto = usePhotoStore((s) => s.addPhoto)
-  const removePhoto = usePhotoStore((s) => s.removePhoto)
-  const updatePhoto = usePhotoStore((s) => s.updatePhoto)
   const photoSource = usePhotoStore((s) => s.source)
   const draftPhase = useDraftStartupStore((s) => s.phase)
-  const canCapture =
-    (draftPhase === 'cleaning' || draftPhase === 'ready') &&
-    photoSource !== 'library'
+  const canCapture = acceptsNewPhotos(draftPhase) && photoSource !== 'library'
 
   const [capturedPhotos, setCapturedPhotos] = useState<SubmissionPhoto[]>([])
   const [flashMode, setFlashMode] = useState<FlashMode>('auto')
@@ -110,13 +107,14 @@ export function useCapturedPhotoWorkflow({
    */
   const persistCapturedPhoto = useCallback(
     (frame: CapturedFrame, shutterTime: string): SubmissionPhoto => {
-      const currentPhase = useDraftStartupStore.getState().phase
       if (
-        (currentPhase !== 'cleaning' && currentPhase !== 'ready') ||
+        !acceptsNewPhotos(useDraftStartupStore.getState().phase) ||
         usePhotoStore.getState().source === 'library'
       ) {
         throw new Error('Camera capture is not available')
       }
+      // Backstop for a burst frame already in flight at the cap.
+      if (isAtPhotoLimit()) throw new Error('Photo limit reached')
       const submission = buildSubmissionPhotoFromCapture(frame, shutterTime)
 
       if (keepOnDevice) {
@@ -125,31 +123,23 @@ export function useCapturedPhotoWorkflow({
       }
 
       addPhoto(submission)
-      setCapturedPhotos((prev) => [...prev, submission])
+      // The stored copy carries its upload slot; the upload needs it.
+      const stored = usePhotoStore
+        .getState()
+        .photos.find((p) => p.local_id === submission.local_id)
+      if (!stored) throw new Error('Photo limit reached')
+      setCapturedPhotos((prev) => [...prev, stored])
 
-      return submission
+      return stored
     },
     [addPhoto, keepOnDevice],
   )
 
   /**
-   * Starts the background upload for a photo persistCapturedPhoto returned.
-   * Kept separate so the caller supplies the authenticated user without this
-   * hook reaching for auth state it does not otherwise need.
+   * Starts the background upload for every photo persistCapturedPhoto has
+   * stored. The facade reads the user, the draft and each slotted copy.
    */
-  const startPhotoUpload = useCallback(
-    (submission: SubmissionPhoto, uid: string | undefined) => {
-      const { submissionId } = usePhotoStore.getState()
-      if (!uid || !submissionId) {
-        console.error(
-          '[useCapturedPhotoWorkflow] missing uid/submissionId for upload',
-        )
-        return
-      }
-      uploadNewPhoto(submission, uid, submissionId, updatePhoto)
-    },
-    [updatePhoto],
-  )
+  const startPhotoUpload = useCallback(() => syncPhotoUploads(), [])
 
   /**
    * Writes every collected capture to the gallery. Called once after a capture
@@ -181,13 +171,10 @@ export function useCapturedPhotoWorkflow({
     }
   }, [])
 
-  const handleDiscardPhoto = useCallback(
-    (localId: string) => {
-      setCapturedPhotos((prev) => prev.filter((p) => p.local_id !== localId))
-      removePhoto(localId)
-    },
-    [removePhoto],
-  )
+  const handleDiscardPhoto = useCallback((localId: string) => {
+    setCapturedPhotos((prev) => prev.filter((p) => p.local_id !== localId))
+    removePhotoFromDraft(localId)
+  }, [])
 
   const cycleFlash = useCallback(() => {
     setFlashMode((m) => (m === 'auto' ? 'on' : m === 'on' ? 'off' : 'auto'))
@@ -199,14 +186,9 @@ export function useCapturedPhotoWorkflow({
   }, [onBeforeFlip])
 
   const handleDone = useCallback(() => {
-    void initializeDraft()
-      .then(() => router.navigate('/submission/create'))
-      .catch(() => {
-        showAlert(
-          'Could not restore your sighting',
-          'Restart the app to try again.',
-        )
-      })
+    void draftReadyOrAlert().then((ready) => {
+      if (ready) router.navigate('/submission/create')
+    })
   }, [])
   const handleClose = useCallback(() => router.back(), [])
 
@@ -218,6 +200,7 @@ export function useCapturedPhotoWorkflow({
           index === capturedPhotos.length - 1 ? capturedPhotos.length : 0
         }
         onRemove={() => handleDiscardPhoto(item.local_id)}
+        label={`Photo ${index + 1} of ${capturedPhotos.length}`}
       />
     ),
     [capturedPhotos.length, handleDiscardPhoto],

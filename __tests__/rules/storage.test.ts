@@ -6,7 +6,6 @@ import {
   initializeTestEnvironment,
   type RulesTestEnvironment,
 } from '@firebase/rules-unit-testing'
-import { doc, setDoc } from 'firebase/firestore'
 import {
   deleteObject,
   listAll,
@@ -16,24 +15,23 @@ import {
   uploadBytes,
 } from 'firebase/storage'
 
-const PROJECT_ID = 'project-e3d5659d-bc4f-438f-88c'
-const BUCKET_URL = 'gs://project-e3d5659d-bc4f-438f-88c.firebasestorage.app'
+// A demo- project runs against the emulators only and needs no real project.
+// The rules match every bucket ({bucket}), so the bucket is local too.
+const PROJECT_ID = 'demo-feral-spotter'
+const BUCKET_URL = `gs://${PROJECT_ID}.appspot.com`
 const SMALL_IMAGE = new Uint8Array([1, 2, 3, 4])
 const OVERSIZED_IMAGE = new Uint8Array(21 * 1024 * 1024) // over the 20MB cap
 const SMALL_JSON = new Uint8Array([0x7b, 0x7d]) // '{}'
 const OVERSIZED_JSON = new Uint8Array(257 * 1024) // over the 256KB cap
+const OWNER_UID = 'uid-owner'
+const JPEG = { contentType: 'image/jpeg' }
+const JSON_TYPE = { contentType: 'application/json' }
 
 let testEnv: RulesTestEnvironment
 
 beforeAll(async () => {
   testEnv = await initializeTestEnvironment({
     projectId: PROJECT_ID,
-    firestore: {
-      rules: fs.readFileSync(
-        path.resolve(__dirname, '../../firestore.rules'),
-        'utf8',
-      ),
-    },
     storage: {
       rules: fs.readFileSync(
         path.resolve(__dirname, '../../storage.rules'),
@@ -48,9 +46,7 @@ afterAll(async () => {
 })
 
 afterEach(async () => {
-  await testEnv.clearFirestore()
-  // clearStorage() uses the default bucket and only its root items. These
-  // fixtures live under nested prefixes in an explicit .firebasestorage.app bucket.
+  // clearStorage() only clears the default bucket's root items.
   await testEnv.withSecurityRulesDisabled((context) =>
     clearPrefix(ref(context.storage(BUCKET_URL))),
   )
@@ -62,338 +58,152 @@ async function clearPrefix(prefix: StorageReference): Promise<void> {
   await Promise.all(prefixes.map((child) => clearPrefix(child)))
 }
 
-async function seedCounter(
-  submissionId: string,
-  ownerUid: string,
-  photoCount: number,
-) {
-  await testEnv.withSecurityRulesDisabled(async (context) => {
-    await setDoc(doc(context.firestore(), 'submissions', submissionId), {
-      ownerUid,
-      photoCount,
-    })
-  })
+const objectAt = (
+  uid: string | null,
+  name: string,
+  claims?: Record<string, unknown>,
+) => {
+  const context = uid
+    ? testEnv.authenticatedContext(uid, claims)
+    : testEnv.unauthenticatedContext()
+  return ref(context.storage(BUCKET_URL), name)
 }
+const photoOf = (uid: string | null, file = 'photo-0.jpg', sub = 'sub-1') =>
+  objectAt(uid, `submissions/${OWNER_UID}/${sub}/${file}`)
+const metadataOf = (claims?: Record<string, unknown>, sub = 'sub-1') =>
+  objectAt(OWNER_UID, `submissions/${OWNER_UID}/${sub}/metadata.json`, claims)
 
-const OWNER_UID = 'uid-owner'
+describe('storage.rules — photos', () => {
+  it('lets the owner upload a valid image into a slot', async () => {
+    await assertSucceeds(uploadBytes(photoOf(OWNER_UID), SMALL_IMAGE, JPEG))
+  })
 
-describe('storage.rules — submissions/{uid}/{submissionId}/{fileName}', () => {
-  it('owner can upload a valid image as the first photo of a new submission', async () => {
-    const owner = testEnv.authenticatedContext(OWNER_UID)
-    const objectRef = ref(
-      owner.storage(BUCKET_URL),
-      `submissions/${OWNER_UID}/sub-1/photo.jpg`,
+  it('denies an unauthenticated upload and an upload into another uid', async () => {
+    await assertFails(uploadBytes(photoOf(null), SMALL_IMAGE, JPEG))
+    await assertFails(uploadBytes(photoOf('uid-attacker'), SMALL_IMAGE, JPEG))
+  })
+
+  it('rejects an oversized file and a non-image type', async () => {
+    await assertFails(uploadBytes(photoOf(OWNER_UID), OVERSIZED_IMAGE, JPEG))
+    await assertFails(
+      uploadBytes(photoOf(OWNER_UID), SMALL_IMAGE, {
+        contentType: 'application/pdf',
+      }),
     )
+  })
+
+  // The 10-photo cap is the object name: photo-0 … photo-9 only.
+  it.each([
+    ['photo-9.jpg', true],
+    ['photo-0.heic', true],
+    ['photo-10.jpg', false],
+    ['photo.jpg', false],
+    ['3f2a.jpg', false],
+    ['photo-1.pdf', false],
+  ])('slot name %s allowed: %s', async (file, allowed) => {
+    const write = uploadBytes(photoOf(OWNER_UID, file), SMALL_IMAGE, JPEG)
+    await (allowed ? assertSucceeds(write) : assertFails(write))
+  })
+
+  it('lets a slot be replaced and its customMetadata patched', async () => {
+    const photo = photoOf(OWNER_UID)
+    await assertSucceeds(uploadBytes(photo, SMALL_IMAGE, JPEG))
+    await assertSucceeds(uploadBytes(photo, new Uint8Array([9, 9]), JPEG))
     await assertSucceeds(
-      uploadBytes(objectRef, SMALL_IMAGE, { contentType: 'image/jpeg' }),
-    )
-  })
-
-  it('unauthenticated upload is denied', async () => {
-    const anon = testEnv.unauthenticatedContext()
-    const objectRef = ref(
-      anon.storage(BUCKET_URL),
-      `submissions/${OWNER_UID}/sub-1/photo.jpg`,
-    )
-    await assertFails(
-      uploadBytes(objectRef, SMALL_IMAGE, { contentType: 'image/jpeg' }),
-    )
-  })
-
-  it("cannot upload into another uid's folder", async () => {
-    const attacker = testEnv.authenticatedContext('uid-attacker')
-    const objectRef = ref(
-      attacker.storage(BUCKET_URL),
-      `submissions/${OWNER_UID}/sub-1/photo.jpg`,
-    )
-    await assertFails(
-      uploadBytes(objectRef, SMALL_IMAGE, { contentType: 'image/jpeg' }),
-    )
-  })
-
-  it('rejects a file over the 20MB cap', async () => {
-    const owner = testEnv.authenticatedContext(OWNER_UID)
-    const objectRef = ref(
-      owner.storage(BUCKET_URL),
-      `submissions/${OWNER_UID}/sub-1/big.jpg`,
-    )
-    await assertFails(
-      uploadBytes(objectRef, OVERSIZED_IMAGE, { contentType: 'image/jpeg' }),
-    )
-  })
-
-  it('rejects a disallowed content type', async () => {
-    const owner = testEnv.authenticatedContext(OWNER_UID)
-    const objectRef = ref(
-      owner.storage(BUCKET_URL),
-      `submissions/${OWNER_UID}/sub-1/file.pdf`,
-    )
-    await assertFails(
-      uploadBytes(objectRef, SMALL_IMAGE, { contentType: 'application/pdf' }),
-    )
-  })
-
-  it('allows the 10th photo when photoCount is 9', async () => {
-    await seedCounter('sub-1', OWNER_UID, 9)
-    const owner = testEnv.authenticatedContext(OWNER_UID)
-    const objectRef = ref(
-      owner.storage(BUCKET_URL),
-      `submissions/${OWNER_UID}/sub-1/photo-10.jpg`,
-    )
-    await assertSucceeds(
-      uploadBytes(objectRef, SMALL_IMAGE, { contentType: 'image/jpeg' }),
-    )
-  })
-
-  it('rejects the 11th photo when photoCount is already 10', async () => {
-    await seedCounter('sub-1', OWNER_UID, 10)
-    const owner = testEnv.authenticatedContext(OWNER_UID)
-    const objectRef = ref(
-      owner.storage(BUCKET_URL),
-      `submissions/${OWNER_UID}/sub-1/photo-11.jpg`,
-    )
-    await assertFails(
-      uploadBytes(objectRef, SMALL_IMAGE, { contentType: 'image/jpeg' }),
-    )
-  })
-
-  // #264: finalizeSubmissionPhotoMetadata patches an already-counted photo's
-  // customMetadata at Submit — must not get blocked by the count gate just
-  // because the submission is already full.
-  it("allows a metadata-only patch on the owner's own already-uploaded photo, even when photoCount is at the 10 cap", async () => {
-    const owner = testEnv.authenticatedContext(OWNER_UID)
-    const objectRef = ref(
-      owner.storage(BUCKET_URL),
-      `submissions/${OWNER_UID}/sub-1/photo-1.jpg`,
-    )
-    await assertSucceeds(
-      uploadBytes(objectRef, SMALL_IMAGE, { contentType: 'image/jpeg' }),
-    )
-    await seedCounter('sub-1', OWNER_UID, 10)
-
-    await assertSucceeds(
-      updateMetadata(objectRef, {
+      updateMetadata(photo, {
         customMetadata: { photo_time: '2026-08-01T10:00:00.000Z' },
       }),
     )
   })
 
-  it('owner can upload valid submission metadata.json', async () => {
-    const owner = testEnv.authenticatedContext(OWNER_UID)
-    const objectRef = ref(
-      owner.storage(BUCKET_URL),
-      `submissions/${OWNER_UID}/sub-1/metadata.json`,
-    )
-    await assertSucceeds(
-      uploadBytes(objectRef, SMALL_JSON, { contentType: 'application/json' }),
+  it('still rejects a non-image overwrite of a slot', async () => {
+    const photo = photoOf(OWNER_UID)
+    await assertSucceeds(uploadBytes(photo, SMALL_IMAGE, JPEG))
+    await assertFails(
+      uploadBytes(photo, SMALL_IMAGE, { contentType: 'text/html' }),
     )
   })
 
-  it('owner can upload metadata.json with a charset suffix on the content type', async () => {
-    // Native uploadString() may send this instead of the bare mime type.
-    const owner = testEnv.authenticatedContext(OWNER_UID)
-    const objectRef = ref(
-      owner.storage(BUCKET_URL),
-      `submissions/${OWNER_UID}/sub-1/metadata.json`,
+  it('rejects a user_id in metadata that names someone else', async () => {
+    const photo = photoOf(OWNER_UID)
+    await assertFails(
+      uploadBytes(photo, SMALL_IMAGE, {
+        ...JPEG,
+        customMetadata: { user_id: 'uid-other' },
+      }),
     )
     await assertSucceeds(
-      uploadBytes(objectRef, SMALL_JSON, {
+      uploadBytes(photo, SMALL_IMAGE, {
+        ...JPEG,
+        customMetadata: { user_id: OWNER_UID },
+      }),
+    )
+    await assertFails(
+      updateMetadata(photo, { customMetadata: { user_id: 'uid-other' } }),
+    )
+  })
+
+  // #267 is deferred: no allowlist gate yet.
+  it('lets any authenticated user upload into their own folder', async () => {
+    const stranger = objectAt(
+      'uid-stranger',
+      'submissions/uid-stranger/sub-1/photo-0.jpg',
+    )
+    await assertSucceeds(uploadBytes(stranger, SMALL_IMAGE, JPEG))
+  })
+})
+
+describe('storage.rules — metadata.json', () => {
+  it('accepts JSON, with or without a charset suffix', async () => {
+    await assertSucceeds(uploadBytes(metadataOf(), SMALL_JSON, JSON_TYPE))
+    await assertSucceeds(
+      uploadBytes(metadataOf(), SMALL_JSON, {
         contentType: 'application/json; charset=utf-8',
       }),
     )
   })
 
-  it("cannot upload metadata.json into another uid's folder", async () => {
-    const attacker = testEnv.authenticatedContext('uid-attacker')
-    const objectRef = ref(
-      attacker.storage(BUCKET_URL),
+  it('rejects another uid, an oversized blob and a non-JSON type', async () => {
+    const theirs = objectAt(
+      'uid-attacker',
       `submissions/${OWNER_UID}/sub-1/metadata.json`,
     )
+    await assertFails(uploadBytes(theirs, SMALL_JSON, JSON_TYPE))
+    await assertFails(uploadBytes(metadataOf(), OVERSIZED_JSON, JSON_TYPE))
     await assertFails(
-      uploadBytes(objectRef, SMALL_JSON, { contentType: 'application/json' }),
+      uploadBytes(metadataOf(), SMALL_JSON, { contentType: 'text/plain' }),
     )
   })
 
-  it('rejects metadata.json over the 256KB cap', async () => {
-    const owner = testEnv.authenticatedContext(OWNER_UID)
-    const objectRef = ref(
-      owner.storage(BUCKET_URL),
-      `submissions/${OWNER_UID}/sub-1/metadata.json`,
-    )
-    await assertFails(
-      uploadBytes(objectRef, OVERSIZED_JSON, {
-        contentType: 'application/json',
-      }),
-    )
-  })
-
-  it('rejects metadata.json with a non-JSON content type', async () => {
-    const owner = testEnv.authenticatedContext(OWNER_UID)
-    const objectRef = ref(
-      owner.storage(BUCKET_URL),
-      `submissions/${OWNER_UID}/sub-1/metadata.json`,
-    )
-    await assertFails(
-      uploadBytes(objectRef, SMALL_JSON, { contentType: 'text/plain' }),
-    )
-  })
-
-  it('metadata.json write bypasses the photoCount cap (not photo-gated by design)', async () => {
-    await seedCounter('sub-1', OWNER_UID, 10)
-    const owner = testEnv.authenticatedContext(OWNER_UID)
-    const objectRef = ref(
-      owner.storage(BUCKET_URL),
-      `submissions/${OWNER_UID}/sub-1/metadata.json`,
+  // #270: functions/ sets submissionCapReached at 250 Submissions.
+  it('refuses a new Submission at the cap but lets a counted one be resent', async () => {
+    const atCap = { submissionCapReached: true }
+    await assertSucceeds(
+      uploadBytes(metadataOf(undefined, 'sub-counted'), SMALL_JSON, JSON_TYPE),
     )
     await assertSucceeds(
-      uploadBytes(objectRef, SMALL_JSON, { contentType: 'application/json' }),
+      uploadBytes(metadataOf(atCap, 'sub-counted'), SMALL_JSON, JSON_TYPE),
     )
-  })
-
-  // No allowlist gate in storage.rules today.
-  it('#267: no allowlist gate — any authenticated user can upload', async () => {
-    const uid = 'uid-not-a-tester'
-    const user = testEnv.authenticatedContext(uid)
-    const objectRef = ref(
-      user.storage(BUCKET_URL),
-      `submissions/${uid}/sub-1/photo.jpg`,
+    await assertFails(
+      uploadBytes(metadataOf(atCap, 'sub-new'), SMALL_JSON, JSON_TYPE),
     )
     await assertSucceeds(
-      uploadBytes(objectRef, SMALL_IMAGE, { contentType: 'image/jpeg' }),
-    )
-  })
-
-  it('rejects a submission id owned by another user even below the photo cap', async () => {
-    await seedCounter('shared-id', 'uid-a', 0)
-    const uidB = testEnv.authenticatedContext('uid-b')
-    const objectRef = ref(
-      uidB.storage(BUCKET_URL),
-      `submissions/uid-b/shared-id/photo.jpg`,
-    )
-    await assertFails(
-      uploadBytes(objectRef, SMALL_IMAGE, { contentType: 'image/jpeg' }),
-    )
-  })
-
-  // ── #293: delete branch ──────────────────────────────────────────────────
-
-  it('#293: owner can delete their own photo', async () => {
-    const owner = testEnv.authenticatedContext(OWNER_UID)
-    const objectRef = ref(
-      owner.storage(BUCKET_URL),
-      `submissions/${OWNER_UID}/sub-del/photo.jpg`,
-    )
-    await assertSucceeds(
-      uploadBytes(objectRef, SMALL_IMAGE, { contentType: 'image/jpeg' }),
-    )
-    await assertSucceeds(deleteObject(objectRef))
-  })
-
-  it('#293: owner can delete their own metadata.json', async () => {
-    const owner = testEnv.authenticatedContext(OWNER_UID)
-    const objectRef = ref(
-      owner.storage(BUCKET_URL),
-      `submissions/${OWNER_UID}/sub-del/metadata.json`,
-    )
-    await assertSucceeds(
-      uploadBytes(objectRef, SMALL_JSON, { contentType: 'application/json' }),
-    )
-    await assertSucceeds(deleteObject(objectRef))
-  })
-
-  it("#293: a different authenticated user cannot delete someone else's photo", async () => {
-    await testEnv.withSecurityRulesDisabled(async (context) => {
-      await uploadBytes(
-        ref(
-          context.storage(BUCKET_URL),
-          `submissions/${OWNER_UID}/sub-del/photo.jpg`,
-        ),
-        SMALL_IMAGE,
-        { contentType: 'image/jpeg' },
-      )
-    })
-    const other = testEnv.authenticatedContext('uid-other')
-    await assertFails(
-      deleteObject(
-        ref(
-          other.storage(BUCKET_URL),
-          `submissions/${OWNER_UID}/sub-del/photo.jpg`,
-        ),
-      ),
-    )
-  })
-
-  it('#293: unauthenticated delete is denied', async () => {
-    await testEnv.withSecurityRulesDisabled(async (context) => {
-      await uploadBytes(
-        ref(
-          context.storage(BUCKET_URL),
-          `submissions/${OWNER_UID}/sub-del/photo.jpg`,
-        ),
-        SMALL_IMAGE,
-        { contentType: 'image/jpeg' },
-      )
-    })
-    const anon = testEnv.unauthenticatedContext()
-    await assertFails(
-      deleteObject(
-        ref(
-          anon.storage(BUCKET_URL),
-          `submissions/${OWNER_UID}/sub-del/photo.jpg`,
-        ),
-      ),
-    )
-  })
-
-  it('#293: splitting write into create/update did not loosen the upload validators — oversized image still denied', async () => {
-    const owner = testEnv.authenticatedContext(OWNER_UID)
-    const objectRef = ref(
-      owner.storage(BUCKET_URL),
-      `submissions/${OWNER_UID}/sub-big/photo.jpg`,
-    )
-    await assertFails(
-      uploadBytes(objectRef, OVERSIZED_IMAGE, { contentType: 'image/jpeg' }),
-    )
-  })
-  it.each([
-    { count: 249, allowed: true },
-    { count: 250, allowed: false },
-  ])(
-    'enforces the per-user submission cap at $count submissions',
-    async ({ count, allowed }) => {
-      await testEnv.withSecurityRulesDisabled(async (context) => {
-        await setDoc(doc(context.firestore(), 'submissionCounts', OWNER_UID), {
-          count,
-        })
-      })
-      const owner = testEnv.authenticatedContext(OWNER_UID)
-      const upload = uploadBytes(
-        ref(
-          owner.storage(BUCKET_URL),
-          `submissions/${OWNER_UID}/cap-boundary/metadata.json`,
-        ),
+      uploadBytes(
+        metadataOf({ submissionCapReached: false }, 'sub-new'),
         SMALL_JSON,
-        { contentType: 'application/json' },
-      )
-      if (allowed) await assertSucceeds(upload)
-      else await assertFails(upload)
-    },
-  )
+        JSON_TYPE,
+      ),
+    )
+  })
+})
 
-  it('rejects replacing an existing photo with a different-sized file', async () => {
-    const owner = testEnv.authenticatedContext(OWNER_UID)
-    const object = ref(
-      owner.storage(BUCKET_URL),
-      `submissions/${OWNER_UID}/overwrite/photo.jpg`,
-    )
-    await assertSucceeds(
-      uploadBytes(object, SMALL_IMAGE, { contentType: 'image/jpeg' }),
-    )
-
-    await assertFails(
-      uploadBytes(object, new Uint8Array([1, 2, 3, 4, 5]), {
-        contentType: 'image/jpeg',
-      }),
-    )
+describe('storage.rules — deletes (#293)', () => {
+  it('lets only the owner delete their objects', async () => {
+    await assertSucceeds(uploadBytes(photoOf(OWNER_UID), SMALL_IMAGE, JPEG))
+    await assertSucceeds(uploadBytes(metadataOf(), SMALL_JSON, JSON_TYPE))
+    await assertFails(deleteObject(photoOf('uid-attacker')))
+    await assertFails(deleteObject(photoOf(null)))
+    await assertSucceeds(deleteObject(photoOf(OWNER_UID)))
+    await assertSucceeds(deleteObject(metadataOf()))
   })
 })

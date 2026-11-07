@@ -24,4 +24,10 @@ export interface SubmissionPhoto {
   cloud_storage_url?: string
   /** ISO — set at shutter press for a camera capture (no EXIF to read it from). */
   captured_at?: string
+  /**
+   * 0 … MAX_PHOTOS-1: the photo's object name in its Submission folder
+   * (`photo-{slot}`). storage.rules accepts only these names, which is
+   * what caps a Submission at MAX_PHOTOS. Set when the photo joins the pool.
+   */
+  upload_slot?: number
 }

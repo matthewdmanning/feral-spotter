@@ -1,6 +1,7 @@
 import { GlassSurface } from '@/src/components/atoms/GlassSurface'
 import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { AppButton } from '@/src/components/atoms/AppButton'
+import { useBackHandler } from '@/src/hooks/useBackHandler'
 import { useState } from 'react'
 import { View, Text, Pressable, ScrollView } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
@@ -22,6 +23,11 @@ interface ConsentChoiceScreenProps {
   onContinue: (checked: boolean) => void
 }
 
+// A consent step has no back path (email-opt-in.md): Continue is the only
+// way on. Android's hardware Back would otherwise pop to sign-in with the
+// step unanswered.
+const stayOnStep = () => true
+
 /** One titled checkbox with a Continue button: the shape of every consent step. */
 export function ConsentChoiceScreen({
   copy,
@@ -31,6 +37,15 @@ export function ConsentChoiceScreen({
 }: ConsentChoiceScreenProps) {
   const { theme } = useUnistyles()
   const [checked, setChecked] = useState(defaultChecked)
+  // Follow a default that arrives after mount (a store still hydrating),
+  // until the user has touched the box.
+  const [shownDefault, setShownDefault] = useState(defaultChecked)
+  const [touched, setTouched] = useState(false)
+  if (shownDefault !== defaultChecked) {
+    setShownDefault(defaultChecked)
+    if (!touched) setChecked(defaultChecked)
+  }
+  useBackHandler(stayOnStep)
 
   return (
     <View style={styles.root}>
@@ -40,7 +55,10 @@ export function ConsentChoiceScreen({
         <Text style={styles.body}>{copy.intro}</Text>
 
         <Pressable
-          onPress={() => setChecked((v) => !v)}
+          onPress={() => {
+            setTouched(true)
+            setChecked((v) => !v)
+          }}
           accessibilityRole="checkbox"
           accessibilityState={{ checked }}
           accessibilityLabel={`${copy.label}: ${copy.text}`}

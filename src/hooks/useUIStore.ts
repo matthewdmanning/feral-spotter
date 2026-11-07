@@ -1,6 +1,6 @@
 /**
  * hooks/useUIStore.ts
- * Cross-screen UI state: connectivity, submission-in-flight status, and the
+ * Cross-screen UI state: connectivity and the
  * single app-owned dialog.
  *
  * Dialogs live here rather than calling `Alert.alert` directly because the
@@ -31,11 +31,9 @@ export interface DialogRequest {
 
 interface UIState {
   isOnline: boolean
-  isSubmitting: boolean
   dialog: DialogRequest | null
 
   setOnlineStatus: (isOnline: boolean) => void
-  setSubmitting: (isSubmitting: boolean) => void
   dismissDialog: () => void
 }
 
@@ -45,22 +43,19 @@ export const useUIStore = create<UIState>()(
   persist(
     (set) => ({
       isOnline: true,
-      isSubmitting: false,
       dialog: null,
 
       setOnlineStatus: (isOnline) => set({ isOnline }),
-      setSubmitting: (isSubmitting) => set({ isSubmitting }),
       dismissDialog: () => set({ dialog: null }),
     }),
     {
       name: 'ui-store',
       storage: createJSONStorage(() => asyncStorage),
-      // Connectivity and in-flight status are the only durable bits. A
-      // rehydrated `dialog` would pop a stale confirmation on cold start,
-      // with handlers whose closures died with the last process.
+      // Connectivity is the only durable bit. A rehydrated `dialog` would pop
+      // a stale confirmation on cold start, with handlers whose closures died
+      // with the last process.
       partialize: (s) => ({
         isOnline: s.isOnline,
-        isSubmitting: s.isSubmitting,
       }),
     },
   ),

@@ -119,6 +119,12 @@ export interface BoundingBoxFrameResult {
   holdProgress: ReturnType<typeof useSharedValue<number>>
   /** Same effect as a successful long-press — call from a Confirm button */
   confirmNow: () => void
+  /**
+   * Grows (positive) or shrinks (negative) one axis by `deltaHalf` dp per
+   * side, with the same clamps as the handle drags. The screen-reader
+   * alternative to dragging a handle.
+   */
+  resizeBy: (axis: 'width' | 'height', deltaHalf: number) => void
 }
 
 export function useBoundingBoxFrame({
@@ -447,7 +453,24 @@ export function useBoundingBoxFrame({
       if (!success) holdProgress.value = withTiming(0, { duration: 120 })
     })
 
+  const resizeBy = (axis: 'width' | 'height', deltaHalf: number) => {
+    const isWidth = axis === 'width'
+    const current = isWidth ? boxHalfWidth : boxHalfHeight
+    const other = isWidth ? boxHalfHeight : boxHalfWidth
+    const maxHalf = maxHalfExtentForBox(
+      (isWidth ? canvasWidth : canvasHeight) / 2,
+      isWidth ? halfExtentX : halfExtentY,
+      userScale.value,
+    )
+    current.value = clampAspectRatio(
+      clampHalfExtent(current.value + deltaHalf, MIN_HALF_EXTENT, maxHalf),
+      other.value,
+      MAX_ASPECT_RATIO,
+    )
+  }
+
   return {
+    resizeBy,
     photoGesture,
     dotGesture,
     leftHandleGesture: leftHandle,

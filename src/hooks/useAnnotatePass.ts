@@ -15,9 +15,9 @@ import { showAlert } from '@/src/hooks/useUIStore'
 import { useState, useCallback, useRef } from 'react'
 
 import type { ICarouselInstance } from 'react-native-reanimated-carousel'
-import { usePhotoStore } from '@/src/hooks'
+import { usePhotoStore } from '@/src/hooks/usePhotoStore'
+import { removePhotoFromDraft } from '@/src/hooks/removePhotoFromDraft'
 import { useActiveCatFlow } from '@/src/hooks/useActiveCatFlow'
-import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'
 import { EVENTS, captureEvent } from '@/src/lib/analytics/analytics'
 import type { BoundingBox } from '@/src/types/BoundingBox'
@@ -45,8 +45,6 @@ export interface AnnotatePass {
 
 export function useAnnotatePass(): AnnotatePass {
   const photos = usePhotoStore((s) => s.photos)
-  const removePhoto = usePhotoStore((s) => s.removePhoto)
-  const removeBoxesForPhoto = useBoundingBoxStore((s) => s.removeBoxesForPhoto)
   const settings = useSettingsStore((s) => s.settings)
   const updateSetting = useSettingsStore((s) => s.updateSetting)
 
@@ -135,8 +133,7 @@ export function useAnnotatePass(): AnnotatePass {
     if (!photo) return
 
     const doRemove = () => {
-      removePhoto(photo.local_id)
-      removeBoxesForPhoto(photo.local_id)
+      removePhotoFromDraft(photo.local_id)
     }
 
     if (settings.skip_photo_remove_confirm) {
@@ -156,14 +153,7 @@ export function useAnnotatePass(): AnnotatePass {
       },
       { text: 'Remove', style: 'destructive', onPress: doRemove },
     ])
-  }, [
-    currentIndex,
-    photos,
-    settings.skip_photo_remove_confirm,
-    removePhoto,
-    removeBoxesForPhoto,
-    updateSetting,
-  ])
+  }, [currentIndex, photos, settings.skip_photo_remove_confirm, updateSetting])
 
   return {
     photos,

@@ -2,40 +2,18 @@
  * Validation utilities for submission data
  */
 
-import type { ValidationError } from '@/src/types'
-
 /**
- * Validates that at least one cat has been observed.
+ * The #265 hard blocks on sending a draft, as alert lines.
+ * Empty when the draft has at least one cat and one photo.
  */
-export function validateCatCount(catCount: number): ValidationError[] {
-  const errors: ValidationError[] = []
-
-  if (catCount === 0) {
-    errors.push({
-      field: 'cats',
-      message: 'At least one cat observation is required.',
-      severity: 'error',
-    })
-  }
-
-  return errors
-}
-
-/**
- * Validates photo requirements
- */
-export function validatePhotos(photoCount: number): ValidationError[] {
-  const errors: ValidationError[] = []
-
-  if (photoCount === 0) {
-    errors.push({
-      field: 'photos',
-      message: 'At least one photo is required.',
-      severity: 'error',
-    })
-  }
-
-  return errors
+export function missingDraftContent(
+  catCount: number,
+  photoCount: number,
+): string[] {
+  return [
+    ...(catCount === 0 ? ['At least one cat observation is required.'] : []),
+    ...(photoCount === 0 ? ['At least one photo is required.'] : []),
+  ]
 }
 
 export const MIN_PASSWORD_LENGTH = 6

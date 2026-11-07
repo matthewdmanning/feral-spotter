@@ -16,6 +16,9 @@ const TIME_FMT = new Intl.DateTimeFormat('en-US', {
  */
 export function formatDateTime(iso: string): string {
   const d = new Date(iso)
+  // Intl throws a RangeError on an invalid date; one bad row must not take
+  // down the whole Reports list.
+  if (Number.isNaN(d.getTime())) return 'Unknown time'
   const mon = MONTH_FMT.format(d)
   const day = String(d.getDate()).padStart(2, '0')
   const yr = d.getFullYear()

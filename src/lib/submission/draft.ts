@@ -35,20 +35,58 @@ import {
   deleteSubmissionCache,
   getCurrentCacheId,
   getSubmissionCache,
-  updateSubmissionCache,
+  transitionSubmission,
   type SubmissionCacheFile,
 } from '@/src/lib/cache/submissionCache'
-import { stopLocationCapture } from '@/src/lib/location'
+import { EVENTS, fireAnalyticsEvent } from '@/src/lib/analytics/analytics'
 import { authProvider } from '@/src/lib/auth'
+import { useAuthStore } from '@/src/lib/auth/authStore'
+import { stopLocationCapture } from '@/src/lib/location'
+import { sendDraft } from '@/src/lib/submission/send'
+import {
+  cancelPhotoUploads,
+  syncPhotoUploads,
+  whenUploadsSettled,
+} from '@/src/lib/upload/draftUploads'
 import { deleteSubmissionUploads } from '@/src/lib/upload/firebaseUpload'
+import { missingDraftContent } from '@/src/utils/validation'
 
-/** Wipes the four draft-owned stores and stops the draft-scoped GPS watch. */
+// ─── The draft lock ──────────────────────────────────────────────────────────
+//
+// One submit at a time, and no discard while it runs: clearing the photo
+// pool mid-send would send the cats with no photos. The lock lives here,
+// next to the only two operations it guards, so no caller can forget it.
+
+let busy = false
+const busyListeners = new Set<() => void>()
+
+function setBusy(next: boolean): void {
+  busy = next
+  busyListeners.forEach((listener) => listener())
+}
+
+/** True while a submit is running. */
+export function isDraftBusy(): boolean {
+  return busy
+}
+
+/** For useSyncExternalStore: the UI disables draft controls while busy. */
+export function subscribeDraftBusy(listener: () => void): () => void {
+  busyListeners.add(listener)
+  return () => busyListeners.delete(listener)
+}
+
+/**
+ * Wipes the four draft-owned stores, stops the draft-scoped GPS watch and
+ * drops the draft's queued uploads.
+ */
 function tearDownDraftState(deferFileDeletion = false): void {
   useSubmissionStore.getState().clearDraft()
   usePhotoStore.getState().clearPhotos(deferFileDeletion)
   useBoundingBoxStore.getState().clearAll()
   useActiveCatFlowStore.getState().setActiveCatId(null)
   stopLocationCapture()
+  cancelPhotoUploads()
 }
 
 /**
@@ -63,8 +101,11 @@ function tearDownDraftState(deferFileDeletion = false): void {
  * and deliberately not awaited: Reset must not block or fail on network
  * I/O. The `sweepPhotosWithoutMetadata` scheduled function is the backstop
  * for every case this misses.
+ *
+ * Refused while a submit runs; returns whether the draft was discarded.
  */
-export async function discardDraft(): Promise<void> {
+export async function discardDraft(): Promise<boolean> {
+  if (busy) return false
   const cacheId = await getCurrentCacheId()
   if (cacheId) await deleteSubmissionCache(cacheId)
 
@@ -73,6 +114,7 @@ export async function discardDraft(): Promise<void> {
   if (submissionId && uid) void deleteSubmissionUploads(uid, submissionId)
 
   tearDownDraftState()
+  return true
 }
 
 const draftStores = [
@@ -111,12 +153,19 @@ export async function discardUnsurvivingDraft(
 ): Promise<void> {
   await Promise.all(draftStores.map(whenHydrated))
   const { photos, updated_at } = usePhotoStore.getState()
+  const oldCacheId = await getCurrentCacheId()
+  const row = oldCacheId ? await getSubmissionCache(oldCacheId) : null
+  // The process died mid-send, so whether it landed is unknown. 'Failed'
+  // makes it resumable and tells the user to send it again; a resend
+  // overwrites the same objects.
+  if (row?.status === 'Sending') await transitionSubmission(row.id, 'Failed')
+  // Once a send started, metadata.json may be in the bucket. Its photos and
+  // row are the user's sent Sighting, not abandoned draft data.
+  const sendStarted = row != null && row.status !== 'In Progress'
+
   let updatedAt = updated_at
-  let oldCacheId: string | null = null
   if (photos.length > 0 && updatedAt == null) {
-    oldCacheId = await getCurrentCacheId()
-    const cache = oldCacheId ? await getSubmissionCache(oldCacheId) : null
-    const cacheUpdatedAt = cache ? new Date(cache.updated_at).getTime() : NaN
+    const cacheUpdatedAt = row ? new Date(row.updated_at).getTime() : NaN
     if (!Number.isFinite(cacheUpdatedAt)) {
       updatedAt = NaN
     } else {
@@ -126,7 +175,6 @@ export async function discardUnsurvivingDraft(
   }
   const isStale = updatedAt != null && now - updatedAt > SUBMISSION_STALE_MS
   if (photos.length === 0 || isStale || !Number.isFinite(updatedAt ?? NaN)) {
-    if (oldCacheId === null) oldCacheId = await getCurrentCacheId()
     const oldSubmissionId = usePhotoStore.getState().submissionId
     const uid = authProvider.getCurrentUser()?.uid
 
@@ -134,6 +182,7 @@ export async function discardUnsurvivingDraft(
     if (oldCacheId) await clearCurrentCacheId()
     onCaptureReady?.()
 
+    if (sendStarted) return
     if (oldCacheId) await deleteSubmissionCache(oldCacheId)
     if (oldSubmissionId && uid)
       void deleteSubmissionUploads(uid, oldSubmissionId)
@@ -145,19 +194,103 @@ export async function discardUnsurvivingDraft(
 
 /**
  * Submit semantics: the history row survives as 'Submitted' and only the
- * current pointer is released. Returns the post-flip snapshot because the
- * caller still fires SUBMISSION_SUBMITTED with it and can no longer fetch it
- * itself once the pointer is gone — so the read has to sit after the status
- * flip and before the clear.
+ * current pointer is released. Returns the post-flip snapshot, taken before
+ * the pointer is cleared, for SUBMISSION_SUBMITTED. Only submitDraft calls
+ * it; exported for the teardown invariant test.
  */
 export async function completeDraft(): Promise<SubmissionCacheFile | null> {
   const cacheId = await getCurrentCacheId()
   let snapshot: SubmissionCacheFile | null = null
   if (cacheId) {
-    await updateSubmissionCache(cacheId, { status: 'Submitted' })
-    snapshot = await getSubmissionCache(cacheId)
+    snapshot = await transitionSubmission(cacheId, 'Submitted')
     await clearCurrentCacheId()
   }
   tearDownDraftState()
   return snapshot
+}
+
+// ─── Submit ──────────────────────────────────────────────────────────────────
+
+/**
+ * Background uploads are waited out silently: the Firebase SDK already
+ * retries through a spotty connection, so there is nothing for the user to
+ * do. Only a stall past this, or an upload that failed outright, is
+ * reported.
+ */
+const UPLOAD_WAIT_TIMEOUT_MS = 30_000
+
+export type SubmitOutcome =
+  | { kind: 'sent' }
+  | { kind: 'busy' }
+  | { kind: 'incomplete'; messages: string[] }
+  | { kind: 'uploads-unfinished' }
+  | { kind: 'superseded' }
+  | { kind: 'failed' }
+
+/** #265 hard blocks, read from the stores as they are now. */
+function missingContent(): string[] {
+  return missingDraftContent(
+    useSubmissionStore.getState().cats.length,
+    usePhotoStore.getState().photos.length,
+  )
+}
+
+/**
+ * Sends the current draft, start to finish, under the draft lock:
+ * validate, wait for uploads, send, then flip the row to 'Submitted' and
+ * tear the draft down. Every store is read after the wait, so an edit
+ * made while waiting is sent. A failure marks the row 'Failed' and keeps
+ * every draft store for the retry.
+ *
+ * Navigation stays with the caller: its ordering against the create
+ * screen's auto-skip effect is load-bearing (#189).
+ */
+export async function submitDraft(): Promise<SubmitOutcome> {
+  if (busy) return { kind: 'busy' }
+  const missing = missingContent()
+  if (missing.length > 0) return { kind: 'incomplete', messages: missing }
+
+  // The draft this submit is for. Reset or Discard cannot run while busy,
+  // but a teardown from elsewhere mints a new id (or none).
+  const startedFor = usePhotoStore.getState().submissionId
+  setBusy(true)
+  let cacheId: string | null = null
+  try {
+    syncPhotoUploads()
+    const uploads = await whenUploadsSettled(UPLOAD_WAIT_TIMEOUT_MS)
+    if (uploads !== 'uploaded') {
+      console.error('[draft] uploads', uploads)
+      return { kind: 'uploads-unfinished' }
+    }
+    if (usePhotoStore.getState().submissionId !== startedFor) {
+      return { kind: 'superseded' }
+    }
+    const missingNow = missingContent()
+    if (missingNow.length > 0) {
+      return { kind: 'incomplete', messages: missingNow }
+    }
+    const userId = useAuthStore.getState().user?.uid
+    if (!userId || !startedFor) {
+      throw new Error('Missing uid/submissionId for submission')
+    }
+    await sendDraft(userId, startedFor, (id) => {
+      cacheId = id
+    })
+    const snapshot = await completeDraft()
+    if (snapshot) fireAnalyticsEvent(EVENTS.SUBMISSION_SUBMITTED, snapshot)
+    return { kind: 'sent' }
+  } catch (error) {
+    console.error('[draft] submit', error)
+    if (cacheId) {
+      try {
+        const failed = await transitionSubmission(cacheId, 'Failed')
+        if (failed) fireAnalyticsEvent(EVENTS.SUBMISSION_FAILED, failed)
+      } catch (markError) {
+        console.error('[draft] mark failed', markError)
+      }
+    }
+    return { kind: 'failed' }
+  } finally {
+    setBusy(false)
+  }
 }

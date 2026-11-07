@@ -13,6 +13,12 @@ interface SegmentedControlProps<T extends string | number> {
   value: T | undefined
   onChange: (value: T | undefined) => void
   accessibilityLabel?: string
+  /**
+   * A choice is always held: tapping the selected option does nothing, so
+   * `onChange` never receives undefined. Off by default, where tapping the
+   * selected option clears it (a cat attribute left unset).
+   */
+  required?: boolean
 }
 
 interface SegmentedRowProps<T extends string | number> {
@@ -22,6 +28,8 @@ interface SegmentedRowProps<T extends string | number> {
   accessibilityLabel: string
   // Long labels ("Bicolor & Piebald") need a second line to stay readable.
   numberOfLines?: number
+  /** See SegmentedControlProps.required. */
+  required?: boolean
 }
 
 /** The track of options alone, for controls that stack more than one. */
@@ -31,6 +39,7 @@ export function SegmentedRow<T extends string | number>({
   onChange,
   accessibilityLabel,
   numberOfLines = 1,
+  required = false,
 }: SegmentedRowProps<T>) {
   return (
     <View style={styles.row} accessibilityLabel={accessibilityLabel}>
@@ -40,7 +49,10 @@ export function SegmentedRow<T extends string | number>({
           <Pressable
             key={String(opt.value)}
             onPressIn={selectionHaptic}
-            onPress={() => onChange(selected ? undefined : opt.value)}
+            onPress={() => {
+              if (selected && required) return
+              onChange(selected ? undefined : opt.value)
+            }}
             style={({ pressed }) => [
               styles.option,
               selected ? styles.optionSelected : styles.optionIdle,
@@ -69,6 +81,7 @@ export function SegmentedControl<T extends string | number>({
   value,
   onChange,
   accessibilityLabel,
+  required,
 }: SegmentedControlProps<T>) {
   return (
     <View style={styles.container}>
@@ -78,6 +91,7 @@ export function SegmentedControl<T extends string | number>({
         value={value}
         onChange={onChange}
         accessibilityLabel={accessibilityLabel ?? label}
+        required={required}
       />
     </View>
   )

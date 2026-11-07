@@ -8,12 +8,18 @@
  */
 
 import { showAlert } from '@/src/hooks/useUIStore'
-import { usePhotoStore, useSubmissionStore } from '@/src/hooks'
-import { useAuth } from '@/src/lib/auth/useAuth'
-import { initializeDraft } from '@/src/hooks/useDraftStartupStore'
+import { isUploadablePhoto } from '@/src/utils/photoFormat'
+import {
+  usePhotoStore,
+  isAtPhotoLimit,
+  photoSlotsLeft,
+  showPhotoLimitReached,
+} from '@/src/hooks/usePhotoStore'
+import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
+import { draftReadyOrAlert } from '@/src/hooks/useDraftStartupStore'
 import { EVENTS, captureEvent } from '@/src/lib/analytics/analytics'
 import { libraryPermission } from '@/src/lib/permissions/libraryPermission'
-import { uploadNewPhoto } from '@/src/lib/upload/uploadNewPhoto'
+import { syncPhotoUploads } from '@/src/lib/upload/draftUploads'
 import { buildSubmissionPhoto } from '@/src/utils/buildSubmissionPhoto'
 import {
   classifyLibraryPickTime,
@@ -30,27 +36,26 @@ export interface LibraryPhotoPickerResult {
 
 export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
   const addPhotos = usePhotoStore((s) => s.addPhotos)
-  const updatePhoto = usePhotoStore((s) => s.updatePhoto)
   const setLocationType = useSubmissionStore((s) => s.setLocationType)
   const setSubmission = useSubmissionStore((s) => s.setSubmission)
-  const { user } = useAuth()
 
   const pickFromLibrary = useCallback(async () => {
-    try {
-      await initializeDraft()
-    } catch {
-      showAlert(
-        'Could not restore your sighting',
-        'Restart the app to try again.',
-      )
+    if (!(await draftReadyOrAlert())) return
+    if (usePhotoStore.getState().source === 'camera') return
+    if (isAtPhotoLimit()) {
+      showPhotoLimitReached()
       return
     }
-    if (usePhotoStore.getState().source === 'camera') return
     // Check-then-request, mirroring useCameraCapture's write-only gallery-save
     // check (#145/#146): a granted/limited check short-circuits every repeat
     // tap, so the native request only ever fires once, on the first
     // undetermined pick.
-    const usable = await libraryPermission.request()
+    let usable = false
+    try {
+      usable = await libraryPermission.request()
+    } catch (error) {
+      console.error('[useLibraryPhotoPicker] permission', error)
+    }
     if (!usable) {
       showAlert(
         'Photo library access needed',
@@ -63,51 +68,68 @@ export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
       return
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      // Bypass the Android Photo Picker's empty Photos tab (#411). The
-      // content chooser also exposes images outside its photo-library index.
-      legacy: Platform.OS === 'android',
-      mediaTypes: ['images'],
-      allowsMultipleSelection: true,
-      quality: 1,
-      exif: true,
-    })
+    let result: ImagePicker.ImagePickerResult
+    try {
+      result = await ImagePicker.launchImageLibraryAsync({
+        // Bypass the Android Photo Picker's empty Photos tab (#411). The
+        // content chooser also exposes images outside its photo-library index.
+        legacy: Platform.OS === 'android',
+        mediaTypes: ['images'],
+        allowsMultipleSelection: true,
+        // Not honored by every picker (the legacy Android chooser ignores it),
+        // so the result is trimmed below too.
+        selectionLimit: photoSlotsLeft(),
+        quality: 1,
+        exif: true,
+      })
+    } catch (error) {
+      console.error('[useLibraryPhotoPicker] picker', error)
+      showAlert('Could not open your photos', 'Try again.')
+      return
+    }
     if (result.canceled || result.assets.length === 0) return
 
     // A camera capture may have arrived while the system picker was open.
     if (usePhotoStore.getState().source === 'camera') return
     const isFirstPick = usePhotoStore.getState().photos.length === 0
-    const newPhotos = result.assets.map(buildSubmissionPhoto)
+    // Only formats storage.rules accepts: anything else would be refused on
+    // upload and sit un-uploaded, blocking Submit.
+    const accepted = result.assets.filter(isUploadablePhoto)
+    const skippedFormat = accepted.length < result.assets.length
+    const slots = photoSlotsLeft()
+    const kept = accepted.slice(0, slots)
+    if (kept.length < accepted.length) showPhotoLimitReached()
+    else if (skippedFormat) {
+      showAlert(
+        'Some photos were skipped',
+        'Only JPEG, PNG and HEIC photos can be added.',
+      )
+    }
+    if (kept.length === 0) return
+    const newPhotos = kept.map(buildSubmissionPhoto)
     addPhotos(newPhotos)
     captureEvent(EVENTS.LIBRARY_PHOTOS_SELECTED, {
       photo_count: newPhotos.length,
       is_first_pick: isFirstPick,
     })
 
-    const uid = user?.uid
-    const submissionId = usePhotoStore.getState().submissionId
-    if (uid && submissionId) {
-      for (const photo of newPhotos) {
-        uploadNewPhoto(photo, uid, submissionId, updatePhoto)
-      }
-    } else {
-      console.error(
-        '[useLibraryPhotoPicker] missing uid/submissionId for upload',
-      )
-    }
+    syncPhotoUploads()
 
     // A draft is single-source by construction (ADR 0002 amendment): the
     // Home screen guard guarantees the pool was empty before this pick.
     if (isFirstPick) setLocationType('pin')
 
-    const capturedAts = result.assets.map((asset) =>
-      parseExifDateTime(asset.exif?.DateTime),
-    )
+    // Classified over the whole pool, not this batch: "Select More Photos"
+    // must not let a batch with EXIF time override a manual time the first
+    // batch needed.
+    const capturedAts = usePhotoStore
+      .getState()
+      .photos.map((photo) => parseExifDateTime(photo.exif?.timestamp))
     const { time_type, captured_at } = classifyLibraryPickTime(capturedAts)
     setSubmission({ time_type, captured_at })
 
     router.navigate('/submission/create')
-  }, [addPhotos, updatePhoto, setLocationType, setSubmission, user])
+  }, [addPhotos, setLocationType, setSubmission])
 
   return { pickFromLibrary }
 }

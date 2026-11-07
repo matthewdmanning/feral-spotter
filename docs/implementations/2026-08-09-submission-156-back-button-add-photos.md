@@ -21,3 +21,8 @@ Covers #156 (part of #154's sprint:submission-details cluster).
 - `npx eslint` on changed files: clean (one pre-existing `no-require-imports` warning shared with every other test file in this repo that mocks `@react-native-async-storage/async-storage`, not new).
 - `npx jest`: full suite green, 111/111 including the 2 new cases.
 - Not verified: no emulator/device pass — header back-button removal and the new button's on-screen placement/behavior are unconfirmed visually.
+
+## 2026-11-03 — refactor
+
+**Purpose:** Submission Details (367 lines, 20 commits) held its own hardware-Back policy and add-more-photos rule; Home re-derived the same single-source rule.
+**Change:** `hooks/useDraftExitPrompt.ts` (focus gate, inert while submitting, the three-way prompt) and `hooks/usePhotoEntrypoints.ts` (`camera`/`library` disabled rules and `addMore` label and action). Submission Details and Home render from them. No behaviour change; the existing back-prompt, add-more-photos and Home photo-source model tests pass unchanged.

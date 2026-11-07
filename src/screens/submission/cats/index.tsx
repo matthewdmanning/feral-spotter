@@ -4,7 +4,7 @@ import { TextButton } from '@/src/components/atoms/TextButton'
 import { ProfilePicPicker } from '@/src/components/molecules/ProfilePicPicker'
 import { CatForm } from '@/src/components/organisms/CatForm'
 import {
-  COLLAPSED_DIAMETER,
+  BUBBLE_HEADER_RESERVE,
   InsetCropBubble,
 } from '@/src/components/organisms/InsetCropBubble'
 import { useSubmissionStore } from '@/src/hooks'
@@ -13,18 +13,33 @@ import { useActiveCatFlow } from '@/src/hooks/useActiveCatFlow'
 import { useCatForm } from '@/src/hooks/useCatForm'
 import { useCatSubmit } from '@/src/hooks/useCatSubmit'
 import { useRemoveCat } from '@/src/hooks/useRemoveCat'
-import { router, useLocalSearchParams } from 'expo-router'
-import { useState } from 'react'
+import { useLocalSearchParams } from 'expo-router'
+import {
+  returnToCatList,
+  returnToCatListAfterRemoval,
+} from '@/src/hooks/catPass'
+import { useEffect, useState } from 'react'
 import { ScrollView, Text, View } from 'react-native'
 import { styles } from './index.styles'
+import { firstParam } from '@/src/utils/routeParam'
 
 export default function CatObservationScreen() {
-  const { edit: editId } = useLocalSearchParams<{ edit?: string }>()
+  const params = useLocalSearchParams<{ edit?: string | string[] }>()
+  const editId = firstParam(params.edit)
 
   const cats = useSubmissionStore((s) => s.cats)
   const existingCat = editId
     ? cats.find((c) => c.local_id === editId)
     : undefined
+  // An edit link for a cat that is already gone (a stale route) must not
+  // turn into a new cat on Save. Frozen at arrival: removing the cat from
+  // this screen also empties the lookup, and that path navigates itself.
+  const [staleEdit] = useState(
+    () => editId !== undefined && !cats.some((c) => c.local_id === editId),
+  )
+  useEffect(() => {
+    if (staleEdit) returnToCatList()
+  }, [staleEdit])
   const { activeCatId } = useActiveCatFlow()
 
   const form = useCatForm(existingCat)
@@ -44,13 +59,9 @@ export default function CatObservationScreen() {
   const handleRemove = existingCat
     ? () =>
         removeCatWithConfirm(existingCat.local_id, () =>
-          // `removed` tells Cat List this emptiness came from a removal, so it
-          // offers the annotate-or-describe choice instead of auto-skipping
+          // Cat List offers annotate-or-describe instead of auto-skipping
           // straight back to annotate (#299).
-          router.replace({
-            pathname: '/submission/create',
-            params: { removed: '1' },
-          }),
+          returnToCatListAfterRemoval(),
         )
     : undefined
 
@@ -66,6 +77,7 @@ export default function CatObservationScreen() {
   // expanded or dragged: a larger reservation shoved the form down when the
   // bubble opened from its default spot. An expanded bubble floats over the
   // form's first rows and can be dragged clear.
+  if (staleEdit) return null
   return (
     <View style={styles.screen}>
       <AmbientBackground />
@@ -79,7 +91,7 @@ export default function CatObservationScreen() {
             testID="cat-form-header-zone"
             style={[
               styles.headerZone,
-              catId ? { minHeight: COLLAPSED_DIAMETER } : null,
+              catId ? { minHeight: BUBBLE_HEADER_RESERVE } : null,
             ]}
           >
             <View
@@ -105,7 +117,6 @@ export default function CatObservationScreen() {
                 edge="top-center"
                 onSettledChange={setBubbleSettledCollapsed}
                 onHoldChange={setBubbleHeld}
-                draggable
               />
             )}
           </View>

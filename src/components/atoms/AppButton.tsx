@@ -1,4 +1,4 @@
-import { Pressable, Text, View, ActivityIndicator } from 'react-native'
+import { Pressable, Text, ActivityIndicator } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { LABEL_COLOR_KEY, styles } from './AppButton.styles'
 import { tapHaptic } from '@/src/lib/haptics'
@@ -8,15 +8,6 @@ export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
 
 // compact: tighter side padding for rows that hold three buttons.
 export type ButtonSize = 'circle' | 'compact'
-
-export interface ColumnButton {
-  key: string
-  label: string
-  onPress: () => void
-  variant?: ButtonVariant
-  disabled?: boolean
-  accessibilityLabel?: string
-}
 
 interface AppButtonProps {
   onPress: () => void
@@ -29,7 +20,10 @@ interface AppButtonProps {
   iconAfter?: ReactNode
   accessibilityLabel?: string
   flex1?: boolean
-  /** Fixed diameter (dp) for size="circle" — screen-dependent, so it's computed by the caller, not a style variant. */
+  /**
+   * Makes the button a circle of this diameter (dp). Screen-dependent, so
+   * the caller computes it; it implies size="circle".
+   */
   diameter?: number
 }
 
@@ -46,7 +40,10 @@ export function AppButton({
   flex1 = false,
   diameter,
 }: AppButtonProps) {
-  styles.useVariants({ variant, size })
+  styles.useVariants({
+    variant,
+    size: diameter != null ? 'circle' : size,
+  })
   const { theme } = useUnistyles()
   const isDisabled = disabled || loading
   // The label's own color, so the spinner reads as the same "text" the
@@ -61,7 +58,7 @@ export function AppButton({
       disabled={isDisabled}
       accessibilityLabel={accessibilityLabel ?? children}
       accessibilityRole="button"
-      accessibilityState={{ disabled: isDisabled }}
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
       style={({ pressed }) => [
         styles.base,
         flex1 && styles.flex1,
@@ -84,9 +81,9 @@ export function AppButton({
         <ActivityIndicator size="small" color={spinnerColor} />
       ) : (
         <>
-          {icon && <View>{icon}</View>}
+          {icon}
           <Text style={styles.label}>{children}</Text>
-          {iconAfter && <View>{iconAfter}</View>}
+          {iconAfter}
         </>
       )}
     </Pressable>

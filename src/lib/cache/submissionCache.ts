@@ -1,25 +1,35 @@
 /**
- * utils/submissionCache.ts
+ * lib/cache/submissionCache.ts
  *
  * One AsyncStorage entry per submission, keyed by ID.
  * A separate index key tracks all known IDs for listing.
  * A "current" key tracks the active in-progress submission.
  *
- * Status lifecycle:
+ * Status lifecycle (enforced by transitionSubmission):
  *   'In Progress' → created when submission begins
- *   'Sending'     → set immediately on Submit press
- *   'Submitted'   → set on API success confirmation
- *   'Failed'      → set on API error
+ *   'Sending'     → set on Submit, from 'In Progress' or 'Failed'
+ *   'Submitted'   → set when the send lands, from 'Sending'
+ *   'Failed'      → set when the send fails, or found 'Sending' at launch
  *
  * Deletion: only on explicit Reset confirm (never on app restart or nav).
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import type { LocationType, TimeType } from '@/src/types'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type CacheStatus = 'In Progress' | 'Submitted' | 'Sending' | 'Failed'
+
+/** Statuses of a row whose Submission has not been sent: the draft still owns it. */
+export const UNSENT_STATUSES: readonly CacheStatus[] = ['In Progress', 'Failed']
+
+/** The only legal status moves. Anything else is refused. */
+const TRANSITIONS: Record<CacheStatus, readonly CacheStatus[]> = {
+  'In Progress': ['Sending'],
+  Failed: ['Sending'],
+  Sending: ['Submitted', 'Failed'],
+  Submitted: [],
+}
 
 /** How the location/time fields were captured, as chosen on the Create screen. */
 export type LocationMethod = 'device' | 'pin' | 'address'
@@ -66,8 +76,6 @@ export interface CachedPhoto {
 export interface CacheMetadata {
   location_method: LocationMethod
   time_method: TimeMethod
-  location_type?: LocationType
-  time_type?: TimeType
   address?: string
   manual_time?: string // ISO string, set when time_method === 'manual'
   captured_at?: string // ISO string, set for a Library pick with trusted EXIF DateTime
@@ -104,6 +112,20 @@ const INDEX_KEY = 'submission_cache_index' // JSON array of IDs
 const CACHE_PREFIX = 'submission_cache_' // + id
 const CURRENT_KEY = 'submission_cache_current' // active in-progress ID
 
+// ─── Write serialization ──────────────────────────────────────────────────────
+
+// Every mutation below is a read-modify-write across separate AsyncStorage
+// calls. Run concurrently (draft sync during Submit), a later write built on
+// an older read restores the old row or drops an index id. One chain runs
+// them in call order. A failed write rejects its own caller only.
+let writeChain: Promise<unknown> = Promise.resolve()
+
+function serialized<T>(write: () => Promise<T>): Promise<T> {
+  const run = writeChain.then(write, write)
+  writeChain = run.catch(() => undefined)
+  return run
+}
+
 // ─── Index helpers ────────────────────────────────────────────────────────────
 
 async function readIndex(): Promise<string[]> {
@@ -125,7 +147,14 @@ async function writeIndex(ids: string[]): Promise<void> {
  * Create a new cache entry. Status is always 'In Progress' on creation.
  * Also sets the "current" pointer to this ID.
  */
-export async function createSubmissionCache(
+export function createSubmissionCache(
+  id: string,
+  metadata: CacheMetadata,
+): Promise<SubmissionCacheFile> {
+  return serialized(() => writeNewSubmissionCache(id, metadata))
+}
+
+async function writeNewSubmissionCache(
   id: string,
   metadata: CacheMetadata,
 ): Promise<SubmissionCacheFile> {
@@ -160,30 +189,65 @@ export async function getSubmissionCache(
  * Partial update — merges into existing entry and refreshes updated_at.
  * Silently no-ops if the entry doesn't exist.
  */
-export async function updateSubmissionCache(
+export function updateSubmissionCache(
   id: string,
   updates: Partial<Omit<SubmissionCacheFile, 'id' | 'created_at'>>,
+  /** Write only while the row's status is one of these (checked in-chain). */
+  onlyIfStatus?: readonly CacheStatus[],
 ): Promise<void> {
-  const existing = await getSubmissionCache(id)
-  if (!existing) return
-  const updated: SubmissionCacheFile = {
-    ...existing,
-    ...updates,
-    updated_at: new Date().toISOString(),
-  }
-  await AsyncStorage.setItem(CACHE_PREFIX + id, JSON.stringify(updated))
+  return serialized(async () => {
+    const existing = await getSubmissionCache(id)
+    if (!existing) return
+    if (onlyIfStatus && !onlyIfStatus.includes(existing.status)) return
+    const updated: SubmissionCacheFile = {
+      ...existing,
+      ...updates,
+      updated_at: new Date().toISOString(),
+    }
+    await AsyncStorage.setItem(CACHE_PREFIX + id, JSON.stringify(updated))
+  })
+}
+
+/**
+ * Moves a row to `to`, writing `patch` with it, only if the move is legal
+ * from the row's current status (checked inside the write chain). Returns
+ * the row as written, or null when the row is missing or the move is
+ * illegal. Callers fire their analytics from the returned snapshot, so
+ * the snapshot is always the post-move row.
+ */
+export function transitionSubmission(
+  id: string,
+  to: CacheStatus,
+  patch: Partial<
+    Omit<SubmissionCacheFile, 'id' | 'created_at' | 'status'>
+  > = {},
+): Promise<SubmissionCacheFile | null> {
+  return serialized(async () => {
+    const existing = await getSubmissionCache(id)
+    if (!existing || !TRANSITIONS[existing.status].includes(to)) return null
+    const updated: SubmissionCacheFile = {
+      ...existing,
+      ...patch,
+      status: to,
+      updated_at: new Date().toISOString(),
+    }
+    await AsyncStorage.setItem(CACHE_PREFIX + id, JSON.stringify(updated))
+    return updated
+  })
 }
 
 /**
  * Hard delete. Removes from index and clears current pointer if it matched.
  * Only called from Reset confirm.
  */
-export async function deleteSubmissionCache(id: string): Promise<void> {
-  await AsyncStorage.removeItem(CACHE_PREFIX + id)
-  await writeIndex((await readIndex()).filter((i) => i !== id))
-  if ((await AsyncStorage.getItem(CURRENT_KEY)) === id) {
-    await AsyncStorage.removeItem(CURRENT_KEY)
-  }
+export function deleteSubmissionCache(id: string): Promise<void> {
+  return serialized(async () => {
+    await AsyncStorage.removeItem(CACHE_PREFIX + id)
+    await writeIndex((await readIndex()).filter((i) => i !== id))
+    if ((await AsyncStorage.getItem(CURRENT_KEY)) === id) {
+      await AsyncStorage.removeItem(CURRENT_KEY)
+    }
+  })
 }
 
 // ─── Listing ──────────────────────────────────────────────────────────────────
@@ -208,6 +272,6 @@ export async function getCurrentCacheId(): Promise<string | null> {
   return (await AsyncStorage.getItem(CURRENT_KEY)) ?? null
 }
 
-export async function clearCurrentCacheId(): Promise<void> {
-  await AsyncStorage.removeItem(CURRENT_KEY)
+export function clearCurrentCacheId(): Promise<void> {
+  return serialized(() => AsyncStorage.removeItem(CURRENT_KEY))
 }

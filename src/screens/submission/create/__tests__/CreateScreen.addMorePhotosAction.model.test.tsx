@@ -56,6 +56,9 @@ jest.mock('@/src/lib/location', () => ({
 
 let mockSource: PhotoSource = 'camera'
 
+// Draft sync has its own tests (useDraftSync.*.test.ts); this suite covers the screen's wiring.
+jest.mock('@/src/hooks/useDraftSync', () => ({ useDraftSync: () => undefined }))
+
 jest.mock('@/src/hooks/usePhotoStore', () => ({
   usePhotoStore: (sel: (s: { source: PhotoSource }) => unknown) =>
     sel({ source: mockSource }),

@@ -4,8 +4,8 @@
  * Copy is draft — see docs/planning/2026-07-14-annotation-tutorial-spec.md.
  */
 
-import type { TutorialStep } from '@/src/components/organisms/TutorialOverlay'
-import { getAppVersion, isVersionReleased } from '@/src/lib/auth/authProviders'
+import type { TutorialStep } from '@/src/types/Tutorial'
+import { getAppVersion, isVersionReleased } from '@/src/utils/appVersion'
 
 /**
  * Deferred to the Alpha milestone — see
@@ -48,7 +48,7 @@ export const ANNOTATION_TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: 'done',
     title: "That's it",
-    body: 'Annotations save automatically with your submission. Replay this anytime from Settings.',
+    body: 'Annotations save automatically with your submission.',
     primaryLabel: 'Finish',
   },
 ]

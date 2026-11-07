@@ -38,6 +38,11 @@ export async function setEmailSubscription(
       emailVerified: claims.email_verified === true,
     })
   } else {
+    // Verified or not: an account has exactly one address, so the token's
+    // address is the caller's own list entry. An unverified opt-out must
+    // land, or a later confirmation of the earlier `pending` signup would
+    // subscribe someone who opted out. This only stops email; it never
+    // deletes the account.
     await provider.unsubscribe(claims.email)
   }
   return { status: 204 }

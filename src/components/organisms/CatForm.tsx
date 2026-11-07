@@ -11,7 +11,8 @@ import {
   SEX_OPTIONS,
   HEALTH_OPTIONS,
   COAT_GROUPS,
-} from '@/src/screens/submission/cats/constants'
+  shownCoatValue,
+} from '@/src/lib/cats/formOptions'
 import { styles } from './CatForm.styles'
 
 interface CatFormProps {
@@ -52,9 +53,9 @@ export function CatForm({ form }: CatFormProps) {
           />
           <HierarchicalSegmentedControl
             label="Coat and color"
-            groups={COAT_GROUPS.map((g) => ({ ...g, children: g.colors }))}
-            group={form.pattern === 'unknown' ? undefined : form.pattern}
-            value={form.color === 'unknown' ? undefined : form.color}
+            groups={COAT_GROUPS}
+            group={shownCoatValue(form.pattern)}
+            value={shownCoatValue(form.color)}
             onChange={(pattern, color) => {
               form.setPattern(pattern)
               form.setColor(color)

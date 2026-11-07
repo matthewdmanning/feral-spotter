@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import type { EmailListConfig, EmailListProvider } from './EmailListProvider'
 
 // https://emailoctopus.com/api-documentation/v2 — "Create or update contact"
@@ -30,5 +31,22 @@ export function createEmailOctopusProvider(
     subscribe: (email, { emailVerified }) =>
       putContact(email, emailVerified ? 'subscribed' : 'pending'),
     unsubscribe: (email) => putContact(email, 'unsubscribed'),
+    // "Delete contact": the contact id may be the MD5 hash of the lowercase
+    // address. 204 on success; 404 means it was never there or is gone.
+    remove: async (email) => {
+      const contactId = createHash('md5')
+        .update(email.toLowerCase())
+        .digest('hex')
+      const response = await fetchImpl(
+        `${API_BASE}/lists/${listId}/contacts/${contactId}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${apiKey}` },
+        },
+      )
+      if (!response.ok && response.status !== 404) {
+        throw new Error(`EmailOctopus responded ${response.status}`)
+      }
+    },
   }
 }

@@ -2,6 +2,7 @@ import {
   deleteObject,
   getMetadata,
   listAll,
+  putFile,
   ref,
   updateMetadata,
   uploadString,
@@ -11,6 +12,7 @@ import {
   deleteSubmissionUploads,
   finalizeSubmissionPhotoMetadata,
   uploadSubmissionMetadata,
+  uploadSubmissionPhoto,
 } from '../firebaseUpload'
 
 beforeEach(() => jest.clearAllMocks())
@@ -112,5 +114,68 @@ describe('Firebase submission upload behavior', () => {
       '[firebaseUpload] best-effort cleanup skipped for submissions/user-4/sub-7',
       failure,
     )
+  })
+})
+
+// The object path is what storage.rules' ownership check, the photo
+// cap (photo-0 … photo-9) and the orphan sweep all key on; the percent
+// drives the progress bar.
+describe('uploadSubmissionPhoto', () => {
+  const photo = (uri: string) => ({
+    local_id: 'photo-9',
+    uri,
+    uploaded: false,
+    upload_progress: 0,
+    width: 10,
+    height: 10,
+    upload_slot: 3,
+  })
+
+  it.each([
+    ['file:///cache/a.jpg', 'jpg'],
+    ['file:///cache/A.JPG', 'jpg'],
+    ['file:///cache/a.heic', 'heic'],
+    ['file:///cache/no-extension', 'jpg'],
+  ])('stores %s under the owner path with .%s', async (uri, ext) => {
+    const result = await uploadSubmissionPhoto(photo(uri), 'uid-1', 'sub-1')
+    const path = `submissions/uid-1/sub-1/photo-3.${ext}`
+    expect(putFile).toHaveBeenCalledWith(
+      expect.objectContaining({ fullPath: path }),
+      uri,
+    )
+    expect(result).toEqual({
+      cloud_storage_path: path,
+      cloud_storage_url: 'https://example.com/mock.jpg',
+    })
+  })
+
+  it('refuses a photo with no slot rather than write a name the rules deny', async () => {
+    await expect(
+      uploadSubmissionPhoto(
+        { ...photo('file:///cache/a.jpg'), upload_slot: undefined },
+        'uid-1',
+        'sub-1',
+      ),
+    ).rejects.toThrow('has no slot')
+    expect(putFile).not.toHaveBeenCalled()
+  })
+
+  it('reports progress as a percent of bytes sent', async () => {
+    jest.mocked(putFile).mockImplementationOnce(() => {
+      const task = Promise.resolve() as Promise<void> & {
+        on: (event: string, handler: (s: object) => void) => void
+      }
+      task.on = (_event, handler) =>
+        handler({ bytesTransferred: 250, totalBytes: 1000 })
+      return task as never
+    })
+    const onProgress = jest.fn()
+    await uploadSubmissionPhoto(
+      photo('file:///cache/a.jpg'),
+      'uid-1',
+      'sub-1',
+      onProgress,
+    )
+    expect(onProgress).toHaveBeenCalledWith(25)
   })
 })

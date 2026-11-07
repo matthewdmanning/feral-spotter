@@ -9,40 +9,14 @@
 import { AppButton } from '@/src/components/atoms/AppButton'
 import { ButtonRow } from '@/src/components/molecules/ButtonRow'
 import { useSubmissionStore } from '@/src/hooks'
-import type { Coordinates } from 'expo-maps'
 import { GoogleMaps } from 'expo-maps'
-import * as Location from 'expo-location'
 import { router } from 'expo-router'
 import { MapPinIcon } from 'phosphor-react-native/src/icons/MapPin'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback } from 'react'
 import { Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
-
-// Opened before any fix exists, so it must never start on null island (0,0).
-// Falls back to the study area (matches the dev GPS stub).
-const DEFAULT_REGION: Required<Coordinates> = {
-  latitude: 34.6834,
-  longitude: -82.8374,
-}
-const DEFAULT_ZOOM = 15
-
-// Seed order (ADR 0002): last-known device position → default region. The
-// photo-EXIF seed applies only to the library-upload path, which is deferred.
-async function resolveSeedRegion(): Promise<Required<Coordinates>> {
-  try {
-    const last = await Location.getLastKnownPositionAsync()
-    if (last) {
-      return {
-        latitude: last.coords.latitude,
-        longitude: last.coords.longitude,
-      }
-    }
-  } catch {
-    // fall through to the default region
-  }
-  return DEFAULT_REGION
-}
+import { DEFAULT_ZOOM, usePinCenter } from './usePinCenter'
 
 export default function LocationPickerScreen() {
   const { theme } = useUnistyles()
@@ -51,41 +25,16 @@ export default function LocationPickerScreen() {
   )
   const setLocationType = useSubmissionStore((s) => s.setLocationType)
 
-  const [seed, setSeed] = useState<Required<Coordinates>>(DEFAULT_REGION)
-  // Latest map centre, updated as the user drags. A ref (not state) so every
-  // camera move doesn't re-render the map.
-  const centerRef = useRef<Required<Coordinates>>(DEFAULT_REGION)
-
-  useEffect(() => {
-    let active = true
-    resolveSeedRegion().then((region) => {
-      if (!active) return
-      setSeed(region)
-      centerRef.current = region
-    })
-    return () => {
-      active = false
-    }
-  }, [])
-
-  const handleCameraMove = useCallback(
-    (event: { coordinates: Coordinates }) => {
-      const { latitude, longitude } = event.coordinates
-      if (latitude != null && longitude != null) {
-        centerRef.current = { latitude, longitude }
-      }
-    },
-    [],
-  )
+  const { seed, centerKnown, handleCameraMove, currentCenter } = usePinCenter()
 
   const handleSetLocation = useCallback(() => {
     // Mark this as a manual pin first — the background Live-fix reacquire
     // (src/lib/location.ts) checks this before writing a new fix, so it
     // never clobbers a location the user picked by hand.
     setLocationType('pin')
-    setSubmissionLocation(centerRef.current)
+    setSubmissionLocation(currentCenter())
     router.back()
-  }, [setLocationType, setSubmissionLocation])
+  }, [setLocationType, setSubmissionLocation, currentCenter])
 
   const handleCancel = useCallback(() => {
     router.back()
@@ -111,12 +60,18 @@ export default function LocationPickerScreen() {
       </View>
 
       <View style={styles.footer}>
-        <Text style={styles.hint}>Drag the map to place the pin</Text>
+        <Text style={styles.hint}>
+          {centerKnown
+            ? 'Drag the map to place the pin'
+            : 'No location yet. Drag the map to where you saw the cat.'}
+        </Text>
         <ButtonRow>
           <AppButton variant="secondary" onPress={handleCancel}>
             Cancel
           </AppButton>
-          <AppButton onPress={handleSetLocation}>Set location</AppButton>
+          <AppButton onPress={handleSetLocation} disabled={!centerKnown}>
+            Set location
+          </AppButton>
         </ButtonRow>
       </View>
     </View>

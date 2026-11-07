@@ -27,19 +27,6 @@ export const styles = StyleSheet.create((theme, rt) => ({
     gap: theme.spacing.md,
   },
   cardTitle: { ...theme.textVariants.heading, color: theme.colors.text },
-  gap: { gap: theme.spacing.sm },
-  configuredRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.sm,
-    backgroundColor: theme.colors.accentSoft,
-    borderRadius: theme.radius.md,
-    padding: theme.spacing.md,
-  },
-  configuredText: {
-    ...theme.textVariants.labelSmall,
-    color: theme.colors.accentSoftText,
-  },
   hint: { ...theme.textVariants.bodySmall, color: theme.colors.muted },
   // The card gap (12) plus this margin puts 16dp on each side of a divider.
   divider: {

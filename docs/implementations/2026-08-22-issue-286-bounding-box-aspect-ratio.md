@@ -103,3 +103,8 @@ tags:
 - [ ] Resume-shape fidelity for a previously-confirmed non-square box not verified on-device
 - [ ] Handle-drag vs. simultaneous photo pinch/pan interaction not tested
 - No PR opened yet as of this note
+
+## 2026-11-02 — fix
+
+**Purpose:** Edge handles were drag-only, with no screen-reader path.
+**Change:** Each handle is `accessible`, role `adjustable`, with increment/decrement actions calling the new `useBoundingBoxFrame().resizeBy(axis, ±8)` (same clamps as the drag). Stale `onZoomChange` doc comment corrected. Not checked with TalkBack. See [app-owned dialogs note](2026-08-27-issue-337-app-owned-dialogs.md) for the rest of this a11y pass.

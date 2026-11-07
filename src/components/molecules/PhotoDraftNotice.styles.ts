@@ -8,8 +8,11 @@ export const styles = StyleSheet.create((theme) => ({
     paddingHorizontal: theme.layout.gutter,
     paddingBottom: theme.spacing.xxl,
   },
+  // Wraps at a large font size instead of clipping the second button.
   actions: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
     gap: theme.spacing.md,
   },
   message: {

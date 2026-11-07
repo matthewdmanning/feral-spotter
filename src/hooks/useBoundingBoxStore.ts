@@ -48,7 +48,6 @@ interface BoundingBoxState {
   colorUses: number[]
 
   addBox: (catId: string, photoId: string, box: BoxInput) => void
-  removeBox: (catId: string, photoId: string, boxId: string) => void
   markAbsent: (catId: string, photoId: string) => void
   getBoxes: (catId: string, photoId: string) => BoundingBox[]
   clearForCat: (catId: string) => void
@@ -103,16 +102,6 @@ export const useBoundingBoxStore = create<BoundingBoxState>()(
             absences,
           }
         })
-      },
-
-      removeBox: (catId, photoId, boxId) => {
-        const key = `${catId}:${photoId}`
-        set((s) => ({
-          boxes: {
-            ...s.boxes,
-            [key]: (s.boxes[key] ?? []).filter((b) => b.id !== boxId),
-          },
-        }))
       },
 
       // Marks the cat explicitly absent from this photo, clearing any box
@@ -215,8 +204,8 @@ export const useBoundingBoxStore = create<BoundingBoxState>()(
 
       // Object key insertion order == box-confirmation order, since addBox
       // only ever assigns new keys or overwrites an existing key in place.
-      // Skips keys left empty by removeBox — those aren't "the first box"
-      // anymore, they're a removed one.
+      // Skips keys left empty (a persisted row from before removals swept
+      // their keys) — those aren't "the first box" anymore.
       getFirstBox: (catId) => {
         const all = get().boxes
         const firstKey = Object.keys(all).find(

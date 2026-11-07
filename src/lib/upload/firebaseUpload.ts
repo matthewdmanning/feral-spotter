@@ -39,6 +39,11 @@ import type {
   SubmissionApiPayload,
   SubmissionPhoto,
 } from '@/src/types'
+import {
+  metadataObjectPath,
+  photoObjectPath,
+  submissionFolder,
+} from '@/src/lib/upload/submissionLayout'
 
 const BUCKET_URL = 'gs://project-e3d5659d-bc4f-438f-88c.firebasestorage.app'
 
@@ -49,10 +54,12 @@ let storageInstance: FirebaseStorage | null = null
 // once, regardless of how many of this file's functions run.
 function getSubmissionRef(path: string): StorageReference {
   if (!storageInstance) {
-    storageInstance = getStorage(getApp(), BUCKET_URL)
+    // Memoized only once the emulator is connected: if connecting throws,
+    // the next call retries instead of silently using the live bucket.
+    const instance = getStorage(getApp(), BUCKET_URL)
     if (USE_FIREBASE_EMULATOR) {
       connectStorageEmulator(
-        storageInstance,
+        instance,
         FIREBASE_EMULATOR_HOST,
         STORAGE_EMULATOR_PORT,
       )
@@ -68,13 +75,9 @@ function getSubmissionRef(path: string): StorageReference {
         )
       })
     }
+    storageInstance = instance
   }
   return ref(storageInstance, path)
-}
-
-function extensionFromUri(uri: string): string {
-  const match = /\.([a-zA-Z0-9]+)$/.exec(uri)
-  return match ? match[1].toLowerCase() : 'jpg'
 }
 
 export async function uploadSubmissionPhoto(
@@ -83,7 +86,16 @@ export async function uploadSubmissionPhoto(
   submissionId: string,
   onProgress?: (percent: number) => void,
 ): Promise<PhotoUploadResponse> {
-  const objectPath = `submissions/${uid}/${submissionId}/${photo.local_id}.${extensionFromUri(photo.uri)}`
+  // storage.rules accepts only photo-0 … photo-9: the slot is the name.
+  if (photo.upload_slot == null) {
+    throw new Error(`[uploadSubmissionPhoto] ${photo.local_id} has no slot`)
+  }
+  const objectPath = photoObjectPath(
+    uid,
+    submissionId,
+    photo.upload_slot,
+    photo.uri,
+  )
   const reference = getSubmissionRef(objectPath)
 
   const task = putFile(reference, photo.uri)
@@ -116,7 +128,7 @@ export async function uploadSubmissionMetadata(
 ): Promise<void> {
   if (UPLOADS_MOCK) return
 
-  const objectPath = `submissions/${uid}/${submissionId}/metadata.json`
+  const objectPath = metadataObjectPath(uid, submissionId)
   const reference = getSubmissionRef(objectPath)
 
   await uploadString(reference, JSON.stringify(payload), 'raw', {
@@ -184,7 +196,7 @@ export async function deleteSubmissionUploads(
   submissionId: string,
 ): Promise<void> {
   try {
-    const prefix = getSubmissionRef(`submissions/${uid}/${submissionId}`)
+    const prefix = getSubmissionRef(submissionFolder(uid, submissionId))
     const listing = await listAll(prefix)
     await Promise.all(
       listing.items.map((item) =>
@@ -200,7 +212,26 @@ export async function deleteSubmissionUploads(
     // Listing itself failed (offline, permissions, emulator down). The
     // scheduled sweep is the backstop; Reset carries on regardless.
     console.warn(
-      `[firebaseUpload] best-effort cleanup skipped for submissions/${uid}/${submissionId}`,
+      `[firebaseUpload] best-effort cleanup skipped for ${submissionFolder(uid, submissionId)}`,
+      error,
+    )
+  }
+}
+
+/**
+ * Best-effort delete of one uploaded photo, for a photo removed from its
+ * draft. Never throws: the object is overwritten if its slot is reused,
+ * and metadata.json lists only the photos still in the Submission.
+ */
+export async function deleteSubmissionPhoto(
+  cloudStoragePath: string,
+): Promise<void> {
+  if (UPLOADS_MOCK) return
+  try {
+    await deleteObject(getSubmissionRef(cloudStoragePath))
+  } catch (error) {
+    console.warn(
+      `[firebaseUpload] best-effort delete failed for ${cloudStoragePath}`,
       error,
     )
   }

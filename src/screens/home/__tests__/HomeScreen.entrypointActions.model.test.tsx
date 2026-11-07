@@ -7,6 +7,7 @@ import { SUBMISSION_STALE_MS } from '@/src/config/constants'
 import { getAllSubmissionCaches } from '@/src/lib/cache/submissionCache'
 import HomeScreen from '../index'
 import { useDraftStartupStore } from '@/src/hooks/useDraftStartupStore'
+import { useUIStore } from '@/src/hooks/useUIStore'
 
 /**
  * Model of every button on HomeScreen (src/screens/home/index.tsx) and what
@@ -32,15 +33,26 @@ jest.mock('expo-router', () => ({
 jest.mock('@/src/lib/auth/useAuth', () => ({
   useAuth: () => ({ isReady: true, isAuthenticated: true }),
 }))
-jest.mock('@/src/hooks/useConsentStore', () => ({
-  hasAcceptedConsent: () => true,
-}))
+// Real consent store, seeded as a returning user who answered every step.
+jest.mock('@/src/hooks/useConsentStore', () => {
+  const actual = jest.requireActual('@/src/hooks/useConsentStore')
+  actual.useConsentStore.setState({
+    accepted: true,
+    acceptedVersion: actual.CONSENT_VERSION,
+    emailOptIn: false,
+    analyticsAccepted: false,
+  })
+  return actual
+})
 jest.mock('@/src/lib/cache/submissionCache', () => ({
   getAllSubmissionCaches: jest.fn(),
+  getCurrentCacheId: jest.fn().mockResolvedValue(null),
 }))
 jest.mock('@/src/hooks/usePhotoStore', () => ({
-  usePhotoStore: (sel: (s: { source: null }) => unknown) =>
-    sel({ source: null }),
+  usePhotoStore: Object.assign(
+    (sel: (s: { source: null }) => unknown) => sel({ source: null }),
+    { getState: () => ({ source: null }) },
+  ),
 }))
 const mockPickFromLibrary = jest.fn()
 jest.mock('@/src/hooks/useLibraryPhotoPicker', () => ({
@@ -83,6 +95,7 @@ describe('HomeScreen entrypoint buttons — model-based test', () => {
   beforeEach(() => {
     useDraftStartupStore.setState({ phase: 'ready', task: Promise.resolve() })
     jest.clearAllMocks()
+    useUIStore.setState({ dialog: null })
   })
 
   const model = createTestModel(buttonsMachine)
@@ -182,7 +195,7 @@ describe('HomeScreen entrypoint buttons — model-based test', () => {
       events: [{ type: 'MOUNT_IN_PROGRESS' }, { type: 'PRESS_RESUME' }],
     },
     {
-      name: 'New Sighting also goes to Submission Details',
+      name: 'New Sighting asks before clearing the draft',
       events: [{ type: 'MOUNT_IN_PROGRESS' }, { type: 'PRESS_NEW' }],
     },
   ] as const
@@ -198,10 +211,15 @@ describe('HomeScreen entrypoint buttons — model-based test', () => {
       if (events.some((e) => e.type === 'PRESS_LIBRARY')) {
         expect(mockPickFromLibrary).toHaveBeenCalledTimes(1)
       }
-      if (
-        events.some((e) => e.type === 'PRESS_RESUME' || e.type === 'PRESS_NEW')
-      ) {
+      if (events.some((e) => e.type === 'PRESS_RESUME')) {
         expect(router.push).toHaveBeenCalledWith('/submission/create')
+      }
+      // New Sighting starts over, so it must not reopen the old draft.
+      if (events.some((e) => e.type === 'PRESS_NEW')) {
+        expect(router.push).not.toHaveBeenCalled()
+        expect(useUIStore.getState().dialog?.title).toBe(
+          'Start a New Sighting?',
+        )
       }
     })
   })

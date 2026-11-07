@@ -8,6 +8,7 @@ import { File, Paths } from 'expo-file-system'
 import {
   createSubmissionCache,
   getSubmissionCache,
+  updateSubmissionCache,
 } from '@/src/lib/cache/submissionCache'
 import { deleteSubmissionUploads } from '@/src/lib/upload/firebaseUpload'
 import { discardUnsurvivingDraft } from '../draft'
@@ -23,7 +24,10 @@ jest.mock('@/src/lib/upload/firebaseUpload', () => ({
   deleteSubmissionUploads: jest.fn(),
 }))
 jest.mock('@/src/lib/auth', () => ({
-  authProvider: { getCurrentUser: () => ({ uid: 'uid-test' }) },
+  authProvider: {
+    getCurrentUser: () => ({ uid: 'uid-test' }),
+    onAuthStateChanged: () => () => {},
+  },
 }))
 
 const NOW = Date.UTC(2026, 9, 31, 12)
@@ -112,6 +116,26 @@ describe('discardUnsurvivingDraft (#424)', () => {
     expect(usePhotoStore.getState().source).toBeNull()
     expect(useSubmissionStore.getState().submission.address).toBeUndefined()
   })
+
+  it.each([
+    ['fresh', NOW - HOUR_MS],
+    ['stale', NOW - SUBMISSION_STALE_MS - HOUR_MS],
+  ])(
+    'keeps a %s draft killed mid-send in the bucket and marks it Failed',
+    async (_label, updatedAt) => {
+      // The app died after Submit started: metadata.json may have landed,
+      // so its objects are the user's Sighting, not abandoned uploads.
+      seedDraft(updatedAt)
+      await createSubmissionCache(CACHE_ID, {
+        location_method: 'device',
+        time_method: 'device',
+      })
+      await updateSubmissionCache(CACHE_ID, { status: 'Sending' })
+      await discardUnsurvivingDraft(NOW)
+      expect(deleteSubmissionUploads).not.toHaveBeenCalled()
+      expect((await getSubmissionCache(CACHE_ID))?.status).toBe('Failed')
+    },
+  )
 
   it('signals readiness before stale cache cleanup and keeps new capture state', async () => {
     const oldFile = new File(Paths.cache, 'startup-old.jpg')

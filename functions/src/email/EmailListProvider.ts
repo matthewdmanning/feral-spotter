@@ -9,6 +9,11 @@ export interface EmailListProvider {
    */
   subscribe(email: string, options: { emailVerified: boolean }): Promise<void>
   unsubscribe(email: string): Promise<void>
+  /**
+   * Delete the address from the list entirely (account deletion, #433).
+   * Resolves when the address is not on the list: already gone is done.
+   */
+  remove(email: string): Promise<void>
 }
 
 export interface EmailListConfig {

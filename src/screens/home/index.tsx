@@ -1,15 +1,19 @@
 import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
-import { AppButton, type ColumnButton } from '@/src/components/atoms/AppButton'
+import { AppButton } from '@/src/components/atoms/AppButton'
+import type { ColumnButton } from '@/src/components/molecules/BottomButtonColumn'
 import { BottomButtonColumn } from '@/src/components/molecules/BottomButtonColumn'
 import { PhotoDraftNotice } from '@/src/components/molecules/PhotoDraftNotice'
 import {
   APP_STARTED_AT,
   ENTRYPOINT_BUFFER_PERCENT,
 } from '@/src/config/constants'
-import { confirmResetSubmission } from '@/src/hooks/confirmResetSubmission'
+import {
+  confirmResetSubmission,
+  confirmStartNewSighting,
+} from '@/src/hooks/confirmResetSubmission'
 import { useDraftStartupStore } from '@/src/hooks/useDraftStartupStore'
 import { useEntryGate } from '@/src/hooks/useEntryGate'
-import { useLibraryPhotoPicker } from '@/src/hooks/useLibraryPhotoPicker'
+import { usePhotoEntrypoints } from '@/src/hooks/usePhotoEntrypoints'
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useResumableDraft } from '@/src/hooks/useResumableDraft'
 import { computeEntrypointDiameter } from '@/src/lib/home/entrypointDiameter'
@@ -123,7 +127,6 @@ function EntrypointCircle({
       <AppButton
         onPress={onPress}
         variant={variant}
-        size="circle"
         diameter={diameter}
         disabled={disabled}
         icon={<Icon size={theme.iconSize.xxl} color={color} />}
@@ -149,13 +152,10 @@ export default function HomeScreen() {
   useEntryGate()
   const columnVisible = useResumableDraft()
 
-  // A draft is single-source by construction (ADR 0002 amendment): once the
-  // shared pool holds a photo, the entrypoint for the *other* source is
-  // disabled until the draft is submitted or reset (pool cleared).
+  // Single-source rule (ADR 0002 amendment): see usePhotoEntrypoints.
+  const { camera, library } = usePhotoEntrypoints()
   const photoSource = usePhotoStore((s) => s.source)
   const draftReady = useDraftStartupStore((s) => s.phase === 'ready')
-  const cameraDisabled = draftReady && photoSource === 'library'
-  const libraryDisabled = !draftReady || photoSource === 'camera'
   // A pool last changed before this process started was restored, not begun here.
   const draftOrigin = usePhotoStore((s) =>
     s.updated_at === null || s.updated_at < APP_STARTED_AT
@@ -163,10 +163,6 @@ export default function HomeScreen() {
       : 'in-session',
   )
 
-  const { pickFromLibrary } = useLibraryPhotoPicker()
-
-  const handleCamera = useCallback(() => router.navigate('/camera'), [])
-  const handleNew = useCallback(() => router.push('/submission/create'), [])
   const handleContinue = useCallback(
     () => router.push('/submission/create'),
     [],
@@ -183,11 +179,11 @@ export default function HomeScreen() {
       {
         key: 'new',
         label: 'New Sighting',
-        onPress: handleNew,
+        onPress: confirmStartNewSighting,
         variant: 'secondary',
       },
     ],
-    [handleContinue, handleNew],
+    [handleContinue],
   )
 
   return (
@@ -220,16 +216,16 @@ export default function HomeScreen() {
             Icon={CameraIcon}
             variant="primary"
             diameter={entrypointDiameter}
-            disabled={cameraDisabled}
-            onPress={handleCamera}
+            disabled={camera.disabled}
+            onPress={camera.open}
           />
           <EntrypointCircle
             label="Upload Photos"
             Icon={ImageSquareIcon}
             variant="secondary"
             diameter={entrypointDiameter}
-            disabled={libraryDisabled}
-            onPress={pickFromLibrary}
+            disabled={library.disabled}
+            onPress={library.open}
           />
         </View>
 

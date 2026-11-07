@@ -25,43 +25,29 @@
  */
 
 import { showAlert } from '@/src/hooks/useUIStore'
-import { clearActiveCatIfMatches } from '@/src/hooks/useActiveCatFlow'
-import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
-import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
+import { removeCatFromDraft } from '@/src/hooks/catPass'
 import { useCallback } from 'react'
 
 export function useRemoveCat(): (
   catId: string,
   onRemoved?: () => void,
 ) => void {
-  const removeCat = useSubmissionStore((s) => s.removeCat)
-  const clearForCat = useBoundingBoxStore((s) => s.clearForCat)
-
-  return useCallback(
-    (catId: string, onRemoved?: () => void) => {
-      showAlert(
-        'Remove this cat?',
-        'This removes the cat and the boxes you drew for it. Your photos are not deleted, and your other cats are not affected.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Remove',
-            style: 'destructive',
-            onPress: () => {
-              clearForCat(catId)
-              removeCat(catId)
-              // If the removed cat happened to be the in-progress one,
-              // leaving its id set would let the next "Add a Cat" resume a cat
-              // that no longer exists — the same stale-id defect #304 fixed on
-              // the abandon path. useActiveCatFlow owns that id and reads it
-              // fresh; this hook does not touch its store directly.
-              clearActiveCatIfMatches(catId)
-              onRemoved?.()
-            },
+  return useCallback((catId: string, onRemoved?: () => void) => {
+    showAlert(
+      'Remove this cat?',
+      'This removes the cat and the boxes you drew for it. Your photos are not deleted, and your other cats are not affected.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => {
+            // Boxes, the cat, and its in-progress id together (#304).
+            removeCatFromDraft(catId)
+            onRemoved?.()
           },
-        ],
-      )
-    },
-    [clearForCat, removeCat],
-  )
+        },
+      ],
+    )
+  }, [])
 }

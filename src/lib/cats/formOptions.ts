@@ -1,5 +1,5 @@
 /**
- * screens/submission/cats/constants.ts
+ * lib/cats/formOptions.ts
  * Options arrays, default values, and pure utilities for the cat observation
  * form — derived from attributes.ts's single per-field table. No React
  * imports — safe to import from hooks and non-component contexts.
@@ -39,3 +39,13 @@ export const SEX_OPTIONS = optionsFor<CatSex>('sex')
 export const HEALTH_OPTIONS = optionsFor<HealthLabel>('healthLabel')
 
 export { COAT_GROUPS } from '@/src/lib/cats/attributes'
+
+/**
+ * The coat picker has no Unknown group: a saved 'unknown' (the default
+ * filled in at save) shows as nothing picked, like a never-touched field.
+ */
+export function shownCoatValue<T extends string>(
+  value: T | undefined,
+): Exclude<T, 'unknown'> | undefined {
+  return value === 'unknown' ? undefined : (value as Exclude<T, 'unknown'>)
+}

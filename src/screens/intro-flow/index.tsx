@@ -26,18 +26,6 @@ import { styles } from './index.styles'
 export default function IntroFlowScreen() {
   const [step, setStep] = useState(0)
 
-  // T1 has no route to pop to — hardware back would otherwise fall through
-  // to native stack pop and exit past the first screen unconfirmed. T2-T4
-  // are left to their default pop (returns to the previous slide), matching
-  // the rest of this flow's unhandled-back behavior.
-  useBackHandler(
-    useCallback(() => {
-      if (step !== 0) return false
-      confirmExitApp(EXIT_WARNING_TITLE, EXIT_WARNING_BODY)
-      return true
-    }, [step]),
-  )
-
   const finish = useCallback(() => {
     router.replace('/consent')
   }, [])
@@ -54,6 +42,17 @@ export default function IntroFlowScreen() {
   const goBack = useCallback(() => {
     setStep((s) => Math.max(0, s - 1))
   }, [])
+
+  // Slides are local state, not routes, and this screen is the only stack
+  // entry: an unhandled Back exits the app. T1 asks first; T2-T4 step back
+  // a slide.
+  useBackHandler(
+    useCallback(() => {
+      if (step === 0) confirmExitApp(EXIT_WARNING_TITLE, EXIT_WARNING_BODY)
+      else goBack()
+      return true
+    }, [step, goBack]),
+  )
 
   const slide = ONBOARDING_SLIDES[step]
   const isAgreementSlide = step === AGREEMENT_SLIDE_INDEX

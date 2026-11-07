@@ -28,9 +28,8 @@
  */
 
 import { showAlert } from '@/src/hooks/useUIStore'
-import { useActiveCatFlow } from '@/src/hooks/useActiveCatFlow'
+import { abandonCatPass } from '@/src/hooks/catPass'
 import { useActiveCatFlowStore } from '@/src/hooks/useActiveCatFlowStore'
-import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { usePreventRemove } from 'expo-router'
 import { useEffect, useRef } from 'react'
 
@@ -41,8 +40,6 @@ import { useEffect, useRef } from 'react'
  */
 export function useAbandonCatGuard(isEditingSavedCat: boolean): void {
   const activeCatId = useActiveCatFlowStore((s) => s.activeCatId)
-  const clearForCat = useBoundingBoxStore((s) => s.clearForCat)
-  const { handleAbandonPass } = useActiveCatFlow()
   // usePreventRemove returns the disabler its own callback needs; a ref
   // hands it over without reading a variable before it is declared.
   const disablePreventionRef = useRef<() => void>(() => {})
@@ -69,13 +66,10 @@ export function useAbandonCatGuard(isEditingSavedCat: boolean): void {
             text: 'Remove progress on this cat',
             style: 'destructive',
             onPress: () => {
-              clearForCat(currentCatId)
               disablePreventionRef.current()
-              // Clears the id and picks the destination itself — Cat List
-              // when other cats exist, Home when none, since Cat List's
-              // zero-cat auto-skip would otherwise bounce straight back
-              // into annotate.
-              handleAbandonPass()
+              // Drops the unfinished cat's boxes and id, and picks the
+              // destination (hooks/catPass.ts).
+              abandonCatPass()
             },
           },
         ],

@@ -5,6 +5,7 @@
  */
 
 import Constants from 'expo-constants'
+import { getAppVersion } from '@/src/utils/appVersion'
 
 /** True in development or pre-release builds. Gates analytics events. */
 export const IS_PRERELEASE: boolean =
@@ -22,20 +23,17 @@ export const FEATURE_FLAGS = {
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS
 
-/** App version from Expo config. */
-export const APP_VERSION: string = Constants.expoConfig?.version ?? '1.0.0'
-
-/** Maximum photos per submission. Override via EXPO_PUBLIC_MAX_PHOTOS. */
-export const MAX_PHOTOS = Number(process.env.EXPO_PUBLIC_MAX_PHOTOS) || 10
-
 /**
- * Maximum distinct submissions per uid (#270), enforced by
- * storage.rules' isValidMetadataWrite against the
- * submissionCounts/{uid} doc functions/src/index.ts maintains.
- * Documentation only — rules can't read this constant, so the literal in
- * storage.rules must be kept in sync by hand.
+ * App version from Expo config. Same source and fallback as the release
+ * gates, so Settings never shows a version the gates disagree with.
  */
-export const MAX_SUBMISSIONS_PER_UID = 250
+export const APP_VERSION: string = getAppVersion()
+
+// Shared with storage.rules and functions/ (see config/submissionLimits.ts).
+export {
+  MAX_PHOTOS,
+  MAX_SUBMISSIONS_PER_UID,
+} from '@/src/config/submissionLimits'
 
 /**
  * Explicit opt-in tag for test-drive builds with no real Firebase project
@@ -88,9 +86,6 @@ export const AUTOSAVE_TEXT_MS = 800
 
 /** Autosave debounce for instant selections — segmented controls (ms). */
 export const AUTOSAVE_INSTANT_MS = 400
-
-/** Autosave status display duration after save completes (ms). */
-export const AUTOSAVE_CLEAR_MS = 2000
 
 /** A draft untouched for longer than this is stale: Home stops offering "Continue Observation" and the start-up check discards its photos (ms). */
 export const SUBMISSION_STALE_MS = 48 * 60 * 60 * 1000

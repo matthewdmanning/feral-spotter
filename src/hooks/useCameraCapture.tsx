@@ -7,12 +7,15 @@
  * state, navigation — comes from useCapturedPhotoWorkflow.
  */
 
+import {
+  isAtPhotoLimit,
+  showPhotoLimitReached,
+} from '@/src/hooks/usePhotoStore'
 import { useCapturedPhotoWorkflow } from '@/src/hooks/useCapturedPhotoWorkflow'
 import { useIosIdentificationCapture } from '@/src/hooks/useIosIdentificationCapture'
 import { useSettingsStore } from '@/src/hooks/useSettingsStore'
 import { useConsentStore } from '@/src/hooks/useConsentStore'
 import { captureEvent, EVENTS } from '@/src/lib/analytics/analytics'
-import { useAuth } from '@/src/lib/auth/useAuth'
 import { startLocationCapture } from '@/src/lib/location'
 import type { SubmissionPhoto } from '@/src/types'
 import { type FlashListRef } from '@shopify/flash-list'
@@ -65,8 +68,6 @@ export function useCameraCapture(): CameraCaptureResult {
     (s) => s.settings.camera_performance_checks === true,
   )
   const improvedCapture = Platform.OS === 'android' && improvedCaptureSetting
-
-  const { user } = useAuth()
 
   const {
     isActive,
@@ -139,6 +140,10 @@ export function useCameraCapture(): CameraCaptureResult {
       return
     }
     if (isTakingPhotoRef.current) return
+    if (isAtPhotoLimit()) {
+      showPhotoLimitReached()
+      return
+    }
 
     isTakingPhotoRef.current = true
     setIsTakingPhoto(true)
@@ -201,8 +206,12 @@ export function useCameraCapture(): CameraCaptureResult {
             : {}),
         })
 
-        startPhotoUpload(submission, user?.uid)
-      } while (captureMode === 'burst' && !burstStopRequested.current)
+        startPhotoUpload()
+      } while (
+        captureMode === 'burst' &&
+        !burstStopRequested.current &&
+        !isAtPhotoLimit()
+      )
 
       if (captureMode === 'burst') {
         captureEvent(EVENTS.CAMERA_CAPTURE_SEQUENCE_COMPLETED, {
@@ -263,7 +272,6 @@ export function useCameraCapture(): CameraCaptureResult {
     startPhotoUpload,
     triggerFlash,
     canCapture,
-    user,
   ])
 
   useEffect(() => {

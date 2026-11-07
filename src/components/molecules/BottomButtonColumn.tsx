@@ -11,7 +11,17 @@
  * primary/secondary/ghost/danger colour maps, which drifted from AppButton's
  * variants of the same names.
  */
-import { AppButton, type ColumnButton } from '@/src/components/atoms/AppButton'
+import { AppButton, type ButtonVariant } from '@/src/components/atoms/AppButton'
+
+/** One button in a BottomButtonColumn. */
+export interface ColumnButton {
+  key: string
+  label: string
+  onPress: () => void
+  variant?: ButtonVariant
+  disabled?: boolean
+  accessibilityLabel?: string
+}
 import { useEffect } from 'react'
 import Animated, {
   Easing,

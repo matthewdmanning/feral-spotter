@@ -5,26 +5,24 @@ import { TextButton } from '@/src/components/atoms/TextButton'
 import { ButtonRow } from '@/src/components/molecules/ButtonRow'
 import { FieldRow } from '@/src/components/molecules/FieldRow'
 import { DateTimePickerButton } from '@/src/components/organisms/DateTimePicker'
-import { showAlert, useSubmissionStore } from '@/src/hooks'
-import { startFreshPass } from '@/src/hooks/useActiveCatFlow'
-import { useBackHandler } from '@/src/hooks/useBackHandler'
+import { useSubmissionStore } from '@/src/hooks'
+import {
+  openCatForm,
+  startCatPass,
+  useCatListLanding,
+} from '@/src/hooks/catPass'
+import { useDraftExitPrompt } from '@/src/hooks/useDraftExitPrompt'
 import { useDraftSync } from '@/src/hooks/useDraftSync'
 import { useSubmissionSubmit } from '@/src/hooks/useSubmissionSubmit'
-import { useLibraryPhotoPicker } from '@/src/hooks/useLibraryPhotoPicker'
-import { usePhotoStore } from '@/src/hooks/usePhotoStore'
+import { usePhotoEntrypoints } from '@/src/hooks/usePhotoEntrypoints'
 import { useRemoveCat } from '@/src/hooks/useRemoveCat'
 import { draftWarnings } from '@/src/lib/submission/status'
-import {
-  router,
-  useIsFocused,
-  useLocalSearchParams,
-  type Href,
-} from 'expo-router'
+import { router } from 'expo-router'
 import { CaretDownIcon } from 'phosphor-react-native/src/icons/CaretDown'
 import { CaretUpIcon } from 'phosphor-react-native/src/icons/CaretUp'
 import { CheckCircleIcon } from 'phosphor-react-native/src/icons/CheckCircle'
 import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { describeCat, summarizeCat } from '@/src/lib/cats/attributes'
@@ -34,95 +32,31 @@ import { styles } from './index.styles'
 // view. Location/Time have no editable fields anymore — a Live fix runs in
 // the background from camera-open (#128) and is only ever corrected through
 // the map picker, reached by tapping the warning icon below.
-const LOCATION_PICKER_ROUTE = '/submission/location-picker' as Href
+const LOCATION_PICKER_ROUTE = '/submission/location-picker'
 
 export default function CreateSubmissionScreen() {
   const { theme } = useUnistyles()
   const removeCatWithConfirm = useRemoveCat()
-  // #299: set by the Cat Form's remove, which lands back here. Distinguishes
-  // "emptied by removing the last cat" from "arrived with nothing recorded",
-  // which the auto-skip below treats very differently.
-  const { removed } = useLocalSearchParams<{ removed?: string }>()
 
   const submission = useSubmissionStore((s) => s.submission)
   const setManualTime = useSubmissionStore((s) => s.setManualTime)
   const cats = useSubmissionStore((s) => s.cats)
 
   useDraftSync()
-  const { handleDone, handleReset, handleDiscard } = useSubmissionSubmit()
+  const { handleDone, handleReset, handleDiscard, isSubmitting } =
+    useSubmissionSubmit()
 
-  // No back path off this screen (#156) — instead, a bottom action returns
-  // the user to whichever entrypoint sourced this draft (ADR 0002
-  // amendment's single-source-by-construction `source`).
-  const photoSource = usePhotoStore((s) => s.source)
-  const { pickFromLibrary } = useLibraryPhotoPicker()
-  const addMorePhotosLabel =
-    photoSource === 'camera' ? 'Take More Photos' : 'Select More Photos'
-  const handleAddMorePhotos = useCallback(() => {
-    if (photoSource === 'camera') {
-      router.navigate('/camera')
-    } else {
-      pickFromLibrary()
-    }
-  }, [photoSource, pickFromLibrary])
-
-  // The header back and swipe-back are off here, but Android's hardware Back
-  // still pops to Home, which offers a draft's owner nothing: they either
-  // keep adding photos or drop the draft. Ask which. Gated on focus because
-  // this screen stays mounted under Cat Form and the map picker, whose own
-  // Back must not reach this handler.
-  const isFocused = useIsFocused()
-  const handleBackPress = useCallback(() => {
-    if (!isFocused) return false
-    showAlert('Leave Submission?', 'Your draft is not sent yet.', [
-      { text: 'Stay', style: 'cancel' },
-      {
-        text: addMorePhotosLabel,
-        onPress: handleAddMorePhotos,
-      },
-      { text: 'Discard Draft', style: 'destructive', onPress: handleDiscard },
-    ])
-    return true
-  }, [isFocused, addMorePhotosLabel, handleAddMorePhotos, handleDiscard])
-  useBackHandler(handleBackPress)
+  // No back path off this screen (#156): a bottom action reopens the
+  // source that started the draft, and Back asks what to do.
+  const { addMore } = usePhotoEntrypoints()
+  useDraftExitPrompt({ isSubmitting, addMore, onDiscard: handleDiscard })
 
   // One cat open at a time: a stack of fully open cats would push the bottom
   // actions off a phone screen.
   const [expandedCatId, setExpandedCatId] = useState<string | null>(null)
 
-  // Zero-friction on-ramp (#173): with no cats recorded yet, skip straight
-  // into annotate instead of rendering an empty Cat List. replace (not
-  // push) so annotate's hardware back pops past Cat List entirely rather
-  // than landing back on it and re-triggering this redirect.
-  //
-  // Gate on the mount-time snapshot (#189), not a live cats.length watch:
-  // this is a landing-time check ("I arrived here with nothing recorded"),
-  // not a standing invariant. A live watch also fires when cats drops to 0
-  // for a reason other than landing here empty -- e.g. handleReset's own
-  // router.replace('/') racing this effect's replace('/submission/annotate')
-  // for whichever one wins the actual navigation, sending Reset to
-  // annotate's empty state instead of Home. useEffect always runs after the
-  // triggering synchronous callback finishes, so reordering handleReset's
-  // own clearDraft()/router.replace() calls can't fix that race -- only not
-  // re-running this effect on every cats.length change can.
-  //
-  // #299: removing the last cat must NOT auto-skip. Landing here with nothing
-  // recorded means a first pass, where the user has to see the photos to pick
-  // a cat out of them. Arriving because they just deleted their last cat is
-  // the opposite situation — they may want to re-annotate, or they may want
-  // to describe a cat they saw but can't pick out of a photo. That is their
-  // call, so the empty state offers both instead of forcing annotate.
-  // Lazy useState, not useRef: same mount-time snapshot, but the render below
-  // has to read it to decide between "redirect in flight" and "empty state,"
-  // and reading a ref during render is a React Compiler violation.
-  const [autoSkipPending] = useState(() => cats.length === 0 && removed !== '1')
-  useEffect(() => {
-    if (!autoSkipPending) return
-    startFreshPass([])
-    router.replace('/submission/annotate')
-    // autoSkipPending is frozen at mount, so listing it changes nothing at
-    // runtime and keeps exhaustive-deps quiet.
-  }, [autoSkipPending])
+  // Landing rule (#173, #189, #299): see useCatListLanding.
+  const { autoSkipPending } = useCatListLanding()
 
   // Same warning-icon/tap-to-fix treatment for location and for a Library
   // pick whose photos lacked EXIF time (ADR 0003).
@@ -143,10 +77,7 @@ export default function CreateSubmissionScreen() {
   // Annotate-first (ADR 0004): discovering a cat starts with boxing it, not
   // filling out a form — Cat Form is reached from annotate's Boxing
   // Complete, not from here.
-  const handleAddCat = useCallback(() => {
-    startFreshPass(cats.map((cat) => cat.local_id))
-    router.push('/submission/annotate')
-  }, [cats])
+  const handleAddCat = startCatPass
 
   // Auto-skip in flight (#173) — nothing to show this frame. Only while the
   // redirect is actually pending: once cats hits 0 by removal instead, the
@@ -168,7 +99,11 @@ export default function CreateSubmissionScreen() {
             Clear. It still confirms first (handleReset). */}
         <View style={styles.header}>
           <Text style={styles.title}>Submission</Text>
-          <TextButton onPress={handleReset} tone="danger">
+          <TextButton
+            onPress={handleReset}
+            tone="danger"
+            disabled={isSubmitting}
+          >
             Reset
           </TextButton>
         </View>
@@ -272,12 +207,7 @@ export default function CreateSubmissionScreen() {
                       <ButtonRow>
                         <AppButton
                           variant="secondary"
-                          onPress={() =>
-                            router.push({
-                              pathname: '/submission/cats',
-                              params: { edit: cat.local_id },
-                            })
-                          }
+                          onPress={() => openCatForm(cat.local_id)}
                         >
                           Edit
                         </AppButton>
@@ -311,10 +241,7 @@ export default function CreateSubmissionScreen() {
             // Describing a cat without annotating it first: it saves with an
             // empty photo_local_ids (useCatSubmit derives that from boxes) — a
             // record of a cat that was seen but can't be picked out of a photo.
-            <AppButton
-              onPress={() => router.push('/submission/cats')}
-              variant="secondary"
-            >
+            <AppButton onPress={() => openCatForm()} variant="secondary">
               Describe a Cat
             </AppButton>
           )}
@@ -332,10 +259,18 @@ export default function CreateSubmissionScreen() {
           </Text>
         )}
         <ButtonRow>
-          <AppButton variant="secondary" onPress={handleAddMorePhotos}>
-            {addMorePhotosLabel}
+          <AppButton
+            variant="secondary"
+            onPress={addMore.open}
+            disabled={isSubmitting}
+          >
+            {addMore.label}
           </AppButton>
-          <AppButton onPress={handleDone} disabled={cats.length === 0}>
+          <AppButton
+            onPress={handleDone}
+            disabled={cats.length === 0}
+            loading={isSubmitting}
+          >
             Finished!
           </AppButton>
         </ButtonRow>

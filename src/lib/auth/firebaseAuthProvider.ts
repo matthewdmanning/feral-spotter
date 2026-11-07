@@ -80,8 +80,9 @@ export function createFirebaseAuthProvider(): IAuthProvider {
     getToken: async () => {
       const user = auth.currentUser
       if (!user) throw new Error('NOT_SIGNED_IN')
-      // Non-force-refresh: an expired-but-cached token still resolves offline,
-      // rather than blocking on a network round trip to refresh it.
+      // Non-force-refresh: a still-valid cached token resolves without a
+      // network round trip. An expired one is refreshed over the network,
+      // so offline it rejects; callers treat that as a failed request.
       return user.getIdToken(false)
     },
     getCurrentUser: () => toAuthUser(auth.currentUser),

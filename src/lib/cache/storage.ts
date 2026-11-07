@@ -1,5 +1,5 @@
 /**
- * utils/storage.ts
+ * lib/cache/storage.ts
  * AsyncStorage-backed Zustand persist storage adapter.
  *
  * Usage in any Zustand store:
@@ -24,9 +24,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 // render, so an AsyncStorage read would paint the wrong theme and then flip it.
 // That read was previously vestigial and slated for removal; it is now the real
 // persistence path behind the System/Light/Dark control, so MMKV stays.
-import { createMMKV } from 'react-native-mmkv'
-
-export const mmkvInstance = createMMKV({ id: 'feralspotter' })
+export { mmkvInstance } from '@/src/utils/mmkv'
 
 export const asyncStorage = {
   getItem: (key: string) => AsyncStorage.getItem(key),

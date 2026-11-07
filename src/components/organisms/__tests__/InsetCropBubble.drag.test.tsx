@@ -79,7 +79,7 @@ function renderBubble(onHoldChange?: (held: boolean) => void) {
     <InsetCropBubble
       catId="cat-1"
       edge="top-center"
-      draggable
+
       onHoldChange={onHoldChange}
     />,
   )
@@ -142,6 +142,33 @@ describe('InsetCropBubble drag', () => {
     expect(position().x).toBeCloseTo(0)
   })
 
+  it('moves only up and down mid-drag and keeps a drop on screen', () => {
+    const dropAt = (x: number, y: number) => {
+      const bubble = renderBubble()
+      act(() => {
+        bubble.touches.onResponderGrant(touch(0, 0))
+        bubble.touches.onResponderMove(touch(x, y))
+      })
+      const midDrag = bubble.position()
+      act(() => {
+        bubble.touches.onResponderRelease(touch(x, y))
+        jest.advanceTimersByTime(300)
+      })
+      const dropped = bubble.position()
+      bubble.unmount()
+      return { midDrag, dropped }
+    }
+
+    // Finger went 90dp left; the bubble stays in its column.
+    expect(dropAt(-90, 200).midDrag.x).toBeCloseTo(0)
+    // Above the dock settles at the dock.
+    expect(dropAt(0, -500).dropped.y).toBeCloseTo(0)
+    // Far past the bottom settles back on screen.
+    const low = dropAt(0, 100_000).dropped.y
+    expect(low).toBeGreaterThan(0)
+    expect(low).toBeLessThan(100_000)
+  })
+
   it('keeps a dragged bubble’s height through expand and collapse', async () => {
     const { touches, toggle, position } = renderBubble()
     act(() => {
@@ -181,9 +208,14 @@ describe('InsetCropBubble drag', () => {
   it('puts the touch handlers on the drawn bubble, not the larger wrapper', () => {
     // The wrapper's layout box is the full unscaled bubble, far bigger than a
     // collapsed one looks. Handlers there made that whole box draggable.
-    const { wrap, touches } = renderBubble()
+    const onHoldChange = jest.fn()
+    const { wrap, touches } = renderBubble(onHoldChange)
     expect(wrap.props.onResponderGrant).toBeUndefined()
     expect(wrap.props.pointerEvents).toBe('box-none')
-    expect(touches.onResponderGrant).toBeDefined()
+    // The drawn bubble's handler is the real drag: a grant starts a hold.
+    act(() => {
+      touches.onResponderGrant(touch(0, 0))
+    })
+    expect(onHoldChange).toHaveBeenLastCalledWith(true)
   })
 })

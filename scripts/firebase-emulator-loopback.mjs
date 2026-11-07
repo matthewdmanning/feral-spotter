@@ -1,7 +1,7 @@
 /**
- * firebase-tools 15 routes even emulator-to-emulator reads through ProxyAgent,
- * ignoring NO_PROXY. A rejected loopback request is treated as a missing
- * Firestore document, which can silently bypass Storage counter guards.
+ * firebase-tools 15 routes even emulator-to-emulator requests through
+ * ProxyAgent, ignoring NO_PROXY, so a loopback call to a local emulator can be
+ * rejected by the proxy.
  * Keep external traffic on the same proxy; only local emulator hosts are direct.
  */
 import { createRequire } from 'node:module'

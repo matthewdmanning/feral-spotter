@@ -21,9 +21,15 @@ export function useSighting(id: string | undefined): SightingResult {
   }>()
   useEffect(() => {
     let active = true
-    ;(id ? getSubmissionCache(id) : Promise.resolve(null)).then((sighting) => {
-      if (active) setLoaded({ id, sighting })
-    })
+    ;(id ? getSubmissionCache(id) : Promise.resolve(null))
+      .then((sighting) => {
+        if (active) setLoaded({ id, sighting })
+      })
+      // A failed read shows "not found" rather than loading forever.
+      .catch((error) => {
+        console.error('[useSighting]', error)
+        if (active) setLoaded({ id, sighting: null })
+      })
     return () => {
       active = false
     }

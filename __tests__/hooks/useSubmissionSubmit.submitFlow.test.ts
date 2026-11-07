@@ -1,4 +1,5 @@
 import * as ui from '@/src/hooks/useUIStore'
+import { useAuthStore } from '@/src/lib/auth/authStore'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { act, renderHook } from '@testing-library/react-native'
 
@@ -27,12 +28,6 @@ jest.mock('expo-crypto', () => ({
   randomUUID: jest.fn(() => 'cat-1'),
 }))
 
-jest.mock('expo-secure-store', () => ({
-  getItemAsync: jest.fn(),
-  setItemAsync: jest.fn(),
-  deleteItemAsync: jest.fn(),
-}))
-
 jest.mock('posthog-react-native', () => ({
   usePostHog: () => null,
 }))
@@ -40,10 +35,6 @@ jest.mock('posthog-react-native', () => ({
 jest.mock('@/src/lib/upload/firebaseUpload', () => ({
   uploadSubmissionMetadata: jest.fn(),
   finalizeSubmissionPhotoMetadata: jest.fn(() => Promise.resolve()),
-}))
-
-jest.mock('@/src/lib/auth/useAuth', () => ({
-  useAuth: () => ({ user: { uid: 'uid-owner' } }),
 }))
 
 const mockStopLocationCapture = jest.fn()
@@ -83,6 +74,10 @@ function defaultCat() {
 
 describe('useSubmissionSubmit submit flow', () => {
   beforeEach(async () => {
+    useAuthStore.setState({
+      user: { uid: 'uid-owner' } as never,
+      isReady: true,
+    })
     jest.restoreAllMocks()
     jest.clearAllMocks()
     await AsyncStorage.clear()
@@ -497,23 +492,28 @@ describe('useSubmissionSubmit submit flow', () => {
     usePhotoStore.setState({
       photos: [photo({ local_id: 'photo-stalled', uploaded: false })],
     })
-    // The wait polls until Date.now() passes its deadline; jumping the clock
-    // past it fails the wait on the first check instead of after 30 real
-    // seconds.
-    jest.spyOn(Date, 'now').mockReturnValueOnce(0).mockReturnValue(999_999)
+    // Fake timers move the clock and the poll together, so the 30 s wait
+    // times out without depending on which code reads Date.now() first.
+    jest.useFakeTimers()
     jest.spyOn(console, 'error').mockImplementation(() => {})
     const errorSpy = jest.spyOn(ui, 'showError').mockImplementation(() => {})
 
     const { result } = renderHook(() => useSubmissionSubmit())
 
-    await act(async () => {
-      result.current.handleDone()
-      const submit = useUIStore
-        .getState()
-        .dialog?.buttons.find((b) => b.text === 'Submit')
-      expect(submit?.onPress).toEqual(expect.any(Function))
-      await submit!.onPress!()
-    })
+    try {
+      await act(async () => {
+        result.current.handleDone()
+        const submit = useUIStore
+          .getState()
+          .dialog?.buttons.find((b) => b.text === 'Submit')
+        expect(submit?.onPress).toEqual(expect.any(Function))
+        const sending = submit!.onPress!() as unknown as Promise<void>
+        await jest.advanceTimersByTimeAsync(31_000)
+        await sending
+      })
+    } finally {
+      jest.useRealTimers()
+    }
 
     expect(errorSpy).toHaveBeenCalledWith(
       'Photos Still Uploading',

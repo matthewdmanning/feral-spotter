@@ -10,13 +10,11 @@ import { useBackHandler } from '@/src/hooks/useBackHandler'
 import { router } from 'expo-router'
 import { TrashIcon } from 'phosphor-react-native/src/icons/Trash'
 import { useState } from 'react'
-import { Dimensions, Pressable, Text, View } from 'react-native'
+import { Pressable, Text, useWindowDimensions, View } from 'react-native'
 import Carousel from 'react-native-reanimated-carousel'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
 import { PHOTO_STATUS_COLOR_KEY } from './photoStatusColors'
-
-const SCREEN_W = Dimensions.get('window').width
 
 export default function AnnotateScreen() {
   const { theme } = useUnistyles()
@@ -42,7 +40,18 @@ export default function AnnotateScreen() {
   // swallowing it here blocks both. "Done With This Cat" already covers
   // every exit case: it falls back to handleAbandonPass itself whenever
   // there's no active cat or no confirmed boxes yet (useActiveCatFlow).
-  useBackHandler(() => true)
+  //
+  // The empty state has no pass to protect: Back does what its "Go back"
+  // button does.
+  const leaveEmpty = () => {
+    clearActiveCat()
+    router.back()
+  }
+  useBackHandler(() => {
+    if (photos.length === 0) leaveEmpty()
+    return true
+  })
+  const { width: screenWidth } = useWindowDimensions()
 
   const tutorial = useAnnotationTutorial()
 
@@ -50,13 +59,7 @@ export default function AnnotateScreen() {
     return (
       <View style={styles.empty}>
         <Text style={styles.emptyText}>No photos to review.</Text>
-        <AppButton
-          variant="secondary"
-          onPress={() => {
-            clearActiveCat()
-            router.back()
-          }}
-        >
+        <AppButton variant="secondary" onPress={leaveEmpty}>
           Go back
         </AppButton>
       </View>
@@ -117,7 +120,7 @@ export default function AnnotateScreen() {
         {carouselHeight > 0 && (
           <Carousel
             ref={carouselRef}
-            width={SCREEN_W}
+            width={screenWidth}
             height={carouselHeight}
             data={photos}
             defaultIndex={0}
@@ -128,7 +131,7 @@ export default function AnnotateScreen() {
               <AnnotateCarouselItem
                 photo={item}
                 activeCatId={activeCatId}
-                width={SCREEN_W}
+                width={screenWidth}
                 height={carouselHeight}
                 onConfirm={handleConfirmBox}
                 onNotInPhoto={handleNotInPhoto}
@@ -145,7 +148,7 @@ export default function AnnotateScreen() {
             default to position: relative, so top: 0 here already lands
             below topBar without hardcoding its height. */}
         {activeCatId && (
-          <InsetCropBubble catId={activeCatId} edge="top-right" draggable />
+          <InsetCropBubble catId={activeCatId} edge="top-right" />
         )}
       </View>
 

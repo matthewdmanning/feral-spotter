@@ -8,7 +8,7 @@
 import { GlassSurface } from '@/src/components/atoms/GlassSurface'
 import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { CatCrop } from '@/src/components/atoms/CatCrop'
-import { STATUS_COLOR_KEY, StatusIcon } from '@/src/components/atoms/StatusIcon'
+import { StatusIcon, StatusText } from '@/src/components/atoms/StatusIcon'
 import { FieldRow } from '@/src/components/molecules/FieldRow'
 import { useSighting } from '@/src/hooks/useSighting'
 import { describeCat, summarizeCat } from '@/src/lib/cats/attributes'
@@ -22,14 +22,15 @@ import { useLocalSearchParams } from 'expo-router'
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
+import { firstParam } from '@/src/utils/routeParam'
 
 /** Larger than Cat Form's picker crops: here the photo is the cat's header. */
 const CAT_PHOTO_SIZE = 96
 
 export default function SightingDetailScreen() {
   const { theme } = useUnistyles()
-  const { id } = useLocalSearchParams<{ id: string }>()
-  const { sighting } = useSighting(id)
+  const params = useLocalSearchParams<{ id: string | string[] }>()
+  const { sighting } = useSighting(firstParam(params.id) ?? '')
 
   if (sighting === undefined) {
     return (
@@ -65,14 +66,7 @@ export default function SightingDetailScreen() {
             <Text style={styles.datetime}>
               {formatDateTime(sightingTime(sighting))}
             </Text>
-            <Text
-              style={[
-                styles.status,
-                { color: theme.colors[STATUS_COLOR_KEY[sighting.status]] },
-              ]}
-            >
-              {sighting.status}
-            </Text>
+            <StatusText status={sighting.status} style={styles.status} />
           </View>
         </View>
 

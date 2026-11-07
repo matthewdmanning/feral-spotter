@@ -1,6 +1,9 @@
 /** A burst stays bounded, and a failed upload cannot strand queued photos. */
 import type { PhotoUploadResponse, SubmissionPhoto } from '@/src/types'
-import { uploadNewPhoto } from '@/src/lib/upload/uploadNewPhoto'
+import {
+  cancelQueuedUploads,
+  uploadNewPhoto,
+} from '@/src/lib/upload/uploadNewPhoto'
 
 const mockPending: {
   resolve: (value: PhotoUploadResponse) => void
@@ -40,6 +43,12 @@ const photo = (n: number): SubmissionPhoto => ({
 
 const drainTasks = () => new Promise((resolve) => setImmediate(resolve))
 
+// Module-level fakes: each test starts with nothing in flight.
+beforeEach(() => {
+  mockPending.length = 0
+  mockInFlight = 0
+  mockPeakInFlight = 0
+})
 afterEach(() => jest.restoreAllMocks())
 
 it('caps a burst at two uploads and drains queued photos after one fails', async () => {
@@ -82,4 +91,29 @@ it('caps a burst at two uploads and drains queued photos after one fails', async
       cloud_storage_url: `https://example.com/${n}.jpg`,
     })
   }
+})
+
+it('retries a failed photo once, and a torn-down draft gets no results', async () => {
+  jest.spyOn(console, 'error').mockImplementation(() => {})
+  const updatePhoto = jest.fn()
+
+  // Queued twice (Details opened, then Submit): one upload, not two.
+  uploadNewPhoto(photo(10), 'uid', 'submission', updatePhoto)
+  uploadNewPhoto(photo(10), 'uid', 'submission', updatePhoto)
+  expect(mockPending).toHaveLength(1)
+  mockPending.shift()!.reject(new Error('offline'))
+  await drainTasks()
+
+  // After the failure, a retry runs it again.
+  uploadNewPhoto(photo(10), 'uid', 'submission', updatePhoto)
+  expect(mockPending).toHaveLength(1)
+
+  // Reset lands mid-upload: the late result must not reach the next draft.
+  cancelQueuedUploads()
+  mockPending.shift()!.resolve({
+    cloud_storage_path: 'photo-10.jpg',
+    cloud_storage_url: 'https://example.com/10.jpg',
+  })
+  await drainTasks()
+  expect(updatePhoto).not.toHaveBeenCalled()
 })

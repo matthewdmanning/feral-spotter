@@ -1,4 +1,5 @@
 import { useUIStore } from '@/src/hooks/useUIStore'
+import { useAuthStore } from '@/src/lib/auth/authStore'
 import { act, renderHook } from '@testing-library/react-native'
 
 import { stopLocationCapture } from '@/src/lib/location'
@@ -42,10 +43,6 @@ jest.mock('@/src/lib/upload/firebaseUpload', () => ({
   uploadSubmissionMetadata: jest.fn(),
 }))
 
-jest.mock('@/src/lib/auth/useAuth', () => ({
-  useAuth: () => ({ user: { uid: 'uid-owner' } }),
-}))
-
 const cat = (id: string) => ({
   local_id: id,
   age: 'adult' as const,
@@ -71,6 +68,10 @@ const photo = (id: string) => ({
 
 describe('useSubmissionSubmit — handleReset (#189)', () => {
   beforeEach(() => {
+    useAuthStore.setState({
+      user: { uid: 'uid-owner' } as never,
+      isReady: true,
+    })
     useSubmissionStore.getState().clearDraft()
     usePhotoStore.setState({ photos: [], source: null })
     useSubmissionStore.getState().addCat(cat('cat-1'))

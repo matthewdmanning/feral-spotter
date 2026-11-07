@@ -4,16 +4,15 @@
  * Migrated from NativeWind → Unistyles v3.
  */
 
-import { GlassSurface } from '@/src/components/atoms/GlassSurface'
+import { DialogShell } from '@/src/components/organisms/DialogShell'
 import { AppButton } from '@/src/components/atoms/AppButton'
 import { ButtonRow } from '@/src/components/molecules/ButtonRow'
 import { useDateTimePicker } from '@/src/hooks/useDateTimePicker'
 import RNDateTimePicker from '@react-native-community/datetimepicker'
 import { CalendarIcon } from 'phosphor-react-native/src/icons/Calendar'
 import { ClockIcon } from 'phosphor-react-native/src/icons/Clock'
-import { Modal, Platform, Pressable, Text, View } from 'react-native'
+import { Platform, Pressable, Text, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
-import { dialogShell } from './dialogShell.styles'
 import { styles } from './DateTimePicker.styles'
 
 type PickerMode = 'date' | 'time' | 'datetime'
@@ -71,7 +70,10 @@ export function DateTimePickerButton({
       <Pressable
         onPress={open}
         style={styles.trigger}
-        accessibilityLabel={label}
+        // The label alone hid the set value from screen readers.
+        accessibilityLabel={[label, formatValue(value, mode)]
+          .filter(Boolean)
+          .join(', ')}
         accessibilityRole="button"
       >
         <Icon size={theme.iconSize.md} color={theme.colors.muted} />
@@ -80,60 +82,48 @@ export function DateTimePickerButton({
 
       {/* iOS modal */}
       {Platform.OS === 'ios' && show && (
-        <Modal
-          visible
-          transparent
-          animationType="fade"
-          onRequestClose={handleCancel}
-          statusBarTranslucent
-        >
-          <View style={dialogShell.backdrop}>
-            <GlassSurface kind="raised" style={dialogShell.sheet}>
-              <Text style={dialogShell.title}>{MODAL_TITLE[mode]}</Text>
+        <DialogShell title={MODAL_TITLE[mode]} onRequestClose={handleCancel}>
+          {currentMode === 'date' && (
+            <RNDateTimePicker
+              value={tempDate}
+              mode="date"
+              display="spinner"
+              onChange={handleChange}
+              minimumDate={minimumDate}
+              maximumDate={maximumDate}
+            />
+          )}
+          {currentMode === 'time' && (
+            <RNDateTimePicker
+              value={tempDate}
+              mode="time"
+              display="spinner"
+              onChange={handleChange}
+            />
+          )}
 
-              {currentMode === 'date' && (
-                <RNDateTimePicker
-                  value={tempDate}
-                  mode="date"
-                  display="spinner"
-                  onChange={handleChange}
-                  minimumDate={minimumDate}
-                  maximumDate={maximumDate}
-                />
-              )}
-              {currentMode === 'time' && (
-                <RNDateTimePicker
-                  value={tempDate}
-                  mode="time"
-                  display="spinner"
-                  onChange={handleChange}
-                />
-              )}
-
-              {mode === 'datetime' && (
-                <View style={styles.stepRow}>
-                  {(['date', 'time'] as const).map((step) => (
-                    <AppButton
-                      key={step}
-                      onPress={() => setStep(step)}
-                      variant={currentMode === step ? 'primary' : 'secondary'}
-                      flex1
-                    >
-                      {STEP_LABEL[step]}
-                    </AppButton>
-                  ))}
-                </View>
-              )}
-
-              <ButtonRow>
-                <AppButton onPress={handleCancel} variant="secondary">
-                  Cancel
+          {mode === 'datetime' && (
+            <View style={styles.stepRow}>
+              {(['date', 'time'] as const).map((step) => (
+                <AppButton
+                  key={step}
+                  onPress={() => setStep(step)}
+                  variant={currentMode === step ? 'primary' : 'secondary'}
+                  flex1
+                >
+                  {STEP_LABEL[step]}
                 </AppButton>
-                <AppButton onPress={handleConfirm}>Confirm</AppButton>
-              </ButtonRow>
-            </GlassSurface>
-          </View>
-        </Modal>
+              ))}
+            </View>
+          )}
+
+          <ButtonRow>
+            <AppButton onPress={handleCancel} variant="secondary">
+              Cancel
+            </AppButton>
+            <AppButton onPress={handleConfirm}>Confirm</AppButton>
+          </ButtonRow>
+        </DialogShell>
       )}
 
       {/* Android native picker */}
