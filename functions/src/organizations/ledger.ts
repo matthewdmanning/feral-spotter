@@ -1,53 +1,58 @@
 import type { Permission, PermissionLedger } from './domain'
+import { RequestError } from './errors'
 
-export interface LedgerMutation {
-  type: 'grant' | 'revoke' | 'revokeOrganization'
-  organizationId: string
-  submissionId?: string
-  permission?: Permission
-}
+export type LedgerMutation =
+  | { type: 'grant'; organizationId: string; permission: Permission }
+  | { type: 'revoke'; organizationId: string; submissionId: string }
+  | { type: 'revokeOrganization'; organizationId: string }
+
+const pairKey = (organizationId: string, submissionId: string) =>
+  `${organizationId}/${submissionId}`
+
 /** Applies monotonic revocations. A retry can never overwrite a grant or tombstone. */
 export function mutateLedger(
   ledger: PermissionLedger,
   mutation: LedgerMutation,
   now: string,
 ): PermissionLedger {
+  const revokedPairs = [...(ledger.revokedPairs ?? [])]
   const next: PermissionLedger = {
     epochs: { ...ledger.epochs },
     permissions: ledger.permissions.map((p) => ({ ...p })),
-    revokedPairs: [...(ledger.revokedPairs ?? [])],
+    revokedPairs,
   }
-  const { organizationId, submissionId } = mutation
-  if (mutation.type === 'revokeOrganization') {
-    next.epochs[organizationId] = (next.epochs[organizationId] ?? 0) + 1
-    next.permissions.forEach((p) => {
-      if (p.organizationId === organizationId) p.revokedAt ??= now
-    })
-  } else if (mutation.type === 'revoke') {
-    const permission = next.permissions.find(
+  const { organizationId } = mutation
+  const find = (submissionId: string) =>
+    next.permissions.find(
       (p) =>
         p.organizationId === organizationId && p.submissionId === submissionId,
     )
-    if (permission) permission.revokedAt ??= now
-    else if (!next.revokedPairs!.includes(`${organizationId}/${submissionId}`))
-      next.revokedPairs!.push(`${organizationId}/${submissionId}`)
-  } else {
-    const permission = mutation.permission
-    if (!permission) throw new Error('Missing permission')
-    const existing = next.permissions.find(
-      (p) =>
-        p.organizationId === organizationId &&
-        p.submissionId === permission.submissionId,
-    )
-    if (
-      next.revokedPairs!.includes(
-        `${organizationId}/${permission.submissionId}`,
-      ) ||
-      existing?.revokedAt ||
-      permission.epoch !== (next.epochs[organizationId] ?? 0)
-    )
-      throw new Error('Permission revoked; confirm again')
-    if (!existing) next.permissions.push(permission)
+  switch (mutation.type) {
+    case 'revokeOrganization':
+      next.epochs[organizationId] = (next.epochs[organizationId] ?? 0) + 1
+      for (const p of next.permissions)
+        if (p.organizationId === organizationId) p.revokedAt ??= now
+      break
+    case 'revoke': {
+      const permission = find(mutation.submissionId)
+      const key = pairKey(organizationId, mutation.submissionId)
+      if (permission) permission.revokedAt ??= now
+      else if (!revokedPairs.includes(key)) revokedPairs.push(key)
+      break
+    }
+    case 'grant': {
+      const { permission } = mutation
+      const existing = find(permission.submissionId)
+      if (
+        revokedPairs.includes(
+          pairKey(organizationId, permission.submissionId),
+        ) ||
+        existing?.revokedAt ||
+        permission.epoch !== (next.epochs[organizationId] ?? 0)
+      )
+        throw RequestError.confirmAgain('Permission revoked; confirm again')
+      if (!existing) next.permissions.push(permission)
+    }
   }
   return next
 }

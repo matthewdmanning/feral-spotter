@@ -14,7 +14,10 @@
  * as a popup — see its comment for why.
  */
 
-import { effectiveSharingSettings } from '@/src/types/Organizations'
+import {
+  buildGrant,
+  FALLBACK_ORGANIZATION_NAME,
+} from '@/src/lib/organizations/sharing'
 import { useOrganizationsFlag } from '@/src/hooks/useOrganizationsFlag'
 import { confirmedSharing } from '@/src/lib/organizations/consent'
 import {
@@ -317,25 +320,16 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
                     organizationId,
                     organizationName:
                       sharing.draft.organizationNames?.[organizationId] ??
-                      'Selected organization',
-                    grant: {
+                      FALLBACK_ORGANIZATION_NAME,
+                    grant: buildGrant({
                       submissionId: cloudSubmissionId,
                       organizationId,
                       catalogVersion: sharing.draft.catalogVersion,
                       epoch: sharing.epochs[organizationId] ?? 0,
                       anonymous: sharing.draft.anonymous,
-                      settings: effectiveSharingSettings(
-                        sharing.settings,
-                        sharing.draft.anonymous,
-                      ),
-                      contactEmail:
-                        !sharing.draft.anonymous &&
-                        sharing.settings.fields.email
-                          ? user.email
-                          : null,
-                      injured: submission.report_injured === true,
-                      disclosureVersion: 1,
-                    },
+                      settings: sharing.settings,
+                      email: user.email,
+                    }),
                   })
                 }
                 await persistOrganizationSharing()

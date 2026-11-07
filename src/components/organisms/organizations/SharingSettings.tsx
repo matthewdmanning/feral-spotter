@@ -9,21 +9,14 @@ import {
   EMPTY_ORGANIZATION_ACCOUNT,
 } from '@/src/hooks/useOrganizationSharingStore'
 import { useOrganizationsFlag } from '@/src/hooks/useOrganizationsFlag'
-import type {
-  SharingFields,
-  SharingSettings as SharingConfiguration,
+import { FIELD_LABELS } from '@/src/lib/organizations/sharing'
+import {
+  SHARING_FIELD_KEYS,
+  type SharingSettings as SharingConfiguration,
 } from '@/src/types/Organizations'
 import { SharingCheckbox } from './SharingCheckbox'
 import { styles } from './styles'
 
-export const FIELD_LABELS: Record<keyof SharingFields, string> = {
-  name: 'Name',
-  email: 'Email',
-  phone: 'Phone',
-  catDetails: 'Cat details',
-  preciseLocation: 'Precise location',
-  photos: 'Photos',
-}
 export function SharingSettings() {
   const { user } = useAuth()
   const enabled = useOrganizationsFlag((s) => s.enabled)
@@ -34,9 +27,10 @@ export function SharingSettings() {
       : EMPTY_ORGANIZATION_ACCOUNT.settings,
   )
   if (!enabled || !user || !hydrated) return null
+  // A different account starts from its own saved values.
   return (
     <SharingSettingsForm
-      key={`${user.uid}:${JSON.stringify(saved)}`}
+      key={user.uid}
       uid={user.uid}
       email={user.email}
       saved={saved}
@@ -66,7 +60,7 @@ function SharingSettingsForm({
         Anonymous is checked by default on each sighting and overrides name,
         email, and phone.
       </Text>
-      {(Object.keys(FIELD_LABELS) as (keyof SharingFields)[]).map((key) => (
+      {SHARING_FIELD_KEYS.map((key) => (
         <SharingCheckbox
           key={key}
           label={`Share ${FIELD_LABELS[key].toLowerCase()}`}

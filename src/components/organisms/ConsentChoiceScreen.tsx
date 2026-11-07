@@ -1,10 +1,9 @@
 import { GlassSurface } from '@/src/components/atoms/GlassSurface'
 import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { AppButton } from '@/src/components/atoms/AppButton'
+import { CheckboxBox } from '@/src/components/atoms/CheckboxBox'
 import { useState } from 'react'
 import { View, Text, Pressable, ScrollView } from 'react-native'
-import { useUnistyles } from 'react-native-unistyles'
-import { CheckIcon } from 'phosphor-react-native/src/icons/Check'
 import { styles } from './ConsentChoiceScreen.styles'
 
 interface ConsentChoiceScreenProps {
@@ -29,7 +28,6 @@ export function ConsentChoiceScreen({
   footnote,
   onContinue,
 }: ConsentChoiceScreenProps) {
-  const { theme } = useUnistyles()
   const [checked, setChecked] = useState(defaultChecked)
 
   return (
@@ -46,14 +44,7 @@ export function ConsentChoiceScreen({
           accessibilityLabel={`${copy.label}: ${copy.text}`}
         >
           <GlassSurface kind="card" style={styles.choiceRow}>
-            <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
-              {checked && (
-                <CheckIcon
-                  size={theme.iconSize.sm}
-                  color={theme.colors.accentText}
-                />
-              )}
-            </View>
+            <CheckboxBox checked={checked} />
             <Text style={styles.choiceItemText}>
               <Text style={styles.itemLabel}>{copy.label}</Text> {copy.text}
             </Text>
