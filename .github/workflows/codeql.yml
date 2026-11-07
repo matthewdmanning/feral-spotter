@@ -20,9 +20,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      # JavaScript/TypeScript (the app and functions/) is scanned on every run.
-      # A pull request scans the other languages only when it changes their
-      # code. The weekly schedule scans every language.
+      # A pull request scans only the languages whose native code it changes.
+      # The weekly schedule scans every language.
       - name: Pick languages to scan
         id: pick
         env:
@@ -34,9 +33,7 @@ jobs:
           fi
           touches() { [ "$GITHUB_EVENT_NAME" != "pull_request" ] || echo "$files" | grep -qE "$1"; }
 
-          include=('{"language":"javascript-typescript","build-mode":"none","runner":"ubuntu-latest"}')
-          touches '^\.github/' &&
-            include+=('{"language":"actions","build-mode":"none","runner":"ubuntu-latest"}')
+          include=()
           touches '^modules/[^/]+/ios/' &&
             include+=('{"language":"swift","build-mode":"autobuild","runner":"macos-latest"}')
 
