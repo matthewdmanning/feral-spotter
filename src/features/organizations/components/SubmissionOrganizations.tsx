@@ -8,14 +8,14 @@ import {
   useSubmissionStore,
   type OrganizationSharingDraft,
 } from '@/src/features/draft-submission/hooks/useSubmissionStore'
-import { useOrganizationDirectory } from '@/src/hooks/useOrganizationDirectory'
+import { useOrganizationDirectory } from '@/src/features/organizations/hooks/useOrganizationDirectory'
 import {
   useOrganizationSharingStore,
   EMPTY_ORGANIZATION_ACCOUNT,
-} from '@/src/hooks/useOrganizationSharingStore'
-import { useOrganizationsFlag } from '@/src/hooks/useOrganizationsFlag'
-import { sharingSignature } from '@/src/lib/organizations/consent'
-import { includedSummary } from '@/src/lib/organizations/sharing'
+} from '@/src/features/organizations/hooks/useOrganizationSharingStore'
+import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
+import { sharingSignature } from '@/src/features/organizations/lib/consent'
+import { includedSummary } from '@/src/features/organizations/lib/sharing'
 import { SharingCheckbox } from './SharingCheckbox'
 import { styles } from './styles'
 

@@ -25,7 +25,7 @@
  */
 
 import { showAlert } from '@/src/shared/hooks/useUIStore'
-import { removeCatFromDraft } from '@/src/hooks/catPass'
+import { removeCatFromDraft } from '@/src/features/draft-submission/hooks/catPass'
 import { useCallback } from 'react'
 
 export function useRemoveCat(): (

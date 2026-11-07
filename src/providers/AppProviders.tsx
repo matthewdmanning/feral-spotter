@@ -28,7 +28,7 @@
  *     opt-in allow it.
  */
 
-import { OrganizationsRuntime } from '@/src/components/organisms/organizations/OrganizationsRuntime'
+import { OrganizationsRuntime } from '@/src/features/organizations/components/OrganizationsRuntime'
 import { AlertHost } from '@/src/shared/ui/organisms/AlertHost'
 import { ErrorBoundary } from '@/src/shared/ui/atoms/ErrorBoundary'
 import {

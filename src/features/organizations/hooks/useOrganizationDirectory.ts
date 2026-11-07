@@ -3,9 +3,9 @@ import { create } from 'zustand'
 import {
   Organizations,
   type DirectoryCache,
-} from '@/src/lib/organizations/Organizations'
-import { organizationRequest } from '@/src/lib/organizations/api'
-import { type Catalog } from '@/src/types/Organizations'
+} from '@/src/features/organizations/lib/Organizations'
+import { organizationRequest } from '@/src/features/organizations/lib/api'
+import { type Catalog } from '@/src/shared/types/Organizations'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { useOrganizationsFlag } from './useOrganizationsFlag'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'

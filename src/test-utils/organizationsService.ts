@@ -1,6 +1,9 @@
 import { authProvider } from '@/src/features/auth/lib'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
-import type { Catalog, PermissionLedger } from '@/src/types/Organizations'
+import type {
+  Catalog,
+  PermissionLedger,
+} from '@/src/shared/types/Organizations'
 
 type Body = Record<string, unknown> & { action: string }
 type Reply = { status: number; body?: unknown } | Catalog | PermissionLedger

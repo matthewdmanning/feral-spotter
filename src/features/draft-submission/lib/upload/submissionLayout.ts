@@ -7,8 +7,8 @@
  * together, so a change to one that the others miss fails a test.
  */
 
-import { MAX_PHOTOS } from '@/src/config/submissionLimits'
-import { extensionOf } from '@/src/utils/photoFormat'
+import { MAX_PHOTOS } from '@/src/shared/config/submissionLimits'
+import { extensionOf } from '@/src/shared/utils/photoFormat'
 
 export const METADATA_FILE_NAME = 'metadata.json'
 

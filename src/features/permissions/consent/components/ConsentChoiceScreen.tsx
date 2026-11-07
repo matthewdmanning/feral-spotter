@@ -1,7 +1,7 @@
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
-import { CheckboxBox } from '@/src/components/atoms/CheckboxBox'
+import { CheckboxBox } from '@/src/shared/ui/atoms/CheckboxBox'
 import { useBackHandler } from '@/src/shared/hooks/useBackHandler'
 import { useState } from 'react'
 import { View, Text, Pressable, ScrollView } from 'react-native'

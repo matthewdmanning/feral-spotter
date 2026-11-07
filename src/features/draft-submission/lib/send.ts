@@ -11,8 +11,8 @@ import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBo
 import {
   persistOrganizationSharing,
   useOrganizationSharingStore,
-} from '@/src/hooks/useOrganizationSharingStore'
-import { useOrganizationsFlag } from '@/src/hooks/useOrganizationsFlag'
+} from '@/src/features/organizations/hooks/useOrganizationSharingStore'
+import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
 import { EVENTS } from '@/src/shared/analytics/analytics'
@@ -23,7 +23,7 @@ import {
   transitionSubmission,
   updateSubmissionCache,
 } from '@/src/features/draft-submission/lib/submissionCache'
-import { confirmedSharing } from '@/src/lib/organizations/consent'
+import { confirmedSharing } from '@/src/features/organizations/lib/consent'
 import {
   buildCacheMetadata,
   buildSubmissionPayload,
@@ -42,7 +42,7 @@ import {
 import {
   buildGrant,
   FALLBACK_ORGANIZATION_NAME,
-} from '@/src/lib/organizations/sharing'
+} from '@/src/features/organizations/lib/sharing'
 import type { SubmissionPhoto } from '@/src/shared/types'
 
 /** The sharing choice submitDraft confirmed, or null when nothing is shared. */

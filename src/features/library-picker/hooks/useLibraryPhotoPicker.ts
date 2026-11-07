@@ -8,7 +8,7 @@
  */
 
 import { showAlert } from '@/src/shared/hooks/useUIStore'
-import { isUploadablePhoto } from '@/src/utils/photoFormat'
+import { isUploadablePhoto } from '@/src/shared/utils/photoFormat'
 import {
   usePhotoStore,
   isAtPhotoLimit,
@@ -19,7 +19,7 @@ import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSub
 import { draftReadyOrAlert } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
 import { EVENTS, captureEvent } from '@/src/shared/analytics/analytics'
 import { libraryPermission } from '@/src/features/permissions/photo/lib/libraryPermission'
-import { syncPhotoUploads } from '@/src/lib/upload/draftUploads'
+import { syncPhotoUploads } from '@/src/features/draft-submission/lib/upload/draftUploads'
 import { buildSubmissionPhoto } from '@/src/features/draft-submission/lib/buildSubmissionPhoto'
 import {
   classifyLibraryPickTime,

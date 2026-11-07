@@ -4,7 +4,7 @@
  * Migrated from NativeWind → Unistyles v3.
  */
 
-import { DialogShell } from '@/src/components/organisms/DialogShell'
+import { DialogShell } from '@/src/shared/ui/organisms/DialogShell'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import { ButtonRow } from '@/src/shared/ui/molecules/ButtonRow'
 import { useDateTimePicker } from '@/src/features/draft-submission/hooks/useDateTimePicker'

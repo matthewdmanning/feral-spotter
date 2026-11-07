@@ -12,7 +12,10 @@ import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBo
 import { useActiveCatFlowStore } from '@/src/features/draft-submission/hooks/useActiveCatFlowStore'
 import type { BoundingBox } from '@/src/shared/types/BoundingBox'
 import { randomUUID } from 'expo-crypto'
-import { abandonCatPass, finishBoxing } from '@/src/hooks/catPass'
+import {
+  abandonCatPass,
+  finishBoxing,
+} from '@/src/features/draft-submission/hooks/catPass'
 import { useCallback } from 'react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -35,7 +38,10 @@ export interface ActiveCatFlow {
 
 // The in-progress cat's id and every navigation of the pass live in
 // hooks/catPass.ts; re-exported here for existing callers.
-export { clearActiveCatIfMatches, startFreshPass } from '@/src/hooks/catPass'
+export {
+  clearActiveCatIfMatches,
+  startFreshPass,
+} from '@/src/features/draft-submission/hooks/catPass'
 
 /** The pass's cat, minting and storing one on the pass's first mark. */
 function currentOrNewCatId(setActiveCatId: (id: string) => void): string {

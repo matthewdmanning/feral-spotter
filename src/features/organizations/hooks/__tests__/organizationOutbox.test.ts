@@ -4,8 +4,8 @@ import { waitFor } from '@testing-library/react-native'
 import { useOrganizationSharingStore } from '../useOrganizationSharingStore'
 import { useOrganizationsFlag } from '../useOrganizationsFlag'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
-import { buildGrant } from '@/src/lib/organizations/sharing'
-import { DEFAULT_SHARING } from '@/src/types/Organizations'
+import { buildGrant } from '@/src/features/organizations/lib/sharing'
+import { DEFAULT_SHARING } from '@/src/shared/types/Organizations'
 import { fakeOrganizationsService } from '@/src/test-utils/organizationsService'
 
 // The supplied expo-crypto mock returns no UUIDs.

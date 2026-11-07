@@ -12,7 +12,7 @@ import {
   HEALTH_OPTIONS,
   COAT_GROUPS,
   shownCoatValue,
-} from '@/src/lib/cats/formOptions'
+} from '@/src/features/draft-submission/lib/formOptions'
 import { styles } from './CatForm.styles'
 
 interface CatFormProps {

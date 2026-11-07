@@ -17,7 +17,7 @@ import {
   usePhotoStore,
   isAtPhotoLimit,
 } from '@/src/features/draft-submission/hooks/usePhotoStore'
-import { removePhotoFromDraft } from '@/src/hooks/removePhotoFromDraft'
+import { removePhotoFromDraft } from '@/src/features/draft-submission/hooks/removePhotoFromDraft'
 import {
   acceptsNewPhotos,
   draftReadyOrAlert,
@@ -29,7 +29,7 @@ import {
   releaseCapturedPhotoFile,
   retainCapturedPhotoFile,
 } from '@/src/features/draft-submission/lib/capturedPhotoFiles'
-import { syncPhotoUploads } from '@/src/lib/upload/draftUploads'
+import { syncPhotoUploads } from '@/src/features/draft-submission/lib/upload/draftUploads'
 import type { SubmissionPhoto } from '@/src/shared/types'
 import {
   buildSubmissionPhotoFromCapture,

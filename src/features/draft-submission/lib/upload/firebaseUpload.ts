@@ -43,7 +43,7 @@ import {
   metadataObjectPath,
   photoObjectPath,
   submissionFolder,
-} from '@/src/lib/upload/submissionLayout'
+} from '@/src/features/draft-submission/lib/upload/submissionLayout'
 
 const BUCKET_URL = 'gs://project-e3d5659d-bc4f-438f-88c.firebasestorage.app'
 

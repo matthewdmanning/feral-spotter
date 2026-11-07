@@ -1,4 +1,4 @@
-import { SubmissionOrganizations } from '@/src/components/organisms/organizations/SubmissionOrganizations'
+import { SubmissionOrganizations } from '@/src/features/organizations/components/SubmissionOrganizations'
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
@@ -11,11 +11,11 @@ import {
   openCatForm,
   startCatPass,
   useCatListLanding,
-} from '@/src/hooks/catPass'
-import { useDraftExitPrompt } from '@/src/hooks/useDraftExitPrompt'
+} from '@/src/features/draft-submission/hooks/catPass'
+import { useDraftExitPrompt } from '@/src/features/draft-submission/hooks/useDraftExitPrompt'
 import { useDraftSync } from '@/src/features/draft-submission/hooks/useDraftSync'
 import { useSubmissionSubmit } from '@/src/features/draft-submission/hooks/useSubmissionSubmit'
-import { usePhotoEntrypoints } from '@/src/hooks/usePhotoEntrypoints'
+import { usePhotoEntrypoints } from '@/src/features/library-picker/hooks/usePhotoEntrypoints'
 import { useRemoveCat } from '@/src/features/draft-submission/hooks/useRemoveCat'
 import { draftWarnings } from '@/src/features/draft-submission/lib/status'
 import { router } from 'expo-router'

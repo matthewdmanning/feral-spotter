@@ -13,7 +13,7 @@ import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import { ButtonRow } from '@/src/shared/ui/molecules/ButtonRow'
 import { useUIStore, type AlertButton } from '@/src/shared/hooks/useUIStore'
 import { Text, View } from 'react-native'
-import { DialogShell } from '@/src/components/organisms/DialogShell'
+import { DialogShell } from '@/src/shared/ui/organisms/DialogShell'
 import { styles } from './AlertHost.styles'
 
 /** Alert.alert's button styles, mapped onto the ones AppButton has. */

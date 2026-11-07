@@ -1,5 +1,5 @@
 import { Pressable, Text } from 'react-native'
-import { CheckboxBox } from '@/src/components/atoms/CheckboxBox'
+import { CheckboxBox } from '@/src/shared/ui/atoms/CheckboxBox'
 import { styles } from './styles'
 
 /** One accessible checkbox target, with text that wraps at large font sizes. */

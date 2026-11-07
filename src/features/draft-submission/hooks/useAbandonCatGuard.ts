@@ -28,7 +28,7 @@
  */
 
 import { showAlert } from '@/src/shared/hooks/useUIStore'
-import { abandonCatPass } from '@/src/hooks/catPass'
+import { abandonCatPass } from '@/src/features/draft-submission/hooks/catPass'
 import { useActiveCatFlowStore } from '@/src/features/draft-submission/hooks/useActiveCatFlowStore'
 import { usePreventRemove } from 'expo-router'
 import { useEffect, useRef } from 'react'

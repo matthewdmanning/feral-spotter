@@ -1,7 +1,7 @@
 import { act, render, screen, userEvent } from '@testing-library/react-native'
 import { randomUUID } from 'expo-crypto'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { SubmissionOrganizations } from '@/src/components/organisms/organizations/SubmissionOrganizations'
+import { SubmissionOrganizations } from '@/src/features/organizations/components/SubmissionOrganizations'
 import {
   submitDraft,
   type SubmitOutcome,
@@ -19,7 +19,7 @@ import {
   createSubmissionCache,
   getSubmissionCache,
 } from '@/src/features/draft-submission/lib/submissionCache'
-import { DEFAULT_SHARING } from '@/src/types/Organizations'
+import { DEFAULT_SHARING } from '@/src/shared/types/Organizations'
 import { uploadSubmissionMetadata } from '@/src/features/draft-submission/lib/upload/firebaseUpload'
 
 jest.mock('expo-router', () => ({

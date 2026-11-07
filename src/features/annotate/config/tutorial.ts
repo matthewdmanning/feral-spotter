@@ -4,8 +4,8 @@
  * Copy is draft — see docs/planning/2026-07-14-annotation-tutorial-spec.md.
  */
 
-import type { TutorialStep } from '@/src/types/Tutorial'
-import { getAppVersion, isVersionReleased } from '@/src/utils/appVersion'
+import type { TutorialStep } from '@/src/shared/types/Tutorial'
+import { getAppVersion, isVersionReleased } from '@/src/shared/utils/appVersion'
 
 /**
  * Deferred to the Alpha milestone — see

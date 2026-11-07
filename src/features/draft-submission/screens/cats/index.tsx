@@ -17,11 +17,11 @@ import { useLocalSearchParams } from 'expo-router'
 import {
   returnToCatList,
   returnToCatListAfterRemoval,
-} from '@/src/hooks/catPass'
+} from '@/src/features/draft-submission/hooks/catPass'
 import { useEffect, useState } from 'react'
 import { ScrollView, Text, View } from 'react-native'
 import { styles } from './index.styles'
-import { firstParam } from '@/src/utils/routeParam'
+import { firstParam } from '@/src/shared/utils/routeParam'
 
 export default function CatObservationScreen() {
   const params = useLocalSearchParams<{ edit?: string | string[] }>()

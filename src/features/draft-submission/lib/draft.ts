@@ -43,13 +43,16 @@ import { fireAnalyticsEvent } from '@/src/features/draft-submission/lib/analytic
 import { authProvider } from '@/src/features/auth/lib'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { stopLocationCapture } from '@/src/core/location/liveFix'
-import { confirmedSharing } from '@/src/lib/organizations/consent'
-import { sendDraft, type ConfirmedSharing } from '@/src/lib/submission/send'
+import { confirmedSharing } from '@/src/features/organizations/lib/consent'
+import {
+  sendDraft,
+  type ConfirmedSharing,
+} from '@/src/features/draft-submission/lib/send'
 import {
   cancelPhotoUploads,
   syncPhotoUploads,
   whenUploadsSettled,
-} from '@/src/lib/upload/draftUploads'
+} from '@/src/features/draft-submission/lib/upload/draftUploads'
 import { deleteSubmissionUploads } from '@/src/features/draft-submission/lib/upload/firebaseUpload'
 import { missingDraftContent } from '@/src/shared/utils/validation'
 
