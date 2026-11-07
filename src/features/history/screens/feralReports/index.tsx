@@ -7,7 +7,7 @@ import { useFeralReports } from '@/src/features/history/hooks/useFeralReports'
 import type {
   CacheStatus,
   SubmissionCacheFile,
-} from '@/src/features/draft-submission/lib/submissionCache'
+} from '@/src/shared/lib/submissionCache'
 import type { SightingSpot } from '@/src/features/history/lib/history'
 import { router, Stack } from 'expo-router'
 import { useCallback, useState } from 'react'

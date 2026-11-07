@@ -13,7 +13,8 @@ src/
 │   ├── auth/              # sign-in, Registration, auth providers, entry gate
 │   ├── permissions/       # onboarding, consent, photo, location, email opt-in
 │   ├── settings/          # settings screen + store, photo toggles
-│   ├── draft-submission/  # the draft (ADR-0006), create/cats/Map picker screens, upload + cache
+│   ├── organizations/     # organization directory, sharing consent, outbox
+│   ├── draft-submission/  # the draft (ADR-0006), create/cats/Map picker screens, upload
 │   ├── camera-control/    # Camera screen and capture hooks (JS side of the Camera seam)
 │   ├── library-picker/    # Library pick
 │   ├── annotate/          # Box Annotation, Tutorial, inset crop bubble
@@ -23,7 +24,7 @@ src/
 │   └── location/          # Live fix (liveFix.ts) + its tuning
 ├── shared/        # domain-agnostic or cross-cutting kernel
 │   ├── ui/{atoms,molecules,organisms}/   # Atomic Design UI kit
-│   ├── analytics/  consent/  hooks/  lib/
+│   ├── analytics/  consent/  hooks/  lib/   # incl. the Submission store + cache
 │   └── config/  content/  types/  utils/
 ├── server-types/  # tsconfig.server.json includes it by path
 └── test-utils/
@@ -45,9 +46,10 @@ never import each other.
 | 2     | permissions                              |
 | 3     | core                                     |
 | 4     | settings                                 |
-| 5     | draft-submission                         |
-| 6     | camera-control, library-picker, annotate |
-| 7     | history                                  |
+| 5     | organizations                            |
+| 6     | draft-submission                         |
+| 7     | camera-control, library-picker, annotate |
+| 8     | history                                  |
 
 - **Screens are the composition layer.** A `screens/` file may import any unit.
   Only `src/app/` and other screens import screens.

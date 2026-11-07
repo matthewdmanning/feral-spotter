@@ -6,7 +6,7 @@ import { TextButton } from '@/src/shared/ui/atoms/TextButton'
 import { ButtonRow } from '@/src/shared/ui/molecules/ButtonRow'
 import { FieldRow } from '@/src/shared/ui/molecules/FieldRow'
 import { DateTimePickerButton } from '@/src/features/draft-submission/components/DateTimePicker'
-import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import {
   openCatForm,
   startCatPass,

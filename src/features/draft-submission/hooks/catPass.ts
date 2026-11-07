@@ -22,7 +22,7 @@
 
 import { useActiveCatFlowStore } from '@/src/features/draft-submission/hooks/useActiveCatFlowStore'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
-import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useEffect, useState } from 'react'
 

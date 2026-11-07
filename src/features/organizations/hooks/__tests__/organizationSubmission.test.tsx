@@ -6,7 +6,7 @@ import {
   submitDraft,
   type SubmitOutcome,
 } from '@/src/features/draft-submission/lib/draft'
-import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import { useOrganizationSharingStore } from '@/src/features/organizations/hooks/useOrganizationSharingStore'
@@ -18,7 +18,7 @@ import { fakeOrganizationsService } from '@/src/test-utils/organizationsService'
 import {
   createSubmissionCache,
   getSubmissionCache,
-} from '@/src/features/draft-submission/lib/submissionCache'
+} from '@/src/shared/lib/submissionCache'
 import { DEFAULT_SHARING } from '@/src/shared/types/Organizations'
 import { uploadSubmissionMetadata } from '@/src/features/draft-submission/lib/upload/firebaseUpload'
 

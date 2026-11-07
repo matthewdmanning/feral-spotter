@@ -4,7 +4,7 @@ import { useCatSubmit } from '@/src/features/draft-submission/hooks/useCatSubmit
 import type { CatFormValues } from '@/src/features/draft-submission/hooks/useCatForm'
 import { useActiveCatFlowStore } from '@/src/features/draft-submission/hooks/useActiveCatFlowStore'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
-import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 
 /**
  * #203: Cat Form Submit must land on Cat List (`/submission/create`), never

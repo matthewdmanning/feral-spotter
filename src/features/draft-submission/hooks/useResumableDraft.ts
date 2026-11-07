@@ -6,7 +6,7 @@
 import {
   getAllSubmissionCaches,
   getCurrentCacheId,
-} from '@/src/features/draft-submission/lib/submissionCache'
+} from '@/src/shared/lib/submissionCache'
 import { isResumableDraft } from '@/src/features/draft-submission/lib/resumable'
 import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
 import { useIsFocused } from 'expo-router'

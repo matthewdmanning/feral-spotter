@@ -5,7 +5,7 @@
  */
 
 import { showAlert } from '@/src/shared/hooks/useUIStore'
-import type { ObservedCat } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import type { ObservedCat } from '@/src/shared/hooks/useSubmissionStore'
 import type {
   CatAge,
   CatColor,

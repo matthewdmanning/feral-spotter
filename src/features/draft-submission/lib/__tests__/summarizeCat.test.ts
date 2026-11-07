@@ -1,4 +1,4 @@
-import type { ObservedCat } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import type { ObservedCat } from '@/src/shared/hooks/useSubmissionStore'
 import { summarizeCat } from '@/src/features/draft-submission/lib/attributes'
 
 /**

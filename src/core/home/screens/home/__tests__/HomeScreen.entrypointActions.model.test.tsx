@@ -4,7 +4,7 @@ import React from 'react'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import { SUBMISSION_STALE_MS } from '@/src/shared/config/constants'
-import { getAllSubmissionCaches } from '@/src/features/draft-submission/lib/submissionCache'
+import { getAllSubmissionCaches } from '@/src/shared/lib/submissionCache'
 import HomeScreen from '@/src/core/home/screens/home/index'
 import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
@@ -46,7 +46,7 @@ jest.mock('@/src/shared/consent/useConsentStore', () => {
   })
   return actual
 })
-jest.mock('@/src/features/draft-submission/lib/submissionCache', () => ({
+jest.mock('@/src/shared/lib/submissionCache', () => ({
   getAllSubmissionCaches: jest.fn(),
   getCurrentCacheId: jest.fn().mockResolvedValue(null),
 }))

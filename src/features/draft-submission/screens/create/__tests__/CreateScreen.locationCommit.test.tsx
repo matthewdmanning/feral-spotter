@@ -1,6 +1,6 @@
 import { act, render } from '@testing-library/react-native'
 import React from 'react'
-import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import CreateSubmissionScreen from '@/src/features/draft-submission/screens/create/index'
 
 /**
@@ -19,7 +19,7 @@ jest.mock('expo-router', () => ({
 
 jest.mock('expo-crypto', () => ({ randomUUID: jest.fn(() => 'sub-1') }))
 
-jest.mock('@/src/features/draft-submission/lib/submissionCache', () => ({
+jest.mock('@/src/shared/lib/submissionCache', () => ({
   createSubmissionCache: jest.fn().mockResolvedValue({}),
   getCurrentCacheId: jest.fn().mockResolvedValue('cache-1'),
   updateSubmissionCache: jest.fn().mockResolvedValue(undefined),

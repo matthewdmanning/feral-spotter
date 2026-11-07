@@ -4,7 +4,7 @@
  */
 
 import { SUBMISSION_STALE_MS } from '@/src/shared/config/constants'
-import type { SubmissionCacheFile } from '@/src/features/draft-submission/lib/submissionCache'
+import type { SubmissionCacheFile } from '@/src/shared/lib/submissionCache'
 
 /**
  * A draft can be resumed while it is unsent — In Progress, or Failed after a

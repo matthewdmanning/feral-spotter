@@ -14,7 +14,7 @@ import {
 } from '@/src/features/organizations/hooks/useOrganizationSharingStore'
 import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
-import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import { EVENTS } from '@/src/shared/analytics/analytics'
 import { fireAnalyticsEvent } from '@/src/features/draft-submission/lib/analytics'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
@@ -22,7 +22,7 @@ import {
   getCurrentCacheId,
   transitionSubmission,
   updateSubmissionCache,
-} from '@/src/features/draft-submission/lib/submissionCache'
+} from '@/src/shared/lib/submissionCache'
 import { confirmedSharing } from '@/src/features/organizations/lib/consent'
 import {
   buildCacheMetadata,

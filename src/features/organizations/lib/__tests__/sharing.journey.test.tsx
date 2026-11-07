@@ -7,7 +7,7 @@ import {
 } from '@testing-library/react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { SubmissionOrganizations } from '@/src/features/organizations/components/SubmissionOrganizations'
-import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import {
   useOrganizationSharingStore,
   EMPTY_ORGANIZATION_ACCOUNT,

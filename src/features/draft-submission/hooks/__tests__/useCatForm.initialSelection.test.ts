@@ -1,6 +1,6 @@
 import { renderHook } from '@testing-library/react-native'
 import { useCatForm } from '@/src/features/draft-submission/hooks/useCatForm'
-import type { ObservedCat } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import type { ObservedCat } from '@/src/shared/hooks/useSubmissionStore'
 
 /**
  * Pins the acceptance criterion from #205 that the model-test on the

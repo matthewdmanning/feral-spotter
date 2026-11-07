@@ -18,7 +18,7 @@ jest.mock('expo-router', () => ({
 }))
 
 jest.mock('@/src/features/auth/lib/useAuth', () => ({ useAuth: jest.fn() }))
-jest.mock('@/src/features/draft-submission/lib/submissionCache', () => ({
+jest.mock('@/src/shared/lib/submissionCache', () => ({
   getAllSubmissionCaches: jest.fn().mockResolvedValue([]),
   getCurrentCacheId: jest.fn().mockResolvedValue(null),
 }))

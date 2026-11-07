@@ -33,7 +33,7 @@ jest.mock('expo-router', () => ({
 
 jest.mock('expo-crypto', () => ({ randomUUID: jest.fn(() => 'sub-1') }))
 
-jest.mock('@/src/features/draft-submission/lib/submissionCache', () => ({
+jest.mock('@/src/shared/lib/submissionCache', () => ({
   createSubmissionCache: jest.fn().mockResolvedValue({}),
   getCurrentCacheId: jest.fn().mockResolvedValue('cache-1'),
 }))
@@ -70,7 +70,7 @@ jest.mock('@/src/features/draft-submission/hooks/usePhotoStore', () => ({
     sel({ source: 'camera' }),
 }))
 
-jest.mock('@/src/features/draft-submission/hooks/useSubmissionStore', () => ({
+jest.mock('@/src/shared/hooks/useSubmissionStore', () => ({
   useSubmissionStore: (sel: (s: unknown) => unknown) =>
     sel({
       submission: { location_type: 'device', time_type: 'device' },

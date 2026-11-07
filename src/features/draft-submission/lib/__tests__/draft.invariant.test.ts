@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useActiveCatFlowStore } from '@/src/features/draft-submission/hooks/useActiveCatFlowStore'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
-import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import {
   completeDraft,
   discardDraft,

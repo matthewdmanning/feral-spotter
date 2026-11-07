@@ -22,7 +22,7 @@ jest.mock('expo-router', () => ({
 
 jest.mock('expo-crypto', () => ({ randomUUID: jest.fn(() => 'sub-1') }))
 
-jest.mock('@/src/features/draft-submission/lib/submissionCache', () => ({
+jest.mock('@/src/shared/lib/submissionCache', () => ({
   createSubmissionCache: jest.fn().mockResolvedValue({}),
   getCurrentCacheId: jest.fn().mockResolvedValue('cache-1'),
 }))
@@ -52,7 +52,7 @@ interface MockSubmission {
 
 let mockSubmission: MockSubmission
 
-jest.mock('@/src/features/draft-submission/hooks/useSubmissionStore', () => ({
+jest.mock('@/src/shared/hooks/useSubmissionStore', () => ({
   useSubmissionStore: (
     sel: (s: {
       submission: MockSubmission

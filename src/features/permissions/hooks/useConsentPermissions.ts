@@ -6,7 +6,7 @@
  */
 
 import consentCopy from '@/src/features/permissions/copy/consentDisclosure.json'
-import { routeAfterDeviceConsent } from '@/src/shared/consent/consentFlow'
+import { routeAfterDeviceConsent } from '@/src/features/permissions/lib/deviceConsentRoute'
 import { useConsentStore } from '@/src/shared/consent/useConsentStore'
 import { showAlert } from '@/src/shared/hooks/useUIStore'
 import { cameraPermission } from '@/src/features/permissions/lib/cameraPermission'

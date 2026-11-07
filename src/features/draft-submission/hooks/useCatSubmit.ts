@@ -12,12 +12,12 @@
  */
 
 import { showAlert } from '@/src/shared/hooks/useUIStore'
-import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import { useActiveCatFlow } from '@/src/features/draft-submission/hooks/useActiveCatFlow'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import { EVENTS, captureEvent } from '@/src/shared/analytics/analytics'
 import type { CatFormValues } from '@/src/features/draft-submission/hooks/useCatForm'
-import type { ObservedCat } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import type { ObservedCat } from '@/src/shared/hooks/useSubmissionStore'
 import {
   CAT_ATTRIBUTES,
   FIELD_LABELS,

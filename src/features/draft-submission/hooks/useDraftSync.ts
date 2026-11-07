@@ -11,14 +11,14 @@ import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoSto
 import {
   useSubmissionStore,
   type ObservedCat,
-} from '@/src/features/draft-submission/hooks/useSubmissionStore'
+} from '@/src/shared/hooks/useSubmissionStore'
 import { useAuth } from '@/src/features/auth/lib/useAuth'
 import {
   createSubmissionCache,
   getCurrentCacheId,
   UNSENT_STATUSES,
   updateSubmissionCache,
-} from '@/src/features/draft-submission/lib/submissionCache'
+} from '@/src/shared/lib/submissionCache'
 import { useLocationCapture } from '@/src/core/location/liveFix'
 import { syncPhotoUploads } from '@/src/features/draft-submission/lib/upload/draftUploads'
 import {

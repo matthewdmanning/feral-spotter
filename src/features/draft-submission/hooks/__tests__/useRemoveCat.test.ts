@@ -4,7 +4,7 @@ import { useActiveCatFlowStore } from '@/src/features/draft-submission/hooks/use
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useRemoveCat } from '@/src/features/draft-submission/hooks/useRemoveCat'
-import { useSubmissionStore } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import { pressDialogButton } from '@/src/test-utils/dialog'
 import { observedCat } from '@/src/test-utils/catFixtures'
 import { submissionPhoto } from '@/src/test-utils/photoFixtures'

@@ -1,7 +1,5 @@
-import {
-  nextConsentRoute,
-  routeAfterDeviceConsent,
-} from '@/src/shared/consent/consentFlow'
+import { nextConsentRoute } from '@/src/shared/consent/consentFlow'
+import { routeAfterDeviceConsent } from '@/src/features/permissions/lib/deviceConsentRoute'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { useConsentStore } from '@/src/shared/consent/useConsentStore'
 

@@ -13,8 +13,8 @@
 import type {
   CachedCat,
   CachedProfileBox,
-} from '@/src/features/draft-submission/lib/submissionCache'
-import type { ObservedCat } from '@/src/features/draft-submission/hooks/useSubmissionStore'
+} from '@/src/shared/lib/submissionCache'
+import type { ObservedCat } from '@/src/shared/hooks/useSubmissionStore'
 import type { BoundingBox } from '@/src/shared/types/BoundingBox'
 
 /** `boxes` in confirmation order — getBoxesForCat's order. */

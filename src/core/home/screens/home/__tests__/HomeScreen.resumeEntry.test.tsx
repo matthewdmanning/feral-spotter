@@ -1,7 +1,7 @@
 import { act, render, waitFor } from '@testing-library/react-native'
 import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
 import React from 'react'
-import { getAllSubmissionCaches } from '@/src/features/draft-submission/lib/submissionCache'
+import { getAllSubmissionCaches } from '@/src/shared/lib/submissionCache'
 import HomeScreen from '@/src/core/home/screens/home/index'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { setConsent } from '@/src/test-utils/consent'
@@ -45,7 +45,7 @@ jest.mock('@/src/shared/consent/useConsentStore', () => {
   })
   return actual
 })
-jest.mock('@/src/features/draft-submission/lib/submissionCache', () => ({
+jest.mock('@/src/shared/lib/submissionCache', () => ({
   getAllSubmissionCaches: jest.fn(),
   getCurrentCacheId: jest.fn().mockResolvedValue(null),
 }))
