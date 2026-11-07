@@ -1,34 +1,34 @@
 {
-  "title": "Before you start",
-  "intro": "FeralSpotter captures the following at the moment you take a photo, and uploads it when you submit a sighting:",
+  "title": "",
+  "intro": "FeralSpotter gather the following when you:",
   "items": [
-    { "label": "Photos", "text": "captured when you take them of the animal" },
+    { "label": "Photos", "text": "" },
     {
       "label": "Location",
-      "text": "(GPS) captured at the moment you take a photo"
+      "text": ""
     },
     {
-      "label": "Details you enter",
-      "text": "about the animal (appearance, condition, etc.), captured when you submit"
+      "label": "Cat descriptions",
+      "text": ""
     },
     {
       "label": "Your Google account",
-      "text": "so we can follow up if a submission needs clarification"
+      "text": ""
     }
   ],
   "body": [
-    "This data is uploaded to a private cloud storage bucket and used to build a dataset for feral cat population tracking and research. It is not made public and is not shared outside this project.",
+    "The app will only ever gather location data while you're using the app. Only photos that you select will be uploaded.",
     "By continuing, you agree to photos and location being captured when you take a photo, and to all of this data being uploaded as described above."
   ],
   "agreeLabel": "I Agree — Continue",
   "declineLabel": "Decline",
-  "declineWarningTitle": "FeralSpotter needs this to work",
-  "declineWarningBody": "Photos, location, and the details you enter are what make a sighting submittable. Without agreeing to collect and upload them, the app has nothing to do — you won't be able to use FeralSpotter at all.",
+  "declineWarningTitle": "Permissions Required",
+  "declineWarningBody": "Without permissions, you won't be able to use FeralSpotter.",
   "locationOnceWarningTitle": "About location access",
   "locationOnceWarningBody": "If you chose \"Only this time\" for location, Android revokes that access as soon as the app closes. Location may not be captured next time you open FeralSpotter until you grant access again.",
   "analytics": {
-    "title": "One more thing",
-    "intro": "FeralSpotter is still a little feral itself, and anonymous usage data helps us tame the rough edges.",
+    "title": "Usage Data",
+    "intro": "FeralSpotter is still a little feral. Anonymous usage data helps us improve your experience.",
     "label": "Anonymous usage analytics",
     "text": "such as app events and crash data, to help us improve FeralSpotter",
     "continueLabel": "Continue"
