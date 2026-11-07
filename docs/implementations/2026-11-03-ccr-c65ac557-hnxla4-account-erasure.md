@@ -22,3 +22,11 @@ API facts were read from the EmailOctopus v2 and PostHog persons docs via Contex
 ## Verification
 
 `functions` tsc and jest (32 passed). Nothing deployed or called against a live service.
+
+## 2026-11-07 — fix: erase organization permission snapshots
+
+**Purpose:** Prevent organization ledgers containing personal and Sighting data from surviving account erasure.
+
+**Change:** Delete `organization-permissions/{uid}/` for both values of `deleteSightings`, before the optional Sighting deletion and final Auth deletion. A failed permission cleanup leaves Auth available for a retry. See [the Organizations fix note](2026-11-07-feat-organizations.md#2026-11-07--fix-consent-races-account-erasure-and-outbox-progress) for the related consent and synchronization fixes.
+
+**Verification:** The erasure regression covers both deletion choices and prevents Auth deletion when ledger cleanup fails; the Storage adapter regression checks the exact uid prefix on retries. The full Functions suite passes (7 suites / 62 tests), as do its TypeScript build and formatting checks. No live erasure or deployment was performed.

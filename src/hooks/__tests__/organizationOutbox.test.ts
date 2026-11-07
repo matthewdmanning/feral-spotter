@@ -91,6 +91,27 @@ test('a 409 marks the grant for review; a 400 leaves it pending but not for revi
   ])
 })
 
+test('a permanent grant rejection does not starve later grants or retry in the same drain', async () => {
+  const service = await fakeOrganizationsService(
+    ({ action, organizationId }) =>
+      action === 'list'
+        ? ledger
+        : organizationId === 'invalid'
+          ? { status: 400 }
+          : ledger,
+  )
+  enqueueGrant('invalid')
+  enqueueGrant('rescue')
+
+  await sync()
+  expect(service.actions()).toEqual(['list', 'grant', 'grant'])
+  expect(outbox().map((item) => item.organizationId)).toEqual(['invalid'])
+
+  await sync()
+  expect(service.actions()).toEqual(['list', 'grant', 'grant', 'list', 'grant'])
+  expect(outbox().map((item) => item.organizationId)).toEqual(['invalid'])
+})
+
 test('flag-off still sends revocations first while withholding grants', async () => {
   const service = await fakeOrganizationsService(() => ledger)
   enqueueGrant('other')

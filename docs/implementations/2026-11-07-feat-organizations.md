@@ -162,3 +162,17 @@ The 400/404/429 retry loop (finding 2) is unchanged.
 - The Firebase Storage emulator ignores `ifGenerationMatch`. The former emulator "concurrent grants" assertion passed by timing; ledger concurrency is now tested with a narrow generation fake.
 
 **Run and passing:** client suite 105 suites / 496 tests, Functions 60, rules 39, organizations emulator lane 14, `npm run typecheck`, Functions build, ESLint on changed files, Prettier, `git diff --check`.
+
+### 2026-11-07 — fix: consent races, account erasure, and outbox progress
+
+**Purpose:** Address the three bugs found in review of PR #435.
+
+**Change:** Recheck the original sharing confirmation after metadata upload and before enqueueing any grant. Withdrawing sharing or changing its settings during upload now completes the Sighting without granting the stale choice. Account erasure also removes the user's organization permission ledger, including when Sightings are retained, before deleting Auth. A grant rejected with 400/404/429 stays pending but is skipped for the remainder of that sync attempt so later grants can proceed; transport/service failures and failed revocations still stop the drain.
+
+**Regression coverage:** The Submission journey keeps the actual form mounted during upload, exercises withdrawal and switching back to Anonymous, and checks that the Sighting completes with no stale persisted grant. Outbox coverage checks progress past a permanent rejection without retrying it in the same drain. Account-erasure coverage checks ledger removal for both Sighting choices and preserves the Auth-last failure boundary.
+
+The account-deletion change is also recorded in the [account-erasure note](2026-11-03-ccr-c65ac557-hnxla4-account-erasure.md#2026-11-07--fix-erase-organization-permission-snapshots).
+
+**Test iterations:** The initial consent journey failed because rendering a separate hook displaced the form as the active test render. The corrected journey calls the real `submitDraft()` lifecycle with the form mounted; all three consent cases pass.
+
+**Verification:** Full client suite: 116 suites / 546 tests passed. Functions suite: 7 suites / 62 tests passed. App/server TypeScript checks, Functions build, focused client ESLint, Prettier on every changed file, and `git diff --check` passed. Rules/emulator integration and device checks were not rerun; nothing was deployed.
