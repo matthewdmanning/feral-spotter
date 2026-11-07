@@ -20,6 +20,8 @@ export interface AnalyticsEraser {
 export interface SubmissionStore {
   /** Delete every object under the uid's Submission folder. */
   deleteUserSubmissions(uid: string): Promise<void>
+  /** Delete every organization-permission snapshot under the uid's folder. */
+  deleteUserOrganizationPermissions(uid: string): Promise<void>
 }
 
 export interface AccountStore {
@@ -48,6 +50,7 @@ export async function eraseAccount(
 ): Promise<void> {
   if (email) await ports.email.remove(email)
   await ports.analytics.erasePerson(uid)
+  await ports.submissions.deleteUserOrganizationPermissions(uid)
   if (deleteSightings) await ports.submissions.deleteUserSubmissions(uid)
   await ports.accounts.deleteUser(uid)
 }

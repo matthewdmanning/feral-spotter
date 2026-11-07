@@ -242,9 +242,12 @@ export const useOrganizationSharingStore = create<SharingState>()(
                 uid,
               )
               updateAccount(uid, () => ({ ledger }))
+              const skipped = new Set<string>()
               while (useAuthStore.getState().user?.uid === uid) {
                 const outbox = get().accounts[uid]?.outbox ?? []
-                const ready = outbox.filter((a) => !a.requiresConfirmation)
+                const ready = outbox.filter(
+                  (a) => !a.requiresConfirmation && !skipped.has(a.mutationId),
+                )
                 // Revocations go first; flag-off withholds grants but never revocations.
                 const item =
                   ready.find((a) => a.action !== 'grant') ??
@@ -264,18 +267,23 @@ export const useOrganizationSharingStore = create<SharingState>()(
                     ),
                   }))
                 } catch (error) {
+                  if (!(error instanceof OrganizationSyncError)) break
+                  if (error.requiresConfirmation) {
+                    updateAccount(uid, (account) => ({
+                      outbox: account.outbox.map((action) =>
+                        action.mutationId === item.mutationId
+                          ? { ...action, requiresConfirmation: true }
+                          : action,
+                      ),
+                    }))
+                    continue
+                  }
                   if (
-                    !(error instanceof OrganizationSyncError) ||
-                    !error.requiresConfirmation
+                    item.action !== 'grant' ||
+                    ![400, 404, 429].includes(error.status)
                   )
                     break
-                  updateAccount(uid, (account) => ({
-                    outbox: account.outbox.map((action) =>
-                      action.mutationId === item.mutationId
-                        ? { ...action, requiresConfirmation: true }
-                        : action,
-                    ),
-                  }))
+                  skipped.add(item.mutationId)
                 }
               }
             } catch {
