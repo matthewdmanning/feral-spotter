@@ -27,7 +27,8 @@
     "format:check": "node scripts/format-changed.mjs --check",
     "clean-debug": "bash scripts/android-build.sh",
     "device-monitor": "bash scripts/device-monitor.sh",
-    "gradle:debug": "expo prebuild --clean && cd android && .\\gradlew assembleDebug"
+    "gradle:debug": "expo prebuild --clean && cd android && .\\gradlew assembleDebug",
+    "test:organizations:emulator": "node scripts/run-rules-tests.mjs --organizations"
   },
   "dependencies": {
     "@expo-google-fonts/nunito": "^0.4.1",

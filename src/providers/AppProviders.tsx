@@ -28,6 +28,7 @@
  *     opt-in allow it.
  */
 
+import { OrganizationsRuntime } from '@/src/components/organisms/organizations/OrganizationsRuntime'
 import { AlertHost } from '@/src/components/organisms/AlertHost'
 import { ErrorBoundary } from '@/src/components/atoms/ErrorBoundary'
 import {
@@ -163,6 +164,7 @@ export function AppProviders({ children }: AppProvidersProps) {
     <GestureHandlerRootView style={{ flex: 1 }}>
       {__DEV__ && <ScreenTransitionLogger />}
       <SystemThemeSync />
+      <OrganizationsRuntime />
       {/* Outside ErrorBoundary's children so a caught render error still
           leaves the app able to raise a dialog. */}
       <AlertHost />

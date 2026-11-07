@@ -1,10 +1,11 @@
 /**
  * screens/sightingDetail
  * Read-only view of one past Sighting, opened from a Reports card or map pin.
- * Same content as Submission Details, but every answer is plain text — no
- * selectors, no edit or delete. History is a record, not a draft.
+ * Sighting content stays read-only. Organization permissions can be revoked
+ * separately from the historical record.
  */
 
+import { OrganizationPermissions } from '@/src/components/organisms/organizations/OrganizationPermissions'
 import { GlassSurface } from '@/src/components/atoms/GlassSurface'
 import { AmbientBackground } from '@/src/components/atoms/AmbientBackground'
 import { CatCrop } from '@/src/components/atoms/CatCrop'
@@ -102,6 +103,11 @@ export default function SightingDetailScreen() {
             ))}
           </GlassSurface>
         ))}
+        {sighting.cloud_submission_id && (
+          <OrganizationPermissions
+            submissionId={sighting.cloud_submission_id}
+          />
+        )}
       </ScrollView>
     </View>
   )

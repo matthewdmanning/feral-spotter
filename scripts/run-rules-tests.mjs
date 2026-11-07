@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url'
 
 const require = createRequire(import.meta.url)
 const repoRoot = fileURLToPath(new URL('../', import.meta.url))
+const organizationsOnly = process.argv.includes('--organizations')
 const MIN_MAJOR = 21
 const JAVA_ROOTS = [
   'C:/Program Files/Java',
@@ -95,7 +96,9 @@ const { status, error } = spawnSync(
     'project-e3d5659d-bc4f-438f-88c',
     '--only',
     'firestore,storage,auth',
-    'jest -c jest.rules.config.js --runInBand',
+    organizationsOnly
+      ? 'npm --prefix functions run test:organizations:emulator'
+      : 'jest -c jest.rules.config.js --runInBand',
   ],
   { stdio: 'inherit', cwd: repoRoot, env },
 )

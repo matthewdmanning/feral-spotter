@@ -289,3 +289,5 @@ export const syncEmailSubscription = onRequest(
     }
   },
 )
+
+export { organizationsApi } from './organizations/api'

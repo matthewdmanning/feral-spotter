@@ -14,6 +14,13 @@
  * as a popup — see its comment for why.
  */
 
+import { effectiveSharingSettings } from '@/src/types/Organizations'
+import { useOrganizationsFlag } from '@/src/hooks/useOrganizationsFlag'
+import { confirmedSharing } from '@/src/lib/organizations/consent'
+import {
+  persistOrganizationSharing,
+  useOrganizationSharingStore,
+} from '@/src/hooks/useOrganizationSharingStore'
 import {
   showAlert,
   showError,
@@ -136,6 +143,19 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
               return
             }
 
+            let sharing: ReturnType<typeof confirmedSharing> = null
+            try {
+              if (user?.uid) sharing = confirmedSharing(user.uid)
+            } catch (error) {
+              showError(
+                'Confirm organization sharing',
+                error instanceof Error
+                  ? error.message
+                  : 'Review sharing choices.',
+              )
+              return
+            }
+
             setIsSubmitting(true)
             setSubmitting(true)
 
@@ -222,8 +242,19 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
                 )
               })
 
+              if (
+                sharing &&
+                confirmedSharing(user?.uid ?? '')?.draft.confirmedSignature !==
+                  sharing.draft.confirmedSignature
+              ) {
+                throw new Error(
+                  'Sharing choices changed during submission; review and try again',
+                )
+              }
               const payload = buildSubmissionPayload({
-                submission,
+                submission: useOrganizationsFlag.getState().enabled
+                  ? submission
+                  : { ...submission, report_injured: undefined },
                 catsWithBoxes,
                 uploadedPhotos,
               })
@@ -275,6 +306,45 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
                 user.uid,
                 cloudSubmissionId,
               )
+
+              // The durable outbox survives draft teardown and has its own sync status.
+              if (sharing) {
+                const sharingState = useOrganizationSharingStore.getState()
+                sharingState.remember(user.uid, sharing.draft.selectedIds)
+                for (const organizationId of sharing.draft.selectedIds) {
+                  sharingState.enqueue(user.uid, {
+                    action: 'grant',
+                    organizationId,
+                    organizationName:
+                      sharing.draft.organizationNames?.[organizationId] ??
+                      'Selected organization',
+                    grant: {
+                      submissionId: cloudSubmissionId,
+                      organizationId,
+                      catalogVersion: sharing.draft.catalogVersion,
+                      epoch: sharing.epochs[organizationId] ?? 0,
+                      anonymous: sharing.draft.anonymous,
+                      settings: effectiveSharingSettings(
+                        sharing.settings,
+                        sharing.draft.anonymous,
+                      ),
+                      contactEmail:
+                        !sharing.draft.anonymous &&
+                        sharing.settings.fields.email
+                          ? user.email
+                          : null,
+                      injured: submission.report_injured === true,
+                      disclosureVersion: 1,
+                    },
+                  })
+                }
+                await persistOrganizationSharing()
+                void sharingState.sync(user.uid)
+              }
+              if (cId)
+                await updateSubmissionCache(cId, {
+                  cloud_submission_id: cloudSubmissionId,
+                })
 
               // Flips the history row to 'Submitted', releases the current
               // pointer (otherwise every later draft's createSubmissionCache()

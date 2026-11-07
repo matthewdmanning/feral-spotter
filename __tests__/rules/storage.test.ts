@@ -9,6 +9,7 @@ import {
 import { doc, setDoc } from 'firebase/firestore'
 import {
   deleteObject,
+  getMetadata,
   listAll,
   type StorageReference,
   ref,
@@ -396,4 +397,36 @@ describe('storage.rules — submissions/{uid}/{submissionId}/{fileName}', () => 
       }),
     )
   })
+})
+
+describe('organization service objects remain server-only', () => {
+  it.each(['owner', 'other', 'anonymous'])(
+    'denies direct catalog and ledger reads/writes for %s',
+    async (actor) => {
+      const paths = [
+        'organizations/catalog.json',
+        'organization-permissions/owner/ledger.json',
+      ]
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        for (const objectPath of paths)
+          await uploadBytes(
+            ref(context.storage(BUCKET_URL), objectPath),
+            SMALL_JSON,
+            { contentType: 'application/json' },
+          )
+      })
+      const context =
+        actor === 'anonymous'
+          ? testEnv.unauthenticatedContext()
+          : testEnv.authenticatedContext(actor)
+      for (const objectPath of paths) {
+        const object = ref(context.storage(BUCKET_URL), objectPath)
+        await assertFails(getMetadata(object))
+        await assertFails(
+          uploadBytes(object, SMALL_JSON, { contentType: 'application/json' }),
+        )
+        await assertFails(deleteObject(object))
+      }
+    },
+  )
 })

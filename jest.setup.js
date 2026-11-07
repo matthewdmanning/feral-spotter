@@ -1,3 +1,8 @@
+// NetInfo's native reachability callbacks are unavailable under the RN Jest preset.
+jest.mock('@react-native-community/netinfo', () =>
+  require('@react-native-community/netinfo/jest/netinfo-mock'),
+)
+
 // Reanimated 4.7's own test environment (its Jest guide), instead of the
 // per-file 'react-native-reanimated/mock' it replaced.
 require('react-native-reanimated').setUpTests()

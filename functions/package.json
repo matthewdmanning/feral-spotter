@@ -9,7 +9,8 @@
   "scripts": {
     "build": "tsc",
     "test": "jest",
-    "deploy": "npm run build && npx -y firebase-tools@latest deploy --only functions"
+    "deploy": "npm run build && npx -y firebase-tools@latest deploy --only functions",
+    "test:organizations:emulator": "jest -c jest.emulator.config.js --runInBand"
   },
   "dependencies": {
     "firebase-admin": "^13.10.0",

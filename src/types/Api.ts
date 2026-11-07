@@ -8,6 +8,7 @@
 
 export interface SubmissionApiPayload {
   submission: {
+    report_injured?: boolean
     location_type: string
     time_type: string
     address?: string
