@@ -141,3 +141,14 @@ boundary lint.
 
 Verified: `tsc`, ESLint (6 pre-existing warnings), Jest, `format:check`; the
 new rule shown to fire on planted `../` imports in source and tests.
+
+### 2026-11-08 — fix
+
+**Purpose:** unblock PR #437's lint/test and rules-test CI jobs, both of which
+failed at `npm ci` because the Expo manifest and lockfile were out of sync.
+**Change:** regenerate `package-lock.json` for the declared Expo 58.0.23
+upgrade, including its updated transitive dependencies.
+
+Verified: type checking (including tests), lint (0 errors; 3 existing
+warnings), formatting, all 116 app suites / 546 tests, 24 rules tests, and
+14 organization emulator tests.
