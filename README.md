@@ -1,101 +1,68 @@
 # FeralSpotter
 
-![Status](https://img.shields.io/badge/status-alpha-orange?style=flat-square)
-![Platform](https://img.shields.io/badge/platform-Android%20%7C%20iOS-brightgreen?style=flat-square&logo=android)
-![Expo](https://img.shields.io/badge/Expo-SDK%2056-000020?style=flat-square&logo=expo&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript&logoColor=white)
-![License](https://img.shields.io/github/license/matthewdmanning/feral-spotter?style=flat-square)
+FeralSpotter is a mobile app for recording feral cat sightings. Add photos, mark the cats in each photo, and record the location and details you notice.
 
-A React Native mobile app for reporting and tracking feral animal sightings. Users capture photos, annotate them, and submit georeferenced observations that feed into downstream computer vision and ecological modeling pipelines.
+The app is in **alpha development**. Android is the current test-drive target; iOS needs separate build and device verification. There is no public store download linked here yet.
 
-> **Status:** Active development — Android build in progress. Core features implemented; dependency stabilization underway.
+## Record a sighting
 
----
+1. Review the first-run data disclosure and permission prompts, then sign in with Google or email. You can also create an email account. Apple and Facebook sign-in are gated to a future release.
+2. On Home, choose **Take Photos** or **Upload Photos** to select pictures from your library. A sighting uses one photo source at a time; finish or reset the current draft before switching sources.
+3. Draw and confirm a box around the same cat in each relevant photo. Use **Not in Photo** where that cat is absent, then **Done With This Cat** to describe it. Leave attributes unknown when you are unsure.
+4. Add other cats as needed. Review the sighting's location and time, correcting them if necessary.
+5. Choose **Submit Sighting**, review the cat/photo counts, and confirm. At least one cat and one photo are required. If sending fails, the draft stays on this device so you can retry.
 
-## Features
+The **Sightings** tab lists local draft and submitted records. You can continue the current draft there. **Reset** clears the draft; copies already saved to your camera roll remain there.
 
-- **Observation capture** — photo submission with gesture-based annotation tools
-- **Geolocation** — automatic GPS tagging of each sighting
-- **Authentication** — Firebase-backed user auth
-- **Offline-first** — local state and caching layer before cloud sync
-- **Structured submissions** — validated observation forms with time/location metadata
+Photos can upload in the background as you add them, before final submission. Final submission sends the sighting metadata. Email updates and usage analytics have separate opt-in choices. Where organization choices are available, they record sharing permissions; automatic delivery to rescue groups is not implemented yet. Read the disclosure in the app before contributing.
 
-## Tech Stack
+## Screenshots
 
-| Layer      | Technology                     |
-| ---------- | ------------------------------ |
-| Framework  | Expo SDK 56 (New Architecture) |
-| Language   | TypeScript                     |
-| Navigation | Expo Router (file-based)       |
-| State      | Zustand                        |
-| Styling    | react-native-unistyles v3      |
-| Auth       | Firebase                       |
-| Image      | expo-image                     |
-| Animation  | react-native-reanimated v4     |
-| Analytics  | PostHog                        |
+These Android captures from October 28, 2026 show Home and annotation controls with a test photo. They are historical previews; labels and styling may differ from the current build.
 
-## Project Suite
+<p>
+  <img src="docs/test-drives/screen-captures/2026-10-28_tab-home.png" alt="Home with Take Photos and Upload Photos actions" width="240" />
+  <img src="docs/test-drives/screen-captures/2026-10-28_annotate.png" alt="Annotation controls: Confirm, Not in Photo, and Done With This Cat" width="240" />
+</p>
 
-FeralSpotter is part of a three-component system:
+## Develop locally
 
-- **FeralSpotter** (this repo) — mobile observation app
-- **FeralSegmentor** — computer vision model for species segmentation
-- **FeralTracker** — ecological modeling and population tracking
+The app uses Expo SDK 58, React Native 0.88, TypeScript 6, Expo Router, Zustand, Unistyles, and Firebase Auth/Storage. Native camera and other modules require a development build; Expo Go is insufficient.
 
-## Getting Started
+Prerequisites:
 
-### Prerequisites
-
-- Node.js 18+
-- Android Studio (for Android emulator) or a physical Android device
-- Expo CLI (via npx — no global install needed)
-
-### Setup
+- Node.js **24.x** and npm.
+- Android SDK/build tools and a connected device or emulator for Android; macOS and Xcode for iOS.
+- A JDK compatible with the native build toolchain. The Firebase emulator rules lane uses JDK 21.
+- Project-specific Firebase native configuration (`google-services.json` / `GoogleService-Info.plist`) and provider setup for real sign-in. Obtain these from the maintainer; do not commit private credentials.
 
 ```bash
-npm install
-expo prebuild --clean   # required — this project uses native modules
+npm ci
+cp .env.example .env.local
 ```
 
-### Run
+Configure the environment for the intended backend mode. Use the [local Firebase emulator instructions](docs/agents/backend.md#test-drive-posture-emulator-by-default) for Auth/Storage testing without production data. Fully offline development stubs are also available with `EXPO_PUBLIC_AUTH_MOCK=true` and `EXPO_PUBLIC_UPLOADS_MOCK=true`; those do not validate Firebase behavior.
 
 ```bash
-npm run android    # Android emulator or device
-npm run ios        # iOS simulator (Mac only)
+npx expo prebuild --clean
+npx expo run:android
+# macOS, after completing iOS native configuration:
+npx expo run:ios
 ```
 
-### Other Commands
+`prebuild --clean` regenerates the native projects; put persistent native changes in config plugins or local modules. See [native development guidance](docs/agents/native-code.md). The `npm run android` wrapper additionally clears the Android app's local data before launching; use it only when you intend to reset that installation.
+
+## Check changes
 
 ```bash
-npm run lint       # ESLint via expo lint
-npm run typecheck  # tsc --noEmit
-npm test           # Jest
+npm run typecheck
+npx expo lint
+npm test -- --runInBand
+npm run test:rules
+npm ci --prefix functions
+npm run test:functions -- --runInBand
 ```
 
-## Architecture
+The rules command starts local Auth/Storage emulators and tests the repository's rules. Native camera, permission, layout, and sign-in behavior still need device testing; passing Jest does not verify those seams.
 
-```
-src/
-├── app/          # Expo Router routes (thin re-exports only)
-├── screens/      # Screen-level components and state
-├── components/   # Atomic Design: atoms → molecules → organisms
-├── hooks/        # Zustand stores and feature hooks
-├── lib/          # Auth, cache, analytics
-├── utils/        # Pure functions
-└── config/       # Constants and feature flags
-```
-
-Dependency direction is strictly one-way: `app/` → `screens/` → `hooks/components/lib/` → `utils/config/`. No upward imports.
-
-## Roadmap
-
-See [CHANGELOG.md](CHANGELOG.md) for completed work.
-
-**Upcoming:**
-
-- Cloud upload API (frontend + backend)
-- UI styling pass
-- Tutorial flow
-- Data usage agreement
-- UX testing pass
-- Beta launch
+See [project structure](docs/PROJECT_STRUCTURE.md), the [manual QA checklist](docs/qa_checklist.md), and [open issues](https://github.com/matthewdmanning/feral-spotter/issues) for architecture, validation, and remaining work. Report a bug with the build/commit, device, reproduction steps, and expected versus observed behavior.

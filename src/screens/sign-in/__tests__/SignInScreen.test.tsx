@@ -37,7 +37,7 @@ describe('SignInScreen', () => {
   it('signs in with email/password and navigates on success', async () => {
     mockSignInWithEmail.mockResolvedValueOnce({ uid: '123', email: 'a@b.com' })
 
-    render(<SignInScreen />)
+    await render(<SignInScreen />)
     await userEvent.type(screen.getByLabelText('Email'), 'a@b.com')
     await userEvent.type(screen.getByLabelText('Password'), 'secret')
     await userEvent.press(screen.getByLabelText('Sign in'))
@@ -51,7 +51,7 @@ describe('SignInScreen', () => {
   it('blocks email sign-in and warns when fields are empty', async () => {
     const alertSpy = jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
 
-    render(<SignInScreen />)
+    await render(<SignInScreen />)
     await userEvent.press(screen.getByLabelText('Sign in'))
 
     expect(mockSignInWithEmail).not.toHaveBeenCalled()
@@ -65,7 +65,7 @@ describe('SignInScreen', () => {
       email: 'a@b.com',
     })
 
-    render(<SignInScreen />)
+    await render(<SignInScreen />)
     await userEvent.press(screen.getByLabelText('Continue with Google'))
 
     await waitFor(() =>
@@ -75,7 +75,7 @@ describe('SignInScreen', () => {
   })
 
   it('navigates to registration from the create-account link', async () => {
-    render(<SignInScreen />)
+    await render(<SignInScreen />)
     await userEvent.press(screen.getByText('Create one'))
     expect(router.push).toHaveBeenCalledWith('/register')
   })
@@ -85,7 +85,7 @@ describe('SignInScreen', () => {
     const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
     const alertSpy = jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
 
-    render(<SignInScreen />)
+    await render(<SignInScreen />)
     await userEvent.press(screen.getByLabelText('Continue with Google'))
 
     await waitFor(() =>

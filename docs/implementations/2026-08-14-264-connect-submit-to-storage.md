@@ -199,3 +199,8 @@ Tests: `useSubmissionSubmit.inFlight.test.ts` (lock, retry, cleared draft, Faile
 
 **Purpose:** The submit lock was checked by hand in four places, and the In Progress → Sending → Submitted/Failed status machine was written by bare cache updates in three files.
 **Change:** See ADR-0006's 2026-11-03 amendment. `submitDraft()`/`discardDraft()`/`isDraftBusy()` in `lib/submission/draft.ts`; the send pipeline moved to `lib/submission/send.ts`; `transitionSubmission()` and `UNSENT_STATUSES` in `submissionCache.ts`. `useSubmissionSubmit` keeps only the confirm, the messages and navigation. Test: transition table in `submissionCache.serial.test.ts`; the submit-flow tests now seed the auth store.
+
+## 2026-11-08 — fix
+
+**Purpose:** Apply the chosen user-facing Sighting terminology consistently (#380).
+**Change:** Home continuation/draft notices, form title, final Submit Sighting action and counted confirmation, reset dialog, retry/failure messages, and history labels use Sighting. Internal Submission models, routes, telemetry, storage keys, and APIs are unchanged. No rescue-response or receipt behavior is added. Existing rendered journeys/assertions are updated with the wording. Device truncation/accessibility acceptance remains open. See the [history note](2026-10-26-feat-reports-history-map.md) and [backlog audit](../planning/2026-11-08-backlog-2026-11-07.md).

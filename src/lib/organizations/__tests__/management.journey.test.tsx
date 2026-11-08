@@ -23,7 +23,7 @@ jest.mock('expo-crypto', () => ({
 }))
 let nextId = 0
 const pressDialogButton = async (text: string) =>
-  act(async () => {
+  await act(async () => {
     await useUIStore
       .getState()
       .dialog!.buttons.find((button) => button.text === text)!.onPress!()
@@ -45,7 +45,7 @@ beforeEach(() => {
 
 test('settings values are saved explicitly and stay scoped to the current user', async () => {
   const user = userEvent.setup()
-  render(<SharingSettings />)
+  await render(<SharingSettings />)
   expect(screen.getByRole('checkbox', { name: 'Share name' })).not.toBeChecked()
   await user.press(screen.getByRole('checkbox', { name: 'Share name' }))
   await user.type(screen.getByLabelText('Name to share'), 'Observer')
@@ -99,7 +99,7 @@ test('review uses the current email and global settings; cancellation still work
     if (action === 'list') return { epochs: { rescue: 1 }, permissions: [] }
     return { status: 503 }
   })
-  render(<OrganizationPermissions />)
+  await render(<OrganizationPermissions />)
   await user.press(screen.getByRole('button', { name: 'Review sharing' }))
   await waitFor(() =>
     expect(useUIStore.getState().dialog?.title).toBe('Confirm sharing again'),

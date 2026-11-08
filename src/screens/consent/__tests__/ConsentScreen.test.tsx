@@ -85,7 +85,7 @@ describe('ConsentScreen decline flow', () => {
 
   it('warns before exiting instead of declining silently', async () => {
     const alertSpy = jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
-    render(<ConsentScreen />)
+    await render(<ConsentScreen />)
 
     await userEvent.press(screen.getByLabelText(consentCopy.declineLabel))
 
@@ -106,7 +106,7 @@ describe('ConsentScreen decline flow', () => {
     jest.spyOn(ui, 'showAlert').mockImplementation((_title, _msg, buttons) => {
       buttons?.find((b) => b.text === 'Exit')?.onPress?.()
     })
-    render(<ConsentScreen />)
+    await render(<ConsentScreen />)
 
     await userEvent.press(screen.getByLabelText(consentCopy.declineLabel))
 
@@ -120,7 +120,7 @@ describe('ConsentScreen decline flow', () => {
     jest.spyOn(ui, 'showAlert').mockImplementation((_title, _msg, buttons) => {
       buttons?.find((b) => b.text === 'Back')?.onPress?.()
     })
-    render(<ConsentScreen />)
+    await render(<ConsentScreen />)
 
     await userEvent.press(screen.getByLabelText(consentCopy.declineLabel))
 
@@ -149,7 +149,7 @@ describe('ConsentScreen blocked-permission recovery', () => {
         return { remove: jest.fn() }
       })
 
-    render(<ConsentScreen />)
+    await render(<ConsentScreen />)
     await userEvent.press(screen.getByLabelText(consentCopy.agreeLabel))
 
     expect(screen.getByText('Permission Blocked')).toBeTruthy()
@@ -186,7 +186,7 @@ describe('ConsentScreen location one-time-grant notice (#225)', () => {
   it('surfaces the convenience-tradeoff notice on a fresh location grant', async () => {
     const alertSpy = jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
     mockRequestForegroundPermissionsAsync.mockResolvedValue(grantedLocation)
-    render(<ConsentScreen />)
+    await render(<ConsentScreen />)
 
     await userEvent.press(screen.getByLabelText(consentCopy.agreeLabel))
 
@@ -214,7 +214,7 @@ describe('ConsentScreen location one-time-grant notice (#225)', () => {
         return { remove: jest.fn() }
       })
 
-    render(<ConsentScreen />)
+    await render(<ConsentScreen />)
     await userEvent.press(screen.getByLabelText(consentCopy.agreeLabel))
     expect(screen.getByText('Permission Blocked')).toBeTruthy()
     expect(mockRouterReplace).not.toHaveBeenCalled()

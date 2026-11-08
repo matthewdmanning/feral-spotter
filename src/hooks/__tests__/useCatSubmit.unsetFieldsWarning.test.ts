@@ -76,8 +76,10 @@ describe('useCatSubmit — missing-field warning (#205)', () => {
   })
 
   it('warns about every field left untouched (undefined)', async () => {
-    const { result } = renderHook(() => useCatSubmit({ form: untouchedForm }))
-    act(() => result.current.handleSave())
+    const { result } = await renderHook(() =>
+      useCatSubmit({ form: untouchedForm }),
+    )
+    await act(() => result.current.handleSave())
 
     expect(ui.showAlert).toHaveBeenCalledTimes(1)
     expect(ui.useUIStore.getState().dialog).toEqual(
@@ -102,7 +104,7 @@ describe('useCatSubmit — missing-field warning (#205)', () => {
     expect(useActiveCatFlowStore.getState().activeCatId).toBe('active-cat-id')
     expect(router.replace).not.toHaveBeenCalled()
 
-    act(() => result.current.handleSave())
+    await act(() => result.current.handleSave())
     await pressDialogButton('Save anyway')
     expect(useSubmissionStore.getState().cats).toEqual([
       {
@@ -123,11 +125,11 @@ describe('useCatSubmit — missing-field warning (#205)', () => {
     expect(router.replace).toHaveBeenCalledWith('/submission/create')
   })
 
-  it('does not warn when Unknown/Unsure was deliberately chosen for every field', () => {
-    const { result } = renderHook(() =>
+  it('does not warn when Unknown/Unsure was deliberately chosen for every field', async () => {
+    const { result } = await renderHook(() =>
       useCatSubmit({ form: deliberatelyUnknownForm }),
     )
-    act(() => result.current.handleSave())
+    await act(() => result.current.handleSave())
 
     expect(ui.showAlert).not.toHaveBeenCalled()
     expect(useSubmissionStore.getState().cats).toEqual([

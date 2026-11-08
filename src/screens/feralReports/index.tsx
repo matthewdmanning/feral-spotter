@@ -58,7 +58,7 @@ export default function FeralReportsScreen() {
         headerShown stays off so this screen's in-body title row (below)
         is its only header.
       */}
-      <Stack.Screen options={{ title: 'Feral Reports', headerShown: false }} />
+      <Stack.Screen options={{ title: 'Sightings', headerShown: false }} />
       <View style={styles.screen}>
         <AmbientBackground />
         {/* FlashList (already the app's list library), not ScrollView + map:
@@ -85,7 +85,7 @@ export default function FeralReportsScreen() {
           ListHeaderComponent={
             <View style={styles.header}>
               <View style={styles.headerRow}>
-                <Text style={styles.title}>Feral Reports</Text>
+                <Text style={styles.title}>Sightings</Text>
                 <Text style={styles.total}>{caches.length} total</Text>
               </View>
               <SightingsMap
@@ -113,9 +113,9 @@ export default function FeralReportsScreen() {
                   color={theme.colors.accentSoftText}
                 />
               </View>
-              <Text style={styles.emptyTitle}>No reports yet</Text>
+              <Text style={styles.emptyTitle}>No sightings yet</Text>
               <Text style={styles.emptyBody}>
-                Submissions appear here as you create them
+                Draft and submitted sightings appear here as you create them
               </Text>
             </GlassSurface>
           }

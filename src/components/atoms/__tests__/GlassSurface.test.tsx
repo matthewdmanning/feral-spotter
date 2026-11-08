@@ -37,7 +37,7 @@ const setReduceTransparency = (value: boolean) => {
 }
 
 const renderSettled = async () => {
-  render(<GlassSurface kind="card" testID="glass" />)
+  await render(<GlassSurface kind="card" testID="glass" />)
   // Wait for the platform's accessibility read, then let its result apply.
   await waitFor(() =>
     expect(
@@ -84,7 +84,7 @@ describe('Android', () => {
       await renderSettled()
 
       if (error) {
-        fireEvent(screen.getByTestId('glass'), 'error', {
+        await fireEvent(screen.getByTestId('glass'), 'error', {
           nativeEvent: { ...error, message: '' },
         })
       }

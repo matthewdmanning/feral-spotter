@@ -30,7 +30,7 @@ jobs:
           cache: 'npm' # Keeps your runners extremely fast by caching node_modules
 
       - name: 📦 Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       - name: 🎨 Check formatting (changed files only)
         env:
@@ -81,7 +81,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - run: npm ci --legacy-peer-deps
+      - run: npm ci
       - run: npm run test:rules
       - run: npm ci --prefix functions
       - run: npm run test:organizations:emulator

@@ -99,7 +99,7 @@ export default function CreateSubmissionScreen() {
             beside Finished!. Same header text-button pattern as Cat Form's
             Clear. It still confirms first (handleReset). */}
         <View style={styles.header}>
-          <Text style={styles.title}>Submission</Text>
+          <Text style={styles.title}>Sighting</Text>
           <TextButton
             onPress={handleReset}
             tone="danger"
@@ -273,7 +273,7 @@ export default function CreateSubmissionScreen() {
             disabled={cats.length === 0}
             loading={isSubmitting}
           >
-            Finished!
+            Submit Sighting
           </AppButton>
         </ButtonRow>
       </View>

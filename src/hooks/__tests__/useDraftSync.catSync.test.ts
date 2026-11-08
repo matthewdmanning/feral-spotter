@@ -23,10 +23,10 @@ it('draft cats reach the In Progress row and survive the post-Submit clear', asy
     time_method: 'device',
   })
   const update = jest.spyOn(cache, 'updateSubmissionCache')
-  const { unmount } = renderHook(() => useDraftSync())
+  const { unmount } = await renderHook(() => useDraftSync())
 
   // A cat saved in Cat Form shows on the In Progress card.
-  act(() => useSubmissionStore.getState().addCat(observedCat()))
+  await act(() => useSubmissionStore.getState().addCat(observedCat()))
   await waitFor(() =>
     expect(update).toHaveBeenCalledWith(
       'cache-1',
@@ -40,7 +40,7 @@ it('draft cats reach the In Progress row and survive the post-Submit clear', asy
   // Submit sends the row, then clears the draft.
   await cache.updateSubmissionCache('cache-1', { status: 'Submitted' })
   update.mockClear()
-  act(() => useSubmissionStore.getState().clearDraft())
+  await act(() => useSubmissionStore.getState().clearDraft())
 
   // The sync's write has run to completion; only then is the row proof.
   await waitFor(() => expect(update).toHaveBeenCalled())
@@ -48,6 +48,6 @@ it('draft cats reach the In Progress row and survive the post-Submit clear', asy
     await update.mock.results[0].value
   })
   expect(await rowCats()).toHaveLength(1)
-  unmount()
+  await unmount()
   update.mockRestore()
 })

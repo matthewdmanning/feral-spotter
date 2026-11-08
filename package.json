@@ -85,7 +85,7 @@
     "@firebase/rules-unit-testing": "^5.0.1",
     "@phosphor-icons/core": "2.1.1",
     "@react-native/jest-preset": "^0.88.1",
-    "@testing-library/react-native": "^13.3.3",
+    "@testing-library/react-native": "^14.1.0",
     "@types/jest": "^30.0.0",
     "@types/semver": "^7.7.1",
     "@xstate/graph": "^3.0.4",

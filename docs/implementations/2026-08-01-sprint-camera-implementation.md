@@ -362,3 +362,8 @@ flow on a device.
 - `npm run lint`: no errors, three warnings in unchanged files.
 - Prettier checks pass for all four changed files; `git diff --check` passes.
 - No device/emulator verification; use the checklist above before closing #411.
+
+## 2026-11-08 — fix
+
+**Purpose:** Finish removing the nonexistent Settings replay promise (#386).
+**Change:** Remove the stale replay assertion from the tutorial-store comment; the runtime tutorial had already dropped that promise on main. Its remaining automatic-save text now uses sighting (#380). No Settings replay feature or tutorial gating change is introduced. See the [backlog audit](../planning/2026-11-08-backlog-2026-11-07.md).

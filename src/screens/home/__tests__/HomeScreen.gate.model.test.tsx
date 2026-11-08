@@ -114,10 +114,10 @@ describe('HomeScreen gate — model-based test', () => {
     })
   }
 
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks()
     setMocks(false, false, false)
-    const result = render(<HomeScreen />)
+    const result = await render(<HomeScreen />)
     rerender = result.rerender
   })
 
@@ -156,38 +156,38 @@ describe('HomeScreen gate — model-based test', () => {
       },
     },
     events: {
-      AUTH_READY_UNAUTHENTICATED_NO_CONSENT: () => {
+      AUTH_READY_UNAUTHENTICATED_NO_CONSENT: async () => {
         setMocks(true, false, false)
-        rerender(<HomeScreen />)
+        await rerender(<HomeScreen />)
       },
-      AUTH_READY_AUTHENTICATED_NO_CONSENT: () => {
+      AUTH_READY_AUTHENTICATED_NO_CONSENT: async () => {
         setMocks(true, true, false)
-        rerender(<HomeScreen />)
+        await rerender(<HomeScreen />)
       },
-      AUTH_READY_CONSENTED_UNAUTHENTICATED: () => {
+      AUTH_READY_CONSENTED_UNAUTHENTICATED: async () => {
         setMocks(true, false, true)
-        rerender(<HomeScreen />)
+        await rerender(<HomeScreen />)
       },
-      AUTH_READY_WITH_CONSENT: () => {
+      AUTH_READY_WITH_CONSENT: async () => {
         setMocks(true, true, true)
-        rerender(<HomeScreen />)
+        await rerender(<HomeScreen />)
       },
-      AUTH_READY_STALE_CONSENT_VERSION: () => {
+      AUTH_READY_STALE_CONSENT_VERSION: async () => {
         setMocks(true, true, 'stale-version')
-        rerender(<HomeScreen />)
+        await rerender(<HomeScreen />)
       },
-      AUTH_READY_WITH_UNANSWERED_STEP: () => {
+      AUTH_READY_WITH_UNANSWERED_STEP: async () => {
         setMocks(true, true, 'unanswered')
-        rerender(<HomeScreen />)
+        await rerender(<HomeScreen />)
       },
-      SIGN_IN: () => {
+      SIGN_IN: async () => {
         setMocks(true, true, true)
-        rerender(<HomeScreen />)
+        await rerender(<HomeScreen />)
       },
-      SIGN_OUT: () => {
+      SIGN_OUT: async () => {
         // Consent persists across sign-out — only auth drops.
         setMocks(true, false, true)
-        rerender(<HomeScreen />)
+        await rerender(<HomeScreen />)
       },
     },
   }

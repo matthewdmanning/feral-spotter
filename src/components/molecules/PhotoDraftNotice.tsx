@@ -27,8 +27,8 @@ function photoDraftNoticeCopy(
 ): string {
   const { used, blocked } = BLOCKED_ENTRYPOINT[source]
   return origin === 'restored'
-    ? `You have an unfinished submission with ${used} photos. Finish or reset it to use ${blocked}.`
-    : `This submission uses ${used} photos. Reset it to use ${blocked}.`
+    ? `You have an unfinished sighting with ${used} photos. Finish or reset it to use ${blocked}.`
+    : `This sighting uses ${used} photos. Reset it to use ${blocked}.`
 }
 
 interface PhotoDraftNoticeProps {

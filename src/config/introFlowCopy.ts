@@ -18,7 +18,7 @@ export const ONBOARDING_SLIDES: readonly SlideCopy[] = [
   {
     header: 'Every feral counts',
     body: [
-      'Every neighborhood has its ferals — and every sighting helps. FeralSpotter turns what you spot into data that rescue volunteers and ecology researchers use to understand feral cats and help them.',
+      'See a feral cat? FeralSpotter lets you record a sighting with photos, a location, and the details you notice.',
     ],
     button: 'Next',
   },
@@ -26,24 +26,24 @@ export const ONBOARDING_SLIDES: readonly SlideCopy[] = [
     header: 'Spot. Snap. Submit.',
     body: [
       'See a feral? Start a sighting. Take a photo or two, note what you can — ear tip, coat pattern, condition — then review and submit.',
-      'About a minute, and every detail helps tell one cat from another.',
+      'Record what you know. You can leave details unknown when you are not sure.',
     ],
     button: 'Next',
   },
   {
     // T3 — informational only. Explicit acceptance happens on /consent,
     // not here (avoid double-gating the same disclosure).
-    header: 'Your sightings do real work',
+    header: 'What you share',
     body: [
-      'Photos and locations you submit go to a secure research database used by animal rescue groups and ecology researchers — to map colonies, plan TNR trips, and predict where cats will be.',
-      'Non-commercial. Never sold. Never used for ads.',
+      'Photos you add can begin uploading while you work. Submitting sends the location and cat details with your sighting to the project’s cloud storage.',
+      'The next screens explain data collection and permissions. Optional email updates and usage analytics have separate choices.',
     ],
     button: 'Next',
   },
   {
     header: 'Almost ready',
     body: [
-      "Next, FeralSpotter will ask you to sign in with Google and grant location, camera, and photo access — each screen explains exactly what's shared and why.",
+      'First, review the data disclosure and set up permissions. Then sign in with Google or email, or create an account with email. Apple and Facebook sign-in are not available in this alpha.',
     ],
     button: 'Set up FeralSpotter',
   },

@@ -75,14 +75,14 @@ const gateMachine = createMachine({
 })
 
 describe('HomeScreen photo-source-exclusivity gate — model-based test', () => {
-  let getByLabelText: ReturnType<typeof render>['getByLabelText']
+  let getByLabelText: Awaited<ReturnType<typeof render>>['getByLabelText']
 
   beforeEach(async () => {
     useDraftStartupStore.setState({ phase: 'ready', task: Promise.resolve() })
     jest.clearAllMocks()
     await usePhotoStore.persist.rehydrate()
     usePhotoStore.setState({ photos: [], source: null, submissionId: null })
-    const result = render(<HomeScreen />)
+    const result = await render(<HomeScreen />)
     getByLabelText = result.getByLabelText
   })
 

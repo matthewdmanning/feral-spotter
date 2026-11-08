@@ -1,6 +1,6 @@
 /**
  * hooks/useSubmissionSubmit.ts
- * Submission Details' "Finished!", "Reset" and "Discard" actions, as UI:
+ * Sighting Details' "Submit Sighting", "Reset" and "Discard" actions, as UI:
  * the confirm dialog, the user-facing messages and the navigation. The
  * lifecycle itself (lock, validation, upload wait, send, status moves,
  * teardown) is lib/submission/draft.ts's submitDraft()/discardDraft().
@@ -47,9 +47,9 @@ export interface SubmissionSubmitResult {
 // needs a better connection, a rejected send only needs a second attempt.
 // The underlying error text goes to the console, never to the user.
 const UPLOAD_STALLED_MESSAGE =
-  'Your photos did not finish uploading. This Submission is saved on this device. Check your connection, then tap Finished! to send it again.'
+  'Your photos did not finish uploading. This sighting is saved on this device. Check your connection, then tap Submit Sighting to send it again.'
 const SUBMIT_FAILED_MESSAGE =
-  'The Submission did not reach the server. It is saved on this device. Tap Finished! to send it again.'
+  'The sighting did not reach the server. It is saved on this device. Tap Submit Sighting to send it again.'
 
 /** True while a submit runs; the screen disables draft controls. */
 export function useDraftBusy(): boolean {
@@ -64,7 +64,7 @@ function report(outcome: SubmitOutcome): void {
       router.replace('/')
       return
     case 'incomplete':
-      showError('Submission Incomplete', outcome.messages.join('\n'))
+      showError('Sighting Incomplete', outcome.messages.join('\n'))
       return
     case 'sharing-unconfirmed':
       showError('Confirm organization sharing', outcome.message)
@@ -73,7 +73,7 @@ function report(outcome: SubmitOutcome): void {
       showError('Photos Still Uploading', UPLOAD_STALLED_MESSAGE)
       return
     case 'failed':
-      showError('Submission Failed', SUBMIT_FAILED_MESSAGE)
+      showError('Sighting Failed', SUBMIT_FAILED_MESSAGE)
       return
     // 'busy' and 'superseded' need no message: another submit is running,
     // or the draft it started for is gone.
@@ -91,7 +91,7 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
     // One submit at a time; the confirm would be a second chance to tap.
     if (isDraftBusy()) return
     showAlert(
-      'Submit Submission',
+      'Submit Sighting',
       `Submit ${catCount} cat${catCount !== 1 ? 's' : ''} and ${photoCount} photo${photoCount !== 1 ? 's' : ''}?`,
       [
         { text: 'Cancel', style: 'cancel' },

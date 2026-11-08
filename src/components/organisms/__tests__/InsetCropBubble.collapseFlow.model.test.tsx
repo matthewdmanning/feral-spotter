@@ -65,12 +65,12 @@ const collapseFlowMachine = createMachine({
 
 describe('InsetCropBubble — collapse/expand flow (#202)', () => {
   let onSettledChange: jest.Mock
-  let getByTestId: ReturnType<typeof render>['getByTestId']
+  let getByTestId: Awaited<ReturnType<typeof render>>['getByTestId']
 
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.useFakeTimers()
     onSettledChange = jest.fn()
-    const result = render(
+    const result = await render(
       <InsetCropBubble
         catId="cat-1"
         edge="top-right"
@@ -118,11 +118,11 @@ describe('InsetCropBubble — collapse/expand flow (#202)', () => {
     },
     events: {
       PRESS: () => press(),
-      ALMOST_FINISHED: () => {
-        act(() => jest.advanceTimersByTime(219))
+      ALMOST_FINISHED: async () => {
+        await act(() => jest.advanceTimersByTime(219))
       },
-      FINISH: () => {
-        act(() => jest.advanceTimersByTime(1))
+      FINISH: async () => {
+        await act(() => jest.advanceTimersByTime(1))
       },
     },
   }

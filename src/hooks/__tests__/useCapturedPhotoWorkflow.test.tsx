@@ -78,18 +78,18 @@ afterEach(() => {
   jest.restoreAllMocks()
 })
 
-it('keeps preview active during restoration and enables capture before cleanup finishes', () => {
+it('keeps preview active during restoration and enables capture before cleanup finishes', async () => {
   useDraftStartupStore.setState({ phase: 'restoring' })
-  const { result } = renderHook(() => useCapturedPhotoWorkflow())
+  const { result } = await renderHook(() => useCapturedPhotoWorkflow())
   expect(result.current.isActive).toBe(true)
   expect(result.current.canCapture).toBe(false)
 
-  act(() => {
+  await act(() => {
     useDraftStartupStore.setState({ phase: 'cleaning' })
   })
   expect(result.current.isActive).toBe(true)
   expect(result.current.canCapture).toBe(true)
-  act(() => {
+  await act(() => {
     result.current.persistCapturedPhoto(
       frame('file:///tmp/field.jpg'),
       'capture',
@@ -97,12 +97,12 @@ it('keeps preview active during restoration and enables capture before cleanup f
   })
   expect(usePhotoStore.getState().photos).toHaveLength(1)
 
-  act(() => {
+  await act(() => {
     useDraftStartupStore.setState({ phase: 'ready' })
   })
   expect(result.current.canCapture).toBe(true)
 
-  act(() => {
+  await act(() => {
     usePhotoStore.setState({ source: 'library' })
   })
   expect(result.current.canCapture).toBe(false)
@@ -113,15 +113,15 @@ it('keeps preview active during restoration and enables capture before cleanup f
     ),
   ).toThrow('Camera capture is not available')
 
-  act(() => {
+  await act(() => {
     usePhotoStore.setState({ source: null })
     useDraftStartupStore.setState({ phase: 'restoring' })
   })
   expect(result.current.canCapture).toBe(false)
 })
 
-it('uses the current captured photo count for the last thumbnail badge', () => {
-  const { result } = renderHook(() => {
+it('uses the current captured photo count for the last thumbnail badge', async () => {
+  const { result } = await renderHook(() => {
     const workflow = useCapturedPhotoWorkflow()
     const index = workflow.capturedPhotos.length - 1
     return {
@@ -138,13 +138,13 @@ it('uses the current captured photo count for the last thumbnail badge', () => {
     }
   })
 
-  act(() => {
+  await act(() => {
     result.current.persistCapturedPhoto(frame('file:///tmp/one.jpg'), 'one')
     result.current.persistCapturedPhoto(frame('file:///tmp/two.jpg'), 'two')
   })
   expect(result.current.lastBadge).toBe(2)
 
-  act(() => {
+  await act(() => {
     result.current.persistCapturedPhoto(frame('file:///tmp/three.jpg'), 'three')
   })
   expect(result.current.lastBadge).toBe(3)
@@ -157,14 +157,14 @@ it('holds a removed cache file until an active gallery save finishes', async () 
   )
   const file = new File(Paths.cache, 'pending.jpg')
   file.create()
-  const { result } = renderHook(() => useCapturedPhotoWorkflow())
+  const { result } = await renderHook(() => useCapturedPhotoWorkflow())
 
-  act(() => {
+  await act(() => {
     result.current.persistCapturedPhoto(frame(file.uri), 'capture')
   })
   const flush = result.current.flushGallerySaves()
   await waitFor(() => expect(mockAssetCreate).toHaveBeenCalledWith(file.uri))
-  act(() => result.current.handleDiscardPhoto('photo-1'))
+  await act(() => result.current.handleDiscardPhoto('photo-1'))
   expect(usePhotoStore.getState().photos).toEqual([])
   expect(file.exists).toBe(true)
 
@@ -187,15 +187,15 @@ it.each([
   }
   const file = new File(Paths.cache, 'permission.jpg')
   file.create()
-  const { result } = renderHook(() => useCapturedPhotoWorkflow())
+  const { result } = await renderHook(() => useCapturedPhotoWorkflow())
 
-  act(() => {
+  await act(() => {
     result.current.persistCapturedPhoto(frame(file.uri), 'capture')
   })
   await act(async () => {
     await result.current.flushGallerySaves()
   })
-  act(() => result.current.handleDiscardPhoto('photo-1'))
+  await act(() => result.current.handleDiscardPhoto('photo-1'))
 
   expect(mockAssetCreate).not.toHaveBeenCalled()
   if (permissionResult instanceof Error) {
@@ -217,15 +217,15 @@ it('releases a pending file when the gallery save fails', async () => {
   mockAssetCreate.mockRejectedValueOnce(saveError)
   const file = new File(Paths.cache, 'error.jpg')
   file.create()
-  const { result } = renderHook(() => useCapturedPhotoWorkflow())
+  const { result } = await renderHook(() => useCapturedPhotoWorkflow())
 
-  act(() => {
+  await act(() => {
     result.current.persistCapturedPhoto(frame(file.uri), 'capture')
   })
   await act(async () => {
     await result.current.flushGallerySaves()
   })
-  act(() => result.current.handleDiscardPhoto('photo-1'))
+  await act(() => result.current.handleDiscardPhoto('photo-1'))
 
   expect(mockAssetCreate).toHaveBeenCalledWith(file.uri)
   expect(errors).toHaveBeenCalledTimes(1)
