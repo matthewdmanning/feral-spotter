@@ -80,3 +80,9 @@ Not run on a device. The defect this fixes is invisible to CI by construction â€
 
 **Purpose:** AlertHost and DateTimePickerButton each hand-built the same Modal, backdrop, sheet, title and #342 theme subscription; InsetCropBubble carried props no screen used.
 **Change:** `organisms/DialogShell.tsx` (title, onRequestClose, children) owns the Modal, the scrolling sheet and the theme subscription; both dialogs render inside it. TutorialOverlay keeps its own bottom-anchored layout. InsetCropBubble drops `onDiameterChange`, `onCollapsedChange` and `draggable` (always on) and exports `BUBBLE_HEADER_RESERVE` for Cat Form's header instead of `COLLAPSED_DIAMETER`. No visual change intended; not checked on device.
+
+## 2026-11-08 â€” fix (async dialog completion types)
+
+**Purpose:** Restore the explicit completion contract for async dialog actions from `1a468a7`.
+
+**Change:** `AlertButton.onPress` and `pressDialogButton` return `void | Promise<void>`, allowing the existing dialog helper and Submission tests to await completion without Promise casts. Runtime dismissal order is unchanged.

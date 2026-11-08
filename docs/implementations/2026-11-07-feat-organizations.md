@@ -176,3 +176,15 @@ The account-deletion change is also recorded in the [account-erasure note](2026-
 **Test iterations:** The initial consent journey failed because rendering a separate hook displaced the form as the active test render. The corrected journey calls the real `submitDraft()` lifecycle with the form mounted; all three consent cases pass.
 
 **Verification:** Full client suite: 116 suites / 546 tests passed. Functions suite: 7 suites / 62 tests passed. App/server TypeScript checks, Functions build, focused client ESLint, Prettier on every changed file, and `git diff --check` passed. Rules/emulator integration and device checks were not rerun; nothing was deployed.
+
+## 2026-11-08 — fix (shared-store teardown and directory reconciliation)
+
+**Purpose:** Restore `1a468a7`'s teardown and reconciliation safeguards while keeping the Submission store shared.
+
+**Change:** Organization code continues to read `shared/hooks/useSubmissionStore.ts`. The shared sharing setter checks the current Submission location before accepting a non-null choice; `clearDraft()` removes that location, so a stale mounted form cannot recreate sharing after teardown. The reconciliation effect also waits for a location. The Sighting screen renders the form only while photos remain, preserving the missing-location hint for an active draft and removing controls when teardown empties the pool. Organizations does not import the higher-level photo store.
+
+Directory reconciliation compares selected ids, organization names and catalog version explicitly. Equivalent refreshes with reordered names preserve confirmation; changes to the account, catalog or eligible choices reset confirmation. Preferred ids are deduplicated and filtered against coverage. Regression checks keep the form mounted through submit and discard rather than unmounting it before teardown, and check that sharing remains cleared.
+
+**Test iterations:** The first full app run passed 117 suites but failed six cases in two Sighting screen suites: their partial photo-store mocks did not provide the photo pool used by the teardown guard. Both suites now use real draft stores and the existing cat/photo fixtures. The focused safeguards, reconciliation, mounted-form lifecycle, architecture and screen checks then passed all 42 tests across six suites.
+
+**Verification:** Final full app run: 119 suites / 579 tests passed. App, server and test TypeScript checks passed. Full client ESLint passed with three existing import-order warnings in `BottomButtonColumn.tsx`; changed screen tests also passed focused lint. Prettier, `git diff --check` and the staged secret scan passed. The final Jest run used `--watchman=false` after Watchman reported a dependency-directory access warning. Firebase rules, Functions suites, native builds and physical-device checks were not run; no backend code changed or deployment occurred.

@@ -7,6 +7,7 @@ import { ButtonRow } from '@/src/shared/ui/molecules/ButtonRow'
 import { FieldRow } from '@/src/shared/ui/molecules/FieldRow'
 import { DateTimePickerButton } from '@/src/features/draft-submission/components/DateTimePicker'
 import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import {
   openCatForm,
   startCatPass,
@@ -15,7 +16,7 @@ import {
 import { useDraftExitPrompt } from '@/src/features/draft-submission/hooks/useDraftExitPrompt'
 import { useDraftSync } from '@/src/features/draft-submission/hooks/useDraftSync'
 import { useSubmissionSubmit } from '@/src/features/draft-submission/hooks/useSubmissionSubmit'
-import { usePhotoEntrypoints } from '@/src/features/library-picker/hooks/usePhotoEntrypoints'
+import { usePhotoEntrypoints } from '@/src/workflows/photo-entry/hooks/usePhotoEntrypoints'
 import { useRemoveCat } from '@/src/features/draft-submission/hooks/useRemoveCat'
 import { draftWarnings } from '@/src/features/draft-submission/lib/status'
 import { router } from 'expo-router'
@@ -45,6 +46,7 @@ export default function CreateSubmissionScreen() {
   const submission = useSubmissionStore((s) => s.submission)
   const setManualTime = useSubmissionStore((s) => s.setManualTime)
   const cats = useSubmissionStore((s) => s.cats)
+  const photos = usePhotoStore((s) => s.photos)
 
   useDraftSync()
   const { handleDone, handleReset, handleDiscard, isSubmitting } =
@@ -250,7 +252,7 @@ export default function CreateSubmissionScreen() {
             </AppButton>
           )}
         </View>
-        <SubmissionOrganizations />
+        {photos.length > 0 && <SubmissionOrganizations />}
       </ScrollView>
 
       {/* Actions pinned to the bottom. The primary action is last, on the
