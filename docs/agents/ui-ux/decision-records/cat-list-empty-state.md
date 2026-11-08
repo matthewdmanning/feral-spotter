@@ -3,9 +3,9 @@ topic: cat-list-empty-state
 status: active
 last_reviewed: 2026-08-25
 governs:
-  - src/screens/submission/create/index.tsx
-  - src/screens/submission/cats/index.tsx
-  - src/hooks/useRemoveCat.ts
+  - src/features/draft-submission/screens/create/index.tsx
+  - src/features/draft-submission/screens/cats/index.tsx
+  - src/features/draft-submission/hooks/useRemoveCat.ts
 derives_from: ['#299']
 ---
 

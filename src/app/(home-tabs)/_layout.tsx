@@ -13,14 +13,14 @@
  * are vector drawables written at prebuild by
  * plugins/withPhosphorTabDrawables.js, the fastest icon source native tabs
  * accept: regular weight idle, fill weight selected. iOS uses SF Symbols.
- * src/config/tabIcons.json names both.
+ * src/shared/config/tabIcons.json names both.
  *
  * useUnistyles with a navigator is explicitly allowed by Unistyles —
  * navigators do not re-render screens on option changes.
  */
 
-import tabIcons from '@/src/config/tabIcons.json'
-import { selectionHaptic } from '@/src/lib/haptics'
+import tabIcons from '@/src/shared/config/tabIcons.json'
+import { selectionHaptic } from '@/src/shared/lib/haptics'
 import { NativeTabs, type SFSymbolIcon } from 'expo-router/native-tabs'
 import { useUnistyles } from 'react-native-unistyles'
 

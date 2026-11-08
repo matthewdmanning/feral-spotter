@@ -40,7 +40,7 @@ import {
 
 initializeApp()
 
-// Must match BUCKET_URL in src/lib/upload/firebaseUpload.ts (ADR-0005).
+// Must match BUCKET_URL in src/features/draft-submission/lib/upload/firebaseUpload.ts (ADR-0005).
 const BUCKET_NAME =
   process.env.GCS_BUCKET_NAME ??
   'project-e3d5659d-bc4f-438f-88c.firebasestorage.app'
@@ -56,7 +56,7 @@ const BUCKET_NAME =
 const SWEEP_RETENTION_DAYS = 7
 
 // Sole parser for the tester allowlist. The client-side twin it used to
-// mirror (src/lib/upload/allowlist.ts) was deleted in ed2cdb4.
+// mirror (src/features/draft-submission/lib/upload/allowlist.ts) was deleted in ed2cdb4.
 function parseTesterAllowlist(raw: string | undefined): Set<string> {
   if (!raw) return new Set()
   return new Set(

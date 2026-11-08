@@ -28,20 +28,23 @@
  *     opt-in allow it.
  */
 
-import { OrganizationsRuntime } from '@/src/components/organisms/organizations/OrganizationsRuntime'
-import { AlertHost } from '@/src/components/organisms/AlertHost'
-import { ErrorBoundary } from '@/src/components/atoms/ErrorBoundary'
+import { OrganizationsRuntime } from '@/src/features/organizations/components/OrganizationsRuntime'
+import { AlertHost } from '@/src/shared/ui/organisms/AlertHost'
+import { ErrorBoundary } from '@/src/shared/ui/atoms/ErrorBoundary'
 import {
   getThemeMode,
   resolveThemeForAppearanceChange,
-} from '@/src/config/unistyles'
-import { CONSENT_VERSION, useConsentStore } from '@/src/hooks/useConsentStore'
-import { useAuthStore } from '@/src/lib/auth/authStore'
+} from '@/src/shared/config/unistyles'
+import {
+  CONSENT_VERSION,
+  useConsentStore,
+} from '@/src/shared/consent/useConsentStore'
+import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import {
   IS_PRERELEASE,
   registerCapture,
   registerCaptureException,
-} from '@/src/lib/analytics/analytics'
+} from '@/src/shared/analytics/analytics'
 import Constants from 'expo-constants'
 import * as Device from 'expo-device'
 import { usePathname } from 'expo-router'

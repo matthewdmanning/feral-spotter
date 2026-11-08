@@ -14,16 +14,16 @@ export const SUPPORTED = /\.(tsx?|jsx?|json|md|ya?ml)$/
 // them buries real edits in formatting noise; the whole-repo reformat is its
 // own branch. Drop an entry once that branch lands and the file converts.
 export const COLUMN_ALIGNED = new Set([
-  'src/components/atoms/ErrorBoundary.styles.ts',
-  'src/components/atoms/SegmentedControl.styles.ts',
+  'src/shared/ui/atoms/ErrorBoundary.styles.ts',
+  'src/shared/ui/atoms/SegmentedControl.styles.ts',
   'src/components/molecules/AddAnotherCatDialog.styles.ts',
-  'src/components/molecules/BottomButtonColumn.styles.ts',
+  'src/shared/ui/molecules/BottomButtonColumn.styles.ts',
   'src/components/molecules/PhotoPreviewModal.styles.ts',
-  'src/components/molecules/ReportCard.styles.ts',
-  'src/components/organisms/DateTimePicker.styles.ts',
+  'src/features/history/components/ReportCard.styles.ts',
+  'src/features/draft-submission/components/DateTimePicker.styles.ts',
   'src/components/organisms/ValidationSheet.styles.ts',
-  'src/screens/analytics-consent/index.styles.ts',
-  'src/screens/settings/index.styles.ts',
+  'src/features/permissions/screens/analytics-consent/index.styles.ts',
+  'src/features/settings/screens/settings/index.styles.ts',
 ])
 
 export const isFormattable = (file) => SUPPORTED.test(file) && !COLUMN_ALIGNED.has(file)
