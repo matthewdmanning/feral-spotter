@@ -3,6 +3,7 @@ import { randomUUID } from 'expo-crypto'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { SubmissionOrganizations } from '@/src/features/organizations/components/SubmissionOrganizations'
 import {
+  discardDraft,
   submitDraft,
   type SubmitOutcome,
 } from '@/src/features/draft-submission/lib/draft'
@@ -36,6 +37,7 @@ jest.mock('expo-crypto', () => ({
 jest.mock('@/src/features/draft-submission/lib/upload/firebaseUpload', () => ({
   uploadSubmissionMetadata: jest.fn().mockResolvedValue(undefined),
   finalizeSubmissionPhotoMetadata: jest.fn().mockResolvedValue(undefined),
+  deleteSubmissionUploads: jest.fn().mockResolvedValue(undefined),
 }))
 
 beforeEach(async () => {
@@ -141,14 +143,16 @@ test.each(['unchanged', 'withdrawn', 'anonymous'] as const)(
       )
     if (choice === 'anonymous')
       await user.press(form.getByRole('checkbox', { name: 'Anonymous' }))
-    // The real screen leaves after completion; avoid starting a new draft here.
-    await form.unmount()
     await act(async () => {
       releaseUpload()
       expect(await sending).toEqual({ kind: 'sent' })
     })
     expect(uploadSubmissionMetadata).toHaveBeenCalled()
     expect(useSubmissionStore.getState().organizationSharing).toBeNull()
+    expect(
+      JSON.parse((await AsyncStorage.getItem('submission-store'))!).state
+        .organizationSharing,
+    ).toBeNull()
     const persisted = JSON.parse(
       (await AsyncStorage.getItem('organization-sharing-v1'))!,
     )
@@ -184,3 +188,46 @@ test.each(['unchanged', 'withdrawn', 'anonymous'] as const)(
     })
   },
 )
+
+test('a mounted form does not recreate sharing after discard teardown', async () => {
+  await fakeOrganizationsService(({ action }) =>
+    action === 'catalog'
+      ? {
+          version: 'v1',
+          organizations: [
+            {
+              id: 'rescue',
+              name: 'Rescue',
+              active: true,
+              coverage: {
+                type: 'Polygon',
+                coordinates: [
+                  [
+                    [0, 0],
+                    [2, 0],
+                    [2, 2],
+                    [0, 2],
+                    [0, 0],
+                  ],
+                ],
+              },
+            },
+          ],
+        }
+      : { status: 503 },
+  )
+  const form = await render(<SubmissionOrganizations />)
+  await screen.findByRole('checkbox', { name: 'Rescue' })
+  expect(useSubmissionStore.getState().organizationSharing).not.toBeNull()
+
+  await act(async () => {
+    expect(await discardDraft()).toBe(true)
+  })
+
+  expect(useSubmissionStore.getState().organizationSharing).toBeNull()
+  expect(
+    JSON.parse((await AsyncStorage.getItem('submission-store'))!).state
+      .organizationSharing,
+  ).toBeNull()
+  await form.unmount()
+})
