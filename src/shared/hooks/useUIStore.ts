@@ -17,11 +17,11 @@ import { createJSONStorage, persist } from 'zustand/middleware'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-/** Mirrors react-native's AlertButton so call sites port over untouched. */
+/** Alert button with an explicit completion result for async actions. */
 export interface AlertButton {
   text: string
   style?: 'default' | 'cancel' | 'destructive'
-  onPress?: () => void
+  onPress?: () => void | Promise<void>
 }
 
 export interface DialogRequest {
@@ -87,7 +87,7 @@ export function showAlert(
  * the next dialog (the submit flow chains two) would otherwise be wiped by
  * the dismiss. Returns the handler's result so a caller can await it.
  */
-export function pressDialogButton(button: AlertButton): void {
+export function pressDialogButton(button: AlertButton): void | Promise<void> {
   useUIStore.getState().dismissDialog()
   return button.onPress?.()
 }

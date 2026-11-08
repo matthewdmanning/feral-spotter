@@ -38,7 +38,9 @@ const HOUR_MS = 60 * 60 * 1000
 const CACHE_ID = 'cache-1'
 
 const seedDraft = (updatedAt: number | null) => {
-  useSubmissionStore.getState().setSubmission({ address: 'Draft address' })
+  useSubmissionStore.setState((s) => ({
+    submission: { ...s.submission, address: 'Draft address' },
+  }))
   usePhotoStore.getState().addPhoto({
     local_id: 'photo-1',
     uri: 'file://photo-1.jpg',
@@ -189,7 +191,9 @@ describe('discardUnsurvivingDraft (#424)', () => {
   })
 
   it('discards draft data that has no photo behind it', async () => {
-    useSubmissionStore.getState().setSubmission({ address: 'Orphan address' })
+    useSubmissionStore.setState((s) => ({
+      submission: { ...s.submission, address: 'Orphan address' },
+    }))
     await discardUnsurvivingDraft(NOW)
     expect(useSubmissionStore.getState().submission.address).toBeUndefined()
   })
