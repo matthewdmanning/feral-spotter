@@ -65,9 +65,9 @@ describe('useSubmissionSubmit — handleReset (#189)', () => {
     expect(useSubmissionStore.getState().cats).toHaveLength(1)
     expect(usePhotoStore.getState().photos).toHaveLength(1)
 
-    const { result } = renderHook(() => useSubmissionSubmit())
+    const { result } = await renderHook(() => useSubmissionSubmit())
 
-    act(() => result.current.handleReset())
+    await act(() => result.current.handleReset())
     await pressDialogButton('Reset')
 
     expect(useSubmissionStore.getState().cats).toEqual([])

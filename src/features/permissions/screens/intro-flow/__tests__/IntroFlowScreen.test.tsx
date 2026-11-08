@@ -34,7 +34,7 @@ describe('IntroFlowScreen', () => {
 
   it('shows each slide, returns with Previous, and advances to /consent', async () => {
     const user = userEvent.setup()
-    render(<IntroFlowScreen />)
+    await render(<IntroFlowScreen />)
 
     const expectSlide = (index: number) => {
       const slide = slides[index]
@@ -65,7 +65,7 @@ describe('IntroFlowScreen', () => {
   })
 
   it('links to /data-agreement from the data-usage slide', async () => {
-    render(<IntroFlowScreen />)
+    await render(<IntroFlowScreen />)
     // Advance to the data-usage slide (index 2)
     await userEvent.press(screen.getByText(slides[0].button))
     await userEvent.press(screen.getByText(slides[1].button))
@@ -74,9 +74,9 @@ describe('IntroFlowScreen', () => {
     expect(router.push).toHaveBeenCalledWith('/data-agreement')
   })
 
-  it('warns before exiting on hardware back at T1', () => {
+  it('warns before exiting on hardware back at T1', async () => {
     const alertSpy = jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
-    render(<IntroFlowScreen />)
+    await render(<IntroFlowScreen />)
 
     const swallowed = backHandler?.()
 
@@ -95,7 +95,7 @@ describe('IntroFlowScreen', () => {
     const exitSpy = jest
       .spyOn(BackHandler, 'exitApp')
       .mockImplementation(() => {})
-    render(<IntroFlowScreen />)
+    await render(<IntroFlowScreen />)
 
     backHandler?.()
     await pressDialogButton('Exit')
@@ -107,12 +107,12 @@ describe('IntroFlowScreen', () => {
   // T1 used to exit the app with no confirm.
   it('steps back one slide on hardware back past T1', async () => {
     const alertSpy = jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
-    render(<IntroFlowScreen />)
+    await render(<IntroFlowScreen />)
     await userEvent.press(screen.getByText(slides[0].button))
     expect(screen.getByText(slides[1].header)).toBeTruthy()
 
     let swallowed: boolean | undefined
-    act(() => {
+    await act(() => {
       swallowed = backHandler?.()
     })
 

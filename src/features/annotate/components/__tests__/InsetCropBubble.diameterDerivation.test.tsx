@@ -62,8 +62,8 @@ beforeEach(() => {
 })
 
 describe('InsetCropBubble — normalized box -> dp derivation', () => {
-  it('scales both box axes by the same window dimension (isotropic)', () => {
-    const { getByTestId, rerender } = render(
+  it('scales both box axes by the same window dimension (isotropic)', async () => {
+    const { getByTestId, rerender } = await render(
       <InsetCropBubble catId="cat-1" edge="top-right" />,
     )
     const bubble = getByTestId('inset-crop-bubble')
@@ -94,7 +94,7 @@ describe('InsetCropBubble — normalized box -> dp derivation', () => {
 
     // Switching cats must resolve that cat's box, rather than reusing the
     // previous cat or whichever box happened to be inserted first.
-    rerender(<InsetCropBubble catId="cat-2" edge="top-right" />)
+    await rerender(<InsetCropBubble catId="cat-2" edge="top-right" />)
     const otherDiameter = StyleSheet.flatten(
       getByTestId('inset-crop-bubble').props.style,
     ).width as number

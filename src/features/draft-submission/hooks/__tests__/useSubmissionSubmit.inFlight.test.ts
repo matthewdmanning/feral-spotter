@@ -91,18 +91,18 @@ beforeEach(async () => {
 afterEach(() => jest.useRealTimers())
 
 it('locks the draft while it waits, re-queues the stuck upload, and sends once', async () => {
-  const { result } = renderHook(() => useSubmissionSubmit())
-  act(() => result.current.handleDone())
+  const { result } = await renderHook(() => useSubmissionSubmit())
+  await act(() => result.current.handleDone())
   let sending!: Promise<void> | void
-  act(() => {
+  await act(() => {
     sending = confirmSubmit()
   })
   expect(result.current.isSubmitting).toBe(true)
   // The photo had no upload running; Submit started one.
   expect(uploadSubmissionPhoto).toHaveBeenCalledTimes(1)
 
-  // Mid-wait: a second Finished! opens nothing, and Reset clears nothing.
-  act(() => result.current.handleDone())
+  // Mid-wait: a second Submit Sighting opens nothing, and Reset clears nothing.
+  await act(() => result.current.handleDone())
   expect(useUIStore.getState().dialog).toBeNull()
   await act(() => discardDraftAndGoHome())
   expect(usePhotoStore.getState().photos).toHaveLength(1)
@@ -121,10 +121,10 @@ it('locks the draft while it waits, re-queues the stuck upload, and sends once',
 })
 
 it('does not send when the draft is cleared during the wait', async () => {
-  const { result } = renderHook(() => useSubmissionSubmit())
-  act(() => result.current.handleDone())
+  const { result } = await renderHook(() => useSubmissionSubmit())
+  await act(() => result.current.handleDone())
   let sending!: Promise<void> | void
-  act(() => {
+  await act(() => {
     sending = confirmSubmit()
   })
   // Torn down by a path that does not go through the lock.
@@ -145,13 +145,13 @@ it('does not send when the draft is cleared during the wait', async () => {
 it('marks the row Failed and unlocks when the send is rejected', async () => {
   markUploaded()
   jest.mocked(uploadSubmissionMetadata).mockRejectedValue(new Error('down'))
-  const { result } = renderHook(() => useSubmissionSubmit())
-  act(() => result.current.handleDone())
+  const { result } = await renderHook(() => useSubmissionSubmit())
+  await act(() => result.current.handleDone())
   await act(async () => {
     await confirmSubmit()
   })
   expect((await cache.getSubmissionCache('cache-1'))?.status).toBe('Failed')
-  expect(useUIStore.getState().dialog?.title).toBe('Submission Failed')
+  expect(useUIStore.getState().dialog?.title).toBe('Sighting Failed')
   expect(isDraftBusy()).toBe(false)
   // The draft is intact for the retry the message promises.
   expect(usePhotoStore.getState().photos).toHaveLength(1)

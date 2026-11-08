@@ -1,7 +1,7 @@
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import { act, userEvent, render } from '@testing-library/react-native'
-import { Animated, StyleSheet } from 'react-native'
+import { StyleSheet } from 'react-native'
 import { InsetCropBubble } from '@/src/features/annotate/components/InsetCropBubble'
 
 /**
@@ -47,7 +47,9 @@ beforeEach(() => {
 })
 
 const resolved = (value: unknown): number =>
-  (value as { __getValue: () => number }).__getValue()
+  typeof value === 'number'
+    ? value
+    : (value as { __getValue: () => number }).__getValue()
 
 const touch = (x: number, y: number) => ({
   touchHistory: {
@@ -73,9 +75,9 @@ const touch = (x: number, y: number) => ({
 
 type Handlers = Record<string, (e: unknown) => unknown>
 
-function renderBubble(onHoldChange?: (held: boolean) => void) {
+async function renderBubble(onHoldChange?: (held: boolean) => void) {
   jest.useFakeTimers()
-  const utils = render(
+  const utils = await render(
     <InsetCropBubble
       catId="cat-1"
       edge="top-center"
@@ -84,10 +86,11 @@ function renderBubble(onHoldChange?: (held: boolean) => void) {
     />,
   )
   // The wrapper carries the drag transform; the inner view takes the touches.
-  const [wrap, inner] = utils.UNSAFE_getAllByType(Animated.View)
+  const inner = utils.getByTestId('inset-crop-bubble').parent!
+  const wrap = inner.parent!
   const toggle = async () => {
     await userEvent.press(utils.getByTestId('inset-crop-bubble'))
-    act(() => jest.advanceTimersByTime(300))
+    await act(() => jest.advanceTimersByTime(300))
   }
   const position = () => {
     const [{ translateX }, { translateY }] = StyleSheet.flatten(
@@ -96,8 +99,8 @@ function renderBubble(onHoldChange?: (held: boolean) => void) {
     return { x: resolved(translateX), y: resolved(translateY) }
   }
   const touches = inner.props as Handlers
-  const drag = (end: 'onResponderRelease' | 'onResponderTerminate') => {
-    act(() => {
+  const drag = async (end: 'onResponderRelease' | 'onResponderTerminate') => {
+    await act(() => {
       touches.onResponderGrant(touch(0, 0))
       touches.onResponderMove(touch(-90, 200))
       touches[end](touch(-90, 200))
@@ -106,7 +109,7 @@ function renderBubble(onHoldChange?: (held: boolean) => void) {
   }
   // Handlers are rebuilt when the bubble expands, so read them live.
   const liveTouches = () =>
-    utils.UNSAFE_getAllByType(Animated.View)[1].props as Handlers
+    utils.getByTestId('inset-crop-bubble').parent!.props as Handlers
   return {
     wrap,
     touches,
@@ -121,18 +124,18 @@ function renderBubble(onHoldChange?: (held: boolean) => void) {
 afterEach(() => jest.useRealTimers())
 
 describe('InsetCropBubble drag', () => {
-  it('holds from grant to release and keeps the dropped height at the dock column', () => {
+  it('holds from grant to release and keeps the dropped height at the dock column', async () => {
     const onHoldChange = jest.fn()
-    const { touches, position } = renderBubble(onHoldChange)
+    const { touches, position } = await renderBubble(onHoldChange)
 
     expect(onHoldChange).not.toHaveBeenCalled()
-    act(() => {
+    await act(() => {
       touches.onResponderGrant(touch(0, 0))
       touches.onResponderMove(touch(-90, 200))
     })
     expect(onHoldChange).toHaveBeenLastCalledWith(true)
 
-    act(() => {
+    await act(() => {
       touches.onResponderRelease(touch(-90, 200))
       jest.advanceTimersByTime(300)
     })
@@ -142,36 +145,36 @@ describe('InsetCropBubble drag', () => {
     expect(position().x).toBeCloseTo(0)
   })
 
-  it('moves only up and down mid-drag and keeps a drop on screen', () => {
-    const dropAt = (x: number, y: number) => {
-      const bubble = renderBubble()
-      act(() => {
+  it('moves only up and down mid-drag and keeps a drop on screen', async () => {
+    const dropAt = async (x: number, y: number) => {
+      const bubble = await renderBubble()
+      await act(() => {
         bubble.touches.onResponderGrant(touch(0, 0))
         bubble.touches.onResponderMove(touch(x, y))
       })
       const midDrag = bubble.position()
-      act(() => {
+      await act(() => {
         bubble.touches.onResponderRelease(touch(x, y))
         jest.advanceTimersByTime(300)
       })
       const dropped = bubble.position()
-      bubble.unmount()
+      await bubble.unmount()
       return { midDrag, dropped }
     }
 
     // Finger went 90dp left; the bubble stays in its column.
-    expect(dropAt(-90, 200).midDrag.x).toBeCloseTo(0)
+    expect((await dropAt(-90, 200)).midDrag.x).toBeCloseTo(0)
     // Above the dock settles at the dock.
-    expect(dropAt(0, -500).dropped.y).toBeCloseTo(0)
+    expect((await dropAt(0, -500)).dropped.y).toBeCloseTo(0)
     // Far past the bottom settles back on screen.
-    const low = dropAt(0, 100_000).dropped.y
+    const low = (await dropAt(0, 100_000)).dropped.y
     expect(low).toBeGreaterThan(0)
     expect(low).toBeLessThan(100_000)
   })
 
   it('keeps a dragged bubble’s height through expand and collapse', async () => {
-    const { touches, toggle, position } = renderBubble()
-    act(() => {
+    const { touches, toggle, position } = await renderBubble()
+    await act(() => {
       touches.onResponderGrant(touch(0, 0))
       touches.onResponderMove(touch(0, 200))
       touches.onResponderRelease(touch(0, 200))
@@ -183,21 +186,21 @@ describe('InsetCropBubble drag', () => {
     expect(position().x).toBeCloseTo(0)
   })
 
-  it('settles the same way when the system takes the touch mid-drag', () => {
-    const released = renderBubble()
-    released.drag('onResponderRelease')
+  it('settles the same way when the system takes the touch mid-drag', async () => {
+    const released = await renderBubble()
+    await released.drag('onResponderRelease')
     const expected = released.position()
-    released.unmount()
+    await released.unmount()
 
     const onHoldChange = jest.fn()
-    const terminated = renderBubble(onHoldChange)
-    terminated.drag('onResponderTerminate')
+    const terminated = await renderBubble(onHoldChange)
+    await terminated.drag('onResponderTerminate')
     expect(terminated.position()).toEqual(expected)
     expect(onHoldChange.mock.calls).toEqual([[true], [false]])
   })
 
   it('lets only the collapsed bubble capture a drag', async () => {
-    const { liveTouches, toggle } = renderBubble()
+    const { liveTouches, toggle } = await renderBubble()
     const capture = () =>
       liveTouches().onMoveShouldSetResponderCapture(touch(0, 50))
     expect(capture()).toBe(true)
@@ -205,15 +208,15 @@ describe('InsetCropBubble drag', () => {
     expect(capture()).toBe(false)
   })
 
-  it('puts the touch handlers on the drawn bubble, not the larger wrapper', () => {
+  it('puts the touch handlers on the drawn bubble, not the larger wrapper', async () => {
     // The wrapper's layout box is the full unscaled bubble, far bigger than a
     // collapsed one looks. Handlers there made that whole box draggable.
     const onHoldChange = jest.fn()
-    const { wrap, touches } = renderBubble(onHoldChange)
+    const { wrap, touches } = await renderBubble(onHoldChange)
     expect(wrap.props.onResponderGrant).toBeUndefined()
     expect(wrap.props.pointerEvents).toBe('box-none')
     // The drawn bubble's handler is the real drag: a grant starts a hold.
-    act(() => {
+    await act(() => {
       touches.onResponderGrant(touch(0, 0))
     })
     expect(onHoldChange).toHaveBeenLastCalledWith(true)

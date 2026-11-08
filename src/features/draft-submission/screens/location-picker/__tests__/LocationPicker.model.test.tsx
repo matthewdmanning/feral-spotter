@@ -78,11 +78,11 @@ const pickerFlow = createMachine({
 })
 
 describe('Location picker — flow (model-based)', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     useSubmissionStore.setState({
       submission: { ...INITIAL_SUBMISSION },
     })
-    render(<LocationPickerScreen />)
+    await render(<LocationPickerScreen />)
   })
 
   const model = createTestModel(pickerFlow)

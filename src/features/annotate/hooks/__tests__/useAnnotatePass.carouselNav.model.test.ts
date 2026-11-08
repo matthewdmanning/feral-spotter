@@ -75,11 +75,11 @@ const navMachine = createMachine({
 })
 
 describe('useAnnotatePass — carousel navigation (model-based test)', () => {
-  let hook: ReturnType<
-    typeof renderHook<ReturnType<typeof useAnnotatePass>, unknown>
+  let hook: Awaited<
+    ReturnType<typeof renderHook<ReturnType<typeof useAnnotatePass>, unknown>>
   >
 
-  beforeEach(() => {
+  beforeEach(async () => {
     useActiveCatFlowStore.getState().setActiveCatId(null)
     useBoundingBoxStore.getState().clearAll()
     useSubmissionStore.getState().clearDraft()
@@ -88,7 +88,7 @@ describe('useAnnotatePass — carousel navigation (model-based test)', () => {
       source: 'camera',
       submissionId: 'carousel-submission',
     })
-    hook = renderHook(() => useAnnotatePass())
+    hook = await renderHook(() => useAnnotatePass())
   })
 
   const model = createTestModel(navMachine)
@@ -103,20 +103,20 @@ describe('useAnnotatePass — carousel navigation (model-based test)', () => {
       },
     },
     events: {
-      CONFIRM: () => {
+      CONFIRM: async () => {
         const photo =
           hook.result.current.photos[hook.result.current.currentIndex]
-        act(() => hook.result.current.handleConfirmBox(box))
+        await act(() => hook.result.current.handleConfirmBox(box))
         if (photo) {
           expect(
             useBoundingBoxStore.getState().getBoxesForPhoto(photo.local_id),
           ).not.toHaveLength(0)
         }
       },
-      NOT_IN_PHOTO: () => {
+      NOT_IN_PHOTO: async () => {
         const photo =
           hook.result.current.photos[hook.result.current.currentIndex]
-        act(() => hook.result.current.handleNotInPhoto())
+        await act(() => hook.result.current.handleNotInPhoto())
         if (photo) {
           expect(
             Object.keys(useBoundingBoxStore.getState().absences).some((key) =>
@@ -125,7 +125,7 @@ describe('useAnnotatePass — carousel navigation (model-based test)', () => {
           ).toBe(true)
         }
       },
-      PREV: () => act(() => hook.result.current.handlePrevPhoto()),
+      PREV: async () => await act(() => hook.result.current.handlePrevPhoto()),
     },
   }
 
@@ -164,11 +164,11 @@ describe('useAnnotatePass — carousel navigation (model-based test)', () => {
     })
   })
 
-  it('completes the pass after boxing evidence exists', () => {
+  it('completes the pass after boxing evidence exists', async () => {
     useActiveCatFlowStore.getState().setActiveCatId('cat-with-box')
     useBoundingBoxStore.getState().addBox('cat-with-box', 'photo-1', box)
 
-    act(() => hook.result.current.handleBoxingComplete())
+    await act(() => hook.result.current.handleBoxingComplete())
 
     expect(router.replace).toHaveBeenCalledWith('/submission/cats')
     expect(useActiveCatFlowStore.getState().activeCatId).toBe('cat-with-box')

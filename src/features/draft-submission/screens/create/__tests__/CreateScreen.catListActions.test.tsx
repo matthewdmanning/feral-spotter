@@ -23,9 +23,9 @@ import CreateSubmissionScreen from '@/src/features/draft-submission/screens/crea
  * wiring). CreateScreen.autoSkipGate.model.test.tsx and
  * CreateScreen.addMorePhotosAction.model.test.tsx already cover this
  * screen's real flows; nothing previously touched Add a Cat, a cat row's
- * edit navigation, or Finished!/Reset.
+ * edit navigation, or Submit Sighting/Reset.
  *
- * Finished!'s `disabled={cats.length === 0}` used to be unreachable — the
+ * Submit Sighting's `disabled={cats.length === 0}` used to be unreachable — the
  * component returned null above it whenever cats.length === 0 (the #173
  * auto-skip gate). #299 made it reachable: removing the last cat now renders
  * an empty state rather than redirecting, so zero-cats is a state the user
@@ -101,7 +101,7 @@ describe('Cat List actions', () => {
   beforeEach(async () => {
     mockParams = {}
     useSubmissionStore.setState({ cats: [...DEFAULT_CATS] })
-    render(
+    await render(
       <>
         <CreateSubmissionScreen />
         <AlertHost />
@@ -177,8 +177,8 @@ describe('Cat List actions', () => {
     })
   })
 
-  it('Finished! calls handleDone', async () => {
-    await userEvent.press(screen.getByText('Finished!'))
+  it('Submit Sighting calls handleDone', async () => {
+    await userEvent.press(screen.getByText('Submit Sighting'))
     expect(mockHandleDone).toHaveBeenCalledTimes(1)
   })
 
@@ -208,10 +208,10 @@ describe('Cat List with no cats left (#299)', () => {
   it('renders the choice, not a blank screen, when the last row is trashed in place', async () => {
     mockParams = {}
     useSubmissionStore.setState({ cats: [...DEFAULT_CATS] })
-    render(<CreateSubmissionScreen />)
+    await render(<CreateSubmissionScreen />)
     await waitFor(() => expect(screen.getByText('Cats Recorded')).toBeTruthy())
 
-    act(() => {
+    await act(() => {
       useSubmissionStore.setState({ cats: [] })
     })
 
@@ -220,16 +220,16 @@ describe('Cat List with no cats left (#299)', () => {
     expect(router.replace).not.toHaveBeenCalled()
   })
 
-  // #375: "Finished!" is disabled at zero cats, so the screen must say what
+  // #375: "Submit Sighting" is disabled at zero cats, so the screen must say what
   // the user has to do first.
-  it('says why Finished! is disabled while no cat is recorded', async () => {
+  it('says why Submit Sighting is disabled while no cat is recorded', async () => {
     mockParams = { removed: '1' }
-    render(<CreateSubmissionScreen />)
+    await render(<CreateSubmissionScreen />)
 
     await waitFor(() =>
       expect(screen.getByText(/Describe at least one cat/)).toBeTruthy(),
     )
-    const finished = screen.getByText('Finished!')
+    const finished = screen.getByText('Submit Sighting')
     expect(finished).toBeDisabled()
     await userEvent.press(finished)
     expect(mockHandleDone).not.toHaveBeenCalled()
@@ -238,7 +238,7 @@ describe('Cat List with no cats left (#299)', () => {
   it('offers annotate or describe after the last cat is removed, and does not redirect', async () => {
     // `removed` is what the Cat Form's remove sets when it lands back here.
     mockParams = { removed: '1' }
-    render(<CreateSubmissionScreen />)
+    await render(<CreateSubmissionScreen />)
 
     await waitFor(() =>
       expect(screen.getByText('Annotate Photos')).toBeTruthy(),
@@ -249,7 +249,7 @@ describe('Cat List with no cats left (#299)', () => {
 
   it('routes each choice to its own destination', async () => {
     mockParams = { removed: '1' }
-    render(<CreateSubmissionScreen />)
+    await render(<CreateSubmissionScreen />)
     await waitFor(() =>
       expect(screen.getByText('Annotate Photos')).toBeTruthy(),
     )
@@ -263,7 +263,7 @@ describe('Cat List with no cats left (#299)', () => {
 
   it('still auto-skips when the user simply arrived with nothing recorded', async () => {
     mockParams = {}
-    render(<CreateSubmissionScreen />)
+    await render(<CreateSubmissionScreen />)
 
     await waitFor(() =>
       expect(router.replace).toHaveBeenCalledWith('/submission/annotate'),

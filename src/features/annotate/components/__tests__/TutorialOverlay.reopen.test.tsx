@@ -25,24 +25,24 @@ const handlers = {
 
 it('starts again at step 1 when reopened', async () => {
   const steps = [step(1), step(2), step(3)]
-  const { rerender } = render(
+  const { rerender } = await render(
     <TutorialOverlay open steps={steps} {...handlers} />,
   )
   await userEvent.press(screen.getByText('Next 1'))
   await userEvent.press(screen.getByText('Next 2'))
   expect(screen.getByText('Step 3')).toBeTruthy()
 
-  rerender(<TutorialOverlay open={false} steps={steps} {...handlers} />)
-  rerender(<TutorialOverlay open steps={steps} {...handlers} />)
+  await rerender(<TutorialOverlay open={false} steps={steps} {...handlers} />)
+  await rerender(<TutorialOverlay open steps={steps} {...handlers} />)
   expect(screen.getByText('Step 1')).toBeTruthy()
   expect(screen.getByText('1 / 3')).toBeTruthy()
 })
 
 it('stays on a real step when the steps array shrinks', async () => {
-  const { rerender } = render(
+  const { rerender } = await render(
     <TutorialOverlay open steps={[step(1), step(2)]} {...handlers} />,
   )
   await userEvent.press(screen.getByText('Next 1'))
-  rerender(<TutorialOverlay open steps={[step(1)]} {...handlers} />)
+  await rerender(<TutorialOverlay open steps={[step(1)]} {...handlers} />)
   expect(screen.getByText('Step 1')).toBeTruthy()
 })

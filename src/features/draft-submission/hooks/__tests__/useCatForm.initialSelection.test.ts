@@ -10,8 +10,8 @@ import type { ObservedCat } from '@/src/shared/hooks/useSubmissionStore'
  * and only fail here.
  */
 describe('useCatForm — initial selection (#205)', () => {
-  it('starts every field unset on a fresh (no existingCat) form', () => {
-    const { result } = renderHook(() => useCatForm())
+  it('starts every field unset on a fresh (no existingCat) form', async () => {
+    const { result } = await renderHook(() => useCatForm())
 
     expect(result.current.age).toBeUndefined()
     expect(result.current.earTipped).toBeUndefined()
@@ -23,7 +23,7 @@ describe('useCatForm — initial selection (#205)', () => {
     expect(result.current.healthLabel).toBeUndefined()
   })
 
-  it('hydrates from an existingCat instead of leaving fields unset', () => {
+  it('hydrates from an existingCat instead of leaving fields unset', async () => {
     const existingCat: ObservedCat = {
       local_id: 'cat-1',
       age: 'adult',
@@ -38,7 +38,7 @@ describe('useCatForm — initial selection (#205)', () => {
       photos_reviewed: false,
     }
 
-    const { result } = renderHook(() => useCatForm(existingCat))
+    const { result } = await renderHook(() => useCatForm(existingCat))
 
     expect(result.current.age).toBe('adult')
     expect(result.current.earTipped).toBe('unsure')

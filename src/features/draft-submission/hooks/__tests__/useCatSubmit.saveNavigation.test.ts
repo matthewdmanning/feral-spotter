@@ -44,10 +44,12 @@ describe('useCatSubmit — save navigation (#203)', () => {
     useBoundingBoxStore.getState().addBox('other-cat', 'photo-2', box)
   })
 
-  it('replaces to Cat List, never a default pop to Camera', () => {
-    const { result } = renderHook(() => useCatSubmit({ form: filledForm }))
+  it('replaces to Cat List, never a default pop to Camera', async () => {
+    const { result } = await renderHook(() =>
+      useCatSubmit({ form: filledForm }),
+    )
 
-    act(() => result.current.handleSave())
+    await act(() => result.current.handleSave())
 
     expect(useSubmissionStore.getState().cats).toEqual([
       {

@@ -41,17 +41,19 @@ jest.mock('@/src/shared/analytics/analytics', () => ({
 }))
 
 describe('useLibraryPhotoPicker permission gate — model-based test', () => {
-  let result: ReturnType<
-    typeof renderHook<ReturnType<typeof useLibraryPhotoPicker>, void>
+  let result: Awaited<
+    ReturnType<
+      typeof renderHook<ReturnType<typeof useLibraryPhotoPicker>, void>
+    >
   >
 
-  beforeEach(() => {
+  beforeEach(async () => {
     useDraftStartupStore.setState({ phase: 'ready', task: Promise.resolve() })
     usePhotoStore.setState(usePhotoStore.getInitialState(), true)
     jest.clearAllMocks()
     ui.useUIStore.setState({ dialog: null })
     jest.spyOn(ui, 'showAlert')
-    result = renderHook(() => useLibraryPhotoPicker())
+    result = await renderHook(() => useLibraryPhotoPicker())
   })
 
   const gateMachine = createMachine({

@@ -62,19 +62,19 @@ describe('useAnnotatePass — handleLongPressRemove confirmation branching', () 
     annotations.addBox('active-cat', OTHER_PHOTO.local_id, BOX)
   })
 
-  it('skip-confirm on: removes immediately without an Alert', () => {
+  it('skip-confirm on: removes immediately without an Alert', async () => {
     useSettingsStore.getState().updateSetting('skip_photo_remove_confirm', true)
-    const { result } = renderHook(() => useAnnotatePass())
+    const { result } = await renderHook(() => useAnnotatePass())
 
-    act(() => result.current.handleLongPressRemove())
+    await act(() => result.current.handleLongPressRemove())
 
     expect(ui.showAlert).not.toHaveBeenCalled()
     expectFirstPhotoRemoved()
   })
 
   it('skip-confirm off: Alert offers a 3rd "don\'t ask again" option', async () => {
-    const { result } = renderHook(() => useAnnotatePass())
-    act(() => result.current.handleLongPressRemove())
+    const { result } = await renderHook(() => useAnnotatePass())
+    await act(() => result.current.handleLongPressRemove())
 
     expect(ui.useUIStore.getState().dialog).toEqual(
       expect.objectContaining({
@@ -96,8 +96,8 @@ describe('useAnnotatePass — handleLongPressRemove confirmation branching', () 
   })
 
   it('pressing "Remove, don\'t ask again" persists the setting and removes', async () => {
-    const { result } = renderHook(() => useAnnotatePass())
-    act(() => result.current.handleLongPressRemove())
+    const { result } = await renderHook(() => useAnnotatePass())
+    await act(() => result.current.handleLongPressRemove())
 
     await pressDialogButton("Remove, don't ask again")
 
@@ -107,7 +107,7 @@ describe('useAnnotatePass — handleLongPressRemove confirmation branching', () 
 
     // The setting must affect the next real removal as well as this callback.
     jest.mocked(ui.showAlert).mockClear()
-    act(() => result.current.handleLongPressRemove())
+    await act(() => result.current.handleLongPressRemove())
     expect(ui.showAlert).not.toHaveBeenCalled()
     expect(usePhotoStore.getState().photos).toEqual([])
     expect(useBoundingBoxStore.getState().getBoxesForPhoto('photo-2')).toEqual(
@@ -117,8 +117,8 @@ describe('useAnnotatePass — handleLongPressRemove confirmation branching', () 
 
   it('pressing Cancel removes nothing', async () => {
     const before = useBoundingBoxStore.getState()
-    const { result } = renderHook(() => useAnnotatePass())
-    act(() => result.current.handleLongPressRemove())
+    const { result } = await renderHook(() => useAnnotatePass())
+    await act(() => result.current.handleLongPressRemove())
 
     await pressDialogButton('Cancel')
 

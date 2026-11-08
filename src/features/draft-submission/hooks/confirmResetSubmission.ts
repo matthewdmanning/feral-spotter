@@ -53,8 +53,8 @@ function confirmDiscard(title: string, message: string, action: string): void {
 /** Ask first, then discard the draft (#153). */
 export function confirmResetSubmission(): void {
   confirmDiscard(
-    'Reset Submission',
-    'This will permanently clear all cats, photos and submission data.',
+    'Reset Sighting',
+    'This will permanently clear all cats, photos and sighting data.',
     'Reset',
   )
 }

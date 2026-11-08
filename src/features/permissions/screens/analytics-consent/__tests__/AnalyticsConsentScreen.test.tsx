@@ -20,7 +20,7 @@ describe('AnalyticsConsentScreen', () => {
 
   it('toggling the checkbox off then continuing disables analytics and navigates to /(home-tabs)', async () => {
     useConsentStore.setState({ analyticsAccepted: true })
-    render(<AnalyticsConsentScreen />)
+    await render(<AnalyticsConsentScreen />)
 
     await userEvent.press(
       screen.getByLabelText(
@@ -36,7 +36,7 @@ describe('AnalyticsConsentScreen', () => {
   })
 
   it('leaving the checkbox checked (default) and continuing enables analytics and navigates to /(home-tabs)', async () => {
-    render(<AnalyticsConsentScreen />)
+    await render(<AnalyticsConsentScreen />)
 
     await userEvent.press(
       screen.getByLabelText(consentCopy.analytics.continueLabel),

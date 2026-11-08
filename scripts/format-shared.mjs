@@ -42,7 +42,7 @@ export function createPrettierRunner() {
   const cli = [top, mainCheckout]
     .map((root) => join(root, 'node_modules', 'prettier', 'bin', 'prettier.cjs'))
     .find(existsSync)
-  if (!cli) throw new Error('prettier is not installed. Run `npm ci --legacy-peer-deps`.')
+  if (!cli) throw new Error('prettier is not installed. Run `npm ci`.')
 
   const run = (args, options = {}) =>
     execFileSync(process.execPath, [cli, ...args], { encoding: 'utf8', ...options })
@@ -53,7 +53,7 @@ export function createPrettierRunner() {
   const installed = run(['--version']).trim()
   if (installed !== pinned) {
     throw new Error(
-      `prettier ${installed} is installed but package-lock.json pins ${pinned}. Run \`npm ci --legacy-peer-deps\`.`,
+      `prettier ${installed} is installed but package-lock.json pins ${pinned}. Run \`npm ci\`.`,
     )
   }
   return run

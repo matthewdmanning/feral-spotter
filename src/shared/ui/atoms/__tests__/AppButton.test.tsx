@@ -10,7 +10,7 @@ it.each([
   async (props) => {
     const user = userEvent.setup()
     const onPress = jest.fn()
-    const { rerender } = render(
+    const { rerender } = await render(
       <AppButton {...props} onPress={onPress}>
         Submit
       </AppButton>,
@@ -21,15 +21,15 @@ it.each([
     await user.press(button)
     expect(onPress).not.toHaveBeenCalled()
 
-    rerender(<AppButton onPress={onPress}>Submit</AppButton>)
+    await rerender(<AppButton onPress={onPress}>Submit</AppButton>)
     expect(screen.getByRole('button', { name: 'Submit' })).toBeEnabled()
     await user.press(screen.getByRole('button', { name: 'Submit' }))
     expect(onPress).toHaveBeenCalledTimes(1)
   },
 )
 
-it('keeps the shared button touch target at least 48dp tall', () => {
-  render(<AppButton onPress={jest.fn()}>Continue</AppButton>)
+it('keeps the shared button touch target at least 48dp tall', async () => {
+  await render(<AppButton onPress={jest.fn()}>Continue</AppButton>)
 
   const style = StyleSheet.flatten(screen.getByRole('button').props.style)
   expect(style.minHeight).toBeGreaterThanOrEqual(48)

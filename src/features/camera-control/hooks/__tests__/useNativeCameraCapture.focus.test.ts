@@ -28,9 +28,9 @@ describe('useNativeCameraCapture manual focus', () => {
       .getState()
       .updateSettings({ camera_subject_metering: false })
     const focus = jest.fn(async () => true)
-    const { result } = renderHook(() => useNativeCameraCapture())
+    const { result } = await renderHook(() => useNativeCameraCapture())
 
-    act(() => {
+    await act(() => {
       result.current.cameraRef.current = { focus } as never
     })
 

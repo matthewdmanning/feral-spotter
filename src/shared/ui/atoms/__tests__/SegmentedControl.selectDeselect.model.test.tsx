@@ -38,10 +38,10 @@ const toggleMachine = createMachine({
 })
 
 describe('SegmentedControl select/deselect — model-based test', () => {
-  let getByLabelText: ReturnType<typeof render>['getByLabelText']
+  let getByLabelText: Awaited<ReturnType<typeof render>>['getByLabelText']
 
-  beforeEach(() => {
-    const result = render(<ControlledSegmentedControl />)
+  beforeEach(async () => {
+    const result = await render(<ControlledSegmentedControl />)
     getByLabelText = result.getByLabelText
   })
 
@@ -91,7 +91,7 @@ describe('SegmentedControl select/deselect — model-based test', () => {
 // guard against the undefined themselves.
 it('keeps a required choice when its selected option is tapped again', async () => {
   const onChange = jest.fn()
-  render(
+  await render(
     <SegmentedControl
       label="Theme"
       options={[

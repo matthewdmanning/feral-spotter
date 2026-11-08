@@ -112,7 +112,7 @@ test.each(['unchanged', 'withdrawn', 'anonymous'] as const)(
         : { status: 503 },
     )
     const user = userEvent.setup()
-    const form = render(<SubmissionOrganizations />)
+    const form = await render(<SubmissionOrganizations />)
     await user.press(await screen.findByRole('checkbox', { name: 'Rescue' }))
     if (choice === 'anonymous')
       await user.press(screen.getByRole('checkbox', { name: 'Anonymous' }))
@@ -142,7 +142,7 @@ test.each(['unchanged', 'withdrawn', 'anonymous'] as const)(
     if (choice === 'anonymous')
       await user.press(form.getByRole('checkbox', { name: 'Anonymous' }))
     // The real screen leaves after completion; avoid starting a new draft here.
-    form.unmount()
+    await form.unmount()
     await act(async () => {
       releaseUpload()
       expect(await sending).toEqual({ kind: 'sent' })

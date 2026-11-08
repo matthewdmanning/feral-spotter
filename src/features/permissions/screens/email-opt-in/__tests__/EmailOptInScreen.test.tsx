@@ -20,15 +20,15 @@ describe('EmailOptInScreen', () => {
     useAuthStore.setState({ user: { uid: 'u', email: 'jane@example.com' } })
   })
 
-  it('shows the account address masked', () => {
-    render(<EmailOptInScreen />)
+  it('shows the account address masked', async () => {
+    await render(<EmailOptInScreen />)
 
     expect(screen.getByText('Updates go to j***@example.com.')).toBeTruthy()
     expect(screen.queryByText(/jane@example\.com/)).toBeNull()
   })
 
   it('continuing without a choice keeps email off and goes to the analytics screen', async () => {
-    render(<EmailOptInScreen />)
+    await render(<EmailOptInScreen />)
 
     await userEvent.press(
       screen.getByLabelText(consentCopy.emailOptIn.continueLabel),
@@ -39,7 +39,7 @@ describe('EmailOptInScreen', () => {
   })
 
   it('checking the box then continuing opts in and goes to the analytics screen', async () => {
-    render(<EmailOptInScreen />)
+    await render(<EmailOptInScreen />)
 
     await userEvent.press(
       screen.getByLabelText(

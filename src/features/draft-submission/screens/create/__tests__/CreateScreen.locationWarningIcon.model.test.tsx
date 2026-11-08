@@ -100,7 +100,7 @@ const gateMachine = createMachine({
 describe('Submission Details location-warning icon — model-based test', () => {
   const model = createTestModel(gateMachine)
 
-  const mount = () => render(<CreateSubmissionScreen />)
+  const mount = async () => await render(<CreateSubmissionScreen />)
 
   const testParams = {
     states: {
@@ -119,11 +119,11 @@ describe('Submission Details location-warning icon — model-based test', () => 
       },
     },
     events: {
-      MOUNT_NO_FIX: () => {
+      MOUNT_NO_FIX: async () => {
         mockSubmission = { location_type: 'device', time_type: 'device' }
-        mount()
+        await mount()
       },
-      MOUNT_LOW_ACCURACY: () => {
+      MOUNT_LOW_ACCURACY: async () => {
         mockSubmission = {
           location_type: 'device',
           time_type: 'device',
@@ -131,9 +131,9 @@ describe('Submission Details location-warning icon — model-based test', () => 
           longitude: -82.83,
           accuracy: 200,
         }
-        mount()
+        await mount()
       },
-      MOUNT_GOOD_FIX: () => {
+      MOUNT_GOOD_FIX: async () => {
         mockSubmission = {
           location_type: 'device',
           time_type: 'device',
@@ -141,7 +141,7 @@ describe('Submission Details location-warning icon — model-based test', () => 
           longitude: -82.83,
           accuracy: 10,
         }
-        mount()
+        await mount()
       },
     },
   }
@@ -169,7 +169,7 @@ describe('Submission Details location-warning icon — model-based test', () => 
 
   it('tapping the icon while warning is shown opens the map picker', async () => {
     mockSubmission = { location_type: 'device', time_type: 'device' }
-    mount()
+    await mount()
     await userEvent.press(
       screen.getByLabelText(
         'Location accuracy is low or unavailable — tap to set manually',
@@ -186,7 +186,7 @@ describe('Submission Details location-warning icon — model-based test', () => 
       longitude: -82.83,
       accuracy: 10,
     }
-    mount()
+    await mount()
     await userEvent.press(screen.getByLabelText('Location acquired'))
     expect(router.push).not.toHaveBeenCalled()
   })

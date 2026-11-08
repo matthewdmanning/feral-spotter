@@ -89,7 +89,7 @@ export const ReportCard = memo(function ReportCard({
       accessibilityLabel={`Sighting, ${cache.status}, ${when}`}
       accessibilityHint={
         action === 'resume'
-          ? 'Continues this observation'
+          ? 'Continues this sighting'
           : "Opens the Sighting's details"
       }
     >

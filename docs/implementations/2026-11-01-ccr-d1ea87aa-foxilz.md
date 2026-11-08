@@ -152,3 +152,17 @@ upgrade, including its updated transitive dependencies.
 Verified: type checking (including tests), lint (0 errors; 3 existing
 warnings), formatting, all 116 app suites / 546 tests, 24 rules tests, and
 14 organization emulator tests.
+
+### 2026-11-08 — integration fix for PR #439
+
+**Purpose:** resolve the overlap between the feature-folder migration and
+the alpha-copy / Testing Library 14 changes.
+**Change:** retain feature paths, typed fixtures, real dialog helpers, and
+store resets while awaiting the Testing Library operations. Move the corrected
+onboarding slides into `features/permissions/copy/introFlowCopy.json` and retain
+the version-2 disclosure. Regenerate the combined dependency lockfile, align
+React DOM with React 19.3.0, and disable the repository's legacy-peer bypass.
+
+Verified: strict clean dependency installation (lifecycle scripts skipped),
+type checking including tests, lint (0 errors; 3 existing warnings), formatting,
+116 app suites / 546 tests, and 24 Firebase rules tests.

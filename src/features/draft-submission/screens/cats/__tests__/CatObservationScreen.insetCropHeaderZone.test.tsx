@@ -1,5 +1,4 @@
 import { act, render } from '@testing-library/react-native'
-import { ScrollView } from 'react-native'
 import CatObservationScreen from '@/src/features/draft-submission/screens/cats/index'
 
 /**
@@ -64,16 +63,18 @@ jest.mock('@/src/features/annotate/components/InsetCropBubble', () => ({
 
 describe('Cat Form page scroll while the bubble is held', () => {
   // A drag on the bubble must not also scroll the page under it.
-  it('stops the page scrolling while a touch is on the bubble, and restores it after', () => {
-    const { UNSAFE_getByType } = render(<CatObservationScreen />)
-    const scrollEnabled = () => UNSAFE_getByType(ScrollView).props.scrollEnabled
+  it('stops the page scrolling while a touch is on the bubble, and restores it after', async () => {
+    const { container } = await render(<CatObservationScreen />)
+    const scrollEnabled = () =>
+      container.queryAll((node) => node.props.scrollEnabled !== undefined)[0]
+        .props.scrollEnabled
 
     expect(scrollEnabled()).toBe(true)
 
-    act(() => latestOnHoldChange?.(true))
+    await act(() => latestOnHoldChange?.(true))
     expect(scrollEnabled()).toBe(false)
 
-    act(() => latestOnHoldChange?.(false))
+    await act(() => latestOnHoldChange?.(false))
     expect(scrollEnabled()).toBe(true)
   })
 })

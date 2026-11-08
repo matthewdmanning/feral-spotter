@@ -27,7 +27,7 @@ import {
 } from '@/functions/src/submissionLayout'
 
 /**
- * The Submission storage contract has three copies: the app's layout
+ * The sighting storage contract has three copies: the app's layout
  * module, functions/' layout module and storage.rules. Each used to be
  * kept in step by hand, and two drifted (#396's bucket, a stale rules
  * reference). This pins them: every path the app can write is one the

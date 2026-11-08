@@ -3,9 +3,9 @@
  * Persisted, reactive record of the data-collection disclosure acceptance
  * (src/features/permissions/screens/consent/). Anything that collects or transmits the data
  * described in that disclosure — photos, location, entered details —
- * must gate on `hasAcceptedConsent()` (plain check) or the `accepted` field
- * (reactive, for components/providers) rather than assuming the consent
- * screen was shown.
+ * must gate on `hasAcceptedConsent()` (plain check) or both `accepted` and
+ * `acceptedVersion === CONSENT_VERSION` (reactive, for components/providers)
+ * rather than assuming the consent screen was shown.
  *
  * Analytics is a separate, narrower opt-in captured on its own screen
  * (src/features/permissions/screens/analytics-consent/): it is `null` until answered, counts as denied, and is only
@@ -25,7 +25,7 @@ import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { useSyncExternalStore } from 'react'
 
-export const CONSENT_VERSION = 1 // bump when disclosure copy changes materially
+export const CONSENT_VERSION = 2 // v2 explains background photo uploads and account-linked data
 
 interface ConsentState {
   accepted: boolean

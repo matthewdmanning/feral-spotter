@@ -79,9 +79,9 @@ it('waits for cleanup before opening the library picker', async () => {
   const launch = jest
     .spyOn(ImagePicker, 'launchImageLibraryAsync')
     .mockResolvedValue({ canceled: true, assets: null })
-  const { result } = renderHook(() => useLibraryPhotoPicker())
+  const { result } = await renderHook(() => useLibraryPhotoPicker())
   let pick!: Promise<void>
-  act(() => {
+  await act(() => {
     pick = result.current.pickFromLibrary()
   })
   expect(launch).not.toHaveBeenCalled()
@@ -107,7 +107,7 @@ it('keeps a camera capture that arrives while the library picker is open', async
       })
       return { canceled: false, assets }
     })
-  const { result } = renderHook(() => useLibraryPhotoPicker())
+  const { result } = await renderHook(() => useLibraryPhotoPicker())
   await act(async () => {
     await result.current.pickFromLibrary()
   })
@@ -126,7 +126,7 @@ it.each(['android', 'ios'] as const)(
     const launch = jest
       .spyOn(ImagePicker, 'launchImageLibraryAsync')
       .mockResolvedValue({ canceled: false, assets })
-    const { result } = renderHook(() => useLibraryPhotoPicker())
+    const { result } = await renderHook(() => useLibraryPhotoPicker())
 
     await act(async () => result.current.pickFromLibrary())
 
@@ -191,7 +191,7 @@ it('Android: cancel leaves the draft intact; a subsequent pick can add a photo w
       assets: [{ uri: 'file:///picker/no-exif.jpg', width: 640, height: 480 }],
     })
   const initialSubmission = useSubmissionStore.getState().submission
-  const { result } = renderHook(() => useLibraryPhotoPicker())
+  const { result } = await renderHook(() => useLibraryPhotoPicker())
 
   await act(async () => result.current.pickFromLibrary())
 
@@ -225,7 +225,7 @@ it('keeps a Library draft at 10 photos and classifies time over the whole pool',
     .spyOn(ImagePicker, 'launchImageLibraryAsync')
     .mockResolvedValueOnce({ canceled: false, assets: many.slice(0, 8) })
     .mockResolvedValueOnce({ canceled: false, assets: many.slice(8) })
-  const { result } = renderHook(() => useLibraryPhotoPicker())
+  const { result } = await renderHook(() => useLibraryPhotoPicker())
 
   await act(async () => result.current.pickFromLibrary())
   await act(async () => result.current.pickFromLibrary())
@@ -271,7 +271,7 @@ it('skips photos in formats the bucket refuses, and says so', async () => {
       { uri: 'file:///picker/d.HEIC', width: 1, height: 1 },
     ],
   })
-  const { result } = renderHook(() => useLibraryPhotoPicker())
+  const { result } = await renderHook(() => useLibraryPhotoPicker())
   await act(async () => result.current.pickFromLibrary())
 
   expect(usePhotoStore.getState().photos.map((p) => p.uri)).toEqual([

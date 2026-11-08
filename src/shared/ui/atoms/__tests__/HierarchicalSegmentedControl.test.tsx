@@ -37,7 +37,7 @@ function Harness() {
 
 describe('HierarchicalSegmentedControl', () => {
   it('shows a group’s choices only once the group is chosen', async () => {
-    render(<Harness />)
+    await render(<Harness />)
     expect(screen.queryByText('Spotted')).toBeNull()
 
     await userEvent.press(screen.getByText('Tabby'))
@@ -45,7 +45,7 @@ describe('HierarchicalSegmentedControl', () => {
   })
 
   it('drops the choice when another group is chosen, and clears on a second tap', async () => {
-    render(<Harness />)
+    await render(<Harness />)
     await userEvent.press(screen.getByText('Tabby'))
     await userEvent.press(screen.getByText('Spotted'))
     expect(onChange).toHaveBeenLastCalledWith('tabby', 'spotted')

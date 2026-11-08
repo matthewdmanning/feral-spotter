@@ -23,10 +23,10 @@ describe('ErrorBoundary crash reporting', () => {
     { accepted: false, analyticsAccepted: true },
   ])(
     'does not report the crash with consent state %p',
-    ({ accepted, analyticsAccepted }) => {
+    async ({ accepted, analyticsAccepted }) => {
       if (accepted) useConsentStore.getState().markAccepted()
       useConsentStore.getState().setAnalyticsAccepted(analyticsAccepted)
-      render(
+      await render(
         <ErrorBoundary>
           <Boom />
         </ErrorBoundary>,
@@ -36,11 +36,11 @@ describe('ErrorBoundary crash reporting', () => {
     },
   )
 
-  it('reports the crash with the component stack once consent and analytics are accepted', () => {
+  it('reports the crash with the component stack once consent and analytics are accepted', async () => {
     useConsentStore.getState().markAccepted()
     useConsentStore.getState().setAnalyticsAccepted(true)
 
-    render(
+    await render(
       <ErrorBoundary>
         <Boom />
       </ErrorBoundary>,

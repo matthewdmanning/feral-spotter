@@ -2,7 +2,6 @@ import '@shopify/flash-list/jestSetup'
 import type { SubmissionCacheFile } from '@/src/shared/lib/submissionCache'
 import { useFeralReports } from '@/src/features/history/hooks/useFeralReports'
 import { SightingsMap } from '@/src/features/history/components/SightingsMap'
-import { FlashList } from '@shopify/flash-list'
 import { router } from 'expo-router'
 import { act, render, screen, userEvent } from '@testing-library/react-native'
 import FeralReportsScreen from '@/src/features/history/screens/feralReports/index'
@@ -49,16 +48,16 @@ const showCaches = (caches: SubmissionCacheFile[], resumableId?: string) =>
 describe('Feral Reports screen', () => {
   it('shows the empty state and no legend before any report exists', async () => {
     showCaches([])
-    render(<FeralReportsScreen />)
+    await render(<FeralReportsScreen />)
 
-    expect(await screen.findByText('No reports yet')).toBeOnTheScreen()
+    expect(await screen.findByText('No sightings yet')).toBeOnTheScreen()
     expect(screen.getByText('0 total')).toBeOnTheScreen()
     expect(screen.queryByText('Failed')).not.toBeOnTheScreen()
   })
 
   it('lists each report with the legend and the total, and no empty state', async () => {
     showCaches([cache('a', 'Submitted', 2), cache('b', 'Failed', 0)])
-    render(<FeralReportsScreen />)
+    await render(<FeralReportsScreen />)
 
     expect(await screen.findByText('2 total')).toBeOnTheScreen()
     expect(screen.getByText('Cats: 2')).toBeOnTheScreen()
@@ -67,7 +66,7 @@ describe('Feral Reports screen', () => {
     expect(screen.getAllByText('Submitted').length).toBeGreaterThanOrEqual(2)
     expect(screen.getAllByText('Failed').length).toBeGreaterThanOrEqual(2)
     expect(screen.getByText('In Progress')).toBeOnTheScreen()
-    expect(screen.queryByText('No reports yet')).not.toBeOnTheScreen()
+    expect(screen.queryByText('No sightings yet')).not.toBeOnTheScreen()
   })
 
   it('keeps map gestures, pin navigation and changing draft actions wired through the recycled list', async () => {
@@ -77,7 +76,7 @@ describe('Feral Reports screen', () => {
       cache('draft', 'In Progress', 1),
     ]
     showCaches(caches, 'draft')
-    const { rerender } = render(<FeralReportsScreen />)
+    const { rerender } = await render(<FeralReportsScreen />)
 
     await user.press(
       screen.getByRole('button', { name: /Sighting, Submitted/ }),
@@ -94,18 +93,26 @@ describe('Feral Reports screen', () => {
     // The cache array stays identical: only the resume target changes.
     // A memoized card/list must still stop offering the abandoned draft.
     showCaches(caches)
-    rerender(<FeralReportsScreen />)
+    await rerender(<FeralReportsScreen />)
     expect(
       screen.queryByRole('button', { name: /Sighting, In Progress/ }),
     ).toBeNull()
     expect(screen.getByText('Cats: 1')).toBeOnTheScreen()
 
     const mapProps = () => jest.mocked(SightingsMap).mock.calls.at(-1)![0]
-    act(() => mapProps().onTouchActiveChange?.(true))
-    expect(screen.UNSAFE_getByType(FlashList).props.scrollEnabled).toBe(false)
-    act(() => mapProps().onTouchActiveChange?.(false))
-    expect(screen.UNSAFE_getByType(FlashList).props.scrollEnabled).toBe(true)
-    act(() =>
+    await act(() => mapProps().onTouchActiveChange?.(true))
+    expect(
+      screen.container.queryAll(
+        (node) => node.props.scrollEnabled !== undefined,
+      )[0].props.scrollEnabled,
+    ).toBe(false)
+    await act(() => mapProps().onTouchActiveChange?.(false))
+    expect(
+      screen.container.queryAll(
+        (node) => node.props.scrollEnabled !== undefined,
+      )[0].props.scrollEnabled,
+    ).toBe(true)
+    await act(() =>
       mapProps().onSpotPress({
         id: 'spot',
         latitude: 34,

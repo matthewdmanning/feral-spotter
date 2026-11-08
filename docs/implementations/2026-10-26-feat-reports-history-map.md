@@ -128,3 +128,8 @@ tags:
 - [ ] Multi-Sighting pin opens newest only.
 - [ ] "Profile Pic" not yet in `docs/agents/domain.md` glossary — candidate for /domain-modeling.
 - [ ] No `ui-ux/current-state/` file for Reports map or Sighting view; needs owner confirmation before writing.
+
+## 2026-11-08 — fix
+
+**Purpose:** Align the history surface with the chosen Sighting vocabulary (#380).
+**Change:** The tab and screen say Sightings; the empty state describes both drafts and submitted sightings, and the resume accessibility hint says sighting. Existing per-record statuses and navigation remain intact. Device label/truncation checks remain pending. See the [submission note](2026-08-14-264-connect-submit-to-storage.md).

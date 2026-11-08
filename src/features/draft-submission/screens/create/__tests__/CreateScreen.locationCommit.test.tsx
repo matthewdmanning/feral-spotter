@@ -53,7 +53,7 @@ describe('Create screen — location-commit invariant', () => {
       startedAt: 1,
       result: { latitude: 1, longitude: 2, accuracy: 20 },
     }
-    const { rerender } = render(<CreateSubmissionScreen />)
+    const { rerender } = await render(<CreateSubmissionScreen />)
     await act(async () => {})
 
     expect(useSubmissionStore.getState().submission).toMatchObject({
@@ -68,7 +68,7 @@ describe('Create screen — location-commit invariant', () => {
       startedAt: 2,
       result: { latitude: 9, longitude: 9, accuracy: 80 },
     }
-    rerender(<CreateSubmissionScreen />)
+    await rerender(<CreateSubmissionScreen />)
     await act(async () => {})
 
     expect(useSubmissionStore.getState().submission).toMatchObject({
@@ -84,7 +84,7 @@ describe('Create screen — location-commit invariant', () => {
       startedAt: 2,
       result: { latitude: 9, longitude: 9, accuracy: 80 },
     }
-    rerender(<CreateSubmissionScreen />)
+    await rerender(<CreateSubmissionScreen />)
     await act(async () => {})
 
     expect(useSubmissionStore.getState().submission).toMatchObject({
@@ -109,7 +109,7 @@ describe('Create screen — location-commit invariant', () => {
       startedAt: 1,
       result: { latitude: 1, longitude: 2, accuracy: 20 },
     }
-    render(<CreateSubmissionScreen />)
+    await render(<CreateSubmissionScreen />)
     await act(async () => {})
 
     expect(useSubmissionStore.getState().submission).toMatchObject({

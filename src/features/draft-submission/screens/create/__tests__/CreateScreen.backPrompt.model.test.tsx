@@ -116,11 +116,11 @@ describe('Submission Details hardware Back — model-based test', () => {
   let rerender: (ui: React.ReactElement) => void
   let lastBackHandled: boolean
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockFocused = true
     useUIStore.setState({ dialog: null })
     lastBackHandled = false
-    const result = render(<CreateSubmissionScreen />)
+    const result = await render(<CreateSubmissionScreen />)
     rerender = result.rerender
   })
 
@@ -155,21 +155,21 @@ describe('Submission Details hardware Back — model-based test', () => {
       },
     },
     events: {
-      BACK: () => {
-        act(() => {
+      BACK: async () => {
+        await act(() => {
           lastBackHandled = mockBackHandler()
         })
       },
-      STAY: () => pressDialogButton('Stay'),
-      TAKE_MORE: () => pressDialogButton('Take More Photos'),
-      DISCARD: () => pressDialogButton('Discard Draft'),
-      COVER: () => {
+      STAY: async () => await pressDialogButton('Stay'),
+      TAKE_MORE: async () => await pressDialogButton('Take More Photos'),
+      DISCARD: async () => await pressDialogButton('Discard Draft'),
+      COVER: async () => {
         mockFocused = false
-        rerender(<CreateSubmissionScreen />)
+        await rerender(<CreateSubmissionScreen />)
       },
-      UNCOVER: () => {
+      UNCOVER: async () => {
         mockFocused = true
-        rerender(<CreateSubmissionScreen />)
+        await rerender(<CreateSubmissionScreen />)
       },
     },
   }

@@ -83,8 +83,8 @@ const buttonsMachine = createMachine({
 })
 
 describe('HomeScreen entrypoint buttons — model-based test', () => {
-  let getByLabelText: ReturnType<typeof render>['getByLabelText']
-  let queryByLabelText: ReturnType<typeof render>['queryByLabelText']
+  let getByLabelText: Awaited<ReturnType<typeof render>>['getByLabelText']
+  let queryByLabelText: Awaited<ReturnType<typeof render>>['queryByLabelText']
   const queryShown = (label: string) =>
     queryByLabelText(label, { includeHiddenElements: false })
 
@@ -105,7 +105,7 @@ describe('HomeScreen entrypoint buttons — model-based test', () => {
         ...c,
       })) as never,
     )
-    const result = render(<HomeScreen />)
+    const result = await render(<HomeScreen />)
     getByLabelText = result.getByLabelText
     queryByLabelText = result.queryByLabelText
     await waitFor(() => expect(getAllSubmissionCaches).toHaveBeenCalled())
@@ -122,13 +122,13 @@ describe('HomeScreen entrypoint buttons — model-based test', () => {
       // write back to the style prop that toBeVisible reads.
       idleEntry: async () => {
         await waitFor(() => {
-          expect(queryShown('Continue Observation')).toBeNull()
+          expect(queryShown('Continue Sighting')).toBeNull()
           expect(queryShown('New Sighting')).toBeNull()
         })
       },
       resumeEntry: async () => {
         await waitFor(() => {
-          expect(queryShown('Continue Observation')).not.toBeNull()
+          expect(queryShown('Continue Sighting')).not.toBeNull()
           expect(queryShown('New Sighting')).not.toBeNull()
         })
       },
@@ -157,7 +157,7 @@ describe('HomeScreen entrypoint buttons — model-based test', () => {
         await userEvent.press(getByLabelText('Upload Photos'))
       },
       PRESS_RESUME: async () => {
-        await userEvent.press(getByLabelText('Continue Observation'))
+        await userEvent.press(getByLabelText('Continue Sighting'))
       },
       PRESS_NEW: async () => {
         await userEvent.press(getByLabelText('New Sighting'))
@@ -189,7 +189,7 @@ describe('HomeScreen entrypoint buttons — model-based test', () => {
       events: [{ type: 'MOUNT_NO_DRAFT' }, { type: 'PRESS_LIBRARY' }],
     },
     {
-      name: 'Continue Observation returns to Cat List',
+      name: 'Continue Sighting returns to Cat List',
       events: [{ type: 'MOUNT_IN_PROGRESS' }, { type: 'PRESS_RESUME' }],
     },
     {

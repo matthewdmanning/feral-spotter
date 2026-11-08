@@ -96,11 +96,11 @@ const gateMachine = createMachine({
 
 describe('Cat List auto-skip gate — model-based test', () => {
   let rerender: (ui: React.ReactElement) => void
-  let queryByText: ReturnType<typeof render>['queryByText']
+  let queryByText: Awaited<ReturnType<typeof render>>['queryByText']
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockCats = []
-    const result = render(<CreateSubmissionScreen />)
+    const result = await render(<CreateSubmissionScreen />)
     queryByText = result.queryByText
     rerender = result.rerender
   })
@@ -136,7 +136,7 @@ describe('Cat List auto-skip gate — model-based test', () => {
       },
     },
     events: {
-      CAT_ADDED: () => {
+      CAT_ADDED: async () => {
         mockCats = [
           {
             local_id: 'cat-1',
@@ -145,11 +145,11 @@ describe('Cat List auto-skip gate — model-based test', () => {
             hair_length: 'short',
           },
         ]
-        rerender(<CreateSubmissionScreen />)
+        await rerender(<CreateSubmissionScreen />)
       },
-      CAT_REMOVED: () => {
+      CAT_REMOVED: async () => {
         mockCats = []
-        rerender(<CreateSubmissionScreen />)
+        await rerender(<CreateSubmissionScreen />)
       },
     },
   }

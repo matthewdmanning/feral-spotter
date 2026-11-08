@@ -85,7 +85,7 @@ describe('AnnotateScreen buttons', () => {
     jest
       .mocked(useAnnotatePass)
       .mockReturnValue({ ...baseAnnotatePass, photos: [] })
-    render(<AnnotateScreen />)
+    await render(<AnnotateScreen />)
 
     await userEvent.press(screen.getByText('Go back'))
 
@@ -97,7 +97,7 @@ describe('AnnotateScreen buttons', () => {
     jest
       .mocked(useAnnotatePass)
       .mockReturnValue({ ...baseAnnotatePass, currentIndex: 0 })
-    render(<AnnotateScreen />)
+    await render(<AnnotateScreen />)
 
     const prevButton = screen.getByText('← Previous')
     await userEvent.press(prevButton)
@@ -111,7 +111,7 @@ describe('AnnotateScreen buttons', () => {
     jest
       .mocked(useAnnotatePass)
       .mockReturnValue({ ...baseAnnotatePass, currentIndex: 1 })
-    render(<AnnotateScreen />)
+    await render(<AnnotateScreen />)
 
     await userEvent.press(screen.getByText('← Previous'))
 
@@ -122,7 +122,7 @@ describe('AnnotateScreen buttons', () => {
 
   it('Not in Photo calls handleNotInPhoto', async () => {
     jest.mocked(useAnnotatePass).mockReturnValue(baseAnnotatePass)
-    render(<AnnotateScreen />)
+    await render(<AnnotateScreen />)
 
     await userEvent.press(screen.getByLabelText('Not in this photo'))
 
@@ -131,7 +131,7 @@ describe('AnnotateScreen buttons', () => {
 
   it('Done With This Cat calls handleBoxingComplete', async () => {
     jest.mocked(useAnnotatePass).mockReturnValue(baseAnnotatePass)
-    render(<AnnotateScreen />)
+    await render(<AnnotateScreen />)
 
     await userEvent.press(screen.getByText('Done With This Cat'))
 
@@ -140,7 +140,7 @@ describe('AnnotateScreen buttons', () => {
 
   it('long-pressing Remove photo calls handleLongPressRemove', async () => {
     jest.mocked(useAnnotatePass).mockReturnValue(baseAnnotatePass)
-    render(<AnnotateScreen />)
+    await render(<AnnotateScreen />)
 
     await userEvent.longPress(screen.getByLabelText('Remove photo'))
 

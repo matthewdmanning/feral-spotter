@@ -12,8 +12,8 @@ describe('StatusIcon', () => {
     ['Sending', 'paper-plane-right'],
     ['Submitted', 'check-circle'],
     ['Failed', 'x-circle'],
-  ])('renders the %s icon for status "%s"', (status, iconName) => {
-    const { getByTestId } = render(<StatusIcon status={status} />)
+  ])('renders the %s icon for status "%s"', async (status, iconName) => {
+    const { getByTestId } = await render(<StatusIcon status={status} />)
     expect(
       getByTestId(new RegExp(`^phosphor-react-native-${iconName}-`)),
     ).toBeTruthy()

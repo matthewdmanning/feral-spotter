@@ -21,11 +21,11 @@ beforeEach(() => {
 })
 
 it('ignores a second attempt while one runs, then advances once', async () => {
-  const { result } = renderHook(() => useAuthAttempt())
+  const { result } = await renderHook(() => useAuthAttempt())
   let finish!: () => void
   const run = jest.fn(() => new Promise<void>((r) => (finish = r)))
   let first!: Promise<void>
-  act(() => {
+  await act(() => {
     first = result.current.attempt(run, copy)
     void result.current.attempt(run, copy)
   })
@@ -40,7 +40,7 @@ it('ignores a second attempt while one runs, then advances once', async () => {
 })
 
 it('stays silent on cancellation and alerts on other failures', async () => {
-  const { result } = renderHook(() => useAuthAttempt())
+  const { result } = await renderHook(() => useAuthAttempt())
   await act(() =>
     result.current.attempt(
       () => Promise.reject(new Error('SIGN_IN_CANCELLED')),

@@ -57,8 +57,8 @@ const catalog: Catalog = {
 }
 const shareBox = () =>
   screen.getByRole('checkbox', { name: 'Share this sighting' })
-const setLocation = (latitude: number, longitude: number) =>
-  act(async () => {
+const setLocation = async (latitude: number, longitude: number) =>
+  await act(async () => {
     useSubmissionStore.getState().setSubmissionLocation({ latitude, longitude })
   })
 
@@ -87,7 +87,7 @@ beforeEach(() => {
 test('submission journey: overlapping organizations, anonymous override, changed settings, restart and a fresh sighting', async () => {
   const service = await fakeOrganizationsService(() => catalog)
   const user = userEvent.setup()
-  const view = render(<SubmissionOrganizations />)
+  const view = await render(<SubmissionOrganizations />)
   await screen.findByRole('checkbox', { name: 'First rescue' })
   expect(service.actions()).toEqual(['catalog'])
   expect(screen.queryByText('Distant rescue')).toBeNull()
@@ -144,19 +144,19 @@ test('submission journey: overlapping organizations, anonymous override, changed
       'This does not contact or notify an organization. No rescue response is requested.',
     ),
   ).toBeTruthy()
-  view.unmount()
+  await view.unmount()
 })
 
 test('only a revocation of a selected organization withdraws the confirmation', async () => {
   await fakeOrganizationsService(() => catalog)
   const user = userEvent.setup()
-  render(<SubmissionOrganizations />)
+  await render(<SubmissionOrganizations />)
   await user.press(
     await screen.findByRole('checkbox', { name: 'First rescue' }),
   )
   await user.press(shareBox())
-  const setEpochs = (epochs: Record<string, number>) =>
-    act(async () => {
+  const setEpochs = async (epochs: Record<string, number>) =>
+    await act(async () => {
       useOrganizationSharingStore.setState((state) => ({
         accounts: {
           owner: {
@@ -176,7 +176,7 @@ test('only a revocation of a selected organization withdraws the confirmation', 
 test('cached coverage filters by the sighting and account changes never reuse another user’s choices', async () => {
   await fakeOrganizationsService(() => catalog)
   const user = userEvent.setup()
-  render(<SubmissionOrganizations />)
+  await render(<SubmissionOrganizations />)
   await user.press(
     await screen.findByRole('checkbox', { name: 'First rescue' }),
   )
@@ -213,7 +213,7 @@ test('a failed refresh keeps the saved directory usable; a corrupt cache is igno
   await fakeOrganizationsService(() => catalog)
   await organizationsDirectory.save(await organizationsDirectory.fetch(1, 1))
   await fakeOrganizationsService(() => ({ status: 503 }))
-  render(<SubmissionOrganizations />)
+  await render(<SubmissionOrganizations />)
   expect(await screen.findByText(/Using saved coverage/)).toBeTruthy()
   expect(
     screen.getByRole('checkbox', { name: 'First rescue' }),

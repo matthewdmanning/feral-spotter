@@ -28,7 +28,7 @@ it('creates one row for a draft with none, and no stray row after Submit', async
   })
   const before = (await cache.getAllSubmissionCaches()).length
 
-  const { unmount } = renderHook(() => useDraftSync())
+  const { unmount } = await renderHook(() => useDraftSync())
   // The row is written by an async effect chain; let it run out.
   for (let i = 0; i < 20; i += 1) {
     await act(async () => {
@@ -42,11 +42,11 @@ it('creates one row for a draft with none, and no stray row after Submit', async
   // What completeDraft does: flip, release the pointer, clear the stores.
   await cache.updateSubmissionCache(id!, { status: 'Submitted' })
   await cache.clearCurrentCacheId()
-  act(() => {
+  await act(() => {
     useSubmissionStore.getState().clearDraft()
     usePhotoStore.getState().clearPhotos(true)
   })
   await act(async () => {})
-  unmount()
+  await unmount()
   expect(await cache.getAllSubmissionCaches()).toHaveLength(before + 1)
 })

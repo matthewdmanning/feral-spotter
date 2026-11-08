@@ -29,7 +29,7 @@ type TabName = keyof typeof tabIcons
 
 const TABS: { name: TabName; title: string }[] = [
   { name: 'index', title: 'Home' },
-  { name: 'feral-reports', title: 'Reports' },
+  { name: 'feral-reports', title: 'Sightings' },
   { name: 'settings', title: 'Settings' },
 ]
 

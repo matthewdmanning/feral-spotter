@@ -97,9 +97,9 @@ describe('useSubmissionSubmit submit flow', () => {
     })
     jest.mocked(uploadSubmissionMetadata).mockResolvedValue(undefined)
 
-    const { result } = renderHook(() => useSubmissionSubmit())
+    const { result } = await renderHook(() => useSubmissionSubmit())
 
-    act(() => result.current.handleDone())
+    await act(() => result.current.handleDone())
     await pressDialogButton('Submit')
 
     expect(uploadSubmissionMetadata).toHaveBeenCalledWith(
@@ -138,9 +138,9 @@ describe('useSubmissionSubmit submit flow', () => {
     })
     jest.mocked(uploadSubmissionMetadata).mockResolvedValue(undefined)
 
-    const { result } = renderHook(() => useSubmissionSubmit())
+    const { result } = await renderHook(() => useSubmissionSubmit())
 
-    act(() => result.current.handleDone())
+    await act(() => result.current.handleDone())
     await pressDialogButton('Submit')
 
     expect(finalizeSubmissionPhotoMetadata).toHaveBeenCalledWith(
@@ -173,9 +173,9 @@ describe('useSubmissionSubmit submit flow', () => {
     })
     jest.mocked(uploadSubmissionMetadata).mockResolvedValue(undefined)
 
-    const { result } = renderHook(() => useSubmissionSubmit())
+    const { result } = await renderHook(() => useSubmissionSubmit())
 
-    act(() => result.current.handleDone())
+    await act(() => result.current.handleDone())
     await pressDialogButton('Submit')
 
     expect(finalizeSubmissionPhotoMetadata).toHaveBeenCalledWith(
@@ -213,9 +213,9 @@ describe('useSubmissionSubmit submit flow', () => {
     })
     jest.mocked(uploadSubmissionMetadata).mockResolvedValue(undefined)
 
-    const { result } = renderHook(() => useSubmissionSubmit())
+    const { result } = await renderHook(() => useSubmissionSubmit())
 
-    act(() => result.current.handleDone())
+    await act(() => result.current.handleDone())
     await pressDialogButton('Submit')
 
     expect(finalizeSubmissionPhotoMetadata).toHaveBeenCalledWith(
@@ -254,13 +254,13 @@ describe('useSubmissionSubmit submit flow', () => {
       .mockResolvedValueOnce(undefined)
     jest.mocked(uploadSubmissionMetadata).mockResolvedValue(undefined)
 
-    const { result } = renderHook(() => useSubmissionSubmit())
+    const { result } = await renderHook(() => useSubmissionSubmit())
 
-    act(() => result.current.handleDone())
+    await act(() => result.current.handleDone())
     await pressDialogButton('Submit')
 
     expect(uploadSubmissionMetadata).toHaveBeenCalled()
-    expect(useUIStore.getState().dialog?.title).not.toBe('Submission Failed')
+    expect(useUIStore.getState().dialog?.title).not.toBe('Sighting Failed')
     expect(isDraftBusy()).toBe(false)
   })
 
@@ -300,9 +300,9 @@ describe('useSubmissionSubmit submit flow', () => {
     })
     jest.mocked(uploadSubmissionMetadata).mockResolvedValue(undefined)
 
-    const { result } = renderHook(() => useSubmissionSubmit())
+    const { result } = await renderHook(() => useSubmissionSubmit())
 
-    act(() => result.current.handleDone())
+    await act(() => result.current.handleDone())
     await pressDialogButton('Submit')
 
     expect(uploadSubmissionMetadata).toHaveBeenCalledWith(
@@ -342,15 +342,15 @@ describe('useSubmissionSubmit submit flow', () => {
       ],
     })
 
-    const { result } = renderHook(() => useSubmissionSubmit())
+    const { result } = await renderHook(() => useSubmissionSubmit())
 
-    act(() => result.current.handleDone())
+    await act(() => result.current.handleDone())
     await pressDialogButton('Submit')
 
     expect(uploadSubmissionMetadata).not.toHaveBeenCalled()
     expect(useUIStore.getState().dialog).toEqual(
       expect.objectContaining({
-        title: 'Submission Incomplete',
+        title: 'Sighting Incomplete',
         message: 'At least one cat observation is required.',
       }),
     )
@@ -364,15 +364,15 @@ describe('useSubmissionSubmit submit flow', () => {
   it('blocks submit and shows an error when there are no photos', async () => {
     usePhotoStore.setState({ photos: [] })
 
-    const { result } = renderHook(() => useSubmissionSubmit())
+    const { result } = await renderHook(() => useSubmissionSubmit())
 
-    act(() => result.current.handleDone())
+    await act(() => result.current.handleDone())
     await pressDialogButton('Submit')
 
     expect(uploadSubmissionMetadata).not.toHaveBeenCalled()
     expect(useUIStore.getState().dialog).toEqual(
       expect.objectContaining({
-        title: 'Submission Incomplete',
+        title: 'Sighting Incomplete',
         message: 'At least one photo is required.',
       }),
     )
@@ -396,9 +396,9 @@ describe('useSubmissionSubmit submit flow', () => {
     })
     jest.mocked(uploadSubmissionMetadata).mockResolvedValue(undefined)
 
-    const { result } = renderHook(() => useSubmissionSubmit())
+    const { result } = await renderHook(() => useSubmissionSubmit())
 
-    act(() => result.current.handleDone())
+    await act(() => result.current.handleDone())
     await pressDialogButton('Submit')
 
     expect(uploadSubmissionMetadata).toHaveBeenCalledWith(
@@ -421,7 +421,7 @@ describe('useSubmissionSubmit submit flow', () => {
     jest.spyOn(console, 'error').mockImplementation(() => {})
     const errorSpy = jest.spyOn(ui, 'showError').mockImplementation(() => {})
 
-    const { result } = renderHook(() => useSubmissionSubmit())
+    const { result } = await renderHook(() => useSubmissionSubmit())
 
     try {
       await act(async () => {
@@ -468,17 +468,17 @@ describe('useSubmissionSubmit submit flow', () => {
     jest.spyOn(console, 'error').mockImplementation(() => {})
     const errorSpy = jest.spyOn(ui, 'showError').mockImplementation(() => {})
 
-    const { result } = renderHook(() => useSubmissionSubmit())
+    const { result } = await renderHook(() => useSubmissionSubmit())
 
-    act(() => result.current.handleDone())
+    await act(() => result.current.handleDone())
     await pressDialogButton('Submit')
 
     expect(errorSpy).toHaveBeenCalledWith(
-      'Submission Failed',
+      'Sighting Failed',
       expect.stringContaining('saved on this device'),
     )
     expect(errorSpy).not.toHaveBeenCalledWith(
-      'Submission Failed',
+      'Sighting Failed',
       expect.stringContaining('PERMISSION_DENIED'),
     )
     expect(useSubmissionStore.getState().cats).toHaveLength(1)
