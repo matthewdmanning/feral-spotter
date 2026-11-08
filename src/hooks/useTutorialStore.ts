@@ -2,7 +2,7 @@
  * hooks/useTutorialStore.ts
  * Persisted Zustand store tracking tutorial completion state.
  * `unseen` auto-fires the tutorial on first annotation entry;
- * `skipped` and `completed` suppress it (replay via Settings resets to `unseen`).
+ * `skipped` and `completed` suppress it. Settings has no replay action.
  */
 
 import { asyncStorage } from '@/src/lib/cache/storage'

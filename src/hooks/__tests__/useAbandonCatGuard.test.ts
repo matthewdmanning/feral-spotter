@@ -50,9 +50,9 @@ const BOX = { lowerLeftX: 1, lowerLeftY: 1, upperRightX: 9, upperRightY: 9 }
  * Simulates any exit — header back, swipe-back or hardware back all land
  * here. Returns whether the router blocked it.
  */
-const attemptLeave = () => {
+const attemptLeave = async () => {
   const blocked = prevented
-  act(() => {
+  await act(() => {
     if (prevented) {
       preventCallback?.({
         data: { action: { type: 'GO_BACK' } },
@@ -63,9 +63,9 @@ const attemptLeave = () => {
   return { blocked }
 }
 
-const pressRemove = () => {
+const pressRemove = async () => {
   const buttons = jest.mocked(ui.showAlert).mock.calls[0][2]
-  act(() => {
+  await act(() => {
     buttons?.find((b) => b.text === 'Remove progress on this cat')?.onPress?.()
   })
 }
@@ -81,38 +81,38 @@ describe('useAbandonCatGuard (#304)', () => {
     useActiveCatFlowStore.getState().setActiveCatId(null)
   })
 
-  it('prompts and blocks the exit when an unsaved cat is in progress', () => {
+  it('prompts and blocks the exit when an unsaved cat is in progress', async () => {
     useActiveCatFlowStore.getState().setActiveCatId(CAT_ID)
-    renderHook(() => useAbandonCatGuard(false))
+    await renderHook(() => useAbandonCatGuard(false))
 
-    const { blocked } = attemptLeave()
+    const { blocked } = await attemptLeave()
 
     expect(blocked).toBe(true)
     expect(ui.showAlert).toHaveBeenCalledTimes(1)
   })
 
-  it('lets the exit through after a save has cleared the active cat', () => {
+  it('lets the exit through after a save has cleared the active cat', async () => {
     useActiveCatFlowStore.getState().setActiveCatId(CAT_ID)
-    renderHook(() => useAbandonCatGuard(false))
-    act(() => {
+    await renderHook(() => useAbandonCatGuard(false))
+    await act(() => {
       useActiveCatFlowStore.getState().setActiveCatId(null)
     })
 
-    const { blocked } = attemptLeave()
+    const { blocked } = await attemptLeave()
 
     expect(blocked).toBe(false)
     expect(ui.showAlert).not.toHaveBeenCalled()
   })
 
-  it('lets a save through that navigates before the guard re-renders', () => {
+  it('lets a save through that navigates before the guard re-renders', async () => {
     // handleSave clears the id and navigates in the same tick, so the guard
     // is still armed when the router asks. It must read the id fresh and
     // repeat the navigation — a stale read would popup on every save.
     useActiveCatFlowStore.getState().setActiveCatId(CAT_ID)
-    renderHook(() => useAbandonCatGuard(false))
+    await renderHook(() => useAbandonCatGuard(false))
     useActiveCatFlowStore.setState({ activeCatId: null })
 
-    const { blocked } = attemptLeave()
+    const { blocked } = await attemptLeave()
 
     expect(blocked).toBe(true)
     expect(ui.showAlert).not.toHaveBeenCalled()
@@ -120,27 +120,27 @@ describe('useAbandonCatGuard (#304)', () => {
     expect(mockRepeat).toHaveBeenCalledTimes(1)
   })
 
-  it('lets the exit through when editing an already-saved cat', () => {
+  it('lets the exit through when editing an already-saved cat', async () => {
     useActiveCatFlowStore.getState().setActiveCatId(CAT_ID)
-    renderHook(() => useAbandonCatGuard(true))
+    await renderHook(() => useAbandonCatGuard(true))
 
-    const { blocked } = attemptLeave()
+    const { blocked } = await attemptLeave()
 
     expect(blocked).toBe(false)
     expect(ui.showAlert).not.toHaveBeenCalled()
   })
 
-  it('removing clears the abandoned cat’s boxes, absences and id — and nothing else', () => {
+  it('removing clears the abandoned cat’s boxes, absences and id — and nothing else', async () => {
     const store = useBoundingBoxStore.getState()
     store.addBox(CAT_ID, PHOTO_ID, BOX)
     store.addBox(CAT_ID, PHOTO_ID, BOX) // second box populates lastBoxes
     store.markAbsent(CAT_ID, 'photo-2')
     store.addBox(OTHER_CAT_ID, PHOTO_ID, BOX)
     useActiveCatFlowStore.getState().setActiveCatId(CAT_ID)
-    renderHook(() => useAbandonCatGuard(false))
+    await renderHook(() => useAbandonCatGuard(false))
 
-    attemptLeave()
-    pressRemove()
+    await attemptLeave()
+    await pressRemove()
 
     const after = useBoundingBoxStore.getState()
     const keysFor = (id: string) =>
@@ -159,9 +159,9 @@ describe('useAbandonCatGuard (#304)', () => {
   it('Cancel leaves the boxes and the active cat alone', async () => {
     useBoundingBoxStore.getState().addBox(CAT_ID, PHOTO_ID, BOX)
     useActiveCatFlowStore.getState().setActiveCatId(CAT_ID)
-    renderHook(() => useAbandonCatGuard(false))
+    await renderHook(() => useAbandonCatGuard(false))
 
-    attemptLeave()
+    await attemptLeave()
     const cancel = ui.useUIStore
       .getState()
       .dialog?.buttons.find((button) => button.text === 'Cancel')

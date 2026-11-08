@@ -89,7 +89,7 @@ describe('useSubmissionSubmit — handleDone cache sync (#228)', () => {
     useSubmissionStore.getState().setSubmission({ time_type: 'manual' })
     useSubmissionStore.getState().setManualTime('2026-08-01T12:00:00.000Z')
 
-    const { result } = renderHook(() => useSubmissionSubmit())
+    const { result } = await renderHook(() => useSubmissionSubmit())
 
     await act(async () => {
       result.current.handleDone()
@@ -158,7 +158,7 @@ describe('useSubmissionSubmit — history row survives teardown', () => {
   })
 
   it('keeps owner, location, cloud photos, and the chosen Profile Pic', async () => {
-    const { result } = renderHook(() => useSubmissionSubmit())
+    const { result } = await renderHook(() => useSubmissionSubmit())
     await act(async () => {
       result.current.handleDone()
       const confirm = useUIStore

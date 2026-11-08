@@ -110,10 +110,10 @@ const backMachine = createMachine({
 const dialog = () => useUIStore.getState().dialog
 
 // Mirrors AlertHost: dismiss first, then run the button's handler.
-const pressDialogButton = (text: string) => {
+const pressDialogButton = async (text: string) => {
   const button = dialog()?.buttons.find((b) => b.text === text)
   if (!button) throw new Error(`no dialog button "${text}"`)
-  act(() => {
+  await act(() => {
     useUIStore.getState().dismissDialog()
     button.onPress?.()
   })
@@ -123,12 +123,12 @@ describe('Submission Details hardware Back — model-based test', () => {
   let rerender: (ui: React.ReactElement) => void
   let lastBackHandled: boolean
 
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks()
     mockFocused = true
     useUIStore.setState({ dialog: null })
     lastBackHandled = false
-    const result = render(<CreateSubmissionScreen />)
+    const result = await render(<CreateSubmissionScreen />)
     rerender = result.rerender
   })
 
@@ -163,21 +163,21 @@ describe('Submission Details hardware Back — model-based test', () => {
       },
     },
     events: {
-      BACK: () => {
-        act(() => {
+      BACK: async () => {
+        await act(() => {
           lastBackHandled = mockBackHandler()
         })
       },
-      STAY: () => pressDialogButton('Stay'),
-      TAKE_MORE: () => pressDialogButton('Take More Photos'),
-      DISCARD: () => pressDialogButton('Discard Draft'),
-      COVER: () => {
+      STAY: async () => await pressDialogButton('Stay'),
+      TAKE_MORE: async () => await pressDialogButton('Take More Photos'),
+      DISCARD: async () => await pressDialogButton('Discard Draft'),
+      COVER: async () => {
         mockFocused = false
-        rerender(<CreateSubmissionScreen />)
+        await rerender(<CreateSubmissionScreen />)
       },
-      UNCOVER: () => {
+      UNCOVER: async () => {
         mockFocused = true
-        rerender(<CreateSubmissionScreen />)
+        await rerender(<CreateSubmissionScreen />)
       },
     },
   }

@@ -37,9 +37,9 @@ it.each([
   { fontScale: 2, stacked: true },
 ])(
   'asks for stacked=$stacked at font scale $fontScale',
-  ({ fontScale, stacked }) => {
+  async ({ fontScale, stacked }) => {
     setFontScale(fontScale)
-    render(
+    await render(
       <ButtonRow>
         <Text>Cancel</Text>
         <Text>Confirm</Text>
@@ -52,9 +52,9 @@ it.each([
   },
 )
 
-it('skips a falsy child without losing the others', () => {
+it('skips a falsy child without losing the others', async () => {
   setFontScale(1)
-  render(
+  await render(
     <ButtonRow>
       {false}
       <Text>Only</Text>

@@ -41,12 +41,12 @@ describe('RootLayout draft start-up ordering', () => {
     useDraftStartupStore.setState(useDraftStartupStore.getInitialState(), true)
   })
 
-  it('holds submission routes during cleanup while leaving the camera route available', () => {
+  it('holds submission routes during cleanup while leaving the camera route available', async () => {
     useDraftStartupStore.setState({ phase: 'cleaning' })
-    render(<SubmissionLayout />)
+    await render(<SubmissionLayout />)
     expect(screen.queryByText('Routes mounted')).toBeNull()
     expect(screen.getByText('Preparing Your Sighting')).toBeOnTheScreen()
-    act(() => useDraftStartupStore.setState({ phase: 'ready' }))
+    await act(() => useDraftStartupStore.setState({ phase: 'ready' }))
     expect(screen.getByText('Routes mounted')).toBeOnTheScreen()
   })
 
@@ -62,7 +62,7 @@ describe('RootLayout draft start-up ordering', () => {
         })
       })
 
-    render(<RootLayout />)
+    await render(<RootLayout />)
     expect(screen.getByText('Routes mounted')).toBeOnTheScreen()
     expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1)
     await waitFor(() =>
@@ -72,7 +72,7 @@ describe('RootLayout draft start-up ordering', () => {
 
     const sharedTask = initializeDraft()
     expect(initializeDraft()).toBe(sharedTask)
-    act(() => enableCapture())
+    await act(() => enableCapture())
     expect(useDraftStartupStore.getState().phase).toBe('cleaning')
 
     await act(async () => finishCleanup())
@@ -86,7 +86,7 @@ describe('RootLayout draft start-up ordering', () => {
     const log = jest.spyOn(console, 'error').mockImplementation(() => {})
     jest.mocked(discardUnsurvivingDraft).mockRejectedValueOnce(error)
     try {
-      render(<RootLayout />)
+      await render(<RootLayout />)
       await waitFor(() =>
         expect(screen.getByText('Routes mounted')).toBeOnTheScreen(),
       )

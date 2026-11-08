@@ -172,7 +172,7 @@ export default function HomeScreen() {
     () => [
       {
         key: 'continue',
-        label: 'Continue Observation',
+        label: 'Continue Sighting',
         onPress: handleContinue,
         variant: 'primary',
       },

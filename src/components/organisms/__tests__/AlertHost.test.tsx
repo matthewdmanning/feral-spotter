@@ -17,9 +17,9 @@ beforeEach(() => {
 
 it('runs the pressed button and closes', async () => {
   const onPress = jest.fn()
-  render(<AlertHost />)
+  await render(<AlertHost />)
 
-  act(() =>
+  await act(() =>
     showAlert('Discard Changes', 'Discard all unsaved changes?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Discard', style: 'destructive', onPress },
@@ -34,9 +34,9 @@ it('runs the pressed button and closes', async () => {
 })
 
 it('leaves the second dialog standing when a handler chains one', async () => {
-  render(<AlertHost />)
+  await render(<AlertHost />)
 
-  act(() =>
+  await act(() =>
     showAlert('First', undefined, [
       { text: 'Next', onPress: () => showAlert('Second') },
     ]),
@@ -49,8 +49,8 @@ it('leaves the second dialog standing when a handler chains one', async () => {
 })
 
 it('dismisses a default OK dialog without a custom handler', async () => {
-  render(<AlertHost />)
-  act(() => showAlert('Submission Incomplete', 'Add at least one cat.'))
+  await render(<AlertHost />)
+  await act(() => showAlert('Sighting Incomplete', 'Add at least one cat.'))
 
   await userEvent.press(screen.getByRole('button', { name: 'OK' }))
 

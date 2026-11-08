@@ -74,12 +74,12 @@ jest.mock('@/src/lib/analytics/analytics', () => ({
 }))
 
 describe('useCameraCapture — flash-mode cycle (model-based test)', () => {
-  let result: ReturnType<
-    typeof renderHook<ReturnType<typeof useCameraCapture>, void>
+  let result: Awaited<
+    ReturnType<typeof renderHook<ReturnType<typeof useCameraCapture>, void>>
   >
 
-  beforeEach(() => {
-    result = renderHook(() => useCameraCapture())
+  beforeEach(async () => {
+    result = await renderHook(() => useCameraCapture())
   })
 
   const flashMachine = createMachine({
@@ -101,7 +101,8 @@ describe('useCameraCapture — flash-mode cycle (model-based test)', () => {
       off: () => expect(result.result.current.flashMode).toBe('off'),
     },
     events: {
-      PRESS_FLASH: () => act(() => result.result.current.cycleFlash()),
+      PRESS_FLASH: async () =>
+        await act(() => result.result.current.cycleFlash()),
     },
   }
 
@@ -131,13 +132,13 @@ describe('useCameraCapture — flash-mode cycle (model-based test)', () => {
 })
 
 describe('useCameraCapture — camera-flip toggle (model-based test)', () => {
-  let result: ReturnType<
-    typeof renderHook<ReturnType<typeof useCameraCapture>, void>
+  let result: Awaited<
+    ReturnType<typeof renderHook<ReturnType<typeof useCameraCapture>, void>>
   >
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockUseCameraDevice.mockClear()
-    result = renderHook(() => useCameraCapture())
+    result = await renderHook(() => useCameraCapture())
   })
 
   const flipMachine = createMachine({
@@ -158,7 +159,8 @@ describe('useCameraCapture — camera-flip toggle (model-based test)', () => {
         expect(mockUseCameraDevice).toHaveBeenLastCalledWith('front'),
     },
     events: {
-      PRESS_FLIP: () => act(() => result.result.current.flipCamera()),
+      PRESS_FLIP: async () =>
+        await act(() => result.result.current.flipCamera()),
     },
   }
 

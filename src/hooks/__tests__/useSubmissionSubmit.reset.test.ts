@@ -82,7 +82,7 @@ describe('useSubmissionSubmit — handleReset (#189)', () => {
     expect(useSubmissionStore.getState().cats).toHaveLength(1)
     expect(usePhotoStore.getState().photos).toHaveLength(1)
 
-    const { result } = renderHook(() => useSubmissionSubmit())
+    const { result } = await renderHook(() => useSubmissionSubmit())
 
     await act(async () => {
       result.current.handleReset()

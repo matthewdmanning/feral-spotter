@@ -1,7 +1,7 @@
 import { usePhotoStore } from '@/src/hooks/usePhotoStore'
 import { useBoundingBoxStore } from '@/src/hooks/useBoundingBoxStore'
 import { render } from '@testing-library/react-native'
-import { Animated, StyleSheet } from 'react-native'
+import { StyleSheet } from 'react-native'
 import { InsetCropBubble } from '../InsetCropBubble'
 
 /**
@@ -54,15 +54,15 @@ const resolved = (value: unknown): number =>
     : (value as { __getValue: () => number }).__getValue()
 
 describe('InsetCropBubble docking', () => {
-  it('docks the collapsed bubble at the top of its zone, however large it grew', () => {
-    const { UNSAFE_getAllByType, getByTestId } = render(
+  it('docks the collapsed bubble at the top of its zone, however large it grew', async () => {
+    const { getByTestId } = await render(
       <InsetCropBubble catId="cat-1" edge="top-center" />,
     )
     const diameter = StyleSheet.flatten(
       getByTestId('inset-crop-bubble').props.style,
     ).width as number
     // The inner Animated.View carries the collapse transform.
-    const [, collapse] = UNSAFE_getAllByType(Animated.View)
+    const collapse = getByTestId('inset-crop-bubble').parent!
     const transform = StyleSheet.flatten(collapse.props.style).transform as {
       translateY?: unknown
       scale?: unknown

@@ -38,24 +38,24 @@ function Harness() {
 describe('HierarchicalSegmentedControl', () => {
   beforeEach(() => onChange.mockClear())
 
-  it('shows a group’s choices only once the group is chosen', () => {
-    render(<Harness />)
+  it('shows a group’s choices only once the group is chosen', async () => {
+    await render(<Harness />)
     expect(screen.queryByText('Spotted')).toBeNull()
 
-    fireEvent.press(screen.getByText('Tabby'))
+    await fireEvent.press(screen.getByText('Tabby'))
     expect(screen.getByText('Spotted')).toBeTruthy()
   })
 
-  it('drops the choice when another group is chosen, and clears on a second tap', () => {
-    render(<Harness />)
-    fireEvent.press(screen.getByText('Tabby'))
-    fireEvent.press(screen.getByText('Spotted'))
+  it('drops the choice when another group is chosen, and clears on a second tap', async () => {
+    await render(<Harness />)
+    await fireEvent.press(screen.getByText('Tabby'))
+    await fireEvent.press(screen.getByText('Spotted'))
     expect(onChange).toHaveBeenLastCalledWith('tabby', 'spotted')
 
-    fireEvent.press(screen.getByText('Solid'))
+    await fireEvent.press(screen.getByText('Solid'))
     expect(onChange).toHaveBeenLastCalledWith('solid', undefined)
 
-    fireEvent.press(screen.getByText('Solid'))
+    await fireEvent.press(screen.getByText('Solid'))
     expect(onChange).toHaveBeenLastCalledWith(undefined, undefined)
     expect(screen.queryByText('Black')).toBeNull()
   })

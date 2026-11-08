@@ -139,7 +139,7 @@ describe('ConsentScreen location gate — model-based test', () => {
   let foregroundListener: ((state: string) => void) | undefined
   let locationResult: object
 
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks()
     Platform.OS = 'android'
     locationResult = grantedLocation
@@ -160,7 +160,7 @@ describe('ConsentScreen location gate — model-based test', () => {
         return { remove: jest.fn() }
       })
 
-    render(<ConsentScreen />)
+    await render(<ConsentScreen />)
   })
 
   const model = createTestModel(locationGateMachine)

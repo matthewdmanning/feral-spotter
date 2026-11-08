@@ -41,9 +41,9 @@ jest.mock('@/src/lib/location', () => ({
 describe('useNativeCameraCapture manual focus', () => {
   it('focuses through the native ref when subject metering is disabled', async () => {
     const focus = jest.fn(async () => true)
-    const { result } = renderHook(() => useNativeCameraCapture())
+    const { result } = await renderHook(() => useNativeCameraCapture())
 
-    act(() => {
+    await act(() => {
       result.current.cameraRef.current = { focus } as never
     })
 

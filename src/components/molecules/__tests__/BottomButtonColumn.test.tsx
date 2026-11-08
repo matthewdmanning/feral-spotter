@@ -23,8 +23,10 @@ it.each([
   },
 ])(
   'sets touch and accessibility for visible=$visible',
-  ({ visible, pointerEvents, hidden, importance }) => {
-    render(<BottomButtonColumn buttons={[...buttons]} visible={visible} />)
+  async ({ visible, pointerEvents, hidden, importance }) => {
+    await render(
+      <BottomButtonColumn buttons={[...buttons]} visible={visible} />,
+    )
 
     expect(screen.toJSON()).toMatchObject({
       props: {

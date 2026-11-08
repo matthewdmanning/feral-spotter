@@ -112,7 +112,7 @@ describe('ConsentScreen camera gate — model-based test', () => {
   let foregroundListener: ((state: string) => void) | undefined
   let cameraResult: string
 
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks()
     Platform.OS = 'android'
     cameraResult = 'authorized'
@@ -132,7 +132,7 @@ describe('ConsentScreen camera gate — model-based test', () => {
         return { remove: jest.fn() }
       })
 
-    render(<ConsentScreen />)
+    await render(<ConsentScreen />)
   })
 
   const model = createTestModel(cameraGateMachine)

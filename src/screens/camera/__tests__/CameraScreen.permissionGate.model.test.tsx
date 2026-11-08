@@ -91,7 +91,7 @@ describe('CameraScreen permission/device gates — model-based test', () => {
 
   const model = createTestModel(gateMachine)
 
-  const mount = (hasPermission: boolean, device: object | null) => {
+  const mount = async (hasPermission: boolean, device: object | null) => {
     jest.mocked(useCameraPermission).mockReturnValue({
       hasPermission,
       requestPermission,
@@ -102,7 +102,7 @@ describe('CameraScreen permission/device gates — model-based test', () => {
       ...baseCaptureResult,
       device,
     })
-    render(<CameraScreen />)
+    await render(<CameraScreen />)
   }
 
   const testParams = {
@@ -118,8 +118,8 @@ describe('CameraScreen permission/device gates — model-based test', () => {
       },
     },
     events: {
-      MOUNT_NO_PERMISSION: () => mount(false, null),
-      MOUNT_NO_DEVICE: () => mount(true, null),
+      MOUNT_NO_PERMISSION: async () => await mount(false, null),
+      MOUNT_NO_DEVICE: async () => await mount(true, null),
       PRESS_ALLOW: async () =>
         await userEvent.press(screen.getByText('Allow Camera')),
       PRESS_OPEN_SETTINGS: async () =>

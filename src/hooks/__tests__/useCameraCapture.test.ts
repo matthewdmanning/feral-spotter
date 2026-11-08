@@ -112,31 +112,31 @@ describe('useCameraCapture isActive (#253)', () => {
     mockIsFocused = true
   })
 
-  it('starts active when the screen is focused and the app is foregrounded', () => {
-    const { result } = renderHook(() => useCameraCapture())
+  it('starts active when the screen is focused and the app is foregrounded', async () => {
+    const { result } = await renderHook(() => useCameraCapture())
     expect(result.current.isActive).toBe(true)
   })
 
-  it('goes inactive on background and reactivates on foreground, without unmounting', () => {
+  it('goes inactive on background and reactivates on foreground, without unmounting', async () => {
     let listener: ((state: string) => void) | undefined
     jest.spyOn(AppState, 'addEventListener').mockImplementation((_e, l) => {
       listener = l as (state: string) => void
       return { remove: jest.fn() }
     })
 
-    const { result } = renderHook(() => useCameraCapture())
+    const { result } = await renderHook(() => useCameraCapture())
     expect(result.current.isActive).toBe(true)
 
-    act(() => listener?.('background'))
+    await act(() => listener?.('background'))
     expect(result.current.isActive).toBe(false)
 
-    act(() => listener?.('active'))
+    await act(() => listener?.('active'))
     expect(result.current.isActive).toBe(true)
   })
 
-  it('stays inactive while foregrounded if the screen has navigated away', () => {
+  it('stays inactive while foregrounded if the screen has navigated away', async () => {
     mockIsFocused = false
-    const { result } = renderHook(() => useCameraCapture())
+    const { result } = await renderHook(() => useCameraCapture())
     expect(result.current.isActive).toBe(false)
   })
 })
@@ -144,14 +144,14 @@ describe('useCameraCapture isActive (#253)', () => {
 describe('useCameraCapture navigation', () => {
   beforeEach(() => jest.clearAllMocks())
 
-  it('handleClose calls router.back()', () => {
-    const { result } = renderHook(() => useCameraCapture())
+  it('handleClose calls router.back()', async () => {
+    const { result } = await renderHook(() => useCameraCapture())
     result.current.handleClose()
     expect(router.back).toHaveBeenCalledTimes(1)
   })
 
   it('handleDone navigates to /submission/create after startup is ready', async () => {
-    const { result } = renderHook(() => useCameraCapture())
+    const { result } = await renderHook(() => useCameraCapture())
     await act(async () => {
       result.current.handleDone()
       await waitFor(() =>
@@ -167,7 +167,7 @@ describe('useCameraCapture handleTakePhoto', () => {
   it('reports PHOTO_CAPTURE_FAILED when capturePhoto throws', async () => {
     mockCapturePhoto.mockRejectedValueOnce(new Error('device busy'))
 
-    const { result } = renderHook(() => useCameraCapture())
+    const { result } = await renderHook(() => useCameraCapture())
     mockCaptureEvent.mockClear()
 
     await act(async () => {
@@ -192,7 +192,7 @@ describe('useCameraCapture handleTakePhoto', () => {
       dispose,
     })
 
-    const { result } = renderHook(() => useCameraCapture())
+    const { result } = await renderHook(() => useCameraCapture())
 
     await act(async () => {
       await result.current.handleTakePhoto()
@@ -211,11 +211,11 @@ describe('useCameraCapture handleTakePhoto', () => {
         }),
     )
 
-    const { result } = renderHook(() => useCameraCapture())
-    act(() => result.current.setCaptureMode('burst'))
+    const { result } = await renderHook(() => useCameraCapture())
+    await act(() => result.current.setCaptureMode('burst'))
 
     let burstPromise: Promise<void>
-    act(() => {
+    await act(() => {
       burstPromise = result.current.handleTakePhoto()
     })
 
@@ -253,7 +253,7 @@ describe('useCameraCapture handleTakePhoto', () => {
     })
     mockAssetCreate.mockReturnValueOnce(gallerySave)
     const errorSpy = jest.spyOn(console, 'error')
-    const { result } = renderHook(() => useCameraCapture())
+    const { result } = await renderHook(() => useCameraCapture())
 
     await act(async () => {
       await result.current.handleTakePhoto()
@@ -296,7 +296,7 @@ describe('useCameraCapture handleTakePhoto', () => {
       dispose: jest.fn(),
     })
 
-    const { result } = renderHook(() => useCameraCapture())
+    const { result } = await renderHook(() => useCameraCapture())
     // let the mount-time permission-request effect resolve first
     await act(async () => {})
 
@@ -326,7 +326,7 @@ describe('useCameraCapture handleTakePhoto', () => {
       dispose: jest.fn(),
     })
 
-    const { result } = renderHook(() => useCameraCapture())
+    const { result } = await renderHook(() => useCameraCapture())
     await act(async () => {
       await result.current.handleTakePhoto()
     })

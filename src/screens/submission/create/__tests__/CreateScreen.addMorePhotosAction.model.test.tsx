@@ -106,12 +106,12 @@ const sourceMachine = createMachine({
 
 describe('Submission Details add-more-photos action — model-based test', () => {
   let rerender: (ui: React.ReactElement) => void
-  let getByText: ReturnType<typeof render>['getByText']
+  let getByText: Awaited<ReturnType<typeof render>>['getByText']
 
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks()
     mockSource = 'camera'
-    const result = render(<CreateSubmissionScreen />)
+    const result = await render(<CreateSubmissionScreen />)
     getByText = result.getByText
     rerender = result.rerender
   })
@@ -134,13 +134,13 @@ describe('Submission Details add-more-photos action — model-based test', () =>
       },
     },
     events: {
-      SWITCH_TO_LIBRARY: () => {
+      SWITCH_TO_LIBRARY: async () => {
         mockSource = 'library'
-        rerender(<CreateSubmissionScreen />)
+        await rerender(<CreateSubmissionScreen />)
       },
-      SWITCH_TO_CAMERA: () => {
+      SWITCH_TO_CAMERA: async () => {
         mockSource = 'camera'
-        rerender(<CreateSubmissionScreen />)
+        await rerender(<CreateSubmissionScreen />)
       },
     },
   }

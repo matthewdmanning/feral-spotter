@@ -5,13 +5,13 @@ import { getAllSubmissionCaches } from '@/src/lib/cache/submissionCache'
 import HomeScreen from '../index'
 
 /**
- * #314. Home's "Continue Observation" entry is read from the submission cache
+ * #314. Home's "Continue Sighting" entry is read from the submission cache
  * inside an effect. That effect used to key on mount alone, and Home does not
  * unmount while Settings sits on top of it — so the answer went stale exactly
  * when it mattered:
  *
  * - Settings -> Clear Draft deleted the cache row and returned here, and Home
- *   still offered Continue Observation. Tapping it dead-ended on an empty
+ *   still offered Continue Sighting. Tapping it dead-ended on an empty
  *   annotate screen.
  * - The reverse also held: start a draft, come back, and the entry stayed
  *   hidden although a draft now existed.
@@ -87,11 +87,11 @@ describe('Home resume entry re-reads on focus (#314)', () => {
   it('reads resume state only after startup cleanup finishes', async () => {
     useDraftStartupStore.setState({ phase: 'cleaning' })
     mockGetAll.mockResolvedValue([])
-    render(<HomeScreen />)
+    await render(<HomeScreen />)
     expect(mockGetAll).not.toHaveBeenCalled()
     expect(capturedVisible).toBe(false)
 
-    act(() => useDraftStartupStore.setState({ phase: 'ready' }))
+    await act(() => useDraftStartupStore.setState({ phase: 'ready' }))
     await waitFor(() => expect(mockGetAll).toHaveBeenCalledTimes(1))
     expect(capturedVisible).toBe(false)
   })
@@ -102,22 +102,22 @@ describe('Home resume entry re-reads on focus (#314)', () => {
         ReturnType<typeof getAllSubmissionCaches>
       >,
     )
-    const { rerender } = render(<HomeScreen />)
+    const { rerender } = await render(<HomeScreen />)
     await waitFor(() => expect(capturedVisible).toBe(true))
 
     // Clear Draft deletes the row, then returns here. Home never unmounted.
     mockGetAll.mockResolvedValue([])
     mockFocused = false
-    rerender(<HomeScreen />)
+    await rerender(<HomeScreen />)
     mockFocused = true
-    rerender(<HomeScreen />)
+    await rerender(<HomeScreen />)
 
     await waitFor(() => expect(capturedVisible).toBe(false))
   })
 
   it('shows the resume entry once a draft exists, without remounting', async () => {
     mockGetAll.mockResolvedValue([])
-    const { rerender } = render(<HomeScreen />)
+    const { rerender } = await render(<HomeScreen />)
     await waitFor(() => expect(mockGetAll).toHaveBeenCalled())
     expect(capturedVisible).toBe(false)
 
@@ -127,21 +127,21 @@ describe('Home resume entry re-reads on focus (#314)', () => {
       >,
     )
     mockFocused = false
-    rerender(<HomeScreen />)
+    await rerender(<HomeScreen />)
     mockFocused = true
-    rerender(<HomeScreen />)
+    await rerender(<HomeScreen />)
 
     await waitFor(() => expect(capturedVisible).toBe(true))
   })
 
   it('does not re-read while blurred', async () => {
     mockGetAll.mockResolvedValue([])
-    const { rerender } = render(<HomeScreen />)
+    const { rerender } = await render(<HomeScreen />)
     await waitFor(() => expect(mockGetAll).toHaveBeenCalledTimes(1))
 
     mockFocused = false
-    rerender(<HomeScreen />)
-    rerender(<HomeScreen />)
+    await rerender(<HomeScreen />)
+    await rerender(<HomeScreen />)
 
     expect(mockGetAll).toHaveBeenCalledTimes(1)
   })

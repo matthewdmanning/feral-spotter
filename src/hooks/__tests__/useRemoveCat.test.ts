@@ -36,9 +36,9 @@ const buildCat = (localId: string) => ({
   photos_reviewed: true,
 })
 
-const pressRemove = () => {
+const pressRemove = async () => {
   const buttons = jest.mocked(ui.showAlert).mock.calls[0][2]
-  act(() => {
+  await act(() => {
     buttons?.find((b) => b.text === 'Remove')?.onPress?.()
   })
 }
@@ -67,21 +67,21 @@ describe('useRemoveCat (#299)', () => {
     })
   })
 
-  it('confirms before removing anything', () => {
-    const { result } = renderHook(() => useRemoveCat())
-    act(() => result.current(CAT_ID))
+  it('confirms before removing anything', async () => {
+    const { result } = await renderHook(() => useRemoveCat())
+    await act(() => result.current(CAT_ID))
 
     expect(ui.showAlert).toHaveBeenCalled()
     // Nothing gone until the destructive button is actually pressed.
     expect(useSubmissionStore.getState().cats).toHaveLength(2)
   })
 
-  it('cancelling removes nothing', () => {
-    const { result } = renderHook(() => useRemoveCat())
-    act(() => result.current(CAT_ID))
+  it('cancelling removes nothing', async () => {
+    const { result } = await renderHook(() => useRemoveCat())
+    await act(() => result.current(CAT_ID))
 
     const buttons = jest.mocked(ui.showAlert).mock.calls[0][2]
-    act(() => {
+    await act(() => {
       buttons?.find((b) => b.text === 'Cancel')?.onPress?.()
     })
 
@@ -91,10 +91,10 @@ describe('useRemoveCat (#299)', () => {
     ).toHaveLength(2)
   })
 
-  it('removes the cat and its boxes, leaving the other cat intact', () => {
-    const { result } = renderHook(() => useRemoveCat())
-    act(() => result.current(CAT_ID))
-    pressRemove()
+  it('removes the cat and its boxes, leaving the other cat intact', async () => {
+    const { result } = await renderHook(() => useRemoveCat())
+    await act(() => result.current(CAT_ID))
+    await pressRemove()
 
     const cats = useSubmissionStore.getState().cats
     expect(cats).toHaveLength(1)
@@ -108,37 +108,37 @@ describe('useRemoveCat (#299)', () => {
     expect(useBoundingBoxStore.getState().getBoxesForCat(CAT_ID)).toEqual([])
   })
 
-  it('never deletes photos — the pool is submission-scoped, not cat-scoped', () => {
-    const { result } = renderHook(() => useRemoveCat())
-    act(() => result.current(CAT_ID))
-    pressRemove()
+  it('never deletes photos — the pool is submission-scoped, not cat-scoped', async () => {
+    const { result } = await renderHook(() => useRemoveCat())
+    await act(() => result.current(CAT_ID))
+    await pressRemove()
 
     expect(usePhotoStore.getState().photos).toHaveLength(1)
   })
 
-  it('clears activeCatId when the removed cat was the in-progress one', () => {
+  it('clears activeCatId when the removed cat was the in-progress one', async () => {
     useActiveCatFlowStore.getState().setActiveCatId(CAT_ID)
-    const { result } = renderHook(() => useRemoveCat())
-    act(() => result.current(CAT_ID))
-    pressRemove()
+    const { result } = await renderHook(() => useRemoveCat())
+    await act(() => result.current(CAT_ID))
+    await pressRemove()
 
     expect(useActiveCatFlowStore.getState().activeCatId).toBeNull()
   })
 
-  it('leaves activeCatId alone when a different cat is in progress', () => {
+  it('leaves activeCatId alone when a different cat is in progress', async () => {
     useActiveCatFlowStore.getState().setActiveCatId(OTHER_CAT_ID)
-    const { result } = renderHook(() => useRemoveCat())
-    act(() => result.current(CAT_ID))
-    pressRemove()
+    const { result } = await renderHook(() => useRemoveCat())
+    await act(() => result.current(CAT_ID))
+    await pressRemove()
 
     expect(useActiveCatFlowStore.getState().activeCatId).toBe(OTHER_CAT_ID)
   })
 
-  it('runs the onRemoved callback so the caller can navigate away', () => {
+  it('runs the onRemoved callback so the caller can navigate away', async () => {
     const onRemoved = jest.fn()
-    const { result } = renderHook(() => useRemoveCat())
-    act(() => result.current(CAT_ID, onRemoved))
-    pressRemove()
+    const { result } = await renderHook(() => useRemoveCat())
+    await act(() => result.current(CAT_ID, onRemoved))
+    await pressRemove()
 
     expect(onRemoved).toHaveBeenCalled()
   })
