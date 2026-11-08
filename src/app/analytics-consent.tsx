@@ -1,1 +1,1 @@
-export { default } from '@/src/screens/analytics-consent'
+export { default } from '@/src/features/permissions/screens/analytics-consent'

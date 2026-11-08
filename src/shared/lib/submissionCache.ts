@@ -1,0 +1,285 @@
+/**
+ * shared/lib/submissionCache.ts
+ *
+ * One AsyncStorage entry per submission, keyed by ID.
+ * A separate index key tracks all known IDs for listing.
+ * A "current" key tracks the active in-progress submission.
+ *
+ * Status lifecycle (enforced by transitionSubmission):
+ *   'In Progress' → created when submission begins
+ *   'Sending'     → set on Submit, from 'In Progress' or 'Failed'
+ *   'Submitted'   → set when the send lands, from 'Sending'
+ *   'Failed'      → set when the send fails, or found 'Sending' at launch
+ *
+ * Deletion: only on explicit Reset confirm (never on app restart or nav).
+ */
+
+import AsyncStorage from '@react-native-async-storage/async-storage'
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export type CacheStatus = 'In Progress' | 'Submitted' | 'Sending' | 'Failed'
+
+/** Statuses of a row whose Submission has not been sent: the draft still owns it. */
+export const UNSENT_STATUSES: readonly CacheStatus[] = ['In Progress', 'Failed']
+
+/** The only legal status moves. Anything else is refused. */
+const TRANSITIONS: Record<CacheStatus, readonly CacheStatus[]> = {
+  'In Progress': ['Sending'],
+  Failed: ['Sending'],
+  Sending: ['Submitted', 'Failed'],
+  Submitted: [],
+}
+
+/** How the location/time fields were captured, as chosen on the Create screen. */
+export type LocationMethod = 'device' | 'pin' | 'address'
+export type TimeMethod = 'device' | 'manual' | 'metadata'
+
+export interface CachedCat {
+  local_id: string
+  age: string
+  ear_tipped: string
+  health_label: string
+  owned_domesticated: string
+  pattern: string
+  hair_length: string
+  color: string
+  sex: string
+  photo_local_ids: string[]
+  photos_reviewed: boolean
+  /** The photo the user chose for the cat's Profile Pic, if any. */
+  profile_photo_local_id?: string
+  /** The resolved Profile Pic crop — chosen box, else first box. Set on Submit. */
+  profile_box?: CachedProfileBox
+}
+
+/** One normalised box (src/shared/types/BoundingBox.ts) — the crop a Profile Pic shows. */
+export interface CachedProfileBox {
+  photo_local_id: string
+  lowerLeftX: number
+  lowerLeftY: number
+  upperRightX: number
+  upperRightY: number
+}
+
+/** Where a submitted photo can still be read from after draft teardown. */
+export interface CachedPhoto {
+  local_id: string
+  /** file:// — deleted with the draft for camera captures; library picks keep it. */
+  uri: string
+  /** Firebase download URL — outlives the draft. */
+  cloud_storage_url?: string
+  /** ISO, shutter press. Set for camera captures only. */
+  captured_at?: string
+}
+
+export interface CacheMetadata {
+  report_injured?: boolean
+  location_method: LocationMethod
+  time_method: TimeMethod
+  address?: string
+  manual_time?: string // ISO string, set when time_method === 'manual'
+  captured_at?: string // ISO string, set for a Library pick with trusted EXIF DateTime
+  // The one Submission location (ADR 0002) — plots the Sighting on the
+  // Reports map. Absent until a fix or pin exists.
+  latitude?: number
+  longitude?: number
+  accuracy?: number | null
+}
+
+export interface SubmissionCacheFile {
+  /** Server submission ID used by the organization permission ledger. */
+  cloud_submission_id?: string
+  id: string
+  created_at: string // ISO — used for ordering in Feral Reports
+  updated_at: string // ISO
+  status: CacheStatus
+  metadata: CacheMetadata
+  cats: CachedCat[]
+  /**
+   * @deprecated Rows sent before `photos` existed. No longer written; read
+   * counts through `sightingPhotoCount` below.
+   */
+  photo_links?: string[]
+  /** Per-photo read paths, keyed by local_id — Profile Pics resolve here. Set on Submit. */
+  photos?: CachedPhoto[]
+  /** Firebase uid of the submitter — scopes the personal history. Set on Submit. */
+  user_id?: string
+  /** ISO. When Submit was pressed — a camera Sighting's time (ADR 0003). */
+  submitted_at?: string
+}
+
+/** Photos in the Sighting. Rows sent before `photos` existed count links. */
+export function sightingPhotoCount(cache: SubmissionCacheFile): number {
+  return cache.photos?.length ?? cache.photo_links?.length ?? 0
+}
+
+// ─── Storage keys ─────────────────────────────────────────────────────────────
+
+const INDEX_KEY = 'submission_cache_index' // JSON array of IDs
+const CACHE_PREFIX = 'submission_cache_' // + id
+const CURRENT_KEY = 'submission_cache_current' // active in-progress ID
+
+// ─── Write serialization ──────────────────────────────────────────────────────
+
+// Every mutation below is a read-modify-write across separate AsyncStorage
+// calls. Run concurrently (draft sync during Submit), a later write built on
+// an older read restores the old row or drops an index id. One chain runs
+// them in call order. A failed write rejects its own caller only.
+let writeChain: Promise<unknown> = Promise.resolve()
+
+function serialized<T>(write: () => Promise<T>): Promise<T> {
+  const run = writeChain.then(write, write)
+  writeChain = run.catch(() => undefined)
+  return run
+}
+
+// ─── Index helpers ────────────────────────────────────────────────────────────
+
+async function readIndex(): Promise<string[]> {
+  try {
+    const raw = await AsyncStorage.getItem(INDEX_KEY)
+    return raw ? (JSON.parse(raw) as string[]) : []
+  } catch {
+    return []
+  }
+}
+
+async function writeIndex(ids: string[]): Promise<void> {
+  await AsyncStorage.setItem(INDEX_KEY, JSON.stringify(ids))
+}
+
+// ─── CRUD ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Create a new cache entry. Status is always 'In Progress' on creation.
+ * Also sets the "current" pointer to this ID.
+ */
+export function createSubmissionCache(
+  id: string,
+  metadata: CacheMetadata,
+): Promise<SubmissionCacheFile> {
+  return serialized(() => writeNewSubmissionCache(id, metadata))
+}
+
+async function writeNewSubmissionCache(
+  id: string,
+  metadata: CacheMetadata,
+): Promise<SubmissionCacheFile> {
+  const now = new Date().toISOString()
+  const entry: SubmissionCacheFile = {
+    id,
+    created_at: now,
+    updated_at: now,
+    status: 'In Progress',
+    metadata,
+    cats: [],
+  }
+  await AsyncStorage.setItem(CACHE_PREFIX + id, JSON.stringify(entry))
+  const idx = await readIndex()
+  if (!idx.includes(id)) await writeIndex([...idx, id])
+  await AsyncStorage.setItem(CURRENT_KEY, id)
+  return entry
+}
+
+export async function getSubmissionCache(
+  id: string,
+): Promise<SubmissionCacheFile | null> {
+  try {
+    const raw = await AsyncStorage.getItem(CACHE_PREFIX + id)
+    return raw ? (JSON.parse(raw) as SubmissionCacheFile) : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Partial update — merges into existing entry and refreshes updated_at.
+ * Silently no-ops if the entry doesn't exist.
+ */
+export function updateSubmissionCache(
+  id: string,
+  updates: Partial<Omit<SubmissionCacheFile, 'id' | 'created_at'>>,
+  /** Write only while the row's status is one of these (checked in-chain). */
+  onlyIfStatus?: readonly CacheStatus[],
+): Promise<void> {
+  return serialized(async () => {
+    const existing = await getSubmissionCache(id)
+    if (!existing) return
+    if (onlyIfStatus && !onlyIfStatus.includes(existing.status)) return
+    const updated: SubmissionCacheFile = {
+      ...existing,
+      ...updates,
+      updated_at: new Date().toISOString(),
+    }
+    await AsyncStorage.setItem(CACHE_PREFIX + id, JSON.stringify(updated))
+  })
+}
+
+/**
+ * Moves a row to `to`, writing `patch` with it, only if the move is legal
+ * from the row's current status (checked inside the write chain). Returns
+ * the row as written, or null when the row is missing or the move is
+ * illegal. Callers fire their analytics from the returned snapshot, so
+ * the snapshot is always the post-move row.
+ */
+export function transitionSubmission(
+  id: string,
+  to: CacheStatus,
+  patch: Partial<
+    Omit<SubmissionCacheFile, 'id' | 'created_at' | 'status'>
+  > = {},
+): Promise<SubmissionCacheFile | null> {
+  return serialized(async () => {
+    const existing = await getSubmissionCache(id)
+    if (!existing || !TRANSITIONS[existing.status].includes(to)) return null
+    const updated: SubmissionCacheFile = {
+      ...existing,
+      ...patch,
+      status: to,
+      updated_at: new Date().toISOString(),
+    }
+    await AsyncStorage.setItem(CACHE_PREFIX + id, JSON.stringify(updated))
+    return updated
+  })
+}
+
+/**
+ * Hard delete. Removes from index and clears current pointer if it matched.
+ * Only called from Reset confirm.
+ */
+export function deleteSubmissionCache(id: string): Promise<void> {
+  return serialized(async () => {
+    await AsyncStorage.removeItem(CACHE_PREFIX + id)
+    await writeIndex((await readIndex()).filter((i) => i !== id))
+    if ((await AsyncStorage.getItem(CURRENT_KEY)) === id) {
+      await AsyncStorage.removeItem(CURRENT_KEY)
+    }
+  })
+}
+
+// ─── Listing ──────────────────────────────────────────────────────────────────
+
+/**
+ * Returns all cache entries ordered newest-first by created_at.
+ */
+export async function getAllSubmissionCaches(): Promise<SubmissionCacheFile[]> {
+  const ids = await readIndex()
+  const entries = await Promise.all(ids.map(getSubmissionCache))
+  return entries
+    .filter((c): c is SubmissionCacheFile => c !== null)
+    .sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    )
+}
+
+// ─── Current-pointer helpers ──────────────────────────────────────────────────
+
+export async function getCurrentCacheId(): Promise<string | null> {
+  return (await AsyncStorage.getItem(CURRENT_KEY)) ?? null
+}
+
+export function clearCurrentCacheId(): Promise<void> {
+  return serialized(() => AsyncStorage.removeItem(CURRENT_KEY))
+}

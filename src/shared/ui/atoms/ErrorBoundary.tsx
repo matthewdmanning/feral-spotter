@@ -1,0 +1,81 @@
+import { AppButton } from './AppButton'
+import { GlassSurface } from './GlassSurface'
+import React, { Component, type ReactNode } from 'react'
+import { View, Text } from 'react-native'
+import { useUnistyles } from 'react-native-unistyles'
+import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle'
+import { captureException } from '@/src/shared/analytics/analytics'
+import { styles } from './ErrorBoundary.styles'
+
+interface Props {
+  children: ReactNode
+  fallback?: (error: Error, reset: () => void) => ReactNode
+}
+interface State {
+  hasError: boolean
+  error: Error | null
+}
+
+export class ErrorBoundary extends Component<Props, State> {
+  constructor(props: Props) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+  static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, error }
+  }
+  override componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error('ErrorBoundary:', error, info)
+    // Reporting a caught crash must never itself throw and escalate into an
+    // unhandled one (network failure, capturer not yet registered, etc.).
+    try {
+      captureException(error, { component_stack: info.componentStack ?? '' })
+    } catch (reportingError) {
+      console.error('ErrorBoundary: captureException failed', reportingError)
+    }
+  }
+  handleReset = () => this.setState({ hasError: false, error: null })
+  override render() {
+    if (this.state.hasError && this.state.error) {
+      if (this.props.fallback)
+        return this.props.fallback(this.state.error, this.handleReset)
+      return (
+        <ErrorFallback error={this.state.error} onReset={this.handleReset} />
+      )
+    }
+    return this.props.children
+  }
+}
+
+function ErrorFallback({
+  error,
+  onReset,
+}: {
+  error: Error
+  onReset: () => void
+}) {
+  const { theme } = useUnistyles()
+  return (
+    <View style={styles.container}>
+      <WarningCircleIcon
+        size={theme.iconSize.hero}
+        color={theme.colors.danger}
+      />
+      <View style={styles.textGroup}>
+        <Text style={styles.title}>Something went wrong</Text>
+        <Text style={styles.subtitle}>
+          An unexpected error occurred. Please try again.
+        </Text>
+      </View>
+      <GlassSurface kind="card" style={styles.card}>
+        <View style={styles.cardInner}>
+          <Text style={styles.errorLabel}>Error Details:</Text>
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>{error.message}</Text>
+          </View>
+        </View>
+      </GlassSurface>
+      <AppButton onPress={onReset}>Try Again</AppButton>
+    </View>
+  )
+}
