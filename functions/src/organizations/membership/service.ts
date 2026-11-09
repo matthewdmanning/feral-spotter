@@ -1,16 +1,10 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { getAuth } from 'firebase-admin/auth'
-import { db } from '../store'
+import { db, readOrganization } from '../store'
 import { changeMembership, readMemberships } from './store'
 export { readMemberships, isActiveMember, roster } from './store'
 import { readDocument } from '../documents'
-import {
-  makePermission,
-  readCatalog,
-  readLedger,
-  updateLedger,
-  validateGrant,
-} from '../api'
+import { makePermission, readLedger, updateLedger, validateGrant } from '../api'
 import { validId, type Permission } from '../domain'
 import { RequestError } from '../errors'
 import { memberName, type LeaveChoice } from './domain'
@@ -19,12 +13,7 @@ const invitePath = (code: string) =>
   `organizationInvites/${createHash('sha256').update(code).digest('hex')}`
 
 export async function activeOrganization(organizationId: string) {
-  const catalog = await readCatalog()
-  const organization = catalog.organizations.find(
-    (o) => o.id === organizationId && o.active,
-  )
-  if (!organization) throw new RequestError(404, 'Organization unavailable')
-  return { catalog, organization }
+  return readOrganization(organizationId)
 }
 
 export async function createInvite(organizationId: string) {

@@ -68,7 +68,12 @@ export async function organizationRequest<T>(
     timedOut = true
     controller.abort()
   }, 15000)
-  try {
+  let rejectInterrupted: () => void = () => {}
+  const interrupted = new Promise<never>((_resolve, reject) => {
+    rejectInterrupted = () => reject(cancelled())
+    controller.signal.addEventListener('abort', rejectInterrupted)
+  })
+  const perform = async (): Promise<T> => {
     const token = await authProvider.getToken()
     assertAccount(expectedUid)
     if (controller.signal.aborted) throw cancelled()
@@ -87,6 +92,9 @@ export async function organizationRequest<T>(
     assertAccount(expectedUid)
     if (controller.signal.aborted) throw cancelled()
     return result
+  }
+  try {
+    return await Promise.race([perform(), interrupted])
   } catch (error) {
     if (timedOut) throw new OrganizationSyncError(408)
     if (controller.signal.aborted || isRequestCancelled(error))
@@ -95,6 +103,7 @@ export async function organizationRequest<T>(
     throw new OrganizationSyncError(0)
   } finally {
     clearTimeout(timer)
+    controller.signal.removeEventListener('abort', rejectInterrupted)
     options.signal?.removeEventListener('abort', abort)
   }
 }

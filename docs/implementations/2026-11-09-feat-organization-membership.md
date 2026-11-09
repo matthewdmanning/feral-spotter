@@ -33,3 +33,12 @@ Android and iOS Metro/Hermes exports passed to `/tmp/feral-spotter-organizations
 **Change:** One membership per Firestore document, private owner identifiers, transactional account-deletion and organization-status checks, indexed/paginated name-only rosters, hashed Firestore invite records, and recoverable leave checkpoints. Loading indicators distinguish initial fetches from empty results; mutations are single-flight and reconcile ambiguous failures. A successful leave updates core permission state even if its screen was dismissed. See [sharing update](2026-11-09-feat-organization-sharing.md) and [ADR-0008](../adr/0008-firestore-for-organizations.md).
 
 Operator tooling now requires an explicit `FIREBASE_PROJECT_ID` as well as the source-files bucket. Final integration verification is recorded after combining the feature branches.
+
+### Firestore integration verification
+
+- Client: 120 suites / 554 tests; Functions: 8 suites / 65 tests.
+- Real Auth/Firestore/Storage integration: 24 cases. Rules: 27 tests.
+- App/server/test type checks, Functions build, focused client lint, formatting, and diff checks pass. Android/iOS JavaScript exports pass; native/device checks were not performed.
+- Separate follow-up branches: `feat/organization-membership-firestore` and `feat/organization-sharing-firestore`; combined implementation: `feat/organizations-firestore`. No live provisioning, deployment, or data migration was performed.
+
+The membership journey checks initial loading versus empty/error states and foregrounding during an in-flight request. Mutation responses reconcile against the durable checkpoint before showing completion. Account-deletion guards hide roster names before physical cleanup finishes and prevent concurrent membership writes from recreating erased data.

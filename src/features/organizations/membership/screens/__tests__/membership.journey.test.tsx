@@ -1,5 +1,6 @@
 import { act, screen, userEvent } from '@testing-library/react-native'
 import { renderRouter } from 'expo-router/testing-library'
+import { AppState, type AppStateStatus } from 'react-native'
 import MembershipsScreen from '@/src/features/organizations/membership/screens/MembershipsScreen'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
@@ -91,4 +92,64 @@ test('initial loading is distinct from empty and a failed request offers recover
   expect(
     screen.getByRole('button', { name: 'Refresh memberships' }),
   ).toBeEnabled()
+})
+
+test('foreground refresh cannot discard an in-flight membership mutation', async () => {
+  const user = userEvent.setup()
+  useAuthStore.setState({ user: { uid: 'member', email: null }, isReady: true })
+  useUIStore.setState({ isOnline: true })
+  // The native lifecycle boundary supplies events; application request/store logic stays real.
+  const listeners = new Set<(state: AppStateStatus) => void>()
+  jest
+    .spyOn(AppState, 'addEventListener')
+    .mockImplementation((_type, listener) => {
+      listeners.add(listener)
+      return {
+        remove: () => {
+          listeners.delete(listener)
+        },
+      }
+    })
+  let finish: (reply: { status: number; body: unknown }) => void = () => {}
+  const service = await fakeOrganizationsService((body) =>
+    body.action === 'joinOrganization'
+      ? new Promise((resolve) => {
+          finish = resolve
+        })
+      : { status: 200, body: { memberships: [] } },
+  )
+  await renderRouter({ index: () => <MembershipsScreen /> })
+  await user.type(screen.getByLabelText('Invite code'), 'a'.repeat(32))
+  await user.type(screen.getByLabelText('Display name'), 'Member')
+  await user.press(screen.getByRole('button', { name: 'Request membership' }))
+  await act(async () => {
+    listeners.forEach((listener) => listener('background'))
+    listeners.forEach((listener) => listener('active'))
+  })
+  expect(
+    screen.getByRole('button', { name: 'Refresh memberships' }),
+  ).toBeDisabled()
+  await act(async () => {
+    finish({
+      status: 200,
+      body: {
+        memberships: [
+          {
+            organizationId: 'org',
+            organizationName: 'Rescue',
+            displayName: 'Member',
+            status: 'pending',
+            leaving: false,
+          },
+        ],
+      },
+    })
+  })
+  expect(await screen.findByText('pending')).toBeOnTheScreen()
+  expect(
+    service.actions().filter((action) => action === 'joinOrganization'),
+  ).toHaveLength(1)
+  expect(
+    service.actions().filter((action) => action === 'memberships'),
+  ).toHaveLength(1)
 })
