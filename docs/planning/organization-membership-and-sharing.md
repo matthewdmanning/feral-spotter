@@ -23,3 +23,9 @@ Common base: `feat/organization-core`. Separate feature branches from that base:
 ## Verification
 
 Verify authorization, name-only roster, consent filtering, sanitized photos, account isolation/deletion, default unsharing, changed retained permissions, failed/retried leaving, and stale-grant races. Core directory/permissions work without membership; membership works with sharing disabled; shared-pin screens can be removed independently. Run client/Functions tests, emulator integration, type checks, and formatting checks. No deployment is included.
+
+## Implemented API
+
+The existing authenticated POST endpoint retains `catalog`, `list`, `grant`, `revoke`, and `revokeOrganization`. It additionally supports `memberships`, `joinOrganization`, `renameMember`, `organizationMembers`, `reviewLeaving`, `leaveOrganization`, `resumeLeaving`, `sharedSightings`, and `sharedPhoto`. All member operations act on the authenticated account; no client administration action exists. Shared pages contain at most 50 Sightings and use numeric continuation positions. Photos are authenticated JPEG data responses, never public source URLs.
+
+Membership data lives in `organization-permissions/{uid}/memberships.json`. Operator-generated invite codes are stored hashed in `organization-invites/`. Existing Storage Rules deny direct client access to both namespaces.

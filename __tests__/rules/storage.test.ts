@@ -211,11 +211,13 @@ describe('storage.rules — deletes (#293)', () => {
 
 describe('organization service objects remain server-only', () => {
   it.each(['owner', 'other', 'anonymous'])(
-    'denies direct catalog and ledger reads/writes for %s',
+    'denies direct organization service reads/writes for %s',
     async (actor) => {
       const paths = [
         'organizations/catalog.json',
         'organization-permissions/owner/ledger.json',
+        'organization-permissions/owner/memberships.json',
+        'organization-invites/code-hash.json',
       ]
       await testEnv.withSecurityRulesDisabled(async (context) => {
         for (const objectPath of paths)

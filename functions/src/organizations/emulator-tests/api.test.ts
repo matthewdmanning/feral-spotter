@@ -5,7 +5,8 @@ import { initializeApp, deleteApp, type App } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 import { getStorage } from 'firebase-admin/storage'
 import { handleOrganizationsRequest } from '../api'
-import { membershipExtension } from '../membership/api'
+import { organizationFeatures } from '../features'
+import sharp from 'sharp'
 import {
   createInvite,
   moderateMembership,
@@ -146,7 +147,7 @@ beforeAll(async () => {
   const service = express()
   service.use(express.json())
   service.post('/', (req, res, next) => {
-    void handleOrganizationsRequest(req, res, membershipExtension).catch(next)
+    void handleOrganizationsRequest(req, res, organizationFeatures).catch(next)
   })
   server = await new Promise<Server>((resolve) => {
     const listening = service.listen(0, '127.0.0.1', () => resolve(listening))
@@ -593,4 +594,136 @@ test('a Storage failure after revocation leaves a resumable checkpoint without r
   } finally {
     fault.mockRestore()
   }
+})
+
+test('shared views enforce membership, project consented fields, sanitize photos and stop after revocation', async () => {
+  const owner = await signedInUser('shared-owner')
+  const viewer = await signedInUser('shared-viewer')
+  const code = await createInvite('first')
+  await call(
+    { action: 'joinOrganization', code, displayName: 'Viewer' },
+    viewer.token,
+  )
+  expect(
+    (
+      await call(
+        { action: 'sharedSightings', organizationId: 'first' },
+        viewer.token,
+      )
+    ).status,
+  ).toBe(403)
+  await moderateMembership(viewer.uid, 'first', 'approve')
+  const photoPath = `submissions/${owner.uid}/sighting/photo-0.jpg`
+  const photo = await sharp({
+    create: { width: 20, height: 10, channels: 3, background: 'red' },
+  })
+    .jpeg()
+    .withMetadata({ exif: { IFD0: { Artist: 'private' } } })
+    .toBuffer()
+  await bucket()
+    .file(photoPath)
+    .save(photo, {
+      resumable: false,
+      contentType: 'image/jpeg',
+      metadata: { metadata: { latitude: 'private' } },
+    })
+  const metadataFile = bucket().file(
+    `submissions/${owner.uid}/sighting/metadata.json`,
+  )
+  const [bytes] = await metadataFile.download()
+  await save(metadataFile.name, {
+    ...JSON.parse(bytes.toString()),
+    photo_paths: [photoPath],
+  })
+  expect(
+    (
+      await call(
+        grant('first', {
+          anonymous: false,
+          contactEmail: owner.email,
+          settings: {
+            ...DEFAULT_SHARING,
+            fields: {
+              ...DEFAULT_SHARING.fields,
+              email: true,
+              photos: true,
+              catDetails: true,
+            },
+          },
+        }),
+        owner.token,
+      )
+    ).status,
+  ).toBe(200)
+  const shared: Record<string, unknown>[] = []
+  let cursor: unknown
+  do {
+    const reply = await call(
+      {
+        action: 'sharedSightings',
+        organizationId: 'first',
+        ...(cursor ? { cursor } : {}),
+      },
+      viewer.token,
+    )
+    expect(reply.status).toBe(200)
+    const page = reply.body as unknown as {
+      sightings: Record<string, unknown>[]
+      cursor: string | null
+    }
+    shared.push(...page.sightings)
+    cursor = page.cursor
+  } while (cursor)
+  const summary = shared.find((s) => s.photoCount === 1)!
+  expect(summary).toBeDefined()
+  expect(summary).not.toHaveProperty('contact')
+  expect(summary).not.toHaveProperty('submissionId')
+  expect(summary).not.toHaveProperty('preciseLocation')
+  expect(summary).toHaveProperty('cats', [{ health_label: 'poor' }])
+  const imageReply = await call(
+    {
+      action: 'sharedPhoto',
+      organizationId: 'first',
+      id: summary.id,
+      index: 0,
+    },
+    viewer.token,
+  )
+  expect(imageReply.status).toBe(200)
+  const image = (imageReply.body as unknown as { image: string }).image
+  expect(
+    (await sharp(Buffer.from(image.split(',')[1], 'base64')).metadata()).exif,
+  ).toBeUndefined()
+  expect(image).not.toContain(photoPath)
+  await call(
+    {
+      action: 'revoke',
+      organizationId: 'first',
+      submissionId: 'sighting',
+      mutationId: 'revoke-delivered-photo',
+    },
+    owner.token,
+  )
+  expect(
+    (
+      await call(
+        {
+          action: 'sharedPhoto',
+          organizationId: 'first',
+          id: summary.id,
+          index: 0,
+        },
+        viewer.token,
+      )
+    ).status,
+  ).toBe(404)
+  await moderateMembership(viewer.uid, 'first', 'remove')
+  expect(
+    (
+      await call(
+        { action: 'sharedSightings', organizationId: 'first' },
+        viewer.token,
+      )
+    ).status,
+  ).toBe(403)
 })
