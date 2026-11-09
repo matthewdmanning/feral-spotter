@@ -17,8 +17,7 @@ test('a timed-out token lookup settles without sending credentials later', async
         completeToken = resolve
       }),
   )
-  const sent = jest.fn()
-  globalThis.fetch = sent
+  const sent = jest.spyOn(globalThis, 'fetch')
   try {
     const request = organizationRequest({ action: 'catalog' }, 'owner')
     const rejected = expect(request).rejects.toMatchObject({
@@ -41,7 +40,8 @@ test('account switching during JSON parsing cannot publish another account’s r
   const parseStarted = new Promise<void>((resolve) => {
     parsing = resolve
   })
-  globalThis.fetch = jest.fn(async () => ({
+  // A real Response parses at once; this one holds parsing open.
+  jest.spyOn(globalThis, 'fetch').mockResolvedValue({
     ok: true,
     json: () => {
       parsing()
@@ -49,7 +49,7 @@ test('account switching during JSON parsing cannot publish another account’s r
         complete = resolve
       })
     },
-  })) as unknown as typeof fetch
+  } as unknown as Response)
   const request = organizationRequest({ action: 'memberships' }, 'owner')
   const rejected = expect(request).rejects.toMatchObject({ name: 'AbortError' })
   await parseStarted

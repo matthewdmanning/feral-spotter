@@ -118,6 +118,8 @@ Shared fixtures live in `src/test-utils/`: `observedCat`, `submissionPhoto`, `se
 
 `jest.setup.js` gives `expo-crypto`'s `randomUUID` real unique ids (jest-expo's mock returns `undefined`). Don't re-mock the module; pin an id with `jest.mocked(randomUUID).mockReturnValue(...)`.
 
+HTTP: fake `fetch` with `jest.spyOn(globalThis, 'fetch')` (so `restoreMocks` undoes it) and return a real `Response`. Never assign `globalThis.fetch`. For the organizations function use `fakeOrganizationsService` (`src/test-utils/organizationsService.ts`): it checks URL, method and Bearer token like the real endpoint.
+
 ### Type checking
 
 Tests type-check through `tsconfig.test.json` (part of `npm run typecheck`), rules tests included. Jest runs TypeScript through Babel, which only strips types; [Jest's docs](https://jestjs.io/docs/getting-started#using-typescript) say to run `tsc` separately for type checking.
