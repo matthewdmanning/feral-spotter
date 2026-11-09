@@ -24,6 +24,6 @@
     "jest-util": "^29.7.0",
     "ts-jest": "^29.2.5",
     "typescript": "^5.4.0",
-    "xstate": "^5.33.4"
+    "xstate": "^5.32.5"
   }
 }
