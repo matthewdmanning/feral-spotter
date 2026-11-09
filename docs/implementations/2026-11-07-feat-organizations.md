@@ -49,3 +49,8 @@ See the spec's [fresh Firestore setup](../planning/organization-membership-and-s
 - Live provisioning, deployment, native compilation, and physical-device checks were not performed.
 
 Feature details: [membership](2026-11-09-feat-organization-membership.md) and [sharing](2026-11-09-feat-organization-sharing.md).
+
+## 2026-11-09 — refactor
+
+**Purpose:** follow TanStack Query's testing guidance: one client per test, injected through context.
+**Change:** `AppProviders` mounts `QueryClientProvider` with `createQueryClient()` (`src/shared/lib/queryClient.ts`). Organization hooks read the client via `useQueryClient()` instead of a module singleton. Tests wrap renders with `queryWrapper()` (`src/test-utils/queryClient.tsx`); `jest.setup.js` no longer clears a shared cache. Verified: 121 suites / 551 tests, typecheck, lint. Not verified on device.

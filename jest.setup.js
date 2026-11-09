@@ -47,10 +47,8 @@ beforeEach(async () => {
 
 // Return every Zustand store to its initial state (__mocks__/zustand.ts).
 const { act } = require('react')
-const { queryClient } = require('./src/shared/lib/queryClient')
 afterEach(() => {
   act(() => {
     globalThis.__zustandStoreResets?.forEach((reset) => reset())
-    queryClient.clear()
   })
 })

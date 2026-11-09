@@ -114,7 +114,7 @@ Put tests in a `__tests__/` folder beside the code. Root `__tests__/` holds only
 
 ### Shared fixtures
 
-Shared fixtures live in `src/test-utils/`: `observedCat`, `submissionPhoto`, `setConsent` (real consent store). Prefer the factories: one place to add a new required field.
+Shared fixtures live in `src/test-utils/`: `observedCat`, `submissionPhoto`, `setConsent` (real consent store), `queryWrapper` (fresh TanStack Query client per render; pass as `renderRouter`/`render` `wrapper`). Prefer the factories: one place to add a new required field.
 
 `jest.setup.js` gives `expo-crypto`'s `randomUUID` real unique ids (jest-expo's mock returns `undefined`). Don't re-mock the module; pin an id with `jest.mocked(randomUUID).mockReturnValue(...)`.
 
