@@ -108,3 +108,9 @@ tags:
 **Unverified:** Physical-device cold-start time to preview and first usable shutter. No latency numbers are claimed from JavaScript tests.
 
 **Verification:** Full Jest suite passed: 97 suites, 449 tests. The cold-start regression verifies no import-time photo read, exactly one startup read and restored photos before capture readiness. Workflow checks verify active preview during restoration and safe capture during cleanup. Typecheck, changed-file ESLint (0 errors; one existing test import warning), Prettier and `git diff --check` passed. Independent integration review found no remaining startup race or duplicate production hydration.
+
+## 2026-11-09 — refactor: greenfield persistence
+
+**Purpose:** Remove older-install upgrade paths because the project has no active users or data to migrate.
+**Change:** Removed cache-age backfilling for drafts without a pool timestamp. Undated pools are discarded even when a cache row is fresh. Current startup hydration, interrupted-send recovery, expiry and file cleanup remain covered.
+**Verification:** Full client suite: 120 suites / 550 tests. Functions: 8 suites / 65 tests. Type checks and focused lint pass. Organization integration: 23 emulator scenarios; Rules: 24 tests. No deployment or device check.

@@ -2,9 +2,8 @@ import { createHash, randomBytes } from 'node:crypto'
 import { getAuth } from 'firebase-admin/auth'
 import { db, readOrganization } from '../store'
 import { changeMembership, readMemberships } from './store'
-export { readMemberships, isActiveMember, roster } from './store'
-import { readDocument } from '../documents'
-import { makePermission, readLedger, updateLedger, validateGrant } from '../api'
+import { makePermission, validateGrant } from '../api'
+import { readLedger, updateLedger } from '../store'
 import { validId, type Permission } from '../domain'
 import { RequestError } from '../errors'
 import { memberName, type LeaveChoice } from './domain'
@@ -12,12 +11,8 @@ import { memberName, type LeaveChoice } from './domain'
 const invitePath = (code: string) =>
   `organizationInvites/${createHash('sha256').update(code).digest('hex')}`
 
-export async function activeOrganization(organizationId: string) {
-  return readOrganization(organizationId)
-}
-
 export async function createInvite(organizationId: string) {
-  await activeOrganization(organizationId)
+  await readOrganization(organizationId)
   const code = randomBytes(24).toString('base64url')
   await db().doc(invitePath(code)).create({ organizationId })
   return code
@@ -36,16 +31,11 @@ export async function joinOrganization(
   } catch {
     throw new RequestError(400, 'Invalid display name')
   }
-  const invite = (
-    await readDocument<{ organizationId?: string }>(
-      invitePath(code.trim()),
-      () => ({}),
-    )
-  ).value
-  if (!validId(invite.organizationId))
+  const invite = (await db().doc(invitePath(code.trim())).get()).data()
+  if (!invite || !validId(invite.organizationId))
     throw new RequestError(404, 'Invalid invite code')
   const organizationId = invite.organizationId
-  await activeOrganization(organizationId)
+  await readOrganization(organizationId)
   await changeMembership(uid, organizationId, (records) => {
     const previous = records[organizationId]
     if (previous?.exit)
@@ -127,9 +117,7 @@ export async function leaveOrganization(
   if (!member.exit) return
   const saved = member.exit
   const token = createHash('sha256')
-    .update(
-      `${uid}/${organizationId}/${member.requestId ?? 'legacy'}/${saved.mutationId}`,
-    )
+    .update(`${uid}/${organizationId}/${member.requestId}/${saved.mutationId}`)
     .digest('hex')
   await updateLedger(uid, `block-${token}`, async () => ({
     type: 'blockOrganization',
@@ -144,7 +132,7 @@ export async function leaveOrganization(
       }))
     } else {
       await updateLedger(uid, `leave-${token}`, async () => {
-        const ledger = (await readLedger(uid)).value
+        const ledger = await readLedger(uid)
         const active = ledger.permissions.filter(
           (p) => p.organizationId === organizationId && !p.revokedAt,
         )
@@ -164,7 +152,7 @@ export async function leaveOrganization(
             }),
           )
         // Validate directory/email even when there are no existing shares.
-        const { catalog } = await activeOrganization(organizationId)
+        const { catalog } = await readOrganization(organizationId)
         if (
           catalog.version !== saved.catalogVersion ||
           (!saved.anonymous &&
@@ -249,7 +237,7 @@ export async function moderateMembership(
     })
     return
   }
-  await activeOrganization(organizationId)
+  await readOrganization(organizationId)
   await changeMembership(uid, organizationId, (records) => {
     const member = records[organizationId]
     if (!member || member.status !== 'pending' || member.exit)

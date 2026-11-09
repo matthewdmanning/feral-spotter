@@ -32,7 +32,6 @@ const publicLedger = ({ epochs, permissions }: PermissionLedger) => ({
   epochs,
   permissions,
 })
-export { readCatalog, readLedger, updateLedger } from './store'
 
 export function validateGrant(input: unknown): GrantRequest {
   const request = input as GrantRequest
@@ -227,7 +226,7 @@ export async function handleOrganizationsRequest(
       return
     }
     if (body.action === 'list') {
-      res.json(publicLedger((await readLedger(identity.uid)).value))
+      res.json(publicLedger(await readLedger(identity.uid)))
       return
     }
     if (!validId(body.mutationId))

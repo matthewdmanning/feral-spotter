@@ -208,35 +208,3 @@ describe('storage.rules — deletes (#293)', () => {
     await assertSucceeds(deleteObject(metadataOf()))
   })
 })
-
-describe('organization service objects remain server-only', () => {
-  it.each(['owner', 'other', 'anonymous'])(
-    'denies direct organization service reads/writes for %s',
-    async (actor) => {
-      const paths = [
-        'organizations/catalog.json',
-        'organization-permissions/owner/ledger.json',
-        'organization-permissions/owner/memberships.json',
-        'organization-invites/code-hash.json',
-      ]
-      await testEnv.withSecurityRulesDisabled(async (context) => {
-        for (const objectPath of paths)
-          await uploadBytes(
-            ref(context.storage(BUCKET_URL), objectPath),
-            SMALL_JSON,
-            JSON_TYPE,
-          )
-      })
-      const context =
-        actor === 'anonymous'
-          ? testEnv.unauthenticatedContext()
-          : testEnv.authenticatedContext(actor)
-      for (const objectPath of paths) {
-        const object = ref(context.storage(BUCKET_URL), objectPath)
-        await assertFails(getMetadata(object))
-        await assertFails(uploadBytes(object, SMALL_JSON, JSON_TYPE))
-        await assertFails(deleteObject(object))
-      }
-    },
-  )
-})

@@ -42,3 +42,9 @@ Operator tooling now requires an explicit `FIREBASE_PROJECT_ID` as well as the s
 - Separate follow-up branches: `feat/organization-membership-firestore` and `feat/organization-sharing-firestore`; combined implementation: `feat/organizations-firestore`. No live provisioning, deployment, or data migration was performed.
 
 The membership journey checks initial loading versus empty/error states and foregrounding during an in-flight request. Mutation responses reconcile against the durable checkpoint before showing completion. Account-deletion guards hide roster names before physical cleanup finishes and prevent concurrent membership writes from recreating erased data.
+
+## 2026-11-09 — refactor: greenfield organization backend
+
+**Purpose:** Follow the user's clarification that this project has no active users or existing data.
+**Change:** Enrollment IDs are required with no legacy fallback. Removed the obsolete JSON-document adapter and read invite documents directly from Firestore. Account erasure no longer attempts Storage organization cleanup.
+**Verification:** Full client suite: 120 suites / 550 tests. Functions: 8 suites / 65 tests. Type checks and focused lint pass. Organization integration: 23 emulator scenarios; Rules: 24 tests. No deployment or device check. Earlier migration descriptions above record superseded implementation history.

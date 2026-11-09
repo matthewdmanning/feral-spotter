@@ -92,7 +92,7 @@ checks), see [test-driving.md](test-driving.md).
 
 The user explicitly authorized Firestore for organization data on 2026-11-09, superseding the previous project-wide prohibition for this scope. See ADR-0008. The authenticated Functions API is the only client entrypoint. Firestore Rules deny direct access, including membership/role writes. Server transactions enforce ownership, deletion guards, epochs, and idempotency; feature adapters supply member authorization.
 
-Firestore joins the local Auth/Storage emulator lane on port 8080. Never silently fall back to Storage or a live database when Firestore is unavailable. Organization schema, indexes, and migration instructions live in the implementation note and saved spec.
+Firestore joins the local Auth/Storage emulator lane on port 8080. Never silently fall back to Storage or a live database when Firestore is unavailable. Organization schema, indexes, and fresh setup instructions live in the implementation note and saved spec.
 
 ## Approved resources
 

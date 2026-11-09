@@ -129,7 +129,7 @@ export async function readOrganization(organizationId: string) {
   )
 }
 
-/** A generation boundary makes organization-wide revocation constant-time and authoritative. */
+/** An epoch boundary makes organization-wide revocation constant-time and authoritative. */
 export function effectivePermission(
   record: StoredPermission,
   state: PermissionState,
@@ -152,9 +152,7 @@ export function effectivePermission(
   return revokedAt ? { ...permission, revokedAt } : permission
 }
 
-export async function readLedger(
-  uid: string,
-): Promise<{ value: PermissionLedger; generation: number }> {
+export async function readLedger(uid: string): Promise<PermissionLedger> {
   return db().runTransaction(
     async (transaction) => {
       const [account, states, records] = await Promise.all([
@@ -183,19 +181,16 @@ export async function readLedger(
           revokedPairs.push(`${record.organizationId}/${record.submissionId}`)
       }
       return {
-        generation: 0,
-        value: {
-          permissions,
-          revokedPairs,
-          epochs: Object.fromEntries(
-            states.docs.map((doc) => [doc.id, doc.get('epoch') ?? 0]),
-          ),
-          blockedOrganizations: Object.fromEntries(
-            states.docs
-              .filter((doc) => doc.get('blockedToken'))
-              .map((doc) => [doc.id, doc.get('blockedToken')]),
-          ),
-        },
+        permissions,
+        revokedPairs,
+        epochs: Object.fromEntries(
+          states.docs.map((doc) => [doc.id, doc.get('epoch') ?? 0]),
+        ),
+        blockedOrganizations: Object.fromEntries(
+          states.docs
+            .filter((doc) => doc.get('blockedToken'))
+            .map((doc) => [doc.id, doc.get('blockedToken')]),
+        ),
       }
     },
     { readOnly: true },
@@ -211,7 +206,7 @@ export async function updateLedger(
   const marker = accountRef(uid)
     .collection('mutations')
     .doc(createHash('sha256').update(mutationId).digest('hex'))
-  if ((await marker.get()).exists) return (await readLedger(uid)).value
+  if ((await marker.get()).exists) return readLedger(uid)
   // Auth/Storage work is performed once, outside Firestore's retrying callback.
   const mutation = await build()
   if (
@@ -361,7 +356,7 @@ export async function updateLedger(
     })
     transaction.create(marker, { appliedAt: now })
   })
-  return (await readLedger(uid)).value
+  return readLedger(uid)
 }
 
 export async function currentPermission(

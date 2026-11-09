@@ -7,7 +7,7 @@
     "node": "22"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "node scripts/build.mjs",
     "test": "jest",
     "deploy": "cd .. && npx firebase deploy --only functions",
     "test:organizations:emulator": "jest -c jest.emulator.config.js --runInBand"
