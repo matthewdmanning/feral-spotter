@@ -176,3 +176,9 @@ The account-deletion change is also recorded in the [account-erasure note](2026-
 **Test iterations:** The initial consent journey failed because rendering a separate hook displaced the form as the active test render. The corrected journey calls the real `submitDraft()` lifecycle with the form mounted; all three consent cases pass.
 
 **Verification:** Full client suite: 116 suites / 546 tests passed. Functions suite: 7 suites / 62 tests passed. App/server TypeScript checks, Functions build, focused client ESLint, Prettier on every changed file, and `git diff --check` passed. Rules/emulator integration and device checks were not rerun; nothing was deployed.
+
+## 2026-11-09 — refactor: reusable organization permissions
+
+**Purpose:** Keep organization permissions independent of optional membership and sharing UI.
+**Change:** Added explicit viewer authorization/projection, CAS JSON helpers, permission-transition blocking and explicit consent replacement. The authenticated API accepts a feature adapter at composition time. See [spec](../planning/organization-membership-and-sharing.md).
+**Tests:** `permissions.test.ts` checks private-field exclusion, revoked content, transition locks and stale-grant rejection. Verification recorded with integrated feature notes.
