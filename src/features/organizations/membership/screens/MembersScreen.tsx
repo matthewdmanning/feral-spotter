@@ -4,9 +4,9 @@ import { Stack, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
-import { organizationRequest } from '../../lib/api'
-import { styles } from '../../components/styles'
-import { styles as layout } from '../components/styles'
+import { organizationRequest } from '@/src/features/organizations/lib/api'
+import { styles } from '@/src/features/organizations/components/styles'
+import { styles as layout } from '@/src/features/organizations/membership/components/styles'
 
 export default function MembersScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -14,6 +14,7 @@ export default function MembersScreen() {
   const online = useUIStore((s) => s.isOnline)
   const generation = useRef(0)
   const [result, setResult] = useState<{
+    organizationId?: string
     uid?: string
     members: { displayName: string }[]
   }>({ members: [] })
@@ -28,7 +29,7 @@ export default function MembersScreen() {
         members: { displayName: string }[]
       }>({ action: 'organizationMembers', organizationId: id }, uid)
       if (ticket === generation.current)
-        setResult({ uid, members: response.members })
+        setResult({ uid, organizationId: id, members: response.members })
     } catch {
       if (ticket === generation.current)
         setError(
@@ -78,6 +79,7 @@ export default function MembersScreen() {
         Refresh members
       </AppButton>
       {uid === result.uid &&
+        id === result.organizationId &&
         online &&
         result.members.map((member, index) => (
           <Text key={index} style={styles.body}>
