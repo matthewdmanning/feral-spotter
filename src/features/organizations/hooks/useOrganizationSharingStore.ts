@@ -13,7 +13,7 @@ import {
   organizationRequest,
   OrganizationSyncError,
 } from '@/src/features/organizations/lib/api'
-import { buildGrant } from '@/src/features/organizations/sharing/lib/sharing'
+import { buildGrant } from '@/src/features/organizations/lib/permissions'
 import { useOrganizationsFlag } from './useOrganizationsFlag'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 
