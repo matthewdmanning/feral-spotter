@@ -65,3 +65,30 @@ test('join, approval refresh and name editing work while sharing is off; account
   expect(screen.queryByDisplayValue('Updated name')).toBeNull()
   expect(screen.queryByDisplayValue('Unsubmitted name')).toBeNull()
 })
+
+test('initial loading is distinct from empty and a failed request offers recovery', async () => {
+  useAuthStore.setState({ user: { uid: 'member', email: null }, isReady: true })
+  useUIStore.setState({ isOnline: true })
+  let finish: (result: { status: number }) => void = () => {}
+  await fakeOrganizationsService(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve
+      }),
+  )
+  await renderRouter({ index: () => <MembershipsScreen /> })
+  expect(screen.getByText('Loading memberships…')).toBeOnTheScreen()
+  expect(screen.queryByText('No memberships or pending requests.')).toBeNull()
+  await act(async () => {
+    finish({ status: 503 })
+  })
+  expect(
+    await screen.findByText(
+      'The organization service is temporarily unavailable. Please retry.',
+    ),
+  ).toBeOnTheScreen()
+  expect(screen.queryByText('No memberships or pending requests.')).toBeNull()
+  expect(
+    screen.getByRole('button', { name: 'Refresh memberships' }),
+  ).toBeEnabled()
+})

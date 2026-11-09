@@ -6,6 +6,7 @@ import { TextField } from '@/src/shared/ui/atoms/TextField'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import { TextButton } from '@/src/shared/ui/atoms/TextButton'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
+import { OrganizationLoading } from '@/src/features/organizations/components/OrganizationLoading'
 import { styles } from '@/src/features/organizations/components/styles'
 import { styles as layout } from '@/src/features/organizations/membership/components/styles'
 import { useMemberships } from '@/src/features/organizations/membership/hooks/useMemberships'
@@ -137,6 +138,9 @@ function MembershipsForm({
               {query.error}
             </Text>
           )}
+          {query.initialLoading && (
+            <OrganizationLoading label="Loading memberships…" />
+          )}
           <AppButton
             disabled={!query.online}
             loading={query.busy}
@@ -190,9 +194,14 @@ function MembershipsForm({
               Request membership
             </AppButton>
           </GlassSurface>
-          {!query.busy && !query.memberships.length && (
-            <Text style={styles.hint}>No memberships or pending requests.</Text>
-          )}
+          {query.online &&
+            !query.error &&
+            !query.busy &&
+            !query.memberships.length && (
+              <Text style={styles.hint}>
+                No memberships or pending requests.
+              </Text>
+            )}
           {query.memberships.map((member) => (
             <MemberCard
               key={`${query.uid}-${member.organizationId}-${member.status}-${member.leaving}-${member.displayName}`}
