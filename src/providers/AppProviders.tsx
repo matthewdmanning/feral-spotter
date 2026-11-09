@@ -9,6 +9,9 @@
  * or hook required. See: Edge to edge layout guide.
  *
  * Providers:
+ *   QueryClientProvider — one TanStack Query client for the app's server
+ *     data (organizations), so hooks read it with useQueryClient and tests
+ *     can give each test its own.
  *   GestureHandlerRootView — required at the app root for
  *     react-native-gesture-handler-backed gestures (react-navigation
  *     native-stack swipe-back included) to work at all.
@@ -28,6 +31,8 @@
  *     opt-in allow it.
  */
 
+import { QueryClientProvider } from '@tanstack/react-query'
+import { createQueryClient } from '@/src/shared/lib/queryClient'
 import { OrganizationsRuntime } from '@/src/features/organizations/components/OrganizationsRuntime'
 import { AlertHost } from '@/src/shared/ui/organisms/AlertHost'
 import { ErrorBoundary } from '@/src/shared/ui/atoms/ErrorBoundary'
@@ -49,7 +54,7 @@ import Constants from 'expo-constants'
 import * as Device from 'expo-device'
 import { usePathname } from 'expo-router'
 import { PostHogProvider, usePostHog } from 'posthog-react-native'
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Appearance } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { UnistylesRuntime } from 'react-native-unistyles'
@@ -168,51 +173,54 @@ export function AppProviders({ children }: AppProvidersProps) {
   const hasAcceptedAnalytics = useConsentStore(
     (s) => s.analyticsAccepted === true,
   )
+  const [queryClient] = useState(createQueryClient)
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      {__DEV__ && <ScreenTransitionLogger />}
-      <SystemThemeSync />
-      <OrganizationsRuntime />
-      {/* Outside ErrorBoundary's children so a caught render error still
+    <QueryClientProvider client={queryClient}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        {__DEV__ && <ScreenTransitionLogger />}
+        <SystemThemeSync />
+        <OrganizationsRuntime />
+        {/* Outside ErrorBoundary's children so a caught render error still
           leaves the app able to raise a dialog. */}
-      <AlertHost />
-      {/* A sibling of the app, not its parent: wrapping `children` only
+        <AlertHost />
+        {/* A sibling of the app, not its parent: wrapping `children` only
           while consented gave them a different parent each time consent
           flipped (and on every cold start, as consent hydrates), and React
           remounted the whole app. Only AnalyticsBridge reads PostHog. */}
-      {IS_PRERELEASE &&
-        POSTHOG_KEY &&
-        POSTHOG_HOST &&
-        hasAcceptedConsent &&
-        hasAcceptedAnalytics && (
-          <PostHogProvider
-            // Its wrapper View defaults to flex: 1; as a sibling it must take
-            // no space from the app.
-            style={POSTHOG_HOST_STYLE}
-            apiKey={POSTHOG_KEY}
-            options={{
-              host: POSTHOG_HOST,
-              // Capture unhandled JS exceptions globally. The root ErrorBoundary
-              // reports render failures separately, so exclude console capture to
-              // avoid React's console logging generating duplicate exceptions.
-              // uncaughtExceptions/unhandledRejections are opt-in per-key, not
-              // deep-merged with defaults — omitting either silently disables
-              // it (confirmed against installed posthog-react-native source).
-              errorTracking: {
-                autocapture: {
-                  uncaughtExceptions: true,
-                  unhandledRejections: true,
-                  console: [],
+        {IS_PRERELEASE &&
+          POSTHOG_KEY &&
+          POSTHOG_HOST &&
+          hasAcceptedConsent &&
+          hasAcceptedAnalytics && (
+            <PostHogProvider
+              // Its wrapper View defaults to flex: 1; as a sibling it must take
+              // no space from the app.
+              style={POSTHOG_HOST_STYLE}
+              apiKey={POSTHOG_KEY}
+              options={{
+                host: POSTHOG_HOST,
+                // Capture unhandled JS exceptions globally. The root ErrorBoundary
+                // reports render failures separately, so exclude console capture to
+                // avoid React's console logging generating duplicate exceptions.
+                // uncaughtExceptions/unhandledRejections are opt-in per-key, not
+                // deep-merged with defaults — omitting either silently disables
+                // it (confirmed against installed posthog-react-native source).
+                errorTracking: {
+                  autocapture: {
+                    uncaughtExceptions: true,
+                    unhandledRejections: true,
+                    console: [],
+                  },
                 },
-              },
-            }}
-            debug={__DEV__}
-          >
-            <AnalyticsBridge />
-          </PostHogProvider>
-        )}
-      <ErrorBoundary>{children}</ErrorBoundary>
-    </GestureHandlerRootView>
+              }}
+              debug={__DEV__}
+            >
+              <AnalyticsBridge />
+            </PostHogProvider>
+          )}
+        <ErrorBoundary>{children}</ErrorBoundary>
+      </GestureHandlerRootView>
+    </QueryClientProvider>
   )
 }

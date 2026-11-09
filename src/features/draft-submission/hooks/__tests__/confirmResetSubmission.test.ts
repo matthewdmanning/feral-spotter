@@ -7,6 +7,7 @@ import {
 } from '@/src/features/draft-submission/hooks/confirmResetSubmission'
 import { discardDraft } from '@/src/features/draft-submission/lib/draft'
 import { router } from 'expo-router'
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
 
 /**
  * Reset never deletes camera-roll copies, so its dialog must say they stay
@@ -22,16 +23,7 @@ jest.mock('@/src/features/draft-submission/lib/draft', () => ({
 
 const seedPhotos = (source: 'camera' | 'library') =>
   usePhotoStore.setState({
-    photos: [
-      {
-        local_id: 'photo-1',
-        uri: 'file:///photo-1.jpg',
-        uploaded: false,
-        upload_progress: 0,
-        width: 100,
-        height: 100,
-      },
-    ],
+    photos: [submissionPhoto()],
     source,
   })
 

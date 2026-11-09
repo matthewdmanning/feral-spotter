@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
 
 jest.mock('@/src/core/location/liveFix', () => ({
   stopLocationCapture: jest.fn(),
@@ -21,14 +22,10 @@ it('defers draft I/O until startup and reads the saved photo pool only once', as
       version: 0,
       state: {
         photos: [
-          {
+          submissionPhoto({
             local_id: 'saved-photo',
             uri: 'file:///saved.jpg',
-            width: 100,
-            height: 100,
-            uploaded: false,
-            upload_progress: 0,
-          },
+          }),
         ],
         source: 'camera',
         submissionId: 'saved-submission',

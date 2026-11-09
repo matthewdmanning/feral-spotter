@@ -6,6 +6,7 @@ import {
   syncPhotoUploads,
   whenUploadsSettled,
 } from '@/src/features/draft-submission/lib/upload/draftUploads'
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
 
 /**
  * Submit waits on these outcomes. A failed upload used to be noticed only
@@ -13,21 +14,12 @@ import {
  * Every upload must carry the photo's stored slot.
  */
 
-// jest-expo's expo-crypto mock returns undefined; the draft needs an id.
-let mockId = 0
-jest.mock('expo-crypto', () => ({ randomUUID: () => `id-${++mockId}` }))
 jest.mock('@/src/features/draft-submission/lib/upload/firebaseUpload', () => ({
   uploadSubmissionPhoto: jest.fn(),
 }))
 
-const photo = (n: number) => ({
-  local_id: `p${n}`,
-  uri: `file:///p${n}.jpg`,
-  uploaded: false,
-  upload_progress: 0,
-  width: 10,
-  height: 10,
-})
+const photo = (n: number) =>
+  submissionPhoto({ local_id: `p${n}`, width: 10, height: 10 })
 const flush = () => new Promise((resolve) => setImmediate(resolve))
 
 beforeEach(() => {

@@ -5,14 +5,11 @@ import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 import { fakeOrganizationsService } from '@/src/test-utils/organizationsService'
+import { queryWrapper } from '@/src/test-utils/queryClient'
 import {
   REACTIONS,
   type PinComment,
 } from '@/functions/src/organizations/interactions/domain'
-
-// The native module has no Jest implementation; each draft gets a fresh id.
-let mockUuid = 0
-jest.mock('expo-crypto', () => ({ randomUUID: () => `mutation-${++mockUuid}` }))
 
 const PIN = 'a'.repeat(64)
 
@@ -89,9 +86,12 @@ test('a member reacts, retries a lost comment once, and deletes only their own',
   useUIStore.setState({ isOnline: true })
   useOrganizationsFlag.setState({ enabled: true })
   const service = await serve()
-  await renderRouter({
-    index: () => <PinInteractions organizationId="org" pinId={PIN} />,
-  })
+  await renderRouter(
+    {
+      index: () => <PinInteractions organizationId="org" pinId={PIN} />,
+    },
+    { wrapper: queryWrapper().wrapper },
+  )
 
   // A retained comment from someone who can no longer be named.
   expect(await screen.findByText('Seen at dusk.')).toBeOnTheScreen()

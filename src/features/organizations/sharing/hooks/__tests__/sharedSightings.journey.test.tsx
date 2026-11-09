@@ -7,6 +7,7 @@ import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 import { fakeOrganizationsService } from '@/src/test-utils/organizationsService'
+import { queryWrapper } from '@/src/test-utils/queryClient'
 
 function SharedView() {
   const query = useSharedSightings('org')
@@ -59,7 +60,7 @@ test('refresh preserves loaded pages and revoked access clears memory-only share
       },
     }
   })
-  await renderRouter({ index: SharedView })
+  await renderRouter({ index: SharedView }, { wrapper: queryWrapper().wrapper })
   expect(await screen.findByText('first-shared-pin')).toBeOnTheScreen()
   await user.press(screen.getByRole('button', { name: 'More' }))
   expect(await screen.findByText('second-shared-pin')).toBeOnTheScreen()

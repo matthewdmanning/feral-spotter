@@ -4,9 +4,8 @@ import * as cache from '@/src/shared/lib/submissionCache'
 import { useDraftSync } from '@/src/features/draft-submission/hooks/useDraftSync'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
 
-// jest-expo's expo-crypto mock returns undefined; rows need a real id.
-jest.mock('expo-crypto', () => ({ randomUUID: () => 'row-new' }))
 jest.mock('@/src/core/location/liveFix', () => ({
   useLocationCapture: () => ({ status: 'idle', result: null }),
 }))
@@ -18,14 +17,9 @@ it('creates one row for a draft with none, and no stray row after Submit', async
   useSubmissionStore.getState().clearDraft()
   await cache.clearCurrentCacheId()
   usePhotoStore.setState({ photos: [], source: null, submissionId: 'sub-1' })
-  usePhotoStore.getState().addPhoto({
-    local_id: 'photo-1',
-    uri: 'file:///p1.jpg',
-    uploaded: false,
-    upload_progress: 0,
-    width: 10,
-    height: 10,
-  })
+  usePhotoStore
+    .getState()
+    .addPhoto(submissionPhoto({ uri: 'file:///p1.jpg', width: 10, height: 10 }))
   const before = (await cache.getAllSubmissionCaches()).length
 
   const { unmount } = await renderHook(() => useDraftSync())

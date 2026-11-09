@@ -6,11 +6,6 @@ import { fakeOrganizationsService } from '@/src/test-utils/organizationsService'
 import { DEFAULT_SHARING } from '@/src/shared/types/Organizations'
 import type { LeaveChoice } from '@/functions/src/organizations/membership/domain'
 
-jest.mock('expo-crypto', () => ({
-  ...jest.requireActual('expo-crypto'),
-  randomUUID: () => 'leave-test',
-}))
-
 beforeEach(() => {
   useAuthStore.setState({
     user: { uid: 'member', email: 'member@example.test' },

@@ -56,7 +56,6 @@ jest.mock('expo-media-library', () => ({
   requestPermissionsAsync: jest.fn(async () => ({ status: 'granted' })),
   PermissionStatus: jest.requireActual('expo-modules-core').PermissionStatus,
 }))
-jest.mock('expo-crypto', () => ({ randomUUID: () => 'test-id' }))
 jest.mock('@/src/shared/analytics/analytics', () => ({
   ...jest.requireActual('@/src/shared/analytics/analytics'),
   captureEvent: jest.fn(),
