@@ -26,17 +26,6 @@ jest.mock('expo-router', () => ({
 jest.mock('@/src/features/auth/lib/useAuth', () => ({
   useAuth: () => ({ isReady: true, isAuthenticated: true }),
 }))
-// Real consent store, seeded as a returning user who answered every step.
-jest.mock('@/src/shared/consent/useConsentStore', () => {
-  const actual = jest.requireActual('@/src/shared/consent/useConsentStore')
-  actual.useConsentStore.setState({
-    accepted: true,
-    acceptedVersion: actual.CONSENT_VERSION,
-    emailOptIn: false,
-    analyticsAccepted: false,
-  })
-  return actual
-})
 jest.mock('@/src/shared/lib/submissionCache', () => ({
   getAllSubmissionCaches: jest.fn().mockResolvedValue([]),
   getCurrentCacheId: jest.fn().mockResolvedValue(null),
