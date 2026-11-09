@@ -5,8 +5,6 @@ import { useDraftSync } from '@/src/features/draft-submission/hooks/useDraftSync
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 
-// jest-expo's expo-crypto mock returns undefined; rows need a real id.
-jest.mock('expo-crypto', () => ({ randomUUID: () => 'row-new' }))
 jest.mock('@/src/core/location/liveFix', () => ({
   useLocationCapture: () => ({ status: 'idle', result: null }),
 }))

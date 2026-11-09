@@ -2,11 +2,6 @@ import { randomUUID } from 'expo-crypto'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 
-// The supplied expo-crypto mock returns no UUIDs.
-jest.mock('expo-crypto', () => ({
-  ...jest.requireActual('expo-crypto'),
-  randomUUID: jest.fn(),
-}))
 let nextId = 0
 jest.mock('expo-constants', () => {
   const actual = jest.requireActual('expo-constants')

@@ -17,7 +17,6 @@ import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 jest.mock('expo-router', () => ({
   router: { back: jest.fn(), replace: jest.fn() },
 }))
-jest.mock('expo-crypto', () => ({ randomUUID: () => 'new-cat-id' }))
 jest.mock('@/src/shared/analytics/analytics', () => ({
   ...jest.requireActual('@/src/shared/analytics/analytics'),
   captureEvent: jest.fn(),

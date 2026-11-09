@@ -10,10 +10,6 @@ import {
   type PinComment,
 } from '@/functions/src/organizations/interactions/domain'
 
-// The native module has no Jest implementation; each draft gets a fresh id.
-let mockUuid = 0
-jest.mock('expo-crypto', () => ({ randomUUID: () => `mutation-${++mockUuid}` }))
-
 const PIN = 'a'.repeat(64)
 
 /**

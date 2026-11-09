@@ -13,9 +13,6 @@ import {
  * Every upload must carry the photo's stored slot.
  */
 
-// jest-expo's expo-crypto mock returns undefined; the draft needs an id.
-let mockId = 0
-jest.mock('expo-crypto', () => ({ randomUUID: () => `id-${++mockId}` }))
 jest.mock('@/src/features/draft-submission/lib/upload/firebaseUpload', () => ({
   uploadSubmissionPhoto: jest.fn(),
 }))

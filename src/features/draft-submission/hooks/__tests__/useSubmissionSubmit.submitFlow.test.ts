@@ -27,10 +27,6 @@ jest.mock('expo-router', () => ({
   },
 }))
 
-jest.mock('expo-crypto', () => ({
-  randomUUID: jest.fn(() => 'cat-1'),
-}))
-
 jest.mock('posthog-react-native', () => ({
   usePostHog: () => null,
 }))

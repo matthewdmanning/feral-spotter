@@ -24,11 +24,6 @@ jest.mock('expo-router', () => ({
   router: { back: jest.fn(), replace: jest.fn() },
 }))
 
-let mockUuidCounter = 0
-jest.mock('expo-crypto', () => ({
-  randomUUID: () => `test-cat-id-${++mockUuidCounter}`,
-}))
-
 const box = {
   lowerLeftX: 0.1,
   lowerLeftY: 0.1,

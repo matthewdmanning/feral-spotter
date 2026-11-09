@@ -8,11 +8,6 @@ import { buildGrant } from '@/src/features/organizations/lib/permissions'
 import { DEFAULT_SHARING } from '@/src/shared/types/Organizations'
 import { fakeOrganizationsService } from '@/src/test-utils/organizationsService'
 
-// The supplied expo-crypto mock returns no UUIDs.
-jest.mock('expo-crypto', () => ({
-  ...jest.requireActual('expo-crypto'),
-  randomUUID: jest.fn(),
-}))
 let nextId = 0
 const grant = buildGrant({
   submissionId: 'sighting',
