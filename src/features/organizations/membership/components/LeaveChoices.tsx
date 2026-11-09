@@ -1,4 +1,4 @@
-import { Fragment as ReactFragment, useEffect, useState } from 'react'
+import { Fragment as ReactFragment, useState } from 'react'
 import { Text, Pressable } from 'react-native'
 import { randomUUID } from 'expo-crypto'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
@@ -10,9 +10,9 @@ import {
   SHARING_FIELD_KEYS,
   SHARING_FIELD_LABELS,
 } from '@/src/shared/types/Organizations'
-import { useOrganizationSharingStore } from '../../hooks/useOrganizationSharingStore'
-import { organizationRequest } from '../../lib/api'
-import { styles } from '../../components/styles'
+import { useOrganizationSharingStore } from '@/src/features/organizations/hooks/useOrganizationSharingStore'
+import { organizationRequest } from '@/src/features/organizations/lib/api'
+import { styles } from '@/src/features/organizations/components/styles'
 import type { LeaveChoice } from '@/functions/src/organizations/membership/domain'
 
 export function LeaveChoices({
@@ -44,10 +44,7 @@ export function LeaveChoices({
   const [loading, setLoading] = useState(false)
   const [choice, setChoice] = useState<LeaveChoice | null>(null)
   const email = useAuthStore((s) => s.user?.email)
-  useEffect(() => {
-    setReview(null)
-    setChoice(null)
-  }, [email])
+  const reviewed = review && choice?.contactEmail === (email ?? null)
   const reset = () => {
     setReview(null)
     setChoice(null)
@@ -139,7 +136,7 @@ export function LeaveChoices({
               ? 'Anonymous overrides name, email, and phone.'
               : 'Selected contact fields are shared with the organization; member views exclude contact information.'}
           </Text>
-          {!review && (
+          {!reviewed && (
             <AppButton
               disabled={busy}
               loading={loading}
@@ -173,7 +170,7 @@ export function LeaveChoices({
               Review retained sharing
             </AppButton>
           )}
-          {review && (
+          {reviewed && review && (
             <Text
               style={styles.body}
             >{`Confirm these choices for ${review.shareCount} existing Sightings before leaving.`}</Text>
@@ -187,7 +184,7 @@ export function LeaveChoices({
       )}
       <AppButton
         variant={keep ? 'primary' : 'danger'}
-        disabled={busy || loading || (keep && !choice)}
+        disabled={busy || loading || (keep && !reviewed)}
         onPress={() => {
           const submitted = choice ?? {
             mode: 'revoke' as const,
