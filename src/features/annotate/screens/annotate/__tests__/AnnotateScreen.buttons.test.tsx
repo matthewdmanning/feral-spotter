@@ -3,6 +3,7 @@ import { router } from 'expo-router'
 import React from 'react'
 import { useAnnotatePass } from '@/src/features/annotate/hooks/useAnnotatePass'
 import AnnotateScreen from '@/src/features/annotate/screens/annotate/index'
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
 
 /**
  * Button wiring on AnnotateScreen (src/features/annotate/screens/annotate/index.tsx)
@@ -46,14 +47,8 @@ jest.mock('@/src/features/annotate/components/InsetCropBubble', () => ({
 jest.mock('@/src/features/annotate/components/TutorialOverlay', () => ({
   TutorialOverlay: () => null,
 }))
-const PHOTO = (id: string) => ({
-  local_id: id,
-  uri: id,
-  uploaded: false,
-  upload_progress: 0,
-  width: 1,
-  height: 1,
-})
+const PHOTO = (id: string) =>
+  submissionPhoto({ local_id: id, uri: id, width: 1, height: 1 })
 
 const handleConfirmBox = jest.fn()
 const handleNotInPhoto = jest.fn()

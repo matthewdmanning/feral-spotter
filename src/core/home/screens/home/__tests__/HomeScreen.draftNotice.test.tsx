@@ -7,6 +7,7 @@ import React from 'react'
 import HomeScreen from '@/src/core/home/screens/home/index'
 import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
 import { setConsent } from '@/src/test-utils/consent'
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
 
 /**
  * #424: Home's notice for a photo draft. A draft restored from an earlier
@@ -35,16 +36,7 @@ jest.mock('@/src/features/library-picker/hooks/useLibraryPhotoPicker', () => ({
 
 const seedPool = (updatedAt: number) => {
   usePhotoStore.setState({
-    photos: [
-      {
-        local_id: 'photo-1',
-        uri: 'file:///photo-1.jpg',
-        uploaded: false,
-        upload_progress: 0,
-        width: 100,
-        height: 100,
-      },
-    ],
+    photos: [submissionPhoto()],
     source: 'camera',
     submissionId: 'submission-1',
     updated_at: updatedAt,

@@ -3,6 +3,7 @@ import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBo
 import { render } from '@testing-library/react-native'
 import { Animated, StyleSheet } from 'react-native'
 import { InsetCropBubble } from '@/src/features/annotate/components/InsetCropBubble'
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
 
 /**
  * The collapsed bubble docks in its zone's top corner. Collapsing is a scale
@@ -27,14 +28,7 @@ beforeEach(() => {
   usePhotoStore.setState({
     ...usePhotoStore.getInitialState(),
     photos: [
-      {
-        local_id: 'photo-1',
-        uri: 'file://photo-1.jpg',
-        width: 1000,
-        height: 1000,
-        uploaded: false,
-        upload_progress: 0,
-      },
+      submissionPhoto({ uri: 'file://photo-1.jpg', width: 1000, height: 1000 }),
     ],
   })
   useBoundingBoxStore.setState(useBoundingBoxStore.getInitialState())
