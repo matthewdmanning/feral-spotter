@@ -5,6 +5,9 @@ import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import CreateSubmissionScreen from '@/src/features/draft-submission/screens/create/index'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
+import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
+import { observedCat } from '@/src/test-utils/catFixtures'
 import { pressDialogButton } from '@/src/test-utils/dialog'
 
 /**
@@ -63,28 +66,6 @@ jest.mock('@/src/features/draft-submission/hooks/useDraftSync', () => ({
   useDraftSync: () => undefined,
 }))
 
-jest.mock('@/src/features/draft-submission/hooks/usePhotoStore', () => ({
-  usePhotoStore: (sel: (s: { source: 'camera' }) => unknown) =>
-    sel({ source: 'camera' }),
-}))
-
-jest.mock('@/src/shared/hooks/useSubmissionStore', () => ({
-  useSubmissionStore: (sel: (s: unknown) => unknown) =>
-    sel({
-      submission: { location_type: 'device', time_type: 'device' },
-      cats: [
-        {
-          local_id: 'cat-1',
-          age: 'adult',
-          pattern: 'tabby',
-          hair_length: 'short',
-        },
-      ],
-      setSubmissionLocation: jest.fn(),
-      setManualTime: jest.fn(),
-    }),
-}))
-
 // The platform check inside the real hook only registers on Android; the
 // screen's own handler is what this test is about, so capture it directly.
 let mockBackHandler: () => boolean = () => false
@@ -117,6 +98,8 @@ describe('Submission Details hardware Back — model-based test', () => {
   beforeEach(() => {
     mockFocused = true
     useUIStore.setState({ dialog: null })
+    usePhotoStore.setState({ source: 'camera' })
+    useSubmissionStore.setState({ cats: [observedCat()] })
     lastBackHandled = false
     const result = await render(<CreateSubmissionScreen />)
     rerender = result.rerender
