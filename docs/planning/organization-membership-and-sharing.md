@@ -18,7 +18,7 @@
 
 ## Delivery
 
-Common base: `feat/organization-core`. Separate feature branches from that base: `feat/organization-sharing` and `feat/organization-membership`. Integrate both for final verification. Preserve unrelated working changes.
+Separate feature branches: `feat/organization-sharing-firestore` and `feat/organization-membership-firestore`. The combined implementation is on `feat/organizations-firestore`. Preserve unrelated working changes.
 
 ## Verification
 
@@ -36,10 +36,8 @@ Initial loading, refresh, empty, offline, forbidden, and retryable failure state
 
 ## Fresh Firestore setup
 
-This is a greenfield project with no active users or existing organization data. There is no migration, compatibility layer, or Storage organization backend.
+Provision Firestore and publish the organization catalog before enabling the feature.
 
 1. Provision a native Firestore database in the Firebase project and grant the Functions service account least-privilege `roles/datastore.user` database access. Deploy `firestore.rules`, `firestore.indexes.json`, and the Functions code; configure the app's organization API URL.
 2. Build Functions and publish the actual organization catalog using `node scripts/publish-organization-catalog.mjs CATALOG.json` with Application Default Credentials and an explicit `FIREBASE_PROJECT_ID`. Publication blocks directory-dependent reads until complete; rerun the same input after a partial failure. No fictional organizations are seeded.
 3. Verify directory, membership, shared reads, revocation, and account deletion before enabling the feature.
-
-Firestore follow-up branches: `feat/organization-membership-firestore` and `feat/organization-sharing-firestore`, integrated on `feat/organizations-firestore`.
