@@ -24,3 +24,8 @@ A cancellable, single-flight pager distinguishes loading, refresh, empty, offlin
 Client journeys verify explicit consent, confirmation changes, pagination, and clearing after access loss. Functions tests verify actual image metadata removal and authorization denial. Emulator tests cover indexed pagination, privacy, revocation, account deletion, and concurrent permission writes.
 
 See [combined verification](2026-11-07-feat-organizations.md#verification) for current test counts and limitations. No live provisioning or deployment was performed.
+
+## 2026-11-09 — extension
+
+**Purpose:** Viewers can comment on and react to shared pins.
+**Change:** Shared Sighting data stays read-only; the detail card adds the pin interactions thread. See [pin interactions](2026-11-09-pin-interactions.md).
