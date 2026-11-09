@@ -68,7 +68,10 @@ export function useOrganizationPager<T>({
           items.push(...(response[itemsKey] as T[]))
           nextCursor = response.cursor as string | null | undefined
           pages++
-        } while (nextCursor && (pages < requestedPages || !items.length))
+        } while (
+          nextCursor &&
+          (pages < requestedPages || (!items.length && pages < 3))
+        )
         loadedPages.current = append ? loadedPages.current + pages : pages
         if (ticket === generation.current)
           setState((previous) => ({
@@ -129,7 +132,7 @@ export function useOrganizationPager<T>({
   )
   const current = state.scope === scope
   const initialLoading =
-    available && (!current || !state.loaded) && !state.error
+    available && (!current || !state.loaded) && !(current && state.error)
   return {
     items: available && current ? state.items : [],
     cursor: available && current ? state.cursor : null,

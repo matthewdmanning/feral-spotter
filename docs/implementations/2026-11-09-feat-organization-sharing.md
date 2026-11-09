@@ -22,3 +22,12 @@ Android and iOS Metro/Hermes exports passed to `/tmp/feral-spotter-organizations
 
 **Purpose:** Replace bucket scans with Firestore queries and make shared views resilient to asynchronous failures.
 **Change:** Indexed organization-scoped pages with opaque document-key cursors, direct photo permission lookups, live revocation/deletion checks, and authorization before/after processing. Photos remain sanitized in Storage, with generation-pinned downloads. Shared collections use a cancellable, single-flight pager with explicit loading/error/empty states; photo failures have an individual retry action. See [membership update](2026-11-09-feat-organization-membership.md) and [ADR-0008](../adr/0008-firestore-for-organizations.md). Final integration verification follows feature-branch integration.
+
+### Firestore integration verification
+
+- Client: 120 suites / 554 tests; Functions: 8 suites / 65 tests.
+- Real Auth/Firestore/Storage integration: 24 cases. Rules: 27 tests.
+- App/server/test type checks, Functions build, focused client lint, formatting, and diff checks pass. Android/iOS JavaScript exports pass; native/device checks were not performed.
+- Separate follow-up branches: `feat/organization-membership-firestore` and `feat/organization-sharing-firestore`; combined implementation: `feat/organizations-firestore`. No live provisioning, deployment, or data migration was performed.
+
+The Firestore read model supersedes the earlier bucket-scan limitation. Pages query only the requested organization and batch owner-state checks within a consistent read transaction. Missing/mismatched permission metadata, stale epochs, revoked permissions, deleting owners, and inactive memberships cannot grant access. Photo reads pin the Storage generation and recheck authorization before returning bytes.

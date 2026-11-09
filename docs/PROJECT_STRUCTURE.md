@@ -105,7 +105,7 @@ runner. Report a Swift change as "needs test drive", never as verified.
 
 ### Organization subfeatures
 
-`organizations/` owns the directory, permission records, validation, revocation, and generic API/storage operations. Core stores do not import membership or sharing UI.
+`organizations/` owns the directory, permission records, validation, revocation, and generic API and Firestore permission operations. Core stores do not import membership or sharing UI.
 
 - `sharing/{components,hooks,lib,screens}/`: consent controls, sharing workflows, shared-Sighting map/details, and authenticated photo delivery.
 - `membership/{components,hooks,lib,screens}/`: invite requests, approval status, names-only roster, and leaving. Uses core permission operations without importing sharing.

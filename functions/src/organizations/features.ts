@@ -14,6 +14,7 @@ export const organizationFeatures: OrganizationExtension = async (
   (await membershipExtension(identity, body, res)) ||
   (await sharingExtension(identity, body, res))
 
-export const organizationsApi = onRequest({ cors: false }, (req, res) =>
-  handleOrganizationsRequest(req, res, organizationFeatures),
+export const organizationsApi = onRequest(
+  { cors: false, memory: '512MiB', concurrency: 1, timeoutSeconds: 60 },
+  (req, res) => handleOrganizationsRequest(req, res, organizationFeatures),
 )

@@ -137,6 +137,11 @@ export function effectivePermission(
 ): Permission | undefined {
   const permission = record.permission
   if (!permission) return undefined
+  if (
+    permission.organizationId !== record.organizationId ||
+    permission.submissionId !== record.submissionId
+  )
+    return undefined
   const revokedAt =
     record.revokedAt ??
     permission.revokedAt ??
@@ -210,6 +215,11 @@ export async function updateLedger(
   // Auth/Storage work is performed once, outside Firestore's retrying callback.
   const mutation = await build()
   if (
+    mutation.type === 'grant' &&
+    mutation.permission.organizationId !== mutation.organizationId
+  )
+    throw new RequestError(400, 'Organization mismatch')
+  if (
     mutation.type === 'replaceOrganization' &&
     (mutation.permissions.length > 400 ||
       Buffer.byteLength(JSON.stringify(mutation.permissions)) > 8 * 1024 * 1024)
@@ -226,6 +236,26 @@ export async function updateLedger(
     const state =
       ((await transaction.get(scope)).data() as PermissionState | undefined) ??
       {}
+    if (mutation.type === 'grant' || mutation.type === 'replaceOrganization') {
+      const version =
+        mutation.type === 'grant'
+          ? mutation.permission.catalogVersion
+          : mutation.permissions[0]?.catalogVersion
+      const [directory, organization] = await Promise.all([
+        transaction.get(db().doc('organizationCatalog/current')),
+        transaction.get(
+          db().collection('organizations').doc(mutation.organizationId),
+        ),
+      ])
+      if (
+        directory.get('updating') ||
+        !organization.get('active') ||
+        (version && directory.get('version') !== version)
+      )
+        throw RequestError.confirmAgain(
+          'Directory changed; confirm sharing again',
+        )
+    }
     const now = new Date().toISOString()
     const base: PermissionLedger = {
       epochs: { [mutation.organizationId]: state.epoch ?? 0 },
@@ -344,14 +374,28 @@ export async function currentPermission(
         db().collection('organizationPermissions').doc(id),
       )
       const record = snapshot.data() as StoredPermission | undefined
-      if (!record || record.organizationId !== organizationId) return null
+      if (
+        !record ||
+        record.organizationId !== organizationId ||
+        permissionId(
+          record.ownerUid,
+          record.organizationId,
+          record.submissionId,
+        ) !== id
+      )
+        return null
       const [scope, account] = await Promise.all([
         transaction.get(stateRef(record.ownerUid, organizationId)),
         transaction.get(accountRef(record.ownerUid)),
       ])
+      if (!scope.exists || !account.exists || account.get('deleting'))
+        return null
       const state = (scope.data() as PermissionState | undefined) ?? {}
       const permission = effectivePermission(record, state, account.data())
-      return permission && !permission.revokedAt && !state.blockedToken
+      return permission &&
+        permission.epoch === (state.epoch ?? 0) &&
+        !permission.revokedAt &&
+        !state.blockedToken
         ? { uid: record.ownerUid, permission }
         : null
     },
@@ -371,16 +415,61 @@ export async function sharedPermissionPage(
     .orderBy(FieldPath.documentId())
     .limit(50)
   if (cursor) query = query.startAfter(cursor)
-  const page = await query.get()
-  const permissions = await Promise.all(
-    page.docs.map((doc) => currentPermission(doc.id, organizationId)),
+  return db().runTransaction(
+    async (transaction) => {
+      const page = await transaction.get(query)
+      const owners = [
+        ...new Set(page.docs.map((doc) => String(doc.get('ownerUid')))),
+      ]
+      const [states, accounts] = owners.length
+        ? await Promise.all([
+            transaction.getAll(
+              ...owners.map((uid) => stateRef(uid, organizationId)),
+            ),
+            transaction.getAll(...owners.map((uid) => accountRef(uid))),
+          ])
+        : [[], []]
+      const scopes = new Map(
+        owners.map((uid, index) => [
+          uid,
+          { state: states[index], account: accounts[index] },
+        ]),
+      )
+      const permissions: { uid: string; permission: Permission }[] = []
+      for (const doc of page.docs) {
+        const record = doc.data() as StoredPermission
+        if (
+          permissionId(
+            record.ownerUid,
+            record.organizationId,
+            record.submissionId,
+          ) !== doc.id
+        )
+          continue
+        const scope = scopes.get(record.ownerUid)
+        if (
+          !scope?.state.exists ||
+          !scope.account.exists ||
+          scope.account.get('deleting')
+        )
+          continue
+        const state = scope.state.data() as PermissionState
+        const permission = effectivePermission(record, state)
+        if (
+          permission &&
+          !permission.revokedAt &&
+          permission.epoch === (state.epoch ?? 0) &&
+          !state.blockedToken
+        )
+          permissions.push({ uid: record.ownerUid, permission })
+      }
+      return {
+        permissions,
+        cursor: page.size === 50 ? page.docs[page.docs.length - 1].id : null,
+      }
+    },
+    { readOnly: true },
   )
-  return {
-    permissions: permissions.filter(
-      (item): item is NonNullable<typeof item> => item !== null,
-    ),
-    cursor: page.size === 50 ? page.docs[page.docs.length - 1].id : null,
-  }
 }
 
 /** Block new writes before deleting names, permissions, receipts, and transition state. */
@@ -395,9 +484,8 @@ export async function eraseOrganizationData(uid: string) {
       .where('ownerUid', '==', uid)
       .get()
     const writer = db().bulkWriter()
-    const deleted = docs.docs.map((doc) => writer.delete(doc.ref))
-    await writer.close()
-    await Promise.all(deleted)
+    const deleted = Promise.all(docs.docs.map((doc) => writer.delete(doc.ref)))
+    await Promise.all([writer.close(), deleted])
   }
   for (const collection of ['states', 'mutations'])
     await db().recursiveDelete(accountRef(uid).collection(collection))
@@ -408,6 +496,16 @@ export async function eraseOrganizationData(uid: string) {
 /** Recoverable catalog publication; readers never consume a partially updated directory. */
 export async function writeCatalog(input: Catalog) {
   const catalog = parseCatalog(input)
+  if (
+    catalog.organizations.some(
+      (organization) =>
+        Buffer.byteLength(JSON.stringify(organization)) > 900 * 1024,
+    )
+  )
+    throw new RequestError(
+      400,
+      'Organization coverage exceeds the Firestore document limit',
+    )
   const token = createHash('sha256')
     .update(JSON.stringify(catalog))
     .digest('hex')

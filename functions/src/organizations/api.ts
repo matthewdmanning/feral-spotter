@@ -2,7 +2,6 @@ import { getAuth } from 'firebase-admin/auth'
 import { getStorage } from 'firebase-admin/storage'
 import type { Request } from 'firebase-functions/v2/https'
 import type { Response } from 'express'
-import { onRequest } from 'firebase-functions/v2/https'
 import { defineString } from 'firebase-functions/params'
 import {
   covers,
@@ -17,7 +16,12 @@ import {
   type PermissionLedger,
 } from './domain'
 import type { LedgerMutation } from './ledger'
-import { readCatalog, readLedger, updateLedger } from './store'
+import {
+  readCatalog,
+  readOrganization,
+  readLedger,
+  updateLedger,
+} from './store'
 import { errorCode, RequestError } from './errors'
 
 const CACHE_RADIUS_KM = defineString('ORGANIZATIONS_CACHE_RADIUS_KM', {
@@ -101,14 +105,17 @@ export async function makePermission(
     request.contactEmail !== (email ?? null)
   )
     throw RequestError.confirmAgain('Contact email changed; confirm again')
-  const catalog = await readCatalog()
+  let selected: Awaited<ReturnType<typeof readOrganization>>
+  try {
+    selected = await readOrganization(request.organizationId)
+  } catch (error) {
+    if (error instanceof RequestError && error.status === 404)
+      throw RequestError.confirmAgain('Organization unavailable; confirm again')
+    throw error
+  }
+  const { catalog, organization: org } = selected
   if (catalog.version !== request.catalogVersion)
     throw RequestError.confirmAgain('Directory changed; confirm again')
-  const org = catalog.organizations.find(
-    (o) => o.id === request.organizationId && o.active,
-  )
-  if (!org)
-    throw RequestError.confirmAgain('Organization unavailable; confirm again')
   const metadata = await readSubmission(uid, request.submissionId)
   const location = metadata.submission
   if (
@@ -197,12 +204,10 @@ export async function handleOrganizationsRequest(
       'auth/user-disabled',
       'auth/user-not-found',
     ].includes(code)
-    res
-      .status(invalid ? 401 : 503)
-      .json({
-        code: invalid ? 'UNAUTHENTICATED' : 'UNAVAILABLE',
-        retryable: !invalid,
-      })
+    res.status(invalid ? 401 : 503).json({
+      code: invalid ? 'UNAUTHENTICATED' : 'UNAVAILABLE',
+      retryable: !invalid,
+    })
     return
   }
   try {
@@ -244,21 +249,14 @@ export async function handleOrganizationsRequest(
       429: 'RATE_LIMITED',
       503: 'UNAVAILABLE',
     }
-    res
-      .status(status)
-      .json({
-        code: codes[status],
-        message:
-          error instanceof RequestError
-            ? error.message
-            : 'Organization service is temporarily unavailable',
-        requiresConfirmation: status === 409,
-        retryable: status === 429 || status === 503,
-      })
+    res.status(status).json({
+      code: codes[status],
+      message:
+        error instanceof RequestError
+          ? error.message
+          : 'Organization service is temporarily unavailable',
+      requiresConfirmation: status === 409,
+      retryable: status === 429 || status === 503,
+    })
   }
 }
-
-export const organizationsApi = onRequest(
-  { cors: false },
-  handleOrganizationsRequest,
-)

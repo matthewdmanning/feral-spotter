@@ -5,13 +5,16 @@ import { initializeApp, deleteApp, type App } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 import { getStorage } from 'firebase-admin/storage'
 import { handleOrganizationsRequest } from '../api'
+import { membershipRef } from '../membership/store'
 import { organizationFeatures } from '../features'
 import sharp from 'sharp'
-import { getFirestore } from 'firebase-admin/firestore'
+import { getFirestore, Transaction } from 'firebase-admin/firestore'
 import {
   writeCatalog,
   accountRef,
   permissionRef,
+  stateRef,
+  currentPermission,
   eraseOrganizationData,
 } from '../store'
 import {
@@ -200,13 +203,16 @@ test('a user cannot grant access to another user’s sighting', async () => {
   const attacker = await signedInUser('attacker')
   await bucket().deleteFiles({ prefix: `submissions/${attacker.uid}/` })
   const denied = await call(grant('first'), attacker.token)
-  expect(denied).toEqual({ status: 404, body: { requiresConfirmation: false } })
+  expect(denied).toMatchObject({
+    status: 404,
+    body: { requiresConfirmation: false },
+  })
   expect(
     (await call({ action: 'list' }, owner.token)).body!.permissions,
   ).toEqual([])
 })
 
-// Concurrency lives in __tests__/ledgerConcurrency: this emulator ignores generation preconditions.
+// Concurrency is verified against real Firestore transactions below.
 test('overlapping grants are minimized, with injury derived from the stored sighting', async () => {
   const { token } = await signedInUser('overlapping')
   for (const id of ['first', 'second']) {
@@ -251,7 +257,7 @@ test.each<[string, (email: string) => ReturnType<typeof grant>]>([
   ['an inactive organization', () => grant('missing-org')],
 ])('%s requires confirming again', async (_name, body) => {
   const { email, token } = await signedInUser('stale')
-  expect(await call(body(email), token)).toEqual({
+  expect(await call(body(email), token)).toMatchObject({
     status: 409,
     body: { requiresConfirmation: true },
   })
@@ -272,7 +278,7 @@ test.each<[string, unknown]>([
   ['an invalid mutation ID', { ...grant('first'), mutationId: '../x' }],
 ])('%s is a permanent 400, never a retryable 503', async (_name, body) => {
   const { token } = await signedInUser('invalid')
-  expect(await call(body, token)).toEqual({
+  expect(await call(body, token)).toMatchObject({
     status: 400,
     body: { requiresConfirmation: false },
   })
@@ -312,13 +318,8 @@ test('a missing catalog is an empty directory', async () => {
 test('capacity limits reject new grants with 429 but never block revocation', async () => {
   const { uid, token } = await signedInUser('capacity')
   expect((await call(grant('first'), token)).status).toBe(200)
-  const path = `organization-permissions/${uid}/ledger.json`
-  const [bytes] = await bucket().file(path).download()
-  await save(path, {
-    ...JSON.parse(bytes.toString()),
-    applied: Array.from({ length: 20000 }, (_, i) => `operation-${i}`),
-  })
-  expect(await call(grant('second'), token)).toEqual({
+  await accountRef(uid).set({ mutationCount: 20000 }, { merge: true })
+  expect(await call(grant('second'), token)).toMatchObject({
     status: 429,
     body: { requiresConfirmation: false },
   })
@@ -379,6 +380,7 @@ test('membership approval, private roster, default leaving and stale-grant rejec
   expect(rosterReply.status).toBe(200)
   expect(rosterReply.body).toEqual({
     members: [{ displayName: 'Visible name' }],
+    cursor: null,
   })
   expect(
     (
@@ -531,9 +533,7 @@ test('a repeated leave ID after rejoining cannot bypass unsharing, and account e
   expect(ledger.permissions.every((p) => p.revokedAt)).toBe(true)
   await join()
   await moderateMembership(owner.uid, 'first', 'approve')
-  await bucket().deleteFiles({
-    prefix: `organization-permissions/${owner.uid}/`,
-  })
+  await eraseOrganizationData(owner.uid)
   expect(
     (
       await call(
@@ -544,7 +544,7 @@ test('a repeated leave ID after rejoining cannot bypass unsharing, and account e
   ).toBe(403)
 })
 
-test('a Storage failure after revocation leaves a resumable checkpoint without restoring grants', async () => {
+test('a Firestore failure after revocation leaves a resumable checkpoint without restoring grants', async () => {
   const owner = await signedInUser('member-resume')
   const code = await createInvite('first')
   await call(
@@ -553,27 +553,32 @@ test('a Storage failure after revocation leaves a resumable checkpoint without r
   )
   await moderateMembership(owner.uid, 'first', 'approve')
   await call(grant('first'), owner.token)
-  // Fail only the external Storage write ending membership; all application logic stays real.
-  const prototype = Object.getPrototypeOf(bucket().file('probe')) as {
-    save: (this: { name: string }, ...args: unknown[]) => Promise<void>
+  // Fail only the external Firestore write ending membership; application logic stays real.
+  const prototype = Transaction.prototype as unknown as {
+    set: (...args: unknown[]) => unknown
   }
-  const saveOriginal = prototype.save
+  const setOriginal = prototype.set
   let failed = false
-  const fault = jest.spyOn(prototype, 'save').mockImplementation(function (
-    this: { name: string },
+  const fault = jest.spyOn(prototype, 'set').mockImplementation(function (
+    this: unknown,
     ...args: unknown[]
   ) {
+    const [reference, data] = args as [
+      { path: string },
+      { ownerUid?: string; status?: string },
+    ]
     if (
       !failed &&
-      this.name === `organization-permissions/${owner.uid}/memberships.json` &&
-      String(args[0]).includes('"status":"left"')
+      reference.path.startsWith('organizationMemberships/') &&
+      data.ownerUid === owner.uid &&
+      data.status === 'left'
     ) {
       failed = true
-      return Promise.reject(
-        Object.assign(new Error('Temporary Storage failure'), { code: 503 }),
-      )
+      throw Object.assign(new Error('Temporary Firestore failure'), {
+        code: 503,
+      })
     }
-    return saveOriginal.apply(this, args)
+    return setOriginal.apply(this, args)
   })
   try {
     const response = await call(
@@ -740,4 +745,188 @@ test('shared views enforce membership, project consented fields, sanitize photos
       )
     ).status,
   ).toBe(403)
+})
+
+test('Firestore transactions preserve concurrent grants and replay a mutation only once', async () => {
+  const owner = await signedInUser('firestore-concurrency')
+  const results = await Promise.all([
+    call(grant('first'), owner.token),
+    call(grant('second'), owner.token),
+  ])
+  expect(results.map((result) => result.status)).toEqual([200, 200])
+  expect(
+    (await call({ action: 'list' }, owner.token))
+      .body!.permissions.map((permission) => permission.organizationId)
+      .sort(),
+  ).toEqual(['first', 'second'])
+  await Promise.all([
+    call(grant('first'), owner.token),
+    call(grant('first'), owner.token),
+  ])
+  expect((await accountRef(owner.uid).get()).get('permissionCount')).toBe(2)
+  expect((await accountRef(owner.uid).get()).get('mutationCount')).toBe(2)
+})
+
+test('a Firestore outage is retryable and never becomes an empty directory or a successful write', async () => {
+  const owner = await signedInUser('firestore-outage')
+  const outage = jest
+    .spyOn(getFirestore(), 'runTransaction')
+    .mockRejectedValueOnce(
+      Object.assign(new Error('Unavailable'), { code: 14 }),
+    )
+  try {
+    expect(await call({ action: 'catalog' }, owner.token)).toMatchObject({
+      status: 503,
+      body: { code: 'UNAVAILABLE', retryable: true },
+    })
+  } finally {
+    outage.mockRestore()
+  }
+  expect((await call({ action: 'catalog' }, owner.token)).status).toBe(200)
+  expect(
+    (
+      await getFirestore()
+        .collection('organizationPermissions')
+        .where('ownerUid', '==', owner.uid)
+        .get()
+    ).empty,
+  ).toBe(true)
+})
+
+test('missing or mismatched permission metadata fails closed, and deletion guards hide names before cleanup finishes', async () => {
+  const owner = await signedInUser('guarded-owner')
+  const viewer = await signedInUser('guarded-viewer')
+  await writeCatalog({
+    ...catalog,
+    organizations: [
+      ...catalog.organizations,
+      { ...catalog.organizations[0], id: 'guarded', name: 'Guarded rescue' },
+    ],
+  })
+  const code = await createInvite('guarded')
+  for (const [account, displayName] of [
+    [owner, 'Owner name'],
+    [viewer, 'Viewer name'],
+  ] as const) {
+    await call({ action: 'joinOrganization', code, displayName }, account.token)
+    await moderateMembership(account.uid, 'guarded', 'approve')
+  }
+  await call(grant('guarded'), owner.token)
+  const reference = permissionRef(owner.uid, 'guarded', 'sighting')
+  await reference.update({ 'permission.organizationId': 'second' })
+  expect(await currentPermission(reference.id, 'guarded')).toBeNull()
+  expect(
+    (
+      await call(
+        { action: 'sharedSightings', organizationId: 'guarded' },
+        viewer.token,
+      )
+    ).body,
+  ).toMatchObject({ sightings: [] })
+  await reference.update({ 'permission.organizationId': 'guarded' })
+  await stateRef(owner.uid, 'guarded').delete()
+  expect(await currentPermission(reference.id, 'guarded')).toBeNull()
+  await accountRef(owner.uid).set({ deleting: true }, { merge: true })
+  expect(
+    (
+      await call(
+        { action: 'organizationMembers', organizationId: 'guarded' },
+        viewer.token,
+      )
+    ).body,
+  ).toEqual({ members: [{ displayName: 'Viewer name' }], cursor: null })
+  expect(
+    (await call(grant('second', {}, 'blocked-during-erasure'), owner.token))
+      .status,
+  ).toBe(403)
+})
+
+test('Firestore cursors paginate organization shares and names without exposing private identifiers', async () => {
+  const owner = await signedInUser('paged-owner')
+  const viewer = await signedInUser('paged-viewer')
+  const organizationId = 'paged'
+  await writeCatalog({
+    ...catalog,
+    organizations: [
+      ...catalog.organizations,
+      { ...catalog.organizations[0], id: organizationId, name: 'Paged rescue' },
+    ],
+  })
+  const code = await createInvite(organizationId)
+  await call(
+    { action: 'joinOrganization', code, displayName: 'Viewer' },
+    viewer.token,
+  )
+  await moderateMembership(viewer.uid, organizationId, 'approve')
+  await call(grant(organizationId), owner.token)
+  const permission = (await call({ action: 'list' }, owner.token)).body!
+    .permissions[0]
+  const batch = getFirestore().batch()
+  for (let index = 0; index < 50; index++) {
+    const submissionId = `page-${index}`
+    batch.set(permissionRef(owner.uid, organizationId, submissionId), {
+      ownerUid: owner.uid,
+      organizationId,
+      submissionId,
+      permission: { ...permission, submissionId },
+    })
+  }
+  batch.set(accountRef(owner.uid), { permissionCount: 51 }, { merge: true })
+  const memberUids = Array.from(
+    { length: 100 },
+    (_, index) => `${fixtureId}-paged-${index}`,
+  )
+  for (const [index, uid] of memberUids.entries()) {
+    batch.set(accountRef(uid), { permissionCount: 0, mutationCount: 0 })
+    batch.set(membershipRef(uid, organizationId), {
+      ownerUid: uid,
+      organizationId,
+      displayName: `Member ${index}`,
+      status: 'active',
+    })
+  }
+  await batch.commit()
+  try {
+    const first = (
+      await call({ action: 'sharedSightings', organizationId }, viewer.token)
+    ).body as unknown as { sightings: { id: string }[]; cursor: string }
+    expect(first.sightings).toHaveLength(50)
+    expect(first.cursor).toMatch(/^[a-f0-9]{64}$/)
+    const second = (
+      await call(
+        { action: 'sharedSightings', organizationId, cursor: first.cursor },
+        viewer.token,
+      )
+    ).body as unknown as { sightings: { id: string }[]; cursor: null }
+    expect(second.sightings).toHaveLength(1)
+    expect(
+      new Set([...first.sightings, ...second.sightings].map((item) => item.id))
+        .size,
+    ).toBe(51)
+    expect(second.cursor).toBeNull()
+    const names = (
+      await call(
+        { action: 'organizationMembers', organizationId },
+        viewer.token,
+      )
+    ).body as unknown as { members: { displayName: string }[]; cursor: string }
+    expect(names.members).toHaveLength(100)
+    const more = (
+      await call(
+        { action: 'organizationMembers', organizationId, cursor: names.cursor },
+        viewer.token,
+      )
+    ).body as unknown as { members: { displayName: string }[]; cursor: null }
+    expect(more.members).toHaveLength(1)
+    expect(more.cursor).toBeNull()
+    for (const member of [...names.members, ...more.members])
+      expect(Object.keys(member)).toEqual(['displayName'])
+  } finally {
+    const cleanup = getFirestore().batch()
+    for (const uid of memberUids) {
+      cleanup.delete(accountRef(uid))
+      cleanup.delete(membershipRef(uid, organizationId))
+    }
+    await cleanup.commit()
+  }
 })
