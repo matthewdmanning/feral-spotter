@@ -405,6 +405,15 @@ export function offeredFields(
   return SHARING_FIELD_KEYS.filter((key) => fields[key])
 }
 
+export const SHARING_FIELD_LABELS: Record<keyof SharingFields, string> = {
+  name: 'Name',
+  email: 'Email',
+  phone: 'Phone',
+  catDetails: 'Cat details',
+  preciseLocation: 'Precise location',
+  photos: 'Photos',
+}
+
 export interface SharedSighting {
   id: string
   catCount: number
