@@ -1,18 +1,18 @@
-import { render, waitFor, userEvent } from '@testing-library/react-native'
+import { act, render, waitFor, userEvent } from '@testing-library/react-native'
 import React from 'react'
 import { router } from 'expo-router'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
-import type { PhotoSource } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import CreateSubmissionScreen from '@/src/features/draft-submission/screens/create/index'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
+import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
+import { observedCat } from '@/src/test-utils/catFixtures'
 
 /**
  * Model of the bottom "add more photos" action (#156): label and press
  * behavior are driven entirely by `usePhotoStore().source` (ADR 0002
  * amendment's single-source-by-construction field) — no new state needed.
- * Mirrors HomeScreen.photoSourceGate.model.test.tsx's mocking pattern for
- * the same reasons (persisted-store rehydration crashes react-test-renderer
- * in this setup).
+ * The photo and submission stores are real, seeded per test.
  */
 
 const mockPickFromLibrary = jest.fn()
@@ -52,47 +52,9 @@ jest.mock('@/src/core/location/liveFix', () => ({
   }),
 }))
 
-let mockSource: PhotoSource = 'camera'
-
 // Draft sync has its own tests (useDraftSync.*.test.ts); this suite covers the screen's wiring.
 jest.mock('@/src/features/draft-submission/hooks/useDraftSync', () => ({
   useDraftSync: () => undefined,
-}))
-
-jest.mock('@/src/features/draft-submission/hooks/usePhotoStore', () => ({
-  usePhotoStore: (sel: (s: { source: PhotoSource }) => unknown) =>
-    sel({ source: mockSource }),
-}))
-
-type Cat = {
-  local_id: string
-  age: string
-  pattern: string
-  hair_length: string
-}
-
-jest.mock('@/src/shared/hooks/useSubmissionStore', () => ({
-  useSubmissionStore: (
-    sel: (s: {
-      submission: { location_type: string; time_type: string }
-      cats: Cat[]
-      setSubmissionLocation: jest.Mock
-      setManualTime: jest.Mock
-    }) => unknown,
-  ) =>
-    sel({
-      submission: { location_type: 'device', time_type: 'device' },
-      cats: [
-        {
-          local_id: 'cat-1',
-          age: 'adult',
-          pattern: 'tabby',
-          hair_length: 'short',
-        },
-      ],
-      setSubmissionLocation: jest.fn(),
-      setManualTime: jest.fn(),
-    }),
 }))
 
 const sourceMachine = createMachine({
@@ -105,14 +67,13 @@ const sourceMachine = createMachine({
 })
 
 describe('Submission Details add-more-photos action — model-based test', () => {
-  let rerender: (ui: React.ReactElement) => void
   let getByText: Awaited<ReturnType<typeof render>>['getByText']
 
   beforeEach(async () => {
-    mockSource = 'camera'
+    usePhotoStore.setState({ source: 'camera' })
+    useSubmissionStore.setState({ cats: [observedCat()] })
     const result = await render(<CreateSubmissionScreen />)
     getByText = result.getByText
-    rerender = result.rerender
   })
 
   const model = createTestModel(sourceMachine)
@@ -134,12 +95,10 @@ describe('Submission Details add-more-photos action — model-based test', () =>
     },
     events: {
       SWITCH_TO_LIBRARY: async () => {
-        mockSource = 'library'
-        await rerender(<CreateSubmissionScreen />)
+        await act(() => usePhotoStore.setState({ source: 'library' }))
       },
       SWITCH_TO_CAMERA: async () => {
-        mockSource = 'camera'
-        await rerender(<CreateSubmissionScreen />)
+        await act(() => usePhotoStore.setState({ source: 'camera' }))
       },
     },
   }
