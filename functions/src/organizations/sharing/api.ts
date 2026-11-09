@@ -39,15 +39,13 @@ export async function sanitizePhoto(bytes: Buffer): Promise<Buffer> {
 }
 
 async function ledgerPage(cursor?: string) {
-  const [files, next] = await getStorage()
-    .bucket()
-    .getFiles({
-      prefix: 'organization-permissions/',
-      matchGlob: '**/ledger.json',
-      autoPaginate: false,
-      maxResults: 1,
-      pageToken: cursor,
-    })
+  const [files, next] = await getStorage().bucket().getFiles({
+    prefix: 'organization-permissions/',
+    matchGlob: '**/ledger.json',
+    autoPaginate: false,
+    maxResults: 1,
+    pageToken: cursor,
+  })
   return {
     files,
     cursor: (next as { pageToken?: string } | undefined)?.pageToken,
@@ -65,17 +63,36 @@ export function createSharingExtension(
     const organizationId = body.organizationId
     await assertAccess(authorize, identity.uid, organizationId)
     if (body.action === 'sharedSightings') {
+      // Numeric positions avoid exposing Storage cursors that can encode owner IDs.
       if (
         body.cursor !== undefined &&
-        (typeof body.cursor !== 'string' || body.cursor.length > 4096)
+        (typeof body.cursor !== 'string' ||
+          !/^\d{1,9}:\d{1,9}$/.test(body.cursor))
       )
         throw new RequestError(400, 'Invalid cursor')
-      const page = await ledgerPage(body.cursor as string | undefined)
+      let [fileIndex, permissionIndex] = String(body.cursor ?? '0:0')
+        .split(':')
+        .map(Number)
+      const [files] = await getStorage()
+        .bucket()
+        .getFiles({
+          prefix: 'organization-permissions/',
+          matchGlob: '**/ledger.json',
+        })
       const sightings = []
-      for (const file of page.files) {
-        const uid = file.name.split('/')[1]
+      let scanned = 0
+      while (
+        fileIndex < files.length &&
+        sightings.length < 50 &&
+        scanned++ < 25
+      ) {
+        const uid = files[fileIndex].name.split('/')[1]
         const ledger = (await readLedger(uid)).value
-        for (const permission of ledger.permissions) {
+        while (
+          permissionIndex < ledger.permissions.length &&
+          sightings.length < 50
+        ) {
+          const permission = ledger.permissions[permissionIndex++]
           if (
             permission.organizationId !== organizationId ||
             ledger.blockedOrganizations?.[organizationId]
@@ -84,9 +101,17 @@ export function createSharingExtension(
           const summary = sharedSighting(uid, permission)
           if (summary) sightings.push(summary)
         }
+        if (permissionIndex >= ledger.permissions.length) {
+          fileIndex++
+          permissionIndex = 0
+        }
       }
       await assertAccess(authorize, identity.uid, organizationId)
-      res.json({ sightings, cursor: page.cursor ?? null })
+      res.json({
+        sightings,
+        cursor:
+          fileIndex < files.length ? `${fileIndex}:${permissionIndex}` : null,
+      })
       return true
     }
     if (

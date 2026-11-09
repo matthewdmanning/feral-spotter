@@ -5,6 +5,8 @@ import {
   type SharingFields,
   type SharingSettings,
 } from '@/src/shared/types/Organizations'
+export { buildGrant } from '@/src/features/organizations/lib/permissions'
+export const FIELD_LABELS = SHARING_FIELD_LABELS
 
 export const FIELD_LABELS: Record<keyof SharingFields, string> = {
   name: 'Name',
