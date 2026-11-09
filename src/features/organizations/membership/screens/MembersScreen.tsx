@@ -33,7 +33,7 @@ export default function MembersScreen() {
         disabled={!query.uid || !query.online}
         loading={query.busy}
         onPress={() => {
-          void query.load()
+          void query.refresh()
         }}
       >
         Refresh members
@@ -54,7 +54,7 @@ export default function MembersScreen() {
         <AppButton
           disabled={query.busy}
           onPress={() => {
-            void query.load(query.cursor ?? undefined, true)
+            void query.loadMore()
           }}
         >
           Load more members
