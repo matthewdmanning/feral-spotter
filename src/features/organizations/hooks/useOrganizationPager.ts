@@ -1,7 +1,6 @@
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
-import { queryClient } from '@/src/shared/lib/queryClient'
 import {
   organizationRequest,
   organizationErrorMessage,
@@ -35,38 +34,35 @@ export function useOrganizationPager<T>({
     queryKey,
     !!uid && online && enabled && !!organizationId,
   )
-  const query = useInfiniteQuery(
-    {
-      queryKey,
-      enabled: visible,
-      gcTime: 0,
-      refetchInterval: 30000,
-      initialPageParam: undefined as string | undefined,
-      getNextPageParam: (page: Page<T>) => page.cursor ?? undefined,
-      queryFn: async ({ pageParam, signal }): Promise<Page<T>> => {
-        const response = await organizationRequest<Record<string, unknown>>(
-          {
-            action,
-            organizationId,
-            ...params,
-            ...(pageParam ? { cursor: pageParam } : {}),
-          },
-          uid,
-          { signal },
-        )
-        if (
-          !Array.isArray(response[itemsKey]) ||
-          (response.cursor != null && typeof response.cursor !== 'string')
-        )
-          throw new Error('Invalid collection response')
-        return {
-          items: response[itemsKey] as T[],
-          cursor: (response.cursor as string | null | undefined) ?? null,
-        }
-      },
+  const query = useInfiniteQuery({
+    queryKey,
+    enabled: visible,
+    gcTime: 0,
+    refetchInterval: 30000,
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (page: Page<T>) => page.cursor ?? undefined,
+    queryFn: async ({ pageParam, signal }): Promise<Page<T>> => {
+      const response = await organizationRequest<Record<string, unknown>>(
+        {
+          action,
+          organizationId,
+          ...params,
+          ...(pageParam ? { cursor: pageParam } : {}),
+        },
+        uid,
+        { signal },
+      )
+      if (
+        !Array.isArray(response[itemsKey]) ||
+        (response.cursor != null && typeof response.cursor !== 'string')
+      )
+        throw new Error('Invalid collection response')
+      return {
+        items: response[itemsKey] as T[],
+        cursor: (response.cursor as string | null | undefined) ?? null,
+      }
     },
-    queryClient,
-  )
+  })
   // Denied access clears loaded pages instead of showing them beside the error.
   const pages = visible && !query.isError ? (query.data?.pages ?? []) : []
   return {

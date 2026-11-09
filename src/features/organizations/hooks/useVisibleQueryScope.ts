@@ -2,10 +2,11 @@ import { useCallback, useEffect, useState } from 'react'
 import { AppState } from 'react-native'
 import { useFocusEffect } from 'expo-router'
 import type { QueryKey } from '@tanstack/react-query'
-import { queryClient } from '@/src/shared/lib/queryClient'
+import { useQueryClient } from '@tanstack/react-query'
 
 /** Organization data is memory-only: blur, backgrounding or unavailability drops it from the cache. */
 export function useVisibleQueryScope(queryKey: QueryKey, available: boolean) {
+  const queryClient = useQueryClient()
   const [focused, setFocused] = useState(false)
   useFocusEffect(
     useCallback(() => {
@@ -24,6 +25,6 @@ export function useVisibleQueryScope(queryKey: QueryKey, available: boolean) {
   useEffect(() => {
     if (!visible)
       queryClient.removeQueries({ queryKey: JSON.parse(key), exact: true })
-  }, [visible, key])
+  }, [queryClient, visible, key])
   return visible
 }
