@@ -114,7 +114,7 @@ export default function SharedSightingsScreen() {
       <AppButton
         onPress={() => {
           select(null)
-          void query.load()
+          void query.refresh()
         }}
         loading={query.busy}
         disabled={!query.online || !query.uid || !query.enabled}
@@ -145,7 +145,7 @@ export default function SharedSightingsScreen() {
         <AppButton
           disabled={query.busy}
           onPress={() => {
-            void query.load(query.cursor ?? undefined, true)
+            void query.loadMore()
           }}
         >
           Load more Sightings

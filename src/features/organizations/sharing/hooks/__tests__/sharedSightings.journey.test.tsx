@@ -18,7 +18,7 @@ function SharedView() {
       <TextButton
         disabled={query.busy}
         onPress={() => {
-          void query.load(query.cursor ?? undefined, true)
+          void query.loadMore()
         }}
       >
         More
@@ -26,7 +26,7 @@ function SharedView() {
       <TextButton
         disabled={query.busy}
         onPress={() => {
-          void query.load()
+          void query.refresh()
         }}
       >
         Refresh
