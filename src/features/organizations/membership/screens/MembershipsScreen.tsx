@@ -5,10 +5,11 @@ import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import { TextField } from '@/src/shared/ui/atoms/TextField'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import { TextButton } from '@/src/shared/ui/atoms/TextButton'
-import { styles } from '../../components/styles'
-import { styles as layout } from '../components/styles'
-import { useMemberships } from '../hooks/useMemberships'
-import { LeaveChoices } from '../components/LeaveChoices'
+import { useAuthStore } from '@/src/features/auth/lib/authStore'
+import { styles } from '@/src/features/organizations/components/styles'
+import { styles as layout } from '@/src/features/organizations/membership/components/styles'
+import { useMemberships } from '@/src/features/organizations/membership/hooks/useMemberships'
+import { LeaveChoices } from '@/src/features/organizations/membership/components/LeaveChoices'
 import type { MembershipSummary } from '@/functions/src/organizations/membership/domain'
 
 function MemberCard({
@@ -113,7 +114,7 @@ function MemberCard({
   )
 }
 
-export default function MembershipsScreen({
+function MembershipsForm({
   renderSharedAccess,
 }: {
   renderSharedAccess?: (organizationId: string) => ReactNode
@@ -204,4 +205,11 @@ export default function MembershipsScreen({
       )}
     </ScrollView>
   )
+}
+
+export default function MembershipsScreen(props: {
+  renderSharedAccess?: (organizationId: string) => ReactNode
+}) {
+  const uid = useAuthStore((s) => s.user?.uid)
+  return <MembershipsForm key={uid ?? 'signed-out'} {...props} />
 }
