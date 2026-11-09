@@ -64,6 +64,8 @@ Use the resources shipped with the installed version. Never hand-roll a mock, st
 | Google Sign-In        | The package's `jest/build/jest/setup.js`, already registered in `jest.config.js`.                                                                                                                                                                                                     |
 | Firebase rules        | [`@firebase/rules-unit-testing`](https://firebase.google.com/docs/rules/unit-tests), already used by `__tests__/rules/`; run through `npm run test:rules` with local emulators.                                                                                                       |
 | Zustand               | [Zustand's Jest recipe](https://zustand.docs.pmnd.rs/guides/testing) in `__mocks__/zustand.ts`; `jest.setup.js` resets every store to initial state after each test. Seed state in `beforeEach`.                                                                                      |
+| TanStack Query        | [TanStack's testing guide](https://tanstack.com/query/latest/docs/framework/react/guides/testing): a fresh client per test via `queryWrapper()` from `src/test-utils/queryClient.tsx`.                                                                                                |
+| HTTP (`fetch`)        | [MSW 2](https://mswjs.io/docs/api/setup-server) `setupServer` from `msw/node`, started in `jest.setup.js`. Stay on 2.x: MSW 3.0.3 hands requests to Expo's `fetch` polyfill unanswered under jest-expo (tried 2026-11-09).                                                            |
 
 ### When a narrow fake is justified
 
@@ -118,7 +120,7 @@ Shared fixtures live in `src/test-utils/`: `observedCat`, `submissionPhoto`, `se
 
 `jest.setup.js` gives `expo-crypto`'s `randomUUID` real unique ids (jest-expo's mock returns `undefined`). Don't re-mock the module; pin an id with `jest.mocked(randomUUID).mockReturnValue(...)`.
 
-HTTP: fake `fetch` with `jest.spyOn(globalThis, 'fetch')` (so `restoreMocks` undoes it) and return a real `Response`. Never assign `globalThis.fetch`. For the organizations function use `fakeOrganizationsService` (`src/test-utils/organizationsService.ts`): it checks URL, method and Bearer token like the real endpoint.
+HTTP: answer requests with an [MSW](https://mswjs.io/docs/api/setup-server) handler on the shared `server` (`src/test-utils/mswServer.ts`) via `server.use(...)`; `jest.setup.js` resets handlers after each test, and an unhandled request fails it. Don't stub or assign `globalThis.fetch`; a bare `jest.spyOn(globalThis, 'fetch')` to observe calls is fine. For the organizations function use `fakeOrganizationsService` (`src/test-utils/organizationsService.ts`): an MSW handler that answers 401 without a Bearer token, like the real endpoint.
 
 ### Type checking
 

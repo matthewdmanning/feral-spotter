@@ -45,6 +45,13 @@ beforeEach(async () => {
   mmkvInstance.clearAll()
 })
 
+// MSW intercepts fetch at the network boundary (mswjs.io/docs/api/setup-server).
+// Unhandled requests fail, so no test reaches a real host.
+const { server } = require('./src/test-utils/mswServer')
+beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
+afterEach(() => server.resetHandlers())
+afterAll(() => server.close())
+
 // Return every Zustand store to its initial state (__mocks__/zustand.ts).
 const { act } = require('react')
 afterEach(() => {

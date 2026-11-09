@@ -1,6 +1,11 @@
 import { authProvider } from '@/src/features/auth/lib'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
-import { fakeOrganizationsService } from '@/src/test-utils/organizationsService'
+import { http, HttpResponse } from 'msw'
+import {
+  fakeOrganizationsService,
+  ORGANIZATIONS_API_URL,
+} from '@/src/test-utils/organizationsService'
+import { server } from '@/src/test-utils/mswServer'
 import { organizationRequest } from '@/src/features/organizations/lib/api'
 
 beforeEach(async () => {
@@ -40,16 +45,28 @@ test('account switching during JSON parsing cannot publish another account’s r
   const parseStarted = new Promise<void>((resolve) => {
     parsing = resolve
   })
-  // A real Response parses at once; this one holds parsing open.
-  jest.spyOn(globalThis, 'fetch').mockResolvedValue({
-    ok: true,
-    json: () => {
-      parsing()
-      return new Promise((resolve) => {
-        complete = resolve
+  // The body arrives only when the test sends it, holding parsing open.
+  server.use(
+    http.post(ORGANIZATIONS_API_URL, () => {
+      const body = new ReadableStream<Uint8Array>(
+        {
+          pull(controller) {
+            parsing()
+            complete = (value) => {
+              controller.enqueue(
+                new TextEncoder().encode(JSON.stringify(value)),
+              )
+              controller.close()
+            }
+          },
+        },
+        { highWaterMark: 0 },
+      )
+      return new HttpResponse(body, {
+        headers: { 'Content-Type': 'application/json' },
       })
-    },
-  } as unknown as Response)
+    }),
+  )
   const request = organizationRequest({ action: 'memberships' }, 'owner')
   const rejected = expect(request).rejects.toMatchObject({ name: 'AbortError' })
   await parseStarted

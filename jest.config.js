@@ -1,5 +1,13 @@
+const expoPreset = require('jest-expo/jest-preset')
+
 module.exports = {
   preset: 'jest-expo',
+  // MSW's dependencies ship .mjs files, which jest-expo's Babel transform
+  // (\.[jt]sx?$) skips; run them through the same transform.
+  transform: {
+    ...expoPreset.transform,
+    '\\.mjs$': expoPreset.transform['\\.[jt]sx?$'],
+  },
   // Reanimated's resolver forces the web build of Reanimated and Worklets in
   // Jest (Reanimated 4.7 testing guide); it supersedes the Worklets-only one.
   resolver: 'react-native-reanimated/jest/resolver',
@@ -38,7 +46,9 @@ module.exports = {
   // @shopify/flash-list, which ships ES modules. Replacing
   // the option replaces the preset's whole list, so its entries are repeated.
   transformIgnorePatterns: [
-    '/node_modules/(?!(.pnpm|react-native|@react-native|@react-native-community|expo|@expo|@expo-google-fonts|react-navigation|@react-navigation|@sentry/react-native|native-base|standard-navigation|phosphor-react-native|@shopify/flash-list))',
+    // MSW and its ES-module dependencies, including copies nested under
+    // node_modules/msw/node_modules, are transformed too.
+    '^(?!.*/node_modules/msw/).*/node_modules/(?!(.pnpm|react-native|@react-native|@react-native-community|expo|@expo|@expo-google-fonts|react-navigation|@react-navigation|@sentry/react-native|native-base|standard-navigation|phosphor-react-native|@shopify/flash-list|msw|@msw|@mswjs|headers-polyfill|rettime|until-async|@open-draft))',
     '/node_modules/react-native-reanimated/plugin/',
     '/node_modules/@react-native/babel-preset/',
   ],
