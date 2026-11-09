@@ -9,13 +9,13 @@ import {
   EMPTY_ORGANIZATION_ACCOUNT,
 } from '@/src/features/organizations/hooks/useOrganizationSharingStore'
 import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
-import { FIELD_LABELS } from '@/src/features/organizations/lib/sharing'
+import { FIELD_LABELS } from '@/src/features/organizations/sharing/lib/sharing'
 import {
   SHARING_FIELD_KEYS,
   type SharingSettings as SharingConfiguration,
 } from '@/src/shared/types/Organizations'
 import { SharingCheckbox } from './SharingCheckbox'
-import { styles } from './styles'
+import { styles } from '../../components/styles'
 
 export function SharingSettings() {
   const { user } = useAuth()

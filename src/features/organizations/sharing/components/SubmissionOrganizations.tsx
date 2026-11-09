@@ -14,10 +14,10 @@ import {
   EMPTY_ORGANIZATION_ACCOUNT,
 } from '@/src/features/organizations/hooks/useOrganizationSharingStore'
 import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
-import { sharingSignature } from '@/src/features/organizations/lib/consent'
-import { includedSummary } from '@/src/features/organizations/lib/sharing'
+import { sharingSignature } from '@/src/features/organizations/sharing/lib/consent'
+import { includedSummary } from '@/src/features/organizations/sharing/lib/sharing'
 import { SharingCheckbox } from './SharingCheckbox'
-import { styles } from './styles'
+import { styles } from '../../components/styles'
 
 export function SubmissionOrganizations() {
   const { user } = useAuth()

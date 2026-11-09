@@ -43,7 +43,7 @@ import { fireAnalyticsEvent } from '@/src/features/draft-submission/lib/analytic
 import { authProvider } from '@/src/features/auth/lib'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { stopLocationCapture } from '@/src/core/location/liveFix'
-import { confirmedSharing } from '@/src/features/organizations/lib/consent'
+import { confirmedSharing } from '@/src/features/organizations/sharing/lib/consent'
 import {
   sendDraft,
   type ConfirmedSharing,

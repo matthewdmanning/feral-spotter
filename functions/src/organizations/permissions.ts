@@ -1,19 +1,10 @@
 import { createHash } from 'node:crypto'
-import type { Permission } from './domain'
+import type { Permission, SharedSighting } from './domain'
 import { RequestError } from './errors'
 
 /** Authorization is supplied by the composing feature, never inferred from consent. */
 export function requireOrganizationAccess(authorized: boolean): void {
   if (!authorized) throw new RequestError(403, 'Organization access denied')
-}
-
-export interface SharedSighting {
-  id: string
-  catCount: number
-  generalLocation: Permission['data']['generalLocation']
-  preciseLocation?: Permission['data']['preciseLocation']
-  cats?: Permission['data']['cats']
-  photoCount: number
 }
 
 export function sharedSighting(
