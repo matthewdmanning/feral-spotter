@@ -31,3 +31,9 @@ Android and iOS Metro/Hermes exports passed to `/tmp/feral-spotter-organizations
 - Separate follow-up branches: `feat/organization-membership-firestore` and `feat/organization-sharing-firestore`; combined implementation: `feat/organizations-firestore`. No live provisioning, deployment, or data migration was performed.
 
 The Firestore read model supersedes the earlier bucket-scan limitation. Pages query only the requested organization and batch owner-state checks within a consistent read transaction. Missing/mismatched permission metadata, stale epochs, revoked permissions, deleting owners, and inactive memberships cannot grant access. Photo reads pin the Storage generation and recheck authorization before returning bytes.
+
+## 2026-11-09 — refactor: greenfield organization backend
+
+**Purpose:** Follow the user's clarification that this project has no active users or existing data.
+**Change:** Removed the grant-builder compatibility re-export and moved callers to its canonical core location. Removed obsolete Storage-organization Rules tests; current Firestore permission and photo authorization coverage remains.
+**Verification:** Full client suite: 120 suites / 550 tests. Functions: 8 suites / 65 tests. Type checks and focused lint pass. Organization integration: 23 emulator scenarios; Rules: 24 tests. No deployment or device check. Earlier migration descriptions above record superseded implementation history.

@@ -12,7 +12,7 @@ import { useOrganizationSharingStore } from '@/src/features/organizations/hooks/
 import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
-import { buildGrant } from '@/src/features/organizations/sharing/lib/sharing'
+import { buildGrant } from '@/src/features/organizations/lib/permissions'
 import { DEFAULT_SHARING } from '@/src/shared/types/Organizations'
 import { fakeOrganizationsService } from '@/src/test-utils/organizationsService'
 

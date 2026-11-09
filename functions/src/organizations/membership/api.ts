@@ -1,17 +1,10 @@
 import type { OrganizationExtension } from '../api'
-import { readCatalog, readLedger } from '../api'
+import { readCatalog, readLedger, readOrganization } from '../store'
 import { validId } from '../domain'
 import { RequestError } from '../errors'
 import { requireOrganizationAccess } from '../permissions'
-import {
-  activeOrganization,
-  isActiveMember,
-  joinOrganization,
-  leaveOrganization,
-  readMemberships,
-  renameMember,
-  roster,
-} from './service'
+import { joinOrganization, leaveOrganization, renameMember } from './service'
+import { isActiveMember, readMemberships, roster } from './store'
 import type { LeaveChoice, MembershipList } from './domain'
 
 async function list(uid: string): Promise<MembershipList> {
@@ -52,7 +45,7 @@ export const membershipExtension: OrganizationExtension = async (
     res.json({
       ...(await list(uid)),
       ...(body.includePermissions === true
-        ? { ledger: (await readLedger(uid)).value }
+        ? { ledger: await readLedger(uid) }
         : {}),
     })
     return true
@@ -66,7 +59,7 @@ export const membershipExtension: OrganizationExtension = async (
     throw new RequestError(400, 'Invalid organization')
   const organizationId = body.organizationId
   if (body.action === 'organizationMembers') {
-    await activeOrganization(organizationId)
+    await readOrganization(organizationId)
     requireOrganizationAccess(await isActiveMember(uid, organizationId))
     const page = await roster(organizationId, body.cursor)
     requireOrganizationAccess(await isActiveMember(uid, organizationId))
@@ -80,8 +73,8 @@ export const membershipExtension: OrganizationExtension = async (
     requireOrganizationAccess(
       !!member && ['active', 'pending'].includes(member.status) && !member.exit,
     )
-    const { catalog } = await activeOrganization(organizationId)
-    const ledger = (await readLedger(uid)).value
+    const { catalog } = await readOrganization(organizationId)
+    const ledger = await readLedger(uid)
     res.json({
       catalogVersion: catalog.version,
       epoch: ledger.epochs[organizationId] ?? 0,
@@ -110,7 +103,7 @@ export const membershipExtension: OrganizationExtension = async (
   res.json({
     ...(await list(uid)),
     ...(['leaveOrganization', 'resumeLeaving'].includes(String(body.action))
-      ? { ledger: (await readLedger(uid)).value }
+      ? { ledger: await readLedger(uid) }
       : {}),
   })
   return true

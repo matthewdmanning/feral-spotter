@@ -3,8 +3,6 @@ import {
   SHARING_FIELD_LABELS,
   type SharingSettings,
 } from '@/src/shared/types/Organizations'
-export { buildGrant } from '@/src/features/organizations/lib/permissions'
-export const FIELD_LABELS = SHARING_FIELD_LABELS
 
 export const FALLBACK_ORGANIZATION_NAME = 'Selected organization'
 
@@ -16,6 +14,8 @@ export function includedSummary(
   return [
     'cat count',
     'approximate area',
-    ...offeredFields(settings, anonymous).map((key) => FIELD_LABELS[key]),
+    ...offeredFields(settings, anonymous).map(
+      (key) => SHARING_FIELD_LABELS[key],
+    ),
   ].join(', ')
 }

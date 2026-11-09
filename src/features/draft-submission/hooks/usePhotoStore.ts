@@ -29,7 +29,7 @@ interface PhotoState {
   submissionId: string | null
   // Epoch ms of the last pool change. Drives the start-up expiry and whether
   // the draft counts as restored from an earlier session. null while the pool
-  // is empty, and for a pool persisted before this field existed.
+  // is empty.
   updated_at: number | null
   // Slots this draft has uploaded into. A freed slot is reused only when no
   // fresh one is left: an upload still running for a removed photo could
@@ -161,22 +161,6 @@ export const usePhotoStore = create<PhotoState>()(
       onRehydrateStorage: () => (state) => {
         if (state && state.photos.length === 0 && state.source !== null) {
           usePhotoStore.setState({ source: null })
-        }
-        // A pool saved before slots existed: give its photos slots so
-        // their uploads can still pass storage.rules.
-        if (state && state.photos.some((p) => p.upload_slot == null)) {
-          const kept = state.photos.filter((p) => p.upload_slot != null)
-          const slotted = assignSlots(
-            kept,
-            state.usedSlots ?? [],
-            state.photos.filter((p) => p.upload_slot == null),
-          )
-          usePhotoStore.setState({
-            photos: state.photos.map(
-              (p) => slotted.photos.find((s) => s.local_id === p.local_id) ?? p,
-            ),
-            usedSlots: slotted.usedSlots,
-          })
         }
       },
     },

@@ -5,7 +5,7 @@ import { initializeApp, deleteApp, type App } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 import { getStorage } from 'firebase-admin/storage'
 import { handleOrganizationsRequest } from '../api'
-import { membershipRef } from '../membership/store'
+import { membershipRef, readMemberships } from '../membership/store'
 import { organizationFeatures } from '../features'
 import sharp from 'sharp'
 import { getFirestore, Transaction } from 'firebase-admin/firestore'
@@ -17,11 +17,7 @@ import {
   currentPermission,
   eraseOrganizationData,
 } from '../store'
-import {
-  createInvite,
-  moderateMembership,
-  readMemberships,
-} from '../membership/service'
+import { createInvite, moderateMembership } from '../membership/service'
 import {
   DEFAULT_SHARING,
   type Catalog,
@@ -33,7 +29,6 @@ let app: App
 let server: Server
 let apiUrl: string
 const fixtureId = `org-emulator-${process.pid}-${Date.now()}`
-const catalogPath = `organizations/${fixtureId}.json`
 const createdUids: string[] = []
 const square = {
   type: 'Polygon' as const,
@@ -69,10 +64,6 @@ function requireLoopback(name: string, protocol = 'http://'): string {
 }
 const bucket = () => getStorage().bucket()
 async function save(path: string, value: unknown) {
-  if (path === catalogPath) {
-    await writeCatalog(value as Catalog)
-    return
-  }
   await bucket().file(path).save(JSON.stringify(value), {
     resumable: false,
     contentType: 'application/json',

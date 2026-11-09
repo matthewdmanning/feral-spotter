@@ -13,7 +13,7 @@ export interface LeaveChoice {
 }
 export interface Membership {
   organizationId: string
-  requestId?: string
+  requestId: string
   displayName: string
   status: MembershipStatus
   /** Durable checkpoint: retries finish the same permission change. Never returned in roster reads. */

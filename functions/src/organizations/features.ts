@@ -1,7 +1,7 @@
 import { onRequest } from 'firebase-functions/v2/https'
 import { handleOrganizationsRequest, type OrganizationExtension } from './api'
 import { createSharingExtension } from './sharing/api'
-import { isActiveMember } from './membership/service'
+import { isActiveMember } from './membership/store'
 import { membershipExtension } from './membership/api'
 
 /** Feature wiring only: core permission stores never import membership. */
