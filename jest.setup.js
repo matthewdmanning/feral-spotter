@@ -11,6 +11,14 @@ jest.mock('react-native-worklets', () => ({
   getUIRuntimeHolder: () => undefined,
 }))
 
+// jest-expo's expo-crypto mock returns undefined from randomUUID; ids must be
+// unique. Keep the other real exports. A test needing a fixed id sets it with
+// jest.mocked(randomUUID).mockReturnValue(...).
+jest.mock('expo-crypto', () => ({
+  ...jest.requireActual('expo-crypto'),
+  randomUUID: jest.fn(() => require('node:crypto').randomUUID()),
+}))
+
 // Use the library's mock so real styles resolve against real app tokens.
 require('react-native-unistyles/mocks')
 

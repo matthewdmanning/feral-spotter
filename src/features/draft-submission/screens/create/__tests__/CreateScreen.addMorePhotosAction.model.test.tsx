@@ -28,8 +28,6 @@ jest.mock('expo-router', () => ({
   },
 }))
 
-jest.mock('expo-crypto', () => ({ randomUUID: jest.fn(() => 'sub-1') }))
-
 jest.mock('@/src/shared/lib/submissionCache', () => ({
   createSubmissionCache: jest.fn().mockResolvedValue({}),
   getCurrentCacheId: jest.fn().mockResolvedValue('cache-1'),
