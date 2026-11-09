@@ -3,7 +3,7 @@ import {
   SHARING_FIELD_LABELS,
   type SharingSettings,
 } from '@/src/shared/types/Organizations'
-export { buildGrant } from '../../lib/permissions'
+export { buildGrant } from '@/src/features/organizations/lib/permissions'
 export const FIELD_LABELS = SHARING_FIELD_LABELS
 
 export const FALLBACK_ORGANIZATION_NAME = 'Selected organization'

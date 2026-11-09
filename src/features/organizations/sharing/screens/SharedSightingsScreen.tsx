@@ -4,14 +4,14 @@ import { Image } from 'expo-image'
 import { useLocalSearchParams, Stack } from 'expo-router'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import { TextButton } from '@/src/shared/ui/atoms/TextButton'
-import { organizationRequest } from '../../lib/api'
-import { styles } from '../../components/styles'
-import { styles as layout } from '../components/styles'
+import { organizationRequest } from '@/src/features/organizations/lib/api'
+import { styles } from '@/src/features/organizations/components/styles'
+import { styles as layout } from '@/src/features/organizations/sharing/components/styles'
 import {
   useSharedSightings,
   type SharedSighting,
-} from '../hooks/useSharedSightings'
-import { SharedSightingsMap } from '../components/SharedSightingsMap'
+} from '@/src/features/organizations/sharing/hooks/useSharedSightings'
+import { SharedSightingsMap } from '@/src/features/organizations/sharing/components/SharedSightingsMap'
 
 function SharedPhoto({
   uid,
@@ -61,6 +61,7 @@ export default function SharedSightingsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const query = useSharedSightings(id)
   const [selectedId, select] = useState<string | null>(null)
+  const uid = query.uid
   const selected = query.sightings.find((s) => s.id === selectedId)
   return (
     <ScrollView contentContainerStyle={layout.content}>
@@ -107,7 +108,7 @@ export default function SharedSightingsScreen() {
         <AppButton
           disabled={query.busy}
           onPress={() => {
-            void query.load(query.cursor!, true)
+            void query.load(query.cursor ?? undefined, true)
           }}
         >
           Load more Sightings
@@ -128,11 +129,11 @@ export default function SharedSightingsScreen() {
                 .join(' · ')}
             </Text>
           ))}
-          {query.uid &&
+          {uid &&
             Array.from({ length: selected.photoCount }, (_, index) => (
               <SharedPhoto
                 key={`${query.uid}-${selected.id}-${index}`}
-                uid={query.uid!}
+                uid={uid}
                 organizationId={id}
                 sighting={selected}
                 index={index}

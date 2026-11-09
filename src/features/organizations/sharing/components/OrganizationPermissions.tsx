@@ -16,7 +16,7 @@ import {
   FALLBACK_ORGANIZATION_NAME,
   includedSummary,
 } from '@/src/features/organizations/sharing/lib/sharing'
-import { styles } from '../../components/styles'
+import { styles } from '@/src/features/organizations/components/styles'
 
 function reviewMessage({ grant, organizationName }: ReviewedGrant): string {
   const contact = [
