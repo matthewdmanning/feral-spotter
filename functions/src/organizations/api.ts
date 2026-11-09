@@ -47,7 +47,7 @@ const publicLedger = ({ epochs, permissions }: PermissionLedger) => ({
   permissions,
 })
 
-async function readCatalog(): Promise<Catalog> {
+export async function readCatalog(): Promise<Catalog> {
   try {
     const [bytes] = await bucket().file(CATALOG_PATH.value()).download()
     return parseCatalog(JSON.parse(bytes.toString()))
@@ -57,7 +57,7 @@ async function readCatalog(): Promise<Catalog> {
     throw error
   }
 }
-async function readLedger(
+export async function readLedger(
   uid: string,
 ): Promise<{ value: StoredLedger; generation: number }> {
   const path = ledgerPath(uid)
@@ -72,7 +72,7 @@ async function readLedger(
   }
 }
 /** Compare-and-swap on the ledger generation. A replayed mutation ID is answered without rebuilding it. */
-async function updateLedger(
+export async function updateLedger(
   uid: string,
   id: string,
   build: () => Promise<LedgerMutation>,
@@ -108,7 +108,7 @@ async function updateLedger(
   }
   throw new Error('Concurrent update; retry')
 }
-function validateGrant(input: unknown): GrantRequest {
+export function validateGrant(input: unknown): GrantRequest {
   const request = input as GrantRequest
   if (
     !request ||
@@ -168,7 +168,7 @@ async function readSubmission(uid: string, submissionId: string) {
     throw new RequestError(400, 'Invalid submitted sighting')
   return metadata
 }
-async function makePermission(
+export async function makePermission(
   uid: string,
   email: string | undefined,
   request: GrantRequest,
@@ -240,10 +240,17 @@ function parseMutation(
     return async () => ({ type: 'revokeOrganization', organizationId })
   throw new RequestError(400, 'Invalid action')
 }
+export type OrganizationExtension = (
+  identity: import('firebase-admin/auth').DecodedIdToken,
+  body: Record<string, unknown>,
+  res: Response,
+) => Promise<boolean>
+
 /** Owner-only catalog/consent API. No endpoint grants organizations access to app data. */
 export async function handleOrganizationsRequest(
   req: Pick<Request, 'method' | 'body' | 'header'>,
   res: Response,
+  extension?: OrganizationExtension,
 ): Promise<void> {
   res.set('Cache-Control', 'no-store')
   if (req.method !== 'POST') {
@@ -264,6 +271,7 @@ export async function handleOrganizationsRequest(
   }
   try {
     const body = (req.body ?? {}) as Record<string, unknown>
+    if (extension && (await extension(identity, body, res))) return
     if (body.action === 'catalog') {
       const radius = Number(CACHE_RADIUS_KM.value())
       res.json({

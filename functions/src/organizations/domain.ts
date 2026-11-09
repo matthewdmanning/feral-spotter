@@ -81,6 +81,7 @@ export interface Permission {
   }
 }
 export interface PermissionLedger {
+  blockedOrganizations?: Record<string, string>
   revokedPairs?: string[]
   epochs: Record<string, number>
   permissions: Permission[]
