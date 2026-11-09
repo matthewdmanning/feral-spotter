@@ -44,7 +44,11 @@ export default function MembersScreen() {
         </Text>
       ))}
       {query.loaded && !query.busy && !query.error && !query.items.length && (
-        <Text style={styles.body}>No members to display.</Text>
+        <Text style={styles.body}>
+          {query.cursor
+            ? 'No members on this page. Load more to continue.'
+            : 'No members to display.'}
+        </Text>
       )}
       {!!query.cursor && (
         <AppButton

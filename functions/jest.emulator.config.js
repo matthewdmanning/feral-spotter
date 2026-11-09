@@ -1,4 +1,4 @@
-// Separate lane: these tests require loopback Auth and Storage emulators.
+// Separate lane: these tests require loopback Auth, Firestore, and Storage emulators.
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',

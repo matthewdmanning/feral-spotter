@@ -70,7 +70,7 @@ third, fully-offline mode for UI work. They skip Firebase entirely, so
 they can never verify rules or real Auth/Storage behavior — don't reach
 for them when the backend is what's under test.
 
-## Where a Node-side Auth/Storage test goes
+## Where a Node-side Auth/Storage/Firestore test goes
 
 Use the existing lane — don't invent a second one:
 `@firebase/rules-unit-testing` + `jest.rules.config.js` (plain-Node
@@ -103,10 +103,7 @@ MCP resources:
 - `firebase://guides/init/auth`
 - `firebase://guides/app_id`
 
-Skills — only these, filtered mechanically by one rule: the skill's
-frontmatter `description` does not mention Firestore. Re-run that check
-against the installed skill's `description` before adding any new one to
-this list; don't add by name/topic judgment:
+For Storage/Auth work, the previously approved skills are listed below. Firestore schema, query, index, and Rules guidance is allowed for organization work under ADR-0008; it does not authorize migrating Submission storage or upload limits.
 
 - `firebase:extension-to-functions-codebase`
 - `firebase:firebase-ai-logic-basics`
@@ -119,5 +116,4 @@ this list; don't add by name/topic judgment:
 - `firebase:firebase-remote-config-basics`
 - `firebase:xcode-project-setup`
 
-The prior Firestore skill prohibition is superseded for organization work. No Firestore skill is installed in this session. The existing restriction on
-`firebase:firebase-security-rules-auditor` remains for unrelated Storage-only work.
+The prior project-wide Firestore skill prohibition is superseded for organization work only.
