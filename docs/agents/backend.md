@@ -90,9 +90,9 @@ checks), see [test-driving.md](test-driving.md).
 
 ## Organization Firestore boundary
 
-The user explicitly authorized Firestore for organization data on 2026-11-09, superseding the previous project-wide prohibition for this scope. See ADR-0008. The authenticated Functions API is the only client entrypoint. Firestore Rules deny direct access, including membership/role writes. Server transactions enforce ownership, deletion guards, epochs, and idempotency; feature adapters supply member authorization.
+Firestore stores organization data under ADR-0008. The authenticated Functions API is the only client entrypoint. Firestore Rules deny direct access, including membership/role writes. Server transactions enforce ownership, deletion guards, epochs, and idempotency; feature adapters supply member authorization.
 
-Firestore joins the local Auth/Storage emulator lane on port 8080. Never silently fall back to Storage or a live database when Firestore is unavailable. Organization schema, indexes, and fresh setup instructions live in the implementation note and saved spec.
+Firestore joins the local Auth/Storage emulator lane on port 8080. Use the configured local emulators for verification; an unavailable Firestore service returns a retryable error. Organization schema, indexes, and fresh setup instructions live in the implementation note and saved spec.
 
 ## Approved resources
 
@@ -103,7 +103,7 @@ MCP resources:
 - `firebase://guides/init/auth`
 - `firebase://guides/app_id`
 
-For Storage/Auth work, the previously approved skills are listed below. Firestore schema, query, index, and Rules guidance is allowed for organization work under ADR-0008; it does not authorize migrating Submission storage or upload limits.
+For Storage/Auth work, the previously approved skills are listed below. Firestore schema, query, index, and Rules guidance is allowed for organization work under ADR-0008; Submission files and upload limits follow ADR-0005.
 
 - `firebase:extension-to-functions-codebase`
 - `firebase:firebase-ai-logic-basics`
@@ -116,4 +116,4 @@ For Storage/Auth work, the previously approved skills are listed below. Firestor
 - `firebase:firebase-remote-config-basics`
 - `firebase:xcode-project-setup`
 
-The prior project-wide Firestore skill prohibition is superseded for organization work only.
+Firestore guidance applies to the organization backend.

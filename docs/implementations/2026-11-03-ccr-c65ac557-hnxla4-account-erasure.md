@@ -2,7 +2,7 @@
 
 ## What shipped
 
-- `functions/src/erasure/eraseAccount.ts`: `eraseAccount({ uid, email, deleteSightings }, ports)`, ordered email → analytics → Sightings (only if `deleteSightings`) → Auth user. Ports: `EmailListProvider`, `AnalyticsEraser`, `SubmissionStore`, `AccountStore`.
+- `functions/src/erasure/eraseAccount.ts`: `eraseAccount({ uid, email, deleteSightings }, ports)`, ordered email → analytics → organization data → Sightings (only if `deleteSightings`) → Auth user. Ports: `EmailListProvider`, `AnalyticsEraser`, `SubmissionStore`, `AccountStore`.
 - `functions/src/erasure/adapters.ts`: PostHog bulk delete by distinct id with events and recordings; Storage delete of the uid's folder (trailing-slash prefix); Auth delete treating "user not found" as done.
 - `functions/src/erasure/deleteAccount.ts` + `deleteAccount` callable in `index.ts`: uid and email from the token; refuses without a sign-in in the last 5 minutes. PostHog host, project and key come from deployment parameters (`POSTHOG_HOST`, `POSTHOG_PROJECT_ID`, secret `POSTHOG_PERSONAL_API_KEY`).
 - `EmailListProvider.remove()`; EmailOctopus "Delete contact" by MD5 of the lowercase address.
@@ -23,10 +23,8 @@ API facts were read from the EmailOctopus v2 and PostHog persons docs via Contex
 
 `functions` tsc and jest (32 passed). Nothing deployed or called against a live service.
 
-## 2026-11-07 — fix: erase organization permission snapshots
+## Organization data erasure
 
-**Purpose:** Prevent organization ledgers containing personal and Sighting data from surviving account erasure.
+Firestore account-deletion guards immediately hide organization names and shares and prevent new writes. Cleanup removes memberships, permission snapshots, receipts, and transition data for either Sighting-deletion choice. Optional Sighting deletion follows, and Auth deletion runs last. A failed cleanup leaves Auth available for retry.
 
-**Change:** Delete `organization-permissions/{uid}/` for both values of `deleteSightings`, before the optional Sighting deletion and final Auth deletion. A failed permission cleanup leaves Auth available for a retry. See [the Organizations fix note](2026-11-07-feat-organizations.md#2026-11-07--fix-consent-races-account-erasure-and-outbox-progress) for the related consent and synchronization fixes.
-
-**Verification:** The erasure regression covers both deletion choices and prevents Auth deletion when ledger cleanup fails; the Storage adapter regression checks the exact uid prefix on retries. The full Functions suite passes (7 suites / 62 tests), as do its TypeScript build and formatting checks. No live erasure or deployment was performed.
+See [organization permissions and erasure](2026-11-07-feat-organizations.md#permissions-and-erasure). Integration tests cover deletion guards and retry behavior; adapter tests verify Firestore cleanup on each attempt. No live erasure or deployment was performed.
