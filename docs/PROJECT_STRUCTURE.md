@@ -109,4 +109,5 @@ runner. Report a Swift change as "needs test drive", never as verified.
 
 - `sharing/{components,hooks,lib,screens}/`: consent controls, sharing workflows, shared-Sighting map/details, and authenticated photo delivery.
 - `membership/{components,hooks,lib,screens}/`: invite requests, approval status, names-only roster, and leaving. Uses core permission operations without importing sharing.
+- `interactions/{components,hooks}/`: comments and emoji reactions on a shared pin. Imports neither membership nor sharing; its server module receives a "may view this pin" check from the composition root.
 - `functions/src/organizations/features.ts` and app routes compose the optional features. Active membership authorizes shared reads; consent still limits the returned data. Membership works with sharing disabled.

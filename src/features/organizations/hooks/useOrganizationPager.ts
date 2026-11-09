@@ -19,15 +19,18 @@ export function useOrganizationPager<T>({
   organizationId,
   itemsKey,
   enabled = true,
+  params,
 }: {
   action: string
   organizationId: string
   itemsKey: string
   enabled?: boolean
+  /** Extra request fields that select the collection, such as a pin id. */
+  params?: Record<string, string>
 }) {
   const uid = useAuthStore((s) => s.user?.uid)
   const online = useUIStore((s) => s.isOnline)
-  const queryKey = ['organizations', uid, organizationId, action]
+  const queryKey = ['organizations', uid, organizationId, action, params ?? {}]
   const visible = useVisibleQueryScope(
     queryKey,
     !!uid && online && enabled && !!organizationId,
@@ -45,6 +48,7 @@ export function useOrganizationPager<T>({
           {
             action,
             organizationId,
+            ...params,
             ...(pageParam ? { cursor: pageParam } : {}),
           },
           uid,

@@ -17,6 +17,7 @@ import {
   type SharedSighting,
 } from '@/src/features/organizations/sharing/hooks/useSharedSightings'
 import { SharedSightingsMap } from '@/src/features/organizations/sharing/components/SharedSightingsMap'
+import { PinInteractions } from '@/src/features/organizations/interactions/components/PinInteractions'
 
 function SharedPhoto({
   uid,
@@ -176,6 +177,11 @@ export default function SharedSightingsScreen() {
                 index={index}
               />
             ))}
+          <PinInteractions
+            key={selected.id}
+            organizationId={id}
+            pinId={selected.id}
+          />
         </View>
       )}
     </ScrollView>

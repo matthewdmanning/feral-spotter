@@ -15,6 +15,14 @@
         { "fieldPath": "organizationId", "order": "ASCENDING" },
         { "fieldPath": "status", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "pinComments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "pinId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": [
@@ -31,6 +39,11 @@
     {
       "collectionGroup": "organizationMemberships",
       "fieldPath": "exit",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pinComments",
+      "fieldPath": "body",
       "indexes": []
     }
   ]
