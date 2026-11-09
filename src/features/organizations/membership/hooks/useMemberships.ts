@@ -3,8 +3,11 @@ import { AppState } from 'react-native'
 import { useFocusEffect } from 'expo-router'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
-import { organizationRequest, OrganizationSyncError } from '../../lib/api'
-import { useOrganizationSharingStore } from '../../hooks/useOrganizationSharingStore'
+import {
+  organizationRequest,
+  OrganizationSyncError,
+} from '@/src/features/organizations/lib/api'
+import { useOrganizationSharingStore } from '@/src/features/organizations/hooks/useOrganizationSharingStore'
 import type { MembershipList } from '@/functions/src/organizations/membership/domain'
 
 export function useMemberships() {

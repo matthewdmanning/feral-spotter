@@ -16,3 +16,11 @@ Build Functions, configure Application Default Credentials, explicitly set `GCS_
 ## Verification
 
 Client leave-control tests pass (2 cases); app/test/server type checks and Functions build pass. Real HTTP/Auth/Storage emulator journeys pass for approval, roster privacy, default unsharing, changed retained consent, invalid review recovery, and removal (16 total scenarios at initial verification). Final integration verification is recorded separately. No deployment or physical-device check.
+
+## Integrated verification
+
+Full client suite: 119 suites / 550 tests. Functions: 9 suites / 66 tests. Real HTTP/Auth/Storage organization integration: 19 scenarios, including failure checkpoints, reused leave IDs, roster privacy, shared reads, photo sanitation, and revocation. Storage Rules: 24 tests, including denial of direct membership and invite access. App/server/test TypeScript checks, Functions build, and focused client ESLint pass.
+
+Membership and sharing were developed on separate branches and composed on `feat/organizations-integration`. The spec is saved under `docs/planning/`. No live deployment, operator actions, or physical-device checks were performed.
+
+`membership/screens/__tests__/membership.journey.test.tsx` verifies joining, approval refresh, name editing with sharing off, and account isolation. Leave-control tests verify default unsharing and mandatory re-review after field changes.
