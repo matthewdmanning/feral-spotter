@@ -1,7 +1,7 @@
 import { Platform, View } from 'react-native'
 import { AppleMaps, GoogleMaps } from 'expo-maps'
 import { useUnistyles } from 'react-native-unistyles'
-import type { SharedSighting } from '../hooks/useSharedSightings'
+import type { SharedSighting } from '@/src/features/organizations/sharing/hooks/useSharedSightings'
 import { styles } from './styles'
 
 export function SharedSightingsMap({
@@ -14,13 +14,17 @@ export function SharedSightingsMap({
   const { theme } = useUnistyles()
   if (!sightings.length || (Platform.OS !== 'ios' && Platform.OS !== 'android'))
     return null
-  const markers = sightings
-    .filter((s) => s.preciseLocation)
-    .map((s) => ({
-      id: s.id,
-      coordinates: s.preciseLocation!,
-      title: `${s.catCount} cats`,
-    }))
+  const markers = sightings.flatMap((s) =>
+    s.preciseLocation
+      ? [
+          {
+            id: s.id,
+            coordinates: s.preciseLocation,
+            title: `${s.catCount} cats`,
+          },
+        ]
+      : [],
+  )
   const polygons = sightings
     .filter((s) => !s.preciseLocation)
     .map((s) => {
