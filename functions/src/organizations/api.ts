@@ -8,106 +8,28 @@ import {
   covers,
   DEFAULT_CACHE_RADIUS_KM,
   effectiveSharingSettings,
-  parseCatalog,
   projectData,
   SHARING_FIELD_KEYS,
   validId,
   validLocation,
-  type Catalog,
   type GrantRequest,
   type Permission,
   type PermissionLedger,
 } from './domain'
-import { mutateLedger, type LedgerMutation } from './ledger'
+import type { LedgerMutation } from './ledger'
+import { readCatalog, readLedger, updateLedger } from './store'
 import { errorCode, RequestError } from './errors'
 
-const CATALOG_PATH = defineString('ORGANIZATIONS_CATALOG_PATH', {
-  default: 'organizations/catalog.json',
-})
 const CACHE_RADIUS_KM = defineString('ORGANIZATIONS_CACHE_RADIUS_KM', {
   default: String(DEFAULT_CACHE_RADIUS_KM),
 })
-const MAX_PERMISSIONS = 5000
-const MAX_APPLIED_MUTATIONS = 20000
-const LEDGER_WRITE_ATTEMPTS = 6
-
-interface StoredLedger extends PermissionLedger {
-  applied: string[]
-}
-const emptyLedger = (): StoredLedger => ({
-  epochs: {},
-  permissions: [],
-  applied: [],
-})
-const ledgerPath = (uid: string) =>
-  `organization-permissions/${uid}/ledger.json`
 const bucket = () => getStorage().bucket()
 const publicLedger = ({ epochs, permissions }: PermissionLedger) => ({
   epochs,
   permissions,
 })
+export { readCatalog, readLedger, updateLedger } from './store'
 
-export async function readCatalog(): Promise<Catalog> {
-  try {
-    const [bytes] = await bucket().file(CATALOG_PATH.value()).download()
-    return parseCatalog(JSON.parse(bytes.toString()))
-  } catch (error) {
-    if (errorCode(error) === 404)
-      return { version: 'empty-v1', organizations: [] }
-    throw error
-  }
-}
-export async function readLedger(
-  uid: string,
-): Promise<{ value: StoredLedger; generation: number }> {
-  const path = ledgerPath(uid)
-  try {
-    const [metadata] = await bucket().file(path).getMetadata()
-    const generation = Number(metadata.generation)
-    const [bytes] = await bucket().file(path, { generation }).download()
-    return { value: JSON.parse(bytes.toString()) as StoredLedger, generation }
-  } catch (error) {
-    if (errorCode(error) === 404) return { value: emptyLedger(), generation: 0 }
-    throw error
-  }
-}
-/** Compare-and-swap on the ledger generation. A replayed mutation ID is answered without rebuilding it. */
-export async function updateLedger(
-  uid: string,
-  id: string,
-  build: () => Promise<LedgerMutation>,
-): Promise<PermissionLedger> {
-  let mutation: LedgerMutation | undefined
-  for (let attempt = 0; attempt < LEDGER_WRITE_ATTEMPTS; attempt++) {
-    const { value, generation } = await readLedger(uid)
-    if (value.applied.includes(id)) return value
-    mutation ??= await build()
-    const next = {
-      ...mutateLedger(value, mutation, new Date().toISOString()),
-      applied: [...value.applied, id],
-    }
-    // Bound one user's ledger independently of the upload cap; revocations stay available.
-    if (
-      mutation.type === 'grant' &&
-      (next.permissions.length > MAX_PERMISSIONS ||
-        next.applied.length > MAX_APPLIED_MUTATIONS)
-    )
-      throw new RequestError(429, 'Permission limit reached')
-    try {
-      await bucket()
-        .file(ledgerPath(uid))
-        .save(JSON.stringify(next), {
-          resumable: false,
-          contentType: 'application/json',
-          preconditionOpts: { ifGenerationMatch: generation },
-        })
-      return next
-    } catch (error) {
-      if (errorCode(error) !== 412) throw error
-    }
-  }
-  throw new Error('Concurrent update; retry')
-}
 export function validateGrant(input: unknown): GrantRequest {
   const request = input as GrantRequest
   if (
@@ -246,7 +168,7 @@ export type OrganizationExtension = (
   res: Response,
 ) => Promise<boolean>
 
-/** Owner-only catalog/consent API. No endpoint grants organizations access to app data. */
+/** Authenticated core consent API; optional feature routes are composed separately. */
 export async function handleOrganizationsRequest(
   req: Pick<Request, 'method' | 'body' | 'header'>,
   res: Response,
@@ -265,12 +187,28 @@ export async function handleOrganizationsRequest(
   let identity
   try {
     identity = await getAuth().verifyIdToken(authorization.slice(7), true)
-  } catch {
-    res.status(401).end()
+  } catch (error) {
+    const code = String(errorCode(error) ?? '')
+    const invalid = [
+      'auth/argument-error',
+      'auth/id-token-expired',
+      'auth/id-token-revoked',
+      'auth/invalid-id-token',
+      'auth/user-disabled',
+      'auth/user-not-found',
+    ].includes(code)
+    res
+      .status(invalid ? 401 : 503)
+      .json({
+        code: invalid ? 'UNAUTHENTICATED' : 'UNAVAILABLE',
+        retryable: !invalid,
+      })
     return
   }
   try {
-    const body = (req.body ?? {}) as Record<string, unknown>
+    if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body))
+      throw new RequestError(400, 'Invalid request body')
+    const body = req.body as Record<string, unknown>
     if (extension && (await extension(identity, body, res))) return
     if (body.action === 'catalog') {
       const radius = Number(CACHE_RADIUS_KM.value())
@@ -296,7 +234,27 @@ export async function handleOrganizationsRequest(
   } catch (error) {
     // Do not log tokens, submission contents or contact values.
     const status = error instanceof RequestError ? error.status : 503
-    res.status(status).json({ requiresConfirmation: status === 409 })
+    if (status === 429 || status === 503) res.set('Retry-After', '5')
+    const codes: Record<number, string> = {
+      400: 'BAD_REQUEST',
+      401: 'UNAUTHENTICATED',
+      403: 'FORBIDDEN',
+      404: 'NOT_FOUND',
+      409: 'REVIEW_REQUIRED',
+      429: 'RATE_LIMITED',
+      503: 'UNAVAILABLE',
+    }
+    res
+      .status(status)
+      .json({
+        code: codes[status],
+        message:
+          error instanceof RequestError
+            ? error.message
+            : 'Organization service is temporarily unavailable',
+        requiresConfirmation: status === 409,
+        retryable: status === 429 || status === 503,
+      })
   }
 }
 
