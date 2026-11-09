@@ -24,3 +24,5 @@ Full client suite: 119 suites / 550 tests. Functions: 9 suites / 66 tests. Real 
 Membership and sharing were developed on separate branches and composed on `feat/organizations-integration`. The spec is saved under `docs/planning/`. No live deployment, operator actions, or physical-device checks were performed.
 
 `membership/screens/__tests__/membership.journey.test.tsx` verifies joining, approval refresh, name editing with sharing off, and account isolation. Leave-control tests verify default unsharing and mandatory re-review after field changes.
+
+Android and iOS Metro/Hermes exports passed to `/tmp/feral-spotter-organizations-export`. Android emitted a nonfatal warning because local `google-services.json` is absent. These checks verify JavaScript bundling, not native compilation or device layout.
