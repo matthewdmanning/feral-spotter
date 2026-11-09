@@ -34,11 +34,12 @@ Directory geometry is stored as an unindexed `coverageJson` string because Fires
 
 Initial loading, refresh, empty, offline, forbidden, and retryable failure states are distinct. Reads cancel on blur/background/account changes; mutations are single-flight, idempotent, and reconciled after lost responses. Network/database failures never become empty directories or successful changes. The server checks current ownership, active membership, organization status, consent fields, epochs, and deletion state.
 
-## Firestore rollout and legacy import
+## Fresh Firestore setup
 
-1. Provision a native Firestore database in the existing Firebase project and grant the Functions service account the least-privilege `roles/datastore.user` database access it needs. Deploy `firestore.rules` and `firestore.indexes.json` with the new Functions code; clients continue using the existing organization API URL.
-2. For existing Storage organization data, pause organization API traffic/writes, back up the source, build Functions, configure Application Default Credentials, and explicitly set `FIREBASE_PROJECT_ID` and `GCS_BUCKET_NAME`. Run `node scripts/migrate-organization-data.mjs` to inspect counts without writes; add `--apply` to import. `ORGANIZATIONS_CATALOG_PATH` optionally identifies the old catalog object. Reruns resume create-only writes; completed imports are no-ops, including after account erasure. Keep source organization objects unchanged until verification; no live import is part of local testing.
-3. New catalog publication uses `node scripts/publish-organization-catalog.mjs CATALOG.json` with an explicit `FIREBASE_PROJECT_ID`. Publication blocks directory-dependent reads until complete; rerun the same input after a partial failure. No fictional organizations are seeded.
-4. Verify catalog, membership, shared reads, revocation, and account deletion before restoring organization traffic. Retire old Storage organization objects only after the import is verified. Runtime code has no Storage fallback for organization data.
+This is a greenfield project with no active users or existing organization data. There is no migration, compatibility layer, or Storage organization backend.
+
+1. Provision a native Firestore database in the Firebase project and grant the Functions service account least-privilege `roles/datastore.user` database access. Deploy `firestore.rules`, `firestore.indexes.json`, and the Functions code; configure the app's organization API URL.
+2. Build Functions and publish the actual organization catalog using `node scripts/publish-organization-catalog.mjs CATALOG.json` with Application Default Credentials and an explicit `FIREBASE_PROJECT_ID`. Publication blocks directory-dependent reads until complete; rerun the same input after a partial failure. No fictional organizations are seeded.
+3. Verify directory, membership, shared reads, revocation, and account deletion before enabling the feature.
 
 Firestore follow-up branches: `feat/organization-membership-firestore` and `feat/organization-sharing-firestore`, integrated on `feat/organizations-firestore`.

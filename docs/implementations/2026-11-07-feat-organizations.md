@@ -204,6 +204,14 @@ Directory reconciliation compares selected ids, organization names and catalog v
 
 **Rollout:** See the saved spec's Firestore rollout section. Runtime organization data never falls back to Storage. The importer defaults to dry-run, preserves old revocations/receipts, resumes create-only writes, and is a no-op after completion. Direct catalog publication uses the new Firestore publisher. No live operator commands were run. The HTTP function uses 512 MiB, concurrency 1, and a 60-second server deadline to bound photo-processing memory; client requests have a 15-second end-to-end deadline and reconcile ambiguous write outcomes.
 
+## 2026-11-09 — refactor: greenfield organization backend
+
+**Purpose:** Follow the user's clarification that this project has no active users or existing data.
+**Change:** Removed the Storage importer, CLI, migration test and generated importer artifacts; organization erasure now operates only on Firestore. Permission reads return the current ledger directly, without a Storage generation wrapper. The spec and ADR now describe fresh setup.
+**Verification:** Full client suite: 120 suites / 550 tests. Functions: 8 suites / 65 tests. Type checks and focused lint pass. Organization integration: 23 emulator scenarios; Rules: 24 tests. No deployment or device check. Earlier migration descriptions above record superseded implementation history.
+
+Functions builds now clean generated `lib/` output before compiling so deleted modules cannot linger in deployment artifacts. No Storage organization import paths remain in runtime code, tooling, tests, or generated output. Current photo generation pinning and revocation epochs remain live safety mechanisms.
+
 ## 2026-11-11 — fix
 
 **Purpose:** Address review findings F10/F11 without changing sharing consent,
