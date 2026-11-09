@@ -96,11 +96,6 @@ export interface SubmissionCacheFile {
   status: CacheStatus
   metadata: CacheMetadata
   cats: CachedCat[]
-  /**
-   * @deprecated Rows sent before `photos` existed. No longer written; read
-   * counts through `sightingPhotoCount` below.
-   */
-  photo_links?: string[]
   /** Per-photo read paths, keyed by local_id — Profile Pics resolve here. Set on Submit. */
   photos?: CachedPhoto[]
   /** Firebase uid of the submitter — scopes the personal history. Set on Submit. */
@@ -109,9 +104,9 @@ export interface SubmissionCacheFile {
   submitted_at?: string
 }
 
-/** Photos in the Sighting. Rows sent before `photos` existed count links. */
+/** Photos in the Sighting; drafts do not have submitted read paths yet. */
 export function sightingPhotoCount(cache: SubmissionCacheFile): number {
-  return cache.photos?.length ?? cache.photo_links?.length ?? 0
+  return cache.photos?.length ?? 0
 }
 
 // ─── Storage keys ─────────────────────────────────────────────────────────────

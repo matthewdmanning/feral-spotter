@@ -11,7 +11,7 @@ jest.mock('firebase-admin/storage', () => ({
 
 import { createStorageSubmissionStore } from '../adapters'
 
-it('deletes the uid permissions prefix on every retry', async () => {
+it('erases Firestore organization data on every retry', async () => {
   const store = createStorageSubmissionStore('uploads')
 
   await store.deleteUserOrganizationPermissions('u1')
@@ -19,11 +19,6 @@ it('deletes the uid permissions prefix on every retry', async () => {
 
   expect(mockErase).toHaveBeenNthCalledWith(1, 'u1')
   expect(mockErase).toHaveBeenNthCalledWith(2, 'u1')
-  expect(mockBucket).toHaveBeenCalledWith('uploads')
-  expect(mockDeleteFiles).toHaveBeenNthCalledWith(1, {
-    prefix: 'organization-permissions/u1/',
-  })
-  expect(mockDeleteFiles).toHaveBeenNthCalledWith(2, {
-    prefix: 'organization-permissions/u1/',
-  })
+  expect(mockBucket).not.toHaveBeenCalled()
+  expect(mockDeleteFiles).not.toHaveBeenCalled()
 })

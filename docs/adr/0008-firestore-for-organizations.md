@@ -12,4 +12,4 @@ Consent replacement is atomic and bounded to 400 records / 8 MiB, below Firestor
 
 Firestore outages fail closed. Missing directories can be empty; unavailable or partially published directories return retryable errors. A recoverable catalog publication marker prevents partial directory reads. Account erasure removes organization names, memberships, permissions, receipts, and transition data, leaving only a minimal write-denial tombstone to prevent in-flight requests recreating deleted data.
 
-Existing Storage organization data requires an explicit, resumable import before enabling the new API. No automatic dual-read/fallback path and no live migration are included in implementation verification.
+This is a greenfield project with no active users or existing organization data. Provision Firestore and publish a catalog directly. No data migration, Storage cleanup, compatibility adapters, or legacy membership defaults are required. Enrollment IDs are mandatory in the membership schema.

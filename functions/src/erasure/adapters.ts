@@ -56,14 +56,7 @@ export function createStorageSubmissionStore(bucket: string): SubmissionStore {
         .deleteFiles({ prefix: userPrefix(uid) }),
     retireUploadIdentity: (uid, sightingsDeleted) =>
       retireUploadIdentity(bucket, uid, sightingsDeleted),
-    // The trailing slash keeps one uid's permissions separate from another's.
-    // This removes the ledger and any future per-user organization snapshots.
-    deleteUserOrganizationPermissions: async (uid) => {
-      await eraseOrganizationData(uid)
-      await getStorage()
-        .bucket(bucket)
-        .deleteFiles({ prefix: `organization-permissions/${uid}/` })
-    },
+    deleteUserOrganizationPermissions: eraseOrganizationData,
   }
 }
 
