@@ -34,7 +34,7 @@ export async function changeMembership(
   change: (records: Records) => Records,
 ): Promise<Records> {
   return db().runTransaction(async (transaction) => {
-    await checkedAccount(transaction, uid)
+    const account = await checkedAccount(transaction, uid)
     const reference = membershipRef(uid, organizationId)
     const existing = await transaction.get(reference)
     const next = change(
@@ -55,6 +55,15 @@ export async function changeMembership(
       if (!organization.get('active'))
         throw RequestError.confirmAgain('Organization is unavailable')
     }
+    transaction.set(
+      accountRef(uid),
+      {
+        ...account,
+        permissionCount: account.permissionCount ?? 0,
+        mutationCount: account.mutationCount ?? 0,
+      },
+      { merge: true },
+    )
     transaction.set(reference, clean({ ...member, ownerUid: uid }))
     return next
   })
@@ -71,6 +80,7 @@ export async function isActiveMember(
         transaction.get(membershipRef(uid, organizationId)),
       ])
       return (
+        account.exists &&
         !account.get('deleting') &&
         member.get('status') === 'active' &&
         !member.get('exit')
@@ -106,7 +116,11 @@ export async function roster(
           )
         : []
       result.docs.forEach((doc, index) => {
-        if (!doc.get('exit') && !accounts[index].get('deleting'))
+        if (
+          !doc.get('exit') &&
+          accounts[index].exists &&
+          !accounts[index].get('deleting')
+        )
           members.push({ displayName: doc.get('displayName') })
       })
       return {

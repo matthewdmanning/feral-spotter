@@ -200,6 +200,10 @@ Directory reconciliation compares selected ids, organization names and catalog v
 **Purpose:** Implement the user's explicit Firestore decision and strengthen asynchronous failure handling.
 **Change:** Normalized Firestore organization/permission documents, transactional mutation receipts, epoch-based revocation, deletion guards, indexed shared reads, server-only Rules, and common cancellable loading/pagination infrastructure. Supersedes Storage-only organization persistence; Submission files remain in Storage. See [ADR-0008](../adr/0008-firestore-for-organizations.md). Feature-specific wiring and final verification are recorded in the membership/sharing notes.
 
+**Firestore verification:** App/server/test TypeScript checks, Functions build, focused client ESLint, Prettier, and diff checks pass. Full client suite: 120 suites / 554 tests. Functions: 8 suites / 65 tests. Real Auth/Firestore/Storage emulator journeys: 24 cases, including concurrency, fail-closed metadata, deletion guards, outage handling, and legacy import. Rules: 27 tests, including direct Firestore access denial. The former Storage-generation fake was replaced by real Firestore transaction concurrency coverage. Android/iOS Metro/Hermes exports pass to `/tmp/feral-spotter-organizations-firestore-export`; Android emits the existing nonfatal missing `google-services.json` warning. Native compilation, physical layout/assistive technology, live Firestore provisioning/index deployment, and live migration remain unverified.
+
+**Rollout:** See the saved spec's Firestore rollout section. Runtime organization data never falls back to Storage. The importer defaults to dry-run, preserves old revocations/receipts, resumes create-only writes, and is a no-op after completion. Direct catalog publication uses the new Firestore publisher. No live operator commands were run. The HTTP function uses 512 MiB, concurrency 1, and a 60-second server deadline to bound photo-processing memory; client requests have a 15-second end-to-end deadline and reconcile ambiguous write outcomes.
+
 ## 2026-11-11 — fix
 
 **Purpose:** Address review findings F10/F11 without changing sharing consent,
@@ -222,5 +226,5 @@ Dynamic coverage dates retain device-locale formatting; inserted catalog/account
 values use named slots and are not reinterpreted as template syntax. The existing
 management journey now verifies a catalog name containing literal replacement
 characters and braces survives the review dialog. Authorization, coverage,
-rollout and outbox behavior are unchanged. See [shared UI work](2026-10-28-ui-component-spacing-alignment.md)
-and the [review](../reviews/2026-11-11-review-ui-ux.md).
+ rollout and outbox behavior are unchanged. See [shared UI work](2026-10-28-ui-component-spacing-alignment.md)
+ and the [review](../reviews/2026-11-11-review-ui-ux.md).

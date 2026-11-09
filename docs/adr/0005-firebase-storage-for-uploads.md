@@ -221,6 +221,10 @@ functions module, and checks the shared numbers agree. A change to one copy
 that the others miss fails that test instead of reaching a device.
 _2026-11-01: code paths updated for the feature-folder layout ([PROJECT_STRUCTURE.md](../PROJECT_STRUCTURE.md)). Decision unchanged._
 
+## Amendment 2026-11-09: organization data uses Firestore
+
+Explicit user instruction supersedes the no-Firestore decision for organization data only. [ADR-0008](0008-firestore-for-organizations.md) governs directory records, membership, invites, permissions, and mutation receipts. Submission files, upload limits, and cap claims retain this ADR's existing design.
+
 ## Amendment 2026-11-16: RAW+JPEG delivery is one slotted pair
 
 The field camera's `RAW+JPEG` result contains the JPEG used by the app and an
