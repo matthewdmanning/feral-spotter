@@ -13,7 +13,7 @@ import {
   organizationRequest,
   OrganizationSyncError,
 } from '@/src/features/organizations/lib/api'
-import { buildGrant } from '@/src/features/organizations/sharing/lib/sharing'
+import { buildGrant } from '@/src/features/organizations/lib/permissions'
 import { useOrganizationsFlag } from './useOrganizationsFlag'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 
@@ -51,6 +51,11 @@ const emptyAccount = (): AccountSharing => ({
 interface SharingState {
   accounts: Record<string, AccountSharing>
   hydrated: boolean
+  acceptLedger: (
+    uid: string,
+    organizationId: string,
+    ledger: PermissionLedger,
+  ) => void
   configure: (uid: string, settings: SharingSettings) => void
   remember: (uid: string, ids: string[]) => void
   enqueue: (uid: string, action: NewAction) => void
@@ -136,6 +141,16 @@ export const useOrganizationSharingStore = create<SharingState>()(
       return {
         accounts: {},
         hydrated: false,
+        acceptLedger: (uid, organizationId, ledger) =>
+          updateAccount(uid, (account) => ({
+            ledger,
+            outbox: account.outbox.filter(
+              (item) => item.organizationId !== organizationId,
+            ),
+            preferredIds: account.preferredIds.filter(
+              (id) => id !== organizationId,
+            ),
+          })),
         configure: (uid, settings) => updateAccount(uid, () => ({ settings })),
         remember: (uid, preferredIds) =>
           updateAccount(uid, () => ({ preferredIds })),
