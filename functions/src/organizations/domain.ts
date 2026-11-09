@@ -404,3 +404,12 @@ export function offeredFields(
   const { fields } = effectiveSharingSettings(settings, anonymous)
   return SHARING_FIELD_KEYS.filter((key) => fields[key])
 }
+
+export interface SharedSighting {
+  id: string
+  catCount: number
+  generalLocation: Permission['data']['generalLocation']
+  preciseLocation?: Permission['data']['preciseLocation']
+  cats?: Permission['data']['cats']
+  photoCount: number
+}

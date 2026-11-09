@@ -15,8 +15,8 @@ import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrga
 import {
   FALLBACK_ORGANIZATION_NAME,
   includedSummary,
-} from '@/src/features/organizations/lib/sharing'
-import { styles } from './styles'
+} from '@/src/features/organizations/sharing/lib/sharing'
+import { styles } from '../../components/styles'
 
 function reviewMessage({ grant, organizationName }: ReviewedGrant): string {
   const contact = [
@@ -123,7 +123,8 @@ export function OrganizationPermissions({
     <GlassSurface kind="card" style={styles.card}>
       <Text style={styles.title}>Organization permissions</Text>
       <Text style={styles.hint}>
-        Permissions are saved here. Organization delivery is not available yet.
+        Permissions control which Sightings and details are shared. Copies
+        already received cannot be recalled.
       </Text>
       {permissions.map((permission) => {
         const revoking = pending.some(
