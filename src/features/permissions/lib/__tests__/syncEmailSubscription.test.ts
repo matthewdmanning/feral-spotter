@@ -14,9 +14,11 @@ const loadWithUrl = (url: string | undefined) => {
 }
 
 describe('syncEmailSubscription', () => {
-  const fetchMock = jest.fn()
+  let fetchMock: jest.SpiedFunction<typeof fetch>
   beforeEach(() => {
-    globalThis.fetch = fetchMock
+    fetchMock = jest
+      .spyOn(globalThis, 'fetch')
+      .mockRejectedValue(new Error('Unexpected fetch'))
   })
 
   it('does nothing when no sync URL is configured', async () => {
@@ -25,7 +27,7 @@ describe('syncEmailSubscription', () => {
   })
 
   it('posts the choice with the ID token and no address', async () => {
-    fetchMock.mockResolvedValue({ ok: true })
+    fetchMock.mockResolvedValue(new Response(null, { status: 200 }))
     await loadWithUrl('https://sync.example/fn')(true)
 
     expect(fetchMock).toHaveBeenCalledWith(
@@ -39,7 +41,7 @@ describe('syncEmailSubscription', () => {
   })
 
   it('rejects when the backend refuses', async () => {
-    fetchMock.mockResolvedValue({ ok: false, status: 502 })
+    fetchMock.mockResolvedValue(new Response(null, { status: 502 }))
     await expect(loadWithUrl('https://sync.example/fn')(false)).rejects.toThrow(
       '502',
     )
