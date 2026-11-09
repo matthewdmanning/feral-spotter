@@ -1,8 +1,13 @@
 import { getStorage } from 'firebase-admin/storage'
 import sharp from 'sharp'
 import type { OrganizationExtension } from '../api'
-import { readCatalog, readLedger } from '../api'
-import { validId, type Permission } from '../domain'
+import {
+  currentPermission,
+  sharedPermissionPage,
+  readOrganization,
+} from '../store'
+import { errorCode } from '../errors'
+import { validId } from '../domain'
 import { RequestError } from '../errors'
 import { requireOrganizationAccess, sharedSighting } from '../permissions'
 
@@ -18,9 +23,7 @@ async function assertAccess(
 ) {
   requireOrganizationAccess(await authorize(uid, organizationId))
   requireOrganizationAccess(
-    (await readCatalog()).organizations.some(
-      (o) => o.id === organizationId && o.active,
-    ),
+    (await readOrganization(organizationId)).organization.active,
   )
 }
 
@@ -38,20 +41,6 @@ export async function sanitizePhoto(bytes: Buffer): Promise<Buffer> {
     .toBuffer()
 }
 
-async function ledgerPage(cursor?: string) {
-  const [files, next] = await getStorage().bucket().getFiles({
-    prefix: 'organization-permissions/',
-    matchGlob: '**/ledger.json',
-    autoPaginate: false,
-    maxResults: 1,
-    pageToken: cursor,
-  })
-  return {
-    files,
-    cursor: (next as { pageToken?: string } | undefined)?.pageToken,
-  }
-}
-
 export function createSharingExtension(
   authorize: OrganizationAuthorizer,
 ): OrganizationExtension {
@@ -63,53 +52,17 @@ export function createSharingExtension(
     const organizationId = body.organizationId
     await assertAccess(authorize, identity.uid, organizationId)
     if (body.action === 'sharedSightings') {
-      // Numeric positions avoid exposing Storage cursors that can encode owner IDs.
-      if (
-        body.cursor !== undefined &&
-        (typeof body.cursor !== 'string' ||
-          !/^\d{1,9}:\d{1,9}$/.test(body.cursor))
-      )
+      if (body.cursor !== undefined && typeof body.cursor !== 'string')
         throw new RequestError(400, 'Invalid cursor')
-      let [fileIndex, permissionIndex] = String(body.cursor ?? '0:0')
-        .split(':')
-        .map(Number)
-      const [files] = await getStorage().bucket().getFiles({
-        prefix: 'organization-permissions/',
-        matchGlob: '**/ledger.json',
-      })
-      const sightings = []
-      let scanned = 0
-      while (
-        fileIndex < files.length &&
-        sightings.length < 50 &&
-        scanned++ < 25
-      ) {
-        const uid = files[fileIndex].name.split('/')[1]
-        const ledger = (await readLedger(uid)).value
-        while (
-          permissionIndex < ledger.permissions.length &&
-          sightings.length < 50
-        ) {
-          const permission = ledger.permissions[permissionIndex++]
-          if (
-            permission.organizationId !== organizationId ||
-            ledger.blockedOrganizations?.[organizationId]
-          )
-            continue
-          const summary = sharedSighting(uid, permission)
-          if (summary) sightings.push(summary)
-        }
-        if (permissionIndex >= ledger.permissions.length) {
-          fileIndex++
-          permissionIndex = 0
-        }
-      }
+      const page = await sharedPermissionPage(
+        organizationId,
+        body.cursor as string | undefined,
+      )
+      const sightings = page.permissions
+        .map(({ uid, permission }) => sharedSighting(uid, permission))
+        .filter(Boolean)
       await assertAccess(authorize, identity.uid, organizationId)
-      res.json({
-        sightings,
-        cursor:
-          fileIndex < files.length ? `${fileIndex}:${permissionIndex}` : null,
-      })
+      res.json({ sightings, cursor: page.cursor })
       return true
     }
     if (
@@ -120,27 +73,7 @@ export function createSharingExtension(
       Number(body.index) > 9
     )
       throw new RequestError(400, 'Invalid photo')
-    let cursor: string | undefined
-    let found: { uid: string; permission: Permission } | undefined
-    do {
-      const page = await ledgerPage(cursor)
-      cursor = page.cursor
-      for (const file of page.files) {
-        const uid = file.name.split('/')[1]
-        const ledger = (await readLedger(uid)).value
-        if (ledger.blockedOrganizations?.[organizationId]) continue
-        const permission = ledger.permissions.find(
-          (p) =>
-            p.organizationId === organizationId &&
-            sharedSighting(uid, p)?.id === body.id &&
-            !p.revokedAt,
-        )
-        if (permission) {
-          found = { uid, permission }
-          break
-        }
-      }
-    } while (cursor && !found)
+    const found = await currentPermission(body.id, organizationId)
     const index = Number(body.index)
     const path = found?.permission.fields.photos
       ? found.permission.data.photoPaths?.[index]
@@ -155,23 +88,32 @@ export function createSharingExtension(
     )
       throw new RequestError(404, 'Photo unavailable')
     const file = getStorage().bucket().file(path)
-    const [metadata] = await file.getMetadata()
-    if (Number(metadata.size) > 20 * 1024 * 1024)
-      throw new RequestError(400, 'Photo too large')
-    const [bytes] = await file.download()
-    const sanitized = await sanitizePhoto(bytes)
-    const current = (await readLedger(found.uid)).value
-    const stillShared = current.permissions.find(
-      (p) =>
-        p.organizationId === organizationId &&
-        p.submissionId === found!.permission.submissionId,
-    )
+    let sanitized: Buffer
+    try {
+      const [metadata] = await file.getMetadata()
+      if (Number(metadata.size) > 20 * 1024 * 1024)
+        throw new RequestError(400, 'Photo too large')
+      // Pin the downloaded generation to the one whose size was checked.
+      const [bytes] = await getStorage()
+        .bucket()
+        .file(path, { generation: Number(metadata.generation) })
+        .download()
+      try {
+        sanitized = await sanitizePhoto(bytes)
+      } catch {
+        throw new RequestError(404, 'Photo unavailable')
+      }
+    } catch (error) {
+      if (errorCode(error) === 404)
+        throw new RequestError(404, 'Photo unavailable')
+      throw error
+    }
+    const stillShared = await currentPermission(body.id, organizationId)
     if (
-      current.blockedOrganizations?.[organizationId] ||
       !stillShared ||
-      stillShared.revokedAt ||
-      !stillShared.fields.photos ||
-      stillShared.data.photoPaths?.[index] !== path
+      stillShared.uid !== found.uid ||
+      !stillShared.permission.fields.photos ||
+      stillShared.permission.data.photoPaths?.[index] !== path
     )
       throw new RequestError(404, 'Photo unavailable')
     await assertAccess(authorize, identity.uid, organizationId)
