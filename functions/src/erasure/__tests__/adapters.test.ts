@@ -1,3 +1,7 @@
+const mockErase = jest.fn().mockResolvedValue(undefined)
+jest.mock('../../organizations/store', () => ({
+  eraseOrganizationData: (uid: string) => mockErase(uid),
+}))
 const mockDeleteFiles = jest.fn().mockResolvedValue(undefined)
 const mockBucket = jest.fn(() => ({ deleteFiles: mockDeleteFiles }))
 
@@ -13,6 +17,8 @@ it('deletes the uid permissions prefix on every retry', async () => {
   await store.deleteUserOrganizationPermissions('u1')
   await store.deleteUserOrganizationPermissions('u1')
 
+  expect(mockErase).toHaveBeenNthCalledWith(1, 'u1')
+  expect(mockErase).toHaveBeenNthCalledWith(2, 'u1')
   expect(mockBucket).toHaveBeenCalledWith('uploads')
   expect(mockDeleteFiles).toHaveBeenNthCalledWith(1, {
     prefix: 'organization-permissions/u1/',

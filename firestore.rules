@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Organization data is accessed through the authenticated Functions API.
+    // The Admin SDK enforces ownership, membership and field-level projections there.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

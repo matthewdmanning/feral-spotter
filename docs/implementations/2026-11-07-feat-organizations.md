@@ -182,3 +182,8 @@ The account-deletion change is also recorded in the [account-erasure note](2026-
 **Purpose:** Keep organization permissions independent of optional membership and sharing UI.
 **Change:** Added explicit viewer authorization/projection, CAS JSON helpers, permission-transition blocking and explicit consent replacement. The authenticated API accepts a feature adapter at composition time. See [spec](../planning/organization-membership-and-sharing.md).
 **Tests:** `permissions.test.ts` checks private-field exclusion, revoked content, transition locks and stale-grant rejection. Verification recorded with integrated feature notes.
+
+## 2026-11-09 — refactor: Firestore organization backend
+
+**Purpose:** Implement the user's explicit Firestore decision and strengthen asynchronous failure handling.
+**Change:** Normalized Firestore organization/permission documents, transactional mutation receipts, epoch-based revocation, deletion guards, indexed shared reads, server-only Rules, and common cancellable loading/pagination infrastructure. Supersedes Storage-only organization persistence; Submission files remain in Storage. See [ADR-0008](../adr/0008-firestore-for-organizations.md). Feature-specific wiring and final verification are recorded in the membership/sharing notes.

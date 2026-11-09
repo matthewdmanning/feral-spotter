@@ -7,6 +7,13 @@ import { getStorage } from 'firebase-admin/storage'
 import { handleOrganizationsRequest } from '../api'
 import { organizationFeatures } from '../features'
 import sharp from 'sharp'
+import { getFirestore } from 'firebase-admin/firestore'
+import {
+  writeCatalog,
+  accountRef,
+  permissionRef,
+  eraseOrganizationData,
+} from '../store'
 import {
   createInvite,
   moderateMembership,
@@ -59,6 +66,10 @@ function requireLoopback(name: string, protocol = 'http://'): string {
 }
 const bucket = () => getStorage().bucket()
 async function save(path: string, value: unknown) {
+  if (path === catalogPath) {
+    await writeCatalog(value as Catalog)
+    return
+  }
   await bucket().file(path).save(JSON.stringify(value), {
     resumable: false,
     contentType: 'application/json',
@@ -139,7 +150,7 @@ beforeAll(async () => {
     requireLoopback('STORAGE_EMULATOR_HOST')
   const projectId = process.env.GCLOUD_PROJECT
   if (!projectId) throw new Error('Run through the repository emulator runner')
-  process.env.ORGANIZATIONS_CATALOG_PATH = catalogPath
+  requireLoopback('FIRESTORE_EMULATOR_HOST')
   app = initializeApp({
     projectId,
     storageBucket: `${projectId}.firebasestorage.app`,
@@ -154,17 +165,20 @@ beforeAll(async () => {
   })
   apiUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}/`
 })
-beforeEach(() => save(catalogPath, catalog))
+beforeEach(() => writeCatalog(catalog))
 afterAll(async () => {
   if (server)
     await new Promise<void>((resolve, reject) =>
       server.close((error) => (error ? reject(error) : resolve())),
     )
   if (!app) return
-  await bucket().file(catalogPath).delete({ ignoreNotFound: true })
+  await getFirestore().doc('organizationCatalog/current').delete()
+  for (const doc of (await getFirestore().collection('organizations').get())
+    .docs)
+    await doc.ref.delete()
   for (const uid of createdUids) {
     await bucket().deleteFiles({ prefix: `submissions/${uid}/` })
-    await bucket().deleteFiles({ prefix: `organization-permissions/${uid}/` })
+    await eraseOrganizationData(uid)
     await getAuth()
       .deleteUser(uid)
       .catch(() => {})
@@ -279,7 +293,7 @@ test('revocations are idempotent, block stale grants, and replay acknowledged mu
   expect(
     (await call(grant('first', {}, 'new-stale-grant'), token)).status,
   ).toBe(409)
-  await bucket().file(catalogPath).delete()
+  await getFirestore().doc('organizationCatalog/current').delete()
   const replay = await call(grant('first'), token)
   expect(replay.status).toBe(200)
   expect(replay.body!.permissions[0].revokedAt).toBeDefined()
@@ -287,7 +301,7 @@ test('revocations are idempotent, block stale grants, and replay acknowledged mu
 
 test('a missing catalog is an empty directory', async () => {
   const { token } = await signedInUser('empty-catalog')
-  await bucket().file(catalogPath).delete()
+  await getFirestore().doc('organizationCatalog/current').delete()
   expect((await call({ action: 'catalog' }, token)).body).toEqual({
     version: 'empty-v1',
     organizations: [],

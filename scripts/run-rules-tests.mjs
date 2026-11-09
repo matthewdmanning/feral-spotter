@@ -96,7 +96,7 @@ const { status, error } = spawnSync(
     // A demo- project needs no real project: emulators only.
     'demo-feral-spotter',
     '--only',
-    'storage,auth',
+    'storage,auth,firestore',
     organizationsOnly
       ? 'npm --prefix functions run test:organizations:emulator'
       : 'jest -c jest.rules.config.js --runInBand',
