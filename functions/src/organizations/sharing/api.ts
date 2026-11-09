@@ -73,12 +73,10 @@ export function createSharingExtension(
       let [fileIndex, permissionIndex] = String(body.cursor ?? '0:0')
         .split(':')
         .map(Number)
-      const [files] = await getStorage()
-        .bucket()
-        .getFiles({
-          prefix: 'organization-permissions/',
-          matchGlob: '**/ledger.json',
-        })
+      const [files] = await getStorage().bucket().getFiles({
+        prefix: 'organization-permissions/',
+        matchGlob: '**/ledger.json',
+      })
       const sightings = []
       let scanned = 0
       while (
