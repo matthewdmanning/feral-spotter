@@ -17,7 +17,7 @@ import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrga
 import { sharingSignature } from '@/src/features/organizations/sharing/lib/consent'
 import { includedSummary } from '@/src/features/organizations/sharing/lib/sharing'
 import { SharingCheckbox } from './SharingCheckbox'
-import { styles } from '../../components/styles'
+import { styles } from '@/src/features/organizations/components/styles'
 
 export function SubmissionOrganizations() {
   const { user } = useAuth()

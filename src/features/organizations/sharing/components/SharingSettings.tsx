@@ -15,7 +15,7 @@ import {
   type SharingSettings as SharingConfiguration,
 } from '@/src/shared/types/Organizations'
 import { SharingCheckbox } from './SharingCheckbox'
-import { styles } from '../../components/styles'
+import { styles } from '@/src/features/organizations/components/styles'
 
 export function SharingSettings() {
   const { user } = useAuth()
