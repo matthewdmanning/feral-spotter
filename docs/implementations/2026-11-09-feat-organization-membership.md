@@ -24,3 +24,12 @@ Full client suite: 119 suites / 550 tests. Functions: 9 suites / 66 tests. Real 
 Membership and sharing were developed on separate branches and composed on `feat/organizations-integration`. The spec is saved under `docs/planning/`. No live deployment, operator actions, or physical-device checks were performed.
 
 `membership/screens/__tests__/membership.journey.test.tsx` verifies joining, approval refresh, name editing with sharing off, and account isolation. Leave-control tests verify default unsharing and mandatory re-review after field changes.
+
+Android and iOS Metro/Hermes exports passed to `/tmp/feral-spotter-organizations-export`. Android emitted a nonfatal warning because local `google-services.json` is absent. These checks verify JavaScript bundling, not native compilation or device layout.
+
+## 2026-11-09 — refactor: Firestore membership and async recovery
+
+**Purpose:** Use Firestore for organization data and make membership actions resilient to latency and partial failure.
+**Change:** One membership per Firestore document, private owner identifiers, transactional account-deletion and organization-status checks, indexed/paginated name-only rosters, hashed Firestore invite records, and recoverable leave checkpoints. Loading indicators distinguish initial fetches from empty results; mutations are single-flight and reconcile ambiguous failures. A successful leave updates core permission state even if its screen was dismissed. See [sharing update](2026-11-09-feat-organization-sharing.md) and [ADR-0008](../adr/0008-firestore-for-organizations.md).
+
+Operator tooling now requires an explicit `FIREBASE_PROJECT_ID` as well as the source-files bucket. Final integration verification is recorded after combining the feature branches.

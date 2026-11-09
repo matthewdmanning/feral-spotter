@@ -1,4 +1,4 @@
-import { Fragment as ReactFragment, useState } from 'react'
+import { Fragment as ReactFragment, useState, useEffect, useRef } from 'react'
 import { Text, Pressable } from 'react-native'
 import { randomUUID } from 'expo-crypto'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
@@ -11,7 +11,10 @@ import {
   SHARING_FIELD_LABELS,
 } from '@/src/shared/types/Organizations'
 import { useOrganizationSharingStore } from '@/src/features/organizations/hooks/useOrganizationSharingStore'
-import { organizationRequest } from '@/src/features/organizations/lib/api'
+import {
+  organizationRequest,
+  isRequestCancelled,
+} from '@/src/features/organizations/lib/api'
 import { styles } from '@/src/features/organizations/components/styles'
 import type { LeaveChoice } from '@/functions/src/organizations/membership/domain'
 
@@ -41,6 +44,13 @@ export function LeaveChoices({
     shareCount: number
   } | null>(null)
   const [error, setError] = useState('')
+  const pendingReview = useRef<AbortController | null>(null)
+  useEffect(
+    () => () => {
+      pendingReview.current?.abort()
+    },
+    [],
+  )
   const [loading, setLoading] = useState(false)
   const [choice, setChoice] = useState<LeaveChoice | null>(null)
   const email = useAuthStore((s) => s.user?.email)
@@ -141,13 +151,18 @@ export function LeaveChoices({
               disabled={busy}
               loading={loading}
               onPress={() => {
+                if (pendingReview.current) return
+                const controller = new AbortController()
+                pendingReview.current = controller
                 setLoading(true)
                 setError('')
                 void organizationRequest<{
                   catalogVersion: string
                   epoch: number
                   shareCount: number
-                }>({ action: 'reviewLeaving', organizationId }, uid)
+                }>({ action: 'reviewLeaving', organizationId }, uid, {
+                  signal: controller.signal,
+                })
                   .then((result) => {
                     setReview(result)
                     setChoice({
@@ -159,12 +174,18 @@ export function LeaveChoices({
                       contactEmail: email ?? null,
                     })
                   })
-                  .catch(() =>
-                    setError(
-                      'Unable to review current shares. Retry or leave and unshare everything.',
-                    ),
-                  )
-                  .finally(() => setLoading(false))
+                  .catch((error) => {
+                    if (!isRequestCancelled(error))
+                      setError(
+                        'Unable to review current shares. Retry or leave and unshare everything.',
+                      )
+                  })
+                  .finally(() => {
+                    if (pendingReview.current === controller) {
+                      pendingReview.current = null
+                      if (!controller.signal.aborted) setLoading(false)
+                    }
+                  })
               }}
             >
               Review retained sharing
