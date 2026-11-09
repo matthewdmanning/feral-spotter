@@ -49,7 +49,12 @@ export const membershipExtension: OrganizationExtension = async (
   if (!actions.includes(String(body.action))) return false
   const uid = identity.uid
   if (body.action === 'memberships') {
-    res.json(await list(uid))
+    res.json({
+      ...(await list(uid)),
+      ...(body.includePermissions === true
+        ? { ledger: (await readLedger(uid)).value }
+        : {}),
+    })
     return true
   }
   if (body.action === 'joinOrganization') {
@@ -63,9 +68,9 @@ export const membershipExtension: OrganizationExtension = async (
   if (body.action === 'organizationMembers') {
     await activeOrganization(organizationId)
     requireOrganizationAccess(await isActiveMember(uid, organizationId))
-    const members = await roster(organizationId)
+    const page = await roster(organizationId, body.cursor)
     requireOrganizationAccess(await isActiveMember(uid, organizationId))
-    res.json({ members })
+    res.json(page)
     return true
   }
   if (body.action === 'renameMember')
