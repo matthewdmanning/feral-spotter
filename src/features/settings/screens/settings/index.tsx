@@ -129,6 +129,9 @@ export default function SettingsScreen() {
             </TextButton>
           </GlassSurface>
 
+          <TextButton onPress={() => router.push('/organizations')}>
+            Organizations
+          </TextButton>
           <SharingSettings />
           <OrganizationPermissions />
 

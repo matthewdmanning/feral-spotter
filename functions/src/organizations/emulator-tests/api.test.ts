@@ -5,6 +5,12 @@ import { initializeApp, deleteApp, type App } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 import { getStorage } from 'firebase-admin/storage'
 import { handleOrganizationsRequest } from '../api'
+import { membershipExtension } from '../membership/api'
+import {
+  createInvite,
+  moderateMembership,
+  readMemberships,
+} from '../membership/service'
 import {
   DEFAULT_SHARING,
   type Catalog,
@@ -140,7 +146,7 @@ beforeAll(async () => {
   const service = express()
   service.use(express.json())
   service.post('/', (req, res, next) => {
-    void handleOrganizationsRequest(req, res).catch(next)
+    void handleOrganizationsRequest(req, res, membershipExtension).catch(next)
   })
   server = await new Promise<Server>((resolve) => {
     const listening = service.listen(0, '127.0.0.1', () => resolve(listening))
@@ -312,4 +318,279 @@ test('capacity limits reject new grants with 429 but never block revocation', as
   )
   expect(revoke.status).toBe(200)
   expect(revoke.body!.permissions[0].revokedAt).toBeDefined()
+})
+
+test('membership approval, private roster, default leaving and stale-grant rejection', async () => {
+  const owner = await signedInUser('member-owner')
+  const outsider = await signedInUser('member-outsider')
+  const code = await createInvite('first')
+  expect(
+    (
+      await call(
+        { action: 'joinOrganization', code, displayName: '   ' },
+        owner.token,
+      )
+    ).status,
+  ).toBe(400)
+  expect(
+    (
+      await call(
+        { action: 'joinOrganization', code, displayName: '  Visible name  ' },
+        owner.token,
+      )
+    ).status,
+  ).toBe(200)
+  expect(
+    (
+      await call(
+        { action: 'organizationMembers', organizationId: 'first' },
+        owner.token,
+      )
+    ).status,
+  ).toBe(403)
+  expect(
+    (
+      await call(
+        { action: 'approveMembership', organizationId: 'first' },
+        owner.token,
+      )
+    ).status,
+  ).toBe(400)
+  await moderateMembership(owner.uid, 'first', 'approve')
+  const rosterReply = await call(
+    { action: 'organizationMembers', organizationId: 'first' },
+    owner.token,
+  )
+  expect(rosterReply.status).toBe(200)
+  expect(rosterReply.body).toEqual({
+    members: [{ displayName: 'Visible name' }],
+  })
+  expect(
+    (
+      await call(
+        { action: 'organizationMembers', organizationId: 'first' },
+        outsider.token,
+      )
+    ).status,
+  ).toBe(403)
+  expect((await call(grant('first'), owner.token)).status).toBe(200)
+  expect((await call(grant('second'), owner.token)).status).toBe(200)
+  const leave = {
+    action: 'leaveOrganization',
+    organizationId: 'first',
+    choice: { mode: 'revoke', mutationId: 'leave-default' },
+  }
+  expect((await call(leave, owner.token)).status).toBe(200)
+  expect((await call(leave, owner.token)).status).toBe(200)
+  const ledger = (await call({ action: 'list' }, owner.token)).body!
+  expect(
+    ledger.permissions.find((p) => p.organizationId === 'first')?.revokedAt,
+  ).toBeDefined()
+  expect(
+    ledger.permissions.find((p) => p.organizationId === 'second')?.revokedAt,
+  ).toBeUndefined()
+  expect(
+    (await call(grant('first', {}, 'stale-after-leave'), owner.token)).status,
+  ).toBe(409)
+  expect((await readMemberships(owner.uid)).first.status).toBe('left')
+  expect(
+    (
+      await call(
+        { action: 'organizationMembers', organizationId: 'first' },
+        owner.token,
+      )
+    ).status,
+  ).toBe(403)
+})
+
+test('keeping shares replaces field permissions; invalid review preserves membership; removal revokes retained content', async () => {
+  const owner = await signedInUser('member-keep')
+  const code = await createInvite('second')
+  await call(
+    { action: 'joinOrganization', code, displayName: 'Keep member' },
+    owner.token,
+  )
+  await moderateMembership(owner.uid, 'second', 'approve')
+  await call(
+    grant('second', {
+      anonymous: false,
+      contactEmail: owner.email,
+      settings: {
+        ...DEFAULT_SHARING,
+        fields: { ...DEFAULT_SHARING.fields, email: true, catDetails: true },
+      },
+    }),
+    owner.token,
+  )
+  const bad = {
+    mode: 'keep',
+    mutationId: 'bad-review',
+    epoch: 0,
+    catalogVersion: 'stale',
+    anonymous: true,
+    settings: DEFAULT_SHARING,
+  }
+  expect(
+    (
+      await call(
+        { action: 'leaveOrganization', organizationId: 'second', choice: bad },
+        owner.token,
+      )
+    ).status,
+  ).toBe(409)
+  expect((await readMemberships(owner.uid)).second).toMatchObject({
+    status: 'active',
+  })
+  expect((await readMemberships(owner.uid)).second.exit).toBeUndefined()
+  const choice = {
+    ...bad,
+    mutationId: 'good-review',
+    catalogVersion: catalog.version,
+  }
+  expect(
+    (
+      await call(
+        { action: 'leaveOrganization', organizationId: 'second', choice },
+        owner.token,
+      )
+    ).status,
+  ).toBe(200)
+  const ledger = (await call({ action: 'list' }, owner.token)).body!
+  const retained = ledger.permissions.find(
+    (p) => p.organizationId === 'second',
+  )!
+  expect(retained.revokedAt).toBeUndefined()
+  expect(retained.data.contact).toBeUndefined()
+  expect(retained.data.cats).toBeUndefined()
+  expect(ledger.epochs.second).toBe(1)
+  await moderateMembership(owner.uid, 'second', 'remove')
+  expect(
+    (await call({ action: 'list' }, owner.token)).body!.permissions.find(
+      (p) => p.organizationId === 'second',
+    )?.revokedAt,
+  ).toBeDefined()
+})
+
+test('a repeated leave ID after rejoining cannot bypass unsharing, and account erasure removes roster names', async () => {
+  const owner = await signedInUser('member-rejoin')
+  const code = await createInvite('first')
+  const join = () =>
+    call(
+      { action: 'joinOrganization', code, displayName: 'Rejoined member' },
+      owner.token,
+    )
+  const leave = () =>
+    call(
+      {
+        action: 'leaveOrganization',
+        organizationId: 'first',
+        choice: { mode: 'revoke', mutationId: 'reused-leave-id' },
+      },
+      owner.token,
+    )
+  await join()
+  await moderateMembership(owner.uid, 'first', 'approve')
+  await leave()
+  await join()
+  await moderateMembership(owner.uid, 'first', 'approve')
+  // A different Submission can be explicitly shared after leaving; joining did not restore anything.
+  const source = `submissions/${owner.uid}/sighting/metadata.json`
+  const [bytes] = await bucket().file(source).download()
+  const data = JSON.parse(bytes.toString())
+  data.photo_paths = []
+  await save(`submissions/${owner.uid}/new-sighting/metadata.json`, data)
+  expect(
+    (
+      await call(
+        grant(
+          'first',
+          { epoch: 1, submissionId: 'new-sighting' },
+          'new-explicit-share',
+        ),
+        owner.token,
+      )
+    ).status,
+  ).toBe(200)
+  expect((await leave()).status).toBe(200)
+  const ledger = (await call({ action: 'list' }, owner.token)).body!
+  expect(ledger.permissions.every((p) => p.revokedAt)).toBe(true)
+  await join()
+  await moderateMembership(owner.uid, 'first', 'approve')
+  await bucket().deleteFiles({
+    prefix: `organization-permissions/${owner.uid}/`,
+  })
+  expect(
+    (
+      await call(
+        { action: 'organizationMembers', organizationId: 'first' },
+        owner.token,
+      )
+    ).status,
+  ).toBe(403)
+})
+
+test('a Storage failure after revocation leaves a resumable checkpoint without restoring grants', async () => {
+  const owner = await signedInUser('member-resume')
+  const code = await createInvite('first')
+  await call(
+    { action: 'joinOrganization', code, displayName: 'Resume member' },
+    owner.token,
+  )
+  await moderateMembership(owner.uid, 'first', 'approve')
+  await call(grant('first'), owner.token)
+  // Fail only the external Storage write ending membership; all application logic stays real.
+  const prototype = Object.getPrototypeOf(bucket().file('probe')) as {
+    save: (this: { name: string }, ...args: unknown[]) => Promise<void>
+  }
+  const saveOriginal = prototype.save
+  let failed = false
+  const fault = jest.spyOn(prototype, 'save').mockImplementation(function (
+    this: { name: string },
+    ...args: unknown[]
+  ) {
+    if (
+      !failed &&
+      this.name === `organization-permissions/${owner.uid}/memberships.json` &&
+      String(args[0]).includes('"status":"left"')
+    ) {
+      failed = true
+      return Promise.reject(
+        Object.assign(new Error('Temporary Storage failure'), { code: 503 }),
+      )
+    }
+    return saveOriginal.apply(this, args)
+  })
+  try {
+    const response = await call(
+      {
+        action: 'leaveOrganization',
+        organizationId: 'first',
+        choice: { mode: 'revoke', mutationId: 'resume-leave' },
+      },
+      owner.token,
+    )
+    expect(response.status).toBe(503)
+    expect((await readMemberships(owner.uid)).first).toMatchObject({
+      status: 'active',
+      exit: { mutationId: 'resume-leave' },
+    })
+    expect(
+      (await call(grant('first', {}, 'blocked-during-exit'), owner.token))
+        .status,
+    ).toBe(409)
+    expect(
+      (
+        await call(
+          { action: 'resumeLeaving', organizationId: 'first' },
+          owner.token,
+        )
+      ).status,
+    ).toBe(200)
+    expect((await readMemberships(owner.uid)).first).toMatchObject({
+      status: 'left',
+    })
+    expect((await readMemberships(owner.uid)).first.exit).toBeUndefined()
+  } finally {
+    fault.mockRestore()
+  }
 })
