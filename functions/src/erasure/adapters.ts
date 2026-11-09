@@ -5,6 +5,7 @@
 
 import { getAuth } from 'firebase-admin/auth'
 import { getStorage } from 'firebase-admin/storage'
+import { eraseOrganizationData } from '../organizations/store'
 import { userPrefix } from '../submissionLayout'
 import type {
   AccountStore,
@@ -54,10 +55,12 @@ export function createStorageSubmissionStore(bucket: string): SubmissionStore {
         .deleteFiles({ prefix: userPrefix(uid) }),
     // The trailing slash keeps one uid's permissions separate from another's.
     // This removes the ledger and any future per-user organization snapshots.
-    deleteUserOrganizationPermissions: (uid) =>
-      getStorage()
+    deleteUserOrganizationPermissions: async (uid) => {
+      await eraseOrganizationData(uid)
+      await getStorage()
         .bucket(bucket)
-        .deleteFiles({ prefix: `organization-permissions/${uid}/` }),
+        .deleteFiles({ prefix: `organization-permissions/${uid}/` })
+    },
   }
 }
 

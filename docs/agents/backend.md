@@ -5,8 +5,7 @@ and which Firebase MCP resources and skills are approved to use. Ratified
 design decisions live in `docs/adr/`; this file is the map to them plus the
 bits not yet ratified.
 
-This project does not use Firestore at all — see "Firestore skills are
-off-limits" below before touching anything Firestore-shaped.
+Organization data uses server-only Firestore (ADR-0008). Submission metadata and photos remain in Cloud Storage; upload counts and limits retain their existing implementation.
 
 ## Current architecture
 
@@ -89,13 +88,11 @@ only.
 For test-drive _mechanics_ (device setup, logging channels, per-run
 checks), see [test-driving.md](test-driving.md).
 
-## Firestore skills are off-limits
+## Organization Firestore boundary
 
-Never load `firebase:firebase-firestore` or any other skill scoped to
-Firestore schema/query/index design in this project. The project has no
-Firestore surface: counts and limits live in Storage object names and Auth
-custom claims. If a task seems to call for Firestore, that's a signal to
-stop and confirm scope with the user rather than loading it.
+The user explicitly authorized Firestore for organization data on 2026-11-09, superseding the previous project-wide prohibition for this scope. See ADR-0008. The authenticated Functions API is the only client entrypoint. Firestore Rules deny direct access, including membership/role writes. Server transactions enforce ownership, deletion guards, epochs, and idempotency; feature adapters supply member authorization.
+
+Firestore joins the local Auth/Storage emulator lane on port 8080. Never silently fall back to Storage or a live database when Firestore is unavailable. Organization schema, indexes, and migration instructions live in the implementation note and saved spec.
 
 ## Approved resources
 
@@ -122,7 +119,5 @@ this list; don't add by name/topic judgment:
 - `firebase:firebase-remote-config-basics`
 - `firebase:xcode-project-setup`
 
-Never `firebase:firebase-firestore` (see above) or
-`firebase:firebase-security-rules-auditor` (its description only mentions
-Firestore, even though its checklist also covers Storage rules) — excluded
-by the same mechanical rule, not a judgment call.
+The prior Firestore skill prohibition is superseded for organization work. No Firestore skill is installed in this session. The existing restriction on
+`firebase:firebase-security-rules-auditor` remains for unrelated Storage-only work.
