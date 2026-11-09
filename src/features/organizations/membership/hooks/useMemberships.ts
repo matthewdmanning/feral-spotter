@@ -1,8 +1,7 @@
-import { useCallback, useRef, useState } from 'react'
-import { AppState } from 'react-native'
-import { useFocusEffect } from 'expo-router'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
+import { queryClient } from '@/src/shared/lib/queryClient'
 import {
   organizationRequest,
   organizationErrorMessage,
@@ -10,167 +9,105 @@ import {
   OrganizationSyncError,
 } from '@/src/features/organizations/lib/api'
 import { useOrganizationSharingStore } from '@/src/features/organizations/hooks/useOrganizationSharingStore'
+import { useVisibleQueryScope } from '@/src/features/organizations/hooks/useVisibleQueryScope'
 import type { MembershipList } from '@/functions/src/organizations/membership/domain'
+
+type Body = Record<string, unknown>
+
+async function fetchMemberships(
+  body: Body,
+  uid: string | undefined,
+  organizationId: unknown,
+  signal?: AbortSignal,
+) {
+  const result = await organizationRequest<MembershipList>(body, uid, {
+    signal,
+  })
+  if (!Array.isArray(result.memberships))
+    throw new Error('Invalid membership response')
+  // Apply acknowledged permission outcomes even if the user left this screen during the write.
+  if (
+    uid &&
+    result.ledger &&
+    typeof organizationId === 'string' &&
+    result.memberships.some(
+      (member) =>
+        member.organizationId === organizationId &&
+        ['left', 'removed'].includes(member.status) &&
+        !member.leaving,
+    )
+  )
+    useOrganizationSharingStore
+      .getState()
+      .acceptLedger(uid, organizationId, result.ledger)
+  return result
+}
 
 export function useMemberships() {
   const uid = useAuthStore((s) => s.user?.uid)
   const online = useUIStore((s) => s.isOnline)
-  const generation = useRef(0)
-  const visible = useRef(false)
-  const pending = useRef<{
-    uid: string
-    mutation: boolean
-    controller: AbortController
-  } | null>(null)
-  const [state, setState] = useState<
-    MembershipList & {
-      uid?: string
-      error: string
-      busy: boolean
-      loaded: boolean
-    }
-  >({ memberships: [], error: '', busy: false, loaded: false })
-  const request = useCallback(
-    async (body: Record<string, unknown> = { action: 'memberships' }) => {
-      if (!uid || !online || pending.current?.uid === uid) return false
-      const ticket = ++generation.current
-      const mutation = body.action !== 'memberships'
-      const operation = { uid, mutation, controller: new AbortController() }
-      pending.current = operation
-      setState((previous) => ({ ...previous, busy: true, error: '' }))
-      try {
-        const result = await organizationRequest<MembershipList>(
-          body,
-          uid,
-          mutation ? {} : { signal: operation.controller.signal },
-        )
-        if (!Array.isArray(result.memberships))
-          throw new Error('Invalid membership response')
-        // Apply acknowledged permission outcomes even if the user left this screen during the write.
-        if (
-          result.ledger &&
-          typeof body.organizationId === 'string' &&
-          result.memberships.some(
-            (member) =>
-              member.organizationId === body.organizationId &&
-              ['left', 'removed'].includes(member.status) &&
-              !member.leaving,
-          )
-        )
-          useOrganizationSharingStore
-            .getState()
-            .acceptLedger(uid, body.organizationId, result.ledger)
-        if (
-          visible.current &&
-          useAuthStore.getState().user?.uid === uid &&
-          (mutation || ticket === generation.current)
-        )
-          setState({
-            uid,
-            memberships: result.memberships,
-            error: '',
-            busy: false,
-            loaded: true,
-          })
-        return true
-      } catch (error) {
-        let memberships: MembershipList['memberships'] | undefined
+  const queryKey = ['organizations', uid, 'memberships']
+  const visible = useVisibleQueryScope(queryKey, !!uid && online)
+  // Writes are never cancelled: their idempotent server outcome must be applied.
+  const mutation = useMutation(
+    {
+      mutationFn: (body: Body) =>
+        fetchMemberships(body, uid, body.organizationId),
+      onSuccess: (result) => queryClient.setQueryData(queryKey, result),
+      onError: async (error, body) => {
+        if (isRequestCancelled(error)) return
         // A lost mutation response is ambiguous: reconcile the durable server checkpoint first.
+        const reconciled = await fetchMemberships(
+          {
+            action: 'memberships',
+            includePermissions: ['leaveOrganization', 'resumeLeaving'].includes(
+              String(body.action),
+            ),
+          },
+          uid,
+          body.organizationId,
+        ).catch(() => undefined)
         if (
-          mutation &&
-          !isRequestCancelled(error) &&
-          useAuthStore.getState().user?.uid === uid
-        ) {
-          try {
-            const reconciled = await organizationRequest<MembershipList>(
-              {
-                action: 'memberships',
-                includePermissions: [
-                  'leaveOrganization',
-                  'resumeLeaving',
-                ].includes(String(body.action)),
-              },
-              uid,
-            )
-            memberships = reconciled.memberships
-            if (
-              reconciled.ledger &&
-              typeof body.organizationId === 'string' &&
-              reconciled.memberships.some(
-                (member) =>
-                  member.organizationId === body.organizationId &&
-                  ['left', 'removed'].includes(member.status) &&
-                  !member.leaving,
-              )
-            )
-              useOrganizationSharingStore
-                .getState()
-                .acceptLedger(uid, body.organizationId, reconciled.ledger)
-          } catch {
-            /* Keep failure actionable; the next refresh can reconcile. */
-          }
-        }
-        if (
-          visible.current &&
-          useAuthStore.getState().user?.uid === uid &&
-          !isRequestCancelled(error)
+          error instanceof OrganizationSyncError &&
+          [401, 403].includes(error.status)
         )
-          setState((previous) => ({
-            uid,
-            memberships:
-              error instanceof OrganizationSyncError &&
-              [401, 403].includes(error.status)
-                ? []
-                : (memberships ?? (mutation ? previous.memberships : [])),
-            busy: false,
-            loaded: true,
-            error: organizationErrorMessage(error),
-          }))
-        return false
-      } finally {
-        if (pending.current === operation) pending.current = null
-      }
+          queryClient.setQueryData(queryKey, { memberships: [] })
+        else if (reconciled) queryClient.setQueryData(queryKey, reconciled)
+      },
     },
-    [uid, online],
+    queryClient,
   )
-  useFocusEffect(
-    useCallback(() => {
-      visible.current = true
-      void request()
-      const clear = () => {
-        generation.current++
-        if (!pending.current?.mutation) {
-          pending.current?.controller.abort()
-          pending.current = null
-        }
-        setState({ memberships: [], error: '', busy: false, loaded: false })
-      }
-      const listener = AppState.addEventListener('change', (state) => {
-        if (state === 'active') {
-          visible.current = true
-          void request()
-        } else {
-          visible.current = false
-          clear()
-        }
-      })
-      return () => {
-        visible.current = false
-        clear()
-        listener.remove()
-      }
-    }, [request]),
+  const query = useQuery(
+    {
+      queryKey,
+      // A refresh during a write could replace its acknowledged result with an older read.
+      enabled: visible && !mutation.isPending,
+      gcTime: 0,
+      staleTime: 30000,
+      queryFn: ({ signal }) =>
+        fetchMemberships({ action: 'memberships' }, uid, undefined, signal),
+    },
+    queryClient,
   )
-  const current = state.uid === uid
-  const initialLoading =
-    !!uid && online && (!current || !state.loaded) && !state.error
+  const failure = mutation.error ?? (query.isError ? query.error : null)
   return {
-    ...state,
-    memberships: current && online ? state.memberships : [],
-    busy: state.busy || initialLoading,
-    initialLoading,
+    memberships:
+      visible && !query.isError ? (query.data?.memberships ?? []) : [],
+    error: failure ? organizationErrorMessage(failure) : '',
+    busy: query.isFetching || mutation.isPending,
+    initialLoading: query.isLoading,
     uid,
     online,
-    request,
+    request: async (body?: Body) => {
+      if (!uid || !online || mutation.isPending) return false
+      if (!body) {
+        mutation.reset()
+        return (await query.refetch()).isSuccess
+      }
+      return mutation.mutateAsync(body).then(
+        () => true,
+        () => false,
+      )
+    },
   }
 }

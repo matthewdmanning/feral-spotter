@@ -39,6 +39,7 @@ test('join, approval refresh and name editing work while sharing is off; account
     }
   })
   await renderRouter({ index: () => <MembershipsScreen /> })
+  await screen.findByText('No memberships or pending requests.')
   await user.type(screen.getByLabelText('Invite code'), 'a'.repeat(32))
   await user.type(screen.getByLabelText('Display name'), 'Member name')
   await user.press(screen.getByRole('button', { name: 'Request membership' }))
@@ -119,6 +120,7 @@ test('foreground refresh cannot discard an in-flight membership mutation', async
       : { status: 200, body: { memberships: [] } },
   )
   await renderRouter({ index: () => <MembershipsScreen /> })
+  await screen.findByText('No memberships or pending requests.')
   await user.type(screen.getByLabelText('Invite code'), 'a'.repeat(32))
   await user.type(screen.getByLabelText('Display name'), 'Member')
   await user.press(screen.getByRole('button', { name: 'Request membership' }))
