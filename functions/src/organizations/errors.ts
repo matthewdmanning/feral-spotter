@@ -1,7 +1,7 @@
 /** A permanent rejection the client must not retry unchanged. */
 export class RequestError extends Error {
   constructor(
-    readonly status: 400 | 404 | 409 | 429,
+    readonly status: 400 | 403 | 404 | 409 | 429,
     message: string,
   ) {
     super(message)
