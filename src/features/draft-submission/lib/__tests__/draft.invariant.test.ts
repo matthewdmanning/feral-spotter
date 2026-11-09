@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useActiveCatFlowStore } from '@/src/features/draft-submission/hooks/useActiveCatFlowStore'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
 import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import {
   completeDraft,
@@ -85,14 +86,11 @@ const buildFullDraft = () => {
     photos_reviewed: true,
   })
   for (const localId of [PHOTO_ID, 'photo-2']) {
-    usePhotoStore.getState().addPhoto({
-      local_id: localId,
-      uri: `file://${localId}.jpg`,
-      uploaded: false,
-      upload_progress: 0,
-      width: 100,
-      height: 100,
-    })
+    usePhotoStore
+      .getState()
+      .addPhoto(
+        submissionPhoto({ local_id: localId, uri: `file://${localId}.jpg` }),
+      )
   }
   useBoundingBoxStore.getState().addBox(CAT_ID, PHOTO_ID, {
     lowerLeftX: 1,

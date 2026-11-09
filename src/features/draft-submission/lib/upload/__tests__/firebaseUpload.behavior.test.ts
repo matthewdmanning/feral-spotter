@@ -14,6 +14,7 @@ import {
   uploadSubmissionMetadata,
   uploadSubmissionPhoto,
 } from '@/src/features/draft-submission/lib/upload/firebaseUpload'
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
 describe('Firebase submission upload behavior', () => {
   it('writes the serialized submission to its owned metadata object as JSON', async () => {
     const payload = { id: 'sub-7', photos: [{ cloud_storage_path: 'p.jpg' }] }
@@ -117,15 +118,14 @@ describe('Firebase submission upload behavior', () => {
 // cap (photo-0 … photo-9) and the orphan sweep all key on; the percent
 // drives the progress bar.
 describe('uploadSubmissionPhoto', () => {
-  const photo = (uri: string) => ({
-    local_id: 'photo-9',
-    uri,
-    uploaded: false,
-    upload_progress: 0,
-    width: 10,
-    height: 10,
-    upload_slot: 3,
-  })
+  const photo = (uri: string) =>
+    submissionPhoto({
+      local_id: 'photo-9',
+      uri,
+      width: 10,
+      height: 10,
+      upload_slot: 3,
+    })
 
   it.each([
     ['file:///cache/a.jpg', 'jpg'],

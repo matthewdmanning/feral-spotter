@@ -4,6 +4,7 @@ import {
   cancelQueuedUploads,
   uploadNewPhoto,
 } from '@/src/features/draft-submission/lib/upload/uploadNewPhoto'
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
 
 const mockPending: {
   resolve: (value: PhotoUploadResponse) => void
@@ -32,14 +33,8 @@ jest.mock('@/src/features/draft-submission/lib/upload/firebaseUpload', () => ({
   ),
 }))
 
-const photo = (n: number): SubmissionPhoto => ({
-  local_id: `photo-${n}`,
-  uri: `file:///cache/${n}.jpg`,
-  uploaded: false,
-  upload_progress: 0,
-  width: 100,
-  height: 100,
-})
+const photo = (n: number): SubmissionPhoto =>
+  submissionPhoto({ local_id: `photo-${n}`, uri: `file:///cache/${n}.jpg` })
 
 const drainTasks = () => new Promise<void>((resolve) => setImmediate(resolve))
 

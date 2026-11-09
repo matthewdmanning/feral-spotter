@@ -6,6 +6,7 @@ import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoSto
 import HomeScreen from '@/src/core/home/screens/home/index'
 import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
 import { setConsent } from '@/src/test-utils/consent'
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
 
 /**
  * Model of the photo-source-exclusivity gate (ADR 0002's 2026-07-31
@@ -36,14 +37,7 @@ jest.mock('@/src/shared/ui/molecules/BottomButtonColumn', () => ({
 jest.mock('@/src/features/library-picker/hooks/useLibraryPhotoPicker', () => ({
   useLibraryPhotoPicker: () => ({ pickFromLibrary: jest.fn() }),
 }))
-const photo = {
-  local_id: 'photo-1',
-  uri: 'file:///picked-photo.jpg',
-  uploaded: false,
-  upload_progress: 0,
-  width: 100,
-  height: 100,
-}
+const photo = submissionPhoto({ uri: 'file:///picked-photo.jpg' })
 
 const gateMachine = createMachine({
   id: 'photoSourceGate',

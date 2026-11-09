@@ -8,17 +8,11 @@ import { useAnnotatePass } from '@/src/features/annotate/hooks/useAnnotatePass'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useSettingsStore } from '@/src/features/settings/hooks/useSettingsStore'
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
 
 jest.mock('expo-router', () => ({ router: { replace: jest.fn() } }))
 
-const PHOTO = {
-  local_id: 'photo-1',
-  uri: 'file:///photo-1.jpg',
-  uploaded: false,
-  upload_progress: 0,
-  width: 100,
-  height: 100,
-}
+const PHOTO = submissionPhoto()
 const OTHER_PHOTO = {
   ...PHOTO,
   local_id: 'photo-2',

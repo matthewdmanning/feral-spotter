@@ -13,6 +13,7 @@ import { useSubmissionSubmit } from '@/src/features/draft-submission/hooks/useSu
 import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { observedCat } from '@/src/test-utils/catFixtures'
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
 
 /**
  * A submit waits up to 30 s for background uploads. During that wait the
@@ -44,14 +45,7 @@ jest.mock('@/src/features/auth/lib', () => ({
   },
 }))
 
-const pendingPhoto = {
-  local_id: 'photo-1',
-  uri: 'file://photo-1.jpg',
-  uploaded: false,
-  upload_progress: 0,
-  width: 100,
-  height: 100,
-}
+const pendingPhoto = submissionPhoto({ uri: 'file://photo-1.jpg' })
 
 function markUploaded() {
   usePhotoStore.getState().updatePhoto('photo-1', {

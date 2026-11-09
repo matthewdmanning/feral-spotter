@@ -1,4 +1,5 @@
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
 
 /**
  * storage.rules accepts only photo-0 … photo-9 in a Submission, so every
@@ -7,14 +8,8 @@ import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoSto
  * land on its replacement.
  */
 
-const photo = (n: number) => ({
-  local_id: `p${n}`,
-  uri: `file:///p${n}.jpg`,
-  uploaded: false,
-  upload_progress: 0,
-  width: 10,
-  height: 10,
-})
+const photo = (n: number) =>
+  submissionPhoto({ local_id: `p${n}`, width: 10, height: 10 })
 const slots = () => usePhotoStore.getState().photos.map((p) => p.upload_slot)
 
 beforeEach(() => usePhotoStore.getState().clearPhotos(true))
