@@ -189,6 +189,12 @@ Directory reconciliation compares selected ids, organization names and catalog v
 
 **Verification:** Final full app run: 119 suites / 579 tests passed. App, server and test TypeScript checks passed. Full client ESLint passed with three existing import-order warnings in `BottomButtonColumn.tsx`; changed screen tests also passed focused lint. Prettier, `git diff --check` and the staged secret scan passed. The final Jest run used `--watchman=false` after Watchman reported a dependency-directory access warning. Firebase rules, Functions suites, native builds and physical-device checks were not run; no backend code changed or deployment occurred.
 
+## 2026-11-09 — refactor: reusable organization permissions
+
+**Purpose:** Keep organization permissions independent of optional membership and sharing UI.
+**Change:** Added explicit viewer authorization/projection, CAS JSON helpers, permission-transition blocking and explicit consent replacement. The authenticated API accepts a feature adapter at composition time. See [spec](../planning/organization-membership-and-sharing.md).
+**Tests:** `permissions.test.ts` checks private-field exclusion, revoked content, transition locks and stale-grant rejection. Verification recorded with integrated feature notes.
+
 ## 2026-11-11 — fix
 
 **Purpose:** Address review findings F10/F11 without changing sharing consent,
