@@ -19,10 +19,15 @@ if (
     'Usage: node scripts/organization-membership.mjs invite ORGANIZATION | approve|reject|remove ORGANIZATION UID',
   )
 }
+if (!process.env.FIREBASE_PROJECT_ID)
+  throw new Error(
+    'Set FIREBASE_PROJECT_ID explicitly to the intended Firestore project',
+  )
 if (!process.env.GCS_BUCKET_NAME)
   throw new Error('Set GCS_BUCKET_NAME explicitly to the intended bucket')
 initializeApp({
   credential: applicationDefault(),
+  projectId: process.env.FIREBASE_PROJECT_ID,
   storageBucket: process.env.GCS_BUCKET_NAME,
 })
 if (action === 'invite')

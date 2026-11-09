@@ -1,7 +1,9 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { getAuth } from 'firebase-admin/auth'
-import { getStorage } from 'firebase-admin/storage'
-import { changeDocument, readDocument } from '../documents'
+import { db } from '../store'
+import { changeMembership, readMemberships } from './store'
+export { readMemberships, isActiveMember, roster } from './store'
+import { readDocument } from '../documents'
 import {
   makePermission,
   readCatalog,
@@ -11,15 +13,10 @@ import {
 } from '../api'
 import { validId, type Permission } from '../domain'
 import { RequestError } from '../errors'
-import { memberName, type LeaveChoice, type Membership } from './domain'
+import { memberName, type LeaveChoice } from './domain'
 
-type Records = Record<string, Membership>
-const path = (uid: string) => `organization-permissions/${uid}/memberships.json`
-const empty = (): Records => ({})
-export const readMemberships = async (uid: string) =>
-  (await readDocument(path(uid), empty)).value
 const invitePath = (code: string) =>
-  `organization-invites/${createHash('sha256').update(code).digest('hex')}.json`
+  `organizationInvites/${createHash('sha256').update(code).digest('hex')}`
 
 export async function activeOrganization(organizationId: string) {
   const catalog = await readCatalog()
@@ -30,25 +27,10 @@ export async function activeOrganization(organizationId: string) {
   return { catalog, organization }
 }
 
-export async function isActiveMember(
-  uid: string,
-  organizationId: string,
-): Promise<boolean> {
-  const member = (await readMemberships(uid))[organizationId]
-  return member?.status === 'active' && !member.exit
-}
-
 export async function createInvite(organizationId: string) {
   await activeOrganization(organizationId)
   const code = randomBytes(24).toString('base64url')
-  await getStorage()
-    .bucket()
-    .file(invitePath(code))
-    .save(JSON.stringify({ organizationId }), {
-      resumable: false,
-      contentType: 'application/json',
-      preconditionOpts: { ifGenerationMatch: 0 },
-    })
+  await db().doc(invitePath(code)).create({ organizationId })
   return code
 }
 
@@ -75,7 +57,7 @@ export async function joinOrganization(
     throw new RequestError(404, 'Invalid invite code')
   const organizationId = invite.organizationId
   await activeOrganization(organizationId)
-  await changeDocument<Records>(path(uid), empty, (records) => {
+  await changeMembership(uid, organizationId, (records) => {
     const previous = records[organizationId]
     if (previous?.exit)
       throw RequestError.confirmAgain('Finish leaving before joining again')
@@ -104,7 +86,7 @@ export async function renameMember(
   } catch {
     throw new RequestError(400, 'Invalid display name')
   }
-  await changeDocument<Records>(path(uid), empty, (records) => {
+  await changeMembership(uid, organizationId, (records) => {
     const member = records[organizationId]
     if (
       !member ||
@@ -116,31 +98,6 @@ export async function renameMember(
   })
 }
 
-export async function roster(
-  organizationId: string,
-): Promise<{ displayName: string }[]> {
-  const names: { displayName: string }[] = []
-  let pageToken: string | undefined
-  do {
-    const [files, next] = await getStorage().bucket().getFiles({
-      prefix: 'organization-permissions/',
-      matchGlob: '**/memberships.json',
-      autoPaginate: false,
-      maxResults: 100,
-      pageToken,
-    })
-    pageToken = (next as { pageToken?: string } | undefined)?.pageToken
-    for (const file of files) {
-      const member = (await readMemberships(file.name.split('/')[1]))[
-        organizationId
-      ]
-      if (member?.status === 'active' && !member.exit)
-        names.push({ displayName: member.displayName })
-    }
-  } while (pageToken)
-  return names.sort((a, b) => a.displayName.localeCompare(b.displayName))
-}
-
 /** A durable saga: block grants, change permissions, end membership, release the block. */
 export async function leaveOrganization(
   uid: string,
@@ -148,7 +105,11 @@ export async function leaveOrganization(
   choice: LeaveChoice,
   status: 'left' | 'removed' = 'left',
 ) {
-  if (!validId(choice.mutationId) || !['keep', 'revoke'].includes(choice.mode))
+  if (
+    !choice ||
+    !validId(choice.mutationId) ||
+    !['keep', 'revoke'].includes(choice.mode)
+  )
     throw new RequestError(400, 'Invalid leaving choice')
   // Validate before reserving the operation, so malformed input cannot trap a membership.
   if (choice.mode === 'keep')
@@ -162,7 +123,7 @@ export async function leaveOrganization(
       contactEmail: choice.contactEmail,
       disclosureVersion: 1,
     })
-  const records = await changeDocument<Records>(path(uid), empty, (records) => {
+  const records = await changeMembership(uid, organizationId, (records) => {
     const member = records[organizationId]
     if (!member) throw new RequestError(404, 'Membership unavailable')
     if (member.exit) {
@@ -237,14 +198,14 @@ export async function leaveOrganization(
     // Validation failures can be corrected, or the user can choose revoke-all instead.
     if (
       error instanceof RequestError &&
-      [400, 404, 409].includes(error.status)
+      [400, 404, 409, 429].includes(error.status)
     ) {
       await updateLedger(uid, `abort-${token}`, async () => ({
         type: 'unblockOrganization',
         organizationId,
         token,
       }))
-      await changeDocument<Records>(path(uid), empty, (records) => {
+      await changeMembership(uid, organizationId, (records) => {
         const current = records[organizationId]
         if (current?.exit?.mutationId !== saved.mutationId) return records
         const { exit: _exit, ...rest } = current
@@ -253,7 +214,7 @@ export async function leaveOrganization(
     }
     throw error
   }
-  await changeDocument<Records>(path(uid), empty, (records) => ({
+  await changeMembership(uid, organizationId, (records) => ({
     ...records,
     [organizationId]: { ...records[organizationId], status, exit: saved },
   }))
@@ -262,7 +223,7 @@ export async function leaveOrganization(
     organizationId,
     token,
   }))
-  await changeDocument<Records>(path(uid), empty, (records) => {
+  await changeMembership(uid, organizationId, (records) => {
     const current = records[organizationId]
     if (current?.exit?.mutationId !== saved.mutationId) return records
     const { exit: _exit, ...rest } = current
@@ -293,14 +254,14 @@ export async function moderateMembership(
       `remove-${randomBytes(16).toString('hex')}`,
       async () => ({ type: 'revokeOrganization', organizationId }),
     )
-    await changeDocument<Records>(path(uid), empty, (records) => {
+    await changeMembership(uid, organizationId, (records) => {
       const { exit: _exit, ...current } = records[organizationId]
       return { ...records, [organizationId]: { ...current, status: 'removed' } }
     })
     return
   }
   await activeOrganization(organizationId)
-  await changeDocument<Records>(path(uid), empty, (records) => {
+  await changeMembership(uid, organizationId, (records) => {
     const member = records[organizationId]
     if (!member || member.status !== 'pending' || member.exit)
       throw RequestError.confirmAgain('No pending request')
