@@ -4,7 +4,12 @@ import { Image } from 'expo-image'
 import { useLocalSearchParams, Stack } from 'expo-router'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import { TextButton } from '@/src/shared/ui/atoms/TextButton'
-import { organizationRequest } from '@/src/features/organizations/lib/api'
+import { OrganizationLoading } from '@/src/features/organizations/components/OrganizationLoading'
+import {
+  organizationRequest,
+  organizationErrorMessage,
+  isRequestCancelled,
+} from '@/src/features/organizations/lib/api'
 import { styles } from '@/src/features/organizations/components/styles'
 import { styles as layout } from '@/src/features/organizations/sharing/components/styles'
 import {
@@ -25,23 +30,28 @@ function SharedPhoto({
   index: number
 }) {
   const [image, setImage] = useState('')
-  const [error, setError] = useState(false)
+  const [error, setError] = useState('')
+  const [attempt, retry] = useState(0)
   useEffect(() => {
     let active = true
+    const controller = new AbortController()
     void organizationRequest<{ image: string }>(
       { action: 'sharedPhoto', organizationId, id: sighting.id, index },
       uid,
+      { signal: controller.signal },
     )
       .then((result) => {
         if (active) setImage(result.image)
       })
-      .catch(() => {
-        if (active) setError(true)
+      .catch((error) => {
+        if (active && !isRequestCancelled(error))
+          setError(organizationErrorMessage(error))
       })
     return () => {
       active = false
+      controller.abort()
     }
-  }, [uid, organizationId, sighting.id, index])
+  }, [uid, organizationId, sighting.id, index, attempt])
   return image ? (
     <Image
       source={{ uri: image }}
@@ -50,10 +60,22 @@ function SharedPhoto({
       contentFit="contain"
       accessibilityLabel={`Shared cat photo ${index + 1}`}
     />
+  ) : error ? (
+    <View>
+      <Text accessibilityRole="alert" style={styles.hint}>
+        {error}
+      </Text>
+      <TextButton
+        onPress={() => {
+          setError('')
+          retry((value) => value + 1)
+        }}
+      >
+        Retry photo
+      </TextButton>
+    </View>
   ) : (
-    <Text style={styles.hint}>
-      {error ? 'Photo unavailable. Refresh to retry.' : 'Loading photo…'}
-    </Text>
+    <OrganizationLoading label="Loading photo…" />
   )
 }
 
@@ -70,6 +92,17 @@ export default function SharedSightingsScreen() {
         Shaded areas show approximate locations. Pins show explicitly shared
         precise locations.
       </Text>
+      {!query.uid && (
+        <Text style={styles.body}>Sign in to view shared Sightings.</Text>
+      )}
+      {!query.enabled && (
+        <Text style={styles.body}>
+          Organization sharing is currently unavailable.
+        </Text>
+      )}
+      {query.initialLoading && (
+        <OrganizationLoading label="Loading shared Sightings…" />
+      )}
       {!query.online && (
         <Text style={styles.body}>Connect to view shared Sightings.</Text>
       )}
@@ -84,11 +117,15 @@ export default function SharedSightingsScreen() {
           void query.load()
         }}
         loading={query.busy}
+        disabled={!query.online || !query.uid || !query.enabled}
       >
         Refresh shared Sightings
       </AppButton>
       <SharedSightingsMap sightings={query.sightings} onSelect={select} />
-      {!query.busy &&
+      {query.enabled &&
+        query.uid &&
+        query.loaded &&
+        !query.busy &&
         !query.error &&
         query.online &&
         !query.sightings.length && (

@@ -15,3 +15,10 @@ Membership and sharing were developed on separate branches and composed on `feat
 `sharing/hooks/__tests__/sharedSightings.journey.test.tsx` verifies pagination retention during refresh and clearing on access loss/account changes. Shared pages return at most 50 Sightings, using numeric cursors rather than Storage tokens that could encode account identifiers.
 
 V1 reads existing owner permission ledgers on demand; it does not add a separate organization index. Large deployments should add an indexed projection before increasing usage substantially. Foreground views refresh every 30 seconds; background/offline/blur clears loaded data. Revocation prevents subsequent authorized reads but cannot recall previously delivered copies.
+
+Android and iOS Metro/Hermes exports passed to `/tmp/feral-spotter-organizations-export`. Android emitted a nonfatal warning because local `google-services.json` is absent. These checks verify JavaScript bundling, not native compilation or device layout.
+
+## 2026-11-09 — refactor: indexed Firestore reads and loading recovery
+
+**Purpose:** Replace bucket scans with Firestore queries and make shared views resilient to asynchronous failures.
+**Change:** Indexed organization-scoped pages with opaque document-key cursors, direct photo permission lookups, live revocation/deletion checks, and authorization before/after processing. Photos remain sanitized in Storage, with generation-pinned downloads. Shared collections use a cancellable, single-flight pager with explicit loading/error/empty states; photo failures have an individual retry action. See [membership update](2026-11-09-feat-organization-membership.md) and [ADR-0008](../adr/0008-firestore-for-organizations.md). Final integration verification follows feature-branch integration.

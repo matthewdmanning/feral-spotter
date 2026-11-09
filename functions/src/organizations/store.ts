@@ -98,6 +98,37 @@ export async function readCatalog(): Promise<Catalog> {
   )
 }
 
+export async function readOrganization(organizationId: string) {
+  return db().runTransaction(
+    async (transaction) => {
+      const [metadata, record] = await Promise.all([
+        transaction.get(db().doc('organizationCatalog/current')),
+        transaction.get(db().collection('organizations').doc(organizationId)),
+      ])
+      if (metadata.get('updating'))
+        throw new RequestError(
+          503,
+          'The organization directory is updating. Please retry.',
+        )
+      if (!metadata.exists || !record.exists || !record.get('active'))
+        throw new RequestError(404, 'Organization unavailable')
+      const catalog = parseCatalog({
+        version: metadata.get('version'),
+        organizations: [
+          {
+            id: record.id,
+            name: record.get('name'),
+            active: record.get('active'),
+            coverage: JSON.parse(record.get('coverageJson')),
+          },
+        ],
+      })
+      return { catalog, organization: catalog.organizations[0] }
+    },
+    { readOnly: true },
+  )
+}
+
 /** A generation boundary makes organization-wide revocation constant-time and authoritative. */
 export function effectivePermission(
   record: StoredPermission,
