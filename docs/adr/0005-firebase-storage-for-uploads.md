@@ -223,4 +223,4 @@ _2026-11-01: code paths updated for the feature-folder layout ([PROJECT_STRUCTUR
 
 ## Amendment 2026-11-09: organization data uses Firestore
 
-Explicit user instruction supersedes the no-Firestore decision for organization data only. [ADR-0008](0008-firestore-for-organizations.md) governs directory records, membership, invites, permissions, and mutation receipts. Submission files, upload limits, and cap claims retain this ADR's existing design.
+Organization data uses Firestore. [ADR-0008](0008-firestore-for-organizations.md) governs directory records, membership, invites, permissions, and mutation receipts. Submission files, upload limits, and cap claims retain this ADR's existing design.
