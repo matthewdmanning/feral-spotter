@@ -413,3 +413,12 @@ export const SHARING_FIELD_LABELS: Record<keyof SharingFields, string> = {
   preciseLocation: 'Precise location',
   photos: 'Photos',
 }
+
+export interface SharedSighting {
+  id: string
+  catCount: number
+  generalLocation: Permission['data']['generalLocation']
+  preciseLocation?: Permission['data']['preciseLocation']
+  cats?: Permission['data']['cats']
+  photoCount: number
+}

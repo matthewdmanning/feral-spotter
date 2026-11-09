@@ -5,7 +5,7 @@
  * separately from the historical record.
  */
 
-import { OrganizationPermissions } from '@/src/features/organizations/components/OrganizationPermissions'
+import { OrganizationPermissions } from '@/src/features/organizations/sharing/components/OrganizationPermissions'
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
 import { CatCrop } from '@/src/shared/ui/atoms/CatCrop'

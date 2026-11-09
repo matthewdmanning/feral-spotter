@@ -6,7 +6,7 @@ import {
   waitFor,
 } from '@testing-library/react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { SubmissionOrganizations } from '@/src/features/organizations/components/SubmissionOrganizations'
+import { SubmissionOrganizations } from '@/src/features/organizations/sharing/components/SubmissionOrganizations'
 import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import {
   useOrganizationSharingStore,
@@ -18,7 +18,7 @@ import {
 } from '@/src/features/organizations/hooks/useOrganizationDirectory'
 import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
-import { confirmedSharing } from '@/src/features/organizations/lib/consent'
+import { confirmedSharing } from '@/src/features/organizations/sharing/lib/consent'
 import { DEFAULT_SHARING, type Catalog } from '@/src/shared/types/Organizations'
 import { fakeOrganizationsService } from '@/src/test-utils/organizationsService'
 

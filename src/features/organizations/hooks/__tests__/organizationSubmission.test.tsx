@@ -1,7 +1,7 @@
 import { act, render, screen, userEvent } from '@testing-library/react-native'
 import { randomUUID } from 'expo-crypto'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { SubmissionOrganizations } from '@/src/features/organizations/components/SubmissionOrganizations'
+import { SubmissionOrganizations } from '@/src/features/organizations/sharing/components/SubmissionOrganizations'
 import {
   discardDraft,
   submitDraft,

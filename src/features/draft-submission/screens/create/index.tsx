@@ -1,4 +1,4 @@
-import { SubmissionOrganizations } from '@/src/features/organizations/components/SubmissionOrganizations'
+import { SubmissionOrganizations } from '@/src/features/organizations/sharing/components/SubmissionOrganizations'
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
