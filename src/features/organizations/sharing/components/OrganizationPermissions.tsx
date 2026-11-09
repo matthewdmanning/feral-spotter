@@ -21,8 +21,8 @@ import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrga
 import {
   FALLBACK_ORGANIZATION_NAME,
   includedSummary,
-} from '@/src/features/organizations/lib/sharing'
-import { styles } from './styles'
+} from '@/src/features/organizations/sharing/lib/sharing'
+import { styles } from '../../components/styles'
 
 function reviewMessage({ grant, organizationName }: ReviewedGrant): string {
   const contact = [
