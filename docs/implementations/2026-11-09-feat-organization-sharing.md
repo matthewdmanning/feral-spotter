@@ -15,5 +15,3 @@ Membership and sharing were developed on separate branches and composed on `feat
 `sharing/hooks/__tests__/sharedSightings.journey.test.tsx` verifies pagination retention during refresh and clearing on access loss/account changes. Shared pages return at most 50 Sightings, using numeric cursors rather than Storage tokens that could encode account identifiers.
 
 V1 reads existing owner permission ledgers on demand; it does not add a separate organization index. Large deployments should add an indexed projection before increasing usage substantially. Foreground views refresh every 30 seconds; background/offline/blur clears loaded data. Revocation prevents subsequent authorized reads but cannot recall previously delivered copies.
-
-Android and iOS Metro/Hermes exports passed to `/tmp/feral-spotter-organizations-export`. Android emitted a nonfatal warning because local `google-services.json` is absent. These checks verify JavaScript bundling, not native compilation or device layout.
