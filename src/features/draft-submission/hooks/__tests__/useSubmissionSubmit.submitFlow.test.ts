@@ -430,7 +430,7 @@ describe('useSubmissionSubmit submit flow', () => {
           .getState()
           .dialog?.buttons.find((b) => b.text === 'Submit')
         expect(submit?.onPress).toEqual(expect.any(Function))
-        const sending = submit!.onPress!() as unknown as Promise<void>
+        const sending = submit!.onPress!()
         await jest.advanceTimersByTimeAsync(31_000)
         await sending
       })
