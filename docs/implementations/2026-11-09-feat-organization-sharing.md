@@ -29,3 +29,13 @@ See [combined verification](2026-11-07-feat-organizations.md#verification) for c
 
 **Purpose:** Viewers can comment on and react to shared pins.
 **Change:** Shared Sighting data stays read-only; the detail card adds the pin interactions thread. See [pin interactions](2026-11-09-pin-interactions.md).
+
+## 2026-11-10 — fix
+
+**Purpose:** Review findings: a failed background refresh blanked loaded results; polling reloaded every loaded page.
+**Change:**
+
+- `useOrganizationPager` clears pages only when access is lost (`isAccessLost`: 401/403/404); other failures keep them beside the error.
+- Auto-refresh (30 s) runs only while one page is loaded; after "load more", refresh is manual. TanStack refetches every loaded page in sequence.
+- `sharedPhoto` pins the Storage generation as returned, without `Number()` conversion.
+- Test: `sharedSightings.journey.test.tsx` asserts a 503 refresh keeps both pages; it failed before the fix. Pin interactions use the same pager: [pin interactions](2026-11-09-pin-interactions.md).

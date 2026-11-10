@@ -4,6 +4,7 @@ import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import {
   organizationRequest,
   organizationErrorMessage,
+  isAccessLost,
 } from '@/src/features/organizations/lib/api'
 import { useVisibleQueryScope } from '@/src/features/organizations/hooks/useVisibleQueryScope'
 
@@ -38,7 +39,9 @@ export function useOrganizationPager<T>({
     queryKey,
     enabled: visible,
     gcTime: 0,
-    refetchInterval: 30000,
+    // A refetch reloads every loaded page in sequence, so only one page polls.
+    refetchInterval: (query) =>
+      (query.state.data?.pages.length ?? 0) > 1 ? false : 30000,
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (page: Page<T>) => page.cursor ?? undefined,
     queryFn: async ({ pageParam, signal }): Promise<Page<T>> => {
@@ -63,8 +66,11 @@ export function useOrganizationPager<T>({
       }
     },
   })
-  // Denied access clears loaded pages instead of showing them beside the error.
-  const pages = visible && !query.isError ? (query.data?.pages ?? []) : []
+  // Lost access clears loaded pages; a temporary failure keeps them beside the error.
+  const pages =
+    visible && !(query.isError && isAccessLost(query.error))
+      ? (query.data?.pages ?? [])
+      : []
   return {
     items: pages.flatMap((page) => page.items),
     cursor: pages.at(-1)?.cursor ?? null,

@@ -3,6 +3,7 @@ import { createTestModel } from '@xstate/graph'
 import { getFirestore } from 'firebase-admin/firestore'
 import { createInvite, moderateMembership } from '../membership/service'
 import { applyAuthorExit } from '../interactions/store'
+import { COMMENT_LIMIT, COMMENT_PAGE_SIZE } from '../interactions/domain'
 import {
   call,
   createOrganizations,
@@ -251,25 +252,76 @@ const journeys = [
   },
 ]
 
+async function sharePin() {
+  ;[organizationId, otherOrganization] = await createOrganizations(2)
+  sharer = await signedInUser('pin-sharer')
+  author = await signedInUser('pin-author')
+  reader = await signedInUser('pin-reader')
+  outsider = await signedInUser('pin-outsider')
+  await joinApproved(sharer, organizationId)
+  await joinApproved(author, organizationId)
+  await joinApproved(reader, organizationId)
+  await joinApproved(outsider, otherOrganization)
+  expect((await call(grant(organizationId), sharer.token)).status).toBe(200)
+  const shared = await call(
+    { action: 'sharedSightings', organizationId },
+    reader.token,
+  )
+  pinId = (shared.body as unknown as { sightings: { id: string }[] })
+    .sightings[0].id
+}
+
 journeys.forEach(({ name, events }) => {
   test(name, async () => {
-    ;[organizationId, otherOrganization] = await createOrganizations(2)
-    sharer = await signedInUser('pin-sharer')
-    author = await signedInUser('pin-author')
-    reader = await signedInUser('pin-reader')
-    outsider = await signedInUser('pin-outsider')
-    await joinApproved(sharer, organizationId)
-    await joinApproved(author, organizationId)
-    await joinApproved(reader, organizationId)
-    await joinApproved(outsider, otherOrganization)
-    expect((await call(grant(organizationId), sharer.token)).status).toBe(200)
-    const shared = await call(
-      { action: 'sharedSightings', organizationId },
-      reader.token,
-    )
-    pinId = (shared.body as unknown as { sightings: { id: string }[] })
-      .sightings[0].id
+    await sharePin()
     const [path] = model.getPathsFromEvents(events.map((type) => ({ type })))
     await path.test(testParams)
   })
+})
+
+const post = (index: number) =>
+  request(author, {
+    action: 'addPinComment',
+    mutationId: `comment-${index}`,
+    body: `Comment ${index}`,
+  })
+const commentOf = (reply: Awaited<ReturnType<typeof call>>) =>
+  (reply.body as unknown as { comment: Comment }).comment
+
+test('deleting the comment a page ended on keeps the next page reachable', async () => {
+  await sharePin()
+  for (let index = 1; index <= COMMENT_PAGE_SIZE + 1; index++)
+    expect((await post(index)).status).toBe(200)
+  const first = await request(reader, { action: 'pinComments' })
+  const { comments, cursor } = first.body as unknown as {
+    comments: Comment[]
+    cursor: string
+  }
+  expect(comments).toHaveLength(COMMENT_PAGE_SIZE)
+  const deleted = await request(author, {
+    action: 'deletePinComment',
+    commentId: comments.at(-1)!.id,
+  })
+  expect(deleted.status).toBe(200)
+  const next = await request(reader, { action: 'pinComments', cursor })
+  expect(next.status).toBe(200)
+  expect(
+    (next.body as unknown as { comments: Comment[] }).comments.map(
+      (c) => c.body,
+    ),
+  ).toEqual([`Comment ${COMMENT_PAGE_SIZE + 1}`])
+})
+
+test('each account stores a bounded number of comments; deleting frees room', async () => {
+  await sharePin()
+  const kept = commentOf(await post(1))
+  await getFirestore()
+    .collection('organizationAccounts')
+    .doc(author.uid)
+    .update({ commentCount: COMMENT_LIMIT })
+  expect((await post(2)).status).toBe(429)
+  // A retry of an already-stored comment is not a new one.
+  expect((await post(1)).status).toBe(200)
+  await request(author, { action: 'deletePinComment', commentId: kept.id })
+  expect((await post(2)).status).toBe(200)
 })

@@ -40,6 +40,8 @@ export interface OrganizationAccount {
   deleting?: boolean
   permissionCount?: number
   mutationCount?: number
+  /** Stored pin comments; bounded by interactions' COMMENT_LIMIT. */
+  commentCount?: number
 }
 export interface PermissionState {
   epoch?: number

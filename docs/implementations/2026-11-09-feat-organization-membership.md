@@ -30,3 +30,12 @@ Build Functions, configure Application Default Credentials, and set `FIREBASE_PR
 The membership journeys cover joining, approval refresh, name editing with sharing off, account isolation, loading/error states, and foregrounding during an in-flight mutation. Leave-control tests cover default unsharing and renewed review after field changes. Server integration covers approvals, roster privacy, removal, revocation, retry checkpoints, and enrollment isolation.
 
 See [combined verification](2026-11-07-feat-organizations.md#verification) for current test counts and limitations. No live operator commands or deployment were performed.
+
+## 2026-11-10 — fix
+
+**Purpose:** Review findings: a leave retry reusing an aborted mutation id stayed at 409; removal during a stuck leave left grants blocked.
+**Change:**
+
+- Each leave attempt gets a server-assigned `exit.attempt`; the block token and ledger receipts include it, so an aborted attempt's receipts never satisfy a retry.
+- Operator removal releases a still-held leave block after revoking.
+- Tests: `leave.model.test.ts` adds a corrected review reusing the rejected mutation id, and removal during a directory update followed by rejoin and a new share; both failed before the fix.

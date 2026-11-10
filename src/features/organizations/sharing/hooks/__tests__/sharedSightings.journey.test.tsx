@@ -16,6 +16,7 @@ function SharedView() {
       {query.sightings.map((s) => (
         <Text key={s.id}>{s.id}</Text>
       ))}
+      {!!query.error && <Text>{query.error}</Text>}
       <TextButton
         disabled={query.busy}
         onPress={() => {
@@ -36,14 +37,16 @@ function SharedView() {
   )
 }
 
-test('refresh preserves loaded pages and revoked access clears memory-only shared results', async () => {
+test('refresh and a failed refresh keep loaded pages; revoked access clears memory-only shared results', async () => {
   const user = userEvent.setup()
   useAuthStore.setState({ user: { uid: 'member', email: null }, isReady: true })
   useUIStore.setState({ isOnline: true })
   useOrganizationsFlag.setState({ enabled: true })
   let denied = false
+  let unavailable = false
   await fakeOrganizationsService((body) => {
     if (denied) return { status: 403 }
+    if (unavailable) return { status: 503 }
     const id = body.cursor ? 'second-shared-pin' : 'first-shared-pin'
     return {
       status: 200,
@@ -66,6 +69,17 @@ test('refresh preserves loaded pages and revoked access clears memory-only share
   expect(await screen.findByText('second-shared-pin')).toBeOnTheScreen()
   await user.press(screen.getByRole('button', { name: 'Refresh' }))
   expect(await screen.findByText('second-shared-pin')).toBeOnTheScreen()
+  // A temporary outage, such as one hit by the 30 s poll, keeps what was loaded.
+  unavailable = true
+  await user.press(screen.getByRole('button', { name: 'Refresh' }))
+  expect(
+    await screen.findByText(
+      'The organization service is temporarily unavailable. Please retry.',
+    ),
+  ).toBeOnTheScreen()
+  expect(screen.getByText('first-shared-pin')).toBeOnTheScreen()
+  expect(screen.getByText('second-shared-pin')).toBeOnTheScreen()
+  unavailable = false
   denied = true
   await user.press(screen.getByRole('button', { name: 'Refresh' }))
   expect(screen.queryByText('first-shared-pin')).toBeNull()
