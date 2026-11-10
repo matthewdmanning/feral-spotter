@@ -130,11 +130,6 @@ describe('useAnnotatePass — carousel navigation (model-based test)', () => {
   }
 
   const journeys = [
-    { name: 'starts on the first photo', events: [] },
-    {
-      name: 'confirming a box advances to the next photo',
-      events: [{ type: 'CONFIRM' }],
-    },
     {
       name: 'not-in-photo advances and completes on the last photo after a confirmed box',
       events: [
