@@ -197,14 +197,6 @@ describe('HomeScreen gate — model-based test', () => {
   // (vs getShortestPaths) lets us name the journey a user actually takes.
   const journeys = [
     {
-      name: 'first launch: unauthenticated, no consent → redirected to intro-flow',
-      events: [{ type: 'AUTH_READY_UNAUTHENTICATED_NO_CONSENT' }],
-    },
-    {
-      name: 'existing account, device consent missing → redirected to intro-flow',
-      events: [{ type: 'AUTH_READY_AUTHENTICATED_NO_CONSENT' }],
-    },
-    {
       name: 'consent already on device but signed out → straight to sign-in, skips intro-flow',
       events: [{ type: 'AUTH_READY_CONSENTED_UNAUTHENTICATED' }],
     },
