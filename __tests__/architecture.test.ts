@@ -159,7 +159,10 @@ beforeAll(() => {
     const cases = JSON.parse(readFileSync(0, 'utf8'))
     const eslint = new ESLint({ overrideConfig: {
       languageOptions: { parserOptions: { projectService: false } },
-      rules: { '@typescript-eslint/consistent-type-exports': 'off' },
+      rules: {
+        '@typescript-eslint/consistent-type-exports': 'off',
+        'import/no-cycle': 'off',
+      },
     } })
     const results = []
     for (const [label, filePath, target] of cases) {
