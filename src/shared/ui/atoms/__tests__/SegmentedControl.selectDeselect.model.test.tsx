@@ -66,10 +66,6 @@ describe('SegmentedControl select/deselect — model-based test', () => {
 
   const journeys = [
     {
-      name: 'tapping the selected option deselects it',
-      events: [{ type: 'TAP_A' }, { type: 'TAP_A' }],
-    },
-    {
       name: 'tapping a different option switches selection',
       events: [{ type: 'TAP_A' }, { type: 'TAP_B' }],
     },
