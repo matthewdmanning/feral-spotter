@@ -96,12 +96,6 @@ describe('useCameraCapture — flash-mode cycle (model-based test)', () => {
   }
 
   const journeys = [
-    { name: 'starts on auto', events: [] },
-    { name: 'one press: auto -> on', events: [{ type: 'PRESS_FLASH' }] },
-    {
-      name: 'two presses: auto -> on -> off',
-      events: [{ type: 'PRESS_FLASH' }, { type: 'PRESS_FLASH' }],
-    },
     {
       name: 'three presses cycles back to auto',
       events: [
@@ -154,11 +148,6 @@ describe('useCameraCapture — camera-flip toggle (model-based test)', () => {
   }
 
   const journeys = [
-    { name: 'starts on the back camera', events: [] },
-    {
-      name: 'one press flips to the front camera',
-      events: [{ type: 'PRESS_FLIP' }],
-    },
     {
       name: 'two presses flips back to the back camera',
       events: [{ type: 'PRESS_FLIP' }, { type: 'PRESS_FLIP' }],

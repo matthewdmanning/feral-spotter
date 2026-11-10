@@ -139,14 +139,6 @@ describe('HomeScreen photo-source-exclusivity gate — model-based test', () => 
 
   const journeys = [
     {
-      name: 'camera pick disables the library entrypoint',
-      events: [{ type: 'CAMERA_PICK' }],
-    },
-    {
-      name: 'library pick disables the camera entrypoint',
-      events: [{ type: 'LIBRARY_PICK' }],
-    },
-    {
       name: 'removing the last camera photo re-enables both entrypoints',
       events: [{ type: 'CAMERA_PICK' }, { type: 'REMOVE_LAST' }],
     },

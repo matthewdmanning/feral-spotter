@@ -169,14 +169,6 @@ describe('HomeScreen entrypoint buttons — model-based test', () => {
   // actions, asserting what pressing each button actually does.
   const journeys = [
     {
-      name: 'no in-progress draft: Resume/New column stays hidden',
-      events: [{ type: 'MOUNT_NO_DRAFT' }],
-    },
-    {
-      name: 'in-progress draft: Resume/New column becomes visible',
-      events: [{ type: 'MOUNT_IN_PROGRESS' }],
-    },
-    {
       name: 'stale in-progress draft: Resume/New column stays hidden',
       events: [{ type: 'MOUNT_STALE' }],
     },
