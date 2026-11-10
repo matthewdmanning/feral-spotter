@@ -1,8 +1,13 @@
 import { createHash } from 'node:crypto'
-import { FieldPath, type Query } from 'firebase-admin/firestore'
-import { checkedAccount, db } from '../store'
+import {
+  FieldPath,
+  type Query,
+  type QueryDocumentSnapshot,
+} from 'firebase-admin/firestore'
+import { accountRef, checkedAccount, db } from '../store'
 import { RequestError } from '../errors'
 import {
+  COMMENT_LIMIT,
   COMMENT_PAGE_SIZE,
   REACTIONS,
   type AuthorExitPolicy,
@@ -39,6 +44,18 @@ const reactions = () => db().collection('pinReactions')
 const reactionRef = (pinId: string, uid: string, key: ReactionKey) =>
   reactions().doc(hash(`${pinId}/${uid}/${key}`))
 
+/** Opaque to clients: `<createdAt>_<comment id>`, the page's last sort position. */
+const commentCursor = (doc: QueryDocumentSnapshot) =>
+  `${String(doc.get('createdAt'))}_${doc.id}`
+function parseCommentCursor(cursor: string): [string, string] {
+  const match =
+    /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)_([a-f0-9]{64})$/.exec(
+      cursor,
+    )
+  if (!match) throw new RequestError(400, 'Invalid cursor')
+  return [match[1], match[2]]
+}
+
 /** Idempotent: retrying one mutationId returns the comment it created. */
 export async function addComment(
   uid: string,
@@ -49,7 +66,7 @@ export async function addComment(
 ): Promise<Omit<PinComment, 'author'>> {
   const reference = comments().doc(hash(`${uid}/${mutationId}`))
   return db().runTransaction(async (transaction) => {
-    await checkedAccount(transaction, uid)
+    const account = await checkedAccount(transaction, uid)
     const existing = await transaction.get(reference)
     const stored = existing.data() as StoredComment | undefined
     if (stored) {
@@ -62,6 +79,9 @@ export async function addComment(
         mine: true,
       }
     }
+    const commentCount = account.commentCount ?? 0
+    if (commentCount >= COMMENT_LIMIT)
+      throw new RequestError(429, 'Comment limit reached')
     const comment: StoredComment = {
       pinId,
       organizationId,
@@ -70,6 +90,11 @@ export async function addComment(
       createdAt: new Date().toISOString(),
     }
     transaction.create(reference, comment)
+    transaction.set(
+      accountRef(uid),
+      { commentCount: commentCount + 1 },
+      { merge: true },
+    )
     return { id: reference.id, body, createdAt: comment.createdAt, mine: true }
   })
 }
@@ -82,13 +107,18 @@ export async function deleteComment(
 ): Promise<void> {
   const reference = comments().doc(commentId)
   await db().runTransaction(async (transaction) => {
-    await checkedAccount(transaction, uid)
+    const account = await checkedAccount(transaction, uid)
     const stored = (await transaction.get(reference)).data() as
       StoredComment | undefined
     if (!stored) return
     if (stored.authorUid !== uid || stored.pinId !== pinId)
       throw new RequestError(404, 'Comment unavailable')
     transaction.delete(reference)
+    transaction.set(
+      accountRef(uid),
+      { commentCount: Math.max(0, (account.commentCount ?? 0) - 1) },
+      { merge: true },
+    )
   })
 }
 
@@ -105,11 +135,10 @@ export async function commentPage(
     .orderBy('createdAt')
     .orderBy(FieldPath.documentId())
     .limit(COMMENT_PAGE_SIZE)
+  // Position values, not a document: the cursor survives its comment's deletion.
   if (cursor) {
-    const after = await comments().doc(cursor).get()
-    if (!after.exists || after.get('pinId') !== pinId)
-      throw new RequestError(400, 'Invalid cursor')
-    query = query.startAfter(after)
+    const [createdAt, id] = parseCommentCursor(cursor)
+    query = query.startAfter(createdAt, id)
   }
   const page = await query.get()
   const stored = page.docs
@@ -133,7 +162,9 @@ export async function commentPage(
       mine: comment.authorUid === uid,
     })),
     cursor:
-      page.size === COMMENT_PAGE_SIZE ? page.docs[page.size - 1].id : null,
+      page.size === COMMENT_PAGE_SIZE
+        ? commentCursor(page.docs[page.size - 1])
+        : null,
   }
 }
 

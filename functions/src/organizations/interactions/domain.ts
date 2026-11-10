@@ -12,6 +12,8 @@ export type ReactionKey = (typeof REACTIONS)[number]['key']
 
 export const COMMENT_MAX_LENGTH = 500
 export const COMMENT_PAGE_SIZE = 50
+/** Stored comments per account, across all pins; deleting one frees room. */
+export const COMMENT_LIMIT = 1000
 
 /**
  * What happens to a member's comments and reactions when they stop being a

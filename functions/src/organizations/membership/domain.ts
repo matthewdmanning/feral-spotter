@@ -10,6 +10,8 @@ export interface LeaveChoice {
   settings?: SharingSettings
   anonymous?: boolean
   contactEmail?: string | null
+  /** Server-assigned when an attempt starts; never taken from the client. */
+  attempt?: string
 }
 export interface Membership {
   organizationId: string

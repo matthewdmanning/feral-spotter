@@ -1,4 +1,5 @@
 import { createMachine } from 'xstate'
+import { getFirestore } from 'firebase-admin/firestore'
 import { createTestModel } from '@xstate/graph'
 import { createInvite, moderateMembership } from '../membership/service'
 import { DEFAULT_SHARING } from '../domain'
@@ -10,6 +11,8 @@ import {
   grant,
   signedInUser,
   serveEmulatorApi,
+  bucket,
+  save,
   withMembershipEndFailure,
 } from './harness'
 
@@ -30,14 +33,21 @@ const leaveMachine = createMachine({
         LEAVE_AND_UNSHARE: 'leftUnshared',
         LEAVE_KEEPING_WITH_STALE_REVIEW: 'sharingMember',
         LEAVE_KEEPING_SHARES: 'leftKeepingShares',
+        RETRY_CORRECTED_REVIEW: 'leftKeepingShares',
         LEAVE_INTERRUPTED: 'leavingIncomplete',
+        LEAVE_DURING_DIRECTORY_UPDATE: 'leavingIncomplete',
       },
     },
-    leavingIncomplete: { on: { RESUME_LEAVING: 'leftUnshared' } },
+    leavingIncomplete: {
+      on: {
+        RESUME_LEAVING: 'leftUnshared',
+        OPERATOR_REMOVES_DURING_DIRECTORY_UPDATE: 'removed',
+      },
+    },
     leftUnshared: { on: { REJOIN_APPROVED: 'rejoinedMember' } },
     leftKeepingShares: { on: { OPERATOR_REMOVES: 'removed' } },
     rejoinedMember: {},
-    removed: {},
+    removed: { on: { REJOIN_APPROVED: 'rejoinedMember' } },
   },
 })
 
@@ -82,6 +92,16 @@ const leave = (choice: Record<string, unknown>) =>
     { action: 'leaveOrganization', organizationId: organization, choice },
     member.token,
   )
+/** Directory reads answer 503 while this runs; the published catalog is unchanged. */
+async function duringDirectoryUpdate<T>(run: () => Promise<T>) {
+  const directory = getFirestore().doc('organizationCatalog/current')
+  await directory.update({ updating: true })
+  try {
+    return await run()
+  } finally {
+    await directory.update({ updating: false })
+  }
+}
 const keepChoice = {
   mode: 'keep',
   epoch: 0,
@@ -133,6 +153,16 @@ const testParams = {
       // Rejoining restores membership, never the shares revoked on leaving.
       expect(seen.share?.revokedAt).toBeDefined()
       expect(seen.rosterStatus).toBe(200)
+      // No leftover leaving block: a new Sighting can be shared again.
+      const fresh = await call(
+        grant(
+          organization,
+          { submissionId: 'other', epoch: seen.epoch },
+          `fresh-${++attempt}`,
+        ),
+        member.token,
+      )
+      expect(fresh.status).toBe(200)
     },
     removed: async () => {
       const seen = await observe()
@@ -156,6 +186,20 @@ const testParams = {
       }
       expect((await leave(choice)).status).toBe(409)
     },
+    RETRY_CORRECTED_REVIEW: async () => {
+      // The client may reuse the rejected attempt's mutation id.
+      const choice = { ...keepChoice, mutationId: 'stale-review' }
+      expect((await leave(choice)).status).toBe(200)
+    },
+    LEAVE_DURING_DIRECTORY_UPDATE: async () => {
+      const choice = { ...keepChoice, mutationId: 'directory-update' }
+      const response = await duringDirectoryUpdate(() => leave(choice))
+      expect(response.status).toBe(503)
+    },
+    OPERATOR_REMOVES_DURING_DIRECTORY_UPDATE: () =>
+      duringDirectoryUpdate(() =>
+        moderateMembership(member.uid, organization, 'remove'),
+      ),
     LEAVE_KEEPING_SHARES: async () => {
       const choice = { ...keepChoice, mutationId: 'keep-review' }
       expect((await leave(choice)).status).toBe(200)
@@ -205,12 +249,35 @@ const journeys = [
     name: 'rejoining after leaving restores no shares',
     events: [{ type: 'LEAVE_AND_UNSHARE' }, { type: 'REJOIN_APPROVED' }],
   },
+  {
+    name: 'a corrected review succeeds when it reuses the rejected mutation id',
+    events: [
+      { type: 'LEAVE_KEEPING_WITH_STALE_REVIEW' },
+      { type: 'RETRY_CORRECTED_REVIEW' },
+    ],
+  },
+  {
+    name: 'removal during a stuck leave releases its block for a later rejoin',
+    events: [
+      { type: 'LEAVE_DURING_DIRECTORY_UPDATE' },
+      { type: 'OPERATOR_REMOVES_DURING_DIRECTORY_UPDATE' },
+      { type: 'REJOIN_APPROVED' },
+    ],
+  },
 ]
 
 journeys.forEach(({ name, events }) => {
   test(name, async () => {
     ;[organization, bystander] = await createOrganizations(2)
     member = await signedInUser('leave-model')
+    const [sighting] = await bucket()
+      .file(`submissions/${member.uid}/sighting/metadata.json`)
+      .download()
+    // A second Sighting at the same point, without photos.
+    await save(`submissions/${member.uid}/other/metadata.json`, {
+      ...JSON.parse(sighting.toString()),
+      photo_paths: [],
+    })
     invite = await createInvite(organization)
     await joinApproved()
     const fields = { ...DEFAULT_SHARING.fields, email: true, catDetails: true }

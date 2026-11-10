@@ -104,3 +104,13 @@ Both tests were checked against a planted fault: an always-true authorizer fails
 - Comments under `retain` survive account erasure until a caller applies `delete`.
 
 ## Implementation updates
+
+## 2026-11-10 — fix
+
+**Purpose:** Review findings: a deleted comment broke the next page; comments had no quota.
+**Change:**
+
+- Comment cursor is `<createdAt>_<id>` and pages by `startAfter` values, so deleting the cursor comment keeps the next page reachable.
+- `COMMENT_LIMIT` (1000) stored comments per account, counted in `organizationAccounts/{uid}.commentCount`; deleting frees room; over the limit returns 429, shown as a comment-limit message.
+- A failed reactions refresh keeps loaded counts unless access is lost (401/403/404). Shared pager change: [organization sharing](2026-11-09-feat-organization-sharing.md).
+- Tests: `pinInteractions.model.test.ts` adds 51-comment pagination with the cursor comment deleted, and the quota; both failed before the fix.

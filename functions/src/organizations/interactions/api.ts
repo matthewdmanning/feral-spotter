@@ -47,7 +47,7 @@ export function createInteractionsExtension({
     await assertAccess()
 
     if (body.action === 'pinComments') {
-      if (body.cursor !== undefined && !isPinId(body.cursor))
+      if (body.cursor !== undefined && typeof body.cursor !== 'string')
         throw new RequestError(400, 'Invalid cursor')
       const page = await commentPage(
         uid,

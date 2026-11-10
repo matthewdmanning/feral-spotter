@@ -6,6 +6,8 @@ import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import {
   organizationRequest,
   organizationErrorMessage,
+  isAccessLost,
+  OrganizationSyncError,
 } from '@/src/features/organizations/lib/api'
 import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 import { useOrganizationPager } from '@/src/features/organizations/hooks/useOrganizationPager'
@@ -90,8 +92,19 @@ export function usePinInteractions(organizationId: string, pinId: string) {
     cursor: comments.cursor,
     loadMore: comments.loadMore,
     initialLoading: comments.initialLoading,
-    reactions: visible && !reactions.isError ? (reactions.data ?? []) : [],
-    error: comments.error || (failure ? organizationErrorMessage(failure) : ''),
+    reactions:
+      visible && !(reactions.isError && isAccessLost(reactions.error))
+        ? (reactions.data ?? [])
+        : [],
+    error:
+      comments.error ||
+      (mutation.variables?.action === 'addPinComment' &&
+      mutation.error instanceof OrganizationSyncError &&
+      mutation.error.status === 429
+        ? 'You reached the comment limit. Delete old comments to post more.'
+        : failure
+          ? organizationErrorMessage(failure)
+          : ''),
     busy: mutation.isPending,
     ready,
     addComment: async (input: string) => {
