@@ -15,7 +15,7 @@ src/
 │   ├── auth/              # sign-in, Registration, auth providers, entry gate
 │   ├── permissions/       # onboarding, consent, photo, location, email opt-in
 │   ├── settings/          # settings screen + store, photo toggles
-│   ├── organizations/     # organization directory, sharing consent, outbox
+│   ├── organizations/     # directory and core permissions; optional sharing/ and membership/
 │   ├── draft-submission/  # the draft (ADR-0006), create/cats/Map picker screens, upload
 │   ├── camera-control/    # Camera screen and capture hooks (JS side of the Camera seam)
 │   ├── library-picker/    # Library pick
@@ -117,3 +117,11 @@ eslint` and `npx jest` say nothing about either. Kotlin has a local compile
 (`cd android && ./gradlew :native-identification-camera:compileDebugKotlin`);
 Swift has no compile check at all on the current plan, because it needs a macOS
 runner. Report a Swift change as "needs test drive", never as verified.
+
+### Organization subfeatures
+
+`organizations/` owns the directory, permission records, validation, revocation, and generic API and Firestore permission operations. Core stores do not import membership or sharing UI.
+
+- `sharing/{components,hooks,lib,screens}/`: consent controls, sharing workflows, shared-Sighting map/details, and authenticated photo delivery.
+- `membership/{components,hooks,lib,screens}/`: invite requests, approval status, names-only roster, and leaving. Uses core permission operations without importing sharing.
+- `functions/src/organizations/features.ts` and app routes compose the optional features. Active membership authorizes shared reads; consent still limits the returned data. Membership works with sharing disabled.

@@ -205,8 +205,8 @@ Tests: `useSubmissionSubmit.inFlight.test.ts` (lock, retry, cleared draft, Faile
 **Purpose:** Apply the chosen user-facing Sighting terminology consistently (#380).
 **Change:** Home continuation/draft notices, form title, final Submit Sighting action and counted confirmation, reset dialog, retry/failure messages, and history labels use Sighting. Internal Submission models, routes, telemetry, storage keys, and APIs are unchanged. No rescue-response or receipt behavior is added. Existing rendered journeys/assertions are updated with the wording. Device truncation/accessibility acceptance remains open. See the [history note](2026-10-26-feat-reports-history-map.md) and [backlog audit](../planning/2026-11-08-backlog-2026-11-07.md).
 
-## 2026-11-08 — fix (shared Submission state transitions)
+## 2026-11-09 — refactor: greenfield persistence
 
-**Purpose:** Restore the state safeguards from `1a468a7` while retaining the shared Submission store used by organizations and draft-submission.
-
-**Change:** `shared/hooks/useSubmissionStore.ts` retains its types and `submission-store` persistence key. Explicit `setLibraryTime` and `setReportInjured` actions replace the broad partial Submission update. Manual-time selection changes the source and clears stale EXIF time; trusted library time clears stale manual time. Cat edits preserve the existing local id even when the supplied object has another id. Tests seed historical or invalid persisted states through `setState` rather than exposing a production action that bypasses these transitions. Main's Sighting wording and asynchronous Testing Library 14 interactions remain intact.
+**Purpose:** Remove older-install upgrade paths because the project has no active users or data to migrate.
+**Change:** Removed rehydration-time slot assignment for pre-slot photo pools. New photos receive upload slots at insertion. Current interrupted-write repair for an empty pool with a stale source lock remains.
+**Verification:** Full client suite: 120 suites / 550 tests. Functions: 8 suites / 65 tests. Type checks and focused lint pass. Organization integration: 23 emulator scenarios; Rules: 24 tests. No deployment or device check.

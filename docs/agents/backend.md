@@ -5,8 +5,7 @@ and which Firebase MCP resources and skills are approved to use. Ratified
 design decisions live in `docs/adr/`; this file is the map to them plus the
 bits not yet ratified.
 
-This project does not use Firestore at all — see "Firestore skills are
-off-limits" below before touching anything Firestore-shaped.
+Organization data uses server-only Firestore (ADR-0008). Submission metadata and photos remain in Cloud Storage; upload counts and limits retain their existing implementation.
 
 ## Current architecture
 
@@ -71,7 +70,7 @@ third, fully-offline mode for UI work. They skip Firebase entirely, so
 they can never verify rules or real Auth/Storage behavior — don't reach
 for them when the backend is what's under test.
 
-## Where a Node-side Auth/Storage test goes
+## Where a Node-side Auth/Storage/Firestore test goes
 
 Use the existing lane — don't invent a second one:
 `@firebase/rules-unit-testing` + `jest.rules.config.js` (plain-Node
@@ -89,13 +88,11 @@ only.
 For test-drive _mechanics_ (device setup, logging channels, per-run
 checks), see [test-driving.md](test-driving.md).
 
-## Firestore skills are off-limits
+## Organization Firestore boundary
 
-Never load `firebase:firebase-firestore` or any other skill scoped to
-Firestore schema/query/index design in this project. The project has no
-Firestore surface: counts and limits live in Storage object names and Auth
-custom claims. If a task seems to call for Firestore, that's a signal to
-stop and confirm scope with the user rather than loading it.
+Firestore stores organization data under ADR-0008. The authenticated Functions API is the only client entrypoint. Firestore Rules deny direct access, including membership/role writes. Server transactions enforce ownership, deletion guards, epochs, and idempotency; feature adapters supply member authorization.
+
+Firestore joins the local Auth/Storage emulator lane on port 8080. Use the configured local emulators for verification; an unavailable Firestore service returns a retryable error. Organization schema, indexes, and fresh setup instructions live in the implementation note and saved spec.
 
 ## Approved resources
 
@@ -106,10 +103,7 @@ MCP resources:
 - `firebase://guides/init/auth`
 - `firebase://guides/app_id`
 
-Skills — only these, filtered mechanically by one rule: the skill's
-frontmatter `description` does not mention Firestore. Re-run that check
-against the installed skill's `description` before adding any new one to
-this list; don't add by name/topic judgment:
+For Storage/Auth work, the previously approved skills are listed below. Firestore schema, query, index, and Rules guidance is allowed for organization work under ADR-0008; Submission files and upload limits follow ADR-0005.
 
 - `firebase:extension-to-functions-codebase`
 - `firebase:firebase-ai-logic-basics`
@@ -122,7 +116,4 @@ this list; don't add by name/topic judgment:
 - `firebase:firebase-remote-config-basics`
 - `firebase:xcode-project-setup`
 
-Never `firebase:firebase-firestore` (see above) or
-`firebase:firebase-security-rules-auditor` (its description only mentions
-Firestore, even though its checklist also covers Storage rules) — excluded
-by the same mechanical rule, not a judgment call.
+Firestore guidance applies to the organization backend.

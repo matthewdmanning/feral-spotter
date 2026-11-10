@@ -109,3 +109,9 @@ tags:
 ## Implementation updates
 
 <!-- Append dated entries when modifying this feature after the initial implementation. -->
+
+## 2026-11-09 — refactor: greenfield persistence
+
+**Purpose:** Remove older-install upgrade paths because the project has no active users or data to migrate.
+**Change:** Removed the old-install pinch-zoom settings migration and version bump. Fresh settings retain current defaults; explicit saved choices still rehydrate. Replaced migration-only tests with current-schema persistence coverage.
+**Verification:** Full client suite: 120 suites / 550 tests. Functions: 8 suites / 65 tests. Type checks and focused lint pass. Organization integration: 23 emulator scenarios; Rules: 24 tests. No deployment or device check.

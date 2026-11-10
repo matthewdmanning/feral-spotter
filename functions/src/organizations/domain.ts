@@ -81,6 +81,7 @@ export interface Permission {
   }
 }
 export interface PermissionLedger {
+  blockedOrganizations?: Record<string, string>
   revokedPairs?: string[]
   epochs: Record<string, number>
   permissions: Permission[]
@@ -402,4 +403,22 @@ export function offeredFields(
 ): (keyof SharingFields)[] {
   const { fields } = effectiveSharingSettings(settings, anonymous)
   return SHARING_FIELD_KEYS.filter((key) => fields[key])
+}
+
+export const SHARING_FIELD_LABELS: Record<keyof SharingFields, string> = {
+  name: 'Name',
+  email: 'Email',
+  phone: 'Phone',
+  catDetails: 'Cat details',
+  preciseLocation: 'Precise location',
+  photos: 'Photos',
+}
+
+export interface SharedSighting {
+  id: string
+  catCount: number
+  generalLocation: Permission['data']['generalLocation']
+  preciseLocation?: Permission['data']['preciseLocation']
+  cats?: Permission['data']['cats']
+  photoCount: number
 }

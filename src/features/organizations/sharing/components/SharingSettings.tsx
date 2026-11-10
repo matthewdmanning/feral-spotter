@@ -9,13 +9,13 @@ import {
   EMPTY_ORGANIZATION_ACCOUNT,
 } from '@/src/features/organizations/hooks/useOrganizationSharingStore'
 import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
-import { FIELD_LABELS } from '@/src/features/organizations/lib/sharing'
 import {
   SHARING_FIELD_KEYS,
+  SHARING_FIELD_LABELS,
   type SharingSettings as SharingConfiguration,
 } from '@/src/shared/types/Organizations'
 import { SharingCheckbox } from './SharingCheckbox'
-import { styles } from './styles'
+import { styles } from '@/src/features/organizations/components/styles'
 
 export function SharingSettings() {
   const { user } = useAuth()
@@ -63,7 +63,7 @@ function SharingSettingsForm({
       {SHARING_FIELD_KEYS.map((key) => (
         <SharingCheckbox
           key={key}
-          label={`Share ${FIELD_LABELS[key].toLowerCase()}`}
+          label={`Share ${SHARING_FIELD_LABELS[key].toLowerCase()}`}
           checked={draft.fields[key]}
           onChange={(value) =>
             setDraft({ ...draft, fields: { ...draft.fields, [key]: value } })

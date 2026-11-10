@@ -43,7 +43,7 @@ import { fireAnalyticsEvent } from '@/src/features/draft-submission/lib/analytic
 import { authProvider } from '@/src/features/auth/lib'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { stopLocationCapture } from '@/src/core/location/liveFix'
-import { confirmedSharing } from '@/src/features/organizations/lib/consent'
+import { confirmedSharing } from '@/src/features/organizations/sharing/lib/consent'
 import {
   sendDraft,
   type ConfirmedSharing,
@@ -148,9 +148,7 @@ async function whenHydrated(
  *
  * Waits for every draft store to hydrate first: a store that hydrates after
  * the teardown would write its saved state back over the cleared one.
- * A pool saved before `updated_at` existed migrates the current cache row's
- * age. If that row is missing or unreadable, the pool cannot be dated safely
- * and is discarded.
+ * A pool without a valid last-change time cannot be dated safely and is discarded.
  */
 export async function discardUnsurvivingDraft(
   now: number,
@@ -168,16 +166,7 @@ export async function discardUnsurvivingDraft(
   // row are the user's sent Sighting, not abandoned draft data.
   const sendStarted = row != null && row.status !== 'In Progress'
 
-  let updatedAt = updated_at
-  if (photos.length > 0 && updatedAt == null) {
-    const cacheUpdatedAt = row ? new Date(row.updated_at).getTime() : NaN
-    if (!Number.isFinite(cacheUpdatedAt)) {
-      updatedAt = NaN
-    } else {
-      updatedAt = cacheUpdatedAt
-      usePhotoStore.setState({ updated_at: updatedAt })
-    }
-  }
+  const updatedAt = updated_at
   const isStale = updatedAt != null && now - updatedAt > SUBMISSION_STALE_MS
   if (photos.length === 0 || isStale || !Number.isFinite(updatedAt ?? NaN)) {
     const oldSubmissionId = usePhotoStore.getState().submissionId

@@ -20,7 +20,7 @@ export interface AnalyticsEraser {
 export interface SubmissionStore {
   /** Delete every object under the uid's Submission folder. */
   deleteUserSubmissions(uid: string): Promise<void>
-  /** Delete every organization-permission snapshot under the uid's folder. */
+  /** Delete this owner's Firestore organization records. */
   deleteUserOrganizationPermissions(uid: string): Promise<void>
 }
 
