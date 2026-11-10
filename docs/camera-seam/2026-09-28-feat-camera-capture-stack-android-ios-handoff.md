@@ -9,11 +9,11 @@ never compiled and never driven.
 
 Three reviews on `feat-camera-capture-stack`, about thirty items:
 
-| Stage | Subject                   | Source                                                           |
-| ----- | ------------------------- | ---------------------------------------------------------------- |
-| 1     | Correctness               | GitHub issue #385, 8 items                                       |
-| 2     | Performance               | `performance.md` at the repo root, 12 items                      |
-| 3     | Maintainability and tests | `CAMERA-SEAM-REVIEW-STAGE-3.md` at the repo root, about 10 items |
+| Stage | Subject                   | Source                                                                              |
+| ----- | ------------------------- | ----------------------------------------------------------------------------------- |
+| 1     | Correctness               | GitHub issue #385, 8 items                                                          |
+| 2     | Performance               | [stage 2](../perf/2026-10-14-feat-camera-capture-stack-review-stage-2.md), 12 items |
+| 3     | Maintainability and tests | [stage 3](2026-09-27-feat-camera-capture-stack-review-stage-3.md), about 10 items   |
 
 Items are split by file and by what has to be one copy before it is safe to
 touch, not by severity. Stage 3's "duplication" section is an interrupted
@@ -340,6 +340,7 @@ Two details worth keeping, because both were nearly got wrong:
 
 3. **The vocabulary and configuration sweep, which is a separate feature and not
    started.** Stage 3 §2 and §3:
+
    - `capture_pipeline` and `capture_backend` are two field names for one
      concept, so no query can span both paths.
    - `camera_variant` carries real values on the legacy path and the constant

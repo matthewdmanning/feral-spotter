@@ -2,7 +2,7 @@
 
 Every change below was implemented and unit/model/tsc/lint-verified in this
 environment (no physical device or emulator available here — see
-[test-driving.md](../../agents/test-driving.md)). None of it has run on a
+[test-driving.md](../../../agents/test-driving.md)). None of it has run on a
 real device yet. This is the checklist for whoever picks up the next
 physical-device test drive. One section per PR/ticket; check off the
 verification steps as they're confirmed.

@@ -22,7 +22,7 @@ gate involved.
 
 ## UX reference
 
-[ux_principles.md](../../agents/ui-ux/reference/ux_principles.md) — this is a small
+[ux_principles.md](../../../agents/ui-ux/reference/ux_principles.md) — this is a small
 inline warning/toast-style element, not a full modal flow; keep it
 consistent with the app's existing warning/notice patterns rather than
 introducing a new pattern.
@@ -30,4 +30,4 @@ introducing a new pattern.
 ## Suggested skills
 
 - No `tdd` model needed — this is presentational, not stateful-flow logic
-  per [testing.md](../../agents/testing.md)'s scope.
+  per [testing.md](../../../agents/testing.md)'s scope.

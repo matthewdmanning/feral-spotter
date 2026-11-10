@@ -13,12 +13,12 @@ src/
 │   ├── auth/              # sign-in, Registration, auth providers, entry gate
 │   ├── permissions/       # onboarding, consent, photo, location, email opt-in
 │   ├── settings/          # settings screen + store, photo toggles
-│   ├── organizations/     # directory and core permissions; optional sharing/ and membership/
+│   ├── organizations/     # directory and core permissions; optional sharing/, membership/, interactions/
 │   ├── draft-submission/  # the draft (ADR-0006), create/cats/Map picker screens, upload
 │   ├── camera-control/    # Camera screen and capture hooks (JS side of the Camera seam)
 │   ├── library-picker/    # Library pick
 │   ├── annotate/          # Box Annotation, Tutorial, inset crop bubble
-│   └── history/           # Reports tab, Sighting detail
+│   └── history/           # Sightings tab (route `feral-reports`), Sighting detail
 ├── core/          # app-specific, too small to be a feature
 │   ├── home/              # Home screen
 │   └── location/          # Live fix (liveFix.ts) + its tuning
