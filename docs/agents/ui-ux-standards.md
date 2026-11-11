@@ -27,7 +27,8 @@ Larger components or more whitespace are not automatically better either.
   wrap and grow the group together rather than leaving mismatched button faces.
 - Use the project font family and its supplied faces for app-rendered text;
   retain platform fonts in OS-owned UI. Text with the same semantic role must
-  share font size, weight/face, line height, letter spacing and scaling policy. Use the established typography hierarchy for intentional differences
+  share font size, weight/face, line height, letter spacing and the enforced
+  scaling ceiling. Use the established typography hierarchy for intentional differences
   between titles, section headings, labels, content and supplementary text.
 - Do not introduce one-off font sizes, weights, icon dimensions or control
   heights to fit individual strings. Resolve long copy with wrapping, reflow or
@@ -91,26 +92,36 @@ Larger components or more whitespace are not automatically better either.
 - Render only meaningful sections. Empty conditional wrappers must not create
   blank gaps, orphaned dividers or empty footers.
 
-## Font scaling and maximums
+## Font scaling and the enforced maximum
 
-- Keep system font scaling enabled. Content, input text, consent and error
-  messages default to uncapped system scaling so users can read essential
-  information at their preferred size. Reflow and scroll the layout as needed.
-- Define any maximum multiplier centrally by semantic typography role and apply
-  it consistently to that role on a screen. Do not scatter differing
-  `maxFontSizeMultiplier` values across otherwise equivalent components.
-- Where compact navigation or action labels require a cap, use a maximum of
-  **2.0×** and document the layout constraint. A cap below 2.0×, disabled font
-  scaling or automatic font shrinking is not an acceptable overflow fix.
-  Prefer a wrapping/reflowing control when it can retain full system scaling.
-- A capped control's container must accommodate its label at the cap without
-  clipping or hiding essential words. Keep body/input text and its surrounding
-  controls visually coherent when their role-specific scaling policies differ.
-- Test at default scale, 200%, every configured maximum and the largest
-  platform-supported setting for uncapped roles. **200% is a required test
-  point, not a universal maximum for the screen.** Check the actual rendered
-  result and record which roles are capped; do not infer runtime support from
-  this documentation alone.
+- The app must enforce one centrally configured maximum font-scale multiplier
+  of **2.0× for all app-rendered text**, including body content, input text,
+  consent, validation errors, headings, navigation and action labels. Essential
+  text is not exempt: text outside a component's visible/reachable area cannot
+  be read.
+- Apply the ceiling through the shared text/input components and text-bearing
+  controls, including `Text` and `TextInput` scaling props. Verify that inherited
+  defaults, third-party controls and local overrides cannot silently remove it.
+  An uncapped default or a documented limit without runtime enforcement does
+  not meet this standard.
+- Keep system font scaling enabled up to the ceiling. Respect the user's
+  preferred scale and clamp larger requests at 2.0×; do not render every label
+  at 2.0× by default. This maximum is a protective ceiling, not an optimum font
+  size or a substitute for the semantic typography hierarchy.
+- Use the same ceiling throughout a screen and across shared controls. Do not
+  introduce smaller per-component caps, disable scaling or automatically shrink
+  individual labels to make a layout fit. Change the layout instead.
+- Every text-bearing component must accommodate its content at the enforced
+  maximum. Allow wrapping, reflow, content-driven heights and scrolling as
+  appropriate. Keep inputs, essential actions, consent and error messages
+  visible or reachable without clipping, overlap or hidden words. A cap alone
+  does not prove that text fits.
+- Test default scale, the 2.0× ceiling and the largest platform-supported
+  accessibility setting. At the last setting, verify that app-rendered text
+  actually remains capped and that its layout remains usable. Record runtime
+  checks separately from the policy; adding this guide does not itself enforce
+  scaling in application code. OS-owned dialogs and keyboards retain platform
+  typography.
 
 ## Semantic tokens and shared components
 
@@ -232,7 +243,7 @@ Larger components or more whitespace are not automatically better either.
   user journeys. Use real stores/controls and substitute external/native services
   only at their boundary, following the [testing policy](testing.md).
 - Check a narrow phone, long configured copy and organization names, 200% text,
-  each role-specific font-scale maximum, keyboard-visible forms, both themes,
+  the enforced font-scale ceiling, keyboard-visible forms, both themes,
   screen-reader navigation and reduced
   transparency. Include permission review, offline retry and destructive states
   when they are human-reachable.
