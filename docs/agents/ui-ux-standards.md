@@ -9,6 +9,33 @@ Use these general standards with the relevant product design documents and
 policy's instruction priority and confirmation requirements for authoritative
 design files. Report conflicts rather than silently rewriting product decisions.
 
+## Minimums are not optimum values
+
+**Every minimum in this guide is a floor, not an optimum value or a design
+recommendation to use that exact value.** Meeting a touch-target, spacing,
+font-scaling or contrast threshold does not establish a comfortable, balanced or
+legible screen. Choose the final values for the content, viewing conditions,
+interaction and available space, then review the whole composition. Do not set
+all sizes, gaps or contrast pairs to their minimum simply because they pass.
+Larger components or more whitespace are not automatically better either.
+
+## Consistent sizing and typography within a screen
+
+- Components with the same role on a screen must use the same sizing contract:
+  minimum height, padding, radius, icon size and label typography. Equal-priority
+  actions in a row should have balanced widths and a common height; labels may
+  wrap and grow the group together rather than leaving mismatched button faces.
+- Use the project font family and its supplied faces for app-rendered text;
+  retain platform fonts in OS-owned UI. Text with the same semantic role must
+  share font size, weight/face, line height, letter spacing and scaling policy. Use the established typography hierarchy for intentional differences
+  between titles, section headings, labels, content and supplementary text.
+- Do not introduce one-off font sizes, weights, icon dimensions or control
+  heights to fit individual strings. Resolve long copy with wrapping, reflow or
+  placement while retaining the role's shared tokens.
+- Keep sizing and typography consistent across default, selected, loading and
+  error states. State changes must not unexpectedly move adjacent components or
+  change an action's dimensions. Maintain that consistency in both themes.
+
 ## Placement and visual hierarchy
 
 - Group controls by the user's task and the data they affect. Keep labels,
@@ -34,6 +61,17 @@ design files. Report conflicts rather than silently rewriting product decisions.
 - Use project layout, spacing and radius tokens. Use card padding inside the
   surface, a larger gap between sections and a smaller gap within related groups.
   Host layouts own inter-card spacing; avoid adding another margin to each card.
+- Distribute components deliberately across the usable screen. Use balanced
+  outer gutters and a regular rhythm of larger section gaps and smaller
+  within-group gaps. Give equal-priority siblings consistent spacing, and keep
+  related labels, fields and actions perceptually close.
+- Place surplus space at intentional section boundaries or around the primary
+  composition. Do not spread every child with `space-between` just to fill a
+  tall viewport, or compress the last section against a pinned footer. Keep
+  scrolling content and pinned actions clearly separated.
+- Review the distribution on short and narrow phones, landscape and wider
+  screens. Avoid a crowded edge and an otherwise empty opposite side; use
+  bounded content widths and coherent groups when extra width is available.
 - Align headings, body text, dividers and actions to a consistent content edge.
   Align dependent fields with the associated control label. Use logical
   start/end padding where direction matters.
@@ -52,6 +90,27 @@ design files. Report conflicts rather than silently rewriting product decisions.
   Ensure focused inputs and their actions remain reachable while typing.
 - Render only meaningful sections. Empty conditional wrappers must not create
   blank gaps, orphaned dividers or empty footers.
+
+## Font scaling and maximums
+
+- Keep system font scaling enabled. Content, input text, consent and error
+  messages default to uncapped system scaling so users can read essential
+  information at their preferred size. Reflow and scroll the layout as needed.
+- Define any maximum multiplier centrally by semantic typography role and apply
+  it consistently to that role on a screen. Do not scatter differing
+  `maxFontSizeMultiplier` values across otherwise equivalent components.
+- Where compact navigation or action labels require a cap, use a maximum of
+  **2.0×** and document the layout constraint. A cap below 2.0×, disabled font
+  scaling or automatic font shrinking is not an acceptable overflow fix.
+  Prefer a wrapping/reflowing control when it can retain full system scaling.
+- A capped control's container must accommodate its label at the cap without
+  clipping or hiding essential words. Keep body/input text and its surrounding
+  controls visually coherent when their role-specific scaling policies differ.
+- Test at default scale, 200%, every configured maximum and the largest
+  platform-supported setting for uncapped roles. **200% is a required test
+  point, not a universal maximum for the screen.** Check the actual rendered
+  result and record which roles are capped; do not infer runtime support from
+  this documentation alone.
 
 ## Semantic tokens and shared components
 
@@ -73,9 +132,33 @@ design files. Report conflicts rather than silently rewriting product decisions.
   them by role; do not replace them with unrelated theme aliases.
 - Review both appearances, including muted text, selected states, outlines and
   disabled controls. Do not rely on color alone to communicate a state.
-- Keep normal text contrast at least 4.5:1, large text at least 3:1 and essential
-  control/icon boundaries at least 3:1. Do not round a failing ratio into a pass.
-  Theme calculations against solid surfaces do not prove glass contrast.
+
+## Component, background and text contrast
+
+- Review the complete contrast chain: screen background, component fill or
+  boundary, and the text/icons inside it. Text must contrast with the component's
+  actual visible background; a readable component edge does not establish
+  readable text, and readable text alone does not identify an interactive shape.
+- Keep normal text at least 4.5:1 and qualifying large text at least 3:1 against
+  its actual background. Essential control boundaries, focus/selection indicators
+  and meaningful icons need at least 3:1 against adjacent colors. Do not round
+  a failing ratio into a pass or assume every heading qualifies as large text.
+- Where a component boundary is needed to identify a control, give its fill or
+  outline sufficient contrast against the surrounding screen/surface. Decorative
+  card boundaries can use hierarchy, grouping and depth; do not apply an
+  interactive-boundary rule indiscriminately to every glass card.
+- Use the correct semantic foreground for each fill, including selected,
+  pressed, loading and error states. Check muted/helper text, input placeholders,
+  focus outlines, check marks and disabled-state legibility as well as headings.
+  Reduced emphasis must not make necessary content unreadable.
+- Test both themes and the actual transparency/compositing over the screen's
+  lightest, darkest and most variable backdrop regions. Glass tint, opacity,
+  blur and an underlying gradient change the effective background. Solid-token
+  calculations alone do not prove native glass contrast; retain the accessible
+  opaque fallback.
+- Contrast thresholds are minimums. Prefer comfortable contrast for sustained
+  reading and real viewing conditions while preserving the intended visual
+  hierarchy. Do not treat a barely passing ratio as the aesthetic target.
 
 ## Native glass surfaces
 
@@ -149,7 +232,8 @@ design files. Report conflicts rather than silently rewriting product decisions.
   user journeys. Use real stores/controls and substitute external/native services
   only at their boundary, following the [testing policy](testing.md).
 - Check a narrow phone, long configured copy and organization names, 200% text,
-  keyboard-visible forms, both themes, screen-reader navigation and reduced
+  each role-specific font-scale maximum, keyboard-visible forms, both themes,
+  screen-reader navigation and reduced
   transparency. Include permission review, offline retry and destructive states
   when they are human-reachable.
 - Add load-bearing regression tests for concrete failures. Verify rendering and
