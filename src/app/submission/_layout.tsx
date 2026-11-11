@@ -4,6 +4,8 @@
  * annotate: fullScreenModal (opened from cats)
  */
 
+import { navigationCopy } from '@/src/shared/config/text'
+import { Text } from '@/src/shared/ui/atoms/Text'
 import { ErrorBoundary } from '@/src/shared/ui/atoms/ErrorBoundary'
 import {
   GoHomeGate,
@@ -19,8 +21,8 @@ const STEPS = ['create', 'cats'] as const
 type Step = (typeof STEPS)[number]
 
 const STEP_TITLES: Record<Step, string> = {
-  create: 'Submission Details',
-  cats: 'Cat Observations',
+  create: navigationCopy.submissionDetails,
+  cats: navigationCopy.catObservations,
 }
 
 // Settings shortcut in the header. Every step screen below turns it off;
@@ -30,7 +32,7 @@ function HeaderRight() {
   return (
     <Pressable
       onPress={() => router.push('/settings')}
-      accessibilityLabel="Open settings"
+      accessibilityLabel={navigationCopy.openSettings}
       accessibilityRole="button"
       // 24dp icon; hitSlop brings the touch target to the 48dp floor without
       // changing header layout.
@@ -52,7 +54,7 @@ export default function SubmissionLayout() {
     return phase === 'error' ? (
       <RestoreFailedGate />
     ) : (
-      <GoHomeGate title="Preparing Your Sighting" />
+      <GoHomeGate title={navigationCopy.preparingSighting} />
     )
   }
 
@@ -62,6 +64,11 @@ export default function SubmissionLayout() {
         screenOptions={{
           headerStyle: { backgroundColor: theme.colors.background },
           headerTintColor: theme.colors.text,
+          headerTitle: ({ children, tintColor }) => (
+            <Text style={[theme.textVariants.heading, { color: tintColor }]}>
+              {children}
+            </Text>
+          ),
           headerTitleStyle: {
             ...theme.textVariants.heading,
             color: theme.colors.text,
@@ -95,7 +102,7 @@ export default function SubmissionLayout() {
         <Stack.Screen
           name="annotate"
           options={{
-            title: 'Locate Cat',
+            title: navigationCopy.locateCat,
             presentation: 'fullScreenModal',
             animation: 'slide_from_bottom',
             headerShown: false,
@@ -106,7 +113,7 @@ export default function SubmissionLayout() {
         <Stack.Screen
           name="location-picker"
           options={{
-            title: 'Pick Location',
+            title: navigationCopy.pickLocation,
             presentation: 'modal',
             animation: 'slide_from_bottom',
           }}

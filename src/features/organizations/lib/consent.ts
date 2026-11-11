@@ -1,3 +1,4 @@
+import { organizationCopy } from '@/src/shared/config/text'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import type {
   OrganizationSharingDraft,
@@ -54,9 +55,7 @@ export function confirmedSharing(uid: string) {
     useAuthStore.getState().user?.email,
   )
   if (draft.confirmedSignature !== signature)
-    throw new Error(
-      'Review the organization choices and confirm “Share this sighting”, or choose not to share.',
-    )
+    throw new Error(organizationCopy.confirmationError)
   return {
     draft,
     settings: account.settings,

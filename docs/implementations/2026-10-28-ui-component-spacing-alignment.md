@@ -111,3 +111,66 @@
 **Hand-rolled audit:** no other component replaces an installed library. Checked: images (no RN `Image`; `expo-image` installed), date picker (wraps `@react-native-community/datetimepicker`), switch (RN `Switch`), dialogs (app-owned on purpose, #337), segmented control and accordion (no library installed for either). Open question: the tab bar is a styled JS `Tabs`; Expo Router native tabs give the native Material bar.
 
 **Unverified:** no device pass for the gutter change or the Submission layout.
+
+## 2026-11-11 — fix
+
+**Purpose:** Resolve the in-scope UI review findings F2–F7, F9 and F11 on
+`review/ui-ux` while retaining touch-first native field-work scope.
+**Change:** Authentication uses scrollable keyboard-avoiding forms; Onboarding's
+slide content scrolls above its actions. Segmented answers wrap with content-driven
+heights, a scaled minimum width and 8dp gaps. ButtonRow also checks available
+width, and Box Annotation uses it in a bounded scrolling action area. Map and pin
+share one viewport outside the footer. Location correction has a 48dp minimum
+height. Text fields use strong input boundaries and an accent focus border.
+Settings' photo Save/Discard actions live with the photo/developer controls;
+appearance, communications and sharing retain independent persistence. Saving
+only writes edited settings and remains on Settings.
+
+Regression coverage: `Text.scaling.test.tsx`, `SegmentedControl.reflow.test.tsx`,
+`SettingsScreen.saveScope.test.tsx`, and the map/pin containment assertion in
+`LocationPicker.model.test.tsx`. These exercise rendering contracts and interaction;
+they do not measure native geometry. Existing annotation, authentication,
+Onboarding and control journeys also pass.
+
+Related changes: [text/theme policy](2026-08-26-issue-320-theme-mode-and-breakpoints.md),
+[organizations](2026-11-07-feat-organizations.md),
+[Onboarding](2026-08-09-intro-flow-t1-hardware-back.md), and
+[location](2026-08-09-consent-66-location-permission-gate.md).
+
+Verification: full Jest run passed (119 suites, 531 tests); focused regression
+runs passed. Application/server/test TypeScript, changed-file ESLint and formatting
+checks are recorded in the [review](../reviews/2026-11-11-review-ui-ux.md).
+Native narrow/short-screen, largest text/display size, on-screen keyboard, native
+map and glass verification remain unperformed: `adb` is absent. Web, external
+keyboards, TTS and screen-reader checks are excluded by the user's scope.
+
+## 2026-11-11 — refactor
+
+**Purpose:** Resolve second-pass findings SP1–SP4 without adding parallel copy,
+configuration or test files.
+**Change:** Existing Settings copy configuration now covers its remaining UI
+strings. The existing shared text configuration owns auth, validation,
+organization, submission and navigation copy, with named template formatting
+that preserves inserted account/catalog values literally. Shared dialog defaults
+and gate labels consume that owner. Feature schemas, business rules and provider
+release gates remain separate from display copy. The existing permission JSON
+and photo-toggle configuration remain their canonical owners.
+
+Scaling dimensions and ratios from SP3 move into semantic theme tokens. Existing
+ButtonRow coverage is extended for measured narrow/wide widths with real buttons
+and callbacks; existing organization management coverage uses replacement-like
+characters in a catalog name to guard template formatting. No duplicate test
+files are introduced. These are renderer/interaction checks, not native geometry.
+
+Copy changes ship with the next application bundle. No new runtime configuration
+service or persistence migration is needed. Native device observations remain
+unavailable; web, external keyboard and nonvisual features remain excluded.
+See [second-pass status](../reviews/2026-11-11-review-ui-ux.md),
+[theme ownership](2026-08-26-issue-320-theme-mode-and-breakpoints.md),
+[organizations](2026-11-07-feat-organizations.md), and
+[submission](2026-08-14-264-connect-submit-to-storage.md).
+
+Second-pass validation: application/server/test typechecks and changed-file
+ESLint passed. The two new measured-width tests fail when width-based stacking
+is removed and pass with the restored condition. Final complete-suite results
+and native validation limits are recorded in the linked review.

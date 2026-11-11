@@ -1,4 +1,5 @@
-import { Pressable, Text, ActivityIndicator } from 'react-native'
+import { Text } from '@/src/shared/ui/atoms/Text'
+import { Pressable, ActivityIndicator } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { LABEL_COLOR_KEY, styles } from './AppButton.styles'
 import { tapHaptic } from '@/src/shared/lib/haptics'

@@ -204,3 +204,14 @@ Tests: `useSubmissionSubmit.inFlight.test.ts` (lock, retry, cleared draft, Faile
 
 **Purpose:** Apply the chosen user-facing Sighting terminology consistently (#380).
 **Change:** Home continuation/draft notices, form title, final Submit Sighting action and counted confirmation, reset dialog, retry/failure messages, and history labels use Sighting. Internal Submission models, routes, telemetry, storage keys, and APIs are unchanged. No rescue-response or receipt behavior is added. Existing rendered journeys/assertions are updated with the wording. Device truncation/accessibility acceptance remains open. See the [history note](2026-10-26-feat-reports-history-map.md) and [backlog audit](../planning/2026-11-08-backlog-2026-11-07.md).
+
+## 2026-11-11 — refactor
+
+**Purpose:** Move submission confirmation, failure and discard copy to its canonical
+configuration owner as requested by second-pass SP2.
+**Change:** Submit and discard/exit UI consume the submission namespace in the
+existing shared text configuration, including named count templates and camera-roll
+notices. No lifecycle state transition, validation requirement or persistence
+boundary changes. Shared validation messages also consume centralized copy.
+See [shared UI work](2026-10-28-ui-component-spacing-alignment.md) and the
+[review](../reviews/2026-11-11-review-ui-ux.md) for verification.

@@ -1,3 +1,5 @@
+import { commonCopy, navigationCopy } from '@/src/shared/config/text'
+import { Text } from '@/src/shared/ui/atoms/Text'
 import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import type { ColumnButton } from '@/src/shared/ui/molecules/BottomButtonColumn'
@@ -172,13 +174,13 @@ export default function HomeScreen() {
     () => [
       {
         key: 'continue',
-        label: 'Continue Sighting',
+        label: navigationCopy.continueSighting,
         onPress: handleContinue,
         variant: 'primary',
       },
       {
         key: 'new',
-        label: 'New Sighting',
+        label: navigationCopy.newSighting,
         onPress: confirmStartNewSighting,
         variant: 'secondary',
       },
@@ -191,7 +193,12 @@ export default function HomeScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: 'FeralSpotter',
+          title: commonCopy.brand,
+          headerTitle: ({ children, tintColor }) => (
+            <Text style={[theme.textVariants.title, { color: tintColor }]}>
+              {children}
+            </Text>
+          ),
           headerStyle: { backgroundColor: theme.colors.background },
           headerTintColor: theme.colors.text,
           headerTitleStyle: {
@@ -212,7 +219,7 @@ export default function HomeScreen() {
           ]}
         >
           <EntrypointCircle
-            label="Take Photos"
+            label={navigationCopy.takePhotos}
             Icon={CameraIcon}
             variant="primary"
             diameter={entrypointDiameter}
@@ -220,7 +227,7 @@ export default function HomeScreen() {
             onPress={camera.open}
           />
           <EntrypointCircle
-            label="Upload Photos"
+            label={navigationCopy.uploadPhotos}
             Icon={ImageSquareIcon}
             variant="secondary"
             diameter={entrypointDiameter}

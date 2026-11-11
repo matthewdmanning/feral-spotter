@@ -7,6 +7,11 @@ import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoSto
 import { useSettingsStore } from '@/src/features/settings/hooks/useSettingsStore'
 import { showAlert, showError } from '@/src/shared/hooks/useUIStore'
 import {
+  commonCopy,
+  formatCopy,
+  submissionCopy,
+} from '@/src/shared/config/text'
+import {
   discardDraft,
   isDraftBusy,
 } from '@/src/features/draft-submission/lib/draft'
@@ -26,8 +31,8 @@ export async function discardDraftAndGoHome(): Promise<void> {
   } catch (error) {
     console.error('[discardDraftAndGoHome]', error)
     showError(
-      'Could Not Clear Draft',
-      'Your draft could not be cleared. Restart the app and try again.',
+      submissionCopy.exit.clearFailedTitle,
+      submissionCopy.exit.clearFailedMessage,
     )
     return
   }
@@ -39,13 +44,13 @@ function cameraRollNote(): string {
   const keptInCameraRoll =
     useSettingsStore.getState().settings.keep_photos_on_device !== false &&
     usePhotoStore.getState().source === 'camera'
-  return keptInCameraRoll ? ' Copies saved to your camera roll stay there.' : ''
+  return keptInCameraRoll ? submissionCopy.exit.cameraRollNote : ''
 }
 
 function confirmDiscard(title: string, message: string, action: string): void {
   if (isDraftBusy()) return
-  showAlert(title, message + cameraRollNote(), [
-    { text: 'Cancel', style: 'cancel' },
+  showAlert(title, formatCopy(message, { cameraRollNote: cameraRollNote() }), [
+    { text: commonCopy.cancel, style: 'cancel' },
     { text: action, style: 'destructive', onPress: discardDraftAndGoHome },
   ])
 }
@@ -53,9 +58,9 @@ function confirmDiscard(title: string, message: string, action: string): void {
 /** Ask first, then discard the draft (#153). */
 export function confirmResetSubmission(): void {
   confirmDiscard(
-    'Reset Sighting',
-    'This will permanently clear all cats, photos and sighting data.',
-    'Reset',
+    submissionCopy.exit.resetTitle,
+    submissionCopy.exit.resetMessage,
+    submissionCopy.exit.resetAction,
   )
 }
 
@@ -65,8 +70,8 @@ export function confirmResetSubmission(): void {
  */
 export function confirmStartNewSighting(): void {
   confirmDiscard(
-    'Start a New Sighting?',
-    'This clears the cats, photos and details of your current sighting.',
-    'Start New',
+    submissionCopy.exit.newSightingTitle,
+    submissionCopy.exit.newSightingMessage,
+    submissionCopy.exit.newSightingAction,
   )
 }

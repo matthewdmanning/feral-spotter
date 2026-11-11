@@ -19,7 +19,8 @@ import {
   returnToCatListAfterRemoval,
 } from '@/src/features/draft-submission/hooks/catPass'
 import { useEffect, useState } from 'react'
-import { ScrollView, Text, View } from 'react-native'
+import { Text } from '@/src/shared/ui/atoms/Text'
+import { ScrollView, View } from 'react-native'
 import { styles } from './index.styles'
 import { firstParam } from '@/src/shared/utils/routeParam'
 

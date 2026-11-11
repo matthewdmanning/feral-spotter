@@ -1,3 +1,4 @@
+import { ButtonRow } from '@/src/shared/ui/molecules/ButtonRow'
 import { showAlert } from '@/src/shared/hooks/useUIStore'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import { AnnotateCarouselItem } from '@/src/features/annotate/components/AnnotateCarouselItem'
@@ -10,7 +11,8 @@ import { useBackHandler } from '@/src/shared/hooks/useBackHandler'
 import { router } from 'expo-router'
 import { TrashIcon } from 'phosphor-react-native/src/icons/Trash'
 import { useState } from 'react'
-import { Pressable, Text, useWindowDimensions, View } from 'react-native'
+import { Text } from '@/src/shared/ui/atoms/Text'
+import { Pressable, ScrollView, useWindowDimensions, View } from 'react-native'
 import Carousel from 'react-native-reanimated-carousel'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
@@ -162,28 +164,32 @@ export default function AnnotateScreen() {
       )}
 
       {/* Bottom buttons — below carousel, never covered by canvas */}
-      <View style={styles.bottomBar}>
-        <AppButton
-          variant="secondary"
-          size="compact"
-          onPress={handlePrevPhoto}
-          disabled={isFirst}
-          flex1
-        >
-          ← Previous
-        </AppButton>
-        <AppButton
-          variant="secondary"
-          size="compact"
-          onPress={handleNotInPhoto}
-          accessibilityLabel="Not in this photo"
-        >
-          Not in Photo
-        </AppButton>
-        <AppButton size="compact" onPress={handleBoxingComplete} flex1>
-          Done With This Cat
-        </AppButton>
-      </View>
+      <ScrollView
+        style={styles.actionScroll}
+        contentContainerStyle={styles.bottomBar}
+      >
+        <ButtonRow>
+          <AppButton
+            variant="secondary"
+            size="compact"
+            onPress={handlePrevPhoto}
+            disabled={isFirst}
+          >
+            ← Previous
+          </AppButton>
+          <AppButton
+            variant="secondary"
+            size="compact"
+            onPress={handleNotInPhoto}
+            accessibilityLabel="Not in this photo"
+          >
+            Not in Photo
+          </AppButton>
+          <AppButton size="compact" onPress={handleBoxingComplete}>
+            Done With This Cat
+          </AppButton>
+        </ButtonRow>
+      </ScrollView>
 
       <TutorialOverlay {...tutorial} steps={ANNOTATION_TUTORIAL_STEPS} />
     </View>

@@ -94,6 +94,18 @@ Larger components or more whitespace are not automatically better either.
 
 ## Font scaling and the enforced maximum
 
+- All scaling values and policies must come from project tokens or a centrally
+  owned configuration file. This includes font-scale ceilings, reflow thresholds,
+  minimum/maximum dimensions, adaptive sizing factors and interaction/animation
+  scale factors. Components
+  consume those values; they must not duplicate literals, invent local scaling
+  policies or copy configuration into a second file. Reuse the existing owner
+  before extending it (for example, `src/shared/config/text.ts`,
+  `src/shared/config/constants.ts` or `src/shared/config/themes.ts`, according to
+  the value's role). Runtime measurements and platform insets remain inputs,
+  not duplicated configuration. Structural fill constraints such as `100%` may
+  remain in layouts; tunable limits/ratios still belong to configuration even
+  when expressed as percentages.
 - The app must enforce one centrally configured maximum font-scale multiplier
   of **2.0× for all app-rendered text**, including body content, input text,
   consent, validation errors, headings, navigation and action labels. Essential
@@ -207,9 +219,18 @@ Larger components or more whitespace are not automatically better either.
 - For example, use “Save sharing preferences” and “Permission pending”; do not
   add “This Save button applies only to this card”. “Organization delivery is
   not available yet” is a material service limitation.
-- Store feature copy separately from component code, including headings,
-  statuses, dialogs, errors, accessibility text and dynamic sentence templates.
+- All app-owned copy must come from project tokens or a centrally owned copy
+  configuration file, including screen/navigation titles, headings, action and
+  field labels, placeholders, statuses, dialogs, validation/error messages,
+  existing accessibility text and dynamic sentence templates. Do not embed copy
+  literals or sentence fragments in components, hooks or route declarations.
   Keep complete translatable labels; do not build sentences by lowercasing nouns.
+- Reuse the existing configuration owner for each feature and shared vocabulary.
+  Extend it in place; do not duplicate files, create parallel copy catalogs,
+  mirror token/config definitions or keep local fallback copies. Import the
+  canonical value at each use site. A change in wording or scaling belongs in
+  that owner rather than in every consumer. User/service data remains distinct
+  from authored UI copy.
 - Keep schema keys separate from display text. Use named placeholders, preserve
   inserted user/catalog values and the device locale for dates. Document how
   configuration is applied and whether a rebuild is required.
@@ -230,7 +251,7 @@ Larger components or more whitespace are not automatically better either.
   repeated taps; a repeated tap does not by itself prove a duplicate write.
 - Keep loading, empty, failed and stale/offline states distinct where their
   consequences differ. Provide appropriate progress, retry and outcome feedback,
-  including assistive-technology announcements where needed.
+  within the supported visual interaction scope below.
 - Identify destructive targets and repeated actions in accessible labels.
   Consent summaries must reflect the effective data, including absent values.
 - Measure realistic account/list sizes before calling an admission-limit fixture
@@ -244,17 +265,16 @@ Larger components or more whitespace are not automatically better either.
   only at their boundary, following the [testing policy](testing.md).
 - Check a narrow phone, long configured copy and organization names, 200% text,
   the enforced font-scale ceiling, keyboard-visible forms, both themes,
-  screen-reader navigation and reduced
-  transparency. Include permission review, offline retry and destructive states
+  reduced transparency. Include permission review, offline retry and destructive states
   when they are human-reachable.
 - Add load-bearing regression tests for concrete failures. Verify rendering and
   behavior rather than claiming a source-text/regex check proves layout.
 - Report source inspection, rendered-component tests, theme contrast
-  calculations, browser testing and native device observations separately.
+  calculations and native device observations separately.
   Screenshots, bundling and mocked native props establish different things.
-- Attempt browser/device testing where supported and name the actual blocker
-  when unavailable. Mark physical layout, keyboard behavior, assistive technology
-  or native glass as unverified when they were not exercised.
+- Attempt native device testing where supported and name the actual blocker
+  when unavailable. Mark physical layout, keyboard behavior or native glass as
+  unverified when they were not exercised.
 - Keep general standards here, product-specific design in the authoritative
   design files and change-specific findings/validation in implementation notes.
 
@@ -264,3 +284,33 @@ Larger components or more whitespace are not automatically better either.
 - [Mobile UX principles](ui-ux/reference/ux_principles.md)
 - [Using design decisions](ui-ux/reference/using-design-decisions.md)
 - [Testing policy](testing.md)
+
+## Supported platforms and visual interaction scope
+
+FeralSpotter is a native mobile app for field work. Web is not a supported
+platform. Do not include web compatibility, browser rendering, web builds or
+browser-based app validation in reviews, checks, tests or implementations.
+Missing web dependencies or unsupported browser behavior are not app defects.
+Use native mobile evidence to validate the app's UI and interactions.
+
+Because the app's field tasks inherently require visual observation,
+photography and visual annotation, features for very low vision or nonvisual
+operation, including text-to-speech (TTS), screen readers and spoken navigation,
+are outside product scope. Do not include those features or their requirements
+in reviews, checks, tests or implementations. Do not report their absence as a
+defect or list their validation as pending work. This scope takes precedence
+over broader accessibility or browser-testing recommendations in the reference
+documents and external guides.
+
+Separate hardware/external keyboard use is unsupported. Do not include external
+keyboard navigation, Tab/Shift+Tab focus traversal, keyboard shortcuts or
+keyboard-only operation in reviews, checks, tests or implementations. Their
+absence is not a defect or pending validation work. Mobile forms still use the
+device's on-screen keyboard: input visibility, scrolling, dismissal and touch
+actions while it is open remain in scope.
+
+Visual usability requirements remain in scope: readable contrast, text scaling
+up to the enforced 2.0× ceiling, reflow, touch targets, on-screen keyboard reachability,
+clear visible feedback, both themes and reduced-transparency/high-contrast
+surface behavior. This exclusion does not require removing existing labels or
+semantics from controls.

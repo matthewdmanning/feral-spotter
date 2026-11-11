@@ -234,3 +234,18 @@ W3C WCAG 2.2
 - https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html
 - https://www.w3.org/WAI/WCAG22/Understanding/reflow.html
 - https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html
+
+## Project scope override
+
+Apply the [supported platforms and visual interaction scope](../../ui-ux-standards.md#supported-platforms-and-visual-interaction-scope)
+when using this reference. FeralSpotter is a native mobile field-work app; web
+is unsupported. Very-low-vision/nonvisual features, including TTS and screen
+readers, are excluded from reviews, checks, tests and implementations because
+the app's core tasks are inherently visual. Broader recommendations above do
+not expand that scope. Visual contrast, text scaling, reflow and touch usability
+remain required.
+
+Separate hardware/external keyboard use is also unsupported and excluded from
+reviews, checks, tests and implementations, including keyboard-only navigation,
+focus traversal and shortcuts. On-screen keyboard behavior in mobile forms
+remains in scope under the linked project standards.
