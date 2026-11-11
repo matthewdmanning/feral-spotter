@@ -4,10 +4,10 @@
  * Screen receives everything via this hook — no business logic in the component.
  */
 
+import { settingsCopy } from '@/src/features/settings/copy/settingsCopy'
 import { showAlert, showSuccess } from '@/src/shared/hooks/useUIStore'
 import { useState } from 'react'
 
-import { router } from 'expo-router'
 import { useSettingsStore } from '@/src/features/settings/hooks/useSettingsStore'
 import type { AppSettings } from '@/src/features/settings/hooks/useSettingsStore'
 
@@ -22,26 +22,26 @@ export function useSettingsDraft(): SettingsDraftResult {
   const savedSettings = useSettingsStore((s) => s.settings)
   const updateSettings = useSettingsStore((s) => s.updateSettings)
 
-  const [draft, setDraft] = useState<AppSettings>({ ...savedSettings })
+  const [changes, setChanges] = useState<Partial<AppSettings>>({})
+  const draft = { ...savedSettings, ...changes }
 
   const patch = (key: keyof AppSettings, value: unknown) =>
-    setDraft((d) => ({ ...d, [key]: value }))
+    setChanges((current) => ({ ...current, [key]: value }))
 
   const handleSave = () => {
-    updateSettings(draft)
-    showSuccess('Saved', 'Settings saved')
-    router.back()
+    updateSettings(changes)
+    setChanges({})
+    showSuccess(settingsCopy.savedTitle, settingsCopy.savedMessage)
   }
 
   const handleDiscard = () => {
-    showAlert('Discard Changes', 'Discard all unsaved changes?', [
-      { text: 'No', style: 'cancel' },
+    showAlert(settingsCopy.discardTitle, settingsCopy.discardMessage, [
+      { text: settingsCopy.cancel, style: 'cancel' },
       {
-        text: 'Yes',
+        text: settingsCopy.discard,
         style: 'destructive',
         onPress: () => {
-          setDraft({ ...savedSettings })
-          router.back()
+          setChanges({})
         },
       },
     ])

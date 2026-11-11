@@ -16,7 +16,8 @@ import {
 import { formatDateTime } from '@/src/shared/utils/formatDateTime'
 import { router } from 'expo-router'
 import { CaretRightIcon } from 'phosphor-react-native/src/icons/CaretRight'
-import { Pressable, Text, View } from 'react-native'
+import { Text } from '@/src/shared/ui/atoms/Text'
+import { Pressable, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './ReportCard.styles'
 

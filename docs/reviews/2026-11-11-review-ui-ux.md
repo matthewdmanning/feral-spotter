@@ -3,8 +3,9 @@
 Reviewed 2026-11-11 on `review/ui-ux`, based on `origin/main` at
 `fcdf2ec9dbf2777c519c2fcbb529af95e0e74441`.
 
-This is a source-based review with calculated theme contrast. No application
-behavior or authoritative design decision was changed. P1 means a core task or
+The initial findings below describe the source-based review with calculated
+theme contrast. Subsequent code changes are recorded in the implementation
+status below; authoritative design decisions have not been changed. P1 means a core task or
 accessibility requirement is at risk; P2 means a material usability or standards
 gap. Layout consequences below are source-derived unless explicitly measured.
 
@@ -312,3 +313,56 @@ review and from checks, tests and implementations. No external-keyboard support
 is requested by the findings. F2 remains actionable because it concerns the
 mobile on-screen keyboard used to enter account details, rather than a separate
 keyboard. Native validation should use touch input and the on-screen keyboard.
+
+## Implementation status — 2026-11-11
+
+Implemented on `review/ui-ux` after the user's request to fix the remaining
+recommendations. The findings above preserve the reviewed baseline.
+
+| Finding | Implemented change                                                                                                                               |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| F1      | Central 2.0 multiplier, forced-on scaling through shared Text/TextField; all app-owned Text migrated, including nested and stack-title text      |
+| F2      | Scrollable keyboard-avoiding account forms; Settings handles touch actions with the on-screen keyboard open                                      |
+| F3      | Onboarding slide content scrolls independently of the action footer                                                                              |
+| F4      | Choice tracks wrap with scalable minimum widths, complete labels and 8dp gaps                                                                    |
+| F5      | Annotation uses the adaptive ButtonRow within a bounded scrolling action region                                                                  |
+| F6      | Pin and map share one viewport excluding the footer                                                                                              |
+| F7      | Strong input boundaries and an accent focus boundary                                                                                             |
+| F8      | Excluded by product scope; no screen-reader work implemented                                                                                     |
+| F9      | Location correction control has a 48dp minimum height                                                                                            |
+| F10     | Sighting sharing follows location/time and precedes the cat list                                                                                 |
+| F11     | Photo Save/Discard is local to the photo group; sharing fields follow their choices; organization cards share radius/heading/spacing conventions |
+
+The new solid input-border/fill contrast ratios are **3.683614:1 light** and
+**4.529205:1 dark**. Focus accent/fill ratios are **5.302100:1 light** and
+**7.072999:1 dark**. Native compositing and focus appearance still need a device.
+
+Verification: the full JavaScript suite passed with **119 suites / 531 tests**.
+Application, server and test TypeScript checks passed. Changed-file ESLint passed.
+Formatting and whitespace checks passed. A final focused Settings regression was
+rerun after limiting persistence to edited settings, to avoid overwriting an
+independent setting while the tab remains mounted.
+
+New tests exercise text/input policy overrides, selection with complete labels
+at font scales 1/2/3, Settings persistence boundaries and shared map/pin containment.
+They establish renderer/interaction contracts; they do not measure native layout.
+
+**Remaining validation limitation:** No native run was possible (`adb` absent).
+Narrow/short-screen layout, on-screen keyboard behavior, actual native map pin
+alignment, glass and both-theme appearance remain unverified. Native tabs, map
+labels and OS date pickers are platform-owned UI rather than React Native Text;
+their SDKs do not expose its `maxFontSizeMultiplier`. Their actual scaling must
+be checked on device; no test here proves a 2× ceiling for those native controls.
+The app-owned text ceiling is enforced in code, not merely documented.
+
+The Home circle placement/gap, empty-cat visual-priority and first-run-document
+mismatches remain the product/design tensions recorded above. No authoritative
+design files were silently changed. Web, external keyboards, TTS and
+screen-reader features remain excluded.
+
+Feature-specific implementation entries:
+[shared layouts](../implementations/2026-10-28-ui-component-spacing-alignment.md),
+[text/theme](../implementations/2026-08-26-issue-320-theme-mode-and-breakpoints.md),
+[sharing](../implementations/2026-11-07-feat-organizations.md),
+[Onboarding](../implementations/2026-08-09-intro-flow-t1-hardware-back.md),
+[location](../implementations/2026-08-09-consent-66-location-permission-gate.md).

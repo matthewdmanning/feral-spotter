@@ -229,7 +229,10 @@ const opacity = {
   pressed: 0.7,
 } as const
 
+const controlWidth = { choice: 112, action: 128 } as const
+
 const sharedTokens = {
+  controlWidth,
   catPalette,
   reticle,
   borderWidth,

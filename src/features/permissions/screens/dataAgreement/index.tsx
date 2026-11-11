@@ -9,7 +9,8 @@
 import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
 import { DisclosureText } from '@/src/features/permissions/components/DisclosureText'
 import agreementCopy from '@/src/features/permissions/copy/consentDisclosure.json'
-import { ScrollView, Text, View } from 'react-native'
+import { Text } from '@/src/shared/ui/atoms/Text'
+import { ScrollView, View } from 'react-native'
 import { styles } from './index.styles'
 
 export default function DataAgreementScreen() {

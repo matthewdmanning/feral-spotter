@@ -1,4 +1,5 @@
-import { Pressable, Text } from 'react-native'
+import { Text } from '@/src/shared/ui/atoms/Text'
+import { Pressable } from 'react-native'
 import { CheckboxBox } from '@/src/shared/ui/atoms/CheckboxBox'
 import { styles } from './styles'
 

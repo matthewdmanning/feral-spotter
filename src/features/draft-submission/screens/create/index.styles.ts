@@ -27,6 +27,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
   },
   statusItem: {
     flex: 1,
+    minHeight: theme.controlHeight.touchTarget,
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing.sm,

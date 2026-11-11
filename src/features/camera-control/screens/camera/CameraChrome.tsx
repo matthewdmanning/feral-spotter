@@ -19,10 +19,10 @@ import { LightningIcon } from 'phosphor-react-native/src/icons/Lightning'
 import { LightningSlashIcon } from 'phosphor-react-native/src/icons/LightningSlash'
 import { XIcon } from 'phosphor-react-native/src/icons/X'
 import { useCallback } from 'react'
+import { Text } from '@/src/shared/ui/atoms/Text'
 import {
   Pressable,
   StyleSheet as RNStyleSheet,
-  Text,
   View,
   type ViewStyle,
 } from 'react-native'

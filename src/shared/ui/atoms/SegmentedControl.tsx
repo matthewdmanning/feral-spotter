@@ -1,4 +1,8 @@
-import { View, Text, Pressable } from 'react-native'
+import { useState } from 'react'
+import { useUnistyles } from 'react-native-unistyles'
+import { MAX_FONT_SIZE_MULTIPLIER } from '@/src/shared/config/text'
+import { Text } from '@/src/shared/ui/atoms/Text'
+import { View, Pressable, useWindowDimensions } from 'react-native'
 import { styles } from './SegmentedControl.styles'
 import { selectionHaptic } from '@/src/shared/lib/haptics'
 
@@ -26,8 +30,6 @@ interface SegmentedRowProps<T extends string | number> {
   value: T | undefined
   onChange: (value: T | undefined) => void
   accessibilityLabel: string
-  // Long labels ("Bicolor & Piebald") need a second line to stay readable.
-  numberOfLines?: number
   /** See SegmentedControlProps.required. */
   required?: boolean
 }
@@ -38,11 +40,26 @@ export function SegmentedRow<T extends string | number>({
   value,
   onChange,
   accessibilityLabel,
-  numberOfLines = 1,
   required = false,
 }: SegmentedRowProps<T>) {
+  const { theme } = useUnistyles()
+  const { width, fontScale } = useWindowDimensions()
+  const [measuredWidth, setMeasuredWidth] = useState<number | null>(null)
+  const availableWidth =
+    (measuredWidth ??
+      width - 2 * theme.layout.gutter - 2 * theme.layout.cardPadding) -
+    2 * theme.spacing.xs -
+    2
+  const optionWidth = Math.min(
+    Math.max(0, availableWidth),
+    theme.controlWidth.choice * Math.min(fontScale, MAX_FONT_SIZE_MULTIPLIER),
+  )
   return (
-    <View style={styles.row} accessibilityLabel={accessibilityLabel}>
+    <View
+      style={styles.row}
+      accessibilityLabel={accessibilityLabel}
+      onLayout={(event) => setMeasuredWidth(event.nativeEvent.layout.width)}
+    >
       {options.map((opt) => {
         const selected = opt.value === value
         return (
@@ -55,6 +72,7 @@ export function SegmentedRow<T extends string | number>({
             }}
             style={({ pressed }) => [
               styles.option,
+              { flexBasis: optionWidth },
               selected ? styles.optionSelected : styles.optionIdle,
               pressed && styles.optionPressed,
             ]}
@@ -62,10 +80,7 @@ export function SegmentedRow<T extends string | number>({
             accessibilityState={{ selected }}
             accessibilityLabel={opt.label}
           >
-            <Text
-              style={selected ? styles.textSelected : styles.textIdle}
-              numberOfLines={numberOfLines}
-            >
+            <Text style={selected ? styles.textSelected : styles.textIdle}>
               {opt.label}
             </Text>
           </Pressable>

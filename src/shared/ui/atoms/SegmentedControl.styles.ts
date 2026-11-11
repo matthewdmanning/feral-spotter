@@ -10,9 +10,10 @@ export const styles = StyleSheet.create((theme) => ({
   label: { ...theme.textVariants.heading, color: theme.colors.text },
   row: {
     flexDirection: 'row',
-    gap: theme.spacing.xs,
+    flexWrap: 'wrap',
+    gap: theme.spacing.sm,
     padding: theme.spacing.xs,
-    borderRadius: theme.radius.full,
+    borderRadius: theme.radius.xl,
     backgroundColor: theme.colors.surfaceAlt,
     // Without an edge the track's fill sits too close to the card and reads
     // as a rendering glitch.
@@ -22,7 +23,8 @@ export const styles = StyleSheet.create((theme) => ({
   },
   // Base option — combined with selected/idle variant below
   option: {
-    flex: 1,
+    flexGrow: 1,
+    flexShrink: 0,
     minHeight: theme.controlHeight.touchTarget,
     paddingVertical: theme.spacing.sm,
     paddingHorizontal: theme.spacing.xs,
@@ -44,10 +46,12 @@ export const styles = StyleSheet.create((theme) => ({
     ...theme.textVariants.labelSmall,
     color: theme.colors.selectionText,
     textAlign: 'center',
+    flexShrink: 1,
   },
   textIdle: {
     ...theme.textVariants.labelSmall,
     color: theme.colors.muted,
     textAlign: 'center',
+    flexShrink: 1,
   },
 }))

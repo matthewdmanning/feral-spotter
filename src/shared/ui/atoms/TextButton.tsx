@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
-import { Pressable, Text, type StyleProp, type ViewStyle } from 'react-native'
+import { Text } from '@/src/shared/ui/atoms/Text'
+import { Pressable, type StyleProp, type ViewStyle } from 'react-native'
 import { styles } from './TextButton.styles'
 
 export type TextButtonTone = 'accent' | 'muted' | 'danger'

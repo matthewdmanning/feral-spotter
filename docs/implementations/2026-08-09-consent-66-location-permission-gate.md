@@ -219,3 +219,15 @@ of always-shown.
 
 **Purpose:** Make the disclosure match current collection and sharing behavior (#208).
 **Change:** Explain camera/library photos, background uploads before final submission, location/time sources and corrections, cat annotations, and account association. Describe organization choices as permissions recorded without delivery, and analytics as account-identifier-linked rather than anonymous. Email/analytics remain separate opt-ins. Bump CONSENT_VERSION to 2 because upload timing is material; the existing stale-version gate requires reacceptance, without resetting the separate optional choices. No collection, backend, or permissions behavior changed. See the [onboarding note](2026-08-09-intro-flow-t1-hardware-back.md).
+
+## 2026-11-11 — fix
+
+**Purpose:** Align the Map picker's visible pin with the location saved by the
+map camera center (review F6), and make correction easier to tap (F9).
+**Change:** The native map and absolute pin overlay share a flex viewport;
+the footer is a sibling outside it. Its changing height no longer shifts the pin
+relative to map center. The draft Location control has a 48dp minimum target.
+The location model test checks map and pin share a viewport excluding Set location;
+existing journeys verify confirmation saves the moved center and Cancel preserves
+the prior location. Exact native geographic/visual alignment remains unverified.
+See [shared layout changes](2026-10-28-ui-component-spacing-alignment.md).

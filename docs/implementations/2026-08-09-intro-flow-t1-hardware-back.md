@@ -41,3 +41,13 @@ mocks `useBackHandler` to capture the registered handler, same pattern as
 
 **Purpose:** Correct onboarding's unsupported timing/downstream-use claims and incorrect setup order (#381, #208).
 **Change:** Describe actual photo/location/cat recording, background uploads, separate optional choices, permissions before sign-in, Google/email availability, and gated Apple/Facebook methods. Remove the one-minute estimate, rescue/TNR/prediction promises, and unverified non-commercial assurances. Layout/first-run comprehension remain device-verification work under #381. See the [consent note](2026-08-09-consent-66-location-permission-gate.md) and [backlog audit](../planning/2026-11-08-backlog-2026-11-07.md).
+
+## 2026-11-11 — fix
+
+**Purpose:** Make all Onboarding paragraphs reachable on short screens at enlarged
+text, as requested by review finding F3.
+**Change:** Slide content scrolls separately above the pinned Previous/Next group;
+its minimum content height preserves centered placement when content fits.
+Slide order, Back policy and Consent navigation are unchanged. Shared Text
+provides the central scaling ceiling. See [shared layout changes](2026-10-28-ui-component-spacing-alignment.md)
+for automated coverage and native validation limits.

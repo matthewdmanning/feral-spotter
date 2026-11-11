@@ -66,6 +66,7 @@ export const styles = StyleSheet.create((theme) => ({
   label: {
     ...theme.textVariants.labelSmall,
     textAlign: 'center',
+    flexShrink: 1,
     variants: {
       variant: {
         primary: { color: theme.colors[LABEL_COLOR_KEY.primary] },

@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react'
-import { Text } from 'react-native'
+import { Text } from '@/src/shared/ui/atoms/Text'
+
 import { router } from 'expo-router'
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import { TextButton } from '@/src/shared/ui/atoms/TextButton'

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Text, View } from 'react-native'
+import { Text } from '@/src/shared/ui/atoms/Text'
+import { View } from 'react-native'
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import { TextButton } from '@/src/shared/ui/atoms/TextButton'
 import { useAuth } from '@/src/features/auth/lib/useAuth'

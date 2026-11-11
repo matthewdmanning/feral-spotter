@@ -9,6 +9,7 @@
  * react-navigation does not re-render screens on screenOptions changes.
  */
 
+import { Text } from '@/src/shared/ui/atoms/Text'
 import '@/src/shared/config/unistyles'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import { initializeDraft } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
@@ -67,6 +68,11 @@ export default function RootLayout() {
         screenOptions={{
           headerStyle: { backgroundColor: theme.colors.background },
           headerTintColor: theme.colors.text,
+          headerTitle: ({ children, tintColor }) => (
+            <Text style={[theme.textVariants.heading, { color: tintColor }]}>
+              {children}
+            </Text>
+          ),
           headerTitleStyle: {
             fontFamily: theme.fonts.bold,
             fontSize: theme.typography.lg,

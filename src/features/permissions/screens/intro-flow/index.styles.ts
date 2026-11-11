@@ -8,7 +8,12 @@ export const styles = StyleSheet.create((theme, rt) => ({
     paddingTop: rt.insets.top + theme.spacing.xxxl,
     paddingBottom: rt.insets.bottom + theme.spacing.lg,
   },
-  slideContent: { flex: 1, justifyContent: 'center' },
+  scroll: { flex: 1 },
+  slideContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingBottom: theme.spacing.xl,
+  },
   header: {
     ...theme.textVariants.display,
     color: theme.colors.text,

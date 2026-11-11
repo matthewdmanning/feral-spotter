@@ -1,6 +1,8 @@
+import { useHeaderHeight } from 'expo-router/react-navigation'
 import { showAlert } from '@/src/shared/hooks/useUIStore'
 import { useState } from 'react'
-import { View, Text } from 'react-native'
+import { Text } from '@/src/shared/ui/atoms/Text'
+import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native'
 import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import { TextField } from '@/src/shared/ui/atoms/TextField'
@@ -10,6 +12,7 @@ import { validateRegistration } from '@/src/shared/utils/validation'
 import { styles } from './index.styles'
 
 export default function RegisterScreen() {
+  const headerHeight = useHeaderHeight()
   const { registerWithEmail } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -30,9 +33,16 @@ export default function RegisterScreen() {
   }
 
   return (
-    <View style={styles.root}>
+    <KeyboardAvoidingView
+      style={styles.root}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={headerHeight}
+    >
       <AmbientBackground />
-      <View style={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
         <Text style={styles.title}>Create your account</Text>
         <Text style={styles.subtitle}>Sign up with an email and password.</Text>
 
@@ -71,7 +81,7 @@ export default function RegisterScreen() {
             Create account
           </AppButton>
         </View>
-      </View>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   )
 }

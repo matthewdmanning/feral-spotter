@@ -1,3 +1,4 @@
+import { settingsCopy } from '@/src/features/settings/copy/settingsCopy'
 import { SharingSettings } from '@/src/features/organizations/components/SharingSettings'
 import { OrganizationPermissions } from '@/src/features/organizations/components/OrganizationPermissions'
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
@@ -28,7 +29,8 @@ import { APP_VERSION, FEATURE_FLAGS } from '@/src/shared/config/constants'
 import { router } from 'expo-router'
 import { FileTextIcon } from 'phosphor-react-native/src/icons/FileText'
 import { Fragment, useState } from 'react'
-import { Platform, ScrollView, Text, View } from 'react-native'
+import { Text } from '@/src/shared/ui/atoms/Text'
+import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
 
@@ -60,9 +62,12 @@ export default function SettingsScreen() {
   const { draft, patch, handleSave, handleDiscard } = useSettingsDraft()
 
   return (
-    <View style={styles.root}>
+    <KeyboardAvoidingView
+      style={styles.root}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       <AmbientBackground />
-      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
         <View style={styles.inner}>
           <View style={styles.header}>
             <Text style={styles.title}>Settings</Text>
@@ -132,31 +137,41 @@ export default function SettingsScreen() {
           <SharingSettings />
           <OrganizationPermissions />
 
-          {[
-            { title: 'Photos', toggles: PHOTO_TOGGLES },
-            { title: 'Developer Mode', toggles: DEVELOPER_TOGGLES },
-          ].map(
-            ({ title, toggles }) =>
-              toggles.length > 0 && (
-                <GlassSurface kind="card" key={title} style={styles.card}>
-                  <Text style={styles.cardTitle}>{title}</Text>
-                  {/* Fragment, not a View: the divider must be a direct child
-                      of the card so the card gap spaces it evenly above and
-                      below. A wrapper View put the gap on one side only. */}
-                  {toggles.map(({ key, label, desc }, i) => (
-                    <Fragment key={key}>
-                      {i > 0 && <View style={styles.divider} />}
-                      <ToggleRow
-                        label={label}
-                        hint={desc}
-                        value={draft[key]}
-                        onValueChange={(value) => patch(key, value)}
-                      />
-                    </Fragment>
-                  ))}
-                </GlassSurface>
-              ),
-          )}
+          <GlassSurface kind="card" style={styles.card}>
+            <Text style={styles.cardTitle}>{settingsCopy.photos}</Text>
+            {[
+              { title: settingsCopy.photos, toggles: PHOTO_TOGGLES },
+              { title: settingsCopy.developer, toggles: DEVELOPER_TOGGLES },
+            ].map(
+              ({ title, toggles }) =>
+                toggles.length > 0 && (
+                  <View key={title} style={styles.toggleGroup}>
+                    {title === settingsCopy.developer && (
+                      <Text style={styles.groupTitle}>{title}</Text>
+                    )}
+                    {toggles.map(({ key, label, desc }, i) => (
+                      <Fragment key={key}>
+                        {i > 0 && <View style={styles.divider} />}
+                        <ToggleRow
+                          label={label}
+                          hint={desc}
+                          value={draft[key]}
+                          onValueChange={(value) => patch(key, value)}
+                        />
+                      </Fragment>
+                    ))}
+                  </View>
+                ),
+            )}
+            <ButtonRow>
+              <AppButton variant="secondary" onPress={handleDiscard}>
+                {settingsCopy.discardPhotos}
+              </AppButton>
+              <AppButton onPress={handleSave}>
+                {settingsCopy.savePhotos}
+              </AppButton>
+            </ButtonRow>
+          </GlassSurface>
 
           <GlassSurface kind="card" style={styles.card}>
             <Text style={styles.cardTitle}>FeralSpotter</Text>
@@ -177,15 +192,6 @@ export default function SettingsScreen() {
           </GlassSurface>
         </View>
       </ScrollView>
-
-      <View style={styles.footer}>
-        <ButtonRow>
-          <AppButton variant="danger" onPress={handleDiscard}>
-            Discard
-          </AppButton>
-          <AppButton onPress={handleSave}>Save</AppButton>
-        </ButtonRow>
-      </View>
-    </View>
+    </KeyboardAvoidingView>
   )
 }

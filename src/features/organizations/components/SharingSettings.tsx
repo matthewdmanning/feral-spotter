@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import { Text } from 'react-native'
+import { Text } from '@/src/shared/ui/atoms/Text'
+import { View } from 'react-native'
+
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import { TextField } from '@/src/shared/ui/atoms/TextField'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
@@ -61,39 +63,40 @@ function SharingSettingsForm({
         email, and phone.
       </Text>
       {SHARING_FIELD_KEYS.map((key) => (
-        <SharingCheckbox
-          key={key}
-          label={`Share ${FIELD_LABELS[key].toLowerCase()}`}
-          checked={draft.fields[key]}
-          onChange={(value) =>
-            setDraft({ ...draft, fields: { ...draft.fields, [key]: value } })
-          }
-        />
+        <View key={key} style={styles.fieldGroup}>
+          <SharingCheckbox
+            label={`Share ${FIELD_LABELS[key].toLowerCase()}`}
+            checked={draft.fields[key]}
+            onChange={(value) =>
+              setDraft({ ...draft, fields: { ...draft.fields, [key]: value } })
+            }
+          />
+          {key === 'name' && draft.fields.name && (
+            <TextField
+              label="Name to share"
+              value={draft.name}
+              maxLength={200}
+              autoComplete="name"
+              onChangeText={(name) => setDraft({ ...draft, name })}
+            />
+          )}
+          {key === 'email' && draft.fields.email && (
+            <Text style={styles.body}>
+              Email to share: {email ?? 'No email available'}
+            </Text>
+          )}
+          {key === 'phone' && draft.fields.phone && (
+            <TextField
+              label="Phone to share"
+              value={draft.phone}
+              maxLength={50}
+              keyboardType="phone-pad"
+              autoComplete="tel"
+              onChangeText={(phone) => setDraft({ ...draft, phone })}
+            />
+          )}
+        </View>
       ))}
-      {draft.fields.name && (
-        <TextField
-          label="Name to share"
-          value={draft.name}
-          maxLength={200}
-          autoComplete="name"
-          onChangeText={(name) => setDraft({ ...draft, name })}
-        />
-      )}
-      {draft.fields.email && (
-        <Text style={styles.body}>
-          Email to share: {email ?? 'No email available'}
-        </Text>
-      )}
-      {draft.fields.phone && (
-        <TextField
-          label="Phone to share"
-          value={draft.phone}
-          maxLength={50}
-          keyboardType="phone-pad"
-          autoComplete="tel"
-          onChangeText={(phone) => setDraft({ ...draft, phone })}
-        />
-      )}
       <AppButton
         onPress={() =>
           useOrganizationSharingStore.getState().configure(uid, draft)

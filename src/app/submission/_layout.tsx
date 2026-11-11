@@ -1,3 +1,4 @@
+import { Text } from '@/src/shared/ui/atoms/Text'
 /**
  * Submission Layout — nested Stack
  * Linear flow: create → cats
@@ -62,6 +63,11 @@ export default function SubmissionLayout() {
         screenOptions={{
           headerStyle: { backgroundColor: theme.colors.background },
           headerTintColor: theme.colors.text,
+          headerTitle: ({ children, tintColor }) => (
+            <Text style={[theme.textVariants.heading, { color: tintColor }]}>
+              {children}
+            </Text>
+          ),
           headerTitleStyle: {
             ...theme.textVariants.heading,
             color: theme.colors.text,

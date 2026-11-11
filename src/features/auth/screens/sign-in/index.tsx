@@ -1,6 +1,7 @@
 import { showAlert } from '@/src/shared/hooks/useUIStore'
 import { useState } from 'react'
-import { View, Text } from 'react-native'
+import { Text } from '@/src/shared/ui/atoms/Text'
+import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native'
 import { router } from 'expo-router'
 import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
@@ -41,9 +42,16 @@ export default function SignInScreen() {
     })
 
   return (
-    <View style={styles.root}>
+    <KeyboardAvoidingView
+      style={styles.root}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={0}
+    >
       <AmbientBackground />
-      <View style={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
         <Text style={styles.title}>FeralSpotter</Text>
         <Text style={styles.subtitle}>
           Sign in to start submitting cat observations.
@@ -109,7 +117,7 @@ export default function SignInScreen() {
             </View>
           )
         })}
-      </View>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   )
 }

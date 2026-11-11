@@ -176,3 +176,16 @@ The account-deletion change is also recorded in the [account-erasure note](2026-
 **Test iterations:** The initial consent journey failed because rendering a separate hook displaced the form as the active test render. The corrected journey calls the real `submitDraft()` lifecycle with the form mounted; all three consent cases pass.
 
 **Verification:** Full client suite: 116 suites / 546 tests passed. Functions suite: 7 suites / 62 tests passed. App/server TypeScript checks, Functions build, focused client ESLint, Prettier on every changed file, and `git diff --check` passed. Rules/emulator integration and device checks were not rerun; nothing was deployed.
+
+## 2026-11-11 — fix
+
+**Purpose:** Address review findings F10/F11 without changing sharing consent,
+rollout gates or persistence semantics.
+**Change:** Sighting sharing sits immediately after location/time, before the cat
+list. Name, email and phone content appears immediately under the corresponding
+sharing choice. Organization cards share the card radius, heading role and
+host-owned spacing used by their screens. The sharing Save action remains local
+to its card; Settings' photo Save/Discard is now local to its own group.
+Existing organization management/sharing journeys remain the interaction coverage.
+See [shared layout changes](2026-10-28-ui-component-spacing-alignment.md) and the
+[review](../reviews/2026-11-11-review-ui-ux.md) for the verification matrix.

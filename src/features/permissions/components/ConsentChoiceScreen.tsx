@@ -4,7 +4,8 @@ import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import { CheckboxBox } from '@/src/shared/ui/atoms/CheckboxBox'
 import { useBackHandler } from '@/src/shared/hooks/useBackHandler'
 import { useState } from 'react'
-import { View, Text, Pressable, ScrollView } from 'react-native'
+import { Text } from '@/src/shared/ui/atoms/Text'
+import { View, Pressable, ScrollView } from 'react-native'
 import { styles } from './ConsentChoiceScreen.styles'
 
 interface ConsentChoiceScreenProps {

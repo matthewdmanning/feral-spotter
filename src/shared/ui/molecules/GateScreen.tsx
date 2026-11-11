@@ -1,7 +1,8 @@
 import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import { router } from 'expo-router'
-import { Linking, Text, View } from 'react-native'
+import { Text } from '@/src/shared/ui/atoms/Text'
+import { Linking, View } from 'react-native'
 import { styles } from './GateScreen.styles'
 
 interface GateScreenProps {

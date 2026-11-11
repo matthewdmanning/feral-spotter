@@ -34,9 +34,6 @@ export const styles = StyleSheet.create((theme, rt) => ({
     backgroundColor: theme.colors.border,
     marginVertical: theme.spacing.xs,
   },
-  footer: {
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
-    paddingVertical: theme.spacing.lg,
-  },
+  toggleGroup: { gap: theme.spacing.md },
+  groupTitle: { ...theme.textVariants.label, color: theme.colors.text },
 }))

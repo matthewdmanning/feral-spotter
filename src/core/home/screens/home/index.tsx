@@ -1,3 +1,4 @@
+import { Text } from '@/src/shared/ui/atoms/Text'
 import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import type { ColumnButton } from '@/src/shared/ui/molecules/BottomButtonColumn'
@@ -192,6 +193,11 @@ export default function HomeScreen() {
         options={{
           headerShown: true,
           title: 'FeralSpotter',
+          headerTitle: ({ children, tintColor }) => (
+            <Text style={[theme.textVariants.title, { color: tintColor }]}>
+              {children}
+            </Text>
+          ),
           headerStyle: { backgroundColor: theme.colors.background },
           headerTintColor: theme.colors.text,
           headerTitleStyle: {

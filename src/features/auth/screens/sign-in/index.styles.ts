@@ -10,9 +10,13 @@ export const styles = StyleSheet.create((theme, rt) => ({
     paddingBottom: rt.insets.bottom,
   },
   content: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: theme.layout.gutter,
+    paddingVertical: theme.layout.sectionGap,
+    width: '100%',
+    maxWidth: 640,
+    alignSelf: 'center',
   },
   title: {
     ...theme.textVariants.display,
