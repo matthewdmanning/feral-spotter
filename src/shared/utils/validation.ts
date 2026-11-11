@@ -2,6 +2,8 @@
  * Validation utilities for submission data
  */
 
+import { formatCopy, validationCopy } from '@/src/shared/config/text'
+
 /**
  * The #265 hard blocks on sending a draft, as alert lines.
  * Empty when the draft has at least one cat and one photo.
@@ -11,8 +13,8 @@ export function missingDraftContent(
   photoCount: number,
 ): string[] {
   return [
-    ...(catCount === 0 ? ['At least one cat observation is required.'] : []),
-    ...(photoCount === 0 ? ['At least one photo is required.'] : []),
+    ...(catCount === 0 ? [validationCopy.missingCatObservation] : []),
+    ...(photoCount === 0 ? [validationCopy.missingPhoto] : []),
   ]
 }
 
@@ -34,18 +36,23 @@ export function validateRegistration(
   confirm: string,
 ): RegistrationProblem | null {
   if (!email.trim()) {
-    return { title: 'Missing email', message: 'Enter an email address.' }
+    return {
+      title: validationCopy.missingEmailTitle,
+      message: validationCopy.missingEmailMessage,
+    }
   }
   if (password.length < MIN_PASSWORD_LENGTH) {
     return {
-      title: 'Weak password',
-      message: `Use at least ${MIN_PASSWORD_LENGTH} characters.`,
+      title: validationCopy.weakPasswordTitle,
+      message: formatCopy(validationCopy.minimumPasswordLengthMessage, {
+        minimumLength: MIN_PASSWORD_LENGTH,
+      }),
     }
   }
   if (password !== confirm) {
     return {
-      title: 'Passwords do not match',
-      message: 'Re-enter the same password in both fields.',
+      title: validationCopy.passwordsDoNotMatchTitle,
+      message: validationCopy.passwordsDoNotMatchMessage,
     }
   }
   return null

@@ -15,7 +15,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     paddingHorizontal: theme.layout.gutter,
     paddingVertical: theme.layout.sectionGap,
     width: '100%',
-    maxWidth: 640,
+    maxWidth: theme.layout.contentMaxWidth,
     alignSelf: 'center',
   },
   title: {

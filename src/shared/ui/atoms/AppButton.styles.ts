@@ -87,6 +87,6 @@ export const styles = StyleSheet.create((theme) => ({
   // pixel, so a press reads as a physical click, not a fade.
   pressed: {
     boxShadow: theme.depth.pressed,
-    transform: [{ translateY: 1 }, { scale: 0.97 }],
+    transform: [{ translateY: 1 }, { scale: theme.interaction.pressScale }],
   },
 }))

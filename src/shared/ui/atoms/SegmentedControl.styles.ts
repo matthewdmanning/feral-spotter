@@ -17,7 +17,7 @@ export const styles = StyleSheet.create((theme) => ({
     backgroundColor: theme.colors.surfaceAlt,
     // Without an edge the track's fill sits too close to the card and reads
     // as a rendering glitch.
-    borderWidth: 1,
+    borderWidth: theme.borderWidth.control,
     borderColor: theme.colors.borderStrong,
     boxShadow: theme.depth.well,
   },

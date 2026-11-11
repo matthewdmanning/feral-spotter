@@ -11,6 +11,7 @@
 
 import { useBackHandler } from '@/src/shared/hooks/useBackHandler'
 import { showAlert } from '@/src/shared/hooks/useUIStore'
+import { submissionCopy } from '@/src/shared/config/text'
 import { useIsFocused } from 'expo-router'
 import { useCallback } from 'react'
 
@@ -27,11 +28,19 @@ export function useDraftExitPrompt({
   const handleBackPress = useCallback(() => {
     if (!isFocused) return false
     if (isSubmitting) return true
-    showAlert('Leave Submission?', 'Your draft is not sent yet.', [
-      { text: 'Stay', style: 'cancel' },
-      { text: addMore.label, onPress: addMore.open },
-      { text: 'Discard Draft', style: 'destructive', onPress: onDiscard },
-    ])
+    showAlert(
+      submissionCopy.exit.leaveTitle,
+      submissionCopy.exit.leaveMessage,
+      [
+        { text: submissionCopy.exit.stay, style: 'cancel' },
+        { text: addMore.label, onPress: addMore.open },
+        {
+          text: submissionCopy.exit.discardDraft,
+          style: 'destructive',
+          onPress: onDiscard,
+        },
+      ],
+    )
     return true
   }, [isFocused, isSubmitting, addMore, onDiscard])
   useBackHandler(handleBackPress)

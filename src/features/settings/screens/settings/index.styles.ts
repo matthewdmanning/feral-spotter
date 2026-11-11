@@ -16,7 +16,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     paddingBottom: theme.spacing.xxl,
     width: '100%',
     alignSelf: 'center',
-    maxWidth: { xs: '100%', md: 640 },
+    maxWidth: { xs: '100%', md: theme.layout.contentMaxWidth },
   },
   header: { gap: theme.spacing.xs, marginTop: theme.spacing.lg },
   title: { ...theme.textVariants.title, color: theme.colors.text },

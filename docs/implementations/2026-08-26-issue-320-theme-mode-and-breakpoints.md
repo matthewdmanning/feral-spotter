@@ -143,3 +143,13 @@ support wrapping choices and action groups; text itself is never manually scaled
 `Text.scaling.test.tsx` checks nested text/input overrides cannot remove the cap
 or disable scaling. See [shared layout changes](2026-10-28-ui-component-spacing-alignment.md)
 and the [review](../reviews/2026-11-11-review-ui-ux.md) for validation limits.
+
+## 2026-11-11 — refactor
+
+**Purpose:** Remove the duplicated authored sizing/scaling values identified in SP3.
+**Change:** The shared theme defines semantic content width, choice-track border,
+pressed-button scale and annotation action-height allocation. Auth, Settings,
+segmented choices and annotation consume those roles; the track-width calculation
+uses the same border token as the drawn track. Structural side counts and actual
+measurements remain layout inputs. See [shared UI work](2026-10-28-ui-component-spacing-alignment.md)
+and the [review](../reviews/2026-11-11-review-ui-ux.md) for checks and limitations.

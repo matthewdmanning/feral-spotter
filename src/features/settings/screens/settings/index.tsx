@@ -1,4 +1,10 @@
 import { settingsCopy } from '@/src/features/settings/copy/settingsCopy'
+import {
+  authCopy,
+  commonCopy,
+  formatCopy,
+  navigationCopy,
+} from '@/src/shared/config/text'
 import { SharingSettings } from '@/src/features/organizations/components/SharingSettings'
 import { OrganizationPermissions } from '@/src/features/organizations/components/OrganizationPermissions'
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
@@ -35,9 +41,9 @@ import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
 
 const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
-  { value: 'system', label: 'System' },
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
+  { value: 'system', label: settingsCopy.themeSystem },
+  { value: 'light', label: settingsCopy.themeLight },
+  { value: 'dark', label: settingsCopy.themeDark },
 ]
 
 const VISIBLE_TOGGLES = visiblePhotoToggles(FEATURE_FLAGS, Platform.OS)
@@ -70,16 +76,14 @@ export default function SettingsScreen() {
       <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
         <View style={styles.inner}>
           <View style={styles.header}>
-            <Text style={styles.title}>Settings</Text>
-            <Text style={styles.subtitle}>
-              Configure appearance, authentication and storage
-            </Text>
+            <Text style={styles.title}>{navigationCopy.settings}</Text>
+            <Text style={styles.subtitle}>{settingsCopy.screenSubtitle}</Text>
           </View>
 
           <GlassSurface kind="card" style={styles.card}>
-            <Text style={styles.cardTitle}>Appearance</Text>
+            <Text style={styles.cardTitle}>{settingsCopy.appearance}</Text>
             <SegmentedControl
-              label="Theme"
+              label={settingsCopy.theme}
               options={THEME_OPTIONS}
               value={themeMode}
               required
@@ -88,38 +92,38 @@ export default function SettingsScreen() {
                 setThemeMode(next)
                 setSelectedThemeMode(next)
               }}
-              accessibilityLabel="Theme"
+              accessibilityLabel={settingsCopy.theme}
             />
-            <Text style={styles.hint}>
-              System follows your device&apos;s appearance setting.
-            </Text>
+            <Text style={styles.hint}>{settingsCopy.systemAppearanceHint}</Text>
           </GlassSurface>
 
           <GlassSurface kind="card" style={styles.card}>
-            <Text style={styles.cardTitle}>Haptic Feedback</Text>
+            <Text style={styles.cardTitle}>{settingsCopy.hapticFeedback}</Text>
             <ToggleRow
-              label="Vibration on Touch"
-              hint="A light click when you press a button or switch tabs"
+              label={settingsCopy.vibrationOnTouch}
+              hint={settingsCopy.hapticHint}
               value={hapticsOn}
               onValueChange={toggleHaptics}
             />
           </GlassSurface>
 
           <GlassSurface kind="card" style={styles.card}>
-            <Text style={styles.cardTitle}>Communications</Text>
+            <Text style={styles.cardTitle}>{settingsCopy.communications}</Text>
             <ToggleRow
-              label="Email Updates"
-              hint="News and project updates, sent to the email address on your account"
+              label={settingsCopy.emailUpdates}
+              hint={settingsCopy.emailUpdatesHint}
               value={emailOptIn}
               onValueChange={saveEmailOptIn}
             />
             <View style={styles.divider} />
             <Text style={styles.hint}>
-              Your email: {accountEmail ?? 'not available'}
+              {formatCopy(settingsCopy.yourEmailTemplate, {
+                email: accountEmail ?? commonCopy.notAvailable,
+              })}
             </Text>
             <TextField
-              label="New email"
-              placeholder="New email"
+              label={settingsCopy.newEmail}
+              placeholder={settingsCopy.newEmail}
               autoComplete="email"
               keyboardType="email-address"
               inputMode="email"
@@ -130,7 +134,7 @@ export default function SettingsScreen() {
               onPress={changeEmail.submit}
               disabled={changeEmail.busy || !changeEmail.newEmail.trim()}
             >
-              Send verification link
+              {authCopy.sendVerificationLink}
             </TextButton>
           </GlassSurface>
 
@@ -174,8 +178,12 @@ export default function SettingsScreen() {
           </GlassSurface>
 
           <GlassSurface kind="card" style={styles.card}>
-            <Text style={styles.cardTitle}>FeralSpotter</Text>
-            <Text style={styles.subtitle}>Version {APP_VERSION}</Text>
+            <Text style={styles.cardTitle}>{commonCopy.brand}</Text>
+            <Text style={styles.subtitle}>
+              {formatCopy(settingsCopy.versionTemplate, {
+                version: APP_VERSION,
+              })}
+            </Text>
             <View style={styles.divider} />
             <TextButton
               onPress={() => router.push('/data-agreement')}
@@ -187,7 +195,7 @@ export default function SettingsScreen() {
                 />
               }
             >
-              Data Policy
+              {settingsCopy.dataPolicy}
             </TextButton>
           </GlassSurface>
         </View>

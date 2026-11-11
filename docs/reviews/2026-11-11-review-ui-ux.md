@@ -490,3 +490,51 @@ annotation test files rather than adding parallel copies of their coverage.
   read-only second pass. The 119-suite/531-test result above belongs to the first
   implementation, not this review. Documentation formatting/whitespace checks
   apply to the current changes; no native or browser observation was added.
+
+## Second-pass fixes — 2026-11-11
+
+Implemented the four consolidated findings in the existing files:
+
+| Finding | Result                                                                                                                                                                                                   |
+| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SP1     | Completed Settings UI copy in the existing `settingsCopy.ts`; reused shared brand/navigation/auth values and retained `photoToggles.ts` as its label owner                                               |
+| SP2     | Centralized reviewed auth, validation, sharing/permission and submission confirmation/error/exit copy in existing `shared/config/text.ts`; complete sharing labels replace lowercased noun concatenation |
+| SP3     | Shared theme tokens now own content width, control border width, pressed-button scale and annotation action-height allocation; the segmented-width calculation uses the drawn border's token             |
+| SP4     | Extended existing ButtonRow and annotation regression coverage for measured width changes and action callbacks; native scrolling/canvas geometry remains unverified                                      |
+
+The shared configuration also owns navigation/gate labels and default dialog
+copy. Named templates use one `formatCopy` function with callback substitution:
+inserted values containing dollar signs or braces remain literal and are not
+interpreted as replacement/template syntax. The existing organization management
+journey now uses a catalog name containing `$& {fields}` and checks the complete
+permission-review message. Integration caught and corrected a doubled period
+while preserving the original wording. No parallel copy catalogs or duplicate
+files were created; permission JSON and photo-toggle configuration retain their
+existing ownership. Configuration changes take effect in the next app bundle.
+
+Provider release gates, authentication, validation rules, consent choices,
+organization rollout/coverage/outbox rules and Submission lifecycle semantics
+remain unchanged. The authored sizing values are numerically unchanged; this
+is an ownership and regression-coverage fix, not a claim of a new native visual
+measurement. The earlier native-control font ceiling and device-validation
+limitations still apply. No unsupported-platform/nonvisual checks were added.
+
+Second-pass verification:
+
+- Application, server and test TypeScript configurations pass (`npm run typecheck`).
+- Changed TypeScript/TSX files pass ESLint.
+- Both focused reflow suites pass (13 tests). Temporarily removing ButtonRow's
+  width condition makes both new narrow-width checks fail; the original
+  condition was restored before the final checks.
+- Focused copy/interaction runs pass for Settings/auth/validation/provider gates
+  and sharing/submission/reset flows. The complete suite is recorded below.
+- Formatting and whitespace checks cover the final code and documentation.
+- These checks establish JavaScript behavior and renderer contracts. Native
+  visual appearance, on-screen keyboard/canvas geometry and native-control font
+  scaling remain unverified because no device tooling is available.
+
+Final integrated result: **119 suites / 533 tests passed** (`npm test -- --runInBand`).
+Application/server/test typechecks, changed-file ESLint, repository formatting
+check and `git diff --check` also passed. All SP1–SP4 code and regression-coverage
+changes are complete; native visual validation remains the explicit limitation
+above. Only existing source, test, review and implementation files were changed.

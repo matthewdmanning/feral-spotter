@@ -9,6 +9,7 @@
  * react-navigation does not re-render screens on screenOptions changes.
  */
 
+import { navigationCopy } from '@/src/shared/config/text'
 import { Text } from '@/src/shared/ui/atoms/Text'
 import '@/src/shared/config/unistyles'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
@@ -89,7 +90,10 @@ export default function RootLayout() {
 
         {/* Non-tab flows */}
         {/* Read-only past Sighting, from a Reports card or map pin */}
-        <Stack.Screen name="sighting/[id]" options={{ title: 'Sighting' }} />
+        <Stack.Screen
+          name="sighting/[id]"
+          options={{ title: navigationCopy.sighting }}
+        />
         <Stack.Screen
           name="intro-flow"
           options={{ headerShown: false, gestureEnabled: false }}
@@ -98,7 +102,10 @@ export default function RootLayout() {
           name="sign-in"
           options={{ headerShown: false, gestureEnabled: false }}
         />
-        <Stack.Screen name="register" options={{ title: 'Create account' }} />
+        <Stack.Screen
+          name="register"
+          options={{ title: navigationCopy.createAccount }}
+        />
         <Stack.Screen
           name="email-opt-in"
           options={{ headerShown: false, gestureEnabled: false }}
@@ -110,14 +117,14 @@ export default function RootLayout() {
         <Stack.Screen
           name="consent"
           options={{
-            title: 'Before You Start',
+            title: navigationCopy.consent,
             gestureEnabled: false,
             headerBackVisible: false,
           }}
         />
         <Stack.Screen
           name="data-agreement"
-          options={{ title: 'Data Usage Agreement' }}
+          options={{ title: navigationCopy.agreement }}
         />
 
         <Stack.Screen

@@ -5,6 +5,7 @@
  */
 
 import { settingsCopy } from '@/src/features/settings/copy/settingsCopy'
+import { commonCopy } from '@/src/shared/config/text'
 import { showAlert, showSuccess } from '@/src/shared/hooks/useUIStore'
 import { useState } from 'react'
 
@@ -36,7 +37,7 @@ export function useSettingsDraft(): SettingsDraftResult {
 
   const handleDiscard = () => {
     showAlert(settingsCopy.discardTitle, settingsCopy.discardMessage, [
-      { text: settingsCopy.cancel, style: 'cancel' },
+      { text: commonCopy.cancel, style: 'cancel' },
       {
         text: settingsCopy.discard,
         style: 'destructive',

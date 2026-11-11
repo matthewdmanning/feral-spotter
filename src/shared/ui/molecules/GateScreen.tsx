@@ -1,3 +1,4 @@
+import { navigationCopy } from '@/src/shared/config/text'
 import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import { router } from 'expo-router'
@@ -34,7 +35,7 @@ export function GateScreen({
         <AppButton onPress={onPrimary}>{primaryLabel}</AppButton>
         {showOpenSettings ? (
           <AppButton variant="secondary" onPress={() => Linking.openSettings()}>
-            Open Settings
+            {navigationCopy.openSystemSettings}
           </AppButton>
         ) : null}
       </View>
@@ -48,7 +49,7 @@ export function GoHomeGate({ title, body }: { title: string; body?: string }) {
     <GateScreen
       title={title}
       body={body}
-      primaryLabel="Go Home"
+      primaryLabel={navigationCopy.goHome}
       onPrimary={() => router.replace('/')}
     />
   )
@@ -58,8 +59,8 @@ export function GoHomeGate({ title, body }: { title: string; body?: string }) {
 export function RestoreFailedGate() {
   return (
     <GoHomeGate
-      title="Could Not Restore Your Sighting"
-      body="Restart the app to try again."
+      title={navigationCopy.restoreFailed}
+      body={navigationCopy.restartToRetry}
     />
   )
 }

@@ -35,7 +35,10 @@ export const styles = StyleSheet.create((theme, rt) => ({
   },
   dot: { height: theme.spacing.sm, borderRadius: theme.radius.full },
   carousel: { flex: 1, backgroundColor: theme.colors.background },
-  actionScroll: { flexGrow: 0, maxHeight: '50%' },
+  actionScroll: {
+    flexGrow: 0,
+    maxHeight: theme.layout.annotationActionAreaMaxHeight,
+  },
   bottomBar: {
     gap: theme.layout.stackGap,
     paddingHorizontal: theme.layout.gutter,

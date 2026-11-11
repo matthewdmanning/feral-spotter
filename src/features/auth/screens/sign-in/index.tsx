@@ -1,4 +1,5 @@
 import { showAlert } from '@/src/shared/hooks/useUIStore'
+import { authCopy, commonCopy, formatCopy } from '@/src/shared/config/text'
 import { useState } from 'react'
 import { Text } from '@/src/shared/ui/atoms/Text'
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native'
@@ -24,21 +25,21 @@ export default function SignInScreen() {
 
   const handleEmailSignIn = () => {
     if (!email.trim() || !password) {
-      showAlert('Missing details', 'Enter your email and password.')
+      showAlert(authCopy.missingDetailsTitle, authCopy.missingDetailsMessage)
       return
     }
     void attempt(() => signInWithEmail(email.trim(), password), {
       tag: '[sign-in] email',
-      title: 'Sign-in failed',
-      message: 'Check your email and password, then try again.',
+      title: authCopy.signInFailedTitle,
+      message: authCopy.emailSignInFailedMessage,
     })
   }
 
   const handleFederated = (providerId: FederatedProviderId) =>
     void attempt(() => signInWithProvider(providerId), {
       tag: `[sign-in] ${providerId}`,
-      title: 'Sign-in failed',
-      message: 'Something went wrong signing in. Please try again.',
+      title: authCopy.signInFailedTitle,
+      message: authCopy.providerSignInFailedMessage,
     })
 
   return (
@@ -52,27 +53,25 @@ export default function SignInScreen() {
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.title}>FeralSpotter</Text>
-        <Text style={styles.subtitle}>
-          Sign in to start submitting cat observations.
-        </Text>
+        <Text style={styles.title}>{commonCopy.brand}</Text>
+        <Text style={styles.subtitle}>{authCopy.signInSubtitle}</Text>
 
         <View style={styles.fields}>
           <TextField
             value={email}
             onChangeText={setEmail}
-            placeholder="Email"
+            placeholder={authCopy.email}
             autoComplete="email"
             keyboardType="email-address"
             inputMode="email"
-            accessibilityLabel="Email"
+            accessibilityLabel={authCopy.email}
           />
           <TextField
             value={password}
             onChangeText={setPassword}
-            placeholder="Password"
+            placeholder={authCopy.password}
             secureTextEntry
-            accessibilityLabel="Password"
+            accessibilityLabel={authCopy.password}
           />
         </View>
 
@@ -80,25 +79,25 @@ export default function SignInScreen() {
           <AppButton
             onPress={handleEmailSignIn}
             loading={busy}
-            accessibilityLabel="Sign in"
+            accessibilityLabel={authCopy.signIn}
           >
-            Sign in
+            {authCopy.signIn}
           </AppButton>
         </View>
 
         <View style={styles.registerRow}>
-          <Text style={styles.registerText}>No account? </Text>
+          <Text style={styles.registerText}>{authCopy.noAccount} </Text>
           <TextButton
             onPress={() => router.push('/register')}
             accessibilityRole="link"
           >
-            Create one
+            {authCopy.createOne}
           </TextButton>
         </View>
 
         <View style={styles.dividerRow}>
           <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>or</Text>
+          <Text style={styles.dividerText}>{authCopy.divider}</Text>
           <View style={styles.dividerLine} />
         </View>
 
@@ -112,7 +111,11 @@ export default function SignInScreen() {
                 onPress={() => handleFederated(provider.id)}
                 accessibilityLabel={provider.label}
               >
-                {released ? provider.label : `${provider.label} (coming soon)`}
+                {released
+                  ? provider.label
+                  : formatCopy(authCopy.comingSoonTemplate, {
+                      provider: provider.label,
+                    })}
               </AppButton>
             </View>
           )

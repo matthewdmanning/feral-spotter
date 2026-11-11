@@ -1,5 +1,6 @@
 import { useHeaderHeight } from 'expo-router/react-navigation'
 import { showAlert } from '@/src/shared/hooks/useUIStore'
+import { authCopy, navigationCopy } from '@/src/shared/config/text'
 import { useState } from 'react'
 import { Text } from '@/src/shared/ui/atoms/Text'
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native'
@@ -27,8 +28,8 @@ export default function RegisterScreen() {
     }
     void attempt(() => registerWithEmail(email.trim(), password), {
       tag: '[register]',
-      title: 'Registration failed',
-      message: 'Could not create the account. Try a different email.',
+      title: authCopy.registrationFailedTitle,
+      message: authCopy.registrationFailedMessage,
     })
   }
 
@@ -43,32 +44,32 @@ export default function RegisterScreen() {
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.title}>Create your account</Text>
-        <Text style={styles.subtitle}>Sign up with an email and password.</Text>
+        <Text style={styles.title}>{authCopy.registrationTitle}</Text>
+        <Text style={styles.subtitle}>{authCopy.registrationSubtitle}</Text>
 
         <View style={styles.fields}>
           <TextField
             value={email}
             onChangeText={setEmail}
-            placeholder="Email"
+            placeholder={authCopy.email}
             autoComplete="email"
             keyboardType="email-address"
             inputMode="email"
-            accessibilityLabel="Email"
+            accessibilityLabel={authCopy.email}
           />
           <TextField
             value={password}
             onChangeText={setPassword}
-            placeholder="Password"
+            placeholder={authCopy.password}
             secureTextEntry
-            accessibilityLabel="Password"
+            accessibilityLabel={authCopy.password}
           />
           <TextField
             value={confirm}
             onChangeText={setConfirm}
-            placeholder="Confirm password"
+            placeholder={authCopy.confirmPassword}
             secureTextEntry
-            accessibilityLabel="Confirm password"
+            accessibilityLabel={authCopy.confirmPassword}
           />
         </View>
 
@@ -76,9 +77,9 @@ export default function RegisterScreen() {
           <AppButton
             onPress={handleRegister}
             loading={busy}
-            accessibilityLabel="Create account"
+            accessibilityLabel={navigationCopy.createAccount}
           >
-            Create account
+            {navigationCopy.createAccount}
           </AppButton>
         </View>
       </ScrollView>

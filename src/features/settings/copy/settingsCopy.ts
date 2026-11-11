@@ -1,5 +1,21 @@
 /** Bundled UI copy; changes take effect with the next application bundle. */
 export const settingsCopy = {
+  screenSubtitle: 'Configure appearance, authentication and storage',
+  appearance: 'Appearance',
+  theme: 'Theme',
+  themeSystem: 'System',
+  themeLight: 'Light',
+  themeDark: 'Dark',
+  systemAppearanceHint: "System follows your device's appearance setting.",
+  hapticFeedback: 'Haptic Feedback',
+  vibrationOnTouch: 'Vibration on Touch',
+  hapticHint: 'A light click when you press a button or switch tabs',
+  communications: 'Communications',
+  emailUpdates: 'Email Updates',
+  emailUpdatesHint:
+    'News and project updates, sent to the email address on your account',
+  yourEmailTemplate: 'Your email: {email}',
+  newEmail: 'New email',
   photos: 'Photos',
   developer: 'Developer Mode',
   savePhotos: 'Save photo settings',
@@ -8,6 +24,7 @@ export const settingsCopy = {
   savedMessage: 'Photo settings saved',
   discardTitle: 'Discard photo changes?',
   discardMessage: 'Your unsaved photo settings will be lost.',
-  cancel: 'Cancel',
   discard: 'Discard',
+  versionTemplate: 'Version {version}',
+  dataPolicy: 'Data Policy',
 } as const

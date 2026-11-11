@@ -19,6 +19,7 @@
  * navigators do not re-render screens on option changes.
  */
 
+import { navigationCopy } from '@/src/shared/config/text'
 import tabIcons from '@/src/shared/config/tabIcons.json'
 import { selectionHaptic } from '@/src/shared/lib/haptics'
 import { NativeTabs, type SFSymbolIcon } from 'expo-router/native-tabs'
@@ -28,9 +29,9 @@ type SFSymbols = NonNullable<SFSymbolIcon['sf']>
 type TabName = keyof typeof tabIcons
 
 const TABS: { name: TabName; title: string }[] = [
-  { name: 'index', title: 'Home' },
-  { name: 'feral-reports', title: 'Sightings' },
-  { name: 'settings', title: 'Settings' },
+  { name: 'index', title: navigationCopy.home },
+  { name: 'feral-reports', title: navigationCopy.sightings },
+  { name: 'settings', title: navigationCopy.settings },
 ]
 
 export default function HomeTabsLayout() {

@@ -189,3 +189,15 @@ to its card; Settings' photo Save/Discard is now local to its own group.
 Existing organization management/sharing journeys remain the interaction coverage.
 See [shared layout changes](2026-10-28-ui-component-spacing-alignment.md) and the
 [review](../reviews/2026-11-11-review-ui-ux.md) for the verification matrix.
+
+## 2026-11-11 — refactor
+
+**Purpose:** Centralize the sharing/permission strings and templates identified in SP2.
+**Change:** Existing organization UI and helpers consume the organization namespace
+in shared text configuration. Complete Share-field labels replace noun lowercasing.
+Dynamic coverage dates retain device-locale formatting; inserted catalog/account
+values use named slots and are not reinterpreted as template syntax. The existing
+management journey now verifies a catalog name containing literal replacement
+characters and braces survives the review dialog. Authorization, coverage,
+rollout and outbox behavior are unchanged. See [shared UI work](2026-10-28-ui-component-spacing-alignment.md)
+and the [review](../reviews/2026-11-11-review-ui-ux.md).

@@ -143,3 +143,34 @@ checks are recorded in the [review](../reviews/2026-11-11-review-ui-ux.md).
 Native narrow/short-screen, largest text/display size, on-screen keyboard, native
 map and glass verification remain unperformed: `adb` is absent. Web, external
 keyboards, TTS and screen-reader checks are excluded by the user's scope.
+
+## 2026-11-11 — refactor
+
+**Purpose:** Resolve second-pass findings SP1–SP4 without adding parallel copy,
+configuration or test files.
+**Change:** Existing Settings copy configuration now covers its remaining UI
+strings. The existing shared text configuration owns auth, validation,
+organization, submission and navigation copy, with named template formatting
+that preserves inserted account/catalog values literally. Shared dialog defaults
+and gate labels consume that owner. Feature schemas, business rules and provider
+release gates remain separate from display copy. The existing permission JSON
+and photo-toggle configuration remain their canonical owners.
+
+Scaling dimensions and ratios from SP3 move into semantic theme tokens. Existing
+ButtonRow coverage is extended for measured narrow/wide widths with real buttons
+and callbacks; existing organization management coverage uses replacement-like
+characters in a catalog name to guard template formatting. No duplicate test
+files are introduced. These are renderer/interaction checks, not native geometry.
+
+Copy changes ship with the next application bundle. No new runtime configuration
+service or persistence migration is needed. Native device observations remain
+unavailable; web, external keyboard and nonvisual features remain excluded.
+See [second-pass status](../reviews/2026-11-11-review-ui-ux.md),
+[theme ownership](2026-08-26-issue-320-theme-mode-and-breakpoints.md),
+[organizations](2026-11-07-feat-organizations.md), and
+[submission](2026-08-14-264-connect-submit-to-storage.md).
+
+Second-pass validation: application/server/test typechecks and changed-file
+ESLint passed. The two new measured-width tests fail when width-based stacking
+is removed and pass with the restored condition. Final complete-suite results
+and native validation limits are recorded in the linked review.

@@ -45,11 +45,11 @@ export function SegmentedRow<T extends string | number>({
   const { theme } = useUnistyles()
   const { width, fontScale } = useWindowDimensions()
   const [measuredWidth, setMeasuredWidth] = useState<number | null>(null)
+  const rowWidth =
+    measuredWidth ??
+    width - 2 * theme.layout.gutter - 2 * theme.layout.cardPadding
   const availableWidth =
-    (measuredWidth ??
-      width - 2 * theme.layout.gutter - 2 * theme.layout.cardPadding) -
-    2 * theme.spacing.xs -
-    2
+    rowWidth - 2 * theme.spacing.xs - 2 * theme.borderWidth.control
   const optionWidth = Math.min(
     Math.max(0, availableWidth),
     theme.controlWidth.choice * Math.min(fontScale, MAX_FONT_SIZE_MULTIPLIER),
