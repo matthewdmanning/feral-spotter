@@ -14,6 +14,7 @@
  * as a popup — see its comment for why.
  */
 
+import { organizationsCopy as copy } from '@/src/lib/organizations/copy'
 import { effectiveSharingSettings } from '@/src/types/Organizations'
 import { useOrganizationsFlag } from '@/src/hooks/useOrganizationsFlag'
 import { confirmedSharing } from '@/src/lib/organizations/consent'
@@ -148,10 +149,8 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
               if (user?.uid) sharing = confirmedSharing(user.uid)
             } catch (error) {
               showError(
-                'Confirm organization sharing',
-                error instanceof Error
-                  ? error.message
-                  : 'Review sharing choices.',
+                copy.validation.confirmTitle,
+                error instanceof Error ? error.message : copy.validation.review,
               )
               return
             }
@@ -247,9 +246,7 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
                 confirmedSharing(user?.uid ?? '')?.draft.confirmedSignature !==
                   sharing.draft.confirmedSignature
               ) {
-                throw new Error(
-                  'Sharing choices changed during submission; review and try again',
-                )
+                throw new Error(copy.validation.changed)
               }
               const payload = buildSubmissionPayload({
                 submission: useOrganizationsFlag.getState().enabled
@@ -317,7 +314,7 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
                     organizationId,
                     organizationName:
                       sharing.draft.organizationNames?.[organizationId] ??
-                      'Selected organization',
+                      copy.common.selectedOrganization,
                     grant: {
                       submissionId: cloudSubmissionId,
                       organizationId,

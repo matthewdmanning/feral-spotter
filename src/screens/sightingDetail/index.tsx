@@ -83,6 +83,12 @@ export default function SightingDetailScreen() {
           ))}
         </GlassSurface>
 
+        {sighting.cloud_submission_id && (
+          <OrganizationPermissions
+            submissionId={sighting.cloud_submission_id}
+          />
+        )}
+
         <Text style={styles.sectionTitle}>Cats Recorded</Text>
         {sighting.cats.length === 0 && (
           <Text style={styles.emptyBody}>No cats recorded.</Text>
@@ -103,11 +109,6 @@ export default function SightingDetailScreen() {
             ))}
           </GlassSurface>
         ))}
-        {sighting.cloud_submission_id && (
-          <OrganizationPermissions
-            submissionId={sighting.cloud_submission_id}
-          />
-        )}
       </ScrollView>
     </View>
   )

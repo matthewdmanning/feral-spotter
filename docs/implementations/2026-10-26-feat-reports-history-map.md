@@ -128,3 +128,9 @@ tags:
 - [ ] Multi-Sighting pin opens newest only.
 - [ ] "Profile Pic" not yet in `docs/agents/domain.md` glossary — candidate for /domain-modeling.
 - [ ] No `ui-ux/current-state/` file for Reports map or Sighting view; needs owner confirmation before writing.
+
+## 2026-11-11 — refactor: permission placement in Sighting detail
+
+**Purpose:** Keep sighting-level sharing access beside the sighting summary rather than beneath a potentially long list of cats.
+
+**Change:** Moved the existing OrganizationPermissions card before Cats Recorded, preserving its cloud-Submission-ID condition and revocation behavior. See the [organization visual pass](2026-11-07-feat-organizations.md) for card spacing, glass-surface checks and validation limits.

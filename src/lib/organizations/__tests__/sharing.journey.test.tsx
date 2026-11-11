@@ -6,6 +6,7 @@ import {
   waitFor,
 } from '@testing-library/react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { SharingSettings } from '@/src/components/organisms/organizations/SharingSettings'
 import { SubmissionOrganizations } from '@/src/components/organisms/organizations/SubmissionOrganizations'
 import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
 import {
@@ -79,6 +80,9 @@ test('submission journey: overlapping organizations, anonymous override, changed
   const view = render(<SubmissionOrganizations />)
   await screen.findByRole('checkbox', { name: 'First rescue' })
   expect(screen.queryByText('Distant rescue')).toBeNull()
+  expect(
+    screen.getByText('Organization delivery is not available yet.'),
+  ).toBeTruthy()
   await user.press(screen.getByRole('checkbox', { name: 'First rescue' }))
   await user.press(screen.getByRole('checkbox', { name: 'Second rescue' }))
   expect(screen.getByRole('checkbox', { name: 'Anonymous' })).toBeChecked()
@@ -137,11 +141,7 @@ test('submission journey: overlapping organizations, anonymous override, changed
     screen.getByRole('checkbox', { name: 'Report an injured cat' }),
   )
   expect(useSubmissionStore.getState().submission.report_injured).toBe(true)
-  expect(
-    screen.getByText(
-      'This does not contact or notify an organization. No rescue response is requested.',
-    ),
-  ).toBeTruthy()
+  expect(screen.getByText('No rescue response is requested.')).toBeTruthy()
   view.unmount()
 })
 
@@ -194,4 +194,27 @@ test('bad cache is ignored and a failed refresh preserves the last offline direc
   expect((await directory.cached())?.version).toBe('v1')
   await AsyncStorage.setItem('organizations-directory-v1', '{bad json')
   expect(await directory.cached()).toBeNull()
+})
+
+// Reachability check: missing contact values must be created through the form,
+// not by inventing an email-less account or mutating saved preferences.
+test('a user can save a selected name field with no name and see it in the disclosure', async () => {
+  const user = userEvent.setup()
+  const settings = render(<SharingSettings />)
+  await user.press(screen.getByRole('checkbox', { name: 'Share name' }))
+  expect(screen.getByLabelText('Name to share').props.value).toBe('')
+  await user.press(
+    screen.getByRole('button', { name: 'Save sharing preferences' }),
+  )
+  settings.unmount()
+
+  render(<SubmissionOrganizations />)
+  await user.press(
+    await screen.findByRole('checkbox', { name: 'First rescue' }),
+  )
+  await user.press(screen.getByRole('checkbox', { name: 'Anonymous' }))
+  expect(
+    screen.getByText('Included: cat count, approximate area, Name, Email.'),
+  ).toBeTruthy()
+  expect(screen.getByText('Name: not configured')).toBeTruthy()
 })

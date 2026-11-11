@@ -142,6 +142,9 @@ export default function SettingsScreen() {
             </TextButton>
           </GlassSurface>
 
+          <SharingSettings />
+          <OrganizationPermissions />
+
           <GlassSurface kind="card" style={styles.card}>
             <Text style={styles.cardTitle}>Authentication</Text>
             {passwordConfigured ? (
@@ -186,9 +189,6 @@ export default function SettingsScreen() {
               </View>
             )}
           </GlassSurface>
-
-          <SharingSettings />
-          <OrganizationPermissions />
 
           {[
             { title: 'Photos', toggles: PHOTO_TOGGLES },

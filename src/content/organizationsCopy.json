@@ -1,0 +1,93 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "share": "Share this sighting",
+    "selectedOrganization": "Selected organization",
+    "unavailable": "not available",
+    "notConfigured": "not configured",
+    "listSeparator": ", "
+  },
+  "fields": {
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "catDetails": "Cat details",
+    "preciseLocation": "Precise location",
+    "photos": "Photos"
+  },
+  "shareFields": {
+    "name": "Share name",
+    "email": "Share email",
+    "phone": "Share phone",
+    "catDetails": "Share cat details",
+    "preciseLocation": "Share precise location",
+    "photos": "Share photos"
+  },
+  "settings": {
+    "title": "Organization sharing",
+    "disclosure": "Shared data includes cat count and approximate area.",
+    "name": "Name to share",
+    "phone": "Phone to share",
+    "email": "Email to share: {email}",
+    "noEmail": "No email available",
+    "save": "Save sharing preferences",
+    "sightingFields": "Sighting data",
+    "contactFields": "Contact details"
+  },
+  "submission": {
+    "title": "Share with organizations",
+    "injured": "Report an injured cat",
+    "injuryHint": "No rescue response is requested.",
+    "location": "Sighting location required for organization coverage.",
+    "loading": "Updating organizations…",
+    "cached": "Saved coverage: {date}.",
+    "failed": "Organization coverage is unavailable.",
+    "offline": "Organization coverage is unavailable offline.",
+    "retry": "Retry organization coverage",
+    "empty": "No organizations cover this sighting’s location.",
+    "emptyOffline": "No saved coverage for this sighting’s location.",
+    "anonymous": "Anonymous",
+    "included": "Included: {fields}.",
+    "email": "Email: {email}",
+    "name": "Name: {name}",
+    "phone": "Phone: {phone}",
+    "revokeHint": "Revoking access stops future access. Copies already received cannot be recalled.",
+    "decline": "Don’t share this sighting",
+    "configure": "Sharing preferences",
+    "baseFields": "cat count, approximate area",
+    "delivery": "Organization delivery is not available yet."
+  },
+  "permissions": {
+    "title": "Organization permissions",
+    "delivery": "Organization delivery is not available yet.",
+    "revokeTitle": "Revoke organization access?",
+    "revokeBody": "This stops future access. Copies already received cannot be recalled.",
+    "revoke": "Revoke",
+    "orgUnavailable": "This organization is no longer available. No permission was granted.",
+    "anonymous": "Anonymous.",
+    "contact": "Contact: {values}.",
+    "noContact": "No contact information selected.",
+    "confirmTitle": "Confirm sharing again",
+    "confirmBody": "{organization}: {fields}. {contact}",
+    "changed": "Sharing confirmation expired.",
+    "pendingError": "Permission pending.",
+    "connect": "Organization coverage is unavailable.",
+    "revoked": "Revoked",
+    "revoking": "Revocation pending",
+    "saved": "Permission saved",
+    "revokeSighting": "Revoke access to this sighting",
+    "reviewRequired": "Not shared — review required",
+    "pending": "Permission pending connection",
+    "review": "Review sharing",
+    "cancelSharing": "Cancel sharing permission",
+    "revokeAll": "Revoke all access for {organization}",
+    "pendingRevoke": "Revocation pending connection.",
+    "retry": "Retry permissions"
+  },
+  "validation": {
+    "confirmTitle": "Confirm organization sharing",
+    "review": "Sharing confirmation required.",
+    "confirm": "Sharing confirmation required.",
+    "changed": "Sharing confirmation expired."
+  }
+}

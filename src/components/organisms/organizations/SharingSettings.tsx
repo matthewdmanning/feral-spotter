@@ -1,5 +1,9 @@
+import {
+  organizationsCopy as copy,
+  formatOrganizationCopy,
+} from '@/src/lib/organizations/copy'
 import { useState } from 'react'
-import { Text } from 'react-native'
+import { Text, View } from 'react-native'
 import { GlassSurface } from '@/src/components/atoms/GlassSurface'
 import { TextField } from '@/src/components/atoms/TextField'
 import { AppButton } from '@/src/components/atoms/AppButton'
@@ -16,14 +20,6 @@ import type {
 import { SharingCheckbox } from './SharingCheckbox'
 import { styles } from './styles'
 
-export const FIELD_LABELS: Record<keyof SharingFields, string> = {
-  name: 'Name',
-  email: 'Email',
-  phone: 'Phone',
-  catDetails: 'Cat details',
-  preciseLocation: 'Precise location',
-  photos: 'Photos',
-}
 export function SharingSettings() {
   const { user } = useAuth()
   const enabled = useOrganizationsFlag((s) => s.enabled)
@@ -54,59 +50,97 @@ function SharingSettingsForm({
   saved: SharingConfiguration
 }) {
   const [draft, setDraft] = useState(saved)
+  const groups: {
+    id: string
+    label: string
+    fields: (keyof SharingFields)[]
+  }[] = [
+    {
+      id: 'sighting',
+      label: copy.settings.sightingFields,
+      fields: ['catDetails', 'preciseLocation', 'photos'],
+    },
+    {
+      id: 'contact',
+      label: copy.settings.contactFields,
+      fields: ['name', 'email', 'phone'],
+    },
+  ]
   return (
-    <GlassSurface kind="card" style={styles.card}>
-      <Text style={styles.title}>Organization sharing</Text>
-      <Text style={styles.body}>
-        Choose what to offer every organization you select. Each sighting still
-        needs your confirmation.
-      </Text>
-      <Text style={styles.hint}>
-        Cat count and an approximate area are always included when you share.
-        Anonymous is checked by default on each sighting and overrides name,
-        email, and phone.
-      </Text>
-      {(Object.keys(FIELD_LABELS) as (keyof SharingFields)[]).map((key) => (
-        <SharingCheckbox
-          key={key}
-          label={`Share ${FIELD_LABELS[key].toLowerCase()}`}
-          checked={draft.fields[key]}
-          onChange={(value) =>
-            setDraft({ ...draft, fields: { ...draft.fields, [key]: value } })
-          }
-        />
-      ))}
-      {draft.fields.name && (
-        <TextField
-          label="Name to share"
-          value={draft.name}
-          maxLength={200}
-          autoComplete="name"
-          onChangeText={(name) => setDraft({ ...draft, name })}
-        />
-      )}
-      {draft.fields.email && (
-        <Text style={styles.body}>
-          Email to share: {email ?? 'No email available'}
+    <GlassSurface
+      kind="card"
+      style={styles.card}
+      testID="organization-sharing-settings"
+    >
+      <View style={styles.header}>
+        <Text accessibilityRole="header" style={styles.title}>
+          {copy.settings.title}
         </Text>
-      )}
-      {draft.fields.phone && (
-        <TextField
-          label="Phone to share"
-          value={draft.phone}
-          maxLength={50}
-          keyboardType="phone-pad"
-          autoComplete="tel"
-          onChangeText={(phone) => setDraft({ ...draft, phone })}
-        />
-      )}
-      <AppButton
-        onPress={() =>
-          useOrganizationSharingStore.getState().configure(uid, draft)
-        }
-      >
-        Save sharing preferences
-      </AppButton>
+        <Text style={styles.hint}>{copy.settings.disclosure}</Text>
+      </View>
+      {groups.map((group) => (
+        <View key={group.id} style={styles.group}>
+          <Text accessibilityRole="header" style={styles.groupTitle}>
+            {group.label}
+          </Text>
+          {group.fields.map((key) => (
+            <View key={key} style={styles.group}>
+              <SharingCheckbox
+                label={copy.shareFields[key]}
+                checked={draft.fields[key]}
+                onChange={(value) =>
+                  setDraft({
+                    ...draft,
+                    fields: { ...draft.fields, [key]: value },
+                  })
+                }
+              />
+              {draft.fields[key] && key === 'name' && (
+                <View style={styles.fieldDetail}>
+                  <TextField
+                    label={copy.settings.name}
+                    value={draft.name}
+                    maxLength={200}
+                    autoComplete="name"
+                    autoCapitalize="words"
+                    onChangeText={(name) => setDraft({ ...draft, name })}
+                  />
+                </View>
+              )}
+              {draft.fields[key] && key === 'email' && (
+                <View style={styles.fieldDetail}>
+                  <Text style={styles.hint}>
+                    {formatOrganizationCopy(copy.settings.email, {
+                      email: email ?? copy.settings.noEmail,
+                    })}
+                  </Text>
+                </View>
+              )}
+              {draft.fields[key] && key === 'phone' && (
+                <View style={styles.fieldDetail}>
+                  <TextField
+                    label={copy.settings.phone}
+                    value={draft.phone}
+                    maxLength={50}
+                    keyboardType="phone-pad"
+                    autoComplete="tel"
+                    onChangeText={(phone) => setDraft({ ...draft, phone })}
+                  />
+                </View>
+              )}
+            </View>
+          ))}
+        </View>
+      ))}
+      <View style={styles.footer}>
+        <AppButton
+          onPress={() =>
+            useOrganizationSharingStore.getState().configure(uid, draft)
+          }
+        >
+          {copy.settings.save}
+        </AppButton>
+      </View>
     </GlassSurface>
   )
 }

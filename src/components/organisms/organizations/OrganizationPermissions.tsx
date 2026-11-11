@@ -1,3 +1,8 @@
+import {
+  organizationsCopy as copy,
+  formatOrganizationCopy,
+  FIELD_LABELS,
+} from '@/src/lib/organizations/copy'
 import { useEffect, useState } from 'react'
 import { Text, View } from 'react-native'
 import { GlassSurface } from '@/src/components/atoms/GlassSurface'
@@ -17,7 +22,6 @@ import {
   type Catalog,
   type PermissionLedger,
 } from '@/src/types/Organizations'
-import { FIELD_LABELS } from './SharingSettings'
 import { styles } from './styles'
 
 /** Existing permissions stay manageable even after a flag is turned off. */
@@ -53,21 +57,17 @@ export function OrganizationPermissions({
   )
   if (!permissions.length && !pending.length) return null
   const revoke = (organizationId: string, sightingId?: string) =>
-    showAlert(
-      'Revoke organization access?',
-      'This stops future access. Copies already received cannot be recalled.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Revoke',
-          style: 'destructive',
-          onPress: () =>
-            useOrganizationSharingStore
-              .getState()
-              .revoke(uid, organizationId, sightingId),
-        },
-      ],
-    )
+    showAlert(copy.permissions.revokeTitle, copy.permissions.revokeBody, [
+      { text: copy.common.cancel, style: 'cancel' },
+      {
+        text: copy.permissions.revoke,
+        style: 'destructive',
+        onPress: () =>
+          useOrganizationSharingStore
+            .getState()
+            .revoke(uid, organizationId, sightingId),
+      },
+    ])
   const review = async (item: PendingOrganizationAction) => {
     if (!item.grant || !enabled) return
     try {
@@ -79,9 +79,7 @@ export function OrganizationPermissions({
         (org) => org.id === item.organizationId && org.active,
       )
       if (!organization) {
-        setMessage(
-          'This organization is no longer available. No permission was granted.',
-        )
+        setMessage(copy.permissions.orgUnavailable)
         return
       }
       const grant = {
@@ -110,39 +108,45 @@ export function OrganizationPermissions({
         grant.settings.phone,
       ].filter(Boolean)
       const contactSummary = grant.anonymous
-        ? 'Anonymous.'
+        ? copy.permissions.anonymous
         : contactValues.length
-          ? `Contact: ${contactValues.join(', ')}.`
-          : 'No contact information selected.'
+          ? formatOrganizationCopy(copy.permissions.contact, {
+              values: contactValues.join(copy.common.listSeparator),
+            })
+          : copy.permissions.noContact
       showAlert(
-        'Confirm sharing again',
-        `${organization.name}: cat count, approximate area${fields.length ? `, ${fields.join(', ')}` : ''}. ${contactSummary} Current coverage will be checked before permission is saved.`,
+        copy.permissions.confirmTitle,
+        formatOrganizationCopy(copy.permissions.confirmBody, {
+          organization: organization.name,
+          fields: [copy.submission.baseFields, ...fields].join(
+            copy.common.listSeparator,
+          ),
+          contact: contactSummary,
+        }),
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: copy.common.cancel, style: 'cancel' },
           {
-            text: 'Share this sighting',
+            text: copy.common.share,
             onPress: async () => {
               const state = useOrganizationSharingStore.getState()
               if (
                 !state.reconfirm(uid, item.mutationId, grant, organization.name)
               ) {
-                setMessage(
-                  'Sharing choices changed. Review this permission again.',
-                )
+                setMessage(copy.permissions.changed)
                 return
               }
               try {
                 await persistOrganizationSharing()
                 void state.sync(uid)
               } catch {
-                setMessage('Permission remains pending. Try syncing again.')
+                setMessage(copy.permissions.pendingError)
               }
             },
           },
         ],
       )
     } catch {
-      setMessage('Connect to review the current organization coverage.')
+      setMessage(copy.permissions.connect)
     }
   }
   const organizations = [
@@ -151,97 +155,126 @@ export function OrganizationPermissions({
     ).entries(),
   ]
   return (
-    <GlassSurface kind="card" style={styles.card}>
-      <Text style={styles.title}>Organization permissions</Text>
-      <Text style={styles.hint}>
-        Permissions are saved here. Organization delivery is not available yet.
-      </Text>
-      {permissions.map((permission) => {
-        const revoking = pending.some(
-          (item) =>
-            item.organizationId === permission.organizationId &&
-            (item.action === 'revokeOrganization' ||
-              (item.action === 'revoke' &&
-                item.submissionId === permission.submissionId)),
-        )
-        return (
-          <View key={`${permission.organizationId}-${permission.submissionId}`}>
-            <Text style={styles.body}>
-              {permission.organizationName} ·{' '}
-              {permission.revokedAt
-                ? 'Revoked'
-                : revoking
-                  ? 'Revocation pending'
-                  : 'Permission saved'}
-            </Text>
-            {submissionId && !permission.revokedAt && !revoking && (
-              <TextButton
-                tone="danger"
-                onPress={() =>
-                  revoke(permission.organizationId, permission.submissionId)
-                }
+    <GlassSurface
+      kind="card"
+      style={styles.card}
+      testID="organization-permissions"
+    >
+      <View style={styles.header}>
+        <Text accessibilityRole="header" style={styles.title}>
+          {copy.permissions.title}
+        </Text>
+        <Text style={styles.hint}>{copy.permissions.delivery}</Text>
+      </View>
+      {(permissions.length > 0 ||
+        pending.some((item) => item.action === 'grant')) && (
+        <View style={styles.group}>
+          {permissions.map((permission) => {
+            const revoking = pending.some(
+              (item) =>
+                item.organizationId === permission.organizationId &&
+                (item.action === 'revokeOrganization' ||
+                  (item.action === 'revoke' &&
+                    item.submissionId === permission.submissionId)),
+            )
+            return (
+              <View
+                key={`${permission.organizationId}-${permission.submissionId}`}
+                style={styles.section}
               >
-                Revoke access to this sighting
-              </TextButton>
-            )}
-          </View>
-        )
-      })}
-      {pending
-        .filter((item) => item.action === 'grant')
-        .map((item) => (
-          <View key={item.mutationId}>
-            <Text style={styles.body}>
-              {item.organizationName ?? 'Selected organization'}:{' '}
-              {item.requiresConfirmation
-                ? 'Not shared — review required'
-                : 'Permission pending connection'}
-            </Text>
-            {item.requiresConfirmation && enabled && (
-              <TextButton
-                onPress={() => {
-                  void review(item)
-                }}
-              >
-                Review sharing
-              </TextButton>
-            )}
-            <TextButton
-              tone="danger"
-              onPress={() =>
-                revoke(item.organizationId, item.grant?.submissionId)
-              }
-            >
-              Cancel sharing permission
-            </TextButton>
-          </View>
-        ))}
-      {!submissionId &&
-        organizations.map(([id, name]) => (
-          <TextButton
-            key={id}
-            tone="danger"
-            onPress={() => revoke(id)}
-          >{`Revoke all access for ${name}`}</TextButton>
-        ))}
-      {pending
-        .filter((item) => item.action !== 'grant')
-        .map((item) => (
-          <Text key={item.mutationId} style={styles.body}>
-            Revocation pending connection. Access is revoked when the server
-            acknowledges it.
-          </Text>
-        ))}
-      {pending.length > 0 && (
-        <TextButton
-          onPress={() => {
-            void useOrganizationSharingStore.getState().sync(uid)
-          }}
-        >
-          Retry permission sync
-        </TextButton>
+                <View style={styles.summary}>
+                  <Text style={styles.itemTitle}>
+                    {permission.organizationName}
+                  </Text>
+                  <Text style={styles.hint}>
+                    {permission.revokedAt
+                      ? copy.permissions.revoked
+                      : revoking
+                        ? copy.permissions.revoking
+                        : copy.permissions.saved}
+                  </Text>
+                </View>
+                {submissionId && !permission.revokedAt && !revoking && (
+                  <TextButton
+                    tone="danger"
+                    onPress={() =>
+                      revoke(permission.organizationId, permission.submissionId)
+                    }
+                  >
+                    {copy.permissions.revokeSighting}
+                  </TextButton>
+                )}
+              </View>
+            )
+          })}
+          {pending
+            .filter((item) => item.action === 'grant')
+            .map((item) => (
+              <View key={item.mutationId} style={styles.section}>
+                <View style={styles.summary}>
+                  <Text style={styles.itemTitle}>
+                    {item.organizationName ?? copy.common.selectedOrganization}
+                  </Text>
+                  <Text style={styles.hint}>
+                    {item.requiresConfirmation
+                      ? copy.permissions.reviewRequired
+                      : copy.permissions.pending}
+                  </Text>
+                </View>
+                {item.requiresConfirmation && enabled && (
+                  <TextButton
+                    onPress={() => {
+                      void review(item)
+                    }}
+                  >
+                    {copy.permissions.review}
+                  </TextButton>
+                )}
+                <TextButton
+                  tone="danger"
+                  onPress={() =>
+                    revoke(item.organizationId, item.grant?.submissionId)
+                  }
+                >
+                  {copy.permissions.cancelSharing}
+                </TextButton>
+              </View>
+            ))}
+        </View>
       )}
-      {!!message && <Text style={styles.hint}>{message}</Text>}
+      {((!submissionId && organizations.length > 0) || pending.length > 0) && (
+        <View style={styles.footer}>
+          {!submissionId &&
+            organizations.map(([id, name]) => (
+              <TextButton key={id} tone="danger" onPress={() => revoke(id)}>
+                {formatOrganizationCopy(copy.permissions.revokeAll, {
+                  organization: name,
+                })}
+              </TextButton>
+            ))}
+          {pending
+            .filter((item) => item.action !== 'grant')
+            .map((item) => (
+              <Text key={item.mutationId} style={styles.hint}>
+                {copy.permissions.pendingRevoke}
+              </Text>
+            ))}
+          {pending.length > 0 && (
+            <TextButton
+              onPress={() => {
+                void useOrganizationSharingStore.getState().sync(uid)
+              }}
+            >
+              {copy.permissions.retry}
+            </TextButton>
+          )}
+        </View>
+      )}
+      {!!message && (
+        <Text style={styles.hint} accessibilityLiveRegion="polite">
+          {message}
+        </Text>
+      )}
     </GlassSurface>
   )
 }

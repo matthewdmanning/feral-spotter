@@ -1,5 +1,10 @@
+import {
+  organizationsCopy as copy,
+  formatOrganizationCopy,
+  FIELD_LABELS,
+} from '@/src/lib/organizations/copy'
 import { useEffect, useMemo } from 'react'
-import { Text } from 'react-native'
+import { Text, View } from 'react-native'
 import { router } from 'expo-router'
 import { GlassSurface } from '@/src/components/atoms/GlassSurface'
 import { TextButton } from '@/src/components/atoms/TextButton'
@@ -15,7 +20,6 @@ import {
 } from '@/src/hooks/useOrganizationSharingStore'
 import { useOrganizationsFlag } from '@/src/hooks/useOrganizationsFlag'
 import { sharingSignature } from '@/src/lib/organizations/consent'
-import { FIELD_LABELS } from './SharingSettings'
 import { SharingCheckbox } from './SharingCheckbox'
 import { styles } from './styles'
 
@@ -98,104 +102,124 @@ export function SubmissionOrganizations() {
     )
     .map(([, label]) => label)
   return (
-    <GlassSurface kind="card" style={styles.card}>
-      <Text style={styles.title}>Share with organizations</Text>
-      <SharingCheckbox
-        label="Report an injured cat"
-        checked={submission.report_injured === true}
-        onChange={(report_injured) =>
-          useSubmissionStore.getState().setSubmission({ report_injured })
-        }
-      />
-      <Text style={styles.hint}>
-        This does not contact or notify an organization. No rescue response is
-        requested.
-      </Text>
-      {submission.latitude == null || submission.longitude == null ? (
-        <Text style={styles.body}>
-          Set this sighting’s location to find organizations that cover the
-          area.
+    <GlassSurface
+      kind="card"
+      style={styles.card}
+      testID="submission-organizations"
+    >
+      <View style={styles.header}>
+        <Text accessibilityRole="header" style={styles.title}>
+          {copy.submission.title}
         </Text>
-      ) : (
-        <>
-          {directory.loading && (
-            <Text style={styles.hint}>Updating organizations…</Text>
-          )}
-          {(!directory.online || directory.refreshFailed) && (
-            <Text style={styles.hint}>
-              {directory.cache
-                ? `Using saved coverage from ${new Date(directory.cache.fetchedAt).toLocaleDateString()}. Choices will be checked when online.`
-                : directory.online
-                  ? 'Organization coverage is unavailable. Try again later; you can still submit without sharing.'
-                  : 'Connect to load organization coverage. You can still submit without sharing.'}
-            </Text>
-          )}
-          {directory.refreshFailed && (
-            <TextButton
-              onPress={() => {
-                void directory.refresh()
-              }}
-            >
-              Retry organization coverage
-            </TextButton>
-          )}
-          {!directory.loading &&
-            directory.cache &&
-            !directory.organizations.length && (
-              <Text style={styles.body}>
-                {directory.online && !directory.refreshFailed
-                  ? 'No organizations cover this sighting’s location.'
-                  : 'No saved organizations cover this sighting’s location. Connect to check current coverage.'}
+        <Text style={styles.hint}>{copy.submission.delivery}</Text>
+      </View>
+      <View style={styles.group}>
+        <SharingCheckbox
+          label={copy.submission.injured}
+          checked={submission.report_injured === true}
+          onChange={(report_injured) =>
+            useSubmissionStore.getState().setSubmission({ report_injured })
+          }
+        />
+        <Text style={styles.hint}>{copy.submission.injuryHint}</Text>
+      </View>
+      <View style={styles.group}>
+        {submission.latitude == null || submission.longitude == null ? (
+          <Text style={styles.body}>{copy.submission.location}</Text>
+        ) : (
+          <>
+            {directory.loading && (
+              <Text style={styles.hint}>{copy.submission.loading}</Text>
+            )}
+            {(!directory.online || directory.refreshFailed) && (
+              <Text style={styles.hint}>
+                {directory.cache
+                  ? formatOrganizationCopy(copy.submission.cached, {
+                      date: new Date(
+                        directory.cache.fetchedAt,
+                      ).toLocaleDateString(),
+                    })
+                  : directory.online
+                    ? copy.submission.failed
+                    : copy.submission.offline}
               </Text>
             )}
-          {directory.organizations.map((org) => (
-            <SharingCheckbox
-              key={org.id}
-              label={org.name}
-              checked={draft?.selectedIds.includes(org.id) ?? false}
-              onChange={(checked) =>
-                patch({
-                  selectedIds: checked
-                    ? [...(draft?.selectedIds ?? []), org.id]
-                    : (draft?.selectedIds.filter((id) => id !== org.id) ?? []),
-                })
-              }
-            />
-          ))}
-        </>
-      )}
+            {directory.refreshFailed && (
+              <TextButton
+                onPress={() => {
+                  void directory.refresh()
+                }}
+              >
+                {copy.submission.retry}
+              </TextButton>
+            )}
+            {!directory.loading &&
+              directory.cache &&
+              !directory.organizations.length && (
+                <Text style={styles.body}>
+                  {directory.online && !directory.refreshFailed
+                    ? copy.submission.empty
+                    : copy.submission.emptyOffline}
+                </Text>
+              )}
+            {directory.organizations.map((org) => (
+              <SharingCheckbox
+                key={org.id}
+                label={org.name}
+                checked={draft?.selectedIds.includes(org.id) ?? false}
+                onChange={(checked) =>
+                  patch({
+                    selectedIds: checked
+                      ? [...(draft?.selectedIds ?? []), org.id]
+                      : (draft?.selectedIds.filter((id) => id !== org.id) ??
+                        []),
+                  })
+                }
+              />
+            ))}
+          </>
+        )}
+      </View>
       {!!draft?.selectedIds.length && (
-        <>
+        <View style={styles.section}>
           <SharingCheckbox
-            label="Anonymous"
+            label={copy.submission.anonymous}
             checked={draft.anonymous}
             onChange={(anonymous) => patch({ anonymous })}
           />
-          <Text style={styles.body}>
-            Included: cat count, approximate area
-            {optional.length ? `, ${optional.join(', ')}` : ''}.
-          </Text>
-          {!draft.anonymous && account.settings.fields.email && (
-            <Text style={styles.hint}>
-              Email: {user.email ?? 'not available'}
+          <View style={styles.summary}>
+            <Text style={styles.body}>
+              {formatOrganizationCopy(copy.submission.included, {
+                fields: [copy.submission.baseFields, ...optional].join(
+                  copy.common.listSeparator,
+                ),
+              })}
             </Text>
-          )}
-          {!draft.anonymous && account.settings.fields.name && (
-            <Text style={styles.hint}>
-              Name: {account.settings.name || 'not configured'}
-            </Text>
-          )}
-          {!draft.anonymous && account.settings.fields.phone && (
-            <Text style={styles.hint}>
-              Phone: {account.settings.phone || 'not configured'}
-            </Text>
-          )}
-          <Text style={styles.hint}>
-            Revoking access stops future access. Copies already received cannot
-            be recalled.
-          </Text>
+            {!draft.anonymous && account.settings.fields.email && (
+              <Text style={styles.hint}>
+                {formatOrganizationCopy(copy.submission.email, {
+                  email: user.email ?? copy.common.unavailable,
+                })}
+              </Text>
+            )}
+            {!draft.anonymous && account.settings.fields.name && (
+              <Text style={styles.hint}>
+                {formatOrganizationCopy(copy.submission.name, {
+                  name: account.settings.name || copy.common.notConfigured,
+                })}
+              </Text>
+            )}
+            {!draft.anonymous && account.settings.fields.phone && (
+              <Text style={styles.hint}>
+                {formatOrganizationCopy(copy.submission.phone, {
+                  phone: account.settings.phone || copy.common.notConfigured,
+                })}
+              </Text>
+            )}
+          </View>
+          <Text style={styles.hint}>{copy.submission.revokeHint}</Text>
           <SharingCheckbox
-            label="Share this sighting"
+            label={copy.common.share}
             checked={draft.confirmedSignature === signature}
             onChange={(checked) =>
               setDraft({
@@ -205,13 +229,18 @@ export function SubmissionOrganizations() {
             }
           />
           <TextButton onPress={() => patch({ selectedIds: [] })}>
-            Don’t share this sighting
+            {copy.submission.decline}
           </TextButton>
-        </>
+        </View>
       )}
-      <TextButton onPress={() => router.push('/(home-tabs)/settings')}>
-        Configure shared fields in Settings
-      </TextButton>
+      <View style={styles.footer}>
+        <TextButton
+          accessibilityRole="link"
+          onPress={() => router.push('/(home-tabs)/settings')}
+        >
+          {copy.submission.configure}
+        </TextButton>
+      </View>
     </GlassSurface>
   )
 }

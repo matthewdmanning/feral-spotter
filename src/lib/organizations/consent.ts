@@ -1,3 +1,4 @@
+import { organizationsCopy as copy } from '@/src/lib/organizations/copy'
 import { useAuthStore } from '@/src/lib/auth/authStore'
 import type { OrganizationSharingDraft } from '@/src/hooks/useSubmissionStore'
 import { useSubmissionStore } from '@/src/hooks/useSubmissionStore'
@@ -55,9 +56,7 @@ export function confirmedSharing(uid: string) {
     ],
   )
   if (draft.confirmedSignature !== signature)
-    throw new Error(
-      'Review the organization choices and confirm “Share this sighting”, or choose not to share.',
-    )
+    throw new Error(copy.validation.confirm)
   return {
     draft,
     settings: account.settings,
