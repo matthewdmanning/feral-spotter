@@ -1,0 +1,171 @@
+# Project UI/UX standards
+
+Read these standards before designing, implementing or reviewing UI, including
+copy, accessibility text, layout, styling and shared components. They apply to
+all project screens, not just organization sharing.
+
+Use these general standards with the relevant product design documents and
+[design-decision policy](ui-ux/reference/using-design-decisions.md). Respect the
+policy's instruction priority and confirmation requirements for authoritative
+design files. Report conflicts rather than silently rewriting product decisions.
+
+## Placement and visual hierarchy
+
+- Group controls by the user's task and the data they affect. Keep labels,
+  dependent inputs, status and related actions together. Place a conditional
+  input immediately beneath the choice that reveals it.
+- Put sighting-level information and permissions beside the sighting summary;
+  keep per-cat information within the cat section. Do not bury sighting-level
+  actions below an arbitrarily long list of cats.
+- Keep related settings adjacent. Distinguish independently saved sections
+  through ownership, grouping and action placement. Do not explain conflicting
+  Save/Discard behavior with helper copy.
+- Use screen-title typography for screen titles, heading typography for cards
+  and sections, label typography for control/group labels, and body/supplementary
+  roles for content and status. Expose actual headings to assistive technology.
+- Make the primary action visually clear. Keep rare destructive actions away
+  from the primary thumb action; give destructive confirmation a specific target
+  and scope. Avoid redundant or competing primary actions.
+- Prefer a small number of meaningful groups over a flat sequence of unrelated
+  controls or a separate decorative card for every row.
+
+## Padding, spacing and alignment
+
+- Use project layout, spacing and radius tokens. Use card padding inside the
+  surface, a larger gap between sections and a smaller gap within related groups.
+  Host layouts own inter-card spacing; avoid adding another margin to each card.
+- Align headings, body text, dividers and actions to a consistent content edge.
+  Align dependent fields with the associated control label. Use logical
+  start/end padding where direction matters.
+- Align a checkbox or icon with the first line of a multiline label. Keep the
+  indicator from shrinking. Account for runtime font scale when aligning a
+  fixed-size indicator with scaled text; do not double-scale text itself.
+- Keep paragraphs and form labels aligned to the reading direction. Reserve
+  centered text for intentionally centered compositions or short empty states.
+- Let long names and action labels wrap within the available width. Use
+  flexible text widths and shrinking in horizontal layouts; do not shrink fonts
+  or truncate consent, errors or essential actions to conceal overflow.
+- Use minimum heights rather than fixed heights for text-bearing controls.
+  Maintain at least 48dp touch targets and at least 8dp between adjacent targets.
+- Respect screen gutters, safe areas, system bars, tab bars, pinned actions and
+  the keyboard. Test the actual host layout before adding duplicate insets.
+  Ensure focused inputs and their actions remain reachable while typing.
+- Render only meaningful sections. Empty conditional wrappers must not create
+  blank gaps, orphaned dividers or empty footers.
+
+## Semantic tokens and shared components
+
+- Use the project's shared controls and theme system. Raw palette values belong
+  in theme definitions, not component styles or inline props.
+- Choose tokens for their meaning, not because their current numeric value
+  happens to match. Use the relevant foreground for a surface: on-accent text
+  or icons on accent, on-danger on a danger fill, and normal/muted text on
+  content surfaces. A page-background token is not a control foreground.
+- Use typography variants and their font families; do not synthesize custom
+  font weights in components. Use the project icon vocabulary for indicators
+  instead of a font-scaled text glyph inside a fixed box.
+- Reuse layout, spacing, radius, border, icon-size, control-size and touch-target
+  tokens where their roles fit. Add a narrowly named semantic token to the theme
+  if the needed role is missing. Do not substitute a photo-frame or icon-size
+  token for an unrelated control dimension.
+- Native hairline widths, safe-area values, runtime font scale, percentages and
+  structural flex/alignment constraints are legitimate layout inputs. Audit
+  them by role; do not replace them with unrelated theme aliases.
+- Review both appearances, including muted text, selected states, outlines and
+  disabled controls. Do not rely on color alone to communicate a state.
+- Keep normal text contrast at least 4.5:1, large text at least 3:1 and essential
+  control/icon boundaries at least 3:1. Do not round a failing ratio into a pass.
+  Theme calculations against solid surfaces do not prove glass contrast.
+
+## Native glass surfaces
+
+- Use the project's `GlassSurface` abstraction for glass cards/sheets and the
+  existing ambient screen background. Pass the appropriate semantic surface
+  kind and radius. Preserve the shared button treatment for actions.
+- Keep groups inside a glass card transparent unless a separate filled control
+  has a clear purpose. Avoid nested glass layers, opaque local card fills,
+  excessive rims or improvised CSS blur that hides or imitates native glass.
+- Preserve the native platform path: LiquidGlassView on supported Android and
+  Expo GlassView on supported iOS. Check the radius and tint passed through the
+  adapter, not only the React Native style object.
+- Preserve the shared theme-surface fallback for reduced transparency/high
+  contrast, unsupported glass APIs and native backdrop/pipeline failures. Never
+  force transparency over an accessibility preference.
+- Do not place glass over a live camera preview or native map. Follow the
+  project's solid-surface treatment for those screens.
+- Inspect glass on a device over the actual ambient background, in both themes.
+  A passing props test or browser approximation is not visual glass sign-off.
+
+## UI copy
+
+- Do not include copy that explains the detailed function or behavior of
+  buttons, checkboxes, switches, inputs, dialogs or other components. This
+  applies to visible text, helper text, tooltips, accessibility labels/hints and
+  configured strings.
+- Use concise action labels, field labels, validation errors and current status.
+  Keep required consent and material service facts concise: what data is shared,
+  who receives it, whether delivery exists and the limits of revocation. These
+  facts describe the service and authorization, not how a control works.
+- Do not narrate clicks, checked defaults, control overrides, Save/Discard scope,
+  component state changes or internal synchronization/validation steps. Fix
+  confusing labels, grouping or interaction instead. Keep implementation detail
+  in developer documentation.
+- For example, use “Save sharing preferences” and “Permission pending”; do not
+  add “This Save button applies only to this card”. “Organization delivery is
+  not available yet” is a material service limitation.
+- Store feature copy separately from component code, including headings,
+  statuses, dialogs, errors, accessibility text and dynamic sentence templates.
+  Keep complete translatable labels; do not build sentences by lowercasing nouns.
+- Keep schema keys separate from display text. Use named placeholders, preserve
+  inserted user/catalog values and the device locale for dates. Document how
+  configuration is applied and whether a rebuild is required.
+- Review every added/changed string in its rendered context, including offline,
+  conditional, error and accessibility states. Keyword searches alone cannot
+  enforce this semantic rule.
+
+## Human reachability and state review
+
+- For each finding, give a real entry point, prerequisites, user actions and
+  resulting UI. State rollout, authentication, connectivity and platform gates.
+- Store injection, mocked authentication or a theoretical service limit does
+  not establish a human path. Distinguish reachable user journeys, asynchronous
+  service changes, defensive states and future/deferred capabilities.
+- Check whether the relevant action actually exists on that screen and whether
+  a modal obscures the controls. Do not invent interactions through a modal.
+- Respect deduplication, immutable grants and request coalescing when assessing
+  repeated taps; a repeated tap does not by itself prove a duplicate write.
+- Keep loading, empty, failed and stale/offline states distinct where their
+  consequences differ. Provide appropriate progress, retry and outcome feedback,
+  including assistive-technology announcements where needed.
+- Identify destructive targets and repeated actions in accessible labels.
+  Consent summaries must reflect the effective data, including absent values.
+- Measure realistic account/list sizes before calling an admission-limit fixture
+  a performance defect. Use grouping, progressive disclosure and virtualization
+  when actual list size and interaction require them.
+
+## Verification and review evidence
+
+- Inspect component composition and resolved styles, then exercise meaningful
+  user journeys. Use real stores/controls and substitute external/native services
+  only at their boundary, following the [testing policy](testing.md).
+- Check a narrow phone, long configured copy and organization names, 200% text,
+  keyboard-visible forms, both themes, screen-reader navigation and reduced
+  transparency. Include permission review, offline retry and destructive states
+  when they are human-reachable.
+- Add load-bearing regression tests for concrete failures. Verify rendering and
+  behavior rather than claiming a source-text/regex check proves layout.
+- Report source inspection, rendered-component tests, theme contrast
+  calculations, browser testing and native device observations separately.
+  Screenshots, bundling and mocked native props establish different things.
+- Attempt browser/device testing where supported and name the actual blocker
+  when unavailable. Mark physical layout, keyboard behavior, assistive technology
+  or native glass as unverified when they were not exercised.
+- Keep general standards here, product-specific design in the authoritative
+  design files and change-specific findings/validation in implementation notes.
+
+## References
+
+- [Mobile UX and layout best practices](ui-ux/reference/mobile-ux-layout-best-practices.md)
+- [Mobile UX principles](ui-ux/reference/ux_principles.md)
+- [Using design decisions](ui-ux/reference/using-design-decisions.md)
+- [Testing policy](testing.md)
