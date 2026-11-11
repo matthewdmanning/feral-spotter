@@ -119,3 +119,9 @@ The touch-target guard from #325 keeps its value here — with buttons routed th
 **Verification:** the shared mock was mutation-checked rather than assumed to matter — removing `useVariants` fails 5 suites and 22 tests; stubbing the numeric tokens out of the theme fails 5 suites and 20 tests. Full run stays at 56 suites and 257 tests, with typecheck and lint unchanged.
 
 The mock is plain JavaScript, matching the other files in `__mocks__/`. A `.tsx` version was written first and rejected: tsconfig includes every `.ts`/`.tsx` outside `__tests__`, so it entered the typecheck without jest's globals in scope and produced eight `Cannot use namespace 'jest' as a value` errors.
+
+## 2026-11-11 — fix: wrap long text actions
+
+**Purpose:** Keep long organization names and enlarged action labels inside their padded touch targets.
+
+**Change:** TextButton labels now use `flexShrink: 1`, allowing natural wrapping without a line cap. The rendered-style regression failed before the change and passes afterward. The shared 48dp minimum touch target is retained. See the [organization visual pass](2026-11-07-feat-organizations.md) for feature layout and validation.

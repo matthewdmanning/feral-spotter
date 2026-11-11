@@ -10,6 +10,7 @@ export const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing.sm,
   },
   label: {
+    flexShrink: 1,
     ...theme.textVariants.labelSmall,
     variants: {
       tone: {
