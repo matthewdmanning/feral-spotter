@@ -23,15 +23,15 @@ over the older reference's suggestion of selectively uncapped text.
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | Home                          | Entry circles, draft notice, resume actions, spacing; design conflict below                                               |
 | Onboarding                    | Slide content, navigation, dots, safe areas; F3                                                                           |
-| Consent and data agreement    | Scrollable disclosure, accept/decline and permission gate; shared issues F1/F7/F8                                         |
-| Sign-in and Registration      | Inputs, provider buttons, loading, keyboard and short-screen layout; F2/F7/F8                                             |
-| Email and analytics choices   | Checkbox, text, Continue, first-run gates; shared issues F1/F8; scrolling and explicit opt-in retained                    |
+| Consent and data agreement    | Scrollable disclosure, accept/decline and permission gate; shared issues F1/F7                                            |
+| Sign-in and Registration      | Inputs, provider buttons, loading, keyboard and short-screen layout; F2/F7                                                |
+| Email and analytics choices   | Checkbox, text, Continue, first-run gates; shared issues F1; scrolling and explicit opt-in retained                       |
 | Camera                        | Shared chrome, permission gate, thumbnails, shutter and solid surfaces; native framing/zoom unverified                    |
 | Box Annotation and Tutorial   | Bottom controls, photo status dots, crop bubble, modal; F5; deliberate Back/swipe restrictions respected                  |
 | Observed Cat / Edit Cat       | Attribute controls, grouped form, profile crop and actions; F4/F7                                                         |
 | Sighting draft                | Status, cat accordion, empty state, pinned actions, organization placement; F9/F10                                        |
 | Map picker                    | Pin, map viewport, footer and saved point; F6                                                                             |
-| Sightings and Sighting detail | Virtualized history, map, status text/icons, empty/loading/not-found, cat details; shared F1/F8; native map unverified    |
+| Sightings and Sighting detail | Virtualized history, map, status text/icons, empty/loading/not-found, cat details; shared F1; native map unverified       |
 | Settings                      | Appearance, communications, photo toggles, footer and organization sections; F2/F11                                       |
 | Shared visual elements        | Buttons, text fields, segmented controls, checkbox, toggle, button rows, dialog shell, glass, typography and theme tokens |
 
@@ -170,22 +170,12 @@ network. Authentication is needed only for Settings.
 checking both adjacent colors) and define a discernible focused state. Measure
 actual backdrop/gradient combinations separately.
 
-### F8 — P2: Visual headings mostly lack heading semantics
+### F8 — Excluded: screen-reader heading navigation
 
-**Evidence:** Settings title/card headings, Sighting section headings, disclosure
-titles and `src/shared/ui/organisms/DialogShell.tsx` title are plain Text without
-heading semantics. Only Onboarding declares `accessibilityRole="header"` in the
-inspected app sources.
-
-**Human path:** Open Settings or a normal app dialog and navigate by headings in
-TalkBack/VoiceOver. These visually emphasized Text nodes have no explicit heading
-role, making the visual hierarchy unavailable through heading navigation. Dialogs
-can be reached before sign-in through validation/consent; Settings requires sign-in.
-
-**Recommendation:** Mark true screen/section/dialog headings with the supported
-accessibility role, preserving ordinary labels as labels. Verify actual focus and
-heading navigation with assistive technology. This is a source semantic gap, not
-a recorded screen-reader session [R4].
+Removed from actionable findings following the user's product-scope clarification.
+Very-low-vision/nonvisual features, including TTS and screen-reader navigation,
+are excluded from reviews, checks, tests and implementations. Existing heading
+semantics do not require removal. Finding identifiers are retained for traceability.
 
 ### F9 — P2: Location correction has a label-sized target below 48dp
 
@@ -264,13 +254,14 @@ Save/Discard helper paragraphs to compensate for the structure.
   treated as a pass. Native glass, gradients and over-photo contrast are unmeasured.
 - **Official docs:** Retrieved and read R1–R5 on 2026-11-11. The Expo keyboard guide
   returned HTTP 403, so no claim relies on having read that page successfully.
-- **Browser attempt:** Started Expo web on port 8090 and attempted headless Chromium
+- **Historical browser attempt (outside supported scope):** Started Expo web on port 8090 and attempted headless Chromium
   plus a direct bundle request. Metro returned HTTP 500: unable to resolve
   `react-native-web/dist/index` from Expo Router. `react-native-web` is absent from
   the project's dependencies. No usable app browser render or screenshot resulted.
   Existing dependencies were temporarily linked from the original checkout; no
   dependency manifests were changed. A web port would not validate native camera,
-  maps, glass, or OS permission surfaces.
+  maps, glass, or OS permission surfaces. Following the scope clarification, web
+  support is not a defect or a pending validation requirement.
 - **Native attempt/capability:** `adb` was absent from PATH; no Android emulator or
   attached-device tooling was found in the inspected runtime locations. Native
   execution was therefore unavailable in this environment.
@@ -278,13 +269,13 @@ Save/Discard helper paragraphs to compensate for the structure.
   review. No fixture injection was treated as proof of a human journey.
 - **Still required:** Native Android narrow/short phone and 600dp+ window; default,
   2× and maximum platform font/display size; both themes; keyboard-open forms;
-  TalkBack/VoiceOver; reduced transparency/high contrast; real glass over ambient
+  reduced transparency/high contrast; real glass over ambient
   backgrounds; camera/annotation framing; permission denial, offline retry and
   destructive confirmations. These are pending, not passing checks.
 
 Recommended order: correct F6's location geometry, enforce the shared text policy,
 then address authentication/onboarding overflow and segmented/annotation actions.
-Follow with contrast, target/heading semantics and screen grouping, then run the
+Follow with contrast, touch targets and screen grouping, then run the
 native matrix. Fixes should include focused regression coverage for actual failures
 and device evidence for geometry/visual behavior.
 
@@ -297,6 +288,15 @@ and device evidence for geometry/visual behavior.
 - **R3:** [React Native ScrollView](https://reactnative.dev/docs/scrollview) — keyboard
   tap handling and its default.
 - **R4:** [Android accessible apps](https://developer.android.com/guide/topics/ui/accessibility/apps)
-  — 48dp touch targets, describing elements and heading semantics.
+  — 48dp touch targets.
 - **R5:** [WCAG non-text contrast](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html)
   — 3:1 meaningful control/state visuals and inactive-control exceptions.
+
+## Product-scope clarification — 2026-11-11
+
+Applied the user's scope clarification: native mobile field work only; web is
+unsupported, and very-low-vision/nonvisual features such as TTS and screen readers
+are excluded from reviews, checks, tests and implementations. Ten actionable
+findings remain; F8 is excluded. Historical browser-attempt evidence is retained
+only as a record of what was attempted, not as a requirement to add web support.
+Visual readability, scaling, contrast and touch usability remain in scope.

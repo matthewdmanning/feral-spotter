@@ -118,3 +118,13 @@ Philosophy: Clarity, deference, and depth. iOS design prioritizes content, uses 
 Key patterns: Tab bar, navigation bar with back button, large titles, swipe gestures, action sheets, context menus.
 SF Symbols: Apple’s icon system with 6,000+ symbols in 9 weights and 3 scales, automatically adapting to Dynamic Type.
 Explore: developer.apple.com/design/human-interface-guidelines
+
+## Project scope override
+
+Apply the [supported platforms and visual interaction scope](../../ui-ux-standards.md#supported-platforms-and-visual-interaction-scope)
+when using this reference. FeralSpotter is a native mobile field-work app; web
+is unsupported. Very-low-vision/nonvisual features, including TTS and screen
+readers, are excluded from reviews, checks, tests and implementations because
+the app's core tasks are inherently visual. Broader recommendations above do
+not expand that scope. Visual contrast, text scaling, reflow and touch usability
+remain required.

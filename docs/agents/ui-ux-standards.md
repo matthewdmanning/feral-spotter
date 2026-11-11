@@ -230,7 +230,7 @@ Larger components or more whitespace are not automatically better either.
   repeated taps; a repeated tap does not by itself prove a duplicate write.
 - Keep loading, empty, failed and stale/offline states distinct where their
   consequences differ. Provide appropriate progress, retry and outcome feedback,
-  including assistive-technology announcements where needed.
+  within the supported visual interaction scope below.
 - Identify destructive targets and repeated actions in accessible labels.
   Consent summaries must reflect the effective data, including absent values.
 - Measure realistic account/list sizes before calling an admission-limit fixture
@@ -244,17 +244,16 @@ Larger components or more whitespace are not automatically better either.
   only at their boundary, following the [testing policy](testing.md).
 - Check a narrow phone, long configured copy and organization names, 200% text,
   the enforced font-scale ceiling, keyboard-visible forms, both themes,
-  screen-reader navigation and reduced
-  transparency. Include permission review, offline retry and destructive states
+  reduced transparency. Include permission review, offline retry and destructive states
   when they are human-reachable.
 - Add load-bearing regression tests for concrete failures. Verify rendering and
   behavior rather than claiming a source-text/regex check proves layout.
 - Report source inspection, rendered-component tests, theme contrast
-  calculations, browser testing and native device observations separately.
+  calculations and native device observations separately.
   Screenshots, bundling and mocked native props establish different things.
-- Attempt browser/device testing where supported and name the actual blocker
-  when unavailable. Mark physical layout, keyboard behavior, assistive technology
-  or native glass as unverified when they were not exercised.
+- Attempt native device testing where supported and name the actual blocker
+  when unavailable. Mark physical layout, keyboard behavior or native glass as
+  unverified when they were not exercised.
 - Keep general standards here, product-specific design in the authoritative
   design files and change-specific findings/validation in implementation notes.
 
@@ -264,3 +263,26 @@ Larger components or more whitespace are not automatically better either.
 - [Mobile UX principles](ui-ux/reference/ux_principles.md)
 - [Using design decisions](ui-ux/reference/using-design-decisions.md)
 - [Testing policy](testing.md)
+
+## Supported platforms and visual interaction scope
+
+FeralSpotter is a native mobile app for field work. Web is not a supported
+platform. Do not include web compatibility, browser rendering, web builds or
+browser-based app validation in reviews, checks, tests or implementations.
+Missing web dependencies or unsupported browser behavior are not app defects.
+Use native mobile evidence to validate the app's UI and interactions.
+
+Because the app's field tasks inherently require visual observation,
+photography and visual annotation, features for very low vision or nonvisual
+operation, including text-to-speech (TTS), screen readers and spoken navigation,
+are outside product scope. Do not include those features or their requirements
+in reviews, checks, tests or implementations. Do not report their absence as a
+defect or list their validation as pending work. This scope takes precedence
+over broader accessibility or browser-testing recommendations in the reference
+documents and external guides.
+
+Visual usability requirements remain in scope: readable contrast, text scaling
+up to the enforced 2.0× ceiling, reflow, touch targets, keyboard reachability,
+clear visible feedback, both themes and reduced-transparency/high-contrast
+surface behavior. This exclusion does not require removing existing labels or
+semantics from controls.
