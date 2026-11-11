@@ -366,3 +366,127 @@ Feature-specific implementation entries:
 [sharing](../implementations/2026-11-07-feat-organizations.md),
 [Onboarding](../implementations/2026-08-09-intro-flow-t1-hardware-back.md),
 [location](../implementations/2026-08-09-consent-66-location-permission-gate.md).
+
+## Second pass — copy/config ownership and regression review
+
+The user requested a second pass after the implementation and added a stricter
+rule: all copy and scaling must use project tokens or centralized configuration,
+reusing the existing owner rather than duplicating files. The
+[project standards](../agents/ui-ux-standards.md) now state that rule explicitly.
+This pass reviews implementation commit `7f18efc`; findings from the initial
+baseline above remain historical.
+
+Three read-only subagents ran with the low-cost `gpt-6-luna` model at high
+reasoning effort, with separate tasks:
+
+- Copy audit: authored strings/templates and duplicated ownership, with existing
+  configuration owners identified for remediation.
+- Scaling audit: ceiling enforcement, adaptive dimensions/thresholds, shared
+  tokens and remaining runtime bypasses.
+- Layout audit: regressions in authentication, Onboarding, annotation, Map picker,
+  Settings/sharing, and whether tests establish the claimed behavior.
+
+The primary agent consolidates and checks the findings below. No separate audit
+files or duplicate configuration files are created. Source findings, renderer
+contracts and native-device evidence remain distinct. This review excludes web,
+external keyboards, TTS and screen-reader/nonvisual features; mobile on-screen
+keyboard and visual usability remain in scope.
+
+### Consolidated findings
+
+**SP1 — P2: Settings copy is only partially centralized.**
+`src/features/settings/copy/settingsCopy.ts:2` owns the photo Save/Discard copy,
+but `src/features/settings/screens/settings/index.tsx:37` still defines Theme
+labels locally, and `index.tsx:73` onward embeds Settings, Appearance, Haptic
+Feedback, Communications, account-email and Data Policy copy. This is a policy
+gap, not a newly observed behavioral regression: the extraction in `7f18efc`
+covered only the changed photo section. Human path: signed-in user → Settings;
+photo/developer options additionally depend on their build/platform gates.
+Extend the existing `settingsCopy.ts`; retain toggle labels/descriptions in their
+existing `config/photoToggles.ts` owner and import the canonical values. Do not
+create a second Settings copy file. Identical words such as Cancel are not, by
+themselves, proof that a duplicate canonical file exists.
+
+**SP2 — P2: Material sharing copy and other feature templates remain authored
+inside UI/logic.** `src/features/organizations/components/SharingSettings.tsx:55`
+and `SubmissionOrganizations.tsx:83` embed sharing facts and choice labels;
+`OrganizationPermissions.tsx:22` embeds the permission-review sentence template.
+`SharingSettings.tsx:68` constructs a label by lowercasing a field noun, despite
+the complete-label rule. Human path: authenticated account with Organizations
+enabled and hydrated → Settings preferences or a located draft → select an
+eligible organization → confirm sharing. Cached coverage can support offline
+choices; permission re-review requires current coverage. These predate `7f18efc`;
+that commit relocated fields without centralizing their copy.
+
+The same policy backlog exists in authentication (`sign-in/index.tsx:27`,
+`register/index.tsx:25`, `auth/hooks/useChangeEmail.ts:15`) and submission dialogs
+(`draft-submission/hooks/useSubmissionSubmit.ts:52`). Signed-out users can reach
+authentication validation; authenticated users with local draft content can reach
+submission confirmation, with network needed for successful service operations.
+Use complete configured templates, preserving inserted values and locale-aware
+formatting. Reuse existing owners such as organization `lib/sharing.ts`'s
+`FIELD_LABELS`/summary vocabulary, auth `lib/authProviders.ts`'s provider labels,
+and shared `utils/validation.ts`'s validation messages. These are existing
+vocabulary owners, not evidence that a complete copy configuration already exists
+for every feature. Establish one canonical ownership boundary for any uncovered
+copy before migrating consumers; do not scatter or duplicate catalogs, move
+feature-specific copy into an unrelated feature, or create dependency cycles.
+Permission copy already has canonical JSON files and should continue using them.
+
+**SP3 — P2: Adaptive sizing still has local, duplicated configuration.**
+`auth/screens/sign-in/index.styles.ts:18` and
+`auth/screens/register/index.styles.ts:11` each add `maxWidth: 640` in `7f18efc`;
+Settings already has a local 640dp width rule. These are authored sizing limits,
+not device measurements. Human path: Sign-in/Create account on a wide native
+window, or signed-in Settings; no organization rollout is required. Reuse a
+semantic content-width token in `shared/config/themes.ts` rather than preserving
+three independent literals. The segmented track's `borderWidth: 1`
+(`shared/ui/atoms/SegmentedControl.styles.ts:20`) and matching subtraction of 2
+in `SegmentedControl.tsx:52` are also coupled without a shared dimension owner.
+A semantic track-border token should drive both; the count of two sides itself
+is a structural fact and does not need a new token.
+
+The primary agent applies the user's **all scaling** requirement to interaction
+transforms as well as text/reflow. The existing pressed `scale: 0.97` in
+`shared/ui/atoms/AppButton.styles.ts:90` is therefore configuration backlog,
+even though it is not a layout regression. Likewise the new annotation action
+`maxHeight: '50%'` in `annotate/screens/annotate/index.styles.ts:38` encodes a
+tunable action/canvas budget. Give these narrowly named roles in the existing
+theme/config owner. This is distinct from structural fill values such as 100%,
+platform insets, a count of sides or runtime measurements. These ownership follow-ups do not establish measured overflow or a behavioral
+regression.
+
+**SP4 — P2: The new width-triggered action reflow lacks regression coverage.**
+`shared/ui/molecules/ButtonRow.tsx:29` now chooses a stack from measured width as
+well as font scale. `ButtonRow.test.tsx:12` fixes width at 400 and only varies font
+scale; no test exercises a measured-width change. Annotation's screen tests cover
+button wiring rather than its three-action group within the bounded scroller.
+Human path: signed-in, consented user with local photos → Box Annotation →
+complete/dismiss Tutorial → narrow/short native window at default or 2× text.
+Add focused coverage for narrow-to-wide `onLayout` changes with real controls and
+unchanged action callbacks. Separately validate by touch that Done With This Cat
+is reachable by scrolling and the photo canvas remains usable on a short phone.
+This is a concrete missing regression guard and an unverified native layout risk,
+not proof that the action currently clips. Extend the existing ButtonRow and
+annotation test files rather than adding parallel copies of their coverage.
+
+### Confirmed strengths and remaining limits
+
+- No direct app-source React Native Text/TextInput bypass was found outside
+  shared Text/TextField. Stack titles use shared Text. The 2× ceiling, ButtonRow
+  font threshold and adaptive option/action width tokens have central owners.
+- No confirmed new Settings save-scope or map-viewport containment bug was found.
+  Auth forms have scrolling, keyboard avoidance and handled touch taps; sharing
+  inputs now follow their corresponding choices.
+- `LocationPicker.model.test.tsx:164` proves common ancestry and footer exclusion,
+  not native projection or pin-tip alignment. This is the native limitation
+  already recorded above, not a second geometry defect. Keep the store-flow
+  coverage and verify actual map alignment on a supported native device.
+- Native tab/map labels and OS date pickers are still outside the React Native
+  Text wrapper. Their scaling remains unverified; they must not be described as
+  having a proven 2× ceiling. A platform API limitation is not evidence of a new
+  regression introduced by `7f18efc`.
+- No application code was changed and no application tests were rerun for this
+  read-only second pass. The 119-suite/531-test result above belongs to the first
+  implementation, not this review. Documentation formatting/whitespace checks
+  apply to the current changes; no native or browser observation was added.

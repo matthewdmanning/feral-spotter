@@ -94,6 +94,18 @@ Larger components or more whitespace are not automatically better either.
 
 ## Font scaling and the enforced maximum
 
+- All scaling values and policies must come from project tokens or a centrally
+  owned configuration file. This includes font-scale ceilings, reflow thresholds,
+  minimum/maximum dimensions, adaptive sizing factors and interaction/animation
+  scale factors. Components
+  consume those values; they must not duplicate literals, invent local scaling
+  policies or copy configuration into a second file. Reuse the existing owner
+  before extending it (for example, `src/shared/config/text.ts`,
+  `src/shared/config/constants.ts` or `src/shared/config/themes.ts`, according to
+  the value's role). Runtime measurements and platform insets remain inputs,
+  not duplicated configuration. Structural fill constraints such as `100%` may
+  remain in layouts; tunable limits/ratios still belong to configuration even
+  when expressed as percentages.
 - The app must enforce one centrally configured maximum font-scale multiplier
   of **2.0× for all app-rendered text**, including body content, input text,
   consent, validation errors, headings, navigation and action labels. Essential
@@ -207,9 +219,18 @@ Larger components or more whitespace are not automatically better either.
 - For example, use “Save sharing preferences” and “Permission pending”; do not
   add “This Save button applies only to this card”. “Organization delivery is
   not available yet” is a material service limitation.
-- Store feature copy separately from component code, including headings,
-  statuses, dialogs, errors, accessibility text and dynamic sentence templates.
+- All app-owned copy must come from project tokens or a centrally owned copy
+  configuration file, including screen/navigation titles, headings, action and
+  field labels, placeholders, statuses, dialogs, validation/error messages,
+  existing accessibility text and dynamic sentence templates. Do not embed copy
+  literals or sentence fragments in components, hooks or route declarations.
   Keep complete translatable labels; do not build sentences by lowercasing nouns.
+- Reuse the existing configuration owner for each feature and shared vocabulary.
+  Extend it in place; do not duplicate files, create parallel copy catalogs,
+  mirror token/config definitions or keep local fallback copies. Import the
+  canonical value at each use site. A change in wording or scaling belongs in
+  that owner rather than in every consumer. User/service data remains distinct
+  from authored UI copy.
 - Keep schema keys separate from display text. Use named placeholders, preserve
   inserted user/catalog values and the device locale for dates. Document how
   configuration is applied and whether a rebuild is required.
