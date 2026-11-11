@@ -175,6 +175,11 @@ const iconSize = {
   hero: 64,
 } as const
 
+/** Width and height of selection controls, independent of their touch target. */
+const controlSize = {
+  checkbox: 24,
+} as const
+
 /**
  * Interactive heights. `touchTarget` is the Android Material minimum
  * (ux_principles.md); `control` is the standard button/input height, a step
@@ -217,9 +222,11 @@ const reticle = {
 
 /**
  * Strokes beyond the glass hairline: `frame` edges a photo thumbnail,
- * `selected` marks the chosen one of a set of thumbnails.
+ * `selected` marks the chosen one of a set of thumbnails; `control` is the
+ * outline of a selection control.
  */
 const borderWidth = {
+  control: 2,
   frame: 1.5,
   selected: 3,
 } as const
@@ -242,6 +249,7 @@ const sharedTokens = {
   layout,
   iconSize,
   controlHeight,
+  controlSize,
 }
 
 // ─── Themes ───────────────────────────────────────────────────────────────────

@@ -127,3 +127,11 @@ Native/external boundaries use existing SDK mocks. NetInfo's official Jest mock 
 **Still external/unverified:** physical layout, large text, assistive technology, remote Organizations flag creation and enabled-rollout behavior, live deployment, and real organization catalog data. The earlier decisions to defer organization management and data delivery remain in force.
 
 **Read-only live check:** The configured PostHog `/flags/?v=2` endpoint returned HTTP 200 with the expected `flags` response shape. `Organizations` was absent, and evaluation therefore stayed disabled. The request used an opaque random ID with GeoIP disabled and sent no capture/identify event or user/contact/location data. Remote flag creation still requires a PostHog management credential.
+
+## 2026-11-11 — fix: semantic styling for organization controls
+
+**Purpose:** Align organization card geometry, hierarchy and checkbox indicators with the project theme and native glass vocabulary.
+
+**Change:** Added checkbox-size and control-border tokens; used the shared card radius, section spacing, typography and touch target. Replaced the text check mark with the bounded project vector icon using on-accent color, preserved box width and aligned it to the first label line using runtime font scale. Added transparent grouping and native hairline styles for the following screen layout changes.
+
+**Validation:** The checkbox rendering regression passed after failing on the old glyph. Both palette foreground/fill combinations exceed 6:1 calculated contrast. App/server TypeScript, focused ESLint and Prettier passed in the complete reviewed worktree. Native physical layout and glass compositing remain unverified.

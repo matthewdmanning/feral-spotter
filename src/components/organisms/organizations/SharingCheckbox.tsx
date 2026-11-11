@@ -1,4 +1,6 @@
 import { Pressable, Text, View } from 'react-native'
+import { useUnistyles } from 'react-native-unistyles'
+import { CheckIcon } from 'phosphor-react-native/src/icons/Check'
 import { styles } from './styles'
 
 /** One accessible checkbox target, with text that wraps at large font sizes. */
@@ -13,6 +15,7 @@ export function SharingCheckbox({
   onChange: (checked: boolean) => void
   disabled?: boolean
 }) {
+  const { theme } = useUnistyles()
   return (
     <Pressable
       style={styles.checkRow}
@@ -23,9 +26,15 @@ export function SharingCheckbox({
       onPress={() => onChange(!checked)}
     >
       <View style={[styles.checkbox, checked && styles.checked]}>
-        <Text style={styles.mark}>{checked ? '✓' : ''}</Text>
+        {checked && (
+          <CheckIcon
+            size={theme.iconSize.sm}
+            color={theme.colors.accentText}
+            weight="bold"
+          />
+        )}
       </View>
-      <Text style={styles.body}>{label}</Text>
+      <Text style={styles.checkLabel}>{label}</Text>
     </Pressable>
   )
 }
