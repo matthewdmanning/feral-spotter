@@ -56,7 +56,11 @@ apply it across shared controls and direct text, and inspect navigation and
 third-party text separately. Preserve scaling below the ceiling. Validate at
 normal, 2× and the largest OS setting; a cap alone does not fix F2–F5.
 
-### F2 — P1: Authentication forms cannot scroll or avoid the keyboard
+### F2 — P1: Authentication forms cannot scroll or avoid the on-screen keyboard
+
+**Scope:** This finding concerns the mobile on-screen keyboard and touch actions.
+External keyboard navigation, focus traversal, shortcuts and keyboard-only use
+are unsupported and excluded; they are not pending checks.
 
 **Evidence:** Sign-in and register `screens/*/index.tsx` render only nested Views;
 their `index.styles.ts` use `flex: 1` and `justifyContent: 'center'`. Neither has
@@ -268,7 +272,7 @@ Save/Discard helper paragraphs to compensate for the structure.
 - **Tests:** No application changes or tests added/run for this documentation-only
   review. No fixture injection was treated as proof of a human journey.
 - **Still required:** Native Android narrow/short phone and 600dp+ window; default,
-  2× and maximum platform font/display size; both themes; keyboard-open forms;
+  2× and maximum platform font/display size; both themes; forms with the on-screen keyboard open;
   reduced transparency/high contrast; real glass over ambient
   backgrounds; camera/annotation framing; permission denial, offline retry and
   destructive confirmations. These are pending, not passing checks.
@@ -300,3 +304,11 @@ are excluded from reviews, checks, tests and implementations. Ten actionable
 findings remain; F8 is excluded. Historical browser-attempt evidence is retained
 only as a record of what was attempted, not as a requirement to add web support.
 Visual readability, scaling, contrast and touch usability remain in scope.
+
+### Separate keyboard scope
+
+Separate hardware/external keyboard use is unsupported and excluded from this
+review and from checks, tests and implementations. No external-keyboard support
+is requested by the findings. F2 remains actionable because it concerns the
+mobile on-screen keyboard used to enter account details, rather than a separate
+keyboard. Native validation should use touch input and the on-screen keyboard.

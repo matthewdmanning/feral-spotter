@@ -281,8 +281,15 @@ defect or list their validation as pending work. This scope takes precedence
 over broader accessibility or browser-testing recommendations in the reference
 documents and external guides.
 
+Separate hardware/external keyboard use is unsupported. Do not include external
+keyboard navigation, Tab/Shift+Tab focus traversal, keyboard shortcuts or
+keyboard-only operation in reviews, checks, tests or implementations. Their
+absence is not a defect or pending validation work. Mobile forms still use the
+device's on-screen keyboard: input visibility, scrolling, dismissal and touch
+actions while it is open remain in scope.
+
 Visual usability requirements remain in scope: readable contrast, text scaling
-up to the enforced 2.0× ceiling, reflow, touch targets, keyboard reachability,
+up to the enforced 2.0× ceiling, reflow, touch targets, on-screen keyboard reachability,
 clear visible feedback, both themes and reduced-transparency/high-contrast
 surface behavior. This exclusion does not require removing existing labels or
 semantics from controls.

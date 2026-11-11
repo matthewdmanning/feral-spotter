@@ -244,3 +244,8 @@ readers, are excluded from reviews, checks, tests and implementations because
 the app's core tasks are inherently visual. Broader recommendations above do
 not expand that scope. Visual contrast, text scaling, reflow and touch usability
 remain required.
+
+Separate hardware/external keyboard use is also unsupported and excluded from
+reviews, checks, tests and implementations, including keyboard-only navigation,
+focus traversal and shortcuts. On-screen keyboard behavior in mobile forms
+remains in scope under the linked project standards.
