@@ -67,7 +67,7 @@ describe('useSubmissionSubmit — handleReset (#189)', () => {
 
     const { result } = await renderHook(() => useSubmissionSubmit())
 
-    act(() => result.current.handleReset())
+    await act(() => result.current.handleReset())
     await pressDialogButton('Reset')
 
     expect(useSubmissionStore.getState().cats).toEqual([])

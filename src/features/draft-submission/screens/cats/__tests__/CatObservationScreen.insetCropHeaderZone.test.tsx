@@ -1,5 +1,4 @@
 import { act, render } from '@testing-library/react-native'
-import { ScrollView } from 'react-native'
 import CatObservationScreen from '@/src/features/draft-submission/screens/cats/index'
 
 /**

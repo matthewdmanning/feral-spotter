@@ -53,7 +53,7 @@ describe('useLibraryPhotoPicker permission gate — model-based test', () => {
     jest.clearAllMocks()
     ui.useUIStore.setState({ dialog: null })
     jest.spyOn(ui, 'showAlert')
-    result = renderHook(() => useLibraryPhotoPicker())
+    result = await renderHook(() => useLibraryPhotoPicker())
   })
 
   const gateMachine = createMachine({

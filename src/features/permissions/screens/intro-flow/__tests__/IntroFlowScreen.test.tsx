@@ -95,7 +95,7 @@ describe('IntroFlowScreen', () => {
     const exitSpy = jest
       .spyOn(BackHandler, 'exitApp')
       .mockImplementation(() => {})
-    render(<IntroFlowScreen />)
+    await render(<IntroFlowScreen />)
 
     backHandler?.()
     await pressDialogButton('Exit')
@@ -107,7 +107,7 @@ describe('IntroFlowScreen', () => {
   // T1 used to exit the app with no confirm.
   it('steps back one slide on hardware back past T1', async () => {
     const alertSpy = jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
-    render(<IntroFlowScreen />)
+    await render(<IntroFlowScreen />)
     await userEvent.press(screen.getByText(slides[0].button))
     expect(screen.getByText(slides[1].header)).toBeTruthy()
 

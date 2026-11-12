@@ -59,7 +59,7 @@ describe('useAnnotatePass — carousel navigation (model-based test)', () => {
     ReturnType<typeof renderHook<ReturnType<typeof useAnnotatePass>, unknown>>
   >
 
-  beforeEach(() => {
+  beforeEach(async () => {
     useActiveCatFlowStore.getState().setActiveCatId(null)
     useBoundingBoxStore.getState().clearAll()
     useSubmissionStore.getState().clearDraft()

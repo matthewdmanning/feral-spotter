@@ -67,7 +67,7 @@ beforeEach(async () => {
     .mockImplementation(() => `photo-${++id}` as ReturnType<typeof randomUUID>)
 })
 
-it('keeps preview active during restoration and enables capture before cleanup finishes', () => {
+it('keeps preview active during restoration and enables capture before cleanup finishes', async () => {
   useDraftStartupStore.setState({ phase: 'restoring' })
   const { result } = await renderHook(() => useCapturedPhotoWorkflow())
   expect(result.current.isActive).toBe(true)

@@ -213,8 +213,8 @@ describe('useActiveCatFlow — model-based test', () => {
     expect(router.replace).not.toHaveBeenCalledWith('/')
   })
 
-  it('abandoning with cats already recorded lands on Cat List, not Home (#203)', () => {
-    act(() => {
+  it('abandoning with cats already recorded lands on Cat List, not Home (#203)', async () => {
+    await act(() => {
       useSubmissionStore.setState({
         cats: [observedCat({ local_id: 'existing-cat' })],
       })

@@ -132,7 +132,7 @@ describe('useAbandonCatGuard (#304)', () => {
     useActiveCatFlowStore.getState().setActiveCatId(CAT_ID)
     await renderHook(() => useAbandonCatGuard(false))
 
-    attemptLeave()
+    await attemptLeave()
     await pressDialogButton('Remove progress on this cat')
 
     const after = useBoundingBoxStore.getState()

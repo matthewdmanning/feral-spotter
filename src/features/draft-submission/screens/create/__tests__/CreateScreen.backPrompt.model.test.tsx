@@ -95,7 +95,7 @@ describe('Submission Details hardware Back — model-based test', () => {
   let rerender: (ui: React.ReactElement) => void
   let lastBackHandled: boolean
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockFocused = true
     useUIStore.setState({ dialog: null })
     usePhotoStore.setState({ source: 'camera' })

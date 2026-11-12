@@ -95,7 +95,7 @@ describe('CameraScreen permission/device gates — model-based test', () => {
 
   const model = createTestModel(gateMachine)
 
-  const mount = (
+  const mount = async (
     hasPermission: boolean,
     device: ReturnType<typeof useCameraCapture>['device'],
   ) => {

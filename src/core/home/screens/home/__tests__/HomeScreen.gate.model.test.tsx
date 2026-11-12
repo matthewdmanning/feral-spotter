@@ -112,7 +112,7 @@ describe('HomeScreen gate — model-based test', () => {
     })
   }
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // This suite covers the auth/consent gate only — the photo-source gate
     // has its own model test (HomeScreen.photoSourceGate.model.test.tsx).
     usePhotoStore.setState(usePhotoStore.getInitialState(), true)

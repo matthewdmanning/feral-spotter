@@ -106,7 +106,7 @@ describe('ConsentScreen decline flow', () => {
     const exitSpy = jest
       .spyOn(BackHandler, 'exitApp')
       .mockImplementation(() => {})
-    render(<ConsentScreen />)
+    await render(<ConsentScreen />)
 
     await userEvent.press(screen.getByLabelText(consentCopy.declineLabel))
     await pressDialogButton('Exit')
@@ -118,7 +118,7 @@ describe('ConsentScreen decline flow', () => {
     const exitSpy = jest
       .spyOn(BackHandler, 'exitApp')
       .mockImplementation(() => {})
-    render(<ConsentScreen />)
+    await render(<ConsentScreen />)
 
     await userEvent.press(screen.getByLabelText(consentCopy.declineLabel))
     await pressDialogButton('Back')

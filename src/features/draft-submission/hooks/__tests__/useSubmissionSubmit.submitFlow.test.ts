@@ -95,7 +95,7 @@ describe('useSubmissionSubmit submit flow', () => {
 
     const { result } = await renderHook(() => useSubmissionSubmit())
 
-    act(() => result.current.handleDone())
+    await act(() => result.current.handleDone())
     await pressDialogButton('Submit')
 
     expect(uploadSubmissionMetadata).toHaveBeenCalledWith(
@@ -136,7 +136,7 @@ describe('useSubmissionSubmit submit flow', () => {
 
     const { result } = await renderHook(() => useSubmissionSubmit())
 
-    act(() => result.current.handleDone())
+    await act(() => result.current.handleDone())
     await pressDialogButton('Submit')
 
     expect(finalizeSubmissionPhotoMetadata).toHaveBeenCalledWith(
@@ -171,7 +171,7 @@ describe('useSubmissionSubmit submit flow', () => {
 
     const { result } = await renderHook(() => useSubmissionSubmit())
 
-    act(() => result.current.handleDone())
+    await act(() => result.current.handleDone())
     await pressDialogButton('Submit')
 
     expect(finalizeSubmissionPhotoMetadata).toHaveBeenCalledWith(
@@ -211,7 +211,7 @@ describe('useSubmissionSubmit submit flow', () => {
 
     const { result } = await renderHook(() => useSubmissionSubmit())
 
-    act(() => result.current.handleDone())
+    await act(() => result.current.handleDone())
     await pressDialogButton('Submit')
 
     expect(finalizeSubmissionPhotoMetadata).toHaveBeenCalledWith(
@@ -252,11 +252,11 @@ describe('useSubmissionSubmit submit flow', () => {
 
     const { result } = await renderHook(() => useSubmissionSubmit())
 
-    act(() => result.current.handleDone())
+    await act(() => result.current.handleDone())
     await pressDialogButton('Submit')
 
     expect(uploadSubmissionMetadata).toHaveBeenCalled()
-    expect(useUIStore.getState().dialog?.title).not.toBe('Submission Failed')
+    expect(useUIStore.getState().dialog?.title).not.toBe('Sighting Failed')
     expect(isDraftBusy()).toBe(false)
   })
 
@@ -298,7 +298,7 @@ describe('useSubmissionSubmit submit flow', () => {
 
     const { result } = await renderHook(() => useSubmissionSubmit())
 
-    act(() => result.current.handleDone())
+    await act(() => result.current.handleDone())
     await pressDialogButton('Submit')
 
     expect(uploadSubmissionMetadata).toHaveBeenCalledWith(
@@ -340,7 +340,7 @@ describe('useSubmissionSubmit submit flow', () => {
 
     const { result } = await renderHook(() => useSubmissionSubmit())
 
-    act(() => result.current.handleDone())
+    await act(() => result.current.handleDone())
     await pressDialogButton('Submit')
 
     expect(uploadSubmissionMetadata).not.toHaveBeenCalled()
@@ -362,7 +362,7 @@ describe('useSubmissionSubmit submit flow', () => {
 
     const { result } = await renderHook(() => useSubmissionSubmit())
 
-    act(() => result.current.handleDone())
+    await act(() => result.current.handleDone())
     await pressDialogButton('Submit')
 
     expect(uploadSubmissionMetadata).not.toHaveBeenCalled()
@@ -394,7 +394,7 @@ describe('useSubmissionSubmit submit flow', () => {
 
     const { result } = await renderHook(() => useSubmissionSubmit())
 
-    act(() => result.current.handleDone())
+    await act(() => result.current.handleDone())
     await pressDialogButton('Submit')
 
     expect(uploadSubmissionMetadata).toHaveBeenCalledWith(
@@ -466,7 +466,7 @@ describe('useSubmissionSubmit submit flow', () => {
 
     const { result } = await renderHook(() => useSubmissionSubmit())
 
-    act(() => result.current.handleDone())
+    await act(() => result.current.handleDone())
     await pressDialogButton('Submit')
 
     expect(errorSpy).toHaveBeenCalledWith(

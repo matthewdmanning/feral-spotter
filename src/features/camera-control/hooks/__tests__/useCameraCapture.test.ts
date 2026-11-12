@@ -136,8 +136,8 @@ describe('useCameraCapture isActive (#253)', () => {
 })
 
 describe('useCameraCapture navigation', () => {
-  it('handleClose calls router.back()', () => {
-    const { result } = renderHook(() => useCameraCapture())
+  it('handleClose calls router.back()', async () => {
+    const { result } = await renderHook(() => useCameraCapture())
     result.current.handleClose()
     expect(router.back).toHaveBeenCalledTimes(1)
   })

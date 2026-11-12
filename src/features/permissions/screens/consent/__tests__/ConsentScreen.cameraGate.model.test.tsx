@@ -115,7 +115,7 @@ describe('ConsentScreen camera gate — model-based test', () => {
   let foregroundListener: ((state: string) => void) | undefined
   let cameraResult: string
 
-  beforeEach(() => {
+  beforeEach(async () => {
     Platform.OS = 'android'
     cameraResult = 'authorized'
     mockCameraPermissionStatus = 'authorized'

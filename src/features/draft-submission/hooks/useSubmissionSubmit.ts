@@ -1,6 +1,6 @@
 /**
  * features/draft-submission/hooks/useSubmissionSubmit.ts
- * Submission Details' "Finished!", "Reset" and "Discard" actions, as UI:
+ * Sighting Details' "Submit Sighting", "Reset" and "Discard" actions, as UI:
  * the confirm dialog, the user-facing messages and the navigation. The
  * lifecycle itself (lock, validation, upload wait, send, status moves,
  * teardown) is features/draft-submission/lib/draft.ts's submitDraft()/discardDraft().
@@ -10,13 +10,6 @@
  * (#265), reported by submitDraft as 'incomplete'.
  */
 
-import { effectiveSharingSettings } from '@/src/types/Organizations'
-import { useOrganizationsFlag } from '@/src/hooks/useOrganizationsFlag'
-import { confirmedSharing } from '@/src/lib/organizations/consent'
-import {
-  persistOrganizationSharing,
-  useOrganizationSharingStore,
-} from '@/src/hooks/useOrganizationSharingStore'
 import {
   confirmResetSubmission,
   discardDraftAndGoHome,

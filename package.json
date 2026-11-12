@@ -63,6 +63,7 @@
     "phosphor-react-native": "^3.0.6",
     "posthog-react-native": "^4.54.2",
     "react": "19.3.0",
+    "react-dom": "19.3.0",
     "react-native": "0.88.1",
     "react-native-fbsdk-next": "^13.4.3",
     "react-native-gesture-handler": "~3.3.0",

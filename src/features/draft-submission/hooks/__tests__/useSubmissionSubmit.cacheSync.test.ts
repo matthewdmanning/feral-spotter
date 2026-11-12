@@ -81,7 +81,7 @@ describe('useSubmissionSubmit — handleDone cache sync (#228)', () => {
 
     const { result } = await renderHook(() => useSubmissionSubmit())
 
-    act(() => result.current.handleDone())
+    await act(() => result.current.handleDone())
     await pressDialogButton('Submit')
 
     // The persisted row is the proof: the Sending write resent the full
@@ -142,8 +142,8 @@ describe('useSubmissionSubmit — history row survives teardown', () => {
   })
 
   it('keeps owner, location, cloud photos, and the chosen Profile Pic', async () => {
-    const { result } = renderHook(() => useSubmissionSubmit())
-    act(() => result.current.handleDone())
+    const { result } = await renderHook(() => useSubmissionSubmit())
+    await act(() => result.current.handleDone())
     await pressDialogButton('Submit')
 
     // The draft is gone; only the history row remains.

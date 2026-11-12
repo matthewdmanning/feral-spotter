@@ -67,7 +67,7 @@ describe('HomeScreen photo-source-exclusivity gate — model-based test', () => 
     await usePhotoStore.persist.rehydrate()
     usePhotoStore.setState(usePhotoStore.getInitialState(), true)
     setConsent(true)
-    const result = render(<HomeScreen />)
+    const result = await render(<HomeScreen />)
     getByLabelText = result.getByLabelText
   })
 

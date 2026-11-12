@@ -145,7 +145,7 @@ it('marks the row Failed and unlocks when the send is rejected', async () => {
     await confirmSubmit()
   })
   expect((await cache.getSubmissionCache('cache-1'))?.status).toBe('Failed')
-  expect(useUIStore.getState().dialog?.title).toBe('Submission Failed')
+  expect(useUIStore.getState().dialog?.title).toBe('Sighting Failed')
   expect(isDraftBusy()).toBe(false)
   // The draft is intact for the retry the message promises.
   expect(usePhotoStore.getState().photos).toHaveLength(1)
