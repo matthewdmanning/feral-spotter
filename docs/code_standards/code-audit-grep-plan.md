@@ -1,6 +1,6 @@
 # Grep-Scoped Rule Audit Plan
 
-How to run a style-guide audit (`docs/COMBINED_STYLE_GUIDE.md` against `src/**/*.ts(x)`) without loading the full codebase and the full rule set into context at the same time.
+How to run a style-guide audit (`docs/code_standards/COMBINED_STYLE_GUIDE.md` against `src/**/*.ts(x)`) without loading the full codebase and the full rule set into context at the same time.
 
 ## Why
 
