@@ -22,4 +22,4 @@ Edit the right-hand column to match whatever vocabulary you actually use.
 
 ## Milestones
 
-Tracked via GitHub Milestones + Issues (source of truth: [milestones](https://github.com/matthewdmanning/feral-spotter/milestones), [project board](https://github.com/users/matthewdmanning/projects/1)). Scope, due dates, and rationale: `docs/planning/2026-07-12-mvp-alpha-beta-roadmap.md` — not duplicated here, it drifts.
+Tracked via GitHub Milestones + Issues (source of truth: [milestones](https://github.com/matthewdmanning/feral-spotter/milestones), [project board](https://github.com/users/matthewdmanning/projects/1)). Scope, due dates, and rationale: `docs/planning/grilling/2026-07-12-mvp-alpha-beta-roadmap.md` — not duplicated here, it drifts.
