@@ -27,7 +27,7 @@ These Android captures from October 28, 2026 show Home and annotation controls w
 
 ## Develop locally
 
-The app uses Expo SDK 58, React Native 0.88, TypeScript 6, Expo Router, Zustand, Unistyles, and Firebase Auth/Storage. Native camera and other modules require a development build; Expo Go is insufficient.
+The app uses Expo SDK 58, React Native 0.88, TypeScript 6, Expo Router, Zustand, Unistyles, and Firebase Auth/Storage/Firestore (Firestore server-side only, for organizations). Native camera and other modules require a development build; Expo Go is insufficient.
 
 Prerequisites:
 
@@ -63,6 +63,6 @@ npm ci --prefix functions
 npm run test:functions -- --runInBand
 ```
 
-The rules command starts local Auth/Storage emulators and tests the repository's rules. Native camera, permission, layout, and sign-in behavior still need device testing; passing Jest does not verify those seams.
+The rules command starts local Auth/Storage/Firestore emulators and tests the repository's rules. Native camera, permission, layout, and sign-in behavior still need device testing; passing Jest does not verify those seams.
 
 See [project structure](docs/PROJECT_STRUCTURE.md), the [manual QA checklist](docs/qa_checklist.md), and [open issues](https://github.com/matthewdmanning/feral-spotter/issues) for architecture, validation, and remaining work. Report a bug with the build/commit, device, reproduction steps, and expected versus observed behavior.
