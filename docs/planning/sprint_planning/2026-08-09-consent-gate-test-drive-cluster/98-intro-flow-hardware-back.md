@@ -21,15 +21,15 @@ not a bug fix.
 
 - Locate T1's screen component under the `intro-flow` route (not pinned down
   precisely this session — start from the route folder per
-  [domain.md](../../agents/domain.md)'s Onboarding definition).
+  [domain.md](../../../agents/domain.md)'s Onboarding definition).
 - Add a `useBackHandler` intercept matching `consent`'s pattern (find that
   screen's implementation as the reference for the confirm-exit prompt UX).
 - Model this as a state addition to the onboarding FSM doc if that doc is
   the source of truth for these decisions — check whether it needs updating
-  alongside the code, per [documentation.md](../../agents/documentation.md).
+  alongside the code, per [documentation.md](../../../agents/documentation.md).
 
 ## Suggested skills
 
 - `tdd` — this is a small state addition to an existing flow; per
-  [testing.md](../../agents/testing.md), extend the existing onboarding
+  [testing.md](../../../agents/testing.md), extend the existing onboarding
   model rather than writing isolated `it()` cases if one already exists.
