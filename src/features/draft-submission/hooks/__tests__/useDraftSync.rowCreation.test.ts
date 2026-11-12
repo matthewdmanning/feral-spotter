@@ -12,8 +12,6 @@ jest.mock('@/src/core/location/liveFix', () => ({
   useLocationCapture: () => ({ status: 'idle', result: null }),
 }))
 
-afterEach(() => jest.useRealTimers())
-
 // #224 follow-up: opening Details with no row creates exactly one, carrying
 // the photos already in the draft; the post-Submit clear must not mint a
 // second, empty row.
@@ -47,16 +45,12 @@ it('creates one row for a draft with none, and no stray row after Submit', async
   // What completeDraft does: flip, release the pointer, clear the stores.
   await cache.updateSubmissionCache(id!, { status: 'Submitted' })
   await cache.clearCurrentCacheId()
-  jest.useFakeTimers()
   await act(() => {
     useSubmissionStore.getState().clearDraft()
-    usePhotoStore.getState().clearPhotos(true)
+    usePhotoStore.getState().clearPhotos()
+    expect(file.exists).toBe(false)
   })
-  // Finish deferred file deletion while Expo's test environment is alive.
-  await act(async () => {
-    await jest.runOnlyPendingTimersAsync()
-  })
+  await act(async () => {})
   await unmount()
   expect(await cache.getAllSubmissionCaches()).toHaveLength(before + 1)
-  expect(file.exists).toBe(false)
 })

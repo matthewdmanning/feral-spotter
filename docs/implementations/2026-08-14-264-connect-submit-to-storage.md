@@ -219,7 +219,7 @@ See [shared UI work](2026-10-28-ui-component-spacing-alignment.md) and the
 ## 2026-11-12 — test cleanup
 
 **Purpose:** Prevent deferred photo deletion from accessing Expo after Jest teardown.
-**Change:** The row-creation regression test controls and drains the deferred cleanup
-timer before unmounting, using Expo's real file wrapper and supplied native mock to
-assert that the captured cache file was deleted. Real timers are restored after the
-test. Production deletion timing is unchanged.
+**Change:** The row-creation regression test now matches `completeDraft`'s synchronous
+photo cleanup instead of requesting deferred deletion. It uses Expo's real file
+wrapper and supplied native mock to assert that the captured cache file is deleted
+before the cleanup call returns. Production deletion timing is unchanged.
