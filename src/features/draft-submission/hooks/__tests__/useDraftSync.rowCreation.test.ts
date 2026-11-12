@@ -1,4 +1,5 @@
 import { act, renderHook } from '@testing-library/react-native'
+import { File, Paths } from 'expo-file-system'
 
 import * as cache from '@/src/shared/lib/submissionCache'
 import { useDraftSync } from '@/src/features/draft-submission/hooks/useDraftSync'
@@ -11,6 +12,8 @@ jest.mock('@/src/core/location/liveFix', () => ({
   useLocationCapture: () => ({ status: 'idle', result: null }),
 }))
 
+afterEach(() => jest.useRealTimers())
+
 // #224 follow-up: opening Details with no row creates exactly one, carrying
 // the photos already in the draft; the post-Submit clear must not mint a
 // second, empty row.
@@ -18,9 +21,11 @@ it('creates one row for a draft with none, and no stray row after Submit', async
   useSubmissionStore.getState().clearDraft()
   await cache.clearCurrentCacheId()
   usePhotoStore.setState({ photos: [], source: null, submissionId: 'sub-1' })
+  const file = new File(Paths.cache, 'row-creation.jpg')
+  file.create()
   usePhotoStore.getState().addPhoto({
     local_id: 'photo-1',
-    uri: 'file:///p1.jpg',
+    uri: file.uri,
     uploaded: false,
     upload_progress: 0,
     width: 10,
@@ -42,11 +47,16 @@ it('creates one row for a draft with none, and no stray row after Submit', async
   // What completeDraft does: flip, release the pointer, clear the stores.
   await cache.updateSubmissionCache(id!, { status: 'Submitted' })
   await cache.clearCurrentCacheId()
+  jest.useFakeTimers()
   await act(() => {
     useSubmissionStore.getState().clearDraft()
     usePhotoStore.getState().clearPhotos(true)
   })
-  await act(async () => {})
+  // Finish deferred file deletion while Expo's test environment is alive.
+  await act(async () => {
+    await jest.runOnlyPendingTimersAsync()
+  })
   await unmount()
   expect(await cache.getAllSubmissionCaches()).toHaveLength(before + 1)
+  expect(file.exists).toBe(false)
 })
