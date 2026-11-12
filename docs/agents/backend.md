@@ -16,7 +16,7 @@ Organization data uses server-only Firestore (ADR-0008). Submission metadata and
   `submissions/{uid}/{submissionId}/{fileName}` (raw Firebase Auth uid, not
   a hash — see ADR-0005's 2026-08-16 amendment). See
   [ADR-0005](../adr/0005-firebase-storage-for-uploads.md).
-- **Upload limits, no database** (ADR-0005's 2026-11-03 amendment):
+- **Upload limits, no database for Submissions** (ADR-0005's 2026-11-03 amendment):
   - 10 photos per Submission: `storage.rules` accepts only the object
     names `photo-0` … `photo-9`; each photo's `upload_slot` names it.
   - 250 Submissions per uid: `functions/` counts the uid's `metadata.json`
@@ -35,7 +35,7 @@ Firebase. Live-project test-driving risks real user data and produces
 infrastructure-level errors that have nothing to do with the code under
 test — a 412 bucket-permission error once cost a session's debugging time
 at the wrong layer. Ports come from `firebase.json` as-is (Auth `9099`,
-Storage `9199`); emulator mode needs **no change** to
+Storage `9199`, Firestore `8080`); emulator mode needs **no change** to
 `storage.rules`, so it exercises the actually-deployed
 rules.
 
@@ -92,7 +92,7 @@ checks), see [test-driving.md](test-driving.md).
 
 Firestore stores organization data under ADR-0008. The authenticated Functions API is the only client entrypoint. Firestore Rules deny direct access, including membership/role writes. Server transactions enforce ownership, deletion guards, epochs, and idempotency; feature adapters supply member authorization.
 
-Firestore joins the local Auth/Storage emulator lane on port 8080. Use the configured local emulators for verification; an unavailable Firestore service returns a retryable error. Organization schema, indexes, and fresh setup instructions live in the implementation note and saved spec.
+Firestore joins the local Auth/Storage emulator lane on port 8080 (`npm run test:rules` starts all three). Use the configured local emulators for verification; an unavailable Firestore service returns a retryable error. Organization schema, indexes, and fresh setup instructions live in the implementation note and saved spec.
 
 ## Approved resources
 

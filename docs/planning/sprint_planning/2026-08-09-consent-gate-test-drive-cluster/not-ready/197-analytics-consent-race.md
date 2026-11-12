@@ -44,5 +44,5 @@ Either:
 ## Suggested skills
 
 - If fixing without device proof: `tdd` — this is provider-mount-order
-  logic, model the sequence per [testing.md](../../../agents/testing.md)
+  logic, model the sequence per [testing.md](../../../../agents/testing.md)
   rather than adding an isolated regression test only.

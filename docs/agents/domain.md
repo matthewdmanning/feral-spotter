@@ -91,7 +91,7 @@ Drawing a bounding box around each cat in a photo. The app's one complex operati
 Live photo-capture screen (`src/features/camera-control/screens/camera/`). Distinct from Box Annotation (`src/features/annotate/screens/annotate/`) — often confused since both handle a just-taken photo.
 
 **Capture backend**:
-The implementation serving the Camera screen. `visioncamera` is default and fallback; `native` is the Camera seam, chosen by the `native_camera_capture` setting. Changing backend needs an explicit product decision plus evidence that supported devices and release builds include it — never a refactoring side effect.
+The implementation serving the Camera screen. `native` (the Camera seam) is the shipped default; `visioncamera` is the fallback. The `native_camera_capture` setting chooses (default `true`, overridable by `EXPO_PUBLIC_NATIVE_CAMERA_CAPTURE`). Changing backend needs an explicit product decision plus evidence that supported devices and release builds include it — never a refactoring side effect.
 _Avoid_: capture pipeline, camera variant (existing telemetry fields with narrower meanings; see note below).
 
 **Capture tuning**:
