@@ -79,3 +79,14 @@ management journey now verifies a catalog name containing literal replacement
 characters and braces survives the review dialog. Authorization, coverage,
 rollout and outbox behavior are unchanged. See [shared UI work](2026-10-28-ui-component-spacing-alignment.md)
 and the [review](../reviews/2026-11-11-review-ui-ux.md).
+
+## 2026-11-12 — test: retain UI review regressions
+
+**Purpose:** Selectively retain the review branch's UI checks after the feature-folder migration.
+**Change:** Tests exercise long TextButton wrapping and enabled presses, SharingCheckbox
+checked state and semantic icon styling through the shared CheckboxBox, and
+SharingSettings card padding/radius with native-glass and reduced-transparency
+fallback props through the real GlassSurface. They use current stores and theme
+tokens without restoring obsolete components or copy catalogs. Native appearance
+remains unverified. The Sighting detail permission placement is documented in the
+[history note](2026-10-26-feat-reports-history-map.md).
