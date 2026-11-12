@@ -24,3 +24,23 @@ A cancellable, single-flight pager distinguishes loading, refresh, empty, offlin
 Client journeys verify explicit consent, confirmation changes, pagination, and clearing after access loss. Functions tests verify actual image metadata removal and authorization denial. Emulator tests cover indexed pagination, privacy, revocation, account deletion, and concurrent permission writes.
 
 See [combined verification](2026-11-07-feat-organizations.md#verification) for current test counts and limitations. No live provisioning or deployment was performed.
+
+## 2026-11-09 — extension
+
+**Purpose:** Viewers can comment on and react to shared pins.
+**Change:** Shared Sighting data stays read-only; the detail card adds the pin interactions thread. See [pin interactions](2026-11-09-pin-interactions.md).
+
+## 2026-11-10 — fix
+
+**Purpose:** Review findings: a failed background refresh blanked loaded results; polling reloaded every loaded page.
+**Change:**
+
+- `useOrganizationPager` clears pages only when access is lost (`isAccessLost`: 401/403/404); other failures keep them beside the error.
+- Auto-refresh (30 s) runs only while one page is loaded; after "load more", refresh is manual. TanStack refetches every loaded page in sequence.
+- `sharedPhoto` pins the Storage generation as returned, without `Number()` conversion.
+- Test: `sharedSightings.journey.test.tsx` asserts a 503 refresh keeps both pages; it failed before the fix. Pin interactions use the same pager: [pin interactions](2026-11-09-pin-interactions.md).
+
+## 2026-11-12 — fix
+
+**Purpose:** Integrate the pin comment composer into the native Shared Sightings screen.
+**Change:** The host scroll view allows handled child taps while the on-screen keyboard is open, so Post receives the first tap. Pin interaction identity includes the account and organization as well as the Sighting. The pager exposes access-loss state for the [interaction controls](2026-11-09-pin-interactions.md) to clear local receipts and disable writes. Native keyboard placement is unverified because `adb` is unavailable.

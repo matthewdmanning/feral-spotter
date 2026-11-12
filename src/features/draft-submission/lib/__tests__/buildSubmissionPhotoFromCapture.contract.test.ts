@@ -9,8 +9,6 @@
 
 import { buildSubmissionPhotoFromCapture } from '@/src/features/draft-submission/lib/buildSubmissionPhoto'
 
-jest.mock('expo-crypto', () => ({ randomUUID: () => 'test-uuid' }))
-
 const SHUTTER = '2026-09-28T10:00:00.000Z'
 
 describe('captured photo contract', () => {

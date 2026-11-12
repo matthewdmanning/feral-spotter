@@ -6,6 +6,7 @@ import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 import { fakeOrganizationsService } from '@/src/test-utils/organizationsService'
+import { queryWrapper } from '@/src/test-utils/queryClient'
 import type { MembershipSummary } from '@/functions/src/organizations/membership/domain'
 
 test('join, approval refresh and name editing work while sharing is off; account switching clears names and forms', async () => {
@@ -38,7 +39,10 @@ test('join, approval refresh and name editing work while sharing is off; account
       },
     }
   })
-  await renderRouter({ index: () => <MembershipsScreen /> })
+  await renderRouter(
+    { index: () => <MembershipsScreen /> },
+    { wrapper: queryWrapper().wrapper },
+  )
   await screen.findByText('No memberships or pending requests.')
   await user.type(screen.getByLabelText('Invite code'), 'a'.repeat(32))
   await user.type(screen.getByLabelText('Display name'), 'Member name')
@@ -78,7 +82,10 @@ test('initial loading is distinct from empty and a failed request offers recover
         finish = resolve
       }),
   )
-  await renderRouter({ index: () => <MembershipsScreen /> })
+  await renderRouter(
+    { index: () => <MembershipsScreen /> },
+    { wrapper: queryWrapper().wrapper },
+  )
   expect(screen.getByText('Loading memberships…')).toBeOnTheScreen()
   expect(screen.queryByText('No memberships or pending requests.')).toBeNull()
   await act(async () => {
@@ -119,7 +126,10 @@ test('foreground refresh cannot discard an in-flight membership mutation', async
         })
       : { status: 200, body: { memberships: [] } },
   )
-  await renderRouter({ index: () => <MembershipsScreen /> })
+  await renderRouter(
+    { index: () => <MembershipsScreen /> },
+    { wrapper: queryWrapper().wrapper },
+  )
   await screen.findByText('No memberships or pending requests.')
   await user.type(screen.getByLabelText('Invite code'), 'a'.repeat(32))
   await user.type(screen.getByLabelText('Display name'), 'Member')

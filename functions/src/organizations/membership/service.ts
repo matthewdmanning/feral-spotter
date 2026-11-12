@@ -6,7 +6,7 @@ import { makePermission, validateGrant } from '../api'
 import { readLedger, updateLedger } from '../store'
 import { validId, type Permission } from '../domain'
 import { RequestError } from '../errors'
-import { memberName, type LeaveChoice } from './domain'
+import { memberName, type LeaveChoice, type Membership } from './domain'
 
 const invitePath = (code: string) =>
   `organizationInvites/${createHash('sha256').update(code).digest('hex')}`
@@ -77,6 +77,15 @@ export async function renameMember(
   })
 }
 
+/** Names one leave attempt's block and its ledger receipts. */
+function leaveToken(uid: string, organizationId: string, member: Membership) {
+  const { mutationId, attempt } = member.exit!
+  return createHash('sha256')
+    .update(
+      `${uid}/${organizationId}/${member.requestId}/${mutationId}/${attempt}`,
+    )
+    .digest('hex')
+}
 /** A durable saga: block grants, change permissions, end membership, release the block. */
 export async function leaveOrganization(
   uid: string,
@@ -111,14 +120,14 @@ export async function leaveOrganization(
       return records
     }
     if (member.status === 'left' || member.status === 'removed') return records
-    return { ...records, [organizationId]: { ...member, exit: choice } }
+    // A fresh attempt id: an aborted attempt's receipts never satisfy a retry.
+    const exit = { ...choice, attempt: randomBytes(16).toString('hex') }
+    return { ...records, [organizationId]: { ...member, exit } }
   })
   const member = records[organizationId]
   if (!member.exit) return
   const saved = member.exit
-  const token = createHash('sha256')
-    .update(`${uid}/${organizationId}/${member.requestId}/${saved.mutationId}`)
-    .digest('hex')
+  const token = leaveToken(uid, organizationId, member)
   await updateLedger(uid, `block-${token}`, async () => ({
     type: 'blockOrganization',
     organizationId,
@@ -231,6 +240,22 @@ export async function moderateMembership(
       `remove-${randomBytes(16).toString('hex')}`,
       async () => ({ type: 'revokeOrganization', organizationId }),
     )
+    // A leave that could not finish still holds its block; removal ends it.
+    const stuck = (await readMemberships(uid))[organizationId]
+    if (stuck?.exit?.attempt) {
+      const token = leaveToken(uid, organizationId, stuck)
+      try {
+        await updateLedger(uid, `release-${token}`, async () => ({
+          type: 'unblockOrganization',
+          organizationId,
+          token,
+        }))
+      } catch (error) {
+        // 409: the attempt never placed its block, or already released it.
+        if (!(error instanceof RequestError && error.status === 409))
+          throw error
+      }
+    }
     await changeMembership(uid, organizationId, (records) => {
       const { exit: _exit, ...current } = records[organizationId]
       return { ...records, [organizationId]: { ...current, status: 'removed' } }

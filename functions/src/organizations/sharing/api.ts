@@ -96,7 +96,7 @@ export function createSharingExtension(
       // Pin the downloaded generation to the one whose size was checked.
       const [bytes] = await getStorage()
         .bucket()
-        .file(path, { generation: Number(metadata.generation) })
+        .file(path, { generation: metadata.generation })
         .download()
       try {
         sanitized = await sanitizePhoto(bytes)

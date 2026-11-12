@@ -1,19 +1,18 @@
-import { render, waitFor } from '@testing-library/react-native'
+import { act, render, waitFor } from '@testing-library/react-native'
 import React from 'react'
 import { router } from 'expo-router'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import CreateSubmissionScreen from '@/src/features/draft-submission/screens/create/index'
+import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
+import { observedCat } from '@/src/test-utils/catFixtures'
 
 /**
  * Model of the Cat List zero-friction on-ramp gate (#173): with no cats
  * recorded, Cat List renders nothing and redirects straight into annotate;
  * with at least one cat, it renders normally. Mirrors
  * HomeScreen.photoSourceGate.model.test.tsx's pattern — render the real
- * screen, mock its store/router deps, gate on a small machine rather than
- * driving the persisted useSubmissionStore live (same react-test-renderer +
- * AsyncStorage-rehydration crash this repo's other screen tests route
- * around).
+ * screen against the real submission store, gate on a small machine.
  */
 
 jest.mock('expo-router', () => ({
@@ -21,8 +20,6 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({}),
   router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() },
 }))
-
-jest.mock('expo-crypto', () => ({ randomUUID: jest.fn(() => 'sub-1') }))
 
 jest.mock('@/src/shared/lib/submissionCache', () => ({
   createSubmissionCache: jest.fn().mockResolvedValue({}),
@@ -42,32 +39,6 @@ jest.mock('@/src/core/location/liveFix', () => ({
     startedAt: null,
     result: undefined,
   }),
-}))
-
-type Cat = {
-  local_id: string
-  age: string
-  pattern: string
-  hair_length: string
-}
-
-let mockCats: Cat[] = []
-
-jest.mock('@/src/shared/hooks/useSubmissionStore', () => ({
-  useSubmissionStore: (
-    sel: (s: {
-      submission: { location_type: string; time_type: string }
-      cats: Cat[]
-      setSubmissionLocation: jest.Mock
-      setManualTime: jest.Mock
-    }) => unknown,
-  ) =>
-    sel({
-      submission: { location_type: 'device', time_type: 'device' },
-      cats: mockCats,
-      setSubmissionLocation: jest.fn(),
-      setManualTime: jest.fn(),
-    }),
 }))
 
 // emptiedAfterHavingCats is a distinct state from emptyList, not a return
@@ -95,14 +66,11 @@ const gateMachine = createMachine({
 })
 
 describe('Cat List auto-skip gate — model-based test', () => {
-  let rerender: (ui: React.ReactElement) => void
   let queryByText: Awaited<ReturnType<typeof render>>['queryByText']
 
   beforeEach(async () => {
-    mockCats = []
     const result = await render(<CreateSubmissionScreen />)
     queryByText = result.queryByText
-    rerender = result.rerender
   })
 
   const model = createTestModel(gateMachine)
@@ -137,19 +105,10 @@ describe('Cat List auto-skip gate — model-based test', () => {
     },
     events: {
       CAT_ADDED: async () => {
-        mockCats = [
-          {
-            local_id: 'cat-1',
-            age: 'adult',
-            pattern: 'tabby',
-            hair_length: 'short',
-          },
-        ]
-        await rerender(<CreateSubmissionScreen />)
+        await act(() => useSubmissionStore.setState({ cats: [observedCat()] }))
       },
       CAT_REMOVED: async () => {
-        mockCats = []
-        await rerender(<CreateSubmissionScreen />)
+        await act(() => useSubmissionStore.setState({ cats: [] }))
       },
     },
   }

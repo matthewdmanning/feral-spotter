@@ -40,6 +40,10 @@ export const organizationErrorMessage = (error: unknown): string =>
   error instanceof OrganizationSyncError
     ? error.message
     : 'Unable to complete this request. Please retry.'
+/** The account can no longer see this data; a temporary failure is not this. */
+export const isAccessLost = (error: unknown) =>
+  error instanceof OrganizationSyncError &&
+  [401, 403, 404].includes(error.status)
 export const isRequestCancelled = (error: unknown) =>
   error instanceof Error && error.name === 'AbortError'
 function cancelled() {

@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Text } from '@/src/shared/ui/atoms/Text'
 import { View } from 'react-native'
 import { formatCopy, organizationCopy } from '@/src/shared/config/text'
-
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import { TextField } from '@/src/shared/ui/atoms/TextField'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'

@@ -1,7 +1,6 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
-import { queryClient } from '@/src/shared/lib/queryClient'
 import {
   organizationRequest,
   organizationErrorMessage,
@@ -44,51 +43,46 @@ async function fetchMemberships(
 }
 
 export function useMemberships() {
+  const queryClient = useQueryClient()
   const uid = useAuthStore((s) => s.user?.uid)
   const online = useUIStore((s) => s.isOnline)
   const queryKey = ['organizations', uid, 'memberships']
   const visible = useVisibleQueryScope(queryKey, !!uid && online)
   // Writes are never cancelled: their idempotent server outcome must be applied.
-  const mutation = useMutation(
-    {
-      mutationFn: (body: Body) =>
-        fetchMemberships(body, uid, body.organizationId),
-      onSuccess: (result) => queryClient.setQueryData(queryKey, result),
-      onError: async (error, body) => {
-        if (isRequestCancelled(error)) return
-        // A lost mutation response is ambiguous: reconcile the durable server checkpoint first.
-        const reconciled = await fetchMemberships(
-          {
-            action: 'memberships',
-            includePermissions: ['leaveOrganization', 'resumeLeaving'].includes(
-              String(body.action),
-            ),
-          },
-          uid,
-          body.organizationId,
-        ).catch(() => undefined)
-        if (
-          error instanceof OrganizationSyncError &&
-          [401, 403].includes(error.status)
-        )
-          queryClient.setQueryData(queryKey, { memberships: [] })
-        else if (reconciled) queryClient.setQueryData(queryKey, reconciled)
-      },
+  const mutation = useMutation({
+    mutationFn: (body: Body) =>
+      fetchMemberships(body, uid, body.organizationId),
+    onSuccess: (result) => queryClient.setQueryData(queryKey, result),
+    onError: async (error, body) => {
+      if (isRequestCancelled(error)) return
+      // A lost mutation response is ambiguous: reconcile the durable server checkpoint first.
+      const reconciled = await fetchMemberships(
+        {
+          action: 'memberships',
+          includePermissions: ['leaveOrganization', 'resumeLeaving'].includes(
+            String(body.action),
+          ),
+        },
+        uid,
+        body.organizationId,
+      ).catch(() => undefined)
+      if (
+        error instanceof OrganizationSyncError &&
+        [401, 403].includes(error.status)
+      )
+        queryClient.setQueryData(queryKey, { memberships: [] })
+      else if (reconciled) queryClient.setQueryData(queryKey, reconciled)
     },
-    queryClient,
-  )
-  const query = useQuery(
-    {
-      queryKey,
-      // A refresh during a write could replace its acknowledged result with an older read.
-      enabled: visible && !mutation.isPending,
-      gcTime: 0,
-      staleTime: 30000,
-      queryFn: ({ signal }) =>
-        fetchMemberships({ action: 'memberships' }, uid, undefined, signal),
-    },
-    queryClient,
-  )
+  })
+  const query = useQuery({
+    queryKey,
+    // A refresh during a write could replace its acknowledged result with an older read.
+    enabled: visible && !mutation.isPending,
+    gcTime: 0,
+    staleTime: 30000,
+    queryFn: ({ signal }) =>
+      fetchMemberships({ action: 'memberships' }, uid, undefined, signal),
+  })
   const failure = mutation.error ?? (query.isError ? query.error : null)
   return {
     memberships:

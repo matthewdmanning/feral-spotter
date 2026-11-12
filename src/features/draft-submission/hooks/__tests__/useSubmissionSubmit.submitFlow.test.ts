@@ -27,10 +27,6 @@ jest.mock('expo-router', () => ({
   },
 }))
 
-jest.mock('expo-crypto', () => ({
-  randomUUID: jest.fn(() => 'cat-1'),
-}))
-
 jest.mock('posthog-react-native', () => ({
   usePostHog: () => null,
 }))
@@ -430,7 +426,7 @@ describe('useSubmissionSubmit submit flow', () => {
           .getState()
           .dialog?.buttons.find((b) => b.text === 'Submit')
         expect(submit?.onPress).toEqual(expect.any(Function))
-        const sending = submit!.onPress!()
+        const sending = submit!.onPress!() as unknown as Promise<void>
         await jest.advanceTimersByTimeAsync(31_000)
         await sending
       })

@@ -5,6 +5,7 @@ import { removePhotoFromDraft } from '@/src/features/draft-submission/hooks/remo
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
 
 /**
  * A photo lives in three stores and an upload. The camera's discard used to
@@ -41,14 +42,7 @@ beforeEach(() => {
       height: 10,
       cloud_storage_path: 'cloud/p1',
     },
-    {
-      local_id: 'p2',
-      uri: 'file:///p2.jpg',
-      uploaded: false,
-      upload_progress: 0,
-      width: 10,
-      height: 10,
-    },
+    submissionPhoto({ local_id: 'p2', width: 10, height: 10 }),
   ])
   useBoundingBoxStore.getState().addBox('cat-1', 'p1', BOX)
   useBoundingBoxStore.getState().addBox('cat-1', 'p2', BOX)

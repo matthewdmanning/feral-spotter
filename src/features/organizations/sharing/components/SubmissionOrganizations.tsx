@@ -5,7 +5,6 @@ import {
   formatCopy,
   organizationCopy,
 } from '@/src/shared/config/text'
-
 import { router } from 'expo-router'
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import { TextButton } from '@/src/shared/ui/atoms/TextButton'

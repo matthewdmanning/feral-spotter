@@ -90,6 +90,23 @@ export async function isActiveMember(
   )
 }
 
+/** Display name of an active, non-deleting member; null otherwise. */
+export async function activeMemberName(
+  uid: string,
+  organizationId: string,
+): Promise<string | null> {
+  const [account, member] = await db().getAll(
+    accountRef(uid),
+    membershipRef(uid, organizationId),
+  )
+  return account.exists &&
+    !account.get('deleting') &&
+    member.get('status') === 'active' &&
+    !member.get('exit')
+    ? String(member.get('displayName'))
+    : null
+}
+
 export async function roster(
   organizationId: string,
   cursor?: unknown,

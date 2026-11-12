@@ -17,6 +17,7 @@ import {
   type SharedSighting,
 } from '@/src/features/organizations/sharing/hooks/useSharedSightings'
 import { SharedSightingsMap } from '@/src/features/organizations/sharing/components/SharedSightingsMap'
+import { PinInteractions } from '@/src/features/organizations/interactions/components/PinInteractions'
 
 function SharedPhoto({
   uid,
@@ -86,7 +87,10 @@ export default function SharedSightingsScreen() {
   const uid = query.uid
   const selected = query.sightings.find((s) => s.id === selectedId)
   return (
-    <ScrollView contentContainerStyle={layout.content}>
+    <ScrollView
+      contentContainerStyle={layout.content}
+      keyboardShouldPersistTaps="handled"
+    >
       <Stack.Screen options={{ title: 'Shared Sightings' }} />
       <Text style={styles.hint}>
         Shaded areas show approximate locations. Pins show explicitly shared
@@ -176,6 +180,11 @@ export default function SharedSightingsScreen() {
                 index={index}
               />
             ))}
+          <PinInteractions
+            key={`${uid}-${id}-${selected.id}`}
+            organizationId={id}
+            pinId={selected.id}
+          />
         </View>
       )}
     </ScrollView>
