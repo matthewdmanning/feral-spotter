@@ -133,3 +133,16 @@ Regression coverage: `pinInteractions.feedback.test.tsx` exercises delayed posti
 Verified: all 11 organization client suites / 36 tests; `npm run typecheck` (app, server, and tests); ESLint on changed interaction, pager, and host code; Prettier on changed files; `git diff --check`.
 
 Native device layout, on-screen keyboard placement, and 2.0× text remain unverified: `adb` is unavailable in this environment. No web integration or external keyboard support was added.
+
+## 2026-11-12 — extension
+
+**Purpose:** Roll out pin interactions independently of organization sharing.
+**Change:** The case-sensitive PostHog flag `PinInteractions` and the existing `Organizations` flag must both evaluate on. The existing installation-scoped, analytics-independent request evaluates both flags together. Pin interactions default off when the child flag is missing, disabled, or the evaluation body is invalid; a parent-off result also disables the child.
+
+The existing cache now records both evaluations for up to 24 hours. A fresh cached result remains usable during transport failures, matching the existing Organizations policy. Legacy caches without the child evaluation never implicitly enable interactions. A successful off evaluation replaces a previously cached on evaluation.
+
+The component unmounts its controls and local receipts when either flag is off. The data hook also gates reads, polling, pagination, retries, and writes. Existing visibility cleanup and response guards prevent late writes from restoring cleared UI. Shared Sightings remains available when only `PinInteractions` is off.
+
+Configure `PinInteractions` in the same PostHog project as `Organizations`; default it off and enable it for the intended installation cohort. Existing foreground/reconnection evaluation picks up changes. These are client rollout gates, matching [Organizations](2026-11-07-feat-organizations.md); server membership and share authorization remain authoritative.
+
+Verification: all 11 organization client suites / 40 tests pass, including independent flag evaluation, parent-off precedence, missing/off/error cases, cache freshness and legacy caches, disabled UI with no interaction requests, cache disposal, and re-enabling without stale receipts. Flag HTTP tests now use the shared MSW boundary. Full app/server/test type checking and ESLint on changed flag and interaction code pass. No live PostHog configuration or native device validation was performed.

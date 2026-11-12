@@ -9,7 +9,7 @@ import {
   isAccessLost,
   OrganizationSyncError,
 } from '@/src/features/organizations/lib/api'
-import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
+import { usePinInteractionsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 import { useOrganizationPager } from '@/src/features/organizations/hooks/useOrganizationPager'
 import { useVisibleQueryScope } from '@/src/features/organizations/hooks/useVisibleQueryScope'
 import { pinInteractionCopy } from '@/src/features/organizations/interactions/copy'
@@ -53,7 +53,7 @@ export function usePinInteractions(organizationId: string, pinId: string) {
   const queryClient = useQueryClient()
   const uid = useAuthStore((s) => s.user?.uid)
   const online = useUIStore((s) => s.isOnline)
-  const enabled = useOrganizationsFlag((s) => s.enabled)
+  const enabled = usePinInteractionsFlag()
   const scope = JSON.stringify([uid, organizationId, pinId])
   const [feedback, setFeedback] = useState(() => emptyFeedback(scope))
   const lifecycle = useRef({ generation: 0, active: false })
@@ -180,7 +180,7 @@ export function usePinInteractions(organizationId: string, pinId: string) {
   }, [scope, active])
   const ready = active && !mutation.isPending
   const run = async (write: Write) => {
-    if (!ready || inFlight.current) return false
+    if (!ready || !lifecycle.current.active || inFlight.current) return false
     inFlight.current = true
     const generation = lifecycle.current.generation
     setFeedback((current) => ({
@@ -206,8 +206,9 @@ export function usePinInteractions(organizationId: string, pinId: string) {
     // Receipts stay outside cursor pages; there may be an unloaded gap.
     receipts: local.receipts.filter((comment) => !loaded.has(comment.id)),
     cursor: active ? comments.cursor : null,
-    loadMore: comments.loadMore,
-    refreshComments: comments.refresh,
+    loadMore: () => (active ? comments.loadMore() : Promise.resolve(undefined)),
+    refreshComments: () =>
+      active ? comments.refresh() : Promise.resolve(undefined),
     commentsBusy: comments.busy,
     initialLoading: comments.initialLoading,
     threadError:
@@ -224,6 +225,7 @@ export function usePinInteractions(organizationId: string, pinId: string) {
         ? organizationErrorMessage(reactions.error)
         : ''),
     retryReactions: () => {
+      if (!active) return Promise.resolve(undefined)
       setFeedback((current) => ({ ...current, reactionError: '' }))
       return reactions.refetch()
     },

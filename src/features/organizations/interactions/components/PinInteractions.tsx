@@ -4,6 +4,7 @@ import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import { TextButton } from '@/src/shared/ui/atoms/TextButton'
 import { TextField } from '@/src/shared/ui/atoms/TextField'
 import { OrganizationLoading } from '@/src/features/organizations/components/OrganizationLoading'
+import { usePinInteractionsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 import { styles as common } from '@/src/features/organizations/components/styles'
 import { usePinInteractions } from '@/src/features/organizations/interactions/hooks/usePinInteractions'
 import { pinInteractionCopy as copy } from '@/src/features/organizations/interactions/copy'
@@ -14,14 +15,21 @@ import {
 } from '@/functions/src/organizations/interactions/domain'
 import { styles } from './styles'
 
-/** Reactions and comment thread for one shared pin. */
-export function PinInteractions({
-  organizationId,
-  pinId,
-}: {
+interface PinInteractionsProps {
   organizationId: string
   pinId: string
-}) {
+}
+
+/** Reactions and comment thread for one shared pin. */
+export function PinInteractions(props: PinInteractionsProps) {
+  const enabled = usePinInteractionsFlag()
+  return enabled ? <EnabledPinInteractions {...props} /> : null
+}
+
+function EnabledPinInteractions({
+  organizationId,
+  pinId,
+}: PinInteractionsProps) {
   const pin = usePinInteractions(organizationId, pinId)
   const [text, setText] = useState('')
   const counts = new Map(pin.reactions.map((r) => [r.key, r]))

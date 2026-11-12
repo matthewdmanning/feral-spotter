@@ -89,7 +89,7 @@ test('a member reacts, retries a lost comment once, and deletes only their own',
   const user = userEvent.setup()
   useAuthStore.setState({ user: { uid: 'member', email: null }, isReady: true })
   useUIStore.setState({ isOnline: true })
-  useOrganizationsFlag.setState({ enabled: true })
+  useOrganizationsFlag.setState({ enabled: true, pinInteractionsEnabled: true })
   const service = await serve()
   await renderRouter(
     {

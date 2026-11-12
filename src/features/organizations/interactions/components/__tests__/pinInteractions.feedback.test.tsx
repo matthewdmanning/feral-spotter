@@ -42,7 +42,7 @@ async function mount() {
 beforeEach(() => {
   useAuthStore.setState({ user: { uid: 'member', email: null }, isReady: true })
   useUIStore.setState({ isOnline: true })
-  useOrganizationsFlag.setState({ enabled: true })
+  useOrganizationsFlag.setState({ enabled: true, pinInteractionsEnabled: true })
 })
 
 test('a delayed post locks only the submitted draft, then restores the composer', async () => {
@@ -265,5 +265,65 @@ test('a late post response cannot restore a cleared receipt, and retry keeps its
   await act(async () => {
     useUIStore.setState({ isOnline: true })
   })
+  expect(screen.queryByText('Posted')).toBeNull()
+})
+
+test('the independent flag hides controls, stops requests and clears local receipts without disabling sharing', async () => {
+  const user = userEvent.setup()
+  useOrganizationsFlag.setState({ pinInteractionsEnabled: false })
+  const service = await fakeOrganizationsService((body) => {
+    if (body.action === 'pinComments')
+      return { status: 200, body: { comments: [], cursor: null } }
+    if (body.action === 'pinReactions')
+      return { status: 200, body: { reactions: reactionState() } }
+    if (body.action === 'addPinComment')
+      return {
+        status: 200,
+        body: {
+          comment: {
+            id: 'posted',
+            body: body.body,
+            mine: true,
+            author: 'Me',
+            createdAt: '2026-11-12T00:00:00Z',
+          },
+        },
+      }
+    return { status: 400 }
+  })
+  const client = await mount()
+  expect(screen.queryByLabelText('Add a comment')).toBeNull()
+  expect(service.requests).toHaveLength(0)
+  await act(async () => {
+    useOrganizationsFlag.setState({ pinInteractionsEnabled: true })
+  })
+  await screen.findByText('No comments yet.')
+  await user.type(screen.getByLabelText('Add a comment'), 'Visible receipt')
+  await user.press(screen.getByRole('button', { name: 'Post comment' }))
+  expect(await screen.findByText('Posted')).toBeOnTheScreen()
+  await act(async () => {
+    useOrganizationsFlag.setState({ pinInteractionsEnabled: false })
+  })
+  expect(screen.queryByLabelText('Add a comment')).toBeNull()
+  expect(screen.queryByText('Posted')).toBeNull()
+  expect(useOrganizationsFlag.getState().enabled).toBe(true)
+  await waitFor(() =>
+    expect(
+      client.getQueriesData({ queryKey: ['organizations', 'member', 'org'] }),
+    ).toHaveLength(0),
+  )
+  const requestCount = service.requests.length
+  await act(async () => {
+    useOrganizationsFlag.setState({
+      enabled: false,
+      pinInteractionsEnabled: true,
+    })
+  })
+  expect(screen.queryByLabelText('Add a comment')).toBeNull()
+  expect(service.requests).toHaveLength(requestCount)
+  await act(async () => {
+    useOrganizationsFlag.setState({ enabled: true })
+  })
+  await screen.findByText('No comments yet.')
   expect(screen.queryByText('Posted')).toBeNull()
 })
