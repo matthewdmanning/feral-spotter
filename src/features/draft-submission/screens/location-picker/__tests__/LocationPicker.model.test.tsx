@@ -25,6 +25,10 @@ import LocationPickerScreen from '@/src/features/draft-submission/screens/locati
  */
 
 const MOVED = { latitude: 10, longitude: 20 }
+let mockCameraPosition: {
+  coordinates: { latitude: number; longitude: number }
+  zoom: number
+}
 const INITIAL_SUBMISSION: SubmissionDraft = {
   location_type: 'device',
   time_type: 'manual',
@@ -44,12 +48,20 @@ jest.mock('expo-maps', () => {
   const { Pressable } = jest.requireActual('react-native')
   return {
     GoogleMaps: {
-      View: ({ onCameraMove }: { onCameraMove?: (e: unknown) => void }) =>
-        ReactLocal.createElement(Pressable, {
+      View: ({
+        onCameraMove,
+        cameraPosition,
+      }: {
+        onCameraMove?: (e: unknown) => void
+        cameraPosition?: typeof mockCameraPosition
+      }) => {
+        mockCameraPosition = cameraPosition!
+        return ReactLocal.createElement(Pressable, {
           testID: 'camera-move',
           onPress: () =>
             onCameraMove?.({ coordinates: { latitude: 10, longitude: 20 } }),
-        }),
+        })
+      },
     },
   }
 })
@@ -168,4 +180,51 @@ it('bounds the map and pin together while keeping footer height outside their vi
   expect(within(viewport).getByTestId('location-map-pin')).toBeOnTheScreen()
   expect(within(viewport).queryByText('Set location')).toBeNull()
   expect(screen.getByText('Set location')).toBeOnTheScreen()
+})
+
+it('reopens on the existing manual point before allowing a replacement', async () => {
+  const existing = {
+    ...INITIAL_SUBMISSION,
+    location_type: 'pin' as const,
+    latitude: 40,
+    longitude: -75,
+    accuracy: null,
+  }
+  useSubmissionStore.setState({ submission: existing })
+
+  await render(<LocationPickerScreen />)
+
+  expect(mockCameraPosition.coordinates).toEqual({
+    latitude: 40,
+    longitude: -75,
+  })
+
+  await userEvent.press(screen.getByTestId('camera-move'))
+  await userEvent.press(screen.getByText('Set location'))
+
+  expect(useSubmissionStore.getState().submission).toMatchObject({
+    location_type: 'pin',
+    latitude: 10,
+    longitude: 20,
+    accuracy: null,
+  })
+  expect(router.back).toHaveBeenCalledTimes(1)
+})
+
+it('cancelling a reopened picker preserves the existing manual point', async () => {
+  const existing = {
+    ...INITIAL_SUBMISSION,
+    location_type: 'pin' as const,
+    latitude: 40,
+    longitude: -75,
+    accuracy: null,
+  }
+  useSubmissionStore.setState({ submission: existing })
+
+  await render(<LocationPickerScreen />)
+  await userEvent.press(screen.getByTestId('camera-move'))
+  await userEvent.press(screen.getByText('Cancel'))
+
+  expect(useSubmissionStore.getState().submission).toEqual(existing)
+  expect(router.back).toHaveBeenCalledTimes(1)
 })

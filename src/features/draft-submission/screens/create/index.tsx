@@ -18,6 +18,7 @@ import { useSubmissionSubmit } from '@/src/features/draft-submission/hooks/useSu
 import { usePhotoEntrypoints } from '@/src/features/library-picker/hooks/usePhotoEntrypoints'
 import { useRemoveCat } from '@/src/features/draft-submission/hooks/useRemoveCat'
 import { draftWarnings } from '@/src/features/draft-submission/lib/status'
+import { submissionCopy } from '@/src/shared/config/text'
 import { router } from 'expo-router'
 import { CaretDownIcon } from 'phosphor-react-native/src/icons/CaretDown'
 import { CaretUpIcon } from 'phosphor-react-native/src/icons/CaretUp'
@@ -36,7 +37,7 @@ import { styles } from './index.styles'
 // #97's split: this screen is now the Cats List + Submission Details landing
 // view. Location/Time have no editable fields anymore — a Live fix runs in
 // the background from camera-open (#128) and is only ever corrected through
-// the map picker, reached by tapping the warning icon below.
+// the map picker, reached by tapping the location icon below.
 const LOCATION_PICKER_ROUTE = '/submission/location-picker'
 
 export default function CreateSubmissionScreen() {
@@ -67,6 +68,8 @@ export default function CreateSubmissionScreen() {
   // pick whose photos lacked EXIF time (ADR 0003).
   const { location: showLocationWarning, time: showTimeWarning } =
     draftWarnings(submission)
+  const canEditLocation =
+    showLocationWarning || submission.location_type === 'pin'
   const handleManualTimeChange = useCallback(
     (date: Date) => setManualTime(date.toISOString()),
     [setManualTime],
@@ -74,10 +77,11 @@ export default function CreateSubmissionScreen() {
 
   const handleLocationIconPress = useCallback(() => {
     // A good Live fix is trusted and not user-editable (ADR 0002) — the
-    // picker is reachable only when GPS hasn't produced one.
-    if (!showLocationWarning) return
+    // picker is reachable when GPS hasn't produced one, or to adjust an
+    // existing manual pin.
+    if (!canEditLocation) return
     router.push(LOCATION_PICKER_ROUTE)
-  }, [showLocationWarning])
+  }, [canEditLocation])
 
   // Annotate-first (ADR 0004): discovering a cat starts with boxing it, not
   // filling out a form — Cat Form is reached from annotate's Boxing
@@ -116,12 +120,14 @@ export default function CreateSubmissionScreen() {
         <GlassSurface kind="card" style={styles.statusRow}>
           <Pressable
             onPress={handleLocationIconPress}
-            disabled={!showLocationWarning}
+            disabled={!canEditLocation}
             accessibilityRole="button"
             accessibilityLabel={
               showLocationWarning
-                ? 'Location accuracy is low or unavailable — tap to set manually'
-                : 'Location acquired'
+                ? submissionCopy.location.accuracyUncertainAccessibility
+                : submission.location_type === 'pin'
+                  ? submissionCopy.location.manualAccessibility
+                  : submissionCopy.location.acquiredAccessibility
             }
             style={styles.statusItem}
           >

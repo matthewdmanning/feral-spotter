@@ -20,6 +20,7 @@ import { TextButton } from '@/src/shared/ui/atoms/TextButton'
 import { TextField } from '@/src/shared/ui/atoms/TextField'
 import { ButtonRow } from '@/src/shared/ui/molecules/ButtonRow'
 import { ToggleRow } from '@/src/shared/ui/molecules/ToggleRow'
+import { DialogShell } from '@/src/shared/ui/organisms/DialogShell'
 import { visiblePhotoToggles } from '@/src/features/settings/config/photoToggles'
 import {
   getHapticsEnabled,
@@ -121,21 +122,14 @@ export default function SettingsScreen() {
                 email: accountEmail ?? commonCopy.notAvailable,
               })}
             </Text>
-            <TextField
-              label={settingsCopy.newEmail}
-              placeholder={settingsCopy.newEmail}
-              autoComplete="email"
-              keyboardType="email-address"
-              inputMode="email"
-              value={changeEmail.newEmail}
-              onChangeText={changeEmail.setNewEmail}
-            />
-            <TextButton
-              onPress={changeEmail.submit}
-              disabled={changeEmail.busy || !changeEmail.newEmail.trim()}
-            >
-              {authCopy.sendVerificationLink}
-            </TextButton>
+            {!accountEmail && (
+              <TextButton
+                onPress={changeEmail.openPrompt}
+                disabled={changeEmail.busy}
+              >
+                {authCopy.addEmail}
+              </TextButton>
+            )}
           </GlassSurface>
 
           <SharingSettings />
@@ -200,6 +194,37 @@ export default function SettingsScreen() {
           </GlassSurface>
         </View>
       </ScrollView>
+      {changeEmail.promptOpen && (
+        <DialogShell
+          title={authCopy.addEmailTitle}
+          onRequestClose={changeEmail.closePrompt}
+        >
+          <TextField
+            label={authCopy.email}
+            placeholder={authCopy.email}
+            autoComplete="email"
+            keyboardType="email-address"
+            inputMode="email"
+            value={changeEmail.newEmail}
+            onChangeText={changeEmail.setNewEmail}
+          />
+          <ButtonRow>
+            <AppButton variant="secondary" onPress={changeEmail.closePrompt}>
+              {commonCopy.cancel}
+            </AppButton>
+            <AppButton
+              onPress={() => {
+                changeEmail.closePrompt()
+                void changeEmail.submit()
+              }}
+              disabled={changeEmail.busy || !changeEmail.newEmail.trim()}
+              loading={changeEmail.busy}
+            >
+              {authCopy.sendVerificationLink}
+            </AppButton>
+          </ButtonRow>
+        </DialogShell>
+      )}
     </KeyboardAvoidingView>
   )
 }
