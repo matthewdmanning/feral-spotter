@@ -1,1 +1,1 @@
-export { default } from '@/src/screens/sign-in'
+export { default } from '@/src/features/auth/screens/sign-in'

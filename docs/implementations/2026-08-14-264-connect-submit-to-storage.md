@@ -160,3 +160,53 @@ tags:
 - [ ] #265 — submit payload validation
 - Run `__tests__/rules/*.test.ts` against the real Local Emulator Suite once a JDK 21 environment is available, to confirm the rules-side hash verification actually behaves as expected (currently syntax-validated only).
 - First real-device submit should be watched for a 403 on upload, which would indicate a hex/encoding mismatch between `expo-crypto` and the rules' `hashing.sha256()`.
+
+## 2026-11-02 — fix
+
+**Purpose:** Codebase review found the submit path could send a Submission with cats but no photos, send twice, wedge, or lose a sent Sighting at startup.
+**Change:**
+
+- `useUIStore.isSubmitting` is the in-process submit lock (no longer persisted). Finished!, Reset, Take/Select More Photos and Android Back are inert while it is set; `discardDraftAndGoHome` and `confirmResetSubmission` refuse.
+- After the upload wait, Submit re-reads every store and stops if the draft's `submissionId` changed. Cache writes moved inside the try; a failing failure-write no longer skips the error message.
+- `uploadNewPhoto`: dedupes by `local_id`; `retryPendingUploads` (Details open + Submit) re-queues `uploaded: false` photos; `cancelQueuedUploads` (draft teardown) drops queued work and detaches in-flight results.
+- `submissionCache` mutations run on one write chain; `updateSubmissionCache` takes an in-chain status guard used by draft sync.
+- Startup cleanup flips a `Sending` row to `Failed` and never deletes a row or its uploads once a send started. `Failed` current drafts resume; unreadable dates do not.
+- Draft sync skips upload-progress ticks. `addCat` is idempotent; Cat Form save commits once; annotate mints cat ids from fresh state. Removed photos are pruned from cats. A failed startup restore retries on the next draft action. Reports reads ignore stale responses and always clear the refresh spinner.
+
+Tests: `useSubmissionSubmit.inFlight.test.ts` (lock, retry, cleared draft, Failed row), `submissionCache.serial.test.ts` (status and index races; both fail on the old code), `draft.startup.test.ts` (mid-send kill kept), `uploadNewPhoto.queue.test.ts` (dedupe, retry, cancel). Not checked on device.
+
+## 2026-11-02 — fix (photo cap and counter)
+
+**Purpose:** `MAX_PHOTOS` was never enforced, so an 11th photo failed its upload silently; `photoCount` drifted under duplicate, overwrite and out-of-order Storage events; a same-size overwrite skipped the content-type check.
+**Change:** See ADR-0005's 2026-11-02 amendment. Client cap at shutter, burst loop and library picker (`photoSlotsLeft`, `showPhotoLimitReached` in `usePhotoStore`); library time classified over the whole pool. Per-object marker docs make both count triggers idempotent, with `retry: true`. Rules: patch branch needs equal size, type and md5; `user_id` must match the path; metadata retries pass the 250 cap. Tests: `functions/src/__tests__/photoCount.test.ts` (event-sequence model; replaces the call-shape cases), three new cases in `__tests__/rules/storage.test.ts` (emulator run: 39 passed), library cap case in `useLibraryPhotoPicker.selection.test.ts`.
+
+## 2026-11-03 — refactor (no Firestore)
+
+**Purpose:** Owner decision: the project does not use Firestore. The photo and Submission caps depended on Firestore counters.
+**Change:** See ADR-0005's 2026-11-03 amendment. Photos are named by `upload_slot` (`photo-0` … `photo-9`), which `storage.rules` enforces; `usePhotoStore` assigns slots, and the pickers upload the stored, slotted copy. The 250-Submission cap is an Auth claim kept in step with the uid's `metadata.json` count. `firestore.rules`, its emulator and tests, and the photo-count triggers are removed. Rules tests run on a `demo-` emulator project. Tests: `usePhotoStore.slots.test.ts`, `functions/src/__tests__/submissionCap.test.ts`, rewritten `__tests__/rules/storage.test.ts` (emulator: 17 passed).
+
+## 2026-11-03 — fix (photo formats and removal)
+
+**Purpose:** Design review found three photo bugs: a library pick in a format storage.rules refuses (e.g. webp, gif) sat un-uploaded with no message; the camera's discard cleared only the photo store, leaving the photo's boxes and cat references; and a removed photo's upload kept running.
+**Change:** `utils/photoFormat.ts` holds the accepted formats; the library picker skips others and says so. `removePhotoFromDraft` (hooks) is the one removal path for annotate and camera: cancels the photo's upload (`cancelPhotoUpload`), clears its boxes and cat references, removes it, and best-effort deletes its uploaded copy (`deleteSubmissionPhoto`). ADR-0006 amended: its Settings "Clear Draft" caller was removed in `9c2084a`. Tests: `removePhotoFromDraft.test.ts`, format case in `useLibraryPhotoPicker.selection.test.ts`.
+
+## 2026-11-03 — refactor (upload facade)
+
+**Purpose:** Five call sites each assembled uid, Submission id and `updatePhoto` and had to upload the store's slotted copy (one didn't); Submit polled the store for 30 s, so a failed upload surfaced only at the timeout.
+**Change:** `lib/upload/draftUploads.ts`: `syncPhotoUploads()` (no arguments; reads auth store and photo store), `cancelPhotoUpload(localId)`, `cancelPhotoUploads()`, `whenUploadsSettled(timeoutMs)` → `'uploaded' | 'failed' | 'timeout'`, event-driven from the photo store and a new queue idle signal. `uploadNewPhoto.ts` is now the queue only; `retryPendingUploads` and the Submit poll are gone. Camera, library, Details, Submit and teardown use the facade. Test: `draftUploads.test.ts` (slotted copy, immediate failure, timeout).
+
+## 2026-11-03 — refactor (draft lifecycle)
+
+**Purpose:** The submit lock was checked by hand in four places, and the In Progress → Sending → Submitted/Failed status machine was written by bare cache updates in three files.
+**Change:** See ADR-0006's 2026-11-03 amendment. `submitDraft()`/`discardDraft()`/`isDraftBusy()` in `lib/submission/draft.ts`; the send pipeline moved to `lib/submission/send.ts`; `transitionSubmission()` and `UNSENT_STATUSES` in `submissionCache.ts`. `useSubmissionSubmit` keeps only the confirm, the messages and navigation. Test: transition table in `submissionCache.serial.test.ts`; the submit-flow tests now seed the auth store.
+
+## 2026-11-08 — fix
+
+**Purpose:** Apply the chosen user-facing Sighting terminology consistently (#380).
+**Change:** Home continuation/draft notices, form title, final Submit Sighting action and counted confirmation, reset dialog, retry/failure messages, and history labels use Sighting. Internal Submission models, routes, telemetry, storage keys, and APIs are unchanged. No rescue-response or receipt behavior is added. Existing rendered journeys/assertions are updated with the wording. Device truncation/accessibility acceptance remains open. See the [history note](2026-10-26-feat-reports-history-map.md) and [backlog audit](../planning/2026-11-08-backlog-2026-11-07.md).
+
+## 2026-11-09 — refactor: greenfield persistence
+
+**Purpose:** Remove older-install upgrade paths because the project has no active users or data to migrate.
+**Change:** Removed rehydration-time slot assignment for pre-slot photo pools. New photos receive upload slots at insertion. Current interrupted-write repair for an empty pool with a stale source lock remains.
+**Verification:** Full client suite: 120 suites / 550 tests. Functions: 8 suites / 65 tests. Type checks and focused lint pass. Organization integration: 23 emulator scenarios; Rules: 24 tests. No deployment or device check.

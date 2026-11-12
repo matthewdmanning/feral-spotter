@@ -1,0 +1,127 @@
+import * as ui from '@/src/shared/hooks/useUIStore'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { act, renderHook } from '@testing-library/react-native'
+import { pressDialogButton } from '@/src/test-utils/dialog'
+
+import { useActiveCatFlowStore } from '@/src/features/draft-submission/hooks/useActiveCatFlowStore'
+import { useAnnotatePass } from '@/src/features/annotate/hooks/useAnnotatePass'
+import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
+import { useSettingsStore } from '@/src/features/settings/hooks/useSettingsStore'
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
+
+jest.mock('expo-router', () => ({ router: { replace: jest.fn() } }))
+
+const PHOTO = submissionPhoto()
+const OTHER_PHOTO = {
+  ...PHOTO,
+  local_id: 'photo-2',
+  uri: 'file:///photo-2.jpg',
+}
+const BOX = { lowerLeftX: 1, lowerLeftY: 1, upperRightX: 9, upperRightY: 9 }
+
+const expectFirstPhotoRemoved = () => {
+  expect(usePhotoStore.getState().photos).toEqual([OTHER_PHOTO])
+  const annotations = useBoundingBoxStore.getState()
+  expect(annotations.getBoxesForPhoto(PHOTO.local_id)).toEqual([])
+  expect(annotations.absences['absent-cat:photo-1']).toBeUndefined()
+  expect(annotations.lastBoxes['active-cat:photo-1']).toBeUndefined()
+  expect(annotations.getBoxesForPhoto(OTHER_PHOTO.local_id)).toEqual([
+    expect.objectContaining({
+      cat_id: 'active-cat',
+      photo_local_id: 'photo-2',
+    }),
+  ])
+}
+
+describe('useAnnotatePass — handleLongPressRemove confirmation branching', () => {
+  beforeEach(() => {
+    jest.spyOn(ui, 'showAlert')
+    ui.useUIStore.setState({ dialog: null })
+    useActiveCatFlowStore.getState().setActiveCatId('active-cat')
+    useSettingsStore
+      .getState()
+      .updateSetting('skip_photo_remove_confirm', false)
+    usePhotoStore.setState({
+      photos: [PHOTO, OTHER_PHOTO],
+      source: 'camera',
+      submissionId: 'remove-confirm-submission',
+    })
+    const annotations = useBoundingBoxStore.getState()
+    annotations.clearAll()
+    annotations.addBox('active-cat', PHOTO.local_id, BOX)
+    annotations.addBox('active-cat', PHOTO.local_id, BOX)
+    annotations.addBox('other-cat', PHOTO.local_id, BOX)
+    annotations.markAbsent('absent-cat', PHOTO.local_id)
+    annotations.addBox('active-cat', OTHER_PHOTO.local_id, BOX)
+  })
+
+  it('skip-confirm on: removes immediately without an Alert', async () => {
+    useSettingsStore.getState().updateSetting('skip_photo_remove_confirm', true)
+    const { result } = await renderHook(() => useAnnotatePass())
+
+    await act(() => result.current.handleLongPressRemove())
+
+    expect(ui.showAlert).not.toHaveBeenCalled()
+    expectFirstPhotoRemoved()
+  })
+
+  it('skip-confirm off: Alert offers a 3rd "don\'t ask again" option', async () => {
+    const { result } = await renderHook(() => useAnnotatePass())
+    await act(() => result.current.handleLongPressRemove())
+
+    expect(ui.useUIStore.getState().dialog).toEqual(
+      expect.objectContaining({
+        title: 'Remove photo from submission?',
+        message: 'This cannot be undone.',
+      }),
+    )
+    expect(ui.useUIStore.getState().dialog?.buttons.map((b) => b.text)).toEqual(
+      ['Cancel', "Remove, don't ask again", 'Remove'],
+    )
+    expect(usePhotoStore.getState().photos).toEqual([PHOTO, OTHER_PHOTO])
+
+    await pressDialogButton('Remove')
+
+    expectFirstPhotoRemoved()
+    expect(useSettingsStore.getState().settings.skip_photo_remove_confirm).toBe(
+      false,
+    )
+  })
+
+  it('pressing "Remove, don\'t ask again" persists the setting and removes', async () => {
+    const { result } = await renderHook(() => useAnnotatePass())
+    await act(() => result.current.handleLongPressRemove())
+
+    await pressDialogButton("Remove, don't ask again")
+
+    expectFirstPhotoRemoved()
+    const stored = JSON.parse((await AsyncStorage.getItem('settings-store'))!)
+    expect(stored.state.settings.skip_photo_remove_confirm).toBe(true)
+
+    // The setting must affect the next real removal as well as this callback.
+    jest.mocked(ui.showAlert).mockClear()
+    await act(() => result.current.handleLongPressRemove())
+    expect(ui.showAlert).not.toHaveBeenCalled()
+    expect(usePhotoStore.getState().photos).toEqual([])
+    expect(useBoundingBoxStore.getState().getBoxesForPhoto('photo-2')).toEqual(
+      [],
+    )
+  })
+
+  it('pressing Cancel removes nothing', async () => {
+    const before = useBoundingBoxStore.getState()
+    const { result } = await renderHook(() => useAnnotatePass())
+    await act(() => result.current.handleLongPressRemove())
+
+    await pressDialogButton('Cancel')
+
+    expect(usePhotoStore.getState().photos).toEqual([PHOTO, OTHER_PHOTO])
+    expect(useBoundingBoxStore.getState().boxes).toEqual(before.boxes)
+    expect(useBoundingBoxStore.getState().absences).toEqual(before.absences)
+    expect(useBoundingBoxStore.getState().lastBoxes).toEqual(before.lastBoxes)
+    expect(useSettingsStore.getState().settings.skip_photo_remove_confirm).toBe(
+      false,
+    )
+  })
+})

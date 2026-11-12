@@ -204,3 +204,18 @@ unconditional-on-GRANTED wording is specific to that library — revisit
 whether the replacement exposes a real distinction when that migration
 happens, since it may let the notice become properly conditional instead
 of always-shown.
+
+## 2026-11-02 — fix
+
+**Purpose:** Codebase review: a GPS watch could leak (two starts across the permission await, or a stop during a pending start), the map picker saved the placeholder study-area coordinates as a Sighting location, and EXIF GPS dropped its hemisphere.
+**Change:**
+
+- `lib/location.ts`: `captureGeneration` (bumped by `stopLocationCapture`) and `startInFlight`. A stale start returns after each await; a subscription created after stop or settle is removed at once.
+- Location picker: Set location is disabled until the centre is real (last-known seed or a user drag off the placeholder); a seed arriving after a drag is ignored.
+- `buildSubmissionPhoto`: applies `GPSLatitudeRef`/`GPSLongitudeRef`.
+- Tests: `location.reentry.test.ts` (both leak paths; fail on the old code), a "Set location saves nothing until the map has a real centre" journey in `LocationPicker.model.test.tsx`. Not checked on device.
+
+## 2026-11-08 — fix
+
+**Purpose:** Make the disclosure match current collection and sharing behavior (#208).
+**Change:** Explain camera/library photos, background uploads before final submission, location/time sources and corrections, cat annotations, and account association. Describe organization choices as permissions recorded without delivery, and analytics as account-identifier-linked rather than anonymous. Email/analytics remain separate opt-ins. Bump CONSENT_VERSION to 2 because upload timing is material; the existing stale-version gate requires reacceptance, without resetting the separate optional choices. No collection, backend, or permissions behavior changed. See the [onboarding note](2026-08-09-intro-flow-t1-hardware-back.md).

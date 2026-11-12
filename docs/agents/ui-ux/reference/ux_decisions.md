@@ -10,7 +10,7 @@ This is a living document. Extend it, don't replace it.
 
 ## Gestures
 
-Gesture thresholds (velocity, distance) start from industry-standard values, defined as named constants in `src/config/*.ts` (see `src/config/location.ts`, `src/config/tutorial.ts`) — never hardcoded inline, never a user-facing setting.
+Gesture thresholds (velocity, distance) start from industry-standard values, defined as named constants in a `config/*.ts` module — `src/shared/config/` or a feature's `config/` (see `src/core/location/location.ts`, `src/features/annotate/config/tutorial.ts`) — never hardcoded inline, never a user-facing setting.
 
 **Swipe-to-dismiss**: an upward swipe on a photo unassigns it from the current cat only (soft dismiss — pool and other cats' assignments untouched), distinct from the destructive long-press Remove (`useAnnotateStateMachine.ts`'s `handleLongPressRemove`, which deletes the photo from the whole submission). Pair every dismiss with the Undo bubble.
 
@@ -30,6 +30,6 @@ Inline status pairs icon + label, not a modal: `AlertCircle` (warning color) whe
 
 ## Home entrypoint buttons
 
-Home's two entry actions (`src/screens/home/index.tsx`) are circular, side by side, sized via `computeEntrypointDiameter`/`computeEntrypointBuffer` (`src/lib/home/entrypointDiameter.ts`) — not a fixed diameter. Formula: `buffer = min(screenWidth, screenHeight) * ENTRYPOINT_BUFFER_PERCENT`, `diameter = (screenWidth - 2*buffer - gap) / 2`, where `gap` is `theme.spacing.xxl` and `ENTRYPOINT_BUFFER_PERCENT` (default `0.075`) lives in `src/config/constants.ts`. "Buffer" is read as screen-edge-to-circle-edge, scaled off the _shorter_ screen side so the inset stays proportional across orientations — the longer side only affects diameter, not buffer size. Floored at `MIN_TOUCH_TARGET_DP` (48, matching `ux_principles.md`'s touch-target minimum) so a narrow/foldable screen can't shrink the circles below tappable.
+Home's two entry actions (`src/core/home/screens/home/index.tsx`) are circular, side by side, sized via `computeEntrypointDiameter`/`computeEntrypointBuffer` (`src/core/home/lib/entrypointDiameter.ts`) — not a fixed diameter. Formula: `buffer = min(screenWidth, screenHeight) * ENTRYPOINT_BUFFER_PERCENT`, `diameter = (screenWidth - 2*buffer - gap) / 2`, where `gap` is `theme.spacing.xxl` and `ENTRYPOINT_BUFFER_PERCENT` (default `0.075`) lives in `src/shared/config/constants.ts`. "Buffer" is read as screen-edge-to-circle-edge, scaled off the _shorter_ screen side so the inset stays proportional across orientations — the longer side only affects diameter, not buffer size. Floored at `MIN_TOUCH_TARGET_DP` (48, matching `ux_principles.md`'s touch-target minimum) so a narrow/foldable screen can't shrink the circles below tappable.
 
 Each circle carries a visible text label (`AppButton`'s `size="circle"` variant, icon above label, both inside the circle) — not caption-below or icon-only: "Take Photos" (camera, `variant="primary"`) and "Upload Photos" (library, `variant="secondary"`).

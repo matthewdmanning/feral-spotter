@@ -31,3 +31,13 @@ mocks `useBackHandler` to capture the registered handler, same pattern as
 - `npx eslint` on touched files — clean (one pre-existing, unrelated
   `no-require-imports` warning in the test file's `AppButton` mock).
 - Not device-tested this session (no physical device in this environment).
+
+## 2026-11-02 — fix
+
+**Purpose:** Back on T2–T4 returned `false`, and the slides are local state on the only stack entry, so the app exited with no confirm.
+**Change:** Back steps back a slide on T2–T4 and still confirms on T1. Annotate's empty state handles Back like its "Go back" button and reads width per render. Test: `IntroFlowScreen.test.tsx` "steps back one slide on hardware back past T1". See also [email opt-in note](2026-10-24-feat-email-opt-in.md).
+
+## 2026-11-08 — fix
+
+**Purpose:** Correct onboarding's unsupported timing/downstream-use claims and incorrect setup order (#381, #208).
+**Change:** Describe actual photo/location/cat recording, background uploads, separate optional choices, permissions before sign-in, Google/email availability, and gated Apple/Facebook methods. Remove the one-minute estimate, rescue/TNR/prediction promises, and unverified non-commercial assurances. Layout/first-run comprehension remain device-verification work under #381. See the [consent note](2026-08-09-consent-66-location-permission-gate.md) and [backlog audit](../planning/2026-11-08-backlog-2026-11-07.md).

@@ -1,0 +1,213 @@
+import { userEvent, render, waitFor } from '@testing-library/react-native'
+import { router } from 'expo-router'
+import React from 'react'
+import { createMachine } from 'xstate'
+import { createTestModel } from '@xstate/graph'
+import { SUBMISSION_STALE_MS } from '@/src/shared/config/constants'
+import { getAllSubmissionCaches } from '@/src/shared/lib/submissionCache'
+import HomeScreen from '@/src/core/home/screens/home/index'
+import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
+import { useUIStore } from '@/src/shared/hooks/useUIStore'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
+import { setConsent } from '@/src/test-utils/consent'
+
+/**
+ * Model of every button on HomeScreen (src/core/home/screens/home/index.tsx) and what
+ * pressing it does — complements HomeScreen.gate.model.test.tsx (auth/consent
+ * redirect) and HomeScreen.photoSourceGate.model.test.tsx (camera/library
+ * disabled state), neither of which asserts navigation destinations or the
+ * bottom column's visibility gate. Auth/consent held ready+granted and photo
+ * source held empty throughout — both orthogonal, already covered elsewhere.
+ *
+ * The Resume/New column's visibility comes from `getAllSubmissionCaches()`
+ * resolving inside an effect. Modeled here as two separate mount scenarios
+ * (MOUNT_NO_DRAFT / MOUNT_IN_PROGRESS) because this suite is about what each
+ * button does, not about when the gate re-reads. Since #314 that effect keys
+ * on focus rather than mount, so it *can* now change mid-session —
+ * HomeScreen.resumeEntry.test.tsx owns that behavior.
+ */
+jest.mock('expo-router', () => ({
+  useIsFocused: () => true,
+  router: { replace: jest.fn(), navigate: jest.fn(), push: jest.fn() },
+  Stack: { Screen: () => null },
+}))
+
+jest.mock('@/src/features/auth/lib/useAuth', () => ({
+  useAuth: () => ({ isReady: true, isAuthenticated: true }),
+}))
+jest.mock('@/src/shared/lib/submissionCache', () => ({
+  getAllSubmissionCaches: jest.fn(),
+  getCurrentCacheId: jest.fn().mockResolvedValue(null),
+}))
+const mockPickFromLibrary = jest.fn()
+jest.mock('@/src/features/library-picker/hooks/useLibraryPhotoPicker', () => ({
+  useLibraryPhotoPicker: () => ({ pickFromLibrary: mockPickFromLibrary }),
+}))
+const buttonsMachine = createMachine({
+  id: 'homeEntrypointActions',
+  initial: 'unmounted',
+  states: {
+    unmounted: {
+      on: {
+        MOUNT_NO_DRAFT: 'idleEntry',
+        MOUNT_IN_PROGRESS: 'resumeEntry',
+        MOUNT_STALE: 'idleEntry',
+      },
+    },
+    idleEntry: {
+      on: {
+        PRESS_CAMERA: 'idleEntry',
+        PRESS_LIBRARY: 'idleEntry',
+      },
+    },
+    resumeEntry: {
+      on: {
+        PRESS_CAMERA: 'resumeEntry',
+        PRESS_LIBRARY: 'resumeEntry',
+        PRESS_RESUME: 'resumeEntry',
+        PRESS_NEW: 'resumeEntry',
+      },
+    },
+  },
+})
+
+describe('HomeScreen entrypoint buttons — model-based test', () => {
+  let getByLabelText: Awaited<ReturnType<typeof render>>['getByLabelText']
+  let queryByLabelText: Awaited<ReturnType<typeof render>>['queryByLabelText']
+  const queryShown = (label: string) =>
+    queryByLabelText(label, { includeHiddenElements: false })
+
+  beforeEach(() => {
+    useDraftStartupStore.setState({ phase: 'ready', task: Promise.resolve() })
+    usePhotoStore.setState(usePhotoStore.getInitialState(), true)
+    setConsent(true)
+    jest.clearAllMocks()
+    useUIStore.setState({ dialog: null })
+  })
+
+  const model = createTestModel(buttonsMachine)
+
+  const mount = async (caches: { status: string; updated_at?: string }[]) => {
+    jest.mocked(getAllSubmissionCaches).mockResolvedValue(
+      caches.map((c) => ({
+        updated_at: new Date().toISOString(),
+        ...c,
+      })) as never,
+    )
+    const result = await render(<HomeScreen />)
+    getByLabelText = result.getByLabelText
+    queryByLabelText = result.queryByLabelText
+    await waitFor(() => expect(getAllSubmissionCaches).toHaveBeenCalled())
+  }
+
+  const testParams = {
+    states: {
+      unmounted: () => {
+        expect(router.navigate).not.toHaveBeenCalled()
+        expect(router.push).not.toHaveBeenCalled()
+      },
+      // Visibility as assistive tech sees it. The fade itself is a Reanimated
+      // animated style, which Reanimated 4.7's Jest environment does not
+      // write back to the style prop that toBeVisible reads.
+      idleEntry: async () => {
+        await waitFor(() => {
+          expect(queryShown('Continue Sighting')).toBeNull()
+          expect(queryShown('New Sighting')).toBeNull()
+        })
+      },
+      resumeEntry: async () => {
+        await waitFor(() => {
+          expect(queryShown('Continue Sighting')).not.toBeNull()
+          expect(queryShown('New Sighting')).not.toBeNull()
+        })
+      },
+    },
+    events: {
+      MOUNT_NO_DRAFT: async () => {
+        await mount([])
+      },
+      MOUNT_IN_PROGRESS: async () => {
+        await mount([{ status: 'In Progress' }])
+      },
+      MOUNT_STALE: async () => {
+        await mount([
+          {
+            status: 'In Progress',
+            updated_at: new Date(
+              Date.now() - SUBMISSION_STALE_MS - 60 * 60 * 1000,
+            ).toISOString(),
+          },
+        ])
+      },
+      PRESS_CAMERA: async () => {
+        await userEvent.press(getByLabelText('Take Photos'))
+      },
+      PRESS_LIBRARY: async () => {
+        await userEvent.press(getByLabelText('Upload Photos'))
+      },
+      PRESS_RESUME: async () => {
+        await userEvent.press(getByLabelText('Continue Sighting'))
+      },
+      PRESS_NEW: async () => {
+        await userEvent.press(getByLabelText('New Sighting'))
+      },
+    },
+  }
+
+  // UX journeys, not exhaustive coverage: each is a sequence of real user
+  // actions, asserting what pressing each button actually does.
+  const journeys = [
+    {
+      name: 'no in-progress draft: Resume/New column stays hidden',
+      events: [{ type: 'MOUNT_NO_DRAFT' }],
+    },
+    {
+      name: 'in-progress draft: Resume/New column becomes visible',
+      events: [{ type: 'MOUNT_IN_PROGRESS' }],
+    },
+    {
+      name: 'stale in-progress draft: Resume/New column stays hidden',
+      events: [{ type: 'MOUNT_STALE' }],
+    },
+    {
+      name: 'Take Photos navigates to the camera',
+      events: [{ type: 'MOUNT_NO_DRAFT' }, { type: 'PRESS_CAMERA' }],
+    },
+    {
+      name: 'Upload Photos invokes the library picker',
+      events: [{ type: 'MOUNT_NO_DRAFT' }, { type: 'PRESS_LIBRARY' }],
+    },
+    {
+      name: 'Continue Sighting returns to Cat List',
+      events: [{ type: 'MOUNT_IN_PROGRESS' }, { type: 'PRESS_RESUME' }],
+    },
+    {
+      name: 'New Sighting asks before clearing the draft',
+      events: [{ type: 'MOUNT_IN_PROGRESS' }, { type: 'PRESS_NEW' }],
+    },
+  ]
+
+  journeys.forEach(({ name, events }) => {
+    it(name, async () => {
+      const [path] = model.getPathsFromEvents(events)
+      await path.test(testParams)
+
+      if (events.some((e) => e.type === 'PRESS_CAMERA')) {
+        expect(router.navigate).toHaveBeenCalledWith('/camera')
+      }
+      if (events.some((e) => e.type === 'PRESS_LIBRARY')) {
+        expect(mockPickFromLibrary).toHaveBeenCalledTimes(1)
+      }
+      if (events.some((e) => e.type === 'PRESS_RESUME')) {
+        expect(router.push).toHaveBeenCalledWith('/submission/create')
+      }
+      // New Sighting starts over, so it must not reopen the old draft.
+      if (events.some((e) => e.type === 'PRESS_NEW')) {
+        expect(router.push).not.toHaveBeenCalled()
+        expect(useUIStore.getState().dialog?.title).toBe(
+          'Start a New Sighting?',
+        )
+      }
+    })
+  })
+})

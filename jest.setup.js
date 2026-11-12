@@ -1,8 +1,3 @@
-// NetInfo's native reachability callbacks are unavailable under the RN Jest preset.
-jest.mock('@react-native-community/netinfo', () =>
-  require('@react-native-community/netinfo/jest/netinfo-mock'),
-)
-
 // Reanimated 4.7's own test environment (its Jest guide), instead of the
 // per-file 'react-native-reanimated/mock' it replaced.
 require('react-native-reanimated').setUpTests()
@@ -16,6 +11,14 @@ jest.mock('react-native-worklets', () => ({
   getUIRuntimeHolder: () => undefined,
 }))
 
+// jest-expo's expo-crypto mock returns undefined from randomUUID; ids must be
+// unique. Keep the other real exports. A test needing a fixed id sets it with
+// jest.mocked(randomUUID).mockReturnValue(...).
+jest.mock('expo-crypto', () => ({
+  ...jest.requireActual('expo-crypto'),
+  randomUUID: jest.fn(() => require('node:crypto').randomUUID()),
+}))
+
 // Use the library's mock so real styles resolve against real app tokens.
 require('react-native-unistyles/mocks')
 
@@ -24,7 +27,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 )
 
 const { StyleSheet, UnistylesRuntime } = require('react-native-unistyles')
-const { darkTheme, lightTheme } = require('./src/config/themes')
+const { darkTheme, lightTheme } = require('./src/shared/config/themes')
 
 // Nonzero insets make missing safe-area padding observable in layout tests.
 Object.assign(UnistylesRuntime.miniRuntime, {
@@ -36,8 +39,23 @@ StyleSheet.configure({ themes: { dark: darkTheme, light: lightTheme } })
 // MMKV 4 selects its own in-memory implementation when NODE_ENV is 'test'.
 // Keep storage isolated without replacing the application's storage adapter.
 const AsyncStorage = require('@react-native-async-storage/async-storage')
-const { mmkvInstance } = jest.requireActual('./src/lib/cache/storage')
+const { mmkvInstance } = jest.requireActual('./src/shared/lib/storage')
 beforeEach(async () => {
   await AsyncStorage.clear()
   mmkvInstance.clearAll()
+})
+
+// MSW intercepts fetch at the network boundary (mswjs.io/docs/api/setup-server).
+// Unhandled requests fail, so no test reaches a real host.
+const { server } = require('./src/test-utils/mswServer')
+beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
+afterEach(() => server.resetHandlers())
+afterAll(() => server.close())
+
+// Return every Zustand store to its initial state (__mocks__/zustand.ts).
+const { act } = require('react')
+afterEach(() => {
+  act(() => {
+    globalThis.__zustandStoreResets?.forEach((reset) => reset())
+  })
 })

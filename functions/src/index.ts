@@ -1,8 +1,8 @@
 /**
- * Maintains per-submission and per-uid Firestore counters so Storage
- * Security Rules can gate uploads on them (rules can't count sibling
- * objects directly — see docs/adr/0005-firebase-storage-for-uploads.md),
- * and gates sign-in on the tester allowlist via a custom claim (#267).
+ * Storage-side upkeep with no database: keeps the per-uid Submission cap
+ * claim in step with the uid's metadata.json objects (#270), sweeps photos
+ * that never got metadata (#293), sets the tester-allowlist claim (#267)
+ * and syncs the email list. See docs/adr/0005-firebase-storage-for-uploads.md.
  *
  * Object path convention: submissions/{uid}/{submissionId}/{fileName} —
  * uid is the signed-in Firebase Auth uid directly (previously a salted
@@ -10,12 +10,26 @@
  */
 import { getAuth } from 'firebase-admin/auth'
 import { initializeApp } from 'firebase-admin/app'
-import { FieldValue, getFirestore } from 'firebase-admin/firestore'
 import { getStorage } from 'firebase-admin/storage'
 import { createEmailListProvider, DEFAULT_EMAIL_PROVIDER } from './email'
 import { setEmailSubscription } from './email/setEmailSubscription'
+import {
+  MAX_SUBMISSIONS_PER_UID,
+  METADATA_FILE_NAME,
+  SUBMISSION_CAP_CLAIM,
+  SUBMISSIONS_ROOT,
+  parseSubmissionObject,
+  submissionPrefix,
+  userPrefix,
+} from './submissionLayout'
 import { defineSecret, defineString } from 'firebase-functions/params'
-import { onRequest } from 'firebase-functions/v2/https'
+import { onCall, onRequest } from 'firebase-functions/v2/https'
+import {
+  authAccountStore,
+  createPostHogEraser,
+  createStorageSubmissionStore,
+} from './erasure/adapters'
+import { handleDeleteAccount } from './erasure/deleteAccount'
 import { onSchedule } from 'firebase-functions/v2/scheduler'
 import type { AuthBlockingEvent } from 'firebase-functions/v2/identity'
 import { beforeUserSignedIn } from 'firebase-functions/v2/identity'
@@ -26,18 +40,10 @@ import {
 
 initializeApp()
 
-// Must match BUCKET_URL in src/lib/upload/firebaseUpload.ts (ADR-0005).
+// Must match BUCKET_URL in src/features/draft-submission/lib/upload/firebaseUpload.ts (ADR-0005).
 const BUCKET_NAME =
   process.env.GCS_BUCKET_NAME ??
   'project-e3d5659d-bc4f-438f-88c.firebasestorage.app'
-const OBJECT_PATH_PATTERN = /^submissions\/([^/]+)\/([^/]+)\/([^/]+)$/
-const METADATA_PATH_PATTERN = /^submissions\/([^/]+)\/([^/]+)\/metadata\.json$/
-
-// metadata.json (the final-submission JSON blob — see storage.rules and
-// src/lib/upload/firebaseUpload.ts) lives under the same
-// submissions/{uid}/{submissionId}/{fileName} prefix as photos but isn't
-// one — it must not move the photoCount counter these triggers maintain.
-const METADATA_FILE_NAME = 'metadata.json'
 
 // #293 ("no metadata ⇒ no photo"). A photo with no location, time or
 // annotation is useless to the wider project, so if the metadata never
@@ -49,17 +55,8 @@ const METADATA_FILE_NAME = 'metadata.json'
 // indefinitely. Product decision, 2026-08-24.
 const SWEEP_RETENTION_DAYS = 7
 
-function parseSubmissionPath(
-  objectName: string,
-): { uid: string; submissionId: string } | null {
-  const match = OBJECT_PATH_PATTERN.exec(objectName)
-  if (!match) return null
-  if (match[3] === METADATA_FILE_NAME) return null
-  return { uid: match[1], submissionId: match[2] }
-}
-
 // Sole parser for the tester allowlist. The client-side twin it used to
-// mirror (src/lib/upload/allowlist.ts) was deleted in ed2cdb4.
+// mirror (src/features/draft-submission/lib/upload/allowlist.ts) was deleted in ed2cdb4.
 function parseTesterAllowlist(raw: string | undefined): Set<string> {
   if (!raw) return new Set()
   return new Set(
@@ -70,91 +67,66 @@ function parseTesterAllowlist(raw: string | undefined): Set<string> {
   )
 }
 
-export const onSubmissionPhotoUploaded = onObjectFinalized(
-  { bucket: BUCKET_NAME },
-  async (event) => {
-    const parsed = parseSubmissionPath(event.data.name)
-    if (!parsed) return
+// #270, without Firestore: caps distinct Submissions per uid. The count is
+// the uid's metadata.json objects in Storage, the same thing a Submission
+// is. Rules cannot count objects, so this keeps an Auth custom claim in
+// step with the count, and storage.rules refuses a new metadata.json
+// while the claim is set. Recounted on every metadata.json write and
+// delete, so it is idempotent under at-least-once delivery and clears
+// itself once Submissions are deleted.
+//
+// Soft at the edge: a client's token carries the claim only after it
+// refreshes (at most an hour). The 10-photo cap needs no such step: it is
+// enforced by object name in storage.rules.
+export { MAX_SUBMISSIONS_PER_UID, SUBMISSION_CAP_CLAIM }
 
-    const firestore = getFirestore()
-    const doc = firestore.collection('submissions').doc(parsed.submissionId)
-
-    // #268: submissionId is client-generated, so two different uids can
-    // collide on the same id. The Storage write already landed by the time
-    // this trigger runs — it can't retroactively deny it — but it must not
-    // flip ownerUid or inflate another uid's photoCount. Transaction guards
-    // against a same-id race between two first-writers; the loser simply
-    // doesn't get counted.
-    await firestore.runTransaction(async (tx) => {
-      const snapshot = await tx.get(doc)
-      const existingOwner = snapshot.get('ownerUid') as string | undefined
-
-      if (existingOwner != null && existingOwner !== parsed.uid) return
-
-      tx.set(
-        doc,
-        { ownerUid: parsed.uid, photoCount: FieldValue.increment(1) },
-        { merge: true },
-      )
+export async function syncSubmissionCapClaim(uid: string): Promise<void> {
+  const [files] = await getStorage()
+    .bucket(BUCKET_NAME)
+    .getFiles({
+      prefix: userPrefix(uid),
+      matchGlob: `**/${METADATA_FILE_NAME}`,
     })
-  },
-)
+  const capReached = files.length >= MAX_SUBMISSIONS_PER_UID
 
-export const onSubmissionPhotoDeleted = onObjectDeleted(
-  { bucket: BUCKET_NAME },
-  async (event) => {
-    const parsed = parseSubmissionPath(event.data.name)
-    if (!parsed) return
+  const user = await getAuth().getUser(uid)
+  const claims = user.customClaims ?? {}
+  if (Boolean(claims[SUBMISSION_CAP_CLAIM]) === capReached) return
+  await getAuth().setCustomUserClaims(uid, {
+    ...claims,
+    [SUBMISSION_CAP_CLAIM]: capReached,
+  })
+}
 
-    // ponytail: decrement can't go below 0 if a doc is ever cleared out of
-    // band; add a floor if that happens in practice.
-    await getFirestore()
-      .collection('submissions')
-      .doc(parsed.submissionId)
-      .set({ photoCount: FieldValue.increment(-1) }, { merge: true })
-  },
-)
+async function syncCapForObject(name: string): Promise<void> {
+  const object = parseSubmissionObject(name)
+  if (!object?.isMetadata) return
+  try {
+    await syncSubmissionCapClaim(object.uid)
+  } catch (error) {
+    // A deleted account has nothing left to cap.
+    if ((error as { code?: string }).code === 'auth/user-not-found') return
+    throw error
+  }
+}
 
-// #270: counts distinct submissions per uid so storage.rules can cap
-// them (isValidMetadataWrite — checked at metadata.json write, not per
-// photo, because isValidPhotoWrite already spends the rules' 2-Firestore-
-// read budget on the photoCount check; metadata.json's own rule evaluation
-// starts fresh with its own budget). Caps submissions that reach Submit,
-// not photos uploaded into an abandoned draft — see the amendment to
-// ADR-0005 for the residual gap that leaves open.
 export const onSubmissionSubmitted = onObjectFinalized(
-  { bucket: BUCKET_NAME },
-  async (event) => {
-    const match = METADATA_PATH_PATTERN.exec(event.data.name)
-    if (!match) return
-    const [, uid, submissionId] = match
-
-    const firestore = getFirestore()
-    const counterDoc = firestore.collection('submissionCounts').doc(uid)
-    const marker = counterDoc.collection('items').doc(submissionId)
-
-    // metadata.json can be re-uploaded on retry (isValidMetadataWrite has
-    // no create-only restriction) — dedupe via a per-submission marker so
-    // a retry doesn't double-count against the cap.
-    await firestore.runTransaction(async (tx) => {
-      const markerSnapshot = await tx.get(marker)
-      if (markerSnapshot.exists) return
-
-      tx.set(marker, {})
-      tx.set(counterDoc, { count: FieldValue.increment(1) }, { merge: true })
-    })
-  },
+  { bucket: BUCKET_NAME, retry: true },
+  (event) => syncCapForObject(event.data.name),
 )
 
-// #267: gates sign-in on the tester allowlist by setting a custom claim
-// (request.auth.token.allowedTester), checked in storage.rules' allow
-// write. Runs on every sign-in (not just account creation) so an
-// already-registered tester's very next sign-in picks up the claim —
-// no separate backfill script needed. Requires Identity Platform to be
-// enabled for this project (Firebase console > Authentication > Settings);
-// blocking functions don't run without it, which means uploads are denied
-// for everyone until it's enabled and each tester has signed in at least
-// once post-deploy. See the PR notes for deploy sequencing.
+export const onSubmissionDeleted = onObjectDeleted(
+  { bucket: BUCKET_NAME, retry: true },
+  (event) => syncCapForObject(event.data.name),
+)
+
+// #267: sets the tester-allowlist custom claim
+// (request.auth.token.allowedTester) on every sign-in. storage.rules does
+// not check it yet: enforcement is deferred while it is dev friction, so
+// any signed-in user can upload today. Runs on every sign-in (not just
+// account creation) so a registered tester's claim is current once
+// enforcement lands. Requires Identity Platform (Firebase console >
+// Authentication > Settings); blocking functions don't run without it.
 // Exported separately from the beforeUserSignedIn wrapper below: the SDK's
 // BlockingFunction type is an Express (req, resp) handler, not something
 // that takes an AuthBlockingEvent directly, so this is the piece tests can
@@ -193,18 +165,22 @@ export const gateTesterAllowlist = beforeUserSignedIn(resolveTesterClaim)
 //
 // Runs under the Admin SDK, which bypasses Security Rules entirely, so it
 // is unaffected by storage.rules' delete branch.
-//
-// Deleting each object individually (rather than a bulk prefix delete) is
-// deliberate: it fires onSubmissionPhotoDeleted per object, which keeps
-// photoCount consistent instead of stranding a counter doc at a count the
-// bucket no longer backs.
+// The default 60 s would cut a large sweep off silently, and the next run
+// would repeat the same listing. Listing is paged so the whole bucket's
+// metadata is never held at once; deletes run a few at a time.
+const SWEEP_PAGE_SIZE = 1000
+const SWEEP_DELETE_CONCURRENCY = 10
+
 export const sweepPhotosWithoutMetadata = onSchedule(
-  { schedule: 'every 24 hours', timeZone: 'Etc/UTC' },
+  {
+    schedule: 'every 24 hours',
+    timeZone: 'Etc/UTC',
+    timeoutSeconds: 540,
+    memory: '512MiB',
+  },
   async () => {
     const bucket = getStorage().bucket(BUCKET_NAME)
     const cutoff = Date.now() - SWEEP_RETENTION_DAYS * 24 * 60 * 60 * 1000
-
-    const [files] = await bucket.getFiles({ prefix: 'submissions/' })
 
     // Group by submissions/{uid}/{submissionId}/ prefix. A prefix is swept
     // only when it has no metadata.json AND every object in it predates the
@@ -214,35 +190,54 @@ export const sweepPhotosWithoutMetadata = onSchedule(
       { hasMetadata: boolean; newestMs: number; names: string[] }
     >()
 
-    for (const file of files) {
-      const match = OBJECT_PATH_PATTERN.exec(file.name)
-      if (!match) continue
-      const prefix = `submissions/${match[1]}/${match[2]}/`
+    let pageToken: string | undefined
+    do {
+      const [files, nextQuery] = await bucket.getFiles({
+        prefix: SUBMISSIONS_ROOT,
+        autoPaginate: false,
+        maxResults: SWEEP_PAGE_SIZE,
+        pageToken,
+      })
+      pageToken = (nextQuery as { pageToken?: string } | undefined)?.pageToken
+      for (const file of files) {
+        const object = parseSubmissionObject(file.name)
+        if (!object) continue
+        const prefix = submissionPrefix(object.uid, object.submissionId)
 
-      const entry = prefixes.get(prefix) ?? {
-        hasMetadata: false,
-        newestMs: 0,
-        names: [],
+        const entry = prefixes.get(prefix) ?? {
+          hasMetadata: false,
+          newestMs: 0,
+          names: [],
+        }
+        if (object.isMetadata) entry.hasMetadata = true
+        // updated/timeCreated are ISO strings on the metadata payload; a
+        // missing value must not read as "ancient" and trigger a delete, so
+        // it falls back to now.
+        const updated = file.metadata?.updated ?? file.metadata?.timeCreated
+        const updatedMs = updated ? Date.parse(String(updated)) : Date.now()
+        entry.newestMs = Math.max(
+          entry.newestMs,
+          Number.isNaN(updatedMs) ? Date.now() : updatedMs,
+        )
+        entry.names.push(file.name)
+        prefixes.set(prefix, entry)
       }
-      if (match[3] === METADATA_FILE_NAME) entry.hasMetadata = true
-      // updated/timeCreated are ISO strings on the metadata payload; a
-      // missing value must not read as "ancient" and trigger a delete, so
-      // it falls back to now.
-      const updated = file.metadata?.updated ?? file.metadata?.timeCreated
-      const updatedMs = updated ? Date.parse(String(updated)) : Date.now()
-      entry.newestMs = Math.max(
-        entry.newestMs,
-        Number.isNaN(updatedMs) ? Date.now() : updatedMs,
-      )
-      entry.names.push(file.name)
-      prefixes.set(prefix, entry)
-    }
+    } while (pageToken)
 
+    const doomed: string[] = []
     for (const [prefix, entry] of prefixes) {
       if (entry.hasMetadata) continue
       if (entry.newestMs >= cutoff) continue
+      doomed.push(...entry.names)
+      console.log(
+        `[sweep] deleting ${entry.names.length} object(s) under ${prefix} (no metadata.json, older than ${SWEEP_RETENTION_DAYS}d)`,
+      )
+    }
 
-      for (const name of entry.names) {
+    let next = 0
+    const worker = async () => {
+      while (next < doomed.length) {
+        const name = doomed[next++]
         // One failure must not abandon the rest of the sweep.
         try {
           await bucket.file(name).delete()
@@ -250,10 +245,10 @@ export const sweepPhotosWithoutMetadata = onSchedule(
           console.error(`[sweep] failed to delete ${name}`, error)
         }
       }
-      console.log(
-        `[sweep] deleted ${entry.names.length} object(s) under ${prefix} (no metadata.json, older than ${SWEEP_RETENTION_DAYS}d)`,
-      )
     }
+    await Promise.all(
+      Array.from({ length: SWEEP_DELETE_CONCURRENCY }, () => worker()),
+    )
   },
 )
 
@@ -290,4 +285,29 @@ export const syncEmailSubscription = onRequest(
   },
 )
 
-export { organizationsApi } from './organizations/api'
+// #433: account deletion behind the app's deletion guard. PostHog's host
+// and project come from deployment parameters; its personal API key is a
+// secret. Not wired to any screen until the guard's decision record lands.
+const POSTHOG_HOST = defineString('POSTHOG_HOST')
+const POSTHOG_PROJECT_ID = defineString('POSTHOG_PROJECT_ID')
+const POSTHOG_PERSONAL_API_KEY = defineSecret('POSTHOG_PERSONAL_API_KEY')
+
+export const deleteAccount = onCall(
+  { secrets: [EMAIL_API_KEY, POSTHOG_PERSONAL_API_KEY] },
+  (request) =>
+    handleDeleteAccount(request, {
+      email: createEmailListProvider(EMAIL_PROVIDER.value(), {
+        apiKey: EMAIL_API_KEY.value(),
+        listId: EMAIL_LIST_ID.value(),
+      }),
+      analytics: createPostHogEraser({
+        host: POSTHOG_HOST.value(),
+        projectId: POSTHOG_PROJECT_ID.value(),
+        personalApiKey: POSTHOG_PERSONAL_API_KEY.value(),
+      }),
+      submissions: createStorageSubmissionStore(BUCKET_NAME),
+      accounts: authAccountStore,
+    }),
+)
+
+export { organizationsApi } from './organizations/features'

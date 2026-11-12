@@ -47,3 +47,13 @@ Until these are decided, `emailOptIn` is a local flag only. See
 - An unverified address is sent as `pending`. EmailOctopus then asks the owner
   to confirm.
 - Not decided: what the app records about the choice (time, copy version).
+
+## Amendment 2026-11-03: account deletion removes the contact
+
+`EmailListProvider` gains `remove(email)`: account deletion (#433) deletes the
+contact rather than marking it unsubscribed. The EmailOctopus adapter calls
+"Delete contact" with the MD5 hash of the lowercase address as the contact id;
+a 404 counts as removed. `remove` runs from `functions/src/erasure/`, the
+ordered account-erasure pipeline (email, analytics person, Sightings only if
+the user chose so, then the Auth user), exposed as the `deleteAccount`
+callable. That callable needs a sign-in within the last five minutes.

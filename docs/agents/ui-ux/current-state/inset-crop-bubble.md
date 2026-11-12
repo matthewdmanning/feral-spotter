@@ -1,13 +1,13 @@
 ---
 topic: inset-crop-bubble
 status: active
-last_reviewed: 2026-08-08
+last_reviewed: 2026-11-02
 governs:
-  - src/components/organisms/InsetCropBubble.tsx
-  - src/components/organisms/InsetCropBubble.styles.ts
-  - src/screens/submission/cats/index.tsx
-  - src/screens/submission/cats/index.styles.ts
-  - src/screens/submission/annotate/index.tsx
+  - src/features/annotate/components/InsetCropBubble.tsx
+  - src/features/annotate/components/InsetCropBubble.styles.ts
+  - src/features/draft-submission/screens/cats/index.tsx
+  - src/features/draft-submission/screens/cats/index.styles.ts
+  - src/features/annotate/screens/annotate/index.tsx
 derives_from: ['#168', '#174', '#186']
 ---
 
@@ -21,7 +21,7 @@ derives_from: ['#168', '#174', '#186']
 
 ## Design Specifications
 
-- Bubble shape: rounded square, fixed corner radius (`theme.radius.lg`, not proportional to bubble size). Same shape on both the annotate screen and Cat Form.
+- Bubble shape: rounded square, fixed corner radius (`theme.radius.md`, 12dp, not proportional to bubble size). Same shape on both the annotate screen and Cat Form. (Changed 2026-11-02 from `lg`: code had drifted to `xs` on annotate; aligned both on `md`, between the two.)
 - Bubble expanded position:
   - Annotate screen: top-right.
   - Cat Form: top-center.

@@ -26,6 +26,7 @@ export interface SharingSettings {
   name: string
   phone: string
 }
+export const DEFAULT_CACHE_RADIUS_KM = 50
 export const DEFAULT_SHARING: SharingSettings = {
   fields: {
     name: false,
@@ -38,6 +39,11 @@ export const DEFAULT_SHARING: SharingSettings = {
   name: '',
   phone: '',
 }
+export const SHARING_FIELD_KEYS = Object.keys(
+  DEFAULT_SHARING.fields,
+) as (keyof SharingFields)[]
+/** Fields that identify the observer; Anonymous suppresses all of them. */
+export const CONTACT_FIELDS = ['name', 'email', 'phone'] as const
 export interface GrantRequest {
   contactEmail?: string | null
   submissionId: string
@@ -46,7 +52,6 @@ export interface GrantRequest {
   epoch: number
   anonymous: boolean
   settings: SharingSettings
-  injured: boolean
   disclosureVersion: 1
 }
 export interface Permission {
@@ -70,15 +75,20 @@ export interface Permission {
       east: number
     }
     contact?: { name?: string; email?: string; phone?: string }
-    preciseLocation?: { latitude: number; longitude: number }
+    preciseLocation?: Location
     cats?: Record<string, string>[]
     photoPaths?: string[]
   }
 }
 export interface PermissionLedger {
+  blockedOrganizations?: Record<string, string>
   revokedPairs?: string[]
   epochs: Record<string, number>
   permissions: Permission[]
+}
+export interface Location {
+  latitude: number
+  longitude: number
 }
 export function validId(value: unknown): value is string {
   return (
@@ -88,10 +98,11 @@ export function validId(value: unknown): value is string {
     value !== 'prototype'
   )
 }
-export function validLocation(
-  latitude: unknown,
-  longitude: unknown,
-): latitude is number {
+export function validLocation(value: {
+  latitude?: unknown
+  longitude?: unknown
+}): value is Location {
+  const { latitude, longitude } = value
   return (
     typeof latitude === 'number' &&
     Number.isFinite(latitude) &&
@@ -100,6 +111,11 @@ export function validLocation(
     Number.isFinite(longitude) &&
     Math.abs(longitude) <= 180
   )
+}
+function polygonsOf(coverage: Coverage): Position[][][] {
+  return coverage.type === 'Polygon'
+    ? [coverage.coordinates]
+    : coverage.coordinates
 }
 function relativeLongitude(longitude: number, origin: number): number {
   return ((longitude - origin + 540) % 360) - 180
@@ -130,10 +146,8 @@ export function covers(
   latitude: number,
   longitude: number,
 ): boolean {
-  if (!validLocation(latitude, longitude)) return false
-  const polygons =
-    coverage.type === 'Polygon' ? [coverage.coordinates] : coverage.coordinates
-  return polygons.some(
+  if (!validLocation({ latitude, longitude })) return false
+  return polygonsOf(coverage).some(
     ([outer, ...holes]) =>
       ringState([longitude, latitude], outer) !== 'outside' &&
       holes.every(
@@ -149,16 +163,12 @@ export function nearby(
   radiusKm: number,
 ): boolean {
   if (covers(organization.coverage, latitude, longitude)) return true
-  const polygons =
-    organization.coverage.type === 'Polygon'
-      ? [organization.coverage.coordinates]
-      : organization.coverage.coordinates
   const latSpan = radiusKm / 110.5
   const lonSpan = Math.min(
     180,
     radiusKm / (110.5 * Math.max(0.001, Math.cos((latitude * Math.PI) / 180))),
   )
-  return polygons.some(([outer]) => {
+  return polygonsOf(organization.coverage).some(([outer]) => {
     const xs = outer.map((p) => relativeLongitude(p[0], longitude))
     const ys = outer.map((p) => p[1] - latitude)
     return (
@@ -202,10 +212,12 @@ function segmentsIntersect(
 }
 function validatePolygon(polygon: Position[][]): void {
   const rings = polygon.map((ring) => planarRing(ring, polygon[0][0][0]))
-  for (const ring of rings) {
-    for (let i = 0; i < ring.length - 1; i++) {
+  for (const ring of rings)
+    for (let i = 0; i < ring.length - 1; i++)
       if (ring[i][0] === ring[i + 1][0] && ring[i][1] === ring[i + 1][1])
         throw new Error('Repeated ring vertex')
+  for (const ring of rings) {
+    for (let i = 0; i < ring.length - 1; i++) {
       for (let j = i + 2; j < ring.length - 1; j++) {
         if (i === 0 && j === ring.length - 2) continue
         if (segmentsIntersect(ring[i], ring[i + 1], ring[j], ring[j + 1]))
@@ -265,10 +277,7 @@ export function parseCatalog(input: unknown): Catalog {
     )
       throw new Error('Invalid organization')
     ids.add(org.id)
-    const polygons =
-      org.coverage.type === 'Polygon'
-        ? [org.coverage.coordinates]
-        : org.coverage.coordinates
+    const polygons = polygonsOf(org.coverage)
     if (!Array.isArray(polygons) || !polygons.length)
       throw new Error('Invalid coverage')
     for (const polygon of polygons) {
@@ -281,7 +290,9 @@ export function parseCatalog(input: unknown): Catalog {
           ring.length > 10000 ||
           ring.some(
             (p) =>
-              !Array.isArray(p) || p.length !== 2 || !validLocation(p[1], p[0]),
+              !Array.isArray(p) ||
+              p.length !== 2 ||
+              !validLocation({ latitude: p[1], longitude: p[0] }),
           )
         )
           throw new Error('Invalid ring')
@@ -320,49 +331,51 @@ export function generalLocation(
     east: +(west + 0.01).toFixed(2),
   }
 }
+const CAT_DETAIL_KEYS = [
+  'age',
+  'ear_tipped',
+  'owned_domesticated',
+  'pattern',
+  'hair_length',
+  'color',
+  'sex',
+  'health_label',
+]
 /** Explicit allowlist prevents internal IDs, URLs and boxes escaping as cat details. */
 export function projectData(input: {
   cats: Record<string, unknown>[]
-  latitude: number
-  longitude: number
+  location: Location
   photoPaths: string[]
-  fields: SharingFields
+  settings: SharingSettings
   anonymous: boolean
-  contact: { name?: string; email?: string; phone?: string }
+  email?: string
 }): Permission['data'] {
-  const { fields, anonymous, contact } = input
+  const { location } = input
+  const { fields, name, phone } = effectiveSharingSettings(
+    input.settings,
+    input.anonymous,
+  )
   const result: Permission['data'] = {
     catCount: input.cats.length,
-    generalLocation: generalLocation(input.latitude, input.longitude),
+    generalLocation: generalLocation(location.latitude, location.longitude),
   }
-  if (!anonymous) {
-    const selected = {
-      ...(fields.name && contact.name ? { name: contact.name } : {}),
-      ...(fields.email && contact.email ? { email: contact.email } : {}),
-      ...(fields.phone && contact.phone ? { phone: contact.phone } : {}),
-    }
-    if (Object.keys(selected).length) result.contact = selected
+  const contact = {
+    ...(name ? { name } : {}),
+    ...(fields.email && input.email ? { email: input.email } : {}),
+    ...(phone ? { phone } : {}),
   }
+  if (Object.keys(contact).length) result.contact = contact
   if (fields.preciseLocation)
     result.preciseLocation = {
-      latitude: input.latitude,
-      longitude: input.longitude,
+      latitude: location.latitude,
+      longitude: location.longitude,
     }
   if (fields.catDetails)
     result.cats = input.cats.map((cat) =>
       Object.fromEntries(
-        [
-          'age',
-          'ear_tipped',
-          'owned_domesticated',
-          'pattern',
-          'hair_length',
-          'color',
-          'sex',
-          'health_label',
-        ]
-          .filter((key) => typeof cat[key] === 'string')
-          .map((key) => [key, cat[key] as string]),
+        CAT_DETAIL_KEYS.filter((key) => typeof cat[key] === 'string').map(
+          (key) => [key, cat[key] as string],
+        ),
       ),
     )
   if (fields.photos) result.photoPaths = input.photoPaths
@@ -374,13 +387,38 @@ export function effectiveSharingSettings(
   settings: SharingSettings,
   anonymous: boolean,
 ): SharingSettings {
-  const fields = {
-    ...settings.fields,
-    ...(anonymous ? { name: false, email: false, phone: false } : {}),
-  }
+  const fields = { ...settings.fields }
+  if (anonymous) for (const key of CONTACT_FIELDS) fields[key] = false
   return {
     fields,
     name: fields.name ? settings.name : '',
     phone: fields.phone ? settings.phone : '',
   }
+}
+
+/** The optional fields actually offered once Anonymous is applied. */
+export function offeredFields(
+  settings: SharingSettings,
+  anonymous: boolean,
+): (keyof SharingFields)[] {
+  const { fields } = effectiveSharingSettings(settings, anonymous)
+  return SHARING_FIELD_KEYS.filter((key) => fields[key])
+}
+
+export const SHARING_FIELD_LABELS: Record<keyof SharingFields, string> = {
+  name: 'Name',
+  email: 'Email',
+  phone: 'Phone',
+  catDetails: 'Cat details',
+  preciseLocation: 'Precise location',
+  photos: 'Photos',
+}
+
+export interface SharedSighting {
+  id: string
+  catCount: number
+  generalLocation: Permission['data']['generalLocation']
+  preciseLocation?: Permission['data']['preciseLocation']
+  cats?: Permission['data']['cats']
+  photoCount: number
 }

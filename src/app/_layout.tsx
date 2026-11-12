@@ -9,9 +9,9 @@
  * react-navigation does not re-render screens on screenOptions changes.
  */
 
-import '@/src/config/unistyles'
-import { useUIStore } from '@/src/hooks'
-import { initializeDraft } from '@/src/hooks/useDraftStartupStore'
+import '@/src/shared/config/unistyles'
+import { useUIStore } from '@/src/shared/hooks/useUIStore'
+import { initializeDraft } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
 import { AppProviders } from '@/src/providers/AppProviders'
 import { Nunito_400Regular } from '@expo-google-fonts/nunito/400Regular'
 import { Nunito_500Medium } from '@expo-google-fonts/nunito/500Medium'
@@ -82,10 +82,6 @@ export default function RootLayout() {
         <Stack.Screen name="(home-tabs)" options={{ headerShown: false }} />
 
         {/* Non-tab flows */}
-        <Stack.Screen
-          name="feral-reports"
-          options={{ title: 'Feral Reports' }}
-        />
         {/* Read-only past Sighting, from a Reports card or map pin */}
         <Stack.Screen name="sighting/[id]" options={{ title: 'Sighting' }} />
         <Stack.Screen

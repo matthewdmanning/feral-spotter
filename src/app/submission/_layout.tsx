@@ -4,9 +4,12 @@
  * annotate: fullScreenModal (opened from cats)
  */
 
-import { ErrorBoundary } from '@/src/components/atoms/ErrorBoundary'
-import { GateScreen } from '@/src/components/molecules/GateScreen'
-import { useDraftStartupStore } from '@/src/hooks/useDraftStartupStore'
+import { ErrorBoundary } from '@/src/shared/ui/atoms/ErrorBoundary'
+import {
+  GoHomeGate,
+  RestoreFailedGate,
+} from '@/src/shared/ui/molecules/GateScreen'
+import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
 import { Stack, router } from 'expo-router'
 import { GearIcon } from 'phosphor-react-native/src/icons/Gear'
 import { Pressable } from 'react-native'
@@ -46,17 +49,10 @@ export default function SubmissionLayout() {
 
   const phase = useDraftStartupStore((s) => s.phase)
   if (phase !== 'ready') {
-    return (
-      <GateScreen
-        title={
-          phase === 'error'
-            ? 'Could not restore your sighting'
-            : 'Preparing your sighting'
-        }
-        body={phase === 'error' ? 'Restart the app to try again.' : undefined}
-        primaryLabel="Go Home"
-        onPrimary={() => router.replace('/')}
-      />
+    return phase === 'error' ? (
+      <RestoreFailedGate />
+    ) : (
+      <GoHomeGate title="Preparing Your Sighting" />
     )
   }
 

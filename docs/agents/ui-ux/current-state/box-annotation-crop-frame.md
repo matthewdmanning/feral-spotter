@@ -19,7 +19,7 @@
 - Photo gestures (pinch, pan, double-tap) reposition and zoom the photo underneath the frame, independent of handle drags — unchanged by the frame's resizability.
 - The annotate screen's carousel does not respond to horizontal swipe. Moving between photos happens only through the Previous button and automatic advance on Confirm / Not in Photo.
 - Add a Cat starts a fresh pass on the first photo. Nothing from an earlier unfinished pass shows or carries over: its cat and boxes are dropped.
-- Each photo shows the boxes of the cats already recorded, drawn in the photo's own pan and zoom. Each cat has one color from a fixed list of eight distinct colors (`catPalette` in `src/config/themes.ts`). The color is set when the cat's first box or Not in Photo mark is saved, and never changes while the cat exists. Removing another cat does not change it. A removed cat's color is reused only after every color has been handed out once.
+- Each photo shows the boxes of the cats already recorded, drawn in the photo's own pan and zoom. Each cat has one color from a fixed list of eight distinct colors (`catPalette` in `src/shared/config/themes.ts`). The color is set when the cat's first box or Not in Photo mark is saved, and never changes while the cat exists. Removing another cat does not change it. A removed cat's color is reused only after every color has been handed out once.
 - The hardware back button does not exit the annotation pass. It is swallowed entirely; "Done With This Cat" is the only way to leave.
 
 ## Reason

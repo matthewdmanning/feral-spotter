@@ -42,7 +42,7 @@ and removed the give-up:
   requests the media-library save permission (#145/#146, unrelated to
   location) — the two are independent effects, not a shared trigger.
 - **No restart while in flight**: the acquisition is a module-level singleton
-  (`src/lib/location.ts`), not tied to any screen's mount/unmount. It cannot
+  (`src/core/location/liveFix.ts`), not tied to any screen's mount/unmount. It cannot
   be restarted while actively watching.
 - **One threshold, two jobs**: it watches (`Location.watchPositionAsync`)
   until accuracy crosses `LOCATION_ACCURACY_THRESHOLD_M` (50m) — that's both
@@ -75,3 +75,5 @@ pool guaranteed empty by the guard above) — no arrival-order logic needed,
 because the mixed case this sprint's earlier drafts of this amendment tried
 to patch around cannot occur. True per-photo location for a genuinely mixed
 or multi-place batch is #133 (Beta), unchanged.
+
+_2026-11-01: code paths updated for the feature-folder layout ([PROJECT_STRUCTURE.md](../PROJECT_STRUCTURE.md)). Decision unchanged._

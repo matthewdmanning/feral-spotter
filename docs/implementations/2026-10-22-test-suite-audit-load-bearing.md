@@ -183,3 +183,15 @@ application gaps now have tests that fail the original semantic mutations.
 Twelve additional backend mutations were also caught. See the [implementation
 record](2026-10-22-test-suite-audit.md) and `post_remediation` in the evidence JSON
 for final validation and limitations.
+
+## 2026-11-02 — extension
+
+**Purpose:** Codebase review found load-bearing gaps: the consent version check, `uploadSubmissionPhoto`, `authStore`'s `isReady` invariant and draft sync's row creation had no real test; one test depended on `Date.now` call order.
+**Change:**
+
+- Home tests use the real consent store; the gate model adds stale-version and unanswered-step journeys (earlier commit).
+- `firebaseUpload.behavior.test.ts`: object path and extension per uri, progress percent.
+- `authStore.test.ts` replaces `authProvider.test.ts`, which only tested the Jest stub.
+- `useDraftSync.rowCreation.test.ts`: one row created with the draft's photos; no stray row after Submit.
+- submitFlow stall test uses fake timers. Queue test fakes reset per test. Functions tests drain `Once` queues. The drag test's handler-placement case fires a real grant.
+  Not done: per-file fixture consolidation and the other untested modules listed in the review (AppleSignIn/nonce, useConsentPermissions, AppProviders).

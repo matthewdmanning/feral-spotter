@@ -1,0 +1,143 @@
+import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
+import { AppButton } from '@/src/shared/ui/atoms/AppButton'
+import { TextButton } from '@/src/shared/ui/atoms/TextButton'
+import { ProfilePicPicker } from '@/src/features/draft-submission/components/ProfilePicPicker'
+import { CatForm } from '@/src/features/draft-submission/components/CatForm'
+import {
+  BUBBLE_HEADER_RESERVE,
+  InsetCropBubble,
+} from '@/src/features/annotate/components/InsetCropBubble'
+import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
+import { useAbandonCatGuard } from '@/src/features/draft-submission/hooks/useAbandonCatGuard'
+import { useActiveCatFlow } from '@/src/features/draft-submission/hooks/useActiveCatFlow'
+import { useCatForm } from '@/src/features/draft-submission/hooks/useCatForm'
+import { useCatSubmit } from '@/src/features/draft-submission/hooks/useCatSubmit'
+import { useRemoveCat } from '@/src/features/draft-submission/hooks/useRemoveCat'
+import { useLocalSearchParams } from 'expo-router'
+import {
+  returnToCatList,
+  returnToCatListAfterRemoval,
+} from '@/src/features/draft-submission/hooks/catPass'
+import { useEffect, useState } from 'react'
+import { ScrollView, Text, View } from 'react-native'
+import { styles } from './index.styles'
+import { firstParam } from '@/src/shared/utils/routeParam'
+
+export default function CatObservationScreen() {
+  const params = useLocalSearchParams<{ edit?: string | string[] }>()
+  const editId = firstParam(params.edit)
+
+  const cats = useSubmissionStore((s) => s.cats)
+  const existingCat = editId
+    ? cats.find((c) => c.local_id === editId)
+    : undefined
+  // An edit link for a cat that is already gone (a stale route) must not
+  // turn into a new cat on Save. Frozen at arrival: removing the cat from
+  // this screen also empties the lookup, and that path navigates itself.
+  const [staleEdit] = useState(
+    () => editId !== undefined && !cats.some((c) => c.local_id === editId),
+  )
+  useEffect(() => {
+    if (staleEdit) returnToCatList()
+  }, [staleEdit])
+  const { activeCatId } = useActiveCatFlow()
+
+  const form = useCatForm(existingCat)
+  const submit = useCatSubmit({ form, existingCat })
+  const catId = existingCat?.local_id ?? activeCatId
+
+  // Backing out of an unsaved cat would otherwise leave it in progress, and
+  // the next "Add a Cat" would silently resume it (#304).
+  useAbandonCatGuard(Boolean(existingCat))
+
+  // #299: only a saved cat can be removed. Navigates explicitly rather than
+  // router.back() — this screen is editing a cat that no longer exists once
+  // the removal lands, and for the first cat of a submission Cat Form was
+  // reached through a chain of `replace`s that strips Cat List off the stack
+  // entirely (the same trap #203 hit).
+  const removeCatWithConfirm = useRemoveCat()
+  const handleRemove = existingCat
+    ? () =>
+        removeCatWithConfirm(existingCat.local_id, () =>
+          // Cat List offers annotate-or-describe instead of auto-skipping
+          // straight back to annotate (#299).
+          returnToCatListAfterRemoval(),
+        )
+    : undefined
+
+  // The title fade needs "is the
+  // bubble actually covering me right now," delayed in *both* directions
+  // (docs/agents/ui-ux/current-state/inset-crop-bubble.md): reporting on expand
+  // would fade the title before the bubble has visually slid into place over it.
+  const [bubbleSettledCollapsed, setBubbleSettledCollapsed] = useState(true)
+  // A finger on the bubble is a drag, not a scroll: with both live, the page
+  // moves under the bubble being dragged.
+  const [bubbleHeld, setBubbleHeld] = useState(false)
+  // The header always reserves the collapsed size, however the bubble is
+  // expanded or dragged: a larger reservation shoved the form down when the
+  // bubble opened from its default spot. An expanded bubble floats over the
+  // form's first rows and can be dragged clear.
+  if (staleEdit) return null
+  return (
+    <View style={styles.screen}>
+      <AmbientBackground />
+      <ScrollView
+        style={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+        scrollEnabled={!bubbleHeld}
+      >
+        <View style={styles.inner}>
+          <View
+            testID="cat-form-header-zone"
+            style={[
+              styles.headerZone,
+              catId ? { minHeight: BUBBLE_HEADER_RESERVE } : null,
+            ]}
+          >
+            <View
+              style={[styles.header, catId ? styles.headerBesideBubble : null]}
+            >
+              <Text
+                style={[
+                  styles.title,
+                  catId && !bubbleSettledCollapsed ? styles.titleFaded : null,
+                ]}
+              >
+                {existingCat ? 'Edit Cat' : 'Observed Cat'}
+              </Text>
+              <View style={styles.headerActions}>
+                <TextButton onPress={form.handleClear} tone="danger">
+                  Clear
+                </TextButton>
+              </View>
+            </View>
+            {catId && (
+              <InsetCropBubble
+                catId={catId}
+                edge="top-center"
+                onSettledChange={setBubbleSettledCollapsed}
+                onHoldChange={setBubbleHeld}
+              />
+            )}
+          </View>
+          {catId && (
+            <ProfilePicPicker
+              catId={catId}
+              value={form.profilePhotoId}
+              onChange={form.setProfilePhotoId}
+            />
+          )}
+          <CatForm form={form} />
+          <View style={styles.actions}>
+            <AppButton onPress={submit.handleSave}>Save</AppButton>
+            {handleRemove && (
+              <AppButton onPress={handleRemove} variant="danger">
+                Remove this Cat
+              </AppButton>
+            )}
+          </View>
+        </View>
+      </ScrollView>
+    </View>
+  )
+}
