@@ -92,3 +92,5 @@ modules/native-identification-camera/android/.gradle/
 
 # Python bytecode (scripts/)
 __pycache__/
+.scratch/
+.idea/
