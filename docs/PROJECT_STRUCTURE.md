@@ -9,22 +9,24 @@ Feature-first. Migrated 2026-11-01 (plan:
 src/
 ├── app/           # Expo Router routes — thin re-exports of screens only
 ├── providers/     # AppProviders (app layer)
+├── workflows/     # app-level coordination across features
+│   └── photo-entry/        # camera/library entrypoints and source selection
 ├── features/
 │   ├── auth/              # sign-in, Registration, auth providers, entry gate
 │   ├── permissions/       # onboarding, consent, photo, location, email opt-in
 │   ├── settings/          # settings screen + store, photo toggles
-│   ├── organizations/     # organization directory, sharing consent, outbox
+│   ├── organizations/     # directory and core permissions; optional sharing/, membership/, interactions/
 │   ├── draft-submission/  # the draft (ADR-0006), create/cats/Map picker screens, upload
 │   ├── camera-control/    # Camera screen and capture hooks (JS side of the Camera seam)
 │   ├── library-picker/    # Library pick
 │   ├── annotate/          # Box Annotation, Tutorial, inset crop bubble
-│   └── history/           # Reports tab, Sighting detail
+│   └── history/           # Sightings tab (route `feral-reports`), Sighting detail
 ├── core/          # app-specific, too small to be a feature
 │   ├── home/              # Home screen
 │   └── location/          # Live fix (liveFix.ts) + its tuning
 ├── shared/        # domain-agnostic or cross-cutting kernel
 │   ├── ui/{atoms,molecules,organisms}/   # Atomic Design UI kit
-│   ├── analytics/  consent/  hooks/  lib/   # incl. the Submission store + cache
+│   ├── analytics/  consent/  hooks/  lib/   # incl. the Submission store + shared history cache
 │   └── config/  content/  types/  utils/
 ├── server-types/  # tsconfig.server.json includes it by path
 └── test-utils/
@@ -33,6 +35,10 @@ src/
 Inside a feature or core unit: `screens/<route>/`, `components/`, `hooks/`
 (hooks and zustand stores), `lib/`, `config/`. Only non-empty ones exist.
 Tests sit in `__tests__/` beside their subject.
+
+The mutable Submission store remains in `shared/hooks/`; draft-submission and
+organizations may import it from shared, while shared modules may not import
+feature modules.
 
 ## Dependency rule
 
@@ -50,9 +56,16 @@ never import each other.
 | 6     | draft-submission                         |
 | 7     | camera-control, library-picker, annotate |
 | 8     | history                                  |
+| 9     | workflows                                |
 
 - **Screens are the composition layer.** A `screens/` file may import any unit.
   Only `src/app/` and other screens import screens.
+- Routes in `src/app/` are entrypoints, not reusable modules. Providers may
+  compose features and workflows, but may not import routes or screens.
+  Features, workflows, shared modules and screens may not import app providers.
+- **Workflows coordinate features without importing screens.** Shared app
+  flows such as photo entry live here; screens invoke them. Features may not
+  import workflows from non-screen code.
 - No barrel (`index.ts` re-export) files: import the defining module. Metro
   bundles every re-export (#406), and barrels invite init-order cycles.
 - No module-level import cycles.
@@ -62,7 +75,9 @@ never import each other.
 
 `eslint.config.js` enforces the level rule, the screens rule, cycles and the
 `../` ban (`BOUNDARY_LEVELS`, `import/no-cycle`, `PARENT_RELATIVE`). The
-no-barrel rule is convention only. To move code, use `node scripts/move-module.mjs
+architecture regression tests in `__tests__/architecture.test.ts` exercise
+forbidden imports and allowed composition through the real ESLint config.
+The no-barrel rule is convention only. To move code, use `node scripts/move-module.mjs
 <mapping-file>`: it runs `git mv` and rewrites import and `jest.mock`
 specifiers.
 
@@ -102,3 +117,11 @@ eslint` and `npx jest` say nothing about either. Kotlin has a local compile
 (`cd android && ./gradlew :native-identification-camera:compileDebugKotlin`);
 Swift has no compile check at all on the current plan, because it needs a macOS
 runner. Report a Swift change as "needs test drive", never as verified.
+
+### Organization subfeatures
+
+`organizations/` owns the directory, permission records, validation, revocation, and generic API and Firestore permission operations. Core stores do not import membership or sharing UI.
+
+- `sharing/{components,hooks,lib,screens}/`: consent controls, sharing workflows, shared-Sighting map/details, and authenticated photo delivery.
+- `membership/{components,hooks,lib,screens}/`: invite requests, approval status, names-only roster, and leaving. Uses core permission operations without importing sharing.
+- `functions/src/organizations/features.ts` and app routes compose the optional features. Active membership authorizes shared reads; consent still limits the returned data. Membership works with sharing disabled.

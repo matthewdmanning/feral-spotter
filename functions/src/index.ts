@@ -310,4 +310,4 @@ export const deleteAccount = onCall(
     }),
 )
 
-export { organizationsApi } from './organizations/api'
+export { organizationsApi } from './organizations/features'

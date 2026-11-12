@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect } from 'react'
 import { Text } from '@/src/shared/ui/atoms/Text'
 import {
   commonCopy,
@@ -14,16 +14,17 @@ import {
   useSubmissionStore,
   type OrganizationSharingDraft,
 } from '@/src/shared/hooks/useSubmissionStore'
+import { reconcileSharingDraft } from '@/src/features/organizations/lib/draft'
 import { useOrganizationDirectory } from '@/src/features/organizations/hooks/useOrganizationDirectory'
 import {
   useOrganizationSharingStore,
   EMPTY_ORGANIZATION_ACCOUNT,
 } from '@/src/features/organizations/hooks/useOrganizationSharingStore'
 import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
-import { sharingSignature } from '@/src/features/organizations/lib/consent'
-import { includedSummary } from '@/src/features/organizations/lib/sharing'
+import { sharingSignature } from '@/src/features/organizations/sharing/lib/consent'
+import { includedSummary } from '@/src/features/organizations/sharing/lib/sharing'
 import { SharingCheckbox } from './SharingCheckbox'
-import { styles } from './styles'
+import { styles } from '@/src/features/organizations/components/styles'
 
 export function SubmissionOrganizations() {
   const { user } = useAuth()
@@ -32,6 +33,7 @@ export function SubmissionOrganizations() {
   const submission = useSubmissionStore((s) => s.submission)
   const storedDraft = useSubmissionStore((s) => s.organizationSharing)
   const setDraft = useSubmissionStore((s) => s.setOrganizationSharing)
+  const setReportInjured = useSubmissionStore((s) => s.setReportInjured)
   const account = useOrganizationSharingStore((s) =>
     user
       ? (s.accounts[user.uid] ?? EMPTY_ORGANIZATION_ACCOUNT)
@@ -42,38 +44,33 @@ export function SubmissionOrganizations() {
     submission.longitude,
   )
   const draft = storedDraft?.ownerUid === user?.uid ? storedDraft : null
-  const eligibleIds = useMemo(
-    () => directory.organizations.map((org) => org.id),
-    [directory.organizations],
-  )
   useEffect(() => {
-    if (!user || !enabled || !hydrated || !directory.cache) return
-    const selectedIds = (draft?.selectedIds ?? account.preferredIds).filter(
-      (id) => eligibleIds.includes(id),
+    if (
+      !user ||
+      !enabled ||
+      !hydrated ||
+      !directory.cache ||
+      submission.latitude == null ||
+      submission.longitude == null
     )
-    const next: OrganizationSharingDraft = draft
-      ? { ...draft, selectedIds, catalogVersion: directory.cache.version }
-      : {
-          ownerUid: user.uid,
-          selectedIds,
-          anonymous: true,
-          catalogVersion: directory.cache.version,
-          confirmedSignature: null,
-        }
-    next.organizationNames = Object.fromEntries(
-      directory.organizations.map((org) => [org.id, org.name]),
-    )
-    if (!draft || JSON.stringify(next) !== JSON.stringify(draft))
-      setDraft({ ...next, confirmedSignature: null })
+      return
+    const next = reconcileSharingDraft(draft, {
+      ownerUid: user.uid,
+      preferredIds: account.preferredIds,
+      catalogVersion: directory.cache.version,
+      organizations: directory.organizations,
+    })
+    if (next !== draft) setDraft(next)
   }, [
     user,
     enabled,
     hydrated,
     directory.cache,
+    submission.latitude,
+    submission.longitude,
     account.preferredIds,
     draft,
     setDraft,
-    eligibleIds,
     directory.organizations,
   ])
   if (!enabled || !user || !hydrated) return null
@@ -90,9 +87,7 @@ export function SubmissionOrganizations() {
       <SharingCheckbox
         label={copy.injuredCat}
         checked={submission.report_injured === true}
-        onChange={(report_injured) =>
-          useSubmissionStore.getState().setSubmission({ report_injured })
-        }
+        onChange={setReportInjured}
       />
       <Text style={styles.hint}>{copy.noContactNotice}</Text>
       {submission.latitude == null || submission.longitude == null ? (

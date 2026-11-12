@@ -59,7 +59,7 @@ suppresses this. Don't attempt it.
 ## Suggested skills
 
 - `tdd` — model this as a permission-state machine per
-  [testing.md](../../agents/testing.md) (states: `granted-fine`,
+  [testing.md](../../../agents/testing.md) (states: `granted-fine`,
   `granted-coarse`, `denied`, `blocked` × time-scope) rather than
   hand-written per-case tests. `getPathsFromEvents` for the real user
   journey, not just `getShortestPaths` coverage.

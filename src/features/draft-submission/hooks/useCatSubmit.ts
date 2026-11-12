@@ -60,9 +60,6 @@ export function useCatSubmit({
   // ── Build ObservedCat from current form values ─────────────────────────────
   // photo_local_ids is derived from useBoundingBoxStore, not form input
   // (ADR 0004) — the manual CatPhotoSelector this used to come from is gone.
-  // Editing a cat with no boxes recorded under its id (pre-#170 draft, or a
-  // useBoundingBoxStore migration wipe) keeps its existing list rather than
-  // blanking it — the derivation is additive/corrective, not destructive.
 
   const buildCat = useCallback(
     (localId: string): ObservedCat => {
@@ -73,10 +70,7 @@ export function useCatSubmit({
       return {
         local_id: localId,
         ...fields,
-        photo_local_ids:
-          boxedPhotoIds.length > 0
-            ? boxedPhotoIds
-            : (existingCat?.photo_local_ids ?? []),
+        photo_local_ids: boxedPhotoIds,
         photos_reviewed: existingCat?.photos_reviewed ?? false,
         ...(form.profilePhotoId && {
           profile_photo_local_id: form.profilePhotoId,

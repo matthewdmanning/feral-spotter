@@ -38,7 +38,9 @@ const HOUR_MS = 60 * 60 * 1000
 const CACHE_ID = 'cache-1'
 
 const seedDraft = (updatedAt: number | null) => {
-  useSubmissionStore.getState().setSubmission({ address: 'Draft address' })
+  useSubmissionStore.setState((s) => ({
+    submission: { ...s.submission, address: 'Draft address' },
+  }))
   usePhotoStore.getState().addPhoto({
     local_id: 'photo-1',
     uri: 'file://photo-1.jpg',
@@ -48,20 +50,6 @@ const seedDraft = (updatedAt: number | null) => {
     height: 100,
   })
   usePhotoStore.setState({ updated_at: updatedAt })
-}
-
-// Use this function to seed a legacy draft cache with the supplied last-change timestamp for expiry tests.
-const seedCache = async (updatedAt: string | undefined) => {
-  await createSubmissionCache(CACHE_ID, {
-    location_method: 'device',
-    time_method: 'device',
-  })
-  const cache = await getSubmissionCache(CACHE_ID)
-  if (!cache) throw new Error('Expected seeded cache')
-  await AsyncStorage.setItem(
-    `submission_cache_${CACHE_ID}`,
-    JSON.stringify({ ...cache, updated_at: updatedAt }),
-  )
 }
 
 describe('discardUnsurvivingDraft (#424)', () => {
@@ -149,7 +137,10 @@ describe('discardUnsurvivingDraft (#424)', () => {
         },
       ],
     })
-    await seedCache(new Date(NOW - SUBMISSION_STALE_MS - HOUR_MS).toISOString())
+    await createSubmissionCache(CACHE_ID, {
+      location_method: 'device',
+      time_method: 'device',
+    })
 
     const deleteStarted = Promise.withResolvers<void>()
     const deleteGate = Promise.withResolvers<void>()
@@ -189,48 +180,22 @@ describe('discardUnsurvivingDraft (#424)', () => {
   })
 
   it('discards draft data that has no photo behind it', async () => {
-    useSubmissionStore.getState().setSubmission({ address: 'Orphan address' })
+    useSubmissionStore.setState((s) => ({
+      submission: { ...s.submission, address: 'Orphan address' },
+    }))
     await discardUnsurvivingDraft(NOW)
     expect(useSubmissionStore.getState().submission.address).toBeUndefined()
   })
 
-  it('migrates a fresh cache age and expires on a later startup', async () => {
+  it('discards an undated pool even when its current cache row is fresh', async () => {
     seedDraft(null)
-    const updatedAt = new Date(
-      NOW - SUBMISSION_STALE_MS + HOUR_MS,
-    ).toISOString()
-    await seedCache(updatedAt)
-    await discardUnsurvivingDraft(NOW)
-    expect(usePhotoStore.getState().photos).toHaveLength(1)
-    expect(usePhotoStore.getState().updated_at).toBe(
-      new Date(updatedAt).getTime(),
-    )
-    const persisted = JSON.parse(
-      (await AsyncStorage.getItem('photo-store')) as string,
-    )
-    expect(persisted.state.updated_at).toBe(new Date(updatedAt).getTime())
-
-    await discardUnsurvivingDraft(NOW + SUBMISSION_STALE_MS + HOUR_MS)
-    expect(usePhotoStore.getState().photos).toHaveLength(0)
-  })
-
-  it.each([
-    [
-      'a stale cache age',
-      new Date(NOW - SUBMISSION_STALE_MS - HOUR_MS).toISOString(),
-    ],
-    ['an unreadable cache age', 'not-a-date'],
-  ])('discards a legacy pool with %s', async (_label, updatedAt) => {
-    seedDraft(null)
-    await seedCache(updatedAt)
+    await createSubmissionCache(CACHE_ID, {
+      location_method: 'device',
+      time_method: 'device',
+    })
     await discardUnsurvivingDraft(NOW)
     expect(usePhotoStore.getState().photos).toHaveLength(0)
-  })
-
-  it('discards a legacy pool when its current cache row is missing', async () => {
-    seedDraft(null)
-    await discardUnsurvivingDraft(NOW)
-    expect(usePhotoStore.getState().photos).toHaveLength(0)
+    expect(usePhotoStore.getState().updated_at).toBeNull()
   })
 
   it('fails instead of hanging when rehydrate resolves without hydration', async () => {

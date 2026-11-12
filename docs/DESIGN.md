@@ -5,7 +5,7 @@
 Started 2026-09-25 by the `improve-app` journey. Tracking issue
 matthewdmanning/feral-spotter#371.
 
-Raw color values live only in `src/config/unistyles.ts`. Component `*.styles.ts` files consume tokens.
+Raw color values live only in `src/shared/config/unistyles.ts`. Component `*.styles.ts` files consume tokens.
 This file records decisions and findings, not hex values.
 
 ## Design Direction
@@ -21,7 +21,7 @@ The Phase 2 pass recorded U1–U25. U26 was added during the Phase 6 copy audit.
 
 ## Typography
 
-`src/config/themes.ts` defines a shared 12/14/16/18/20/24/30 type scale. Its use on the key screens
+`src/shared/config/themes.ts` defines a shared 12/14/16/18/20/24/30 type scale. Its use on the key screens
 still needs a rendered grayscale check.
 
 ## Tokens

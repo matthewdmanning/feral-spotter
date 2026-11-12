@@ -5,8 +5,8 @@ import {
   formatCopy,
   navigationCopy,
 } from '@/src/shared/config/text'
-import { SharingSettings } from '@/src/features/organizations/components/SharingSettings'
-import { OrganizationPermissions } from '@/src/features/organizations/components/OrganizationPermissions'
+import { SharingSettings } from '@/src/features/organizations/sharing/components/SharingSettings'
+import { OrganizationPermissions } from '@/src/features/organizations/sharing/components/OrganizationPermissions'
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import {
   getThemeMode,
@@ -132,6 +132,9 @@ export default function SettingsScreen() {
             )}
           </GlassSurface>
 
+          <TextButton onPress={() => router.push('/organizations')}>
+            Organizations
+          </TextButton>
           <SharingSettings />
           <OrganizationPermissions />
 

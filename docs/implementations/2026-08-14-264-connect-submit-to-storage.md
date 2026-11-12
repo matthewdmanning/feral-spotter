@@ -205,6 +205,12 @@ Tests: `useSubmissionSubmit.inFlight.test.ts` (lock, retry, cleared draft, Faile
 **Purpose:** Apply the chosen user-facing Sighting terminology consistently (#380).
 **Change:** Home continuation/draft notices, form title, final Submit Sighting action and counted confirmation, reset dialog, retry/failure messages, and history labels use Sighting. Internal Submission models, routes, telemetry, storage keys, and APIs are unchanged. No rescue-response or receipt behavior is added. Existing rendered journeys/assertions are updated with the wording. Device truncation/accessibility acceptance remains open. See the [history note](2026-10-26-feat-reports-history-map.md) and [backlog audit](../planning/2026-11-08-backlog-2026-11-07.md).
 
+## 2026-11-09 — refactor: greenfield persistence
+
+**Purpose:** Remove older-install upgrade paths because the project has no active users or data to migrate.
+**Change:** Removed rehydration-time slot assignment for pre-slot photo pools. New photos receive upload slots at insertion. Current interrupted-write repair for an empty pool with a stale source lock remains.
+**Verification:** Full client suite: 120 suites / 550 tests. Functions: 8 suites / 65 tests. Type checks and focused lint pass. Organization integration: 23 emulator scenarios; Rules: 24 tests. No deployment or device check.
+
 ## 2026-11-11 — refactor
 
 **Purpose:** Move submission confirmation, failure and discard copy to its canonical

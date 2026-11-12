@@ -15,7 +15,7 @@ import {
 } from '@/src/features/draft-submission/hooks/confirmResetSubmission'
 import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
 import { useEntryGate } from '@/src/features/auth/hooks/useEntryGate'
-import { usePhotoEntrypoints } from '@/src/features/library-picker/hooks/usePhotoEntrypoints'
+import { usePhotoEntrypoints } from '@/src/workflows/photo-entry/hooks/usePhotoEntrypoints'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useResumableDraft } from '@/src/features/draft-submission/hooks/useResumableDraft'
 import { computeEntrypointDiameter } from '@/src/core/home/lib/entrypointDiameter'

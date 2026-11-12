@@ -30,6 +30,28 @@ const PARENT_RELATIVE = {
     "Import through the @/ alias, e.g. '@/src/features/<unit>/…'. Only same-folder './' imports stay relative.",
 }
 
+const APP_ROUTES = {
+  group: ['@/src/app', '@/src/app/**'],
+  message: 'App routes are entrypoints; reusable code must not import them.',
+}
+const APP_PROVIDERS = {
+  group: ['@/src/providers', '@/src/providers/**'],
+  message: 'Only app routes and other providers may import app providers.',
+}
+const SCREENS = {
+  group: ['**/screens', '**/screens/**'],
+  message:
+    'Only src/app routes and other screens import screens. Move the shared piece out of screens/.',
+}
+
+// Each override replaces the whole rule, so preserve the common icon and
+// relative-import restrictions in every production scope.
+/** Use this function to add scope-specific patterns while retaining RESTRICTED_PATHS and PARENT_RELATIVE. */
+const restrictedImports = (...patterns) => [
+  'error',
+  { paths: RESTRICTED_PATHS, patterns: [PARENT_RELATIVE, ...patterns] },
+]
+
 // Feature-folder boundaries (docs/PROJECT_STRUCTURE.md). Non-screen code in a
 // unit may import its own unit or a lower level only; peers on one level may
 // not import each other. Screens are the composition layer and are exempt.
@@ -43,9 +65,12 @@ const BOUNDARY_LEVELS = [
   ['draft-submission'],
   ['camera-control', 'library-picker', 'annotate'],
   ['history'],
+  ['workflows'],
 ]
 const unitDir = (unit) =>
-  unit === 'shared' || unit === 'core' ? `src/${unit}` : `src/features/${unit}`
+  ['shared', 'core', 'workflows'].includes(unit)
+    ? `src/${unit}`
+    : `src/features/${unit}`
 const boundaryBlocks = BOUNDARY_LEVELS.flatMap((level, i) =>
   level.map((unit) => {
     const forbidden = BOUNDARY_LEVELS.slice(i)
@@ -55,28 +80,22 @@ const boundaryBlocks = BOUNDARY_LEVELS.flatMap((level, i) =>
       files: [`${unitDir(unit)}/**/*.ts`, `${unitDir(unit)}/**/*.tsx`],
       ignores: ['**/__tests__/**', '**/screens/**'],
       rules: {
-        '@typescript-eslint/no-restricted-imports': [
-          'error',
-          {
-            paths: RESTRICTED_PATHS,
-            patterns: [
-              PARENT_RELATIVE,
-              ...(forbidden.length
-                ? [
-                    {
-                      group: forbidden.map((other) => `@/${unitDir(other)}/**`),
-                      message: `${unit} may import only lower levels (docs/PROJECT_STRUCTURE.md). Move the shared piece down, or compose in a screen.`,
-                    },
-                  ]
-                : []),
-              {
-                group: ['**/screens/**'],
-                message:
-                  'Only src/app routes and other screens import screens. Move the shared piece out of screens/.',
-              },
-            ],
-          },
-        ],
+        '@typescript-eslint/no-restricted-imports': restrictedImports(
+          APP_ROUTES,
+          APP_PROVIDERS,
+          SCREENS,
+          ...(forbidden.length
+            ? [
+                {
+                  group: forbidden.flatMap((other) => [
+                    `@/${unitDir(other)}`,
+                    `@/${unitDir(other)}/**`,
+                  ]),
+                  message: `${unit} may import only lower levels (docs/PROJECT_STRUCTURE.md). Move the shared piece down, or compose in a screen.`,
+                },
+              ]
+            : []),
+        ),
       },
     }
   }),
@@ -170,13 +189,11 @@ module.exports = defineConfig([
       // Icons come one file per icon. The package root is a barrel that
       // re-exports every icon, and Metro bundles and runs all of them (#406).
       // Type-only imports are erased at build time, so they stay allowed.
-      '@typescript-eslint/no-restricted-imports': [
-        'error',
-        {
-          paths: RESTRICTED_PATHS,
-          patterns: [PARENT_RELATIVE],
-        },
-      ],
+      '@typescript-eslint/no-restricted-imports': restrictedImports(
+        APP_ROUTES,
+        APP_PROVIDERS,
+        SCREENS,
+      ),
       // Do not use `#private` fields; do not use `const enum`.
       'no-restricted-syntax': [
         'error',
@@ -191,6 +208,32 @@ module.exports = defineConfig([
           message: 'Do not use `const enum`; use a regular `enum`.',
         },
       ],
+    },
+  },
+  // Screens may compose features, workflows and other screens, but must not
+  // depend on the app routes or providers that mount them.
+  {
+    files: ['src/**/screens/**/*.ts', 'src/**/screens/**/*.tsx'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': restrictedImports(
+        APP_ROUTES,
+        APP_PROVIDERS,
+      ),
+    },
+  },
+  {
+    files: ['src/providers/**/*.ts', 'src/providers/**/*.tsx'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': restrictedImports(
+        APP_ROUTES,
+        SCREENS,
+      ),
+    },
+  },
+  {
+    files: ['src/app/**/*.ts', 'src/app/**/*.tsx'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': restrictedImports(),
     },
   },
   // react-hooks/immutability flags Reanimated SharedValue `.value` mutations as illegal.
