@@ -87,7 +87,10 @@ export default function SharedSightingsScreen() {
   const uid = query.uid
   const selected = query.sightings.find((s) => s.id === selectedId)
   return (
-    <ScrollView contentContainerStyle={layout.content}>
+    <ScrollView
+      contentContainerStyle={layout.content}
+      keyboardShouldPersistTaps="handled"
+    >
       <Stack.Screen options={{ title: 'Shared Sightings' }} />
       <Text style={styles.hint}>
         Shaded areas show approximate locations. Pins show explicitly shared
@@ -178,7 +181,7 @@ export default function SharedSightingsScreen() {
               />
             ))}
           <PinInteractions
-            key={selected.id}
+            key={`${uid}-${id}-${selected.id}`}
             organizationId={id}
             pinId={selected.id}
           />

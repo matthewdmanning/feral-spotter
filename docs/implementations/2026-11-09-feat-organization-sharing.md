@@ -39,3 +39,8 @@ See [combined verification](2026-11-07-feat-organizations.md#verification) for c
 - Auto-refresh (30 s) runs only while one page is loaded; after "load more", refresh is manual. TanStack refetches every loaded page in sequence.
 - `sharedPhoto` pins the Storage generation as returned, without `Number()` conversion.
 - Test: `sharedSightings.journey.test.tsx` asserts a 503 refresh keeps both pages; it failed before the fix. Pin interactions use the same pager: [pin interactions](2026-11-09-pin-interactions.md).
+
+## 2026-11-12 — fix
+
+**Purpose:** Integrate the pin comment composer into the native Shared Sightings screen.
+**Change:** The host scroll view allows handled child taps while the on-screen keyboard is open, so Post receives the first tap. Pin interaction identity includes the account and organization as well as the Sighting. The pager exposes access-loss state for the [interaction controls](2026-11-09-pin-interactions.md) to clear local receipts and disable writes. Native keyboard placement is unverified because `adb` is unavailable.

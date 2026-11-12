@@ -1,4 +1,9 @@
-import { screen, userEvent, waitFor } from '@testing-library/react-native'
+import {
+  screen,
+  userEvent,
+  waitFor,
+  within,
+} from '@testing-library/react-native'
 import { renderRouter } from 'expo-router/testing-library'
 import { PinInteractions } from '@/src/features/organizations/interactions/components/PinInteractions'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
@@ -111,6 +116,9 @@ test('a member reacts, retries a lost comment once, and deletes only their own',
   await user.type(screen.getByLabelText('Add a comment'), 'Two kittens fed')
   await user.press(screen.getByRole('button', { name: 'Post comment' }))
   expect(await screen.findByRole('alert')).toBeOnTheScreen()
+  expect(
+    within(screen.getByTestId('pin-comment-composer')).getByRole('alert'),
+  ).toBeOnTheScreen()
   // The typed text survives the failure, and the retry reuses its mutation id.
   await user.press(screen.getByRole('button', { name: 'Post comment' }))
   expect(await screen.findByText('Two kittens fed')).toBeOnTheScreen()

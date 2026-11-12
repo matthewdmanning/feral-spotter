@@ -6,9 +6,11 @@ import { TextField } from '@/src/shared/ui/atoms/TextField'
 import { OrganizationLoading } from '@/src/features/organizations/components/OrganizationLoading'
 import { styles as common } from '@/src/features/organizations/components/styles'
 import { usePinInteractions } from '@/src/features/organizations/interactions/hooks/usePinInteractions'
+import { pinInteractionCopy as copy } from '@/src/features/organizations/interactions/copy'
 import {
   COMMENT_MAX_LENGTH,
   REACTIONS,
+  type PinComment,
 } from '@/functions/src/organizations/interactions/domain'
 import { styles } from './styles'
 
@@ -23,93 +25,156 @@ export function PinInteractions({
   const pin = usePinInteractions(organizationId, pinId)
   const [text, setText] = useState('')
   const counts = new Map(pin.reactions.map((r) => [r.key, r]))
-  return (
-    <View style={styles.section}>
-      <View style={styles.reactions}>
-        {REACTIONS.map(({ key, emoji, label }) => {
-          const reaction = counts.get(key)
-          const mine = !!reaction?.mine
-          const count = reaction?.count ?? 0
-          return (
-            <Pressable
-              key={key}
-              disabled={!pin.ready}
-              onPress={() => {
-                void pin.toggleReaction(key, !mine)
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={`${label}, ${count}`}
-              accessibilityState={{ selected: mine, disabled: !pin.ready }}
-              style={[styles.reaction, mine && styles.reactionSelected]}
-            >
-              <Text
-                style={[
-                  styles.reactionLabel,
-                  mine && styles.reactionLabelSelected,
-                ]}
-              >{`${emoji} ${count}`}</Text>
-            </Pressable>
-          )
-        })}
-      </View>
-      <Text style={common.title}>Comments</Text>
-      {pin.initialLoading && <OrganizationLoading label="Loading comments…" />}
-      {!!pin.error && (
+  const renderComment = (comment: PinComment) => (
+    <View key={comment.id} style={styles.comment}>
+      <Text style={styles.author}>
+        {comment.mine ? copy.you : (comment.author ?? copy.formerMember)}
+      </Text>
+      <Text style={common.body}>{comment.body}</Text>
+      {comment.mine && (
+        <TextButton
+          tone="danger"
+          disabled={!pin.ready}
+          accessibilityLabel={copy.deleteOwnComment}
+          onPress={() => {
+            void pin.deleteComment(comment.id)
+          }}
+        >
+          {pin.deletingId === comment.id ? copy.deleting : copy.delete}
+        </TextButton>
+      )}
+      {pin.deleteError?.commentId === comment.id && (
         <Text accessibilityRole="alert" style={common.body}>
-          {pin.error}
+          {pin.deleteError.message}
         </Text>
       )}
-      {!pin.initialLoading && !pin.error && !pin.comments.length && (
-        <Text style={common.hint}>No comments yet.</Text>
-      )}
-      {pin.comments.map((comment) => (
-        <View key={comment.id} style={styles.comment}>
-          <Text style={styles.author}>
-            {comment.mine ? 'You' : (comment.author ?? 'Former member')}
-          </Text>
-          <Text style={common.body}>{comment.body}</Text>
-          {comment.mine && (
+    </View>
+  )
+  return (
+    <View style={styles.section}>
+      <View style={styles.section} testID="pin-reactions">
+        {pin.reactionsLoading && (
+          <OrganizationLoading label={copy.loadingReactions} />
+        )}
+        {pin.reactionsKnown && (
+          <View style={styles.reactions}>
+            {REACTIONS.map(({ key, emoji, label }) => {
+              const reaction = counts.get(key)
+              const mine = !!reaction?.mine
+              const count = reaction?.count ?? 0
+              return (
+                <Pressable
+                  key={key}
+                  disabled={!pin.reactionsReady}
+                  onPress={() => {
+                    void pin.toggleReaction(key, !mine)
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${label}, ${count}`}
+                  accessibilityState={{
+                    selected: mine,
+                    disabled: !pin.reactionsReady,
+                  }}
+                  style={[styles.reaction, mine && styles.reactionSelected]}
+                >
+                  <Text
+                    style={[
+                      styles.reactionLabel,
+                      mine && styles.reactionLabelSelected,
+                    ]}
+                  >{`${emoji} ${count}`}</Text>
+                </Pressable>
+              )
+            })}
+          </View>
+        )}
+        {pin.reacting && <OrganizationLoading label={copy.updatingReaction} />}
+        {!!pin.reactionError && (
+          <View>
+            <Text accessibilityRole="alert" style={common.body}>
+              {pin.reactionError}
+            </Text>
             <TextButton
-              tone="danger"
-              disabled={!pin.ready}
-              accessibilityLabel="Delete your comment"
+              disabled={pin.reactionsBusy}
               onPress={() => {
-                void pin.deleteComment(comment.id)
+                void pin.retryReactions()
               }}
             >
-              Delete
+              {copy.retryReactions}
             </TextButton>
-          )}
-        </View>
-      ))}
-      {!!pin.cursor && (
+          </View>
+        )}
+      </View>
+      <Text style={common.title}>{copy.comments}</Text>
+      {pin.initialLoading && (
+        <OrganizationLoading label={copy.loadingComments} />
+      )}
+      {!pin.initialLoading &&
+        !pin.threadError &&
+        !pin.comments.length &&
+        !pin.receipts.length && (
+          <Text style={common.hint}>{copy.noComments}</Text>
+        )}
+      {pin.comments.map(renderComment)}
+      {!!pin.threadError && (
+        <Text accessibilityRole="alert" style={common.body}>
+          {pin.threadError}
+        </Text>
+      )}
+      {!!pin.cursor ? (
         <TextButton
+          disabled={pin.commentsBusy}
           onPress={() => {
             void pin.loadMore()
           }}
         >
-          Load more comments
+          {copy.loadMore}
         </TextButton>
+      ) : (
+        !!pin.threadError && (
+          <TextButton
+            disabled={pin.commentsBusy}
+            onPress={() => {
+              void pin.refreshComments()
+            }}
+          >
+            {copy.retryComments}
+          </TextButton>
+        )
       )}
-      <TextField
-        label="Add a comment"
-        value={text}
-        onChangeText={setText}
-        multiline
-        maxLength={COMMENT_MAX_LENGTH}
-        autoCapitalize="sentences"
-      />
-      <AppButton
-        disabled={!pin.ready || !text.trim()}
-        loading={pin.busy}
-        onPress={() => {
-          void pin.addComment(text).then((posted) => {
-            if (posted) setText('')
-          })
-        }}
-      >
-        Post comment
-      </AppButton>
+      {!!pin.receipts.length && (
+        <View style={styles.section}>
+          <Text style={common.hint}>{copy.posted}</Text>
+          {pin.receipts.map(renderComment)}
+        </View>
+      )}
+      <View style={styles.section} testID="pin-comment-composer">
+        <TextField
+          label={copy.addComment}
+          value={text}
+          onChangeText={setText}
+          editable={!pin.posting}
+          multiline
+          maxLength={COMMENT_MAX_LENGTH}
+          autoCapitalize="sentences"
+        />
+        {!!pin.postError && (
+          <Text accessibilityRole="alert" style={common.body}>
+            {pin.postError}
+          </Text>
+        )}
+        <AppButton
+          disabled={!pin.ready || !text.trim()}
+          loading={pin.posting}
+          onPress={() => {
+            void pin.addComment(text).then((posted) => {
+              if (posted) setText('')
+            })
+          }}
+        >
+          {copy.postComment}
+        </AppButton>
+      </View>
     </View>
   )
 }

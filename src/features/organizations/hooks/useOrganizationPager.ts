@@ -75,6 +75,7 @@ export function useOrganizationPager<T>({
     items: pages.flatMap((page) => page.items),
     cursor: pages.at(-1)?.cursor ?? null,
     error: query.error ? organizationErrorMessage(query.error) : '',
+    accessLost: isAccessLost(query.error),
     busy: query.isFetching,
     initialLoading: query.isLoading,
     loaded: query.isFetched,

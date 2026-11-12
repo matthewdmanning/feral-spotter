@@ -114,3 +114,22 @@ Both tests were checked against a planted fault: an always-true authorizer fails
 - `COMMENT_LIMIT` (1000) stored comments per account, counted in `organizationAccounts/{uid}.commentCount`; deleting frees room; over the limit returns 429, shown as a comment-limit message.
 - A failed reactions refresh keeps loaded counts unless access is lost (401/403/404). Shared pager change: [organization sharing](2026-11-09-feat-organization-sharing.md).
 - Tests: `pinInteractions.model.test.ts` adds 51-comment pagination with the cursor comment deleted, and the quota; both failed before the fix.
+
+## 2026-11-12 — fix
+
+**Purpose:** Address the pin interaction UI/UX review: protect pending drafts, show reliable outcomes, and keep failures beside their actions.
+**Change:**
+
+- The composer retains its submitted text and becomes read-only while posting; only a confirmed success clears it. Retries retain the same mutation ID, including after a visibility interruption.
+- Confirmed comments outside the loaded pages appear in a separate Posted group beside the composer, with their own Delete action. Loading their page removes the receipt without duplicating the comment or changing the oldest-first cursor order.
+- Receipt state clears when visibility, account, pin, availability, or access changes. Late write responses cannot restore cleared receipts or reaction data.
+- Reactions wait for their initial data, offer a local retry after failure, and retain known values through temporary background failures. Lost access hides the thread and reactions and disables writes.
+- Posting, reaction, deletion, and thread errors appear beside the affected controls. A successful post remains confirmed when the subsequent thread refresh fails; reaction/deletion requests no longer show a posting spinner.
+- Native scroll tap handling and account/pin identity are supplied by the [Shared Sightings host](2026-11-09-feat-organization-sharing.md).
+- App-owned labels and statuses for this component now come from `interactions/copy.ts`; these are build-time configuration and require a new app build to change.
+
+Regression coverage: `pinInteractions.feedback.test.tsx` exercises delayed posting, 50+ comment receipts and deduplication, initial reaction loading, temporary failure and lost access, independent action errors, and late-response/retry identity. The original retry/delete journey also checks posting-error placement. The three initial regression scenarios failed against the pre-fix implementation.
+
+Verified: all 11 organization client suites / 36 tests; `npm run typecheck` (app, server, and tests); ESLint on changed interaction, pager, and host code; Prettier on changed files; `git diff --check`.
+
+Native device layout, on-screen keyboard placement, and 2.0× text remain unverified: `adb` is unavailable in this environment. No web integration or external keyboard support was added.
