@@ -1,4 +1,5 @@
 import { act, renderHook } from '@testing-library/react-native'
+import { File, Paths } from 'expo-file-system'
 
 import * as cache from '@/src/shared/lib/submissionCache'
 import { useDraftSync } from '@/src/features/draft-submission/hooks/useDraftSync'
@@ -18,9 +19,11 @@ it('creates one row for a draft with none, and no stray row after Submit', async
   useSubmissionStore.getState().clearDraft()
   await cache.clearCurrentCacheId()
   usePhotoStore.setState({ photos: [], source: null, submissionId: 'sub-1' })
+  const file = new File(Paths.cache, 'row-creation.jpg')
+  file.create()
   usePhotoStore.getState().addPhoto({
     local_id: 'photo-1',
-    uri: 'file:///p1.jpg',
+    uri: file.uri,
     uploaded: false,
     upload_progress: 0,
     width: 10,
@@ -44,7 +47,8 @@ it('creates one row for a draft with none, and no stray row after Submit', async
   await cache.clearCurrentCacheId()
   await act(() => {
     useSubmissionStore.getState().clearDraft()
-    usePhotoStore.getState().clearPhotos(true)
+    usePhotoStore.getState().clearPhotos()
+    expect(file.exists).toBe(false)
   })
   await act(async () => {})
   await unmount()

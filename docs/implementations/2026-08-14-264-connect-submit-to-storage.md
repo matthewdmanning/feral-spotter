@@ -215,3 +215,11 @@ notices. No lifecycle state transition, validation requirement or persistence
 boundary changes. Shared validation messages also consume centralized copy.
 See [shared UI work](2026-10-28-ui-component-spacing-alignment.md) and the
 [review](../reviews/2026-11-11-review-ui-ux.md) for verification.
+
+## 2026-11-12 — test cleanup
+
+**Purpose:** Prevent deferred photo deletion from accessing Expo after Jest teardown.
+**Change:** The row-creation regression test now matches `completeDraft`'s synchronous
+photo cleanup instead of requesting deferred deletion. It uses Expo's real file
+wrapper and supplied native mock to assert that the captured cache file is deleted
+before the cleanup call returns. Production deletion timing is unchanged.

@@ -2,13 +2,37 @@ import { useState } from 'react'
 import { authCopy, commonCopy, formatCopy } from '@/src/shared/config/text'
 import { showError, showSuccess } from '@/src/shared/hooks/useUIStore'
 import { authProvider } from '@/src/features/auth/lib'
+import { useAuthStore } from '@/src/features/auth/lib/authStore'
 
 const LOOKS_LIKE_EMAIL = /^\S+@\S+\.\S+$/
 
 /** Settings' change-email form: the address takes effect after the emailed link. */
 export function useChangeEmail() {
-  const [newEmail, setNewEmail] = useState('')
+  const user = useAuthStore((s) => s.user)
+  const [emailOwnerUid, setEmailOwnerUid] = useState<string | null>(null)
+  const [emailDraft, setEmailDraft] = useState('')
   const [busy, setBusy] = useState(false)
+  const [dismissedUid, setDismissedUid] = useState<string | null>(null)
+  const newEmail = user?.uid === emailOwnerUid ? emailDraft : ''
+  const promptOpen = Boolean(user && !user.email && dismissedUid !== user.uid)
+
+  /** Use this function to keep the typed address value scoped to the current account uid. */
+  const setNewEmail = (value: string) => {
+    if (!user) return
+    setEmailOwnerUid(user.uid)
+    setEmailDraft(value)
+  }
+
+  /** Use this function to open the prompt; it depends on the current account and request state. */
+  const openPrompt = () => {
+    if (!user || user.email || busy) return
+    setDismissedUid(null)
+  }
+
+  /** Use this function to close the prompt; it depends on the current account. */
+  const closePrompt = () => {
+    if (user) setDismissedUid(user.uid)
+  }
 
   const submit = async () => {
     const address = newEmail.trim()
@@ -19,7 +43,8 @@ export function useChangeEmail() {
     setBusy(true)
     try {
       await authProvider.changeEmail(address)
-      setNewEmail('')
+      setEmailDraft('')
+      closePrompt()
       showSuccess(
         authCopy.checkYourEmailTitle,
         formatCopy(authCopy.emailChangeSentMessage, { email: address }),
@@ -39,5 +64,13 @@ export function useChangeEmail() {
     }
   }
 
-  return { newEmail, setNewEmail, busy, submit }
+  return {
+    newEmail,
+    setNewEmail,
+    busy,
+    submit,
+    promptOpen,
+    openPrompt,
+    closePrompt,
+  }
 }

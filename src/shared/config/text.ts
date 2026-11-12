@@ -73,6 +73,8 @@ export const authCopy = {
   registrationFailedTitle: 'Registration failed',
   registrationFailedMessage:
     'Could not create the account. Try a different email.',
+  addEmail: 'Add email',
+  addEmailTitle: 'Add your email',
   sendVerificationLink: 'Send verification link',
   checkYourEmailTitle: 'Check your email',
   emailChangeSentMessage:
@@ -201,6 +203,12 @@ export const organizationCopy = {
 
 // Submission copy owner.
 export const submissionCopy = {
+  location: {
+    accuracyUncertainAccessibility:
+      'Location accuracy is low or unavailable — tap to set manually',
+    manualAccessibility: 'Edit location',
+    acquiredAccessibility: 'Location acquired',
+  },
   exit: {
     clearFailedTitle: 'Could Not Clear Draft',
     clearFailedMessage:

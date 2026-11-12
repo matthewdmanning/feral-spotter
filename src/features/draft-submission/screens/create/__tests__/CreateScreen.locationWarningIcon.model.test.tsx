@@ -4,6 +4,7 @@ import React from 'react'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import CreateSubmissionScreen from '@/src/features/draft-submission/screens/create/index'
+import { submissionCopy } from '@/src/shared/config/text'
 
 /**
  * Model of the location-warning icon's gate on Submission Details
@@ -109,12 +110,14 @@ describe('Submission Details location-warning icon — model-based test', () => 
       },
       noFix: () => {
         const icon = screen.getByLabelText(
-          'Location accuracy is low or unavailable — tap to set manually',
+          submissionCopy.location.accuracyUncertainAccessibility,
         )
         expect(icon.props.accessibilityState?.disabled).not.toBe(true)
       },
       acquired: () => {
-        const icon = screen.getByLabelText('Location acquired')
+        const icon = screen.getByLabelText(
+          submissionCopy.location.acquiredAccessibility,
+        )
         expect(icon.props.accessibilityState?.disabled).toBe(true)
       },
     },
@@ -172,7 +175,7 @@ describe('Submission Details location-warning icon — model-based test', () => 
     await mount()
     await userEvent.press(
       screen.getByLabelText(
-        'Location accuracy is low or unavailable — tap to set manually',
+        submissionCopy.location.accuracyUncertainAccessibility,
       ),
     )
     expect(router.push).toHaveBeenCalledWith('/submission/location-picker')
@@ -187,7 +190,26 @@ describe('Submission Details location-warning icon — model-based test', () => 
       accuracy: 10,
     }
     await mount()
-    await userEvent.press(screen.getByLabelText('Location acquired'))
+    await userEvent.press(
+      screen.getByLabelText(submissionCopy.location.acquiredAccessibility),
+    )
     expect(router.push).not.toHaveBeenCalled()
+  })
+
+  it('reopens the map picker for a previously selected manual location', async () => {
+    mockSubmission = {
+      location_type: 'pin',
+      time_type: 'device',
+      latitude: 10,
+      longitude: 20,
+      accuracy: null,
+    }
+    await mount()
+
+    await userEvent.press(
+      screen.getByLabelText(submissionCopy.location.manualAccessibility),
+    )
+
+    expect(router.push).toHaveBeenCalledWith('/submission/location-picker')
   })
 })

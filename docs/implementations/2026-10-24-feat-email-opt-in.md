@@ -111,6 +111,15 @@ tags:
 
 <!-- Append dated entries when modifying this feature after the initial implementation. -->
 
+## 2026-11-11 — fix
+
+**Purpose:** Issue #449: avoid keeping an email-entry field permanently visible while still collecting an address for accounts whose signed-in identity has none.
+**Change:** Settings now shows only the account address. Missing-email accounts open the existing `DialogShell` once per account and retain an Add email action for retry; cancel, validation, verification-link success, and recent-login failures keep the existing `useChangeEmail` behavior.
+
+**Test:** `SettingsScreen.email.test.tsx` covers existing-email rendering, missing-email prompting, cancellation, account-scoped input, validation, retry, and verification-link success and failure handling.
+
+**Verification:** Full Jest suite: 120 suites, 540 tests passed; typecheck, ESLint, Prettier and diff checks passed. Native dialog and on-screen keyboard behavior have not been exercised on a device.
+
 ## 2026-11-02 — fix
 
 **Purpose:** Codebase review: hardware Back escaped the consent steps, a killed chain never resumed, the entry gate could act before consent hydrated, re-consent sent signed-in users to sign-in, and the PostHog wrapper remounted the app when consent flipped.

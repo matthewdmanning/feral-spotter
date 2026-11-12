@@ -5,6 +5,7 @@
 
 import type { Coordinates } from 'expo-maps'
 import * as Location from 'expo-location'
+import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 // Opened before any fix exists, so it must never start on null island (0,0).
@@ -26,9 +27,10 @@ function isPlaceholder({ latitude, longitude }: Required<Coordinates>) {
   )
 }
 
-// Seed order (ADR 0002): last-known device position → default region. The
-// photo-EXIF seed applies only to the library-upload path, which is deferred.
-// null means no real position: the map opens on the placeholder.
+// A reopened manual pin wins; otherwise seed from the last-known device
+// position → default region (ADR 0002). The photo-EXIF seed applies only to
+// the library-upload path, which is deferred. null means no real position:
+// the map opens on the placeholder.
 async function resolveSeedRegion(): Promise<Required<Coordinates> | null> {
   try {
     const last = await Location.getLastKnownPositionAsync()
@@ -55,16 +57,32 @@ export interface PinCenter {
 }
 
 export function usePinCenter(): PinCenter {
-  const [seed, setSeed] = useState<Required<Coordinates>>(DEFAULT_REGION)
+  const submission = useSubmissionStore((s) => s.submission)
+  const existingPin =
+    submission.location_type === 'pin' &&
+    submission.latitude != null &&
+    submission.longitude != null
+      ? {
+          latitude: submission.latitude,
+          longitude: submission.longitude,
+        }
+      : null
+  const [seed, setSeed] = useState<Required<Coordinates>>(
+    () => existingPin ?? DEFAULT_REGION,
+  )
   // Latest map centre, updated as the user drags. A ref (not state) so every
   // camera move doesn't re-render the map.
-  const centerRef = useRef<Required<Coordinates>>(DEFAULT_REGION)
+  const centerRef = useRef<Required<Coordinates>>(seed)
+  const seededFromExistingPin = existingPin !== null
   // Set location stays off while the pin sits on the placeholder: saving it
   // would record the study area as where this Sighting happened.
-  const [centerKnown, setCenterKnown] = useState(false)
+  const [centerKnown, setCenterKnown] = useState(() => existingPin !== null)
   const moved = useRef(false)
 
   useEffect(() => {
+    if (seededFromExistingPin) {
+      return
+    }
     let active = true
     resolveSeedRegion().then((region) => {
       // A drag that beat the seed wins: re-centring would throw it away.
@@ -76,7 +94,7 @@ export function usePinCenter(): PinCenter {
     return () => {
       active = false
     }
-  }, [])
+  }, [seededFromExistingPin])
 
   const handleCameraMove = useCallback(
     (event: { coordinates: Coordinates }) => {

@@ -15,7 +15,6 @@ export const settingsCopy = {
   emailUpdatesHint:
     'News and project updates, sent to the email address on your account',
   yourEmailTemplate: 'Your email: {email}',
-  newEmail: 'New email',
   photos: 'Photos',
   developer: 'Developer Mode',
   savePhotos: 'Save photo settings',

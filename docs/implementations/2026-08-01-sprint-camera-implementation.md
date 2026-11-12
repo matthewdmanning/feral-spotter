@@ -367,3 +367,10 @@ flow on a device.
 
 **Purpose:** Finish removing the nonexistent Settings replay promise (#386).
 **Change:** Remove the stale replay assertion from the tutorial-store comment; the runtime tutorial had already dropped that promise on main. Its remaining automatic-save text now uses sighting (#380). No Settings replay feature or tutorial gating change is introduced. See the [backlog audit](../planning/2026-11-08-backlog-2026-11-07.md).
+
+## 2026-11-11 — fix
+
+**Purpose:** Issue #448: let a user reopen and adjust a manually selected Submission location before submitting.
+**Change:** Keep trusted device Live fixes locked, but make an existing manual pin reopenable and seed the picker from that pin. Regression coverage verifies reopening, replacement, and cancellation.
+
+**Verification:** Location control and picker regression tests passed. Full Jest suite: 120 suites, 540 tests passed; typecheck, ESLint, Prettier and diff checks passed. Native map interaction has not been exercised on a device.
