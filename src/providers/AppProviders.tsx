@@ -18,7 +18,7 @@
  *   PostHogProvider — analytics; a third-party data-collection library, so it
  *     only mounts once the user has accepted the consent disclosure AND the
  *     narrower analytics opt-in (see useConsentStore) — in addition to the
- *     existing IS_PRERELEASE gate at call sites. Before both are accepted,
+ *     existing IS_RELEASE_CANDIDATE gate at call sites. Before both are accepted,
  *     no PostHog SDK code runs at all — not just "events don't fire." The
  *     SDK does its own automatic capture (sessions, app lifecycle) as soon
  *     as it mounts, independent of fireAnalyticsEvent call sites, so gating
@@ -46,7 +46,7 @@ import {
 } from '@/src/shared/consent/useConsentStore'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import {
-  IS_PRERELEASE,
+  IS_RELEASE_CANDIDATE,
   registerCapture,
   registerCaptureException,
 } from '@/src/shared/analytics/analytics'
@@ -188,7 +188,7 @@ export function AppProviders({ children }: AppProvidersProps) {
           while consented gave them a different parent each time consent
           flipped (and on every cold start, as consent hydrates), and React
           remounted the whole app. Only AnalyticsBridge reads PostHog. */}
-        {IS_PRERELEASE &&
+        {IS_RELEASE_CANDIDATE &&
           POSTHOG_KEY &&
           POSTHOG_HOST &&
           hasAcceptedConsent &&

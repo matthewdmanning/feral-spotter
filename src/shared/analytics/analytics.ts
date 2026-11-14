@@ -1,26 +1,26 @@
 /**
  * shared/analytics/analytics.ts
  *
- * PostHog analytics, guarded by IS_PRERELEASE.
- * Events are only fired in pre-release / staging builds.
+ * PostHog analytics, guarded by IS_RELEASE_CANDIDATE.
+ * Events are only fired in release candidate builds.
  *
  * Setup:
  *   npx expo install posthog-react-native
  *   Wrap app root with <PostHogProvider apiKey="...">
  *
- * IS_PRERELEASE is read from Expo's app config extra field.
+ * IS_RELEASE_CANDIDATE is read from Expo's app config extra field.
  * Set in app.config.js / app.json:
- *   "extra": { "isPrerelease": true }
+ *   "extra": { "isReleaseCandidate": true }
  */
 
-import { IS_PRERELEASE } from '@/src/shared/config/constants'
+import { IS_RELEASE_CANDIDATE } from '@/src/shared/config/constants'
 import {
   hasAcceptedAnalytics,
   hasAcceptedConsent,
 } from '@/src/shared/consent/useConsentStore'
 import type { PostHogEventProperties } from '@posthog/core'
 
-export { IS_PRERELEASE }
+export { IS_RELEASE_CANDIDATE }
 
 // ─── Event names ──────────────────────────────────────────────────────────────
 
@@ -70,9 +70,9 @@ export function registerCaptureException(
   registeredCaptureException = fn
 }
 
-/** Same gate as every capture path: pre-release build, general consent, analytics opt-in. */
+/** Same gate as every capture path: release candidate build, general consent, analytics opt-in. */
 function shouldCapture(): boolean {
-  return IS_PRERELEASE && hasAcceptedConsent() && hasAcceptedAnalytics()
+  return IS_RELEASE_CANDIDATE && hasAcceptedConsent() && hasAcceptedAnalytics()
 }
 
 // ─── Fire event ───────────────────────────────────────────────────────────────
@@ -100,7 +100,7 @@ export function captureEvent(
 
 /**
  * Report an exception to PostHog, gated identically to every other capture
- * path (pre-release, consent, analytics opt-in) — a stale registered capturer
+ * path (release candidate, consent, analytics opt-in) — a stale registered capturer
  * must not fire post-revocation.
  */
 export function captureException(
