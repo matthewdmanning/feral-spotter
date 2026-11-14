@@ -125,6 +125,28 @@ When a Gradle build fails and you want the error rather than the whole log:
 npm run clean-debug  # expo prebuild --clean, then gradlew assembleDebug, filtered
 ```
 
+### Pre-release build
+
+```bash
+npm run build:prerelease  # scripts/build-prerelease.sh -> expo run:android --variant release
+```
+
+A standalone (JS bundled, no Metro, no dev client) release APK for sideloading,
+with test features on. It sets `APP_VARIANT=prerelease` (`app.config.js` then
+sets `extra.isPrerelease`, so `IS_PRERELEASE` is true, and appends " (pre)" to
+the launcher label) and `EXPO_PUBLIC_EXPERIMENTAL_CAMERA=true` (inlined into the
+bundle). The applicationId is unchanged, because `google-services.json` is bound
+to it, so the APK installs over a release build. Install with
+`adb install -r android/app/build/outputs/apk/release/app-release.apk`.
+
+Tag a pre-release `vX.Y.Z-pre.N`, for example `v0.1.0-pre.1`. The Expo `version`
+in `app.json` stays plain `X.Y.Z`: `isVersionReleased` compares it with semver,
+and a `-pre` suffix would sort below `X.Y.Z` and close release gates.
+
+To add a test feature to the variant, add its `EXPO_PUBLIC_*` name to
+`PRERELEASE_FLAGS` in the script and read it in `src/shared/config/constants.ts`.
+Not tested on a device or in a Gradle build as of 2026-11-14.
+
 ### The JDK, and why the build is pinned
 
 Gradle builds this app on **JDK 17**, and that is correct, not a fallback. Expo

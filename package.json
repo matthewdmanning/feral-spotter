@@ -25,6 +25,7 @@
     "test:functions": "cd functions && npm test",
     "format": "node scripts/format-changed.mjs",
     "format:check": "node scripts/format-changed.mjs --check",
+    "build:prerelease": "bash scripts/build-prerelease.sh",
     "clean-debug": "bash scripts/android-build.sh",
     "device-monitor": "bash scripts/device-monitor.sh",
     "gradle:debug": "expo prebuild --clean && cd android && .\\gradlew assembleDebug",
