@@ -24,7 +24,7 @@ import {
   subscribeDraftBusy,
   type SubmitOutcome,
 } from '@/src/features/draft-submission/lib/draft'
-import { router } from 'expo-router'
+import { goHome } from '@/src/shared/lib/navigation'
 import { useCallback, useSyncExternalStore } from 'react'
 
 export interface SubmissionSubmitResult {
@@ -44,11 +44,8 @@ function report(outcome: SubmitOutcome): void {
   switch (outcome.kind) {
     case 'sent':
       // Navigation stays here: its ordering against the create screen's
-      // auto-skip effect is load-bearing (#189). Pop back to the Home that is
-      // already on the root stack rather than replacing the top screen: a
-      // replace left the Camera beneath the new Home, so Back re-opened the
-      // finished flow (#453).
-      router.dismissTo('/')
+      // auto-skip effect is load-bearing (#189).
+      goHome()
       return
     case 'incomplete':
       showError(
