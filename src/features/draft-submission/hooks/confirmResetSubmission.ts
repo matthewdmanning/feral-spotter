@@ -16,7 +16,7 @@ import {
   isDraftBusy,
 } from '@/src/features/draft-submission/lib/draft'
 import { initializeDraft } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
-import { router } from 'expo-router'
+import { goHome } from '@/src/shared/lib/navigation'
 
 /**
  * Clear the whole draft and return Home. discardDraft() refuses while a
@@ -36,7 +36,7 @@ export async function discardDraftAndGoHome(): Promise<void> {
     )
     return
   }
-  router.replace('/')
+  goHome()
 }
 
 /** Reset never touches camera-roll copies; say so when some were saved. */

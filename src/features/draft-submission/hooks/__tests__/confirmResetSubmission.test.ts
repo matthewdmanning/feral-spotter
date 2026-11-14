@@ -14,7 +14,9 @@ import { submissionPhoto } from '@/src/test-utils/photoFixtures'
  * exactly when "Keep Photos on Device" saved some. Real stores.
  */
 
-jest.mock('expo-router', () => ({ router: { replace: jest.fn() } }))
+jest.mock('expo-router', () => ({
+  router: { replace: jest.fn(), dismissTo: jest.fn() },
+}))
 jest.mock('@/src/features/draft-submission/lib/draft', () => ({
   discardDraft: jest.fn(),
   discardUnsurvivingDraft: jest.fn().mockResolvedValue(undefined),
@@ -69,6 +71,6 @@ describe('confirmStartNewSighting', () => {
     expect(discardDraft).not.toHaveBeenCalled()
     await dialog?.buttons.find((b) => b.text === 'Start New')?.onPress?.()
     expect(discardDraft).toHaveBeenCalledTimes(1)
-    expect(router.replace).toHaveBeenCalledWith('/')
+    expect(router.dismissTo).toHaveBeenCalledWith('/')
   })
 })

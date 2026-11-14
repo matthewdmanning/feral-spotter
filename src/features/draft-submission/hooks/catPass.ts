@@ -23,13 +23,13 @@
 import { useActiveCatFlowStore } from '@/src/features/draft-submission/hooks/useActiveCatFlowStore'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
+import { goHome } from '@/src/shared/lib/navigation'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useEffect, useState } from 'react'
 
 const CAT_LIST = '/submission/create'
 const ANNOTATE = '/submission/annotate'
 const CAT_FORM = '/submission/cats'
-const HOME = '/'
 // Private to this module: Cat List reads it through useCatListLanding.
 const REMOVED_LAST_CAT_PARAM = 'removed'
 
@@ -82,7 +82,8 @@ export function finishBoxing(): void {
  */
 export function abandonCatPass(): void {
   startFreshPass()
-  router.replace(recordedCatIds().length > 0 ? CAT_LIST : HOME)
+  if (recordedCatIds().length > 0) router.replace(CAT_LIST)
+  else goHome()
 }
 
 /** Back to Cat List after saving a cat, or from a stale edit link. */

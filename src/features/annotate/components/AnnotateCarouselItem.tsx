@@ -16,11 +16,14 @@
 
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import {
+  A11Y_RESIZE_STEP,
   DOT_HITBOX_SIZE,
   HANDLE_HITBOX_SIZE,
   HANDLE_INSET,
-  useBoundingBoxFrame,
-} from '@/src/features/annotate/hooks/useBoundingBoxFrame'
+  HOLD_DOT_PULSE_OPACITY,
+  HOLD_DOT_PULSE_SCALE,
+} from '@/src/features/annotate/config/boundingBoxFrame'
+import { useBoundingBoxFrame } from '@/src/features/annotate/hooks/useBoundingBoxFrame'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import { containFit } from '@/src/shared/lib/geometry/cropProjection'
@@ -56,8 +59,6 @@ interface AnnotateCarouselItemProps {
   onNotInPhoto?: () => void
 }
 
-// Per-step resize for the screen-reader actions, in dp per side.
-const A11Y_RESIZE_STEP = 8
 const RESIZE_ACTIONS = [
   { name: 'increment', label: 'Grow box' },
   { name: 'decrement', label: 'Shrink box' },
@@ -147,9 +148,24 @@ export function AnnotateCarouselItem({
   }))
 
   const dotStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: interpolate(holdProgress.value, [0, 1], [1, 1.4]) }],
-    opacity: interpolate(holdProgress.value, [0, 1], [1, 0.6]),
+    transform: [
+      {
+        scale: interpolate(
+          holdProgress.value,
+          [0, 1],
+          [1, HOLD_DOT_PULSE_SCALE],
+        ),
+      },
+    ],
+    opacity: interpolate(
+      holdProgress.value,
+      [0, 1],
+      [1, HOLD_DOT_PULSE_OPACITY],
+    ),
   }))
+
+  // Centers the crosshair lines on the canvas midpoint.
+  const crosshairHalf = theme.cropFrame.crosshairThickness / 2
 
   // Box is center-anchored: its screen rect and crosshair both track the
   // live boxHalfWidth/boxHalfHeight shared values as handles are dragged.
@@ -162,12 +178,12 @@ export function AnnotateCarouselItem({
 
   const crosshairHStyle = useAnimatedStyle(() => ({
     left: width / 2 - boxHalfWidth.value,
-    top: height / 2 - 0.5,
+    top: height / 2 - crosshairHalf,
     width: boxHalfWidth.value * 2,
   }))
 
   const crosshairVStyle = useAnimatedStyle(() => ({
-    left: width / 2 - 0.5,
+    left: width / 2 - crosshairHalf,
     top: height / 2 - boxHalfHeight.value,
     height: boxHalfHeight.value * 2,
   }))
@@ -231,7 +247,7 @@ export function AnnotateCarouselItem({
       {/* Photo: pinch/pan/double-tap to frame */}
       <GestureDetector gesture={photoGesture}>
         <View style={styles.photoLayer}>
-          <Animated.View style={[{ flex: 1 }, imageStyle]}>
+          <Animated.View style={[styles.imageLayer, imageStyle]}>
             <Image
               source={{ uri: photo.uri }}
               cachePolicy="memory-disk"
@@ -269,11 +285,19 @@ export function AnnotateCarouselItem({
       <Animated.View pointerEvents="none" style={[styles.box, boxStyle]} />
       <Animated.View
         pointerEvents="none"
-        style={[styles.crosshairLine, { height: 1 }, crosshairHStyle]}
+        style={[
+          styles.crosshairLine,
+          styles.crosshairLineHorizontal,
+          crosshairHStyle,
+        ]}
       />
       <Animated.View
         pointerEvents="none"
-        style={[styles.crosshairLine, { width: 1 }, crosshairVStyle]}
+        style={[
+          styles.crosshairLine,
+          styles.crosshairLineVertical,
+          crosshairVStyle,
+        ]}
       />
 
       {/* Edge handles — single-finger drag reshapes the box's aspect ratio (#286) */}

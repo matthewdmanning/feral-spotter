@@ -16,7 +16,7 @@ import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
  */
 
 jest.mock('expo-router', () => ({
-  router: { replace: jest.fn(), push: jest.fn() },
+  router: { replace: jest.fn(), push: jest.fn(), dismissTo: jest.fn() },
   useLocalSearchParams: () => ({}),
 }))
 
@@ -41,7 +41,7 @@ it('abandoning the first cat drops its boxes and id and lands Home', () => {
   abandonCatPass()
   expect(boxesOf('cat-new')).toEqual([])
   expect(useActiveCatFlowStore.getState().activeCatId).toBeNull()
-  expect(router.replace).toHaveBeenCalledWith('/')
+  expect(router.dismissTo).toHaveBeenCalledWith('/')
 })
 
 it('abandoning with a cat recorded keeps that cat and lands on Cat List', () => {

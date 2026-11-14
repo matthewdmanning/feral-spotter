@@ -1,7 +1,7 @@
 import { navigationCopy } from '@/src/shared/config/text'
 import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
-import { router } from 'expo-router'
+import { goHome } from '@/src/shared/lib/navigation'
 import { Text } from '@/src/shared/ui/atoms/Text'
 import { Linking, View } from 'react-native'
 import { styles } from './GateScreen.styles'
@@ -50,7 +50,7 @@ export function GoHomeGate({ title, body }: { title: string; body?: string }) {
       title={title}
       body={body}
       primaryLabel={navigationCopy.goHome}
-      onPrimary={() => router.replace('/')}
+      onPrimary={goHome}
     />
   )
 }
