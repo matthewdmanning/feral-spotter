@@ -17,7 +17,6 @@ interface PhotoToggle {
     | 'camera_motion_priority'
     | 'camera_disable_low_light_boost'
     | 'camera_subject_metering'
-    | 'camera_pinch_zoom'
     | 'camera_performance_checks'
   label: string
   desc: string
@@ -83,13 +82,6 @@ export const PHOTO_TOGGLES: readonly PhotoToggle[] = [
     desc: 'Allow a bounding-box localizer to steer native focus and exposure',
     flag: 'experimentalCamera',
     platform: null,
-  },
-  {
-    key: 'camera_pinch_zoom',
-    label: 'Pinch to Zoom',
-    desc: 'Pinch to zoom the preview. The saved photo stays full field',
-    flag: 'experimentalCamera',
-    platform: 'android',
   },
   {
     key: 'camera_performance_checks',

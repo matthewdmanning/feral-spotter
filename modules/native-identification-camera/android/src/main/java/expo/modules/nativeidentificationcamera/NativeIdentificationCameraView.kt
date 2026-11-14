@@ -24,6 +24,7 @@ import androidx.camera.camera2.interop.Camera2Interop
 import androidx.camera.camera2.interop.ExperimentalCamera2Interop
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ExperimentalZeroShutterLag
 import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -186,6 +187,11 @@ class NativeIdentificationCameraView(
 
   @Volatile
   private var imageCaptureUseCase: ImageCapture? = null
+
+  // The tuning and ZSL support of the bound session, so a capture reports the
+  // mode that session runs even while a prop change waits for its rebind.
+  private var boundTuning: CaptureTuning? = null
+  private var boundZslSupported = false
 
   @Volatile
   private var camera: Camera? = null
@@ -502,7 +508,7 @@ class NativeIdentificationCameraView(
     return builder.build()
   }
 
-  @OptIn(ExperimentalCamera2Interop::class)
+  @OptIn(ExperimentalCamera2Interop::class, ExperimentalZeroShutterLag::class)
   private fun bindCamera() = traced(SECTION_BIND) {
     val provider = cameraProvider ?: return@traced
     val lifecycleOwner = appContext.currentActivity as? LifecycleOwner ?: run {
@@ -551,15 +557,21 @@ class NativeIdentificationCameraView(
       boundSessionConfig = sessionConfig
       imageCaptureUseCase = imageCapture
       camera = boundCamera
+      boundTuning = activeTuning
+      boundZslSupported = boundCamera.cameraInfo.isZslSupported
       if (disableLowLightBoost) {
         disableLowLightBoostIfSupported(boundCamera)
       }
-      // The resolved tuning is reported so an on-device profiling run can tell
-      // which capture mode actually ran, rather than inferring it from settings.
+      // requestedCaptureTuning names the settings that asked; captureMode names the mode
+      // CameraX runs. Flash is set per capture, so this assumes flash off and
+      // each capture reports its own mode.
+      val readyCaptureMode = CaptureTuning.captureModeName(
+        activeTuning.resolvedCaptureMode(boundZslSupported, ImageCapture.FLASH_MODE_OFF)
+      )
       onCameraReady(
         mapOf(
-          "captureTuning" to activeTuning.telemetryName,
-          "captureMode" to activeTuning.captureMode()
+          "requestedCaptureTuning" to activeTuning.telemetryName,
+          "captureMode" to readyCaptureMode
         )
       )
 
@@ -568,8 +580,9 @@ class NativeIdentificationCameraView(
         "session_bound",
         mapOf(
           "bind_count" to bindCount,
-          "capture_tuning" to activeTuning.telemetryName,
-          "capture_mode" to activeTuning.captureMode(),
+          "requested_capture_tuning" to activeTuning.telemetryName,
+          "capture_mode" to readyCaptureMode,
+          "zsl_supported" to boundZslSupported,
           "camera_position" to position,
           "max_detail" to maxDetail,
           "motion_priority" to motionPriority,
@@ -600,6 +613,7 @@ class NativeIdentificationCameraView(
     boundSessionConfig = null
     imageCaptureUseCase = null
     camera = null
+    boundTuning = null
     // CameraX zoom resets when the camera closes; the view zoom does the same,
     // so a new session never starts zoomed.
     resetViewZoom()
@@ -639,6 +653,10 @@ class NativeIdentificationCameraView(
         "auto" -> ImageCapture.FLASH_MODE_AUTO
         else -> ImageCapture.FLASH_MODE_OFF
       }
+      val requestedTuning = boundTuning ?: tuning
+      val captureMode = CaptureTuning.captureModeName(
+        requestedTuning.resolvedCaptureMode(boundZslSupported, imageCapture.flashMode)
+      )
 
       val outputFile = File(context.cacheDir, "${UUID.randomUUID()}.jpg")
       val outputOptions = ImageCapture.OutputFileOptions.Builder(outputFile).build()
@@ -650,7 +668,13 @@ class NativeIdentificationCameraView(
         object : ImageCapture.OnImageSavedCallback {
           override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
             traced(SECTION_RESOLVE) {
-              resolveWithFileDimensions(outputFile, promise, requestedAt)
+              resolveWithFileDimensions(
+                outputFile,
+                promise,
+                requestedAt,
+                requestedTuning,
+                captureMode
+              )
             }
             endSection(SECTION_CAPTURE, captureCookie)
             perfLog(
@@ -688,7 +712,9 @@ class NativeIdentificationCameraView(
   private fun resolveWithFileDimensions(
     outputFile: File,
     promise: Promise,
-    requestedAt: Long
+    requestedAt: Long,
+    requestedTuning: CaptureTuning,
+    captureMode: String
   ) {
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
     BitmapFactory.decodeFile(outputFile.absolutePath, bounds)
@@ -730,7 +756,8 @@ class NativeIdentificationCameraView(
       mapOf(
         "uri" to android.net.Uri.fromFile(outputFile).toString(),
         "width" to reportedWidth,
-        "height" to reportedHeight
+        "height" to reportedHeight,
+        "captureMode" to captureMode
       )
     )
 
@@ -747,7 +774,8 @@ class NativeIdentificationCameraView(
         "axes_swapped" to quarterTurned,
         "file_bytes" to outputFile.length(),
         "camera_position" to position,
-        "capture_tuning" to tuning.telemetryName,
+        "requested_capture_tuning" to requestedTuning.telemetryName,
+        "capture_mode" to captureMode,
         "elapsed_ms" to (System.currentTimeMillis() - requestedAt)
       )
     )

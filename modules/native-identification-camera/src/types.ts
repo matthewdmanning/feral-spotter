@@ -12,17 +12,19 @@ export interface NativeCapturedPhoto {
   uri: string
   width: number
   height: number
+  /** Android only: the capture mode CameraX ran for this capture, after any ZSL fallback. */
+  captureMode?: string
 }
 
 /**
- * What the view reports once a session is bound. captureTuning names the
- * resolved tuning combination and captureMode is the platform's own capture
- * mode constant, so a profiling run can tell which mode actually ran instead of
- * inferring it from the settings that asked for it.
+ * What the view reports once a session is bound. requestedCaptureTuning names
+ * the tuning combination the settings asked for. captureMode (Android only)
+ * names the mode CameraX runs after any ZSL fallback, assuming flash off; each
+ * capture reports its own.
  */
 export interface NativeCameraReadyEvent {
-  captureTuning?: string
-  captureMode?: number
+  requestedCaptureTuning?: string
+  captureMode?: string
 }
 
 /**
