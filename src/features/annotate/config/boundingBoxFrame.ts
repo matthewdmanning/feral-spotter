@@ -16,6 +16,8 @@ export const ZOOM_REACTIVE_THRESHOLD = 1.02 // above this, treat as "zoomed in"
 // ─── Confirm hold ───────────────────────────────────────────────────────────
 export const HOLD_DURATION_MS = 650 // push time length
 export const HOLD_CANCEL_DURATION_MS = 120 // hold-ring reset after an early release
+export const HOLD_DOT_PULSE_SCALE = 1.4 // center dot grows to this while held
+export const HOLD_DOT_PULSE_OPACITY = 0.6 // center dot fades to this while held
 
 // ─── Hitboxes ───────────────────────────────────────────────────────────────
 export const DOT_HITBOX_RADIUS = 24 // button hitbox radius

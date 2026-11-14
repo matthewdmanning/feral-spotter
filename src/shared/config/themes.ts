@@ -218,6 +218,21 @@ const reticle = {
 } as const
 
 /**
+ * Annotate crop frame drawn over the photo: the active box stroke, its
+ * crosshair, the center confirm dot and the edge-handle bars, plus the
+ * stroke of boxes already recorded for other cats.
+ */
+const cropFrame = {
+  boxStroke: 1.5,
+  previousBoxStroke: 2,
+  crosshairThickness: 1,
+  crosshairOpacity: 0.6,
+  dotSize: 14,
+  handleBarThickness: 4,
+  handleBarLength: 20,
+} as const
+
+/**
  * Strokes beyond the glass hairline: `frame` edges a photo thumbnail,
  * `selected` marks the chosen one of a set of thumbnails.
  */
@@ -241,6 +256,7 @@ const sharedTokens = {
   interaction,
   catPalette,
   reticle,
+  cropFrame,
   borderWidth,
   opacity,
   spacing,
