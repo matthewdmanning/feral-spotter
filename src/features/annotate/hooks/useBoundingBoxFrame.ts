@@ -16,6 +16,20 @@
  */
 
 import {
+  DEFAULT_BOX_FRACTION,
+  DOUBLE_TAP_SCALE,
+  HOLD_CANCEL_DURATION_MS,
+  HOLD_DURATION_MS,
+  MAX_ASPECT_RATIO,
+  MAX_SCALE,
+  MIN_HALF_EXTENT,
+  MIN_SCALE,
+  NOT_IN_PHOTO_SWIPE_MIN_DISTANCE,
+  NOT_IN_PHOTO_SWIPE_VELOCITY,
+  SNAP_THRESHOLD,
+  ZOOM_REACTIVE_THRESHOLD,
+} from '@/src/features/annotate/config/boundingBoxFrame'
+import {
   clampAspectRatio,
   clampHalfExtent,
   maxHalfExtentForBox,
@@ -39,46 +53,6 @@ import {
   withSpring,
   withTiming,
 } from 'react-native-reanimated'
-
-// ─── Tunables ───────────────────────────────────────────────────────────────
-const MIN_SCALE = 0.5
-const MAX_SCALE = 4
-const SNAP_THRESHOLD = 0.08 // zoom-out snap-to-1 band
-const DOUBLE_TAP_SCALE = 2.5
-const HOLD_DURATION_MS = 650 // push time length
-const DOT_HITBOX_RADIUS = 24 // button hitbox radius
-const HANDLE_HITBOX_RADIUS = 36 // edge-handle hitbox radius (+50%, punchlist 2026-08-19)
-// How far inward from the box edge the handles sit, on the crosshairs
-// instead of straddling the border (#286 follow-up).
-const HANDLE_INSET = 20
-// Must clear the dot's own hitbox at minimum box size, or handle-drag and
-// confirm-hold compete for the same pixels at dead center. HANDLE_INSET
-// shifts handles toward center, so the margin has to grow with it.
-const MIN_HALF_EXTENT = DOT_HITBOX_RADIUS + HANDLE_HITBOX_RADIUS + HANDLE_INSET
-const MAX_ASPECT_RATIO = 3 // widest/tallest the box can go, either axis
-const DEFAULT_BOX_FRACTION = 0.85 // initial box size, as a fraction of the shorter canvas axis
-const ZOOM_REACTIVE_THRESHOLD = 1.02 // above this, treat as "zoomed in"
-// #204: swipe-up-to-"Not in Photo". Needs on-device tuning — this is a
-// starting point, not a measured value. Gated on not-zoomed-in (below) so a
-// fast upward flick while framing a zoomed photo doesn't get misread as the
-// skip gesture.
-const NOT_IN_PHOTO_SWIPE_VELOCITY = 800 // px/sec, upward (negative velocityY)
-
-export const BOUNDING_BOX_FRAME_TUNABLES = {
-  MIN_SCALE,
-  MAX_SCALE,
-  SNAP_THRESHOLD,
-  DOUBLE_TAP_SCALE,
-  HOLD_DURATION_MS,
-  DOT_HITBOX_RADIUS,
-  HANDLE_HITBOX_RADIUS,
-  HANDLE_INSET,
-  MIN_HALF_EXTENT,
-  MAX_ASPECT_RATIO,
-  DEFAULT_BOX_FRACTION,
-  ZOOM_REACTIVE_THRESHOLD,
-  NOT_IN_PHOTO_SWIPE_VELOCITY,
-}
 
 interface UseBoundingBoxFrameParams {
   canvasWidth: number
@@ -315,7 +289,7 @@ export function useBoundingBoxFrame({
       if (
         onNotInPhoto &&
         userScale.value <= ZOOM_REACTIVE_THRESHOLD &&
-        e.translationY < -40 &&
+        e.translationY < -NOT_IN_PHOTO_SWIPE_MIN_DISTANCE &&
         e.velocityY < -NOT_IN_PHOTO_SWIPE_VELOCITY
       ) {
         runOnJS(onNotInPhoto)()
@@ -450,7 +424,10 @@ export function useBoundingBoxFrame({
     })
     .onFinalize((_e, success) => {
       'worklet'
-      if (!success) holdProgress.value = withTiming(0, { duration: 120 })
+      if (!success)
+        holdProgress.value = withTiming(0, {
+          duration: HOLD_CANCEL_DURATION_MS,
+        })
     })
 
   const resizeBy = (axis: 'width' | 'height', deltaHalf: number) => {
@@ -486,7 +463,3 @@ export function useBoundingBoxFrame({
     confirmNow: handleConfirm,
   }
 }
-
-export const DOT_HITBOX_SIZE = DOT_HITBOX_RADIUS * 2
-export const HANDLE_HITBOX_SIZE = HANDLE_HITBOX_RADIUS * 2
-export { HANDLE_INSET }

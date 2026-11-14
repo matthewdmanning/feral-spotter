@@ -16,11 +16,12 @@
 
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import {
+  A11Y_RESIZE_STEP,
   DOT_HITBOX_SIZE,
   HANDLE_HITBOX_SIZE,
   HANDLE_INSET,
-  useBoundingBoxFrame,
-} from '@/src/features/annotate/hooks/useBoundingBoxFrame'
+} from '@/src/features/annotate/config/boundingBoxFrame'
+import { useBoundingBoxFrame } from '@/src/features/annotate/hooks/useBoundingBoxFrame'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import { containFit } from '@/src/shared/lib/geometry/cropProjection'
@@ -56,8 +57,6 @@ interface AnnotateCarouselItemProps {
   onNotInPhoto?: () => void
 }
 
-// Per-step resize for the screen-reader actions, in dp per side.
-const A11Y_RESIZE_STEP = 8
 const RESIZE_ACTIONS = [
   { name: 'increment', label: 'Grow box' },
   { name: 'decrement', label: 'Shrink box' },

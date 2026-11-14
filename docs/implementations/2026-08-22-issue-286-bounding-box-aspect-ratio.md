@@ -108,3 +108,8 @@ tags:
 
 **Purpose:** Edge handles were drag-only, with no screen-reader path.
 **Change:** Each handle is `accessible`, role `adjustable`, with increment/decrement actions calling the new `useBoundingBoxFrame().resizeBy(axis, ±8)` (same clamps as the drag). Stale `onZoomChange` doc comment corrected. Not checked with TalkBack. See [app-owned dialogs note](2026-08-27-issue-337-app-owned-dialogs.md) for the rest of this a11y pass.
+
+## 2026-11-14 — fix
+
+**Purpose:** #457 — 160px on-screen box floor couldn't tightly frame distant cats.
+**Change:** `MAX_SCALE` 4→8; on-screen floor (`MIN_HALF_EXTENT`) and 3:1 aspect cap unchanged, so smallest framable photo region halves. Crop-frame tunables (plus former inline `40` swipe distance, `120` hold-cancel ms, `A11Y_RESIZE_STEP`) moved to `src/features/annotate/config/boundingBoxFrame.ts`. Verified: tsc, eslint, prettier, `jest src/features/annotate` (54/54). Unverified: no device pass at 8×. Pre-existing, not fixed: resuming a saved box can reconstruct a scale above `MAX_SCALE` (`transformForBox` is unclamped).
