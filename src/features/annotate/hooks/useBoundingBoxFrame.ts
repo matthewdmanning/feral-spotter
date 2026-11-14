@@ -424,10 +424,11 @@ export function useBoundingBoxFrame({
     })
     .onFinalize((_e, success) => {
       'worklet'
-      if (!success)
+      if (!success) {
         holdProgress.value = withTiming(0, {
           duration: HOLD_CANCEL_DURATION_MS,
         })
+      }
     })
 
   const resizeBy = (axis: 'width' | 'height', deltaHalf: number) => {
