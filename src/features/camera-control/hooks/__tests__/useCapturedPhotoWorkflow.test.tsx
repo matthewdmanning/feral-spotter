@@ -140,6 +140,28 @@ it('uses the current captured photo count for the last thumbnail badge', async (
   expect(result.current.lastBadge).toBe(3)
 })
 
+// #453: the camera screen stays mounted below Home after a submit, so its
+// strip must follow the draft, not its own list of captures.
+it('shows no thumbnails once the draft is cleared, and only new ones after', async () => {
+  const { result } = await renderHook(() => useCapturedPhotoWorkflow())
+  await act(() => {
+    result.current.persistCapturedPhoto(frame('file:///tmp/one.jpg'), 'one')
+    result.current.persistCapturedPhoto(frame('file:///tmp/two.jpg'), 'two')
+  })
+  expect(result.current.capturedPhotos).toHaveLength(2)
+
+  // What a successful submit's teardown does to the photo store.
+  await act(() => usePhotoStore.getState().clearPhotos())
+  expect(result.current.capturedPhotos).toEqual([])
+
+  usePhotoStore.setState({ submissionId: 'next-submission' })
+  await act(() => {
+    result.current.persistCapturedPhoto(frame('file:///tmp/three.jpg'), 'three')
+  })
+  expect(result.current.capturedPhotos).toHaveLength(1)
+  expect(result.current.capturedPhotos[0].uri).toBe('file:///tmp/three.jpg')
+})
+
 it('holds a removed cache file until an active gallery save finishes', async () => {
   let resolveSave!: () => void
   mockAssetCreate.mockImplementationOnce(

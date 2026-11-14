@@ -44,8 +44,11 @@ function report(outcome: SubmitOutcome): void {
   switch (outcome.kind) {
     case 'sent':
       // Navigation stays here: its ordering against the create screen's
-      // auto-skip effect is load-bearing (#189).
-      router.replace('/')
+      // auto-skip effect is load-bearing (#189). Pop back to the Home that is
+      // already on the root stack rather than replacing the top screen: a
+      // replace left the Camera beneath the new Home, so Back re-opened the
+      // finished flow (#453).
+      router.dismissTo('/')
       return
     case 'incomplete':
       showError(

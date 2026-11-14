@@ -374,3 +374,9 @@ flow on a device.
 **Change:** Keep trusted device Live fixes locked, but make an existing manual pin reopenable and seed the picker from that pin. Regression coverage verifies reopening, replacement, and cancellation.
 
 **Verification:** Location control and picker regression tests passed. Full Jest suite: 120 suites, 540 tests passed; typecheck, ESLint, Prettier and diff checks passed. Native map interaction has not been exercised on a device.
+
+## 2026-11-14 — fix
+
+**Purpose:** After a submit, Back from Home re-opened the Camera with the submitted photos still shown as thumbnails (#453).
+**Change:** `useCapturedPhotoWorkflow` now shows only this session's captures that are still in the photo store, so clearing the draft empties the strip. Navigation half: [2026-08-14-264-connect-submit-to-storage.md](2026-08-14-264-connect-submit-to-storage.md).
+**Verification:** `useCapturedPhotoWorkflow.test.tsx` (clear, then new capture shows only the new thumbnail) passes. Not driven on a device.

@@ -2,6 +2,7 @@ import * as ui from '@/src/shared/hooks/useUIStore'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { act, renderHook } from '@testing-library/react-native'
+import { router } from 'expo-router'
 
 import { useSubmissionSubmit } from '@/src/features/draft-submission/hooks/useSubmissionSubmit'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
@@ -23,6 +24,7 @@ jest.mock('expo-router', () => ({
     back: jest.fn(),
     push: jest.fn(),
     replace: jest.fn(),
+    dismissTo: jest.fn(),
     navigate: jest.fn(),
   },
 }))
@@ -74,6 +76,29 @@ describe('useSubmissionSubmit submit flow', () => {
     useBoundingBoxStore.setState(useBoundingBoxStore.getInitialState(), true)
     useUIStore.setState(useUIStore.getInitialState(), true)
     setConsent(true)
+  })
+
+  // #453: a replace swapped only the top screen, leaving the Camera under the
+  // new Home, so Back re-opened the finished flow.
+  it('pops back to the existing Home after a send instead of replacing the top screen', async () => {
+    usePhotoStore.setState({
+      photos: [
+        photo({
+          local_id: 'photo-uploaded',
+          uploaded: true,
+          cloud_storage_path: 'gs://bucket/uploaded.jpg',
+          cloud_storage_url: 'https://cdn/uploaded.jpg',
+        }),
+      ],
+    })
+    jest.mocked(uploadSubmissionMetadata).mockResolvedValue(undefined)
+    const { result } = await renderHook(() => useSubmissionSubmit())
+
+    await act(() => result.current.handleDone())
+    await pressDialogButton('Submit')
+
+    expect(router.dismissTo).toHaveBeenCalledWith('/')
+    expect(router.replace).not.toHaveBeenCalled()
   })
 
   it('only submits photos with both a cloud path and url, among uploaded photos', async () => {

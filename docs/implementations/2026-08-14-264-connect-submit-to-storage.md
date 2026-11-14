@@ -223,3 +223,9 @@ See [shared UI work](2026-10-28-ui-component-spacing-alignment.md) and the
 photo cleanup instead of requesting deferred deletion. It uses Expo's real file
 wrapper and supplied native mock to assert that the captured cache file is deleted
 before the cleanup call returns. Production deletion timing is unchanged.
+
+## 2026-11-14 — fix
+
+**Purpose:** After a successful submit, Back from Home re-opened the Camera (#453).
+**Change:** On `'sent'`, `useSubmissionSubmit` calls `router.dismissTo('/')` instead of `router.replace('/')`: `replace` swapped only the top screen and left the Camera under the new Home; `dismissTo` pops to the Home already on the root stack. It still runs after the draft teardown, as #189 requires. Thumbnail half: [2026-08-01-sprint-camera-implementation.md](2026-08-01-sprint-camera-implementation.md). Reset/Discard still use `replace('/')` (not changed here).
+**Verification:** `useSubmissionSubmit.submitFlow.test.ts` asserts `dismissTo('/')` and no `replace`. Stack behaviour read from expo-router 58.0.28 source; not driven on a device.
