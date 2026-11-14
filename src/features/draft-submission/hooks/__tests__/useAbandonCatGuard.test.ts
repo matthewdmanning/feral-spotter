@@ -39,7 +39,12 @@ jest.mock('expo-router', () => ({
     preventCallback = callback
     return mockDisablePrevention
   },
-  router: { replace: jest.fn(), push: jest.fn(), back: jest.fn() },
+  router: {
+    replace: jest.fn(),
+    push: jest.fn(),
+    back: jest.fn(),
+    dismissTo: jest.fn(),
+  },
 }))
 
 const CAT_ID = 'cat-1'

@@ -24,7 +24,7 @@ import {
   subscribeDraftBusy,
   type SubmitOutcome,
 } from '@/src/features/draft-submission/lib/draft'
-import { router } from 'expo-router'
+import { goHome } from '@/src/shared/lib/navigation'
 import { useCallback, useSyncExternalStore } from 'react'
 
 export interface SubmissionSubmitResult {
@@ -45,7 +45,7 @@ function report(outcome: SubmitOutcome): void {
     case 'sent':
       // Navigation stays here: its ordering against the create screen's
       // auto-skip effect is load-bearing (#189).
-      router.replace('/')
+      goHome()
       return
     case 'incomplete':
       showError(

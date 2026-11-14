@@ -38,7 +38,7 @@ import {
 import { type FlashListRef } from '@shopify/flash-list'
 import { Asset } from 'expo-media-library'
 import { router, useIsFocused } from 'expo-router'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AppState, type AppStateStatus, type ViewStyle } from 'react-native'
 import {
   Easing,
@@ -70,7 +70,17 @@ export function useCapturedPhotoWorkflow({
   const draftPhase = useDraftStartupStore((s) => s.phase)
   const canCapture = acceptsNewPhotos(draftPhase) && photoSource !== 'library'
 
-  const [capturedPhotos, setCapturedPhotos] = useState<SubmissionPhoto[]>([])
+  const [capturedThisSession, setCapturedPhotos] = useState<SubmissionPhoto[]>(
+    [],
+  )
+  // The strip shows only this session's captures that are still in the
+  // draft. A submit, Reset or Discard clears the photo store while this
+  // screen stays mounted below Home, so the local list alone went stale (#453).
+  const draftPhotos = usePhotoStore((s) => s.photos)
+  const capturedPhotos = useMemo(() => {
+    const inDraft = new Set(draftPhotos.map((p) => p.local_id))
+    return capturedThisSession.filter((p) => inDraft.has(p.local_id))
+  }, [capturedThisSession, draftPhotos])
   const [flashMode, setFlashMode] = useState<FlashMode>('auto')
   const [position, setPosition] = useState<CameraPosition>('back')
   const listRef = useRef<FlashListRef<SubmissionPhoto>>(null)

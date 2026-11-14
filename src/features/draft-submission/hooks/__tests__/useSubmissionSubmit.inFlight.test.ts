@@ -23,7 +23,12 @@ import { observedCat } from '@/src/test-utils/catFixtures'
  */
 
 jest.mock('expo-router', () => ({
-  router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() },
+  router: {
+    push: jest.fn(),
+    back: jest.fn(),
+    replace: jest.fn(),
+    dismissTo: jest.fn(),
+  },
 }))
 jest.mock('@/src/core/location/liveFix', () => ({
   stopLocationCapture: jest.fn(),

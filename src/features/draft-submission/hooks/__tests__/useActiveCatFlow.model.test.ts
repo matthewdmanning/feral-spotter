@@ -21,7 +21,7 @@ import { observedCat } from '@/src/test-utils/catFixtures'
  * Uses the real persisted stores; only native storage and navigation are mocked.
  */
 jest.mock('expo-router', () => ({
-  router: { back: jest.fn(), replace: jest.fn() },
+  router: { back: jest.fn(), replace: jest.fn(), dismissTo: jest.fn() },
 }))
 
 let mockUuidCounter = 0
@@ -114,7 +114,7 @@ describe('useActiveCatFlow — model-based test', () => {
       // very-first-cat path) or Cat List (loops for a zero-cats submission).
       BACK: async () => {
         await act(() => hook.result.current.handleAbandonPass())
-        expect(router.replace).toHaveBeenCalledWith('/')
+        expect(router.dismissTo).toHaveBeenCalledWith('/')
       },
       // Mirrors useCatSubmit's post-save clearActiveCat call.
       FORM_SAVED: async () => {
@@ -169,7 +169,7 @@ describe('useActiveCatFlow — model-based test', () => {
     // risk on the first cat of a submission as the hardware-back path.
     await act(() => hook.result.current.handleBoxingComplete())
     expect(router.back).not.toHaveBeenCalled()
-    expect(router.replace).toHaveBeenCalledWith('/')
+    expect(router.dismissTo).toHaveBeenCalledWith('/')
   })
 
   it('boxing complete after only not-in-photo marks (no box) also abandons the pass — no phantom cat (#203)', async () => {
@@ -183,7 +183,7 @@ describe('useActiveCatFlow — model-based test', () => {
 
     await act(() => hook.result.current.handleBoxingComplete())
     expect(router.back).not.toHaveBeenCalled()
-    expect(router.replace).toHaveBeenCalledWith('/')
+    expect(router.dismissTo).toHaveBeenCalledWith('/')
   })
 
   it('a box and an absence marker are mutually exclusive for the same cat+photo slot', async () => {
@@ -215,7 +215,7 @@ describe('useActiveCatFlow — model-based test', () => {
     })
 
     expect(router.replace).toHaveBeenCalledWith('/submission/cats')
-    expect(router.replace).not.toHaveBeenCalledWith('/')
+    expect(router.dismissTo).not.toHaveBeenCalled()
   })
 
   it('abandoning with cats already recorded lands on Cat List, not Home (#203)', async () => {

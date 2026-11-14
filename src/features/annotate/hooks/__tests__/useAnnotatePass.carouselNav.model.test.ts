@@ -14,7 +14,7 @@ import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
  * last photo, where they complete the pass without incrementing the index.
  */
 jest.mock('expo-router', () => ({
-  router: { replace: jest.fn() },
+  router: { replace: jest.fn(), dismissTo: jest.fn() },
 }))
 
 const THREE_PHOTOS = [
