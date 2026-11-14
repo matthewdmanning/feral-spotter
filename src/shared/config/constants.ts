@@ -7,9 +7,9 @@
 import Constants from 'expo-constants'
 import { getAppVersion } from '@/src/shared/utils/appVersion'
 
-/** True in development or pre-release builds. Gates analytics events. */
-export const IS_PRERELEASE: boolean =
-  Boolean(Constants.expoConfig?.extra?.isPrerelease) || __DEV__
+/** True in development or release candidate builds. Gates analytics events. */
+export const IS_RELEASE_CANDIDATE: boolean =
+  Boolean(Constants.expoConfig?.extra?.isReleaseCandidate) || __DEV__
 
 /**
  * Feature flags. Each is off in a release build unless its EXPO_PUBLIC_*
