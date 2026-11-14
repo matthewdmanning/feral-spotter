@@ -19,7 +19,6 @@ export interface AppSettings {
   camera_motion_priority: boolean
   camera_disable_low_light_boost: boolean
   camera_subject_metering: boolean
-  camera_pinch_zoom: boolean
 }
 
 interface SettingsState {
@@ -74,10 +73,7 @@ const DEFAULT_SETTINGS: AppSettings = {
     process.env.EXPO_PUBLIC_CAMERA_SUBJECT_METERING,
     false,
   ),
-  camera_pinch_zoom: true,
 }
-
-const PINCH_ZOOM_ON_VERSION = 1
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
@@ -93,22 +89,10 @@ export const useSettingsStore = create<SettingsState>()(
     {
       name: 'settings-store',
       storage: createJSONStorage(() => asyncStorage),
-      // Pinch zoom ships on. The old default (off) was saved with every
-      // other setting, so without this an existing install would keep it off
-      // and never see the new default. A choice made after v1 is kept.
-      version: PINCH_ZOOM_ON_VERSION,
-      migrate: (persisted, version) => {
-        const state = persisted as SettingsState
-        return version < PINCH_ZOOM_ON_VERSION && state?.settings
-          ? {
-              ...state,
-              settings: {
-                ...state.settings,
-                camera_pinch_zoom: DEFAULT_SETTINGS.camera_pinch_zoom,
-              },
-            }
-          : state
-      },
+      // Installs are saved at v1. Without a migrate, zustand drops a store saved
+      // at another version, so older stores pass through and merge below.
+      version: 1,
+      migrate: (persisted) => persisted as SettingsState,
       merge: (persisted, current) => {
         const persistedSettings = (
           persisted as Partial<SettingsState> | undefined

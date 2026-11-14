@@ -21,14 +21,6 @@ it.each(['android', 'ios'])(
   },
 )
 
-it('pinch zoom is switchable only on Android with experimentalCamera on', () => {
-  const keys = (flags: typeof FLAGS_ON, os: string) =>
-    visiblePhotoToggles(flags, os).map((t) => t.key)
-  expect(keys(FLAGS_ON, 'android')).toContain('camera_pinch_zoom')
-  expect(keys(FLAGS_ON, 'ios')).not.toContain('camera_pinch_zoom')
-  expect(keys(FLAGS_OFF, 'android')).not.toContain('camera_pinch_zoom')
-})
-
 it('a build with flags on hides only the other platform’s toggles', () => {
   const visible = visiblePhotoToggles(FLAGS_ON, 'android')
   const hidden = PHOTO_TOGGLES.filter((t) => !visible.includes(t))

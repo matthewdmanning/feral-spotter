@@ -47,9 +47,7 @@ export function useNativeCameraCapture(
   )
   // Android only: it zooms the preview there. iOS zooms the camera itself, so
   // a zoomed iOS capture is a cropped capture.
-  const pinchZoom = useSettingsStore(
-    (s) => Platform.OS === 'android' && s.settings.camera_pinch_zoom === true,
-  )
+  const pinchZoom = Platform.OS === 'android'
   const performanceChecks = useSettingsStore(
     (s) => s.settings.camera_performance_checks === true,
   )
@@ -91,10 +89,10 @@ export function useNativeCameraCapture(
   const isTakingPhotoRef = useRef(false)
   const hasStartedLocationCapture = useRef(false)
 
-  // The tuning the view actually resolved, reported once per bind. Held in a
-  // ref so every capture event can carry it without re-creating the capture
-  // callback each time the camera rebinds.
-  const resolvedCaptureTuning = useRef<string | null>(null)
+  // The tuning the settings requested, reported once per bind. Held in a ref so
+  // every capture event can carry it without re-creating the capture callback
+  // each time the camera rebinds.
+  const requestedCaptureTuning = useRef<string | null>(null)
 
   useEffect(() => {
     cameraOpenedAt.current = performanceChecks ? Date.now() : null
@@ -103,7 +101,8 @@ export function useNativeCameraCapture(
   const handleCameraReady = useCallback(
     (event?: { nativeEvent?: NativeCameraReadyEvent }) => {
       setIsCameraReady(true)
-      resolvedCaptureTuning.current = event?.nativeEvent?.captureTuning ?? null
+      requestedCaptureTuning.current =
+        event?.nativeEvent?.requestedCaptureTuning ?? null
       const openedAt = cameraOpenedAt.current
       if (!performanceChecks || openedAt === null) return
 
@@ -118,7 +117,9 @@ export function useNativeCameraCapture(
         motion_priority: motionPriority,
         low_light_boost_disabled: disableLowLightBoost,
         subject_metering: subjectMetering,
-        capture_tuning: resolvedCaptureTuning.current ?? 'unreported',
+        requested_capture_tuning:
+          requestedCaptureTuning.current ?? 'unreported',
+        capture_mode: event?.nativeEvent?.captureMode ?? 'unreported',
         ready_duration_ms: Date.now() - openedAt,
       })
     },
@@ -204,7 +205,9 @@ export function useNativeCameraCapture(
               motion_priority: motionPriority,
               low_light_boost_disabled: disableLowLightBoost,
               subject_metering: subjectMetering,
-              capture_tuning: resolvedCaptureTuning.current ?? 'unreported',
+              requested_capture_tuning:
+                requestedCaptureTuning.current ?? 'unreported',
+              capture_mode: captured.captureMode ?? 'unreported',
               capture_duration_ms: capturedAt - captureStartedAt,
               postprocess_duration_ms: processedAt - capturedAt,
               capture_pipeline_duration_ms: processedAt - captureStartedAt,
@@ -230,7 +233,8 @@ export function useNativeCameraCapture(
               motion_priority: motionPriority,
               low_light_boost_disabled: disableLowLightBoost,
               subject_metering: subjectMetering,
-              capture_tuning: resolvedCaptureTuning.current ?? 'unreported',
+              requested_capture_tuning:
+                requestedCaptureTuning.current ?? 'unreported',
               elapsed_ms: Date.now() - captureStartedAt,
             }
           : {}),

@@ -1,15 +1,13 @@
 /**
- * Pinch zoom ships on, but the old default (off) was persisted with the other
- * settings. Without the migration an existing install keeps zoom off for good.
+ * zustand drops a persisted store whose version differs and has no migrate.
+ * A store saved before v1 must keep what the user saved.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
-const persisted = (version: number, pinch: boolean) =>
+const persisted = (version: number) =>
   JSON.stringify({
-    state: {
-      settings: { camera_pinch_zoom: pinch, native_camera_capture: false },
-    },
+    state: { settings: { native_camera_capture: false } },
     version,
   })
 
@@ -27,21 +25,9 @@ const loadRehydrated = async (stored: string | null) => {
   return store!.getState().settings
 }
 
-describe('useSettingsStore pinch zoom migration', () => {
-  it('turns zoom on for an install saved before it shipped on', async () => {
-    const settings = await loadRehydrated(persisted(0, false))
-    expect(settings.camera_pinch_zoom).toBe(true)
-    // The rest of what the user saved is kept.
+describe('useSettingsStore migration', () => {
+  it.each([0, 1])('keeps settings saved at v%i', async (version) => {
+    const settings = await loadRehydrated(persisted(version))
     expect(settings.native_camera_capture).toBe(false)
-  })
-
-  it('keeps a choice made after the migration', async () => {
-    const settings = await loadRehydrated(persisted(1, false))
-    expect(settings.camera_pinch_zoom).toBe(false)
-  })
-
-  it('starts a new install with zoom on', async () => {
-    const settings = await loadRehydrated(null)
-    expect(settings.camera_pinch_zoom).toBe(true)
   })
 })
