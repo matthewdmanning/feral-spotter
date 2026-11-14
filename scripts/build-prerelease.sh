@@ -12,11 +12,15 @@
 # EXPO_PUBLIC_* name to PRERELEASE_FLAGS below (and read it in
 # src/shared/config/constants.ts).
 #
-# .env.android.local is layered on top of .env.local, as in run-android.sh.
-# Variables already in the environment win over both files, except the
-# pre-release ones below, which this script forces.
+# .env.android.local is layered on top of .env.local, as in run-android.sh:
+# its keys are exported here, and Expo skips keys already in the environment.
+# The pre-release keys below are exported last, so they always win.
 #
-# Usage: bash scripts/build-prerelease.sh [extra `expo run:android` args]
+# Prebuild runs with --clean, because the launcher label lives in generated
+# native files. Run a plain prebuild before the next non-pre-release build.
+# Needs no connected device: it assembles the APK and does not install it.
+#
+# Usage: bash scripts/build-prerelease.sh [extra gradlew args]
 # Output: android/app/build/outputs/apk/release/app-release.apk
 set -euo pipefail
 
@@ -40,5 +44,8 @@ for flag in "${PRERELEASE_FLAGS[@]}"; do
   echo "[build-prerelease] $flag=true"
 done
 
-# --no-bundler: a release build bundles JS itself and must not start Metro.
-exec npx expo run:android --variant release --no-bundler "$@"
+npx expo prebuild --platform android --clean
+
+# assembleRelease bundles the JS into the APK itself; no Metro is involved.
+cd android
+exec ./gradlew assembleRelease "$@"

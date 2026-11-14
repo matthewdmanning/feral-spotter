@@ -128,7 +128,7 @@ npm run clean-debug  # expo prebuild --clean, then gradlew assembleDebug, filter
 ### Pre-release build
 
 ```bash
-npm run build:prerelease  # scripts/build-prerelease.sh -> expo run:android --variant release
+npm run build:prerelease  # prebuild --clean, then gradlew assembleRelease
 ```
 
 A standalone (JS bundled, no Metro, no dev client) release APK for sideloading,
@@ -136,7 +136,9 @@ with test features on. It sets `APP_VARIANT=prerelease` (`app.config.js` then
 sets `extra.isPrerelease`, so `IS_PRERELEASE` is true, and appends " (pre)" to
 the launcher label) and `EXPO_PUBLIC_EXPERIMENTAL_CAMERA=true` (inlined into the
 bundle). The applicationId is unchanged, because `google-services.json` is bound
-to it, so the APK installs over a release build. Install with
+to it, so the APK installs over a release build. The build needs no device.
+Prebuild runs with `--clean`, so run a plain prebuild before the next
+non-pre-release build. Install with
 `adb install -r android/app/build/outputs/apk/release/app-release.apk`.
 
 Tag a pre-release `vX.Y.Z-pre.N`, for example `v0.1.0-pre.1`. The Expo `version`

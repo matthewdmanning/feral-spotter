@@ -43,7 +43,7 @@
 ## What shipped
 
 - `app.config.js`: `extra.isPrerelease` (false unless `APP_VARIANT=prerelease`), " (pre)" name suffix.
-- `scripts/build-prerelease.sh` and `npm run build:prerelease`: `expo run:android --variant release --no-bundler`.
+- `scripts/build-prerelease.sh` and `npm run build:prerelease`: `expo prebuild --platform android --clean`, then `./gradlew assembleRelease`. Needs no device.
 - Build and install steps in `docs/agents/native-code.md` ("Pre-release build").
 
 ## Tests
@@ -60,7 +60,7 @@
 
 **Unverified:**
 
-- No Android SDK in the authoring environment: the release Gradle build, `--no-bundler` behavior, and the APK on a device were not run.
+- No Android SDK in the authoring environment: the release Gradle build and the APK on a device were not run.
 - That the inlined `EXPO_PUBLIC_EXPERIMENTAL_CAMERA` turns the camera controls on in the built APK.
 - Release signing: whatever the generated `android/` project uses (Expo's template uses the debug keystore); fine for sideloading.
 
