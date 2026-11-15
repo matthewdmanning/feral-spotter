@@ -91,6 +91,10 @@ export const useSettingsStore = create<SettingsState>()(
     {
       name: 'settings-store',
       storage: createJSONStorage(() => asyncStorage),
+      // Installs are saved at v1. Without a migrate, zustand drops a store saved
+      // at another version, so older stores pass through and merge below.
+      version: 1,
+      migrate: (persisted) => persisted as SettingsState,
       merge: (persisted, current) => {
         const persistedSettings = (
           persisted as Partial<SettingsState> | undefined

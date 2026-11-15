@@ -1,11 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
-const persisted = (pinch: boolean) =>
+const persisted = (pinch: boolean, version = 0) =>
   JSON.stringify({
     state: {
       settings: { camera_pinch_zoom: pinch, native_camera_capture: false },
     },
-    version: 0,
+    version,
   })
 
 const loadRehydrated = async (stored: string | null) => {
@@ -25,6 +25,11 @@ const loadRehydrated = async (stored: string | null) => {
 describe('useSettingsStore persistence', () => {
   it('keeps an explicitly saved pinch zoom choice', async () => {
     const settings = await loadRehydrated(persisted(false))
+    expect(settings.camera_pinch_zoom).toBe(false)
+    expect(settings.native_camera_capture).toBe(false)
+  })
+  it('keeps settings an existing v1 install saved', async () => {
+    const settings = await loadRehydrated(persisted(false, 1))
     expect(settings.camera_pinch_zoom).toBe(false)
     expect(settings.native_camera_capture).toBe(false)
   })

@@ -231,6 +231,15 @@ export async function removeAuthorInteractions(
     const writer = db().bulkWriter()
     const deleted = Promise.all(docs.docs.map((doc) => writer.delete(doc.ref)))
     await Promise.all([writer.close(), deleted])
+    // Deleted comments free their room under COMMENT_LIMIT, as deleteComment does.
+    if (collection.id === comments().id && docs.size)
+      await db().runTransaction(async (transaction) => {
+        const account = (await transaction.get(accountRef(uid))).data()
+        if (!account || account.deleting) return
+        transaction.update(accountRef(uid), {
+          commentCount: Math.max(0, (account.commentCount ?? 0) - docs.size),
+        })
+      })
   }
 }
 
