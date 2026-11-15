@@ -58,7 +58,7 @@ test('default leaving revokes everything, while retained sharing needs explicit 
   )
   expect(
     await screen.findByText(
-      'Confirm these choices for 3 existing Sightings before leaving.',
+      '3 existing sightings retain these sharing permissions.',
     ),
   ).toBeOnTheScreen()
   await user.press(screen.getByRole('checkbox', { name: 'Share cat details' }))

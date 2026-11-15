@@ -2,7 +2,7 @@ import { StyleSheet } from 'react-native-unistyles'
 export const styles = StyleSheet.create((theme) => ({
   card: {
     padding: theme.layout.cardPadding,
-    gap: theme.spacing.md,
+    gap: theme.layout.stackGap,
     borderRadius: theme.radius.xl,
   },
   title: { ...theme.textVariants.heading, color: theme.colors.text },
@@ -12,12 +12,13 @@ export const styles = StyleSheet.create((theme) => ({
     color: theme.colors.muted,
     flexShrink: 1,
   },
+  permissionGroup: { gap: theme.layout.stackGap },
   fieldGroup: { gap: theme.spacing.sm },
   checkRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.md,
-    minHeight: 48,
+    gap: theme.layout.stackGap,
+    minHeight: theme.controlHeight.touchTarget,
     paddingVertical: theme.spacing.sm,
   },
 }))

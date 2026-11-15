@@ -39,3 +39,28 @@ See [combined verification](2026-11-07-feat-organizations.md#verification) for c
 - Each leave attempt gets a server-assigned `exit.attempt`; the block token and ledger receipts include it, so an aborted attempt's receipts never satisfy a retry.
 - Operator removal releases a still-held leave block after revoking.
 - Tests: `leave.model.test.ts` adds a corrected review reusing the rejected mutation id, and removal during a directory update followed by rejoin and a new share; both failed before the fix.
+
+## 2026-11-15 — extension
+
+**Purpose:** Give each organization a dedicated membership landing screen.
+**Change:** Organizations list cards now link to `/organizations/[id]`. The new screen loads the signed-in user's membership and shows the organization name, status, display-name editing and leave/resume controls. Active members can open Members and, when the Organizations rollout is enabled, Shared Sightings. The existing member card is shared by both screens. Copy lives in `organizationCopy.overview`; no profile fields or backend contracts were added.
+
+The screen distinguishes sign-in, loading, offline, error and missing-membership states. A journey test opens the landing screen from the list, refreshes pending membership to active, toggles the sharing rollout, and switches accounts to verify names and controls are cleared.
+
+**Verification:** `npm run typecheck` passed. ESLint passed for the changed TypeScript files; Prettier and `git diff --check` passed. The new organization journey and existing membership journeys passed (2 suites, 4 tests). Native layout, keyboard behavior, themes and glass remain unverified: this environment has no Android emulator or `adb` available.
+
+## 2026-11-15 — extension
+
+**Purpose:** Make membership display names read-only and expose organization privacy through deliberate button actions.
+**Change:** Membership cards show the display name as text; the rename field and Save action are removed from both the list and landing screen. The landing screen has a Privacy settings button opening permissions scoped to that organization, including after leaving. Opening the panel changes no permission; revocations require explicit confirmation. Account or organization changes reset the panel. New members still choose a display name when requesting membership. See [organization sharing](2026-11-09-feat-organization-sharing.md) for permission changes.
+
+**Verification:** Membership, organization landing and permission-management journeys passed (3 suites, 7 tests), including read-only names and confirmation cancel/commit with sharing off. Native device layout remains unverified; no emulator or adb is installed.
+
+Type checking, targeted ESLint, Prettier and whitespace checks passed.
+
+## 2026-11-15 — refactor
+
+**Purpose:** Resolve the organization UI review findings for semantic tokens, spacing, copy ownership and text scaling.
+**Change:** Membership screens use `layout.gutter` and `layout.sectionGap`; shared organization cards use `layout.stackGap`, and checkbox targets use `controlHeight.touchTarget`. Membership, leave and loading text now uses the shared Text component and its configured font-scale ceiling. Membership labels, authored statuses, leave disclosure, errors and confirmation summaries live in `organizationCopy` in `src/shared/config/text.ts`. Existing field-label owners are reused rather than assembling sentences from schema labels. The generic overview guidance was removed and the privacy description shortened to the membership-name visibility fact. Copy is bundled TypeScript configuration: development reloads apply edits; distributed builds require a rebuild. See [organization sharing](2026-11-09-feat-organization-sharing.md) for permission-group spacing.
+
+**Verification:** Type checking passed. Organization landing, membership, leave and permission-management journeys passed (4 suites, 9 tests). Native layout at narrow widths and enlarged text, keyboard behavior and native glass remain unverified: this environment has no emulator or adb.

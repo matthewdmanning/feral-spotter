@@ -1,146 +1,42 @@
 import { useState, type ReactNode } from 'react'
-import { ScrollView, Text } from 'react-native'
+import { ScrollView } from 'react-native'
+import { Text } from '@/src/shared/ui/atoms/Text'
 import { router, Stack } from 'expo-router'
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import { TextField } from '@/src/shared/ui/atoms/TextField'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import { TextButton } from '@/src/shared/ui/atoms/TextButton'
+import { organizationCopy, formatCopy } from '@/src/shared/config/text'
+import { MemberCard } from '@/src/features/organizations/membership/components/MemberCard'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { OrganizationLoading } from '@/src/features/organizations/components/OrganizationLoading'
 import { styles } from '@/src/features/organizations/components/styles'
 import { styles as layout } from '@/src/features/organizations/membership/components/styles'
 import { useMemberships } from '@/src/features/organizations/membership/hooks/useMemberships'
-import { LeaveChoices } from '@/src/features/organizations/membership/components/LeaveChoices'
-import type { MembershipSummary } from '@/functions/src/organizations/membership/domain'
-
-function MemberCard({
-  member,
-  query,
-  renderSharedAccess,
-}: {
-  member: MembershipSummary
-  query: ReturnType<typeof useMemberships>
-  renderSharedAccess?: (organizationId: string) => ReactNode
-}) {
-  const [name, setName] = useState(member.displayName)
-  const [leaving, setLeaving] = useState(false)
-  const active = member.status === 'active' && !member.leaving
-  return (
-    <GlassSurface kind="card" style={styles.card}>
-      <Text style={styles.title}>{member.organizationName}</Text>
-      <Text style={styles.body}>
-        {member.leaving
-          ? 'Leaving incomplete — resume to finish'
-          : member.status}
-      </Text>
-      {member.leaving ? (
-        <AppButton
-          disabled={query.busy}
-          onPress={() => {
-            void query.request({
-              action: 'resumeLeaving',
-              organizationId: member.organizationId,
-            })
-          }}
-        >
-          Resume leaving
-        </AppButton>
-      ) : (
-        <>
-          {['active', 'pending'].includes(member.status) && (
-            <>
-              <TextField
-                label={`Display name for ${member.organizationName}`}
-                value={name}
-                maxLength={80}
-                editable={!query.busy}
-                onChangeText={setName}
-              />
-              <TextButton
-                disabled={query.busy || !name.trim()}
-                onPress={() => {
-                  void query.request({
-                    action: 'renameMember',
-                    organizationId: member.organizationId,
-                    displayName: name,
-                  })
-                }}
-              >
-                Save display name
-              </TextButton>
-              {active && (
-                <>
-                  <TextButton
-                    onPress={() =>
-                      router.push({
-                        pathname: '/organizations/[id]/members',
-                        params: { id: member.organizationId },
-                      })
-                    }
-                  >
-                    Members
-                  </TextButton>
-                  {renderSharedAccess?.(member.organizationId)}
-                </>
-              )}
-              <TextButton
-                disabled={query.busy}
-                onPress={() => setLeaving(!leaving)}
-              >
-                {leaving
-                  ? 'Cancel leaving'
-                  : member.status === 'pending'
-                    ? 'Cancel request'
-                    : 'Leave organization'}
-              </TextButton>
-              {leaving && query.uid && (
-                <LeaveChoices
-                  uid={query.uid}
-                  organizationId={member.organizationId}
-                  busy={query.busy}
-                  onLeave={(choice) =>
-                    query.request({
-                      action: 'leaveOrganization',
-                      organizationId: member.organizationId,
-                      choice,
-                    })
-                  }
-                />
-              )}
-            </>
-          )}
-        </>
-      )}
-    </GlassSurface>
-  )
-}
 
 function MembershipsForm({
   renderSharedAccess,
 }: {
   renderSharedAccess?: (organizationId: string) => ReactNode
 }) {
+  const copy = organizationCopy.membership
   const query = useMemberships()
   const [code, setCode] = useState('')
   const [name, setName] = useState('')
   return (
     <ScrollView contentContainerStyle={layout.content}>
-      <Stack.Screen options={{ title: 'Organizations' }} />
+      <Stack.Screen options={{ title: copy.title }} />
       {!query.uid ? (
-        <Text style={styles.body}>Sign in to join an organization.</Text>
+        <Text style={styles.body}>{copy.signIn}</Text>
       ) : (
         <>
-          {!query.online && (
-            <Text style={styles.body}>Connect to manage memberships.</Text>
-          )}
+          {!query.online && <Text style={styles.body}>{copy.offline}</Text>}
           {!!query.error && (
             <Text accessibilityRole="alert" style={styles.body}>
               {query.error}
             </Text>
           )}
-          {query.initialLoading && (
-            <OrganizationLoading label="Loading memberships…" />
-          )}
+          {query.initialLoading && <OrganizationLoading label={copy.loading} />}
           <AppButton
             disabled={!query.online}
             loading={query.busy}
@@ -148,17 +44,13 @@ function MembershipsForm({
               void query.request()
             }}
           >
-            Refresh memberships
+            {copy.refresh}
           </AppButton>
           <GlassSurface kind="card" style={styles.card}>
-            <Text style={styles.title}>Join an organization</Text>
-            <Text style={styles.body}>
-              Enter an invite code and request approval. Your display name will
-              be visible to other members. Joining does not share your Sightings
-              or contact details.
-            </Text>
+            <Text style={styles.title}>{copy.join}</Text>
+            <Text style={styles.body}>{copy.disclosure}</Text>
             <TextField
-              label="Invite code"
+              label={copy.inviteCode}
               value={code}
               maxLength={32}
               editable={!query.busy}
@@ -166,7 +58,7 @@ function MembershipsForm({
               autoCorrect={false}
             />
             <TextField
-              label="Display name"
+              label={copy.displayName}
               value={name}
               maxLength={80}
               editable={!query.busy}
@@ -191,16 +83,14 @@ function MembershipsForm({
                   })
               }}
             >
-              Request membership
+              {copy.request}
             </AppButton>
           </GlassSurface>
           {query.online &&
             !query.error &&
             !query.busy &&
             !query.memberships.length && (
-              <Text style={styles.hint}>
-                No memberships or pending requests.
-              </Text>
+              <Text style={styles.hint}>{copy.empty}</Text>
             )}
           {query.memberships.map((member) => (
             <MemberCard
@@ -208,7 +98,20 @@ function MembershipsForm({
               member={member}
               query={query}
               renderSharedAccess={renderSharedAccess}
-            />
+            >
+              <TextButton
+                onPress={() =>
+                  router.push({
+                    pathname: '/organizations/[id]',
+                    params: { id: member.organizationId },
+                  })
+                }
+              >
+                {formatCopy(organizationCopy.overview.open, {
+                  name: member.organizationName,
+                })}
+              </TextButton>
+            </MemberCard>
           ))}
         </>
       )}

@@ -100,6 +100,68 @@ export const validationCopy = {
 
 // Organization copy owner.
 export const organizationCopy = {
+  loading: 'Loading organizations…',
+  membership: {
+    title: 'Organizations',
+    signIn: 'Sign in to join an organization.',
+    offline: 'Connect to manage memberships.',
+    loading: 'Loading memberships…',
+    refresh: 'Refresh memberships',
+    join: 'Join an organization',
+    disclosure:
+      'Your display name is visible to other members. Joining does not share sightings or contact details.',
+    inviteCode: 'Invite code',
+    displayName: 'Display name',
+    request: 'Request membership',
+    empty: 'No memberships or pending requests.',
+    statuses: {
+      pending: 'Pending approval',
+      active: 'Active member',
+      rejected: 'Request declined',
+      removed: 'Membership removed',
+      left: 'Membership ended',
+    },
+    leavingIncomplete: 'Leaving incomplete',
+    resumeLeaving: 'Resume leaving',
+    members: 'Members',
+    cancelLeaving: 'Cancel leaving',
+    cancelRequest: 'Cancel request',
+    leave: 'Leave organization',
+  },
+  leave: {
+    disclosure:
+      'Leaving unshares all your sightings unless you retain sharing. Copies already received cannot be recalled.',
+    keep: 'Keep sharing my existing Sightings',
+    retainedDisclosure:
+      'Retained shares include cat count and approximate area. Future sightings are not shared automatically.',
+    anonymousDisclosure: 'Anonymous shares exclude your name, email and phone.',
+    contactDisclosure:
+      'Selected contact details are shared with the organization. Member views exclude contact information.',
+    review: 'Review retained sharing',
+    reviewSummary:
+      '{count} existing sightings retain these sharing permissions.',
+    reviewFailed:
+      'Current shares are unavailable. Retry or leave and unshare all sightings.',
+    incomplete:
+      'Leaving is incomplete. Refresh memberships to check its status.',
+    confirmKeep: 'Confirm sharing and leave',
+    confirmRevoke: 'Leave and unshare all my Sightings',
+  },
+  overview: {
+    title: 'Organization',
+    displayName: 'Display name: {name}',
+    privacy: 'Privacy settings',
+    closePrivacy: 'Close privacy settings',
+    privacyDescription:
+      'Your membership display name is visible to other members.',
+    open: 'View {name}',
+    signIn: 'Sign in to view your organization.',
+    offline: 'Connect to load your organization.',
+    unavailable: 'This organization is not in your memberships.',
+    loading: 'Loading organization…',
+    refresh: 'Refresh organization',
+    sharedSightings: 'Shared Sightings',
+  },
   listSeparator: ', ',
   sharingSettings: {
     title: 'Organization sharing',
@@ -160,6 +222,14 @@ export const organizationCopy = {
     reviewCurrentCoverage:
       '{organization}: {fields}. {contact} Current coverage will be checked before permission is saved.',
     revokeTitle: 'Revoke organization access?',
+    revokeSightingMessage:
+      'Revoke {organization}’s access to sighting {sighting}? This stops future access. Copies already received cannot be recalled.',
+    revokeOrganizationMessage:
+      'Revoke {organization}’s access to all your sightings, including pending permissions? This stops future access. Copies already received cannot be recalled.',
+    noPermissions:
+      'No saved or pending sharing permissions for this organization.',
+    sightingDetails: 'Sighting {sighting}: {fields}',
+    revokeNamedSighting: 'Revoke access to sighting {sighting}',
     revokeMessage:
       'This stops future access. Copies already received cannot be recalled.',
     revoke: 'Revoke',

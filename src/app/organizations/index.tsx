@@ -1,3 +1,4 @@
+import { organizationCopy } from '@/src/shared/config/text'
 import { router } from 'expo-router'
 import MembershipsScreen from '@/src/features/organizations/membership/screens/MembershipsScreen'
 import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
@@ -18,7 +19,7 @@ export default function OrganizationsRoute() {
                   })
                 }
               >
-                Shared Sightings
+                {organizationCopy.overview.sharedSightings}
               </TextButton>
             )
           : undefined

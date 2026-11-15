@@ -9,7 +9,7 @@ import { fakeOrganizationsService } from '@/src/test-utils/organizationsService'
 import { queryWrapper } from '@/src/test-utils/queryClient'
 import type { MembershipSummary } from '@/functions/src/organizations/membership/domain'
 
-test('join, approval refresh and name editing work while sharing is off; account switching clears names and forms', async () => {
+test('join and approval refresh work with a read-only display name while sharing is off; account switching clears names and forms', async () => {
   const user = userEvent.setup()
   useAuthStore.setState({
     user: { uid: 'member', email: 'private@example.test' },
@@ -29,8 +29,6 @@ test('join, approval refresh and name editing work while sharing is off; account
           leaving: false,
         },
       ]
-    if (body.action === 'renameMember')
-      members[0] = { ...members[0], displayName: String(body.displayName) }
     return {
       status: 200,
       body: {
@@ -47,20 +45,16 @@ test('join, approval refresh and name editing work while sharing is off; account
   await user.type(screen.getByLabelText('Invite code'), 'a'.repeat(32))
   await user.type(screen.getByLabelText('Display name'), 'Member name')
   await user.press(screen.getByRole('button', { name: 'Request membership' }))
-  expect(await screen.findByText('pending')).toBeOnTheScreen()
+  expect(await screen.findByText('Pending approval')).toBeOnTheScreen()
   expect(screen.queryByRole('button', { name: 'Members' })).toBeNull()
   members[0] = { ...members[0], status: 'active' }
   await user.press(screen.getByRole('button', { name: 'Refresh memberships' }))
   expect(
     await screen.findByRole('button', { name: 'Members' }),
   ).toBeOnTheScreen()
-  await user.clear(screen.getByLabelText('Display name for Rescue'))
-  await user.type(
-    screen.getByLabelText('Display name for Rescue'),
-    'Updated name',
-  )
-  await user.press(screen.getByRole('button', { name: 'Save display name' }))
-  expect(await screen.findByDisplayValue('Updated name')).toBeOnTheScreen()
+  expect(screen.getByText('Display name: Member name')).toBeOnTheScreen()
+  expect(screen.queryByLabelText('Display name for Rescue')).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Save display name' })).toBeNull()
   expect(
     service.requests.find((body) => body.action === 'joinOrganization'),
   ).toMatchObject({ code: 'a'.repeat(32), displayName: 'Member name' })
@@ -68,7 +62,7 @@ test('join, approval refresh and name editing work while sharing is off; account
   await act(async () => {
     useAuthStore.setState({ user: { uid: 'other', email: null } })
   })
-  expect(screen.queryByDisplayValue('Updated name')).toBeNull()
+  expect(screen.queryByText('Display name: Member name')).toBeNull()
   expect(screen.queryByDisplayValue('Unsubmitted name')).toBeNull()
 })
 
@@ -157,7 +151,7 @@ test('foreground refresh cannot discard an in-flight membership mutation', async
       },
     })
   })
-  expect(await screen.findByText('pending')).toBeOnTheScreen()
+  expect(await screen.findByText('Pending approval')).toBeOnTheScreen()
   expect(
     service.actions().filter((action) => action === 'joinOrganization'),
   ).toHaveLength(1)
