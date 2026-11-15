@@ -68,8 +68,11 @@ Zero shutter lag (ZSL) rules:
 | `FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER` | Closest lower size, then higher sizes. "Cap memory usage".     | [S5][S7] |
 
 - The docs recommend one of these two rules [S5].
-- Without a fallback, `bindToLifecycle` can throw `IllegalArgumentException` [S5].
-- The default `ImageCapture` strategy is `HIGHEST_AVAILABLE_STRATEGY`. It selects the largest available size [S27].
+- `FALLBACK_RULE_NONE` makes `bindToLifecycle` throw `IllegalArgumentException` when `boundSize` is unavailable. The docs recommend the two rules above because some devices have problems with sizes of the preferred aspect ratio [S5].
+- Other rules: `FALLBACK_RULE_NONE` (0), `FALLBACK_RULE_CLOSEST_HIGHER` (2), `FALLBACK_RULE_CLOSEST_LOWER` (4). The table's rules are 1 and 3 [S5].
+- The aspect-ratio strategy takes precedence over the resolution strategy when sizes are sorted. A `ResolutionFilter` receives the sorted list [S3].
+- Deprecated `setTargetResolution` / `setTargetAspectRatio` combined with `setResolutionSelector` throw `IllegalArgumentException` at `build()` [S2].
+- The default `ImageCapture` strategy is `HIGHEST_AVAILABLE_STRATEGY`. It selects the largest available size [S2][S27].
 - CameraX uses the selector as a hint. The output can differ because of device constraints [S27].
 
 ### 2c. Aspect ratio strategy
@@ -93,11 +96,11 @@ Camera2 `CONTROL_ZOOM_RATIO` (API 30+) or `SCALER_CROP_REGION` [S8][S9].
 
 - The crop region is "the desired region of the sensor to read out" [S8].
 - Output streams scale the sensor input "to match the output's configured resolution" [S8].
-- With `zoomRatio`, leave the crop region at the default active array size [S8]. **CONFLICT** if you zoom with both.
+- With `zoomRatio` other than 1.0, leave the crop region at the active array size. Use it only for letterboxing or pillarboxing; freeform crop-region zoom is not allowed [S8]. **CONFLICT** if you zoom with both.
 - `zoomRatio` supports zoom-out below 1.0x. `SCALER_CROP_REGION` does not [S8].
 - `zoomRatio` can combine optical and digital zoom on multi-camera systems [S8].
 - RAW streams are not croppable unless the device supports the `CROPPED_RAW` stream use case [S8].
-- From API 30, query the zoom range with `CONTROL_ZOOM_RATIO_RANGE` [S9].
+- From API 30, query the zoom range with `CONTROL_ZOOM_RATIO_RANGE` [S9]. The key is optional (can be `null`); LIMITED and above list it [S9].
 
 ---
 
@@ -105,12 +108,12 @@ Camera2 `CONTROL_ZOOM_RATIO` (API 30+) or `SCALER_CROP_REGION` [S8][S9].
 
 `ImageCapture.Builder.setOutputFormat(int)`, CameraX 1.4.0+. **EXCLUSIVE.** Default: `OUTPUT_FORMAT_JPEG` [S2].
 
-| Value                          | Constant          | File(s)                         | Source                         |
-| ------------------------------ | ----------------- | ------------------------------- | ------------------------------ |
-| `OUTPUT_FORMAT_JPEG`           | 0                 | 8-bit SDR, `ImageFormat.JPEG`   | [S1]                           |
-| `OUTPUT_FORMAT_JPEG_ULTRA_HDR` | 1                 | Ultra HDR, `ImageFormat.JPEG_R` | [S1]                           |
-| `OUTPUT_FORMAT_RAW`            | 2, CameraX 1.5.0+ | `ImageFormat.RAW_SENSOR`        | [S1]; version: [S1] Web search |
-| `OUTPUT_FORMAT_RAW_JPEG`       | 3, CameraX 1.5.0+ | `RAW_SENSOR` **and** `JPEG`     | [S1]                           |
+| Value                          | Constant          | File(s)                         | Source |
+| ------------------------------ | ----------------- | ------------------------------- | ------ |
+| `OUTPUT_FORMAT_JPEG`           | 0                 | 8-bit SDR, `ImageFormat.JPEG`   | [S1]   |
+| `OUTPUT_FORMAT_JPEG_ULTRA_HDR` | 1                 | Ultra HDR, `ImageFormat.JPEG_R` | [S1]   |
+| `OUTPUT_FORMAT_RAW`            | 2, CameraX 1.5.0+ | `ImageFormat.RAW_SENSOR`        | [S1]   |
+| `OUTPUT_FORMAT_RAW_JPEG`       | 3, CameraX 1.5.0+ | `RAW_SENSOR` **and** `JPEG`     | [S1]   |
 
 Rules:
 
@@ -120,7 +123,7 @@ Rules:
 - Ultra HDR is available on capable devices from API 34 [S15].
 - With `OUTPUT_FORMAT_RAW_JPEG`, `OnImageSavedCallback` fires twice: once per file [S21].
 - Give separate output options for the DNG and the JPEG [S21].
-- RAW output is not supported for HDR capture [S26].
+- Camera2 `CONTROL_SCENE_MODE_HDR` does not support a RAW output [S26]. This rule is not about CameraX Ultra HDR.
 
 ---
 
@@ -145,7 +148,7 @@ Rules:
 
 ### 5a. Flash mode
 
-`ImageCapture.setFlashMode(int)` or `ImageCapture.Builder.setFlashMode(int)`. **EXCLUSIVE.** Default: `FLASH_MODE_OFF` [S1][S2].
+`ImageCapture.setFlashMode(int)` or `ImageCapture.Builder.setFlashMode(int)`. **EXCLUSIVE.** Default: `FLASH_MODE_OFF` [S2].
 
 | Value               | Rule                                                                                              | Source |
 | ------------------- | ------------------------------------------------------------------------------------------------- | ------ |
@@ -176,17 +179,20 @@ Rules:
 - It adjusts brightness of preview, video and image analysis streams [S11].
 - It turns on in low light and off in brighter light [S11].
 - The future fails with `IllegalStateException` when not supported or when settings conflict [S11].
-- Camera2 equivalent: AE mode `CONTROL_AE_MODE_ON_LOW_LIGHT_BOOST_BRIGHTNESS_PRIORITY` [S13].
+- Camera2 counterpart: AE mode `CONTROL_AE_MODE_ON_LOW_LIGHT_BOOST_BRIGHTNESS_PRIORITY` (API 35) [S13]. No source says CameraX implements boost with it.
+- On Camera2, confirm the mode in `CaptureResult.CONTROL_AE_MODE`; some configurations, such as high-speed recording, reject it. `CONTROL_LOW_LIGHT_BOOST_STATE` reports whether boost is active [S13].
 - It is its own AE mode, because other AE settings are not compatible with its preview brightening [S13]. **EXCLUSIVE** with other AE modes.
 
 ### 5d. Night extension
 
-`ExtensionMode.NIGHT` through `ExtensionsManager` [S14].
+`ExtensionMode.NIGHT` through `ExtensionsManager` [S14]. Bind with `ExtensionSessionConfig` (CameraX 1.6.0+); `getExtensionEnabledCameraSelector` is deprecated from 1.7.0-alpha02 [S15][S22].
+
+- From November 1, 2026, Extensions support is removed on some devices for apps on CameraX 1.5 or earlier. 1.6 and later keep it [S14].
 
 - Night mode combines a burst of photos into one image [S11].
 - Night mode cannot create a continuous stream of frames. Low-light boost can [S11].
 - Query `isExtensionAvailable(cameraSelector, ExtensionMode.NIGHT)` first [S14].
-- Call `unbindAll()` before you enable a different extension mode [S14]. **EXCLUSIVE.**
+- Call `unbindAll()` before you enable a different extension mode [S14]. This is the legacy-selector path; binding a new `SessionConfig` replaces it [S21]. **EXCLUSIVE.**
 - An extension disables ZSL [S1].
 - Extensions do not support 10-bit preview or video. Dynamic range must be SDR [S15].
 - Ultra HDR can work with an extension. Check formats with the extension-enabled `CameraInfo` [S15][S21].
@@ -202,15 +208,17 @@ Rules:
 
 ## 6. Camera2 processing modes — quality vs frame rate
 
-Set through Camera2 interop on the use-case builder: `builder.camera2Interop { setCaptureRequestOption(key, value) }` [S17].
+Set through Camera2 interop. The API depends on the pinned CameraX version [S2][S17][S22]:
 
-- `Camera2Interop.Extender.setCaptureRequestOption` is deprecated in CameraX 1.7.0-rc02 [S17].
+- 1.6.x: `Camera2Interop.Extender(builder).setCaptureRequestOption(key, value)`. Not deprecated there.
+- 1.7.0-alpha03 and later: the Extender is deprecated. Use `ImageCapture.Builder.camera2Interop` for still keys (`setStillCaptureRequestOption`). Use `SessionConfig.Builder.camera2Interop` or `CameraControl.applyCamera2InteropAsync` for repeating keys.
+- The reference pages stamp the deprecation "1.7.0-rc02". The release notes first list it in 1.7.0-alpha03 [S17][S22].
 - Interop values override CameraX internal values. They can interfere with `CameraControl` APIs and 3A behavior [S17].
 - On `ImageCapture.Builder`, still-capture options override the same keys in repeating requests [S17].
 
 ### 6a. `CaptureRequest.NOISE_REDUCTION_MODE`
 
-**EXCLUSIVE.** Query `NOISE_REDUCTION_AVAILABLE_NOISE_REDUCTION_MODES` [S8].
+**EXCLUSIVE.** Query `NOISE_REDUCTION_AVAILABLE_NOISE_REDUCTION_MODES` [S9]. LIMITED and above list it. LEGACY devices support only `FAST` [S9].
 
 | Value              | Effect                                                                                     | Source |
 | ------------------ | ------------------------------------------------------------------------------------------ | ------ |
@@ -222,7 +230,7 @@ Set through Camera2 interop on the use-case builder: `builder.camera2Interop { s
 
 ### 6b. `CaptureRequest.EDGE_MODE` (sharpening)
 
-**EXCLUSIVE.** Query `EDGE_AVAILABLE_EDGE_MODES` [S8].
+**EXCLUSIVE.** Query `EDGE_AVAILABLE_EDGE_MODES` [S9].
 
 | Value              | Effect                                                          | Source   |
 | ------------------ | --------------------------------------------------------------- | -------- |
@@ -233,6 +241,7 @@ Set through Camera2 interop on the use-case builder: `builder.camera2Interop { s
 
 - Both keys are optional. The value can be `null` on some devices [S8].
 - Both keys are present on all `HARDWARE_LEVEL_FULL` devices [S8].
+- `ZERO_SHUTTER_LAG` modes leave high-resolution streams unprocessed (noise reduction falls back to `MINIMAL` or none). They suit app-side ZSL reprocessing, not a plain `ImageCapture` JPEG [S8][S10].
 
 ---
 
@@ -267,7 +276,7 @@ Each row repeats a rule from sections 1–6. The source is the section's source.
 | Those devices provide all DNG-related optional metadata.                                                  | [S10]                         |
 | Maximum RAW size equals `SENSOR_INFO_PIXEL_ARRAY_SIZE` or `SENSOR_INFO_PRE_CORRECTION_ACTIVE_ARRAY_SIZE`. | [S10]                         |
 | `DngCreator` writes `RAW_SENSOR` data to a DNG file.                                                      | [S24]                         |
-| CameraX manages `DngCreator` internally to wrap RAW data.                                                 | [S22] Web search              |
+| CameraX manages `DngCreator` internally to wrap RAW data (`DngImage2Disk`).                               | [S35]                         |
 | Whether a `ResolutionSelector` filters RAW sizes                                                          | Not settled. No source found. |
 
 ### 8b. Controls and RAW
@@ -286,14 +295,14 @@ Each row repeats a rule from sections 1–6. The source is the section's source.
 
 ### 8c. RAW conflicts
 
-| Pair                            | Type             | Rule                                                             | Source           |
-| ------------------------------- | ---------------- | ---------------------------------------------------------------- | ---------------- |
-| RAW ↔ digital zoom              | CONFLICT         | RAW is not croppable unless the device supports `CROPPED_RAW`    | [S8]             |
-| `CROPPED_RAW` constant          | —                | Value 6. Added in API 34.                                        | [S10] Web search |
-| RAW ↔ stream use cases          | CONFLICT         | For RAW stream combinations, leave stream use cases as `DEFAULT` | [S9]             |
-| RAW ↔ app-side ZSL reprocessing | EXCLUSIVE        | "Mutually exclusive ZSL … and DNG capture"                       | [S25]            |
-| RAW ↔ HDR capture               | CONFLICT         | RAW output is not supported for HDR capture                      | [S26]            |
-| RAW ↔ extensions                | Device-dependent | Supported formats can change with an extension on                | [S2]             |
+| Pair                            | Type             | Rule                                                                                                                            | Source    |
+| ------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| RAW ↔ digital zoom              | CONFLICT         | RAW is not croppable unless the device supports `CROPPED_RAW`                                                                   | [S8]      |
+| `CROPPED_RAW` constant          | —                | Value 6. Added in API 34.                                                                                                       | [S10]     |
+| RAW ↔ stream use cases          | Guidance         | Outside the mandatory lists, leave RAW stream use cases `DEFAULT`. `CROPPED_RAW` devices add combinations.                      | [S9][S25] |
+| RAW ↔ app-side ZSL reprocessing | EXCLUSIVE        | "Mutually exclusive ZSL … and DNG capture". Camera2 reprocessable sessions: both targets configured, never both in one request. | [S25]     |
+| RAW ↔ Camera2 `SCENE_MODE_HDR`  | CONFLICT         | "Using a RAW output for HDR capture is not supported." Not about Ultra HDR.                                                     | [S8]      |
+| RAW ↔ extensions                | Device-dependent | Supported formats can change with an extension on                                                                               | [S2]      |
 
 Device tests that settle the open rows:
 
@@ -306,14 +315,16 @@ Device tests that settle the open rows:
 
 **Layering: COMBINABLE.**
 
-| Path                                      | Use                                                                        | Source |
-| ----------------------------------------- | -------------------------------------------------------------------------- | ------ |
-| `Camera2CameraInfo`                       | Read the underlying `CameraCharacteristics`                                | [S20]  |
-| `Camera2CameraControl`                    | Set `CaptureRequest` keys. They affect all use cases on that camera.       | [S19]  |
-| `Camera2Interop.Extender`                 | Set `CaptureRequest` keys and the stream use case on one use case          | [S20]  |
-| `ImageCapture.Builder.camera2Interop { }` | Still-capture keys, request template, capture callback, physical camera ID | [S18]  |
+| Path                                      | Use                                                                                                     | Source     |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------- | ---------- |
+| `Camera2CameraInfo`                       | Read the underlying `CameraCharacteristics`                                                             | [S20]      |
+| `Camera2CameraControl`                    | Set `CaptureRequest` keys. They affect all use cases on that camera.                                    | [S19]      |
+| `Camera2Interop.Extender`                 | Set `CaptureRequest` keys and the stream use case on one use case                                       | [S20]      |
+| `ImageCapture.Builder.camera2Interop { }` | Still-capture keys, request template, capture callback, physical camera ID. CameraX 1.7.0-alpha03+ only | [S18][S22] |
 
 - Interop options override CameraX internal configuration. "May result in unexpected behavior" [S18][S19].
+- `Camera2CameraInfo`, `Camera2CameraControl` and `Camera2Interop.Extender` are deprecated from 1.7.0-alpha03 (reference pages: rc02). They remain the API on 1.6.x [S17][S22].
+- Interop session callbacks receive the raw `CameraCaptureSession`. Do not close it or submit requests on it [S18].
 
 **Runtime ownership: EXCLUSIVE per camera ID.**
 
@@ -329,27 +340,28 @@ Device tests that settle the open rows:
 
 Command: `adb shell dumpsys media.camera`, filtered by key name. Run on 2026-11-14 [D1].
 
-| Observation                                                                                  | Source                         |
-| -------------------------------------------------------------------------------------------- | ------------------------------ |
-| Every `android.request.availableCapabilities` entry lists `RAW`.                             | [D1]                           |
-| Every `android.info.supportedHardwareLevel` entry is `FULL`.                                 | [D1]                           |
-| Every `android.scaler.availableStreamUseCases` entry lists `0 1 2 3 4 5`.                    | [D1]                           |
-| No entry lists `6` (`CROPPED_RAW`). Digital zoom therefore does not crop RAW on this device. | [D1] + [S8] + [S10] Web search |
-| One entry lists `android.scaler.availableMaxDigitalZoom` = 8.0.                              | [D1]                           |
+| Observation                                                                                              | Source              |
+| -------------------------------------------------------------------------------------------------------- | ------------------- |
+| Every `android.request.availableCapabilities` entry lists `RAW`.                                         | [D1]                |
+| Every `android.info.supportedHardwareLevel` entry is `FULL`.                                             | [D1]                |
+| Every `android.scaler.availableStreamUseCases` entry lists `0 1 2 3 4 5`.                                | [D1]                |
+| No entry lists `6` (`CROPPED_RAW`). Inference: digital zoom should not crop RAW here. Confirm on device. | [D1] + [S8] + [S10] |
+| One entry lists `android.scaler.availableMaxDigitalZoom` = 8.0.                                          | [D1]                |
 
-- `RAW` in the Camera2 capabilities does not prove that CameraX lists `OUTPUT_FORMAT_RAW`. Check `getSupportedOutputFormats()` in the app. No source links the two.
+- `RAW` in the Camera2 capabilities does not prove that CameraX lists `OUTPUT_FORMAT_RAW`. Check `getSupportedOutputFormats()` in the app. CameraX 1.5.0-beta02 fixed it reporting RAW on devices without the RAW capability, so CameraX gates on that capability [S22].
 
 ## 11. Build observations — this app
 
-| Observation                                                                                                    | Source                 |
-| -------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| The camera module declares CameraX 1.6.2 (`camera-core`, `camera-camera2`, `camera-lifecycle`, `camera-view`). | [D2]                   |
-| `react-native-vision-camera` declares CameraX 1.7.0-alpha01, including `camera-extensions`.                    | [D3]                   |
-| The app release build resolves all CameraX artifacts to 1.7.0-alpha01.                                         | [D4]                   |
-| 1.7.0-alpha01 is later than 1.5.0, so `OUTPUT_FORMAT_RAW` exists in the resolved version.                      | [D4] + [S1] Web search |
-| The module's Kotlin source never calls `setOutputFormat`. Its only capture call is `takePicture`.              | [D5]                   |
-| With no output format set, `ImageCapture` uses `OUTPUT_FORMAT_JPEG`.                                           | [S2]                   |
-| Not yet checked: whether `getSupportedOutputFormats()` lists RAW on the Pixel 7.                               | —                      |
+| Observation                                                                                                                      | Source       |
+| -------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| The camera module declares CameraX 1.6.2 (`camera-core`, `camera-camera2`, `camera-lifecycle`, `camera-view`).                   | [D2]         |
+| `react-native-vision-camera` declares CameraX 1.7.0-alpha01, including `camera-extensions`.                                      | [D3]         |
+| The app release build resolves all CameraX artifacts to 1.7.0-alpha01.                                                           | [D4]         |
+| 1.7.0-alpha01 predates the 1.7.0-alpha03 interop configurators. Builder `camera2Interop` is unavailable at the resolved version. | [D4] + [S22] |
+| 1.7.0-alpha01 is later than 1.5.0, so `OUTPUT_FORMAT_RAW` exists in the resolved version.                                        | [D4] + [S1]  |
+| The module's Kotlin source never calls `setOutputFormat`. Its only capture call is `takePicture`.                                | [D5]         |
+| With no output format set, `ImageCapture` uses `OUTPUT_FORMAT_JPEG`.                                                             | [S2]         |
+| Not yet checked: whether `getSupportedOutputFormats()` lists RAW on the Pixel 7.                                                 | —            |
 
 ---
 
@@ -357,61 +369,62 @@ Command: `adb shell dumpsys media.camera`, filtered by key name. Run on 2026-11-
 
 ### 12a. CameraX use cases
 
-| Surface         | Output                                                                          | Source |
-| --------------- | ------------------------------------------------------------------------------- | ------ |
-| `ImageCapture`  | Still files: JPEG, Ultra HDR, RAW, RAW+JPEG (section 3)                         | [S1]   |
-| `ImageAnalysis` | Per-frame `ImageProxy`: `YUV_420_888` (default), `RGBA_8888`, `NV21`, `PRIVATE` | [S30]  |
-| `Preview`       | Viewfinder frames                                                               | [S20]  |
-| `VideoCapture`  | Video recording                                                                 | [S20]  |
+| Surface         | Output                                                                                                                      | Source |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------- | ------ |
+| `ImageCapture`  | Still files: JPEG, Ultra HDR, RAW, RAW+JPEG (section 3)                                                                     | [S1]   |
+| `ImageAnalysis` | Per-frame `ImageProxy`: `YUV_420_888` (default), `RGBA_8888`, `NV21` (1.5.0+), `PRIVATE` (reference: "Added in 1.7.0-rc02") | [S30]  |
+| `Preview`       | Viewfinder frames                                                                                                           | [S20]  |
+| `VideoCapture`  | Video recording                                                                                                             | [S20]  |
 
 `ImageAnalysis` rules:
 
 - `RGBA_8888` and `NV21` add overhead, because format conversion takes time [S30].
 - `PRIVATE` is not CPU accessible. Use it for GPU processing [S30].
 - `PRIVATE` does not allow `setOutputImageRotationEnabled(true)` [S30].
-- Check support with `ImageAnalysisCapabilities.isOutputFormatSupported(int)` [S30].
+- Check support with `ImageAnalysisCapabilities.isOutputFormatSupported(int)` [S30]. The reference marks `getImageAnalysisCapabilities` "Added in 1.7.0-rc02"; it is absent from 1.6.2 [S30].
+- Close every `ImageProxy`. An unclosed one stalls the analyzer; with `STRATEGY_BLOCK_PRODUCER` it can stall `Preview` too [S30].
 - `ImageAnalysis` takes a `ResolutionSelector` [S7].
 - `STRATEGY_KEEP_ONLY_LATEST` drops older frames while the analyzer is busy [S7].
 
 Use-case combinations:
 
-| Combination                                                                     | Status                                                                             | Source |
-| ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------ |
-| One each of `Preview`, `VideoCapture`, `ImageAnalysis`, `ImageCapture`          | Allowed together                                                                   | [S20]  |
-| Higher resolutions                                                              | Some cameras support a combination only at lower resolution                        | [S20]  |
-| Extensions on                                                                   | Only `ImageCapture` + `Preview` is guaranteed. `ImageAnalysis` depends on the OEM. | [S20]  |
-| Extensions + `VideoCapture`                                                     | Not possible                                                                       | [S20]  |
-| FULL or lower: `Preview` + `VideoCapture` + (`ImageCapture` or `ImageAnalysis`) | Can force stream sharing: higher latency, less battery                             | [S20]  |
-| `Preview` + `VideoCapture` + `ImageCapture`                                     | `LIMITED` and above                                                                | [S31]  |
-| `Preview` + `VideoCapture` + `ImageAnalysis`                                    | `LEVEL_3`                                                                          | [S31]  |
-| All four                                                                        | Not supported                                                                      | [S31]  |
+| Combination                                                                     | Status                                                                               | Source |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------ |
+| One each of `Preview`, `VideoCapture`, `ImageAnalysis`, `ImageCapture`          | Allowed, subject to resolution and hardware level. An unsupported set fails at bind. | [S20]  |
+| Higher resolutions                                                              | Some cameras support a combination only at lower resolution                          | [S20]  |
+| Extensions on                                                                   | Only `ImageCapture` + `Preview` is guaranteed. `ImageAnalysis` depends on the OEM.   | [S20]  |
+| Extensions + `VideoCapture`                                                     | Not possible                                                                         | [S20]  |
+| FULL or lower: `Preview` + `VideoCapture` + (`ImageCapture` or `ImageAnalysis`) | Can force stream sharing: higher latency, less battery                               | [S20]  |
+| `Preview` + `VideoCapture` + `ImageCapture`                                     | `LIMITED` and above                                                                  | [S31]  |
+| `Preview` + `VideoCapture` + `ImageAnalysis`                                    | `LEVEL_3`                                                                            | [S31]  |
+| All four                                                                        | Not supported                                                                        | [S31]  |
 
 Note: [S20] and [S31] disagree about all four use cases together.
 
 ### 12b. Camera-wide controls (all bound use cases)
 
-| Surface                       | Controls                                                                                                           | Source     |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------- |
-| `CameraControl`               | `setZoomRatio`, `startFocusAndMetering`, `setExposureCompensationIndex`, `enableTorch`, `enableLowLightBoostAsync` | [S11]      |
-| `Camera2CameraControl`        | Any `CaptureRequest` key, for all use cases on the camera                                                          | [S19]      |
-| Per-use-case `camera2Interop` | `CaptureRequest` keys for one use case                                                                             | [S17][S18] |
+| Surface                       | Controls                                                                                                                           | Source     |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| `CameraControl`               | `setZoomRatio`, `startFocusAndMetering`, `setExposureCompensationIndex`, `enableTorch`, `enableLowLightBoostAsync`                 | [S11]      |
+| `Camera2CameraControl`        | `CaptureRequest` keys for all use cases on the camera. Deprecated from 1.7.0-alpha03; use `CameraControl.applyCamera2InteropAsync` | [S19]      |
+| Per-use-case `camera2Interop` | `CaptureRequest` keys for one use case                                                                                             | [S17][S18] |
 
 - Only one `FocusMeteringAction` runs at a time. The latest one cancels the others [S11].
-- `setZoomRatio` outside `ZoomState` min/max fails with `IllegalArgumentException` [S11].
+- `setZoomRatio` outside `ZoomState` min/max fails the returned future with `IllegalArgumentException`. It does not throw. Clamp first [S11].
 
 ### 12c. Camera2 directly
 
 - A Camera2 capture session can target `RAW`, `YUV`, `JPEG` and `PRIV` streams together, in the documented combinations [S25].
 - Example: `PRIV` preview + `YUV` preview + `RAW` maximum is "Preview with in-app processing and DNG capture" [S25].
-- Camera2 and CameraX cannot own the same camera ID at the same time (section 9) [S28].
+- A second open of a camera ID disconnects the first owner, so Camera2 and CameraX must not share one (section 9) [S28].
 
 ## 13. CameraX alpha in this build
 
 | Observation                                                                                                                                                                                                 | Source     |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
 | 1.7.0-alpha01 was released on March 11, 2026.                                                                                                                                                               | [S22]      |
-| 1.7.0-alpha01 API change: `CameraController.setSessionConfig()` is exposed.                                                                                                                                 | [S22]      |
-| 1.7.0-alpha01 bug fix: libraries target Java 11. This "might require desugaring".                                                                                                                           | [S22]      |
+| 1.7.0-alpha01 API change: `CameraController.setSessionConfig()` is exposed. The reference marks it "Added in 1.7.0-rc02" [S27].                                                                             | [S22]      |
+| 1.7.0-alpha01 bug fix: libraries target Java 11. The notes say "you may need desugaring".                                                                                                                   | [S22]      |
 | 1.7.0-alpha01 bug fix: `ImageAnalysis` rotation when output rotation is on and the initial rotation is 0.                                                                                                   | [S22]      |
 | Latest stable is 1.6.2, released August 26, 2026. Latest RC is 1.7.0-rc02.                                                                                                                                  | [S22][S32] |
 | Alpha: "APIs may be added, removed, or changed".                                                                                                                                                            | [S32]      |
@@ -437,13 +450,13 @@ The docs name these as the "2 ways to write a CameraX app" [S20]. The docs do no
 
 | Aspect                 | `CameraController` (`LifecycleCameraController`)                                  | `CameraProvider` (`ProcessCameraProvider`)                          | Source     |
 | ---------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ---------- |
-| Docs recommendation    | "The simplest way to use CameraX"                                                 | "Great if you need more flexibility"                                | [S20]      |
+| Docs recommendation    | "great if you want the simplest way to use CameraX"                               | "Great if you need more flexibility"                                | [S20]      |
 | Setup code             | Little                                                                            | App configures and binds each use case                              | [S20][S33] |
 | Handled for you        | Initialization, use-case management, target rotation, tap-to-focus, pinch-to-zoom | Nothing automatic; app builds use cases and calls `bindToLifecycle` | [S20]      |
 | Default use cases      | `Preview`, `ImageCapture`, `ImageAnalysis`. Toggle with `setEnabledUseCases()`.   | None implied. The app sets up `Preview` itself.                     | [S20][S33] |
 | Preview surface        | Requires `PreviewView`                                                            | Can use a custom `Surface`                                          | [S33]      |
-| Crop                   | `PreviewView` sets the crop rect for all use cases to match what the user sees    | App sets it                                                         | [S34]      |
-| Customization examples | —                                                                                 | Output image rotation; `ImageAnalysis` output image format          | [S33]      |
+| Crop                   | `PreviewView` sets the crop rect for all use cases to match what the user sees    | App sets it                                                         | [S27]      |
+| Customization examples | `setImageAnalysisOutputImageFormat` (1.4.0+)                                      | Output image rotation; `ImageAnalysis` output image format          | [S27][S33] |
 | Integration example    | ML Kit maps model result coordinates onto preview coordinates                     | Reuse existing `Surface` code                                       | [S33]      |
 
 ## 15. Not covered
@@ -495,6 +508,7 @@ Context7 libraries: `/websites/developer_android`, `/websites/developer_android_
 | S32 | [AndroidX versions](https://developer.android.com/jetpack/androidx/versions), read 2026-11-14                                                                                                                                                                 |
 | S33 | [Migrate Camera1 to CameraX](https://developer.android.com/media/camera/camerax/camera1-to-camerax)                                                                                                                                                           |
 | S34 | [PreviewView](https://developer.android.com/reference/kotlin/androidx/camera/view/PreviewView)                                                                                                                                                                |
+| S35 | [androidx `DngImage2Disk.java`](https://github.com/androidx/androidx/blob/androidx-main/camera/camera-core/src/main/java/androidx/camera/core/imagecapture/DngImage2Disk.java), read 2026-11-15                                                               |
 | D1  | Pixel 7 (`panther`), `adb shell dumpsys media.camera`, 2026-11-14                                                                                                                                                                                             |
 | D2  | `modules/native-identification-camera/android/build.gradle:21-24`                                                                                                                                                                                             |
 | D3  | `node_modules/react-native-vision-camera/android/build.gradle:155-162` (package version 5.1.0)                                                                                                                                                                |
