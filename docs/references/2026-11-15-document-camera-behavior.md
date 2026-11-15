@@ -164,16 +164,16 @@ after close. All callbacks must tolerate teardown races.
 After `bindToLifecycle`, obtain `CameraInfo` and `CameraControl` from the
 returned `Camera`. Check the relevant state before exposing a control:
 
-| Desired control       | CameraX query or state                                 | What it means                                                              |
-| --------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------- |
-| Torch or flash        | `cameraInfo.hasFlashUnit()`                            | The camera has a flash unit; screen flash is a separate front-camera path. |
-| Zoom                  | `cameraInfo.zoomState`                                 | Read min, max, current, and linear zoom; do not assume 1x–5x.              |
-| Low-light boost       | `cameraInfo.isLowLightBoostSupported()`                | CameraX 1.5.0+; enable with `enableLowLightBoostAsync`.                    |
-| Exposure compensation | `cameraInfo.exposureState`                             | Read supported index range and applied index.                              |
-| Focus/metering        | `cameraInfo.isFocusMeteringSupported(action)`          | True if ≥1 requested AF/AE/AWB region is supported; false ⇒ start fails.   |
-| ZSL                   | `cameraInfo.isZslSupported()`                          | Capability, not a promise; needs `@ExperimentalZeroShutterLag` opt-in.     |
+| Desired control       | CameraX query or state                                 | What it means                                                               |
+| --------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------- |
+| Torch or flash        | `cameraInfo.hasFlashUnit()`                            | The camera has a flash unit; screen flash is a separate front-camera path.  |
+| Zoom                  | `cameraInfo.zoomState`                                 | Read min, max, current, and linear zoom; do not assume 1x–5x.               |
+| Low-light boost       | `cameraInfo.isLowLightBoostSupported()`                | CameraX 1.5.0+; enable with `enableLowLightBoostAsync`.                     |
+| Exposure compensation | `cameraInfo.exposureState`                             | Read supported index range and applied index.                               |
+| Focus/metering        | `cameraInfo.isFocusMeteringSupported(action)`          | True if ≥1 requested AF/AE/AWB region is supported; false ⇒ start fails.    |
+| ZSL                   | `cameraInfo.isZslSupported()`                          | Capability, not a promise; needs `@ExperimentalZeroShutterLag` opt-in.      |
 | Output format         | `ImageCapture.getImageCaptureCapabilities(cameraInfo)` | 1.4.0+; always includes JPEG; re-query with extension-enabled `CameraInfo`. |
-| Extension             | `ExtensionsManager.isExtensionAvailable(...)`          | The selected lens and mode support that extension.                         |
+| Extension             | `ExtensionsManager.isExtensionAvailable(...)`          | The selected lens and mode support that extension.                          |
 
 For every request, handle a failed `ListenableFuture` or binding exception.
 `IllegalArgumentException` commonly means that a requested format, size,
@@ -329,20 +329,20 @@ Official source: [CameraX take a photo](https://developer.android.com/media/came
 
 ## 5. CameraX controls: what changes at runtime
 
-| Control               | Runtime operation                             | Effect on sensor/output                                                                | Capability and caveat                                                                     |
-| --------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| Zoom ratio            | `camera.cameraControl.setZoomRatio(value)`    | Changes the camera crop/zoom for bound use cases; saved capture is zoomed too.         | Clamp to `ZoomState.minZoomRatio..maxZoomRatio`; future can fail.                         |
-| Linear zoom           | `setLinearZoom(0f..1f)`                       | Maps a UI slider to the device's zoom range.                                           | Read the resulting `ZoomState`; do not equate slider position with optical magnification. |
+| Control               | Runtime operation                             | Effect on sensor/output                                                                   | Capability and caveat                                                                     |
+| --------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Zoom ratio            | `camera.cameraControl.setZoomRatio(value)`    | Changes the camera crop/zoom for bound use cases; saved capture is zoomed too.            | Clamp to `ZoomState.minZoomRatio..maxZoomRatio`; future can fail.                         |
+| Linear zoom           | `setLinearZoom(0f..1f)`                       | Maps a UI slider to the device's zoom range.                                              | Read the resulting `ZoomState`; do not equate slider position with optical magnification. |
 | Focus/metering        | `startFocusAndMetering(action)`               | Requests AF/AE/AWB from normalized `MeteringPoint`s; CameraX maps them to sensor regions. | Use supported metering points and cancel/replace the previous action.                     |
-| Exposure compensation | `setExposureCompensationIndex(index)`         | Biases automatic exposure; does not mean a fixed shutter or ISO.                       | Read the applied index from `ExposureState`; latest outstanding request wins.             |
-| Torch                 | `enableTorch(true/false)`                     | Keeps the torch on for preview and capture.                                            | Requires `hasFlashUnit`; future can fail.                                                 |
-| Still flash           | `imageCapture.flashMode = OFF/ON/AUTO/SCREEN` | Adds flash behavior to still capture; not a continuous torch.                          | Screen flash requires a `ScreenFlash` and front camera.                                   |
-| Low-light boost       | `enableLowLightBoostAsync(true)`              | Brightens supported preview/video/analysis streams through the camera AE path.         | CameraX 1.5.0+; query support and handle `IllegalStateException`.                         |
-| Capture mode          | `ImageCapture.Builder.setCaptureMode`         | Chooses quality/latency behavior during use-case construction.                         | `MINIMIZE_LATENCY`, `MAXIMIZE_QUALITY`; ZSL is experimental/version-gated.                |
-| JPEG quality          | `setJpegQuality(1..100)`                      | Changes JPEG encoding quality and therefore bytes/detail retention, not sensor pixels. | Build-time use-case option; out-of-range throws.                                          |
-| Output format         | `setOutputFormat(...)`                        | Selects JPEG, Ultra HDR, RAW, or RAW+JPEG where supported.                             | Query `ImageCaptureCapabilities`; format support can change with extensions.              |
-| Resolution            | `ResolutionSelector`                          | Chooses the output buffer dimensions; it is a hint constrained by the device/session.  | A larger pixel rectangle is not automatically more sensor detail.                         |
-| Extension             | `ExtensionsManager`                           | OEM pipeline such as night or bokeh may combine/process frames.                        | Check availability and rebind; extension changes other supported options.                 |
+| Exposure compensation | `setExposureCompensationIndex(index)`         | Biases automatic exposure; does not mean a fixed shutter or ISO.                          | Read the applied index from `ExposureState`; latest outstanding request wins.             |
+| Torch                 | `enableTorch(true/false)`                     | Keeps the torch on for preview and capture.                                               | Requires `hasFlashUnit`; future can fail.                                                 |
+| Still flash           | `imageCapture.flashMode = OFF/ON/AUTO/SCREEN` | Adds flash behavior to still capture; not a continuous torch.                             | Screen flash requires a `ScreenFlash` and front camera.                                   |
+| Low-light boost       | `enableLowLightBoostAsync(true)`              | Brightens supported preview/video/analysis streams through the camera AE path.            | CameraX 1.5.0+; query support and handle `IllegalStateException`.                         |
+| Capture mode          | `ImageCapture.Builder.setCaptureMode`         | Chooses quality/latency behavior during use-case construction.                            | `MINIMIZE_LATENCY`, `MAXIMIZE_QUALITY`; ZSL is experimental/version-gated.                |
+| JPEG quality          | `setJpegQuality(1..100)`                      | Changes JPEG encoding quality and therefore bytes/detail retention, not sensor pixels.    | Build-time use-case option; out-of-range throws.                                          |
+| Output format         | `setOutputFormat(...)`                        | Selects JPEG, Ultra HDR, RAW, or RAW+JPEG where supported.                                | Query `ImageCaptureCapabilities`; format support can change with extensions.              |
+| Resolution            | `ResolutionSelector`                          | Chooses the output buffer dimensions; it is a hint constrained by the device/session.     | A larger pixel rectangle is not automatically more sensor detail.                         |
+| Extension             | `ExtensionsManager`                           | OEM pipeline such as night or bokeh may combine/process frames.                           | Check availability and rebind; extension changes other supported options.                 |
 
 CameraX's `CameraControl` operations affect the active bound camera. Zoom,
 torch, focus/metering, and exposure compensation revert to defaults when it
@@ -956,24 +956,24 @@ This matrix describes decisions to make before exposing controls. “May” mean
 the result is version/device dependent; a capability check and a capture-result
 or callback check are required.
 
-| Combination                             | Expected interaction                                                            | Safe implementation rule                                                    |
-| --------------------------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| CameraX ZSL + non-off flash             | ZSL may be disabled.                                                            | Query ZSL support and do not promise zero shutter lag.                      |
-| CameraX ZSL + extension                 | ZSL may be disabled.                                                            | Recompute capabilities with the extension enabled.                          |
-| CameraX ZSL + video                     | ZSL may be disabled.                                                            | Choose a capture mode that remains valid for all bound use cases.           |
+| Combination                             | Expected interaction                                                                      | Safe implementation rule                                                    |
+| --------------------------------------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| CameraX ZSL + non-off flash             | ZSL may be disabled.                                                                      | Query ZSL support and do not promise zero shutter lag.                      |
+| CameraX ZSL + extension                 | ZSL may be disabled.                                                                      | Recompute capabilities with the extension enabled.                          |
+| CameraX ZSL + video                     | ZSL may be disabled.                                                                      | Choose a capture mode that remains valid for all bound use cases.           |
 | CameraX torch + flash                   | Torch stays on during capture whatever the flash mode; flash applies only with torch off. | Keep torch and flash as separate UI/state values; observe result.           |
-| CameraX torch + low-light boost         | Last-setting-wins behavior in current 1.7.0 RC docs; older versions may reject. | Gate by pinned version, handle failed future, and test device.              |
-| CameraX low-light boost + flash         | Current 1.7.0 RC docs allow still flash while boost remains preview-active.     | Do not apply an older blanket conflict rule to every CameraX version.       |
-| CameraX boost + frame rate above 30 FPS | Boost may disable.                                                              | Read support/state after frame-rate configuration.                          |
-| CameraX extension + Ultra HDR/RAW       | Supported formats can change.                                                   | Query formats after extension selection and rebind.                         |
-| CameraX view scaling + sensor zoom      | Independent transforms can double-crop or mis-map focus.                        | Choose one owner for field-of-view behavior and map coordinates explicitly. |
-| Camera2 manual AE + auto AF/AWB         | Automatic algorithms may change or stop converging.                             | Disable or lock them intentionally and verify result states.                |
-| Camera2 AF trigger + repeating request  | A trigger is one-shot state, not a repeating mode.                              | START once, observe state, return to IDLE; CANCEL to unlock.                |
-| Camera2 zoom ratio + crop region        | They compose: with zoom ratio set, crop region uses post-zoom coordinates.      | Use ratio on API 30+ with default crop; crop on older APIs.                 |
-| Camera2 RAW + crop                      | RAW is usually full sensor field.                                               | Require the device's cropped-RAW support before claiming crop.              |
-| Camera2 RAW + JPEG                      | Both outputs must be in the session and matched independently.                  | Pair by capture ID/timestamp and close both images.                         |
-| Camera2 stream sizes                    | Individually valid streams can fail as a combination.                           | Validate the exact combination before session creation.                     |
-| Any request + lifecycle close           | Futures/callbacks can complete after teardown.                                  | Make callbacks idempotent and ignore stale owners.                          |
+| CameraX torch + low-light boost         | Last-setting-wins behavior in current 1.7.0 RC docs; older versions may reject.           | Gate by pinned version, handle failed future, and test device.              |
+| CameraX low-light boost + flash         | Current 1.7.0 RC docs allow still flash while boost remains preview-active.               | Do not apply an older blanket conflict rule to every CameraX version.       |
+| CameraX boost + frame rate above 30 FPS | Boost may disable.                                                                        | Read support/state after frame-rate configuration.                          |
+| CameraX extension + Ultra HDR/RAW       | Supported formats can change.                                                             | Query formats after extension selection and rebind.                         |
+| CameraX view scaling + sensor zoom      | Independent transforms can double-crop or mis-map focus.                                  | Choose one owner for field-of-view behavior and map coordinates explicitly. |
+| Camera2 manual AE + auto AF/AWB         | Automatic algorithms may change or stop converging.                                       | Disable or lock them intentionally and verify result states.                |
+| Camera2 AF trigger + repeating request  | A trigger is one-shot state, not a repeating mode.                                        | START once, observe state, return to IDLE; CANCEL to unlock.                |
+| Camera2 zoom ratio + crop region        | They compose: with zoom ratio set, crop region uses post-zoom coordinates.                | Use ratio on API 30+ with default crop; crop on older APIs.                 |
+| Camera2 RAW + crop                      | RAW is usually full sensor field.                                                         | Require the device's cropped-RAW support before claiming crop.              |
+| Camera2 RAW + JPEG                      | Both outputs must be in the session and matched independently.                            | Pair by capture ID/timestamp and close both images.                         |
+| Camera2 stream sizes                    | Individually valid streams can fail as a combination.                                     | Validate the exact combination before session creation.                     |
+| Any request + lifecycle close           | Futures/callbacks can complete after teardown.                                            | Make callbacks idempotent and ignore stale owners.                          |
 
 ## 14. Version and API gates
 
