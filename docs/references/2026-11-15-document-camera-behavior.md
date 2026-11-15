@@ -38,7 +38,10 @@ and [Camera2 capture sessions and requests](https://developer.android.com/media/
 
 `ProcessCameraProvider` is the flexible CameraX entry point. A
 `LifecycleCameraController` is simpler when its managed use cases and
-`PreviewView` are sufficient. Do not make both owners open the same camera at
+`PreviewView` are sufficient. After `CameraController.setSessionConfig`
+(reference: added 1.7.0-rc02), most controller setters throw
+`IllegalStateException`; flash mode, camera selector, zoom, torch, and
+tap/pinch settings remain. Do not make both owners open the same camera at
 the same time.
 
 ### Use direct Camera2 when
@@ -281,6 +284,21 @@ after binding; the whole stream combination constrains what is selected.
 Official sources: [CameraX architecture](https://developer.android.com/media/camera/camerax/architecture)
 and [`ResolutionSelector`](https://developer.android.com/reference/androidx/camera/core/resolutionselector/ResolutionSelector).
 
+### Use-case combinations
+
+Bind at most one each of `Preview`, `VideoCapture`, `ImageAnalysis`, and
+`ImageCapture`. Higher resolutions or a lower hardware level can make a
+combination unsupported, and an unsupported set fails at bind. On FULL or lower,
+`Preview` + `VideoCapture` + another use case can force stream sharing (higher
+latency, more battery). Official sources disagree on all four at once: the
+architecture guide allows them; the getting-started codelab says not supported.
+Test the target device.
+
+`ImageAnalysis` defaults to `YUV_420_888`; `RGBA_8888` and `NV21` (1.5.0+) cost
+conversion time; `PRIVATE` is GPU-only. Close every `ImageProxy`: an unclosed
+one stalls analysis, and `STRATEGY_BLOCK_PRODUCER` can stall `Preview` too.
+`STRATEGY_KEEP_ONLY_LATEST` drops frames while the analyzer is busy.
+
 ### Save a JPEG and surface failures
 
 ```kotlin
@@ -393,6 +411,11 @@ can increase capture time, memory pressure, and file bytes; it can also be
 rejected by the simultaneous preview/analysis stream combination. CameraX's
 ordinary aspect-ratio strategies are 4:3 and 16:9; use a resolution filter for
 other requirements and retain a fallback unless a hard failure is intended.
+`FALLBACK_RULE_NONE` fails the bind when the bound size is unavailable. The
+aspect-ratio strategy outranks the resolution strategy when sizes are sorted.
+OEMs may align sizes to mod 16 (1920x1088 for 1920x1080). Combining deprecated
+`setTargetResolution`/`setTargetAspectRatio` with a `ResolutionSelector` throws
+at `build()`. A `ViewPort` or `setCropAspectRatio` crops the saved image.
 
 For exact Camera2 sizing, inspect `SCALER_STREAM_CONFIGURATION_MAP` and the
 chosen output combination. A 1920x1080 output may be a rescale or crop of a
@@ -408,7 +431,8 @@ camera and handle a binding failure. Ultra HDR JPEG uses a gain map; selecting
 it is not the same as selecting a 10-bit HDR video dynamic range. RAW output is
 not a promise that every extension or HDR path remains available.
 
-RAW/RAW+JPEG require CameraX 1.5.0+. Query with the `CameraInfo` for the selected
+RAW/RAW+JPEG require CameraX 1.5.0+. 1.5.0-beta02 fixed RAW being reported on
+devices without the RAW capability; 1.6.0-beta02 fixed in-memory RAW+JPEG. Query with the `CameraInfo` for the selected
 camera (use the extension-enabled selector when applicable):
 
 ```kotlin
@@ -441,7 +465,11 @@ and [`ImageCapture.Builder`](https://developer.android.com/reference/androidx/ca
 ### Flash, torch, low-light boost, and extensions
 
 Flash mode is a still-capture policy. Torch is a continuous light. They are not
-interchangeable. On current CameraX 1.7.0 release-candidate documentation,
+interchangeable. With no flash unit, every flash mode except
+`FLASH_MODE_SCREEN` acts as `FLASH_MODE_OFF`. CameraX disables auto flash on
+some LEGACY devices that crash with it. Screen flash behaves like `ON`, needs a
+`ScreenFlash` and the front camera, and throws `IllegalArgumentException` after
+a switch to the rear camera. On current CameraX 1.7.0 release-candidate documentation,
 torch and low-light boost use last-setting-wins behavior, while a still flash
 can still fire with low-light boost active for preview. Earlier CameraX versions
 may reject or resolve a combination differently. CameraX 1.6.2 and earlier
@@ -449,12 +477,20 @@ may require disabling one of torch/boost before enabling the other. Query the
 pinned CameraX version's contract, observe failed futures, and test the device.
 `enableTorch(false)` does not restore a low-light boost that the torch replaced.
 
-Low-light boost is CameraX 1.5.0+ and Android 15/API 35+ device dependent. A
+Low-light boost is CameraX 1.5.0+ and Android 15/API 35+ device dependent.
+Camera2's counterpart is AE mode
+`CONTROL_AE_MODE_ON_LOW_LIGHT_BOOST_BRIGHTNESS_PRIORITY` (API 35); confirm it in
+`CaptureResult.CONTROL_AE_MODE`, since some configurations such as high-speed
+recording reject it, and read `CONTROL_LOW_LIGHT_BOOST_STATE`. A
 frame-rate request above 30 FPS can disable it. Night extension combines frames
 and is not the same as a continuous low-light preview boost. Extensions require
-an availability check and a rebind when changing modes. CameraX 1.7.0-rc02
+an availability check and a rebind when changing modes. CameraX 1.7.0-alpha02
 deprecates `getExtensionEnabledCameraSelector` in favor of
-`ExtensionSessionConfig`.
+`ExtensionSessionConfig` (1.6.0+). From November 1, 2026, apps on CameraX 1.5
+or earlier lose Extensions on some devices; 1.6 and later keep them. Extensions
+guarantee only `Preview` + `ImageCapture`; `ImageAnalysis` is OEM-dependent
+(`isImageAnalysisSupported`), and `VideoCapture` cannot be bound with an
+extension.
 
 ## 7. CameraX control recipes
 
@@ -539,7 +575,8 @@ The exposure index is a bias to automatic exposure, not an ISO or shutter
 command: EV = index × `exposureCompensationStep`. The snippets use host
 callbacks; unwrap `ExecutionException.cause` for diagnostics and distinguish
 intentional cancellation from failure. Dispatch UI callbacks to the UI thread
-if `executor` is a background executor. `enableTorch` may fail after close.
+if `executor` is a background executor. `enableTorch` may fail after close. An out-of-range exposure index fails the
+future with `IllegalArgumentException`.
 
 ## 8. Camera2: static characteristics and request lifecycle
 
@@ -744,7 +781,9 @@ and [`CameraCharacteristics`](https://developer.android.com/reference/android/ha
 
 On API 30+, use `CONTROL_ZOOM_RATIO` within
 `CONTROL_ZOOM_RATIO_RANGE`. Leave `SCALER_CROP_REGION` at its default active
-array when using zoom ratio. On older APIs, use `SCALER_CROP_REGION` within
+array when using zoom ratio; with a ratio other than 1.0 it may only letterbox
+or pillarbox. The range key is optional (LIMITED and above list it). A ratio
+below 1.0 zooms out where supported; crop region cannot. On older APIs, use `SCALER_CROP_REGION` within
 `SCALER_AVAILABLE_MAX_DIGITAL_ZOOM` and the active-array/cropping rules. Do not
 set both zoom ratio and a competing crop policy in the same request.
 
@@ -782,6 +821,10 @@ available values. `HIGH_QUALITY` may reduce capture rate;
 reduction). Only noise reduction states a RAW-domain effect (`MINIMAL` is
 raw-domain; `OFF` covers raw and YUV); `EDGE_MODE` states none. Do not describe
 a JPEG sharpening choice as sensor detail.
+Check each available-mode list for `null`: noise-reduction modes are listed on
+LIMITED and above (LEGACY supports only `FAST`); both keys are guaranteed on
+FULL. `ZERO_SHUTTER_LAG` modes leave high-resolution streams unprocessed, so
+they suit app-side ZSL reprocessing, not a plain still.
 
 ## 11. RAW capture and DNG output with Camera2
 
@@ -792,6 +835,18 @@ RAW requires all of the following:
 3. A session combination that supports the preview/JPEG/RAW outputs together.
 4. An `ImageReader` configured with `ImageFormat.RAW_SENSOR`.
 5. A capture result matched to the exact RAW image.
+
+`RAW_SENSOR` is usually a single-channel 16-bit Bayer mosaic. The largest RAW
+size equals `SENSOR_INFO_PIXEL_ARRAY_SIZE` or
+`SENSOR_INFO_PRE_CORRECTION_ACTIVE_ARRAY_SIZE`. Several controls skip RAW:
+`CONTROL_POST_RAW_SENSITIVITY_BOOST`, zoom-ratio cropping (without
+`CROPPED_RAW`, API 34), distortion correction, and rotate-and-crop.
+`HOT_PIXEL_MODE`, `BLACK_LEVEL_LOCK`, and `SENSOR_INFO_LENS_SHADING_APPLIED`
+change or describe RAW-domain processing. Enable lens-shading-map output for
+DNG; RAW-capable devices always support it. Camera2 `CONTROL_SCENE_MODE_HDR`
+does not support a RAW output. In a reprocessable session, app-side ZSL
+reprocessing and DNG capture cannot share one request. Outside the mandatory
+stream-use-case lists, leave RAW stream use cases `DEFAULT`.
 
 `ImageReader` images carry a timestamp. Match the image timestamp to
 `TotalCaptureResult.SENSOR_TIMESTAMP` from the corresponding request; do not
@@ -861,7 +916,8 @@ fun captureWithNoiseReduction(mode: Int): ImageCapture {
 ```
 
 The fragment assumes a pinned CameraX version that still exposes
-`Camera2Interop.Extender`. AndroidX Camera 1.7.0-rc02 deprecates the older
+`Camera2Interop.Extender`. AndroidX Camera 1.7.0-alpha03 (reference pages stamp
+1.7.0-rc02) deprecates the older
 Extender/Camera2CameraControl surface in favor of builder `camera2Interop` and
 runtime `applyCamera2Interop` / `applyCamera2InteropAsync`; use the API present
 in the version actually pinned by the app and do
@@ -935,10 +991,15 @@ or callback check are required.
 | Camera2 cropped-RAW use case     | API 34 (`SCALER_AVAILABLE_STREAM_USE_CASES_CROPPED_RAW`).                                           |
 | CameraX low-light boost          | CameraX 1.5.0+, Android 15/API 35+ capable devices; query support.                                  |
 | CameraX ZSL                      | CameraX 1.2.0+ experimental mode and device support.                                                |
-| CameraX interop APIs             | Check the app's pinned CameraX version; 1.7.0 RC docs deprecate older interop surfaces.             |
+| CameraX interop APIs             | Check the pinned version; older interop surfaces deprecated from 1.7.0-alpha03 (reference: rc02).   |
+| CameraX Extensions               | CameraX 1.6+ to keep Extensions on all devices after 2026-11-01; `ExtensionSessionConfig` 1.6.0+.   |
+| CameraX `ImageAnalysis` PRIVATE  | Reference marks `PRIVATE` and `getImageAnalysisCapabilities` "Added in 1.7.0-rc02"; NV21 1.5.0.     |
 | Ultra HDR                        | Device support and Android API 34+ requirements apply in addition to CameraX support.               |
 
-Do not fill this table with an arbitrary “latest CameraX” version. Read the
+Alpha releases may add, remove, or change APIs; an RC's API surface is final.
+Release notes and reference "Added in" markers can name different versions;
+confirm the API in the pinned binary. Do not fill this table with an arbitrary
+“latest CameraX” version. Read the
 project's dependency lock/build output, then verify the API in that version's
 official reference. A version gate is useful only when it matches the binary
 actually shipped.
