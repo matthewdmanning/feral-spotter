@@ -55,6 +55,7 @@ export const authCopy = {
   createOne: 'Create one',
   noAccount: 'No account? ',
   divider: 'or',
+  name: 'Name',
   email: 'Email',
   password: 'Password',
   confirmPassword: 'Confirm password',
@@ -90,6 +91,8 @@ export const authCopy = {
 export const validationCopy = {
   missingCatObservation: 'At least one cat observation is required.',
   missingPhoto: 'At least one photo is required.',
+  missingNameTitle: 'Missing name',
+  missingNameMessage: 'Enter the name organization members will see.',
   missingEmailTitle: 'Missing email',
   missingEmailMessage: 'Enter an email address.',
   weakPasswordTitle: 'Weak password',
@@ -109,9 +112,9 @@ export const organizationCopy = {
     refresh: 'Refresh memberships',
     join: 'Join an organization',
     disclosure:
-      'Your display name is visible to other members. Joining does not share sightings or contact details.',
+      'Members see your account name. Joining does not share sightings or contact details.',
+    nameRequired: 'Your account needs a name to join an organization.',
     inviteCode: 'Invite code',
-    displayName: 'Display name',
     request: 'Request membership',
     empty: 'No memberships or pending requests.',
     statuses: {
@@ -127,6 +130,11 @@ export const organizationCopy = {
     cancelLeaving: 'Cancel leaving',
     cancelRequest: 'Cancel request',
     leave: 'Leave organization',
+    memberCount: { one: '1 member', other: '{count} members' },
+    locationNear: 'Near {latitude}, {longitude}',
+    arrange: 'Arrange',
+    saveOrder: 'Save',
+    move: 'Move {name}',
   },
   leave: {
     disclosure:
@@ -149,11 +157,9 @@ export const organizationCopy = {
   },
   overview: {
     title: 'Organization',
-    displayName: 'Display name: {name}',
     privacy: 'Privacy settings',
     closePrivacy: 'Close privacy settings',
-    privacyDescription:
-      'Your membership display name is visible to other members.',
+    privacyDescription: 'Members see your account name.',
     open: 'View {name}',
     signIn: 'Sign in to view your organization.',
     offline: 'Connect to load your organization.',

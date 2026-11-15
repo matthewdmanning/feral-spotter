@@ -52,29 +52,38 @@ function OrganizationContent() {
             {copy.refresh}
           </AppButton>
           {member ? (
-            <>
-              <MemberCard
-                key={`${query.uid}-${member.organizationId}-${member.status}-${member.leaving}-${member.displayName}`}
-                member={member}
-                query={query}
-                renderSharedAccess={
-                  sharingEnabled
-                    ? (organizationId) => (
-                        <TextButton
-                          onPress={() =>
-                            router.push({
-                              pathname: '/organizations/[id]/sightings',
-                              params: { id: organizationId },
-                            })
-                          }
-                        >
-                          {copy.sharedSightings}
-                        </TextButton>
-                      )
-                    : undefined
-                }
-              />
-            </>
+            <MemberCard
+              key={`${query.uid}-${member.organizationId}-${member.status}-${member.leaving}`}
+              member={member}
+              query={query}
+            >
+              {member.status === 'active' && !member.leaving && (
+                <>
+                  <TextButton
+                    onPress={() =>
+                      router.push({
+                        pathname: '/organizations/[id]/members',
+                        params: { id: member.organizationId },
+                      })
+                    }
+                  >
+                    {organizationCopy.membership.members}
+                  </TextButton>
+                  {sharingEnabled && (
+                    <TextButton
+                      onPress={() =>
+                        router.push({
+                          pathname: '/organizations/[id]/sightings',
+                          params: { id: member.organizationId },
+                        })
+                      }
+                    >
+                      {copy.sharedSightings}
+                    </TextButton>
+                  )}
+                </>
+              )}
+            </MemberCard>
           ) : query.online && !query.busy && !query.error ? (
             <Text style={styles.body}>{copy.unavailable}</Text>
           ) : null}

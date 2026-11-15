@@ -102,3 +102,9 @@ export const ENTRYPOINT_BUFFER_PERCENT = 0.2
  * start to wrap.
  */
 export const BUTTON_ROW_STACK_FONT_SCALE = 1.3
+
+/**
+ * Decimal places for an organization's coverage-center fallback location:
+ * two places is about 1 km, enough to name an area without a precise point.
+ */
+export const COVERAGE_CENTER_FRACTION_DIGITS = 2

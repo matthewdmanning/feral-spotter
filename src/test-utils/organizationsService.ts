@@ -6,6 +6,22 @@ import type {
   Catalog,
   PermissionLedger,
 } from '@/src/shared/types/Organizations'
+import type { MembershipSummary } from '@/functions/src/organizations/membership/domain'
+
+/** One row of a memberships reply; override only what a test is about. */
+export function membershipSummary(
+  overrides: Partial<MembershipSummary> = {},
+): MembershipSummary {
+  return {
+    organizationId: 'org',
+    organizationName: 'Rescue',
+    status: 'active',
+    leaving: false,
+    memberCount: 2,
+    location: { label: 'Riverside', center: { latitude: 1, longitude: 1 } },
+    ...overrides,
+  }
+}
 
 type Body = Record<string, unknown> & { action: string }
 type Reply = { status: number; body?: unknown } | Catalog | PermissionLedger

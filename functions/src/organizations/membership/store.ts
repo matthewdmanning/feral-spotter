@@ -28,6 +28,35 @@ export async function readMemberships(uid: string): Promise<Records> {
   )
 }
 
+/** Gives every membership of this account the same display name. */
+export async function renameMemberships(
+  uid: string,
+  displayName: string,
+): Promise<void> {
+  await db().runTransaction(async (transaction) => {
+    await checkedAccount(transaction, uid)
+    const records = await transaction.get(
+      db().collection('organizationMemberships').where('ownerUid', '==', uid),
+    )
+    for (const doc of records.docs)
+      if (doc.get('displayName') !== displayName)
+        transaction.update(doc.ref, { displayName })
+  })
+}
+
+/** Active members of one organization, for membership cards. */
+export async function activeMemberCount(
+  organizationId: string,
+): Promise<number> {
+  const snapshot = await db()
+    .collection('organizationMemberships')
+    .where('organizationId', '==', organizationId)
+    .where('status', '==', 'active')
+    .count()
+    .get()
+  return snapshot.data().count
+}
+
 export async function changeMembership(
   uid: string,
   organizationId: string,

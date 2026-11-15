@@ -85,19 +85,27 @@ export async function readCatalog(): Promise<Catalog> {
       )
       return parseCatalog({
         version: metadata.get('version'),
-        organizations: organizations.docs.map((doc) => {
-          const record = doc.data()
-          return {
-            id: doc.id,
-            name: record.name,
-            active: record.active,
-            coverage: JSON.parse(record.coverageJson),
-          }
-        }),
+        organizations: organizations.docs.map((doc) =>
+          organizationFromRecord(doc.id, doc.data()),
+        ),
       })
     },
     { readOnly: true },
   )
+}
+
+/** One stored organization document, before catalog validation. */
+function organizationFromRecord(
+  id: string,
+  record: FirebaseFirestore.DocumentData | undefined,
+) {
+  return {
+    id,
+    name: record?.name,
+    active: record?.active,
+    ...(record?.location !== undefined ? { location: record.location } : {}),
+    coverage: JSON.parse(record?.coverageJson),
+  }
 }
 
 export async function readOrganization(organizationId: string) {
@@ -116,14 +124,7 @@ export async function readOrganization(organizationId: string) {
         throw new RequestError(404, 'Organization unavailable')
       const catalog = parseCatalog({
         version: metadata.get('version'),
-        organizations: [
-          {
-            id: record.id,
-            name: record.get('name'),
-            active: record.get('active'),
-            coverage: JSON.parse(record.get('coverageJson')),
-          },
-        ],
+        organizations: [organizationFromRecord(record.id, record.data())],
       })
       return { catalog, organization: catalog.organizations[0] }
     },
@@ -537,6 +538,9 @@ export async function writeCatalog(input: Catalog) {
         batch.set(db().collection('organizations').doc(organization.id), {
           name: organization.name,
           active: organization.active,
+          ...(organization.location !== undefined
+            ? { location: organization.location }
+            : {}),
           coverageJson: JSON.stringify(organization.coverage),
         })
       for (const doc of existing.docs.slice(start, start + 200))

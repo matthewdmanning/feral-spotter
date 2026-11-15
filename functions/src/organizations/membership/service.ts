@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { getAuth } from 'firebase-admin/auth'
 import { db, readOrganization } from '../store'
-import { changeMembership, readMemberships } from './store'
+import { changeMembership, readMemberships, renameMemberships } from './store'
 import { makePermission, validateGrant } from '../api'
 import { readLedger, updateLedger } from '../store'
 import { validId, type Permission } from '../domain'
@@ -18,19 +18,19 @@ export async function createInvite(organizationId: string) {
   return code
 }
 
-export async function joinOrganization(
-  uid: string,
-  code: unknown,
-  name: unknown,
-) {
+/** The Firebase Auth profile name: read-only here, shared by every membership. */
+async function accountName(uid: string): Promise<string> {
+  try {
+    return memberName((await getAuth().getUser(uid)).displayName)
+  } catch {
+    throw new RequestError(400, 'Account name required')
+  }
+}
+
+export async function joinOrganization(uid: string, code: unknown) {
   if (typeof code !== 'string' || !/^[a-zA-Z0-9_-]{32}$/.test(code.trim()))
     throw new RequestError(400, 'Invalid invite code')
-  let displayName: string
-  try {
-    displayName = memberName(name)
-  } catch {
-    throw new RequestError(400, 'Invalid display name')
-  }
+  const displayName = await accountName(uid)
   const invite = (await db().doc(invitePath(code.trim())).get()).data()
   if (!invite || !validId(invite.organizationId))
     throw new RequestError(404, 'Invalid invite code')
@@ -52,29 +52,8 @@ export async function joinOrganization(
       },
     }
   })
-}
-
-export async function renameMember(
-  uid: string,
-  organizationId: string,
-  name: unknown,
-) {
-  let displayName: string
-  try {
-    displayName = memberName(name)
-  } catch {
-    throw new RequestError(400, 'Invalid display name')
-  }
-  await changeMembership(uid, organizationId, (records) => {
-    const member = records[organizationId]
-    if (
-      !member ||
-      !['active', 'pending'].includes(member.status) ||
-      member.exit
-    )
-      throw new RequestError(403, 'Membership unavailable')
-    return { ...records, [organizationId]: { ...member, displayName } }
-  })
+  // A changed profile name reaches every existing membership too.
+  await renameMemberships(uid, displayName)
 }
 
 /** Names one leave attempt's block and its ledger receipts. */

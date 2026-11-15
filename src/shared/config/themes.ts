@@ -242,7 +242,8 @@ const borderWidth = {
   control: 1,
 } as const
 
-const interaction = { pressScale: 0.97 } as const
+/** `dragScale` lifts the row being dragged in a reorderable list. */
+const interaction = { pressScale: 0.97, dragScale: 1.03 } as const
 
 /** Feedback on a touched card or other surface that is not a button. */
 const opacity = {
