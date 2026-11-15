@@ -108,7 +108,7 @@ Low-light cost of unbinned output:
 | Fact                                                                                                                                                                | Source         |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
 | Main: 50 MP, 1/1.31", 1.2 µm, dual-pixel PDAF, OIS. Aperture f/1.85 (TechAdvisor) or f/1.9 (GSMArena). 82° FoV. 8x Super Res Zoom.                                  | [S-PX7]        |
-| Sensor model (Samsung GN1): not stated in any page read                                                                                                             | †              |
+| Main sensor Samsung GN1; ultrawide Sony IMX381. Pre-launch leak: IDs matched from camera HAL code. Not an official spec.                                            | [S-GN1, leak]  |
 | Ultrawide: 12 MP, f/2.2, 114°, 1/2.9", 1.25 µm                                                                                                                      | [S-PX7]        |
 | **No telephoto.** GSMArena lists a dual camera. Any zoom >1x is a crop of the main sensor.                                                                          | [S-PX7]        |
 | "Recent flagship Pixels … shoot at 12.5MP as they use pixel-binning by default … Google doesn't let you shoot at the full 50MP resolution" (Pixel Camera app, 2023) | [S-PX50]       |
@@ -173,18 +173,18 @@ Low-light cost of unbinned output:
 
 ### 4c. ISO and noise in RAW
 
-| Fact                                                                                                                                            | Source       |
-| ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| Below `SENSOR_MAX_ANALOG_SENSITIVITY`, gain is "only analog". Above it, a mix of analog and digital.                                            | [O-CR][O-CC] |
-| `POST_RAW_SENSITIVITY_BOOST` never affects RAW. Copy it too when matching auto ISO in a manual request.                                         | [O-CR]       |
-| `SENSOR_NOISE_PROFILE` gives per-channel `N(x) = sqrt(S·x + O)`: S shot-noise, O read-noise term.                                               | [O-CRes]     |
-| Shot noise is set by exposure only. Raising ISO mainly reduces read-noise impact; past a point it "mostly just brightens" and costs highlights. | [S-ISO †]    |
+| Fact                                                                                                                                                                                      | Source       |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Below `SENSOR_MAX_ANALOG_SENSITIVITY`, gain is "only analog". Above it, a mix of analog and digital.                                                                                      | [O-CR][O-CC] |
+| `POST_RAW_SENSITIVITY_BOOST` never affects RAW. Copy it too when matching auto ISO in a manual request.                                                                                   | [O-CR]       |
+| `SENSOR_NOISE_PROFILE` gives per-channel `N(x) = sqrt(S·x + O)`: S shot-noise, O read-noise term.                                                                                         | [O-CRes]     |
+| Photon (shot) noise "has nothing to do with your camera". ISO-invariant camera: brightening in post shows the same noise as higher ISO, and keeps highlights. Pixel 7 invariance unknown. | [S-ISO]      |
 
 **Do (INF):** raise analog ISO up to `SENSOR_MAX_ANALOG_SENSITIVITY`. Beyond that, keep ISO and push in post: same noise, more highlight room. Find the real read-noise floor by plotting O against ISO on the device. **DEVICE TEST.**
 
 ### 4d. Choosing the shutter cap
 
-- DSLR wildlife guidance: walking animal ≈1/500 s; running ≈1/1000–1/2000 s [S-WL †]. Frame-filling subjects; an upper bound here.
+- DSLR wildlife guidance: walking animal ≈1/500 s; running dog 1/1000–1/2000 s; birds or cheetahs 1/2000–1/4000 s [S-WL]. Frame-filling subjects; an upper bound here.
 - Blur in pixels ≈ `v · t / GSD`. GSD (metres per pixel at distance d) ≈ `d · pixelPitch / focalLength` (INF, thin-lens geometry).
 - Read focal length, physical size and pixel array at runtime: `LENS_INFO_AVAILABLE_FOCAL_LENGTHS`, `SENSOR_INFO_PHYSICAL_SIZE`, `SENSOR_INFO_PIXEL_ARRAY_SIZE` [O-CC].
 - Target ≤1–2 px of blur at the expected cat speed. Calibrate on a moving target at 10/15/20 m. **DEVICE TEST.**
@@ -376,19 +376,19 @@ Gyro shake gate:
 
 ### 9a. Vendor extensions (Night, HDR, Auto)
 
-| Fact                                                                                                                         | Source          |
-| ---------------------------------------------------------------------------------------------------------------------------- | --------------- |
-| Extension still formats: JPEG, YUV_420_888, JPEG_R, P010, DEPTH_JPEG. **No RAW.** At most two surfaces.                      | [O-CEC][O-CES]  |
-| Extension "is allowed to override all capture parameters".                                                                   | [O-CES]         |
-| CameraX with extensions: only JPEG (+ Ultra HDR where offered). "Cannot set non-JPEG buffer format with Extensions enabled." | [X-IC]          |
-| Night "takes several photos … can take several seconds … user should hold the phone still".                                  | [O-EXT]         |
-| Pixel 7 is in the supported-devices list; the list does not say which extensions.                                            | [O-SD]          |
-| Pixel CameraX Night needs Android 14 and current Pixel Camera Services. Release page refused reads; claim not verified.      | [S-PCS †]       |
-| MPC (Android 15 CDD) adds a Night mode extension requirement via CameraX and Camera2 (7.5/H-1-15).                           | [O-CDD]         |
-| Zoom/AF keys in Night are mandatory only on devices launching on Android 15+. Pixel 7 launched earlier.                      | [O-CEC]         |
-| `EXTENSION_STRENGTH` (API 34) controls frames fused. Camera2 says 100 = max; CameraX says 100 = default. **Conflict.**       | [O-CR][O-CXEXT] |
-| Latency estimate, postview and progress callbacks exist (API 34; CameraX 1.4).                                               | [O-CEC][O-IC]   |
-| CameraX ≤1.5 loses extension support on some devices from 2026-11-01; 1.6+ keeps it.                                         | [O-EXT]         |
+| Fact                                                                                                                                                                                                     | Source          |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| Extension still formats: JPEG, YUV_420_888, JPEG_R, P010, DEPTH_JPEG. **No RAW.** At most two surfaces.                                                                                                  | [O-CEC][O-CES]  |
+| Extension "is allowed to override all capture parameters".                                                                                                                                               | [O-CES]         |
+| CameraX with extensions: only JPEG (+ Ultra HDR where offered). "Cannot set non-JPEG buffer format with Extensions enabled."                                                                             | [X-IC]          |
+| Night "takes several photos … can take several seconds … user should hold the phone still".                                                                                                              | [O-EXT]         |
+| Pixel 7 is in the supported-devices list; the list does not say which extensions.                                                                                                                        | [O-SD]          |
+| "Pixel 6 and above support night mode CameraX Extensions since Android 14 (A Pixel-Camera-Service apk update is required if it's before QPR1)." Scott Nien, 2024-01-26; mailing list, not official docs. | [S-PCS, forum]  |
+| MPC (Android 15 CDD) adds a Night mode extension requirement via CameraX and Camera2 (7.5/H-1-15).                                                                                                       | [O-CDD]         |
+| Zoom/AF keys in Night are mandatory only on devices launching on Android 15+. Pixel 7 launched earlier.                                                                                                  | [O-CEC]         |
+| `EXTENSION_STRENGTH` (API 34) controls frames fused. Camera2 says 100 = max; CameraX says 100 = default. **Conflict.**                                                                                   | [O-CR][O-CXEXT] |
+| Latency estimate, postview and progress callbacks exist (API 34; CameraX 1.4).                                                                                                                           | [O-CEC][O-IC]   |
+| CameraX ≤1.5 loses extension support on some devices from 2026-11-01; 1.6+ keeps it.                                                                                                                     | [O-EXT]         |
 
 **Do (INF):** offer Night as a separate "low-light JPEG" mode that rebinds the session. Query `isExtensionAvailable(NIGHT)`, zoom/AF keys and latency. Show a hold-still countdown and postview. Poor fit for a moving cat.
 
@@ -607,7 +607,7 @@ Dynamic tests:
 | "RAW bypasses ISP"       | HDR+ paper: yes. Camera2: only some blocks stated; HAL: "minimal processing".                                                                                                         |
 | Pixel 7 aperture         | f/1.85 (TechAdvisor) vs f/1.9 (GSMArena). Read `LENS_INFO_AVAILABLE_APERTURES` on device.                                                                                             |
 | CameraX source branch    | All [X-…] rows read from `androidx-main`, not the pinned versions.                                                                                                                    |
-| Re-verification          | 2026-11-14: snippet-only claims re-read in full. Still unverified (†): S-ISO, S-WL (HTTP 403), S-PCS (403), Pixel 7 sensor model, store.google.com (JS-only page).                    |
+| Re-verification          | 2026-11-14: snippet-only claims re-read in full. 2026-11-15: S-ISO, S-WL, S-PCS re-sourced; sensor model from leak (S-GN1). Still unverified (†): store.google.com (JS-only page).    |
 | Corrections from re-read | MPC startup < 500 ms from Android 13; FULL required on back primary only; S-PX50 says nothing about Pixel 8 Pro; ultrawide "fixed focus" not found; LED "long range" quote not found. |
 
 ---
@@ -676,13 +676,14 @@ Fetched 2026-11-14. developer.android.com pages read in full.
 | S-PX50    | [Android Authority, Pixel camera tweaks](https://www.androidauthority.com/google-pixel-camera-app-tweaks-3357628)                                                                                                                                                                                                                                                                          |
 | S-GOS     | [GrapheneOS forum, Pixel 8 Pro 50 MP](https://discuss.grapheneos.org/d/11321-pixel-8-pro-camera-activating-50mp-mode)                                                                                                                                                                                                                                                                      |
 | S-SAM     | [Samsung semiconductor blog, 200 MP](https://semiconductor.samsung.com/news-events/tech-blog/what-defines-a-true-200-megapixel-experience/)                                                                                                                                                                                                                                                |
-| S-ISO †   | [DPReview, ISO invariance](https://www.dpreview.com/articles/7450523388/what-is-iso-invariance-and-should-i-care)                                                                                                                                                                                                                                                                          |
-| S-WL †    | [Akari wildlife shutter guide](https://akariphototours.com/resources/wildlife-photography-tutorials/wildlife-shutter-speed-guide/)                                                                                                                                                                                                                                                         |
+| S-ISO     | [Capture the Atlas, ISO invariance](https://capturetheatlas.com/iso-invariance)                                                                                                                                                                                                                                                                                                            |
+| S-WL      | [Castle Cameras, animals in motion](https://www.castlecameras.co.uk/article/526-photographing-animals-in-motion)                                                                                                                                                                                                                                                                           |
+| S-GN1     | [GSMArena, Pixel 7 sensors uncovered (2022-07-27)](https://www.gsmarena.com/google_pixel_7_7_pro_pixel_tablet_and_foldable_smartphone_camera_sensors_uncovered-news-55200.php), [9to5Google (2022-07-26)](https://9to5google.com/2022/07/26/pixel-7-pro-tablet-camera-sensors/)                                                                                                            |
 | S-LED     | [UniquePhoto Q&A (Photography Stack Exchange repost), LED guide number](https://www.uniquephoto.com/community/qa/can-a-smartphone-led-flash-be-described-with-a-guide-number)                                                                                                                                                                                                              |
 | S-DXO     | [DXOMARK, large sensors](https://www.dxomark.com/dxomark-decodes-how-a-large-sensor-in-a-smartphone-affects-image-quality/)                                                                                                                                                                                                                                                                |
 | S-IMA     | [Imatest sharpening](https://www.imatest.com/docs/sharpening)                                                                                                                                                                                                                                                                                                                              |
 | S-GP      | [google/pixelvisualcorecamera README](https://github.com/google/pixelvisualcorecamera) ("not an officially supported Google product")                                                                                                                                                                                                                                                      |
-| S-PCS †   | [APKMirror, Pixel Camera Services 1.2](https://www.apkmirror.com/apk/google-inc/pixel-camera-services/pixel-camera-services-1-2-568704869-08-release)                                                                                                                                                                                                                                      |
+| S-PCS     | [CameraX developers group, Pixel night extensions](https://groups.google.com/a/android.com/g/camerax-developers/c/jgEygQ3EXdk) (mailing list)                                                                                                                                                                                                                                              |
 | S-MC      | [MotionCam README](https://raw.githubusercontent.com/f0enix/motioncam/master/README.md)                                                                                                                                                                                                                                                                                                    |
 | S-SRIMPL  | [ImageStackAlignator README](https://raw.githubusercontent.com/kunzmi/ImageStackAlignator/master/README.md), [Handheld-Multi-Frame-Super-Resolution README](https://raw.githubusercontent.com/Jamy-L/Handheld-Multi-Frame-Super-Resolution/main/README.md)                                                                                                                                 |
 | S-PIXDNG  | [pixls.us, Pixel 7 Pro RAW](https://discuss.pixls.us/t/pixel-7-pro-raw-processing/33942) (forum)                                                                                                                                                                                                                                                                                           |
