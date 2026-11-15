@@ -19,6 +19,7 @@ module.exports = {
   FacebookAuthProvider: { credential: jest.fn() },
   OAuthProvider: jest.fn(() => ({ credential: jest.fn() })),
   onAuthStateChanged: jest.fn(() => () => {}),
+  updateProfile: jest.fn(),
   verifyBeforeUpdateEmail: jest.fn(),
   signOut: jest.fn(),
 }

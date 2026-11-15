@@ -58,10 +58,7 @@ let invite: string
 let attempt = 0
 
 async function joinApproved() {
-  await call(
-    { action: 'joinOrganization', code: invite, displayName: 'Leaving member' },
-    member.token,
-  )
+  await call({ action: 'joinOrganization', code: invite }, member.token)
   await moderateMembership(member.uid, organization, 'approve')
 }
 async function observe() {

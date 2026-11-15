@@ -9,7 +9,10 @@ import MembershipsScreen from '@/src/features/organizations/membership/screens/M
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
-import { fakeOrganizationsService } from '@/src/test-utils/organizationsService'
+import {
+  fakeOrganizationsService,
+  membershipSummary,
+} from '@/src/test-utils/organizationsService'
 import { queryWrapper } from '@/src/test-utils/queryClient'
 import type { MembershipSummary } from '@/functions/src/organizations/membership/domain'
 
@@ -19,19 +22,21 @@ test('open an organization, refresh approval, honor sharing rollout, and clear a
   useUIStore.setState({ isOnline: true })
   useOrganizationsFlag.setState({ enabled: false })
   let status: MembershipSummary['status'] = 'pending'
-  await fakeOrganizationsService(() => ({
+  const service = await fakeOrganizationsService(() => ({
     status: 200,
     body: {
       memberships:
         useAuthStore.getState().user?.uid === 'member'
           ? [
-              {
+              membershipSummary({
                 organizationId: 'rescue',
                 organizationName: 'Local Rescue',
-                displayName: 'Volunteer',
                 status,
-                leaving: false,
-              },
+                location: {
+                  label: null,
+                  center: { latitude: 30.2672, longitude: -97.7431 },
+                },
+              }),
             ]
           : [],
     },
@@ -47,9 +52,13 @@ test('open an organization, refresh approval, honor sharing rollout, and clear a
     await screen.findByRole('button', { name: 'View Local Rescue' }),
   )
   expect(await screen.findByText('Pending approval')).toBeOnTheScreen()
-  expect(screen.getByText('Display name: Volunteer')).toBeOnTheScreen()
-  expect(screen.queryByLabelText('Display name for Local Rescue')).toBeNull()
-  expect(screen.queryByRole('button', { name: 'Save display name' })).toBeNull()
+  // The list and this screen share one memberships query; leaving the list
+  // must not drop it while this screen shows it.
+  expect(screen.queryByText('Loading organization…')).toBeNull()
+  expect(service.actions()).toEqual(['memberships'])
+  // No catalog label: the coverage center names the area.
+  expect(screen.getByText('Near 30.27, -97.74')).toBeOnTheScreen()
+  expect(screen.queryByText(/Volunteer|Display name/)).toBeNull()
   expect(screen.queryByRole('button', { name: 'Members' })).toBeNull()
   status = 'active'
   await user.press(screen.getByRole('button', { name: 'Refresh organization' }))
@@ -66,7 +75,7 @@ test('open an organization, refresh approval, honor sharing rollout, and clear a
   await act(async () => {
     useAuthStore.setState({ user: { uid: 'other', email: null } })
   })
-  expect(screen.queryByText('Display name: Volunteer')).toBeNull()
+  expect(screen.queryByText('Near 30.27, -97.74')).toBeNull()
   expect(
     await screen.findByText('This organization is not in your memberships.'),
   ).toBeOnTheScreen()
@@ -101,15 +110,7 @@ test('privacy is organization-scoped and requires confirmation, including when s
       ? {
           status: 200,
           body: {
-            memberships: [
-              {
-                organizationId: 'rescue',
-                organizationName: 'Rescue',
-                displayName: 'Volunteer',
-                status: 'active',
-                leaving: false,
-              },
-            ],
+            memberships: [membershipSummary({ organizationId: 'rescue' })],
           },
         }
       : { status: 503 },
@@ -121,7 +122,7 @@ test('privacy is organization-scoped and requires confirmation, including when s
       wrapper: queryWrapper().wrapper,
     },
   )
-  await screen.findByText('Display name: Volunteer')
+  await screen.findByText('Active member')
   expect(
     screen.queryByRole('button', { name: 'Cancel sharing permission' }),
   ).toBeNull()

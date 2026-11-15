@@ -45,11 +45,7 @@ let commentId: string
 async function joinApproved(account: Account, organization: string) {
   const code = await createInvite(organization)
   const response = await call(
-    {
-      action: 'joinOrganization',
-      code,
-      displayName: `${account.uid.split('-').at(-2)} name`,
-    },
+    { action: 'joinOrganization', code },
     account.token,
   )
   expect(response.status).toBe(200)

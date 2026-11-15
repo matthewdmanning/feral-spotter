@@ -172,14 +172,19 @@ test('capacity limits reject new grants with 429 but never block revocation', as
   expect(revoke.body!.permissions[0].revokedAt).toBeDefined()
 })
 
-test('joining requires a display name, members cannot approve themselves, and the roster shows display names only', async () => {
-  const [organizationId] = await createOrganizations(1)
-  const owner = await signedInUser('member-owner')
+test('joining requires an account name, members cannot approve themselves, and every roster shows the one current account name', async () => {
+  const [organizationId, otherId] = await createOrganizations(2)
+  const owner = await signedInUser('member-owner', undefined, null)
   const code = await createInvite(organizationId)
-  const join = (displayName: string) =>
-    call({ action: 'joinOrganization', code, displayName }, owner.token)
-  expect((await join('   ')).status).toBe(400)
-  expect((await join('  Visible name  ')).status).toBe(200)
+  const join = (invite = code) =>
+    call(
+      // A client-supplied name is ignored: the Auth profile is the source.
+      { action: 'joinOrganization', code: invite, displayName: 'Ignored' },
+      owner.token,
+    )
+  expect((await join()).status).toBe(400)
+  await getAuth().updateUser(owner.uid, { displayName: '  Visible name  ' })
+  expect((await join()).status).toBe(200)
   // There is no member-facing approval API; only operators approve.
   expect(
     (await call({ action: 'approveMembership', organizationId }, owner.token))
@@ -192,16 +197,37 @@ test('joining requires a display name, members cannot approve themselves, and th
     status: 200,
     body: { members: [{ displayName: 'Visible name' }], cursor: null },
   })
+  expect(
+    (await call({ action: 'memberships' }, owner.token)).body,
+  ).toMatchObject({
+    memberships: [
+      {
+        organizationId,
+        status: 'active',
+        memberCount: 1,
+        // No catalog label: cards fall back to the coverage center.
+        location: { label: null, center: { latitude: 1, longitude: 1 } },
+      },
+    ],
+  })
+  await getAuth().updateUser(owner.uid, { displayName: 'Renamed' })
+  expect((await join(await createInvite(otherId))).status).toBe(200)
+  await moderateMembership(owner.uid, otherId, 'approve')
+  for (const id of [organizationId, otherId])
+    expect(
+      (
+        await call(
+          { action: 'organizationMembers', organizationId: id },
+          owner.token,
+        )
+      ).body,
+    ).toEqual({ members: [{ displayName: 'Renamed' }], cursor: null })
 })
 
 test('a repeated leave ID after rejoining cannot bypass unsharing, and account erasure removes roster names', async () => {
   const owner = await signedInUser('member-rejoin')
   const code = await createInvite('first')
-  const join = () =>
-    call(
-      { action: 'joinOrganization', code, displayName: 'Rejoined member' },
-      owner.token,
-    )
+  const join = () => call({ action: 'joinOrganization', code }, owner.token)
   const leave = () =>
     call(
       {
@@ -307,11 +333,8 @@ test('missing or mismatched permission metadata fails closed, and deletion guard
     ],
   })
   const code = await createInvite('guarded')
-  for (const [account, displayName] of [
-    [owner, 'Owner name'],
-    [viewer, 'Viewer name'],
-  ] as const) {
-    await call({ action: 'joinOrganization', code, displayName }, account.token)
+  for (const account of [owner, viewer]) {
+    await call({ action: 'joinOrganization', code }, account.token)
     await moderateMembership(account.uid, 'guarded', 'approve')
   }
   await call(grant('guarded'), owner.token)
@@ -337,7 +360,7 @@ test('missing or mismatched permission metadata fails closed, and deletion guard
         viewer.token,
       )
     ).body,
-  ).toEqual({ members: [{ displayName: 'Viewer name' }], cursor: null })
+  ).toEqual({ members: [{ displayName: 'viewer name' }], cursor: null })
   expect(
     (await call(grant('second', {}, 'blocked-during-erasure'), owner.token))
       .status,
@@ -356,10 +379,7 @@ test('Firestore cursors paginate organization shares and names without exposing 
     ],
   })
   const code = await createInvite(organizationId)
-  await call(
-    { action: 'joinOrganization', code, displayName: 'Viewer' },
-    viewer.token,
-  )
+  await call({ action: 'joinOrganization', code }, viewer.token)
   await moderateMembership(viewer.uid, organizationId, 'approve')
   await call(grant(organizationId), owner.token)
   const permission = (await call({ action: 'list' }, owner.token)).body!

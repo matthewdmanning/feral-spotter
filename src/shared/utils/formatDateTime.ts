@@ -24,3 +24,8 @@ export function formatDateTime(iso: string): string {
   const yr = d.getFullYear()
   return `${mon} ${day} ${yr}     ${TIME_FMT.format(d)}`
 }
+
+/** "Mon DD YYYY, HH:MM AM/PM", for a date inside a sentence. */
+export function formatInlineDateTime(iso: string): string {
+  return formatDateTime(iso).replace(/\s{2,}/, ', ')
+}

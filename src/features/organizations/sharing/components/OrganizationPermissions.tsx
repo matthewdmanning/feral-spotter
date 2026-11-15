@@ -24,6 +24,7 @@ import {
   includedSummary,
 } from '@/src/features/organizations/sharing/lib/sharing'
 import { styles } from '@/src/features/organizations/components/styles'
+import { formatInlineDateTime } from '@/src/shared/utils/formatDateTime'
 
 function reviewMessage({ grant, organizationName }: ReviewedGrant): string {
   const contact = [
@@ -83,7 +84,8 @@ export function OrganizationPermissions({
   )
   if (!organizationId && !permissions.length && !pending.length) return null
   const copy = organizationCopy.permissions
-  const revoke = (targetId: string, sightingId?: string) => {
+  /** `sharedAt` names the sighting by when it was shared; ids mean nothing to people. */
+  const revoke = (targetId: string, sightingId?: string, sharedAt?: string) => {
     const name =
       permissions.find((p) => p.organizationId === targetId)
         ?.organizationName ??
@@ -92,10 +94,15 @@ export function OrganizationPermissions({
     showAlert(
       copy.revokeTitle,
       formatCopy(
-        sightingId
-          ? copy.revokeSightingMessage
-          : copy.revokeOrganizationMessage,
-        { organization: name, sighting: sightingId ?? '' },
+        !sightingId
+          ? copy.revokeOrganizationMessage
+          : sharedAt
+            ? copy.revokeSharedSightingMessage
+            : copy.revokeSightingMessage,
+        {
+          organization: name,
+          date: sharedAt ? formatInlineDateTime(sharedAt) : '',
+        },
       ),
       [
         { text: commonCopy.cancel, style: 'cancel' },
@@ -193,7 +200,7 @@ export function OrganizationPermissions({
             {organizationId && !permission.revokedAt && (
               <Text style={styles.hint}>
                 {formatCopy(copy.sightingDetails, {
-                  sighting: permission.submissionId,
+                  date: formatInlineDateTime(permission.confirmedAt),
                   fields: includedSummary(
                     {
                       fields: permission.fields,
@@ -211,12 +218,16 @@ export function OrganizationPermissions({
                 <TextButton
                   tone="danger"
                   onPress={() =>
-                    revoke(permission.organizationId, permission.submissionId)
+                    revoke(
+                      permission.organizationId,
+                      permission.submissionId,
+                      organizationId ? permission.confirmedAt : undefined,
+                    )
                   }
                 >
                   {organizationId
                     ? formatCopy(copy.revokeNamedSighting, {
-                        sighting: permission.submissionId,
+                        date: formatInlineDateTime(permission.confirmedAt),
                       })
                     : copy.revokeForSighting}
                 </TextButton>

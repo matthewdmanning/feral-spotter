@@ -8,6 +8,7 @@ import {
   OAuthProvider,
   FacebookAuthProvider,
   onAuthStateChanged,
+  updateProfile,
   verifyBeforeUpdateEmail,
   signOut as firebaseSignOut,
   type User,
@@ -28,7 +29,7 @@ import {
 
 function toAuthUser(user: User | null): AuthUser | null {
   if (!user) return null
-  return { uid: user.uid, email: user.email }
+  return { uid: user.uid, email: user.email, displayName: user.displayName }
 }
 
 async function credentialForProvider(providerId: FederatedProviderId) {
@@ -76,6 +77,10 @@ export function createFirebaseAuthProvider(): IAuthProvider {
     })
   }
 
+  // Firebase reports sign-in before Registration sets the profile name, and a
+  // profile update fires no auth event, so Registration re-notifies listeners.
+  const listeners = new Set<(user: AuthUser | null) => void>()
+
   return {
     getToken: async () => {
       const user = auth.currentUser
@@ -95,13 +100,16 @@ export function createFirebaseAuthProvider(): IAuthProvider {
       const { user } = await signInWithEmailAndPassword(auth, email, password)
       return toAuthUser(user) as AuthUser
     },
-    registerWithEmail: async (email, password) => {
+    registerWithEmail: async (email, password, displayName) => {
       const { user } = await createUserWithEmailAndPassword(
         auth,
         email,
         password,
       )
-      return toAuthUser(user) as AuthUser
+      await updateProfile(user, { displayName })
+      const named = { ...(toAuthUser(user) as AuthUser), displayName }
+      listeners.forEach((cb) => cb(named))
+      return named
     },
     changeEmail: async (newEmail) => {
       const user = auth.currentUser
@@ -113,7 +121,15 @@ export function createFirebaseAuthProvider(): IAuthProvider {
       await Promise.allSettled([googleSignOut(), facebookSignOut()])
       await firebaseSignOut(auth)
     },
-    onAuthStateChanged: (cb) =>
-      onAuthStateChanged(auth, (user) => cb(toAuthUser(user))),
+    onAuthStateChanged: (cb) => {
+      listeners.add(cb)
+      const unsubscribe = onAuthStateChanged(auth, (user) =>
+        cb(toAuthUser(user)),
+      )
+      return () => {
+        listeners.delete(cb)
+        unsubscribe()
+      }
+    },
   }
 }

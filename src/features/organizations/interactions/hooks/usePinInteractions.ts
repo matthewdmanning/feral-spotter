@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { ORGANIZATION_REFRESH_INTERVAL_MS } from '@/src/shared/config/constants'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { randomUUID } from 'expo-crypto'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
@@ -12,7 +13,7 @@ import {
 import { usePinInteractionsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 import { useOrganizationPager } from '@/src/features/organizations/hooks/useOrganizationPager'
 import { useVisibleQueryScope } from '@/src/features/organizations/hooks/useVisibleQueryScope'
-import { pinInteractionCopy } from '@/src/features/organizations/interactions/copy'
+import { organizationCopy } from '@/src/shared/config/text'
 import {
   commentBody,
   type PinComment,
@@ -82,7 +83,7 @@ export function usePinInteractions(organizationId: string, pinId: string) {
     queryKey: reactionsKey,
     enabled: visible,
     gcTime: 0,
-    refetchInterval: 30000,
+    refetchInterval: ORGANIZATION_REFRESH_INTERVAL_MS,
     queryFn: async ({ signal }) => {
       const result = await organizationRequest<PinReactions>(
         { action: 'pinReactions', organizationId, id: pinId },
@@ -138,7 +139,7 @@ export function usePinInteractions(organizationId: string, pinId: string) {
         write.action === 'addPinComment' &&
         error instanceof OrganizationSyncError &&
         error.status === 429
-          ? pinInteractionCopy.commentLimit
+          ? organizationCopy.pinInteractions.commentLimit
           : organizationErrorMessage(error)
       setFeedback((current) => ({
         ...current,

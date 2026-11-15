@@ -8,7 +8,6 @@ import {
 } from '@firebase/rules-unit-testing'
 import {
   deleteObject,
-  getMetadata,
   listAll,
   type StorageReference,
   ref,

@@ -1,4 +1,5 @@
 import { useInfiniteQuery } from '@tanstack/react-query'
+import { ORGANIZATION_REFRESH_INTERVAL_MS } from '@/src/shared/config/constants'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import {
@@ -41,7 +42,9 @@ export function useOrganizationPager<T>({
     gcTime: 0,
     // A refetch reloads every loaded page in sequence, so only one page polls.
     refetchInterval: (query) =>
-      (query.state.data?.pages.length ?? 0) > 1 ? false : 30000,
+      (query.state.data?.pages.length ?? 0) > 1
+        ? false
+        : ORGANIZATION_REFRESH_INTERVAL_MS,
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (page: Page<T>) => page.cursor ?? undefined,
     queryFn: async ({ pageParam, signal }): Promise<Page<T>> => {

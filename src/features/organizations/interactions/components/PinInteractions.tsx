@@ -8,13 +8,15 @@ import { OrganizationLoading } from '@/src/features/organizations/components/Org
 import { usePinInteractionsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 import { styles as common } from '@/src/features/organizations/components/styles'
 import { usePinInteractions } from '@/src/features/organizations/interactions/hooks/usePinInteractions'
-import { pinInteractionCopy as copy } from '@/src/features/organizations/interactions/copy'
+import { formatCopy, organizationCopy } from '@/src/shared/config/text'
 import {
   COMMENT_MAX_LENGTH,
   REACTIONS,
   type PinComment,
 } from '@/functions/src/organizations/interactions/domain'
 import { styles } from './styles'
+
+const copy = organizationCopy.pinInteractions
 
 interface PinInteractionsProps {
   organizationId: string
@@ -79,7 +81,10 @@ function EnabledPinInteractions({
                     void pin.toggleReaction(key, !mine)
                   }}
                   accessibilityRole="button"
-                  accessibilityLabel={`${label}, ${count}`}
+                  accessibilityLabel={formatCopy(copy.reaction, {
+                    label,
+                    count,
+                  })}
                   accessibilityState={{
                     selected: mine,
                     disabled: !pin.reactionsReady,
@@ -91,7 +96,9 @@ function EnabledPinInteractions({
                       styles.reactionLabel,
                       mine && styles.reactionLabelSelected,
                     ]}
-                  >{`${emoji} ${count}`}</Text>
+                  >
+                    {formatCopy(copy.reactionFace, { emoji, count })}
+                  </Text>
                 </Pressable>
               )
             })}

@@ -37,16 +37,16 @@ test('default leaving revokes everything, while retained sharing needs explicit 
   )
   expect(
     screen.getByRole('checkbox', {
-      name: 'Keep sharing my existing Sightings',
+      name: 'Keep sharing my existing sightings',
     }),
   ).not.toBeChecked()
   await user.press(
-    screen.getByRole('button', { name: 'Leave and unshare all my Sightings' }),
+    screen.getByRole('button', { name: 'Leave and unshare all my sightings' }),
   )
   expect(choices[0]).toMatchObject({ mode: 'revoke' })
   await user.press(
     screen.getByRole('checkbox', {
-      name: 'Keep sharing my existing Sightings',
+      name: 'Keep sharing my existing sightings',
     }),
   )
   expect(
