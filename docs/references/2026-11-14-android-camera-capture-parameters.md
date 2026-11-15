@@ -2,6 +2,10 @@
 
 Effect of CameraX and Camera2 still-capture controls on resolution, file size, latency, lighting and file type.
 
+> This is the dated parameter catalog. For practical API ownership, capability
+> checks, version-dependent CameraX interactions, and Camera2 recipes, start
+> with [`Android native camera control guide`](2026-11-15-document-camera-behavior.md).
+
 - Each claim has a source tag in square brackets. The [Sources](#sources) table lists the tags.
 - Tags marked "Web search" come from a web search. Context7 did not confirm them.
 - Tags `D1`–`Dn` are observations on a test device, not documentation.
