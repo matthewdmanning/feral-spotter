@@ -5,7 +5,7 @@ import { Text } from '@/src/shared/ui/atoms/Text'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import { TextButton } from '@/src/shared/ui/atoms/TextButton'
 import { organizationCopy } from '@/src/shared/config/text'
-import { OrganizationLoading } from '@/src/features/organizations/components/OrganizationLoading'
+import { OrganizationQueryStatus } from '@/src/features/organizations/components/OrganizationQueryStatus'
 import { styles } from '@/src/features/organizations/components/styles'
 import { styles as layout } from '@/src/features/organizations/membership/components/styles'
 import { OrganizationPermissions } from '@/src/features/organizations/sharing/components/OrganizationPermissions'
@@ -35,28 +35,17 @@ function OrganizationContent() {
       <Stack.Screen
         options={{ title: member?.organizationName ?? copy.title }}
       />
-      {!query.uid ? (
-        <Text style={styles.body}>{copy.signIn}</Text>
-      ) : (
+      <OrganizationQueryStatus
+        query={query}
+        copy={copy}
+        onRefresh={() => {
+          void query.request()
+        }}
+      />
+      {!!query.uid && (
         <>
-          {!query.online && <Text style={styles.body}>{copy.offline}</Text>}
-          {query.initialLoading && <OrganizationLoading label={copy.loading} />}
-          {!!query.error && <Text style={styles.body}>{query.error}</Text>}
-          <AppButton
-            disabled={!query.online}
-            loading={query.busy}
-            onPress={() => {
-              void query.request()
-            }}
-          >
-            {copy.refresh}
-          </AppButton>
           {member ? (
-            <MemberCard
-              key={`${query.uid}-${member.organizationId}-${member.status}-${member.leaving}`}
-              member={member}
-              query={query}
-            >
+            <MemberCard member={member} query={query}>
               {member.status === 'active' && !member.leaving && (
                 <>
                   <TextButton

@@ -6,13 +6,15 @@ export const styles = StyleSheet.create((theme) => ({
     borderRadius: theme.radius.xl,
   },
   title: { ...theme.textVariants.heading, color: theme.colors.text },
+  subtitle: { ...theme.textVariants.label, color: theme.colors.text },
   body: { ...theme.textVariants.body, color: theme.colors.text, flexShrink: 1 },
   hint: {
     ...theme.textVariants.bodySmall,
     color: theme.colors.muted,
     flexShrink: 1,
   },
-  permissionGroup: { gap: theme.layout.stackGap },
+  // Inside a card: tighter than the card's own gap, so a group reads as one.
+  permissionGroup: { gap: theme.spacing.sm },
   fieldGroup: { gap: theme.spacing.sm },
   checkRow: {
     flexDirection: 'row',

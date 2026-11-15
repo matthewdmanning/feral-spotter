@@ -166,6 +166,24 @@ const layout = {
   sectionGap: spacing.xxl,
   contentMaxWidth: 640,
   annotationActionAreaMaxHeight: '50%',
+  /**
+   * Inline map overviews: a neighbourhood of pins with the first cards still
+   * in view. Map framing measures the frame, so this is the only edit.
+   */
+  mapHeight: 220,
+  /** A shared photo preview: tall enough to judge the cat, not the page. */
+  photoPreviewHeight: 240,
+} as const
+
+/**
+ * Approximate areas drawn on a map. Tiles stay light in both app themes, so
+ * these are fixed: a translucent fill keeps the streets readable under it,
+ * and the opaque edge marks the area against the tiles.
+ */
+const mapArea = {
+  fill: '#8F4D2940',
+  stroke: '#8F4D29',
+  strokeWidth: 2,
 } as const
 
 const iconSize = {
@@ -256,6 +274,7 @@ const sharedTokens = {
   controlWidth,
   interaction,
   catPalette,
+  mapArea,
   reticle,
   cropFrame,
   borderWidth,

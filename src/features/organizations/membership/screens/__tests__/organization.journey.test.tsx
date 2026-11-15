@@ -22,7 +22,7 @@ test('open an organization, refresh approval, honor sharing rollout, and clear a
   useUIStore.setState({ isOnline: true })
   useOrganizationsFlag.setState({ enabled: false })
   let status: MembershipSummary['status'] = 'pending'
-  await fakeOrganizationsService(() => ({
+  const service = await fakeOrganizationsService(() => ({
     status: 200,
     body: {
       memberships:
@@ -52,6 +52,10 @@ test('open an organization, refresh approval, honor sharing rollout, and clear a
     await screen.findByRole('button', { name: 'View Local Rescue' }),
   )
   expect(await screen.findByText('Pending approval')).toBeOnTheScreen()
+  // The list and this screen share one memberships query; leaving the list
+  // must not drop it while this screen shows it.
+  expect(screen.queryByText('Loading organization…')).toBeNull()
+  expect(service.actions()).toEqual(['memberships'])
   // No catalog label: the coverage center names the area.
   expect(screen.getByText('Near 30.27, -97.74')).toBeOnTheScreen()
   expect(screen.queryByText(/Volunteer|Display name/)).toBeNull()

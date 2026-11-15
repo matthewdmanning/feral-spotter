@@ -15,7 +15,7 @@ import {
 } from '@/src/shared/config/text'
 import { MemberCard } from '@/src/features/organizations/membership/components/MemberCard'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
-import { OrganizationLoading } from '@/src/features/organizations/components/OrganizationLoading'
+import { OrganizationQueryStatus } from '@/src/features/organizations/components/OrganizationQueryStatus'
 import { styles } from '@/src/features/organizations/components/styles'
 import { styles as layout } from '@/src/features/organizations/membership/components/styles'
 import { useMemberships } from '@/src/features/organizations/membership/hooks/useMemberships'
@@ -65,9 +65,7 @@ function MembershipsForm() {
         scrollEnabled={!dragging}
         keyboardShouldPersistTaps="handled"
       >
-        {!query.uid ? (
-          <Text style={styles.body}>{copy.signIn}</Text>
-        ) : arranging ? (
+        {arranging ? (
           <SortableList
             data={memberships}
             keyOf={(member) => member.organizationId}
@@ -86,54 +84,51 @@ function MembershipsForm() {
           />
         ) : (
           <>
-            {!query.online && <Text style={styles.body}>{copy.offline}</Text>}
-            {!!query.error && (
-              <Text accessibilityRole="alert" style={styles.body}>
-                {query.error}
-              </Text>
-            )}
-            {query.initialLoading && (
-              <OrganizationLoading label={copy.loading} />
-            )}
-            <AppButton
-              disabled={!query.online}
-              loading={query.busy}
-              onPress={() => {
+            <OrganizationQueryStatus
+              query={query}
+              copy={copy}
+              onRefresh={() => {
                 void query.request()
               }}
-            >
-              {copy.refresh}
-            </AppButton>
-            <GlassSurface kind="card" style={styles.card}>
-              <Text accessibilityRole="header" style={styles.title}>
-                {copy.join}
-              </Text>
-              <Text style={styles.body}>{copy.disclosure}</Text>
-              {!hasName && <Text style={styles.hint}>{copy.nameRequired}</Text>}
-              <TextField
-                label={copy.inviteCode}
-                value={code}
-                maxLength={32}
-                editable={!query.busy}
-                onChangeText={setCode}
-                autoCorrect={false}
-              />
-              <AppButton
-                disabled={
-                  !query.online || query.busy || !hasName || !code.trim()
-                }
-                onPress={() => {
-                  void query
-                    .request({ action: 'joinOrganization', code: code.trim() })
-                    .then((ok) => {
-                      if (ok) setCode('')
-                    })
-                }}
-              >
-                {copy.request}
-              </AppButton>
-            </GlassSurface>
-            {query.online &&
+            />
+            {!!query.uid && (
+              <GlassSurface kind="card" style={styles.card}>
+                <Text accessibilityRole="header" style={styles.title}>
+                  {copy.join}
+                </Text>
+                <Text style={styles.body}>{copy.disclosure}</Text>
+                {!hasName && (
+                  <Text style={styles.hint}>{copy.nameRequired}</Text>
+                )}
+                <TextField
+                  label={copy.inviteCode}
+                  value={code}
+                  maxLength={32}
+                  editable={!query.busy}
+                  onChangeText={setCode}
+                  autoCorrect={false}
+                />
+                <AppButton
+                  disabled={
+                    !query.online || query.busy || !hasName || !code.trim()
+                  }
+                  onPress={() => {
+                    void query
+                      .request({
+                        action: 'joinOrganization',
+                        code: code.trim(),
+                      })
+                      .then((ok) => {
+                        if (ok) setCode('')
+                      })
+                  }}
+                >
+                  {copy.request}
+                </AppButton>
+              </GlassSurface>
+            )}
+            {!!query.uid &&
+              query.online &&
               !query.error &&
               !query.busy &&
               !memberships.length && (
@@ -141,7 +136,7 @@ function MembershipsForm() {
               )}
             {memberships.map((member) => (
               <MemberCard
-                key={`${query.uid}-${member.organizationId}-${member.status}-${member.leaving}`}
+                key={member.organizationId}
                 member={member}
                 query={query}
               >

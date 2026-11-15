@@ -1,10 +1,14 @@
-import { ScrollView, Text } from 'react-native'
+import { ScrollView } from 'react-native'
 import { Stack, useLocalSearchParams } from 'expo-router'
+import { Text } from '@/src/shared/ui/atoms/Text'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
+import { organizationCopy } from '@/src/shared/config/text'
 import { useOrganizationPager } from '@/src/features/organizations/hooks/useOrganizationPager'
-import { OrganizationLoading } from '@/src/features/organizations/components/OrganizationLoading'
+import { OrganizationQueryStatus } from '@/src/features/organizations/components/OrganizationQueryStatus'
 import { styles } from '@/src/features/organizations/components/styles'
 import { styles as layout } from '@/src/features/organizations/membership/components/styles'
+
+const copy = organizationCopy.members
 
 export default function MembersScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -15,39 +19,24 @@ export default function MembersScreen() {
   })
   return (
     <ScrollView contentContainerStyle={layout.content}>
-      <Stack.Screen options={{ title: 'Members' }} />
-      <Text style={styles.hint}>
-        Only display names are shared in this list.
-      </Text>
-      {!query.uid && <Text style={styles.body}>Sign in to view members.</Text>}
-      {!query.online && (
-        <Text style={styles.body}>Connect to view members.</Text>
-      )}
-      {query.initialLoading && <OrganizationLoading label="Loading members…" />}
-      {!!query.error && (
-        <Text accessibilityRole="alert" style={styles.body}>
-          {query.error}
-        </Text>
-      )}
-      <AppButton
-        disabled={!query.uid || !query.online}
-        loading={query.busy}
-        onPress={() => {
+      <Stack.Screen options={{ title: copy.title }} />
+      <Text style={styles.hint}>{copy.notice}</Text>
+      <OrganizationQueryStatus
+        query={query}
+        copy={copy}
+        onRefresh={() => {
           void query.refresh()
         }}
-      >
-        Refresh members
-      </AppButton>
+      />
       {query.items.map((member, index) => (
+        // Names are not unique and the roster exposes no ids.
         <Text key={index} style={styles.body}>
           {member.displayName}
         </Text>
       ))}
       {query.loaded && !query.busy && !query.error && !query.items.length && (
         <Text style={styles.body}>
-          {query.cursor
-            ? 'No members on this page. Load more to continue.'
-            : 'No members to display.'}
+          {query.cursor ? copy.emptyPage : copy.empty}
         </Text>
       )}
       {!!query.cursor && (
@@ -57,7 +46,7 @@ export default function MembersScreen() {
             void query.loadMore()
           }}
         >
-          Load more members
+          {copy.loadMore}
         </AppButton>
       )}
     </ScrollView>

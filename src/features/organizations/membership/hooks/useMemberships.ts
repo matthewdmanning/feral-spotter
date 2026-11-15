@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { ORGANIZATION_REFRESH_INTERVAL_MS } from '@/src/shared/config/constants'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import {
@@ -79,7 +80,7 @@ export function useMemberships() {
     // A refresh during a write could replace its acknowledged result with an older read.
     enabled: visible && !mutation.isPending,
     gcTime: 0,
-    staleTime: 30000,
+    staleTime: ORGANIZATION_REFRESH_INTERVAL_MS,
     queryFn: ({ signal }) =>
       fetchMemberships({ action: 'memberships' }, uid, undefined, signal),
   })

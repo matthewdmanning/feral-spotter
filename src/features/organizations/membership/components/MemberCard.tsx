@@ -29,7 +29,11 @@ export function MemberCard({
   children?: ReactNode
 }) {
   const copy = organizationCopy.membership
-  const [leaving, setLeaving] = useState(false)
+  // Leave choices belong to one membership state: a status change closes them.
+  const state = `${member.status}-${member.leaving}`
+  const [choices, setChoices] = useState({ state, open: false })
+  const leaving = choices.state === state && choices.open
+  const setLeaving = (open: boolean) => setChoices({ state, open })
   const canLeave =
     !member.leaving && ['active', 'pending'].includes(member.status)
   return (

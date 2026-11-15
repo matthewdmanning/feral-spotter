@@ -148,3 +148,8 @@ Cats Recorded, retaining the cloud-Submission-ID condition and existing revocati
 behavior. The rendered-screen regression checks this order with real permissions
 and confirms that a sighting without a cloud ID omits the card. Native layout has
 not been exercised on a device.
+
+## 2026-11-15 — refactor
+
+**Purpose:** Share map framing with the Shared Sightings map instead of duplicating it.
+**Change:** `mapViewForSpots`, `MapSize` and the Google map UI settings moved to `src/shared/lib/mapView.ts`. The map height is now the `layout.mapHeight` theme token. Behavior is unchanged. See [organization sharing](2026-11-09-feat-organization-sharing.md).

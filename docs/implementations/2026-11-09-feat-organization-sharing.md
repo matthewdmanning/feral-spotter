@@ -60,3 +60,22 @@ Type checking, targeted ESLint, Prettier and whitespace checks passed.
 **Change:** Permission row wrappers use the shared `permissionGroup` style with `layout.stackGap`, so nested Review and Cancel actions retain their own spacing independently of the outer card. See [membership UI review fixes](2026-11-09-feat-organization-membership.md) for shared token and copy changes.
 
 **Verification:** Organization landing, membership, leave and permission-management journeys passed (4 suites, 9 tests); type checking passed. Native device spacing remains unverified because no emulator or adb is installed.
+
+## 2026-11-15 — fix
+
+**Purpose:** Fix the branch review findings for Shared Sightings, sharing permissions and organization screens.
+**Change:**
+
+- Cat details render through `describeCat` as labelled rows ("Ear Tipped: Yes"), not schema keys. Counts use plural copy ("1 cat").
+- The map frames every pin and area with `mapViewForSpots` (moved to `src/shared/lib/mapView.ts`). Its camera, markers and polygons are memoized on values, so selection and polling no longer reset a pan. Map touches pause page scroll. Areas use the `mapArea` theme tokens, a translucent fill over light tiles.
+- Selected-sighting details are a `GlassSurface` card directly below the map. Photos load one at a time.
+- Permission labels and revoke dialogs name a sighting by its share date (`confirmedAt`), not its id.
+- Copy for Shared Sightings, Members, pin interactions and service errors lives in `organizationCopy`. `interactions/copy.ts` is removed. All organization text uses the scaled `Text` atom.
+- Tokens: `layout.mapHeight` (shared with the Reports map), `layout.photoPreviewHeight`, `controlHeight.touchTarget` for reaction chips, and a tighter `permissionGroup` gap. Refresh and timeout intervals are `ORGANIZATION_REFRESH_INTERVAL_MS` and `ORGANIZATION_REQUEST_TIMEOUT_MS`.
+- `OrganizationQueryStatus` replaces the sign-in, offline, loading, error and Refresh block that four screens each repeated.
+- `useVisibleQueryScope` counts visible screens per query and removes data one tick after the last one leaves. Before this, opening an organization dropped the shared memberships query and fetched it again.
+- `MemberCard` closes its leave choices on a status change through state, not a remount key.
+
+**Tests:** `SharedSightingsScreen.test.tsx` checks readable cat details, the singular label and one-at-a-time photo requests. `organization.journey.test.tsx` checks that opening an organization reuses the list's query; it failed before the fix.
+
+**Verification:** `npm run typecheck`, ESLint (0 errors), Prettier and `npx jest` (137 suites, 612 tests) passed. Map framing, pan stability, scroll pausing, both themes and glass remain unverified on a device: no emulator or adb here.
