@@ -7,7 +7,7 @@ import {
   readOrganization,
 } from '../store'
 import { errorCode } from '../errors'
-import { validId } from '../domain'
+import { isSharedPhotoPath, validId } from '../domain'
 import { RequestError } from '../errors'
 import { requireOrganizationAccess, sharedSighting } from '../permissions'
 
@@ -84,7 +84,7 @@ export function createSharingExtension(
       !path.startsWith(
         `submissions/${found.uid}/${found.permission.submissionId}/`,
       ) ||
-      !/^photo-[0-9]\.(jpg|jpeg|png|heic|heif)$/.test(path.split('/').pop()!)
+      !isSharedPhotoPath(path)
     )
       throw new RequestError(404, 'Photo unavailable')
     const file = getStorage().bucket().file(path)

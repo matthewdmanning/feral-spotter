@@ -347,6 +347,11 @@ export function generalLocation(
     east: +(west + 0.01).toFixed(2),
   }
 }
+/** Organizations receive JPEG photos only; other formats are never offered. */
+export function isSharedPhotoPath(path: string): boolean {
+  return /^photo-[0-9]\.(jpg|jpeg)$/.test(path.split('/').pop() ?? '')
+}
+
 const CAT_DETAIL_KEYS = [
   'age',
   'ear_tipped',
