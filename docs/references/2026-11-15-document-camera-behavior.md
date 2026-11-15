@@ -30,7 +30,8 @@ and [Camera2 capture sessions and requests](https://developer.android.com/media/
 - the app needs a preview plus still capture;
 - the camera should start and stop with an Android `LifecycleOwner`;
 - common controls are enough: zoom, torch, focus/metering, exposure
-  compensation, or low-light boost;
+  compensation, or low-light boost (supported devices only: CameraX 1.5.0+,
+  Android 15+);
 - CameraX use cases can own all output surfaces; and
 - device compatibility and ordinary JPEG capture matter more than complete
   sensor-level control.
@@ -44,8 +45,9 @@ the same time.
 
 - the app needs custom RAW/result pairing, a custom stream combination, or a
   custom `CameraCaptureSession` (CameraX also supports RAW/RAW+JPEG from 1.5.0);
-- the app must choose manual ISO, exposure time, focus, white balance, or
-  post-processing keys itself;
+- the app needs manual ISO, exposure time, focus, white balance, or
+  post-processing keys and prefers direct control over CameraX's experimental
+  Camera2 interop (section 12);
 - capture-result metadata and request sequencing are part of the product
   contract; or
 - CameraX cannot express the required session or output configuration.
@@ -57,7 +59,10 @@ CameraX.
 
 ### Do not mix ownership casually
 
-CameraX and direct Camera2 cannot concurrently own the same camera ID. If a
+Never let CameraX and direct Camera2 own the same camera ID at once. A second
+`openCamera` for an ID the app already holds succeeds, but the first owner gets
+`onDisconnected` and its in-flight work is dropped; a higher-priority client
+can also take the camera. If a
 CameraX interop path is selected, let CameraX create and manage the session.
 If direct Camera2 is selected, close CameraX use cases before opening the
 `CameraDevice`.
@@ -160,11 +165,11 @@ returned `Camera`. Check the relevant state before exposing a control:
 | --------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------- |
 | Torch or flash        | `cameraInfo.hasFlashUnit()`                            | The camera has a flash unit; screen flash is a separate front-camera path. |
 | Zoom                  | `cameraInfo.zoomState`                                 | Read min, max, current, and linear zoom; do not assume 1x–5x.              |
-| Low-light boost       | `cameraInfo.isLowLightBoostSupported()`                | The device and current CameraX path can advertise LLB.                     |
+| Low-light boost       | `cameraInfo.isLowLightBoostSupported()`                | CameraX 1.5.0+; enable with `enableLowLightBoostAsync`.                    |
 | Exposure compensation | `cameraInfo.exposureState`                             | Read supported index range and applied index.                              |
-| Focus/metering        | `cameraInfo.isFocusMeteringSupported(action)`          | Check the actual combination of points and AF/AE/AWB flags.                |
-| ZSL                   | `cameraInfo.isZslSupported()`                          | ZSL is a capability, not a promise from selecting the mode.                |
-| Output format         | `ImageCaptureCapabilities.getSupportedOutputFormats()` | Query after extensions/configuration; support can change.                  |
+| Focus/metering        | `cameraInfo.isFocusMeteringSupported(action)`          | True if ≥1 requested AF/AE/AWB region is supported; false ⇒ start fails.   |
+| ZSL                   | `cameraInfo.isZslSupported()`                          | Capability, not a promise; needs `@ExperimentalZeroShutterLag` opt-in.     |
+| Output format         | `ImageCapture.getImageCaptureCapabilities(cameraInfo)` | 1.4.0+; always includes JPEG; re-query with extension-enabled `CameraInfo`. |
 | Extension             | `ExtensionsManager.isExtensionAvailable(...)`          | The selected lens and mode support that extension.                         |
 
 For every request, handle a failed `ListenableFuture` or binding exception.
@@ -195,8 +200,9 @@ for (cameraId in manager.cameraIdList) {
 }
 ```
 
-The snippet assumes `CAMERA` permission and a non-null stream configuration
-map. The capability enum is not a numeric quality ranking. Check the actual
+The snippet uses `getSystemService(Class)` (API 23+; use
+`Context.CAMERA_SERVICE` below that) and assumes `CAMERA` permission and a
+non-null stream configuration map. The capability enum is not a numeric quality ranking. Check the actual
 keys and values, output sizes, hardware level, and stream combinations needed
 by the chosen camera. `REQUEST_AVAILABLE_CAPABILITIES_RAW` is required for a
 RAW sensor stream. Physical camera IDs require API 28 or later.
@@ -208,10 +214,10 @@ and [`SCALER_STREAM_CONFIGURATION_MAP`](https://developer.android.com/reference/
 ## 4. CameraX: bind preview and still capture
 
 The normal CameraX path is `Preview` plus `ImageCapture` bound in one call.
-Configure immutable builders before binding; changing a builder after
-`build()` does nothing. Use a new use case and rebind when a build-time option
-such as capture mode, resolution selector, output format, or JPEG quality
-changes.
+`build()` returns an immutable use case; later builder changes do not affect
+it. Build a new use case and rebind to change capture mode, resolution
+selector, output format, or JPEG quality. Flash mode and target rotation have
+runtime setters on `ImageCapture`.
 
 ```kotlin
 import androidx.camera.core.CameraSelector
@@ -229,7 +235,7 @@ private fun bindCamera(previewView: PreviewView, owner: LifecycleOwner) {
       try {
         val provider = future.get()
         val preview = Preview.Builder().build().also {
-            it.surfaceProvider = previewView.surfaceProvider
+            it.setSurfaceProvider(previewView.surfaceProvider)
         }
         val resolution = ResolutionSelector.Builder()
             .setAllowedResolutionMode(
@@ -258,7 +264,9 @@ private fun bindCamera(previewView: PreviewView, owner: LifecycleOwner) {
 ```
 
 The fragment assumes a `LifecycleOwner` (import `androidx.lifecycle.LifecycleOwner`),
-a `PreviewView`, CameraX 1.3.0+ dependencies, and host callbacks that retain the
+a `PreviewView`, CameraX 1.3.0+ dependencies (section 3's table also needs
+1.4.0 for output-format queries and screen flash, 1.5.0 for low-light boost),
+and host callbacks that retain the
 bound camera/use case or show setup failure. `unbindAll()` assumes this screen
 owns all provider use cases; otherwise unbind only its own use cases. Run this
 on the main thread after permission is granted.
@@ -271,7 +279,7 @@ an aspect-ratio strategy matching that size. Inspect `imageCapture.resolutionInf
 after binding; the whole stream combination constrains what is selected.
 
 Official sources: [CameraX architecture](https://developer.android.com/media/camera/camerax/architecture)
-and [resolution selection](https://developer.android.com/media/camera/camerax/configuration#specify-resolution).
+and [`ResolutionSelector`](https://developer.android.com/reference/androidx/camera/core/resolutionselector/ResolutionSelector).
 
 ### Save a JPEG and surface failures
 
@@ -297,7 +305,7 @@ fun captureJpeg(imageCapture: ImageCapture, file: File, executor: Executor) {
 The callback must not update a dead view or claim success before the file is
 closed and readable. For a URI, use the `ContentResolver` output builder and
 verify the returned URI. Do not swallow `ERROR_FILE_IO`, `ERROR_CAPTURE_FAILED`,
-or `ERROR_INVALID_CAMERA`.
+`ERROR_CAMERA_CLOSED`, `ERROR_INVALID_CAMERA`, or `ERROR_UNKNOWN`.
 
 Official source: [CameraX take a photo](https://developer.android.com/media/camera/camerax/take-photo).
 
@@ -307,7 +315,7 @@ Official source: [CameraX take a photo](https://developer.android.com/media/came
 | --------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | Zoom ratio            | `camera.cameraControl.setZoomRatio(value)`    | Changes the camera crop/zoom for bound use cases; saved capture is zoomed too.         | Clamp to `ZoomState.minZoomRatio..maxZoomRatio`; future can fail.                         |
 | Linear zoom           | `setLinearZoom(0f..1f)`                       | Maps a UI slider to the device's zoom range.                                           | Read the resulting `ZoomState`; do not equate slider position with optical magnification. |
-| Focus/metering        | `startFocusAndMetering(action)`               | Requests AF/AE/AWB regions in the sensor coordinate system.                            | Use supported metering points and cancel/replace the previous action.                     |
+| Focus/metering        | `startFocusAndMetering(action)`               | Requests AF/AE/AWB from normalized `MeteringPoint`s; CameraX maps them to sensor regions. | Use supported metering points and cancel/replace the previous action.                     |
 | Exposure compensation | `setExposureCompensationIndex(index)`         | Biases automatic exposure; does not mean a fixed shutter or ISO.                       | Read the applied index from `ExposureState`; latest outstanding request wins.             |
 | Torch                 | `enableTorch(true/false)`                     | Keeps the torch on for preview and capture.                                            | Requires `hasFlashUnit`; future can fail.                                                 |
 | Still flash           | `imageCapture.flashMode = OFF/ON/AUTO/SCREEN` | Adds flash behavior to still capture; not a continuous torch.                          | Screen flash requires a `ScreenFlash` and front camera.                                   |
@@ -318,11 +326,13 @@ Official source: [CameraX take a photo](https://developer.android.com/media/came
 | Resolution            | `ResolutionSelector`                          | Chooses the output buffer dimensions; it is a hint constrained by the device/session.  | A larger pixel rectangle is not automatically more sensor detail.                         |
 | Extension             | `ExtensionsManager`                           | OEM pipeline such as night or bokeh may combine/process frames.                        | Check availability and rebind; extension changes other supported options.                 |
 
-CameraX's `CameraControl` operations affect the active bound camera and are
-reverted when it closes. Reapply them after a rebind. Do not report a requested
+CameraX's `CameraControl` operations affect the active bound camera. Zoom,
+torch, focus/metering, and exposure compensation revert to defaults when it
+closes; the guide does not list low-light boost, so re-query its state. Reapply
+them after a rebind. Do not report a requested
 value as applied until the returned future/state confirms it.
 
-Official source: [CameraX camera controls](https://developer.android.com/media/camera/camerax/configuration#control-camera-output)
+Official source: [CameraX camera controls](https://developer.android.com/media/camera/camerax/configuration#camera-output)
 and [`CameraControl`](https://developer.android.com/reference/kotlin/androidx/camera/core/CameraControl).
 
 ### Zoom ratio is not preview scaling
@@ -418,7 +428,10 @@ if (ImageCapture.OUTPUT_FORMAT_RAW_JPEG in formats) {
 The dual-output overload takes RAW options first, JPEG second. It calls
 `OnImageSavedCallback` separately for each format, in unspecified order; inspect
 `OutputFileResults.imageFormat` and track both results/errors for that capture.
-The single-output overload is invalid for RAW+JPEG. File options own the output
+The single-file `takePicture(OutputFileOptions, ...)` overload throws
+`IllegalArgumentException` for RAW+JPEG; the in-memory
+`takePicture(Executor, OnImageCapturedCallback)` overload is valid and calls
+`onCaptureSuccess` twice, in unspecified order. File options own the output
 writing; there is no app-owned `ImageProxy` to close on this save-to-file path.
 
 Sources: [`ImageCapture`](https://developer.android.com/reference/kotlin/androidx/camera/core/ImageCapture),
@@ -434,11 +447,14 @@ can still fire with low-light boost active for preview. Earlier CameraX versions
 may reject or resolve a combination differently. CameraX 1.6.2 and earlier
 may require disabling one of torch/boost before enabling the other. Query the
 pinned CameraX version's contract, observe failed futures, and test the device.
+`enableTorch(false)` does not restore a low-light boost that the torch replaced.
 
 Low-light boost is CameraX 1.5.0+ and Android 15/API 35+ device dependent. A
 frame-rate request above 30 FPS can disable it. Night extension combines frames
 and is not the same as a continuous low-light preview boost. Extensions require
-an availability check and a rebind when changing modes.
+an availability check and a rebind when changing modes. CameraX 1.7.0-rc02
+deprecates `getExtensionEnabledCameraSelector` in favor of
+`ExtensionSessionConfig`.
 
 ## 7. CameraX control recipes
 
@@ -485,10 +501,12 @@ if (camera.cameraInfo.isFocusMeteringSupported(action)) {
 }
 ```
 
-The point must be in the preview's current coordinate mapping. For a scaled,
-cropped, rotated, or front-facing preview, use the view's mapping rather than
-assuming raw screen coordinates. Only one focus/metering action is active;
-starting another cancels/replaces the earlier one.
+Pass view coordinates to `PreviewView`'s factory; it accounts for `ScaleType`
+and layout. Wait until the preview is `STREAMING` and the view has nonzero
+size; before that the factory yields an invalid point and focus fails. Only one
+focus/metering action is active; starting another cancels the earlier one (its
+future fails with `OperationCanceledException`). The two-flag builder above
+omits AWB; the one-argument builder defaults to AF, AE, and AWB.
 
 ### Exposure compensation and torch
 
@@ -531,7 +549,9 @@ results:
 1. Enumerate IDs and read characteristics.
 2. Select a camera and verify permission.
 3. Create every output surface (`SurfaceTexture`, `Surface`, `ImageReader`)
-   before creating the capture session.
+   before creating the capture session; each surface's size and format are
+   read then. Deferred `SurfaceView`/`SurfaceTexture` outputs
+   (`OutputConfiguration`, API 26+) are the exception.
 4. Open `CameraDevice` with a `StateCallback`.
 5. Create a session containing the exact output surfaces.
 6. Build a repeating preview request targeting preview outputs.
@@ -577,7 +597,8 @@ try {
 The host callbacks also release session/readers and reject late `onOpened`
 callbacks after teardown; closing the device alone does not close app-owned
 images/readers. This is the API 21-compatible handler overload. A camera can
-become unavailable even after a successful permission check. See
+become unavailable even after a successful permission check, and an unknown ID
+throws `IllegalArgumentException`. See
 [`CameraManager.openCamera`](https://developer.android.com/reference/android/hardware/camera2/CameraManager).
 
 ### Create a session with supported outputs
@@ -600,7 +621,7 @@ if (Build.VERSION.SDK_INT >= 28) {
 
 On API 29+, use `CameraDevice.isSessionConfigurationSupported` before creating
 the session when available. On API 28, `SessionConfiguration` supplies the
-structured form. On API 21–27, use the list-based overload and handle the
+structured form. On API 21–27, use the list-based overload (deprecated in API 30) and handle the
 session callback failure. A list of individually valid streams is not proof
 that the combined stream set is bindable.
 
@@ -624,11 +645,13 @@ val still = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTUR
 session.capture(still.build(), stillCallback, handler)
 ```
 
-The `still` builder is intentionally explicit. A still capture may temporarily
-disrupt repeating preview, and the callback is the place to record a failed
+The `still` builder is intentionally explicit. `capture()` takes priority over the
+repeating request and runs after the current repeat; preview cadence may dip.
+The callback is the place to record a failed
 request or capture metadata. For a controlled sequence, issue the repeating
 request, wait for the desired result state, submit the still request, then
-resume repeating if the sequence requires it.
+restore the repeating request only if the sequence replaced or stopped it;
+`capture()` itself does not stop repeating.
 
 ## 9. Camera2 manual controls
 
@@ -661,8 +684,8 @@ claiming that an exposure is manual.
 
 ### Manual focus
 
-Set `CONTROL_AF_MODE_OFF` and use `LENS_FOCUS_DISTANCE` only when
-`LENS_INFO_MINIMUM_FOCUS_DISTANCE` is greater than zero and the device's
+Set `CONTROL_AF_MODE_OFF` and use `LENS_FOCUS_DISTANCE` only when the camera
+advertises `MANUAL_SENSOR`, `LENS_INFO_MINIMUM_FOCUS_DISTANCE` is greater than zero, and the device's
 calibration is suitable. Zero is infinity and the device's minimum-focus-distance
 value is the closest end. Values have physical diopter meaning only when
 `LENS_INFO_FOCUS_DISTANCE_CALIBRATION` is `APPROXIMATE` or `CALIBRATED`;
@@ -706,14 +729,14 @@ matrix and call the result calibrated.
 ### Auto locks and result evidence
 
 If the product wants an auto-derived setting frozen for a still, wait for AE or
-AWB convergence, verify that `CONTROL_AE_LOCK` or `CONTROL_AWB_LOCK` is
-available (API 23+), then lock it and observe the result. Locking is not the
+AWB convergence, verify `CONTROL_AE_LOCK_AVAILABLE` or `CONTROL_AWB_LOCK_AVAILABLE`
+(characteristics, API 23+; the lock request keys exist from API 21), then lock it and observe the result. Locking is not the
 same as setting a manual ISO, exposure, or white-balance value. Always inspect
 the `TotalCaptureResult` keys to learn what the camera actually applied.
 
 Official sources: [`CaptureRequest`](https://developer.android.com/reference/android/hardware/camera2/CaptureRequest),
 [`CaptureResult`](https://developer.android.com/reference/android/hardware/camera2/CaptureResult),
-and [Camera2 controls](https://developer.android.com/media/camera/camera2/capture-sessions-requests).
+and [`CameraCharacteristics`](https://developer.android.com/reference/android/hardware/camera2/CameraCharacteristics).
 
 ## 10. Camera2 zoom, flash, and processing
 
@@ -728,7 +751,7 @@ set both zoom ratio and a competing crop policy in the same request.
 Zoom ratio can combine optical and digital behavior on a logical multi-camera
 device. It still changes the field of view of the targeted output streams. RAW
 is not generally cropped unless the device advertises the relevant cropped-RAW
-stream use case.
+stream use case (`SCALER_AVAILABLE_STREAM_USE_CASES_CROPPED_RAW`, API 34).
 
 ### Flash and torch
 
@@ -754,10 +777,11 @@ auto-flash sequence. See [`CaptureRequest`](https://developer.android.com/refere
 ### Noise reduction and edge processing
 
 `NOISE_REDUCTION_MODE` and `EDGE_MODE` are optional keys with device-advertised
-available values. `HIGH_QUALITY` can reduce capture rate/raise latency;
-`FAST` may be equivalent to a lower-quality path. Their effect on RAW differs
-from their effect on YUV/JPEG, so inspect the format-specific contract rather
-than describing a JPEG sharpening choice as sensor detail.
+available values. `HIGH_QUALITY` may reduce capture rate;
+`FAST` never does and may equal `OFF` (edge) or `MINIMAL`/`OFF` (noise
+reduction). Only noise reduction states a RAW-domain effect (`MINIMAL` is
+raw-domain; `OFF` covers raw and YUV); `EDGE_MODE` states none. Do not describe
+a JPEG sharpening choice as sensor detail.
 
 ## 11. RAW capture and DNG output with Camera2
 
@@ -771,7 +795,9 @@ RAW requires all of the following:
 
 `ImageReader` images carry a timestamp. Match the image timestamp to
 `TotalCaptureResult.SENSOR_TIMESTAMP` from the corresponding request; do not
-pair “the next result” by arrival order. Bound the pending-result map and clean
+pair “the next result” by arrival order. Timestamps are identical across a
+capture's outputs under the default timestamp base;
+`OutputConfiguration.setTimestampBase` (API 33) can change an output's base. Bound the pending-result map and clean
 it on timeout, reader error, session close, and device close.
 
 ```kotlin
@@ -812,7 +838,7 @@ pair, not a complete asynchronous matching implementation.
 Official sources: [`DngCreator`](https://developer.android.com/reference/android/hardware/camera2/DngCreator),
 [`ImageReader`](https://developer.android.com/reference/android/media/ImageReader),
 [`RAW_SENSOR`](https://developer.android.com/reference/android/graphics/ImageFormat#RAW_SENSOR),
-and [`TotalCaptureResult`](https://developer.android.com/reference/kotlin/android/hardware/camera2/TotalCaptureResult).
+and [`CaptureResult.SENSOR_TIMESTAMP`](https://developer.android.com/reference/android/hardware/camera2/CaptureResult#SENSOR_TIMESTAMP).
 
 ## 12. CameraX and Camera2 interop
 
@@ -866,7 +892,7 @@ operation: clear at the later mode transition and observe that future too.
 
 Official sources: [`Camera2Interop.Extender`](https://developer.android.com/reference/kotlin/androidx/camera/camera2/interop/Camera2Interop.Extender),
 [`Camera2CameraControl`](https://developer.android.com/reference/androidx/camera/camera2/interop/Camera2CameraControl),
-and [CameraX interop](https://developer.android.com/media/camera/camerax/configuration#camera2-interop).
+and [camera2 interop package](https://developer.android.com/reference/kotlin/androidx/camera/camera2/interop/package-summary).
 
 ## 13. Controls and effects interaction matrix
 
@@ -879,7 +905,7 @@ or callback check are required.
 | CameraX ZSL + non-off flash             | ZSL may be disabled.                                                            | Query ZSL support and do not promise zero shutter lag.                      |
 | CameraX ZSL + extension                 | ZSL may be disabled.                                                            | Recompute capabilities with the extension enabled.                          |
 | CameraX ZSL + video                     | ZSL may be disabled.                                                            | Choose a capture mode that remains valid for all bound use cases.           |
-| CameraX torch + flash                   | Torch can stay on while still flash policy is evaluated.                        | Keep torch and flash as separate UI/state values; observe result.           |
+| CameraX torch + flash                   | Torch stays on during capture whatever the flash mode; flash applies only with torch off. | Keep torch and flash as separate UI/state values; observe result.           |
 | CameraX torch + low-light boost         | Last-setting-wins behavior in current 1.7.0 RC docs; older versions may reject. | Gate by pinned version, handle failed future, and test device.              |
 | CameraX low-light boost + flash         | Current 1.7.0 RC docs allow still flash while boost remains preview-active.     | Do not apply an older blanket conflict rule to every CameraX version.       |
 | CameraX boost + frame rate above 30 FPS | Boost may disable.                                                              | Read support/state after frame-rate configuration.                          |
@@ -887,7 +913,7 @@ or callback check are required.
 | CameraX view scaling + sensor zoom      | Independent transforms can double-crop or mis-map focus.                        | Choose one owner for field-of-view behavior and map coordinates explicitly. |
 | Camera2 manual AE + auto AF/AWB         | Automatic algorithms may change or stop converging.                             | Disable or lock them intentionally and verify result states.                |
 | Camera2 AF trigger + repeating request  | A trigger is one-shot state, not a repeating mode.                              | START once, observe state, return to IDLE; CANCEL to unlock.                |
-| Camera2 zoom ratio + crop region        | Competing crop controls.                                                        | Use ratio on API 30+ or crop on older APIs; do not mix casually.            |
+| Camera2 zoom ratio + crop region        | They compose: with zoom ratio set, crop region uses post-zoom coordinates.      | Use ratio on API 30+ with default crop; crop on older APIs.                 |
 | Camera2 RAW + crop                      | RAW is usually full sensor field.                                               | Require the device's cropped-RAW support before claiming crop.              |
 | Camera2 RAW + JPEG                      | Both outputs must be in the session and matched independently.                  | Pair by capture ID/timestamp and close both images.                         |
 | Camera2 stream sizes                    | Individually valid streams can fail as a combination.                           | Validate the exact combination before session creation.                     |
@@ -901,10 +927,12 @@ or callback check are required.
 | Camera2 `SessionConfiguration`   | API 28; `isSessionConfigurationSupported` is API 29.                                                |
 | Camera2 zoom ratio               | API 30; use crop region on earlier APIs.                                                            |
 | Camera2 physical camera IDs      | API 28.                                                                                             |
-| Camera2 AE/AWB lock availability | API 23 characteristic/key behavior.                                                                 |
+| Camera2 AE/AWB lock availability | API 23 `*_LOCK_AVAILABLE` characteristics; lock request keys API 21.                                |
 | CameraX resolution selector      | CameraX 1.3.0+ APIs; keep a fallback.                                                               |
 | CameraX JPEG quality             | CameraX 1.1.0+ API.                                                                                 |
-| CameraX output format selector   | CameraX 1.4.0+ for JPEG/Ultra HDR API; RAW/RAW+JPEG require 1.5.0+.                                 |
+| CameraX output format selector   | CameraX 1.4.0+ for JPEG/Ultra HDR (experimental in 1.4.x); RAW/RAW+JPEG require 1.5.0+.             |
+| CameraX screen flash             | CameraX 1.4.0+; front camera and a `ScreenFlash` required.                                          |
+| Camera2 cropped-RAW use case     | API 34 (`SCALER_AVAILABLE_STREAM_USE_CASES_CROPPED_RAW`).                                           |
 | CameraX low-light boost          | CameraX 1.5.0+, Android 15/API 35+ capable devices; query support.                                  |
 | CameraX ZSL                      | CameraX 1.2.0+ experimental mode and device support.                                                |
 | CameraX interop APIs             | Check the app's pinned CameraX version; 1.7.0 RC docs deprecate older interop surfaces.             |
