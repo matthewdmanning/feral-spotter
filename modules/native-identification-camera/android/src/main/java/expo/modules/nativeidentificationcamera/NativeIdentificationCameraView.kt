@@ -129,9 +129,8 @@ class NativeIdentificationCameraView(
   // zoom would crop the saved photo too. The photo must stay full field and
   // full resolution, so the zoom here only magnifies what the user looks at.
   // The zoom always centres on the preview. The scale is kept in `viewZoom`, an
-  // immutable value read by focus on a caller's thread, and copied onto
-  // previewView by applyViewZoom. Its limits are the one place the zoom range
-  // is set.
+  // immutable value read by focus, and copied onto previewView by
+  // applyViewZoom. Its limits are the one place the zoom range is set.
   @Volatile
   private var viewZoom = ViewZoom.initial()
 
@@ -190,11 +189,10 @@ class NativeIdentificationCameraView(
 
   private var cameraProvider: ProcessCameraProvider? = null
 
-  // Written on the main thread from bindCamera/unbindCamera and read by capture
-  // and focus, which arrive on an Expo async caller's thread. @Volatile makes
-  // that read see the latest write; capture additionally hops to the main
-  // thread before it touches CameraX, matching the explicit session-queue hops
-  // the iOS view makes.
+  // Written by bindCamera/unbindCamera and read by capture and focus, all on
+  // the main thread: expo-modules-core runs every view-scoped AsyncFunction on
+  // Queues.MAIN (ViewDefinitionBuilder.build). @Volatile is kept as a guard,
+  // not a requirement.
   @Volatile
   private var boundSessionConfig: SessionConfig? = null
 
@@ -754,14 +752,15 @@ class NativeIdentificationCameraView(
   }
 
   fun capture(options: NativeCaptureOptions, promise: Promise) {
-    // The section starts here, before the main-thread hop, so the trace shows
-    // the whole wait from the JavaScript call to the saved file.
+    // The section starts here, before the post, so the trace shows the whole
+    // wait from the JavaScript call to the saved file.
     val captureCookie = captureCookies.incrementAndGet()
     val calledAtNs = System.nanoTime()
     beginSection(SECTION_CAPTURE, captureCookie)
 
-    // CameraX use cases are bound on the main thread, so the capture request
-    // joins them there instead of touching them from the caller's thread.
+    // Already on the main thread (view-scoped AsyncFunction). The post defers
+    // the request behind any queued rebind, so it reads the session that rebind
+    // leaves rather than the one it is about to tear down.
     post {
       val imageCapture = imageCaptureUseCase ?: run {
         endSection(SECTION_CAPTURE, captureCookie)

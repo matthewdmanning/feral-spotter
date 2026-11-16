@@ -33,13 +33,15 @@ Summary: the models are clean, pure, and well tested. The view has absorbed ever
 
 Ranked by severity. P1: correctness risk or blocks testability of core behaviour. P2: material layering gap. P3: cleanup.
 
-### F1 (P1): `focus`/`setSubjectRegion` touch `PreviewView` off the main thread
+### F1: withdrawn (false positive)
 
-`AsyncFunction` defaults to `Queues.DEFAULT` → `appContext.modulesQueue` (checked in `expo-modules-core` `AsyncFunctionComponent.dispatchOnQueue`). `focus` → `focusPreviewPoint` reads `previewView.width/height` and calls `previewView.meteringPointFactory` (`NativeIdentificationCameraView.kt:1117-1125`) on that background queue. `PreviewView` is a UI-thread class. `diagnostic(...)` also dispatches events from there. `capture` already hops to main via `post` (`:765`). Focus doesn't.
+The original claim: `focus` and `setSubjectRegion` touch `PreviewView` off the main thread. That is wrong.
 
-- Failure: the metering point is built from stale or torn layout state, or the call throws on stricter builds. A tap focuses the wrong spot, or fails without any visible sign.
-- MVVM cause: there is no single owner of the threading rule. The view is both the UI object and the command handler.
-- Fix: run `focus`/`setSubjectRegion` with `.runOnQueue(Queues.MAIN)` in the module, or `post` the body as `capture` does. Needs a device drive.
+- A module-level `AsyncFunction` defaults to `Queues.DEFAULT`, the modules queue.
+- But `ViewDefinitionBuilder.build()` forces **every view-scoped** `AsyncFunction` onto `Queues.MAIN` (`expo-modules-core` 58.0.30).
+- `capture`, `focus` and `setSubjectRegion` are all declared inside `View(...)`, so all three already run on main.
+- The view's own comments said they ran on a caller's thread, and that misled the review. Those comments are now corrected: `viewZoom`, the bound-session fields and the `capture` `post`.
+- Residual: `@Volatile` on `viewZoom` and the bound-session fields is unneeded. It is harmless, so it is left in place.
 
 ### F2 (P1): the view is a god object; session logic can't be unit-tested
 
@@ -111,13 +113,12 @@ The controller takes `ProcessCameraProvider`, `LifecycleOwner` and an event sink
 
 Suggested order, smallest first. Each step is independently shippable, and each needs a compile, and a device drive where it touches CameraX:
 
-1. F1: main-queue focus (one line in the module).
-2. F4: extract the pure policy functions, with tests.
-3. F3: introduce `BoundSession`.
-4. F2/F5: extract `CameraSessionController`; the view shrinks to rendering and input.
+1. F4: extract the pure policy functions, with tests.
+2. F3: introduce `BoundSession`.
+3. F2/F5: extract `CameraSessionController`; the view shrinks to rendering and input.
 
 ## Verification
 
 - Read every main-source Kotlin file in full.
-- Read `expo-modules-core` `AsyncFunctionComponent` and `BaseAsyncFunctionComponent` for the default queue.
-- Not compiled. No JVM tests run. Not driven on a device. F1's runtime effect is inferred from the threading, not observed.
+- Read `expo-modules-core` `AsyncFunctionComponent`, `BaseAsyncFunctionComponent` and `ViewDefinitionBuilder` (58.0.30) for function queues.
+- Not compiled. No JVM tests run. Not driven on a device.
