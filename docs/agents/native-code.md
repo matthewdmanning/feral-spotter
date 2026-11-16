@@ -86,13 +86,23 @@ else will surface them.
 
 ## 5. Testing
 
-There is no native test suite, no instrumentation test, no XCTest target. `npm
-test` runs Jest over JavaScript only.
+`npm test` runs Jest over JavaScript only. No instrumentation test or XCTest
+target exists.
+
+The camera module has JVM unit tests for its pure Kotlin
+(`modules/native-identification-camera/android/src/test/`): `ViewZoomTest`,
+`FieldCaptureConfigTest`, `RawJpegSettlementTest`. Run them with
+`npm run test:android-unit` (prebuilds `android/` if missing, then Gradle
+`:native-identification-camera:testDebugUnitTest`). CI does not run them. They
+cannot reach the view or the module: anything touching CameraX, a `Context`
+or Expo needs a device. To test new logic there, extract it into a pure class
+first, as `ViewZoom` and `RawJpegSettlement` are.
 
 So a native change is verified in exactly two ways, and you must say which one
 you did:
 
-1. **It compiled.** Necessary, never sufficient.
+1. **It compiled**, and its JVM tests pass where it has any. Necessary, never
+   sufficient.
 2. **It was driven on a device or emulator.** This is the real check.
 
 Drive it with the `run` skill, and read on-device state with the tools in

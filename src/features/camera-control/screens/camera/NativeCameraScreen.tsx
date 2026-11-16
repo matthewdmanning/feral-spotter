@@ -31,6 +31,7 @@ export function NativeCameraScreen() {
     isActive,
     maxDetail,
     motionPriority,
+    fieldCondition,
     disableLowLightBoost,
     subjectMetering,
     pinchZoom,
@@ -100,6 +101,7 @@ export function NativeCameraScreen() {
           position={position}
           maxDetail={maxDetail}
           motionPriority={motionPriority}
+          fieldCondition={fieldCondition}
           disableLowLightBoost={disableLowLightBoost}
           subjectMetering={subjectMetering}
           pinchZoom={pinchZoom}

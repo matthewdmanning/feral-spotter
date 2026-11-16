@@ -4,8 +4,10 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.graphics.ImageFormat
 import android.graphics.drawable.GradientDrawable
 import android.hardware.camera2.CameraCaptureSession
+import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.TotalCaptureResult
 import android.media.ExifInterface
@@ -22,7 +24,10 @@ import android.widget.TextView
 import androidx.annotation.OptIn
 import androidx.camera.camera2.interop.Camera2Interop
 import androidx.camera.camera2.interop.ExperimentalCamera2Interop
+import androidx.camera.camera2.interop.camera2Interop
+import androidx.camera.camera2.interop.cameraCharacteristics
 import androidx.camera.core.Camera
+import androidx.camera.core.CameraInfo
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalZeroShutterLag
 import androidx.camera.core.FocusMeteringAction
@@ -62,6 +67,9 @@ private const val SECTION_CAPTURE = "FeralCam:capture"
 private const val SECTION_RESOLVE = "FeralCam:resolveDimensions"
 private const val COUNTER_FRAME_INTERVAL = "FeralCam:frameIntervalUs"
 
+/** The cache subfolder RAW+JPEG captures write their DNGs to. */
+private const val RAW_SIDECAR_DIR = "raw-sidecars"
+
 /** Milliseconds since this process was forked, the zero point of a cold start. */
 private fun msSinceProcessStart(): Long =
   SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()
@@ -86,6 +94,11 @@ private fun msSinceProcessStart(): Long =
  * output-mode combination that blocks the requirement. Query CameraX's runtime
  * output-format set and validate the chosen mode on representative physical
  * devices rather than assuming from the documentation.
+ *
+ * CameraX already writes RAW+JPEG for the low_light and fine_detail field
+ * capture configs (FieldCaptureConfig.kt) where the device lists it. The DNG
+ * lands in the cache beside the JPEG and is returned as rawUri; no downstream
+ * step reads it yet.
  */
 @SuppressLint("ViewConstructor")
 class NativeIdentificationCameraView(
@@ -193,6 +206,14 @@ class NativeIdentificationCameraView(
   private var boundTuning: CaptureTuning? = null
   private var boundZslSupported = false
 
+  // The field capture config the bound use case was built from, or null when
+  // the capture tuning built it. Read by capture on the main thread.
+  private var boundFieldConfig: FieldCaptureConfig? = null
+
+  // The frame-rate range the bound session asked for, or null for CameraX's
+  // default. It bounds the still's auto-exposure too, so each photo reports it.
+  private var boundFrameRateRange: Range<Int>? = null
+
   @Volatile
   private var camera: Camera? = null
 
@@ -228,6 +249,20 @@ class NativeIdentificationCameraView(
     }
 
   var motionPriority: Boolean = true
+    set(value) {
+      if (field == value) return
+      field = value
+      needsRebind = true
+    }
+
+  /**
+   * A FieldCondition name, or null. When set, its field capture config builds
+   * the ImageCapture use case in place of the capture tuning. maxDetail and
+   * motionPriority still decide the session's frame-rate range, so the preview
+   * is the same either way. That range also bounds the still's exposure; see
+   * the FieldCondition class note.
+   */
+  var fieldCondition: FieldCondition? = null
     set(value) {
       if (field == value) return
       field = value
@@ -482,30 +517,91 @@ class NativeIdentificationCameraView(
   }
 
   /**
+   * What the selected camera advertises for a field capture config, read
+   * before binding so the use case is built with values the device accepts.
+   */
+  @OptIn(ExperimentalZeroShutterLag::class)
+  private fun readFieldCaptureDevice(cameraInfo: CameraInfo): FieldCaptureDevice {
+    val characteristics = cameraInfo.cameraCharacteristics
+    fun modes(key: CameraCharacteristics.Key<IntArray>): Set<Int> =
+      characteristics.get(key)?.toSet().orEmpty()
+    return FieldCaptureDevice(
+      zslSupported = cameraInfo.isZslSupported,
+      outputFormats = ImageCapture.getImageCaptureCapabilities(cameraInfo).supportedOutputFormats,
+      noiseReductionModes = modes(
+        CameraCharacteristics.NOISE_REDUCTION_AVAILABLE_NOISE_REDUCTION_MODES
+      ),
+      edgeModes = modes(CameraCharacteristics.EDGE_AVAILABLE_EDGE_MODES),
+      hotPixelModes = modes(CameraCharacteristics.HOT_PIXEL_AVAILABLE_HOT_PIXEL_MODES),
+      opticalStabilizationModes = modes(
+        CameraCharacteristics.LENS_INFO_AVAILABLE_OPTICAL_STABILIZATION
+      )
+    )
+  }
+
+  /**
+   * The ImageCapture use case for a field capture config. Builder options set
+   * the mode, size pool, output format and JPEG quality; the Camera2 keys go
+   * through the CameraX 1.7 still-capture interop, so they apply to the still
+   * request only and leave the preview's repeating request as it is.
+   */
+  private fun buildFieldImageCapture(config: FieldCaptureConfig): ImageCapture {
+    val builder = ImageCapture.Builder()
+      .setCaptureMode(config.captureMode)
+      .setOutputFormat(config.outputFormat)
+      .setJpegQuality(config.jpegQuality)
+
+    if (config.highResolutionPool) {
+      builder.setResolutionSelector(
+        ResolutionSelector.Builder()
+          .setAllowedResolutionMode(
+            ResolutionSelector.PREFER_HIGHER_RESOLUTION_OVER_CAPTURE_RATE
+          )
+          .setResolutionStrategy(ResolutionStrategy.HIGHEST_AVAILABLE_STRATEGY)
+          .build()
+      )
+    }
+
+    builder.camera2Interop {
+      config.noiseReductionMode?.let {
+        setStillCaptureRequestOption(CaptureRequest.NOISE_REDUCTION_MODE, it)
+      }
+      config.edgeMode?.let { setStillCaptureRequestOption(CaptureRequest.EDGE_MODE, it) }
+      config.hotPixelMode?.let {
+        setStillCaptureRequestOption(CaptureRequest.HOT_PIXEL_MODE, it)
+      }
+      config.opticalStabilizationMode?.let {
+        setStillCaptureRequestOption(CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE, it)
+      }
+    }
+
+    return builder.build()
+  }
+
+  /**
    * CameraX can only report supported frame rate ranges for a SessionConfig, so
    * asking the question costs one config object. When no range is preferred the
    * probe is returned as the real config rather than built a second time.
+   *
+   * Returns the range it set, or null when CameraX's default applies.
    */
   private fun buildSessionConfig(
-    provider: ProcessCameraProvider,
-    selector: CameraSelector,
+    cameraInfo: CameraInfo,
     preview: Preview,
     imageCapture: ImageCapture,
     tuning: CaptureTuning
-  ): SessionConfig {
+  ): Pair<SessionConfig, Range<Int>?> {
     val builder = SessionConfig.Builder(preview, imageCapture)
-    if (!tuning.prefersFrameRateRange()) return builder.build()
+    if (!tuning.prefersFrameRateRange()) return builder.build() to null
 
     val probeConfig = builder.build()
-    val supportedRanges = provider
-      .getCameraInfo(selector)
-      .getSupportedFrameRateRanges(probeConfig)
+    val supportedRanges = cameraInfo.getSupportedFrameRateRanges(probeConfig)
     val preferredRange = supportedRanges.maxWithOrNull(
       compareBy<Range<Int>> { it.lower }.thenBy { it.upper }
-    ) ?: return probeConfig
+    ) ?: return probeConfig to null
 
     builder.setFrameRateRange(preferredRange)
-    return builder.build()
+    return builder.build() to preferredRange
   }
 
   @OptIn(ExperimentalCamera2Interop::class, ExperimentalZeroShutterLag::class)
@@ -529,16 +625,25 @@ class NativeIdentificationCameraView(
         )
         .build()
 
+      // The preview is deliberately unchanged by the CameraX 1.7 upgrade. The
+      // Extender is deprecated from 1.7.0-alpha03 but still works; moving the
+      // profiling callback to SessionConfig.Builder.camera2Interop is a
+      // separate change that needs its own first-frame trace comparison.
       val preview = Preview.Builder()
         .also {
           if (profiling) Camera2Interop.Extender(it).setSessionCaptureCallback(frameCallback)
         }
         .build()
         .also { it.surfaceProvider = previewView.surfaceProvider }
-      val imageCapture = buildImageCapture(activeTuning)
-      val sessionConfig = buildSessionConfig(
-        provider,
-        selector,
+      val cameraInfo = provider.getCameraInfo(selector)
+      val fieldConfig = fieldCondition?.resolve(readFieldCaptureDevice(cameraInfo))
+      val imageCapture = if (fieldConfig != null) {
+        buildFieldImageCapture(fieldConfig)
+      } else {
+        buildImageCapture(activeTuning)
+      }
+      val (sessionConfig, frameRateRange) = buildSessionConfig(
+        cameraInfo,
         preview,
         imageCapture,
         activeTuning
@@ -559,6 +664,8 @@ class NativeIdentificationCameraView(
       camera = boundCamera
       boundTuning = activeTuning
       boundZslSupported = boundCamera.cameraInfo.isZslSupported
+      boundFieldConfig = fieldConfig
+      boundFrameRateRange = frameRateRange
       if (disableLowLightBoost) {
         disableLowLightBoostIfSupported(boundCamera)
       }
@@ -566,14 +673,17 @@ class NativeIdentificationCameraView(
       // CameraX runs. Flash is set per capture, so this assumes flash off and
       // each capture reports its own mode.
       val readyCaptureMode = CaptureTuning.captureModeName(
-        activeTuning.resolvedCaptureMode(boundZslSupported, ImageCapture.FLASH_MODE_OFF)
+        runningCaptureMode(ImageCapture.FLASH_MODE_OFF)
       )
-      onCameraReady(
-        mapOf(
-          "requestedCaptureTuning" to activeTuning.telemetryName,
-          "captureMode" to readyCaptureMode
-        )
+      val readyFields = mutableMapOf<String, Any>(
+        "requestedCaptureTuning" to activeTuning.telemetryName,
+        "captureMode" to readyCaptureMode
       )
+      if (fieldConfig != null) {
+        readyFields["fieldCondition"] = fieldConfig.condition.telemetryName
+        readyFields["outputFormat"] = FieldCaptureConfig.outputFormatName(fieldConfig.outputFormat)
+      }
+      onCameraReady(readyFields)
 
       bindCount += 1
       diagnostic(
@@ -589,7 +699,7 @@ class NativeIdentificationCameraView(
           "low_light_boost_disabled" to disableLowLightBoost,
           "low_light_boost_supported" to boundCamera.cameraInfo.isLowLightBoostSupported,
           "bind_duration_ms" to (System.currentTimeMillis() - startedAt)
-        )
+        ) + (fieldConfig?.diagnosticFields() ?: mapOf("field_condition" to "none"))
       )
     } catch (error: Throwable) {
       abandonFirstFrameSection()
@@ -614,6 +724,8 @@ class NativeIdentificationCameraView(
     imageCaptureUseCase = null
     camera = null
     boundTuning = null
+    boundFieldConfig = null
+    boundFrameRateRange = null
     // CameraX zoom resets when the camera closes; the view zoom does the same,
     // so a new session never starts zoomed.
     resetViewZoom()
@@ -623,9 +735,18 @@ class NativeIdentificationCameraView(
   }
 
   /**
-   * Low-light boost brightens the preview by lengthening exposure, which blurs
-   * a moving animal. Turning it off is opt-in, and only where the device says
-   * it supports the control at all.
+   * Low-light boost is a preview feature, not a still-capture mode. CameraX
+   * documents it for the preview, video and image-analysis streams, keeps it
+   * on the preview while an ImageCapture capture runs, and turns it off when
+   * the session's frame rate exceeds 30 FPS (enableLowLightBoostAsync
+   * reference). In dim scenes it may drop those streams to 10 FPS and raise
+   * sensor gain (CONTROL_AE_MODE_ON_LOW_LIGHT_BOOST_BRIGHTNESS_PRIORITY), so a
+   * moving animal smears on screen. No source says whether a still taken
+   * while it is active inherits that exposure: compare the photo's EXIF
+   * exposure time with it on and off on a device.
+   *
+   * Turning it off is opt-in, and only where the device says it supports the
+   * control at all.
    */
   private fun disableLowLightBoostIfSupported(boundCamera: Camera) {
     if (!boundCamera.cameraInfo.isLowLightBoostSupported) return
@@ -654,13 +775,35 @@ class NativeIdentificationCameraView(
         else -> ImageCapture.FLASH_MODE_OFF
       }
       val requestedTuning = boundTuning ?: tuning
-      val captureMode = CaptureTuning.captureModeName(
-        requestedTuning.resolvedCaptureMode(boundZslSupported, imageCapture.flashMode)
+      val runningMode = runningCaptureMode(imageCapture.flashMode)
+      val captureMode = CaptureTuning.captureModeName(runningMode)
+      val settings = CaptureSettings.of(
+        tuning = requestedTuning,
+        fieldConfig = boundFieldConfig,
+        captureMode = runningMode,
+        jpegQuality = imageCapture.jpegQuality,
+        frameRateRange = boundFrameRateRange?.let { "${it.lower}-${it.upper}" }
       )
 
       val outputFile = File(context.cacheDir, "${UUID.randomUUID()}.jpg")
       val outputOptions = ImageCapture.OutputFileOptions.Builder(outputFile).build()
       val requestedAt = System.currentTimeMillis()
+
+      if (boundFieldConfig?.writesRaw == true) {
+        takeRawAndJpeg(
+          imageCapture,
+          outputFile,
+          createRawSidecarFile(),
+          promise,
+          requestedAt,
+          requestedTuning,
+          captureMode,
+          settings,
+          captureCookie,
+          calledAtNs
+        )
+        return@post
+      }
 
       imageCapture.takePicture(
         outputOptions,
@@ -673,7 +816,8 @@ class NativeIdentificationCameraView(
                 promise,
                 requestedAt,
                 requestedTuning,
-                captureMode
+                captureMode,
+                settings
               )
             }
             endSection(SECTION_CAPTURE, captureCookie)
@@ -701,6 +845,135 @@ class NativeIdentificationCameraView(
   }
 
   /**
+   * The capture mode CameraX runs for the bound use case at this flash mode:
+   * the field capture config's mode when one built it, else the tuning's.
+   */
+  private fun runningCaptureMode(flashMode: Int): Int {
+    val requested = boundFieldConfig?.captureMode ?: (boundTuning ?: tuning).captureMode()
+    return CaptureTuning.runningCaptureMode(requested, boundZslSupported, flashMode)
+  }
+
+  /**
+   * A new, empty file for a capture's DNG, in a sidecar folder of the app's
+   * cache directory. The cache directory is the OS's temporary area: Android
+   * deletes its files when the device runs short of space, and Settings
+   * clears it with "Clear cache". createTempFile names the file uniquely, so
+   * two captures never share one. The draft deletes it after a send or a
+   * discard (capturedPhotoFiles.ts).
+   */
+  private fun createRawSidecarFile(): File {
+    val dir = File(context.cacheDir, RAW_SIDECAR_DIR).apply { mkdirs() }
+    return File.createTempFile("raw-", ".dng", dir)
+  }
+
+  /**
+   * RAW+JPEG capture. CameraX reports each file separately, in no set order;
+   * RawJpegSettlement decides when the photo is known. The promise resolves
+   * with the JPEG as the photo and the DNG as rawUri when both saved, or with
+   * the JPEG alone when only the DNG failed. It rejects only when the JPEG
+   * failed or the whole request did.
+   *
+   * A file that lands after the capture settled is not part of the result,
+   * so it is deleted on arrival rather than left in the cache.
+   */
+  private fun takeRawAndJpeg(
+    imageCapture: ImageCapture,
+    jpegFile: File,
+    rawFile: File,
+    promise: Promise,
+    requestedAt: Long,
+    requestedTuning: CaptureTuning,
+    captureMode: String,
+    settings: Map<String, String>,
+    captureCookie: Int,
+    calledAtNs: Long
+  ) {
+    // Callbacks and the timeout run on the main thread, so the settlement
+    // needs no synchronisation.
+    val settlement = RawJpegSettlement()
+    var lastError: ImageCaptureException? = null
+    var timeout: Runnable? = null
+
+    fun settle(outcome: RawJpegSettlement.Outcome) {
+      timeout?.let(::removeCallbacks)
+      when (outcome) {
+        is RawJpegSettlement.Outcome.Photo -> {
+          if (!outcome.rawKept) rawFile.delete()
+          val rawSidecar = if (outcome.rawKept) rawFile else null
+          traced(SECTION_RESOLVE) {
+            resolveWithFileDimensions(
+              jpegFile,
+              promise,
+              requestedAt,
+              requestedTuning,
+              captureMode,
+              settings,
+              rawSidecar
+            )
+          }
+          endSection(SECTION_CAPTURE, captureCookie)
+          perfLog(
+            "capture_saved raw=${rawSidecar != null}" +
+              " call_to_saved_ms=${(System.nanoTime() - calledAtNs) / 1_000_000}" +
+              " since_process_start_ms=${msSinceProcessStart()}"
+          )
+        }
+        RawJpegSettlement.Outcome.Failed -> {
+          jpegFile.delete()
+          rawFile.delete()
+          endSection(SECTION_CAPTURE, captureCookie)
+          val error = lastError
+          promise.reject(
+            "ERR_CAPTURE_FAILED",
+            error?.message ?: "RAW+JPEG capture reported no JPEG",
+            error
+          )
+        }
+      }
+    }
+
+    imageCapture.takePicture(
+      ImageCapture.OutputFileOptions.Builder(rawFile).build(),
+      ImageCapture.OutputFileOptions.Builder(jpegFile).build(),
+      ContextCompat.getMainExecutor(context),
+      object : ImageCapture.OnImageSavedCallback {
+        override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
+          val isRaw = outputFileResults.imageFormat == ImageFormat.RAW_SENSOR
+          if (settlement.outcome != null) {
+            (if (isRaw) rawFile else jpegFile).delete()
+            return
+          }
+          settlement.onSaved(isRaw)?.let(::settle)
+        }
+
+        override fun onError(exception: ImageCaptureException) {
+          if (settlement.outcome != null) return
+          lastError = exception
+          diagnostic(
+            "capture_failed",
+            mapOf(
+              "message" to (exception.message ?: exception.toString()),
+              "image_capture_error_code" to exception.imageCaptureError,
+              "output_format" to "raw_jpeg",
+              "whole_request" to
+                (exception.imageCaptureError in RawJpegSettlement.WHOLE_REQUEST_ERRORS),
+              "elapsed_ms" to (System.currentTimeMillis() - requestedAt)
+            )
+          )
+          val outcome = settlement.onError(exception.imageCaptureError)
+          if (outcome != null) {
+            settle(outcome)
+          } else if (settlement.awaitingOtherFile && timeout == null) {
+            val waitOut = Runnable { settlement.onTimeout()?.let(::settle) }
+            timeout = waitOut
+            postDelayed(waitOut, RawJpegSettlement.PER_FILE_WAIT_MS)
+          }
+        }
+      }
+    )
+  }
+
+  /**
    * Reads the dimensions from the file that was just written, rather than from
    * imageCapture.resolutionInfo. resolutionInfo is null until the use case
    * attaches, which includes the window after any rebind, and the previous
@@ -708,18 +981,26 @@ class NativeIdentificationCameraView(
    *
    * The stored pixels are unrotated, so the EXIF orientation decides whether
    * the axes are swapped for a consumer that honours it.
+   *
+   * settings is what CaptureSettings reported for this capture; it travels
+   * with the photo into its metadata. rawFile is the DNG a RAW+JPEG capture
+   * wrote beside the JPEG, if any.
    */
   private fun resolveWithFileDimensions(
     outputFile: File,
     promise: Promise,
     requestedAt: Long,
     requestedTuning: CaptureTuning,
-    captureMode: String
+    captureMode: String,
+    settings: Map<String, String>,
+    rawFile: File? = null
   ) {
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
     BitmapFactory.decodeFile(outputFile.absolutePath, bounds)
 
     if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
+      // No photo reaches the draft, so nothing else would delete the DNG.
+      rawFile?.delete()
       promise.reject(
         "ERR_CAPTURE_NO_DIMENSIONS",
         "Saved capture reported no dimensions",
@@ -752,14 +1033,15 @@ class NativeIdentificationCameraView(
     val reportedWidth = if (quarterTurned) bounds.outHeight else bounds.outWidth
     val reportedHeight = if (quarterTurned) bounds.outWidth else bounds.outHeight
 
-    promise.resolve(
-      mapOf(
-        "uri" to android.net.Uri.fromFile(outputFile).toString(),
-        "width" to reportedWidth,
-        "height" to reportedHeight,
-        "captureMode" to captureMode
-      )
+    val result = mutableMapOf<String, Any>(
+      "uri" to android.net.Uri.fromFile(outputFile).toString(),
+      "width" to reportedWidth,
+      "height" to reportedHeight,
+      "captureMode" to captureMode,
+      "captureSettings" to settings
     )
+    if (rawFile != null) result["rawUri"] = android.net.Uri.fromFile(rawFile).toString()
+    promise.resolve(result)
 
     // Both the stored and the reported axes, so the EXIF swap can be checked
     // against a real portrait capture instead of inferred from the photo.
@@ -776,6 +1058,8 @@ class NativeIdentificationCameraView(
         "camera_position" to position,
         "requested_capture_tuning" to requestedTuning.telemetryName,
         "capture_mode" to captureMode,
+        "field_condition" to (settings["field_condition"] ?: "none"),
+        "raw_file_bytes" to (rawFile?.length() ?: -1L),
         "elapsed_ms" to (System.currentTimeMillis() - requestedAt)
       )
     )

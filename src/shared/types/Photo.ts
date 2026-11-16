@@ -30,4 +30,20 @@ export interface SubmissionPhoto {
    * what caps a Submission at MAX_PHOTOS. Set when the photo joins the pool.
    */
   upload_slot?: number
+  /**
+   * The DNG a RAW+JPEG camera capture wrote beside `uri`, in the app cache.
+   * Never uploaded. Deleted with the photo: on removal, after a send, or when
+   * the draft is discarded.
+   */
+  raw_uri?: string
+  /** How the camera was set for this capture. Camera captures only. */
+  camera_config?: PhotoCameraConfig
 }
+
+/**
+ * The camera settings one capture ran with, by name. Values are strings
+ * because they become Storage custom metadata: each entry is written to the
+ * photo's object as `camera_<key>` at Submit, beside its location and time,
+ * so an exported photo still says how it was taken.
+ */
+export type PhotoCameraConfig = Readonly<Record<string, string>>

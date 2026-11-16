@@ -4,6 +4,20 @@ export type NativeCameraPosition = 'back' | 'front'
 export type NativeFlashMode = 'off' | 'on' | 'auto'
 
 /**
+ * Android only. A field condition selects a candidate still-capture config
+ * (`FieldCaptureConfig.kt`) in place of the capture tuning. The preview is the
+ * same whichever is set. The names must match `FieldCondition.telemetryName`
+ * in Kotlin; this list is the only JS copy.
+ */
+export const NATIVE_FIELD_CONDITIONS = [
+  'low_light',
+  'distant_motion',
+  'fine_detail',
+] as const
+
+export type NativeFieldCondition = (typeof NATIVE_FIELD_CONDITIONS)[number]
+
+/**
  * A capture result. The view reports what it produced and nothing more: the
  * capture instant is stamped in JS at the shutter, because a native stamp
  * meant a different instant on each platform.
@@ -14,6 +28,19 @@ export interface NativeCapturedPhoto {
   height: number
   /** Android only: the capture mode CameraX ran for this capture, after any ZSL fallback. */
   captureMode?: string
+  /**
+   * Android only: the DNG written beside the JPEG when the field capture config
+   * resolved to RAW+JPEG. `uri` is still the JPEG. Absent when no DNG was kept.
+   * It is a cache file; the draft deletes it after a send or a discard.
+   */
+  rawUri?: string
+  /**
+   * Android only: the settings this capture ran with (`CaptureSettings.kt`),
+   * by name, as strings — capture mode, tuning, field condition, output
+   * format, JPEG quality, frame-rate range, and each Camera2 key it set.
+   * Written to the photo's Storage metadata as-is.
+   */
+  captureSettings?: Readonly<Record<string, string>>
 }
 
 /**
@@ -25,6 +52,10 @@ export interface NativeCapturedPhoto {
 export interface NativeCameraReadyEvent {
   requestedCaptureTuning?: string
   captureMode?: string
+  /** Android only, present when a field condition built the capture use case. */
+  fieldCondition?: NativeFieldCondition
+  /** Android only: `jpeg` or `raw_jpeg`, after the device's format check. */
+  outputFormat?: string
 }
 
 /**
@@ -59,6 +90,8 @@ export interface NativeIdentificationCameraProps {
   position: NativeCameraPosition
   maxDetail: boolean
   motionPriority: boolean
+  /** Android only. Absent or null keeps the capture tuning. */
+  fieldCondition?: NativeFieldCondition | null
   disableLowLightBoost: boolean
   subjectMetering: boolean
   /**

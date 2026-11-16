@@ -12,6 +12,7 @@ import {
   showPhotoLimitReached,
 } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useCapturedPhotoWorkflow } from '@/src/features/camera-control/hooks/useCapturedPhotoWorkflow'
+import { visionCameraConfig } from '@/src/features/camera-control/lib/cameraConfig'
 import { useIosIdentificationCapture } from '@/src/features/camera-control/hooks/useIosIdentificationCapture'
 import { useSettingsStore } from '@/src/features/settings/hooks/useSettingsStore'
 import { useConsentStore } from '@/src/shared/consent/useConsentStore'
@@ -172,6 +173,15 @@ export function useCameraCapture(): CameraCaptureResult {
               uri: `file://${filePath}`,
               width: photo.width,
               height: photo.height,
+              cameraConfig: visionCameraConfig({
+                platform: Platform.OS,
+                position: cameraPosition,
+                flashMode,
+                shutterMode: captureMode,
+                capturePipeline,
+                qualityPrioritization: effectiveQualityPrioritization,
+                lowLightBoost: enableLowLightBoost,
+              }),
             },
             shutterTime,
           )
@@ -259,6 +269,7 @@ export function useCameraCapture(): CameraCaptureResult {
       void flushGallerySaves()
     }
   }, [
+    cameraPosition,
     cameraVariant,
     captureMode,
     capturePipeline,

@@ -35,6 +35,7 @@ import {
   USE_FIREBASE_EMULATOR,
 } from '@/src/shared/config/constants'
 import type {
+  PhotoCameraConfig,
   PhotoUploadResponse,
   SubmissionApiPayload,
   SubmissionPhoto,
@@ -147,6 +148,10 @@ export async function uploadSubmissionMetadata(
  * upload_time is read back from the object's own `timeCreated` (the actual
  * moment the bytes landed, set by Storage itself) rather than "now" — this
  * runs at Submit, which can be well after the photo actually uploaded.
+ *
+ * A camera capture's settings (PhotoCameraConfig) go on as `camera_<key>`
+ * entries, so the exported photo says how it was taken. Library picks have
+ * none.
  */
 export async function finalizeSubmissionPhotoMetadata(
   objectPath: string,
@@ -154,6 +159,7 @@ export async function finalizeSubmissionPhotoMetadata(
   photoTime: string,
   latitude?: number,
   longitude?: number,
+  cameraConfig?: PhotoCameraConfig,
 ): Promise<void> {
   if (UPLOADS_MOCK) return
 
@@ -161,9 +167,17 @@ export async function finalizeSubmissionPhotoMetadata(
 
   const existing = await getMetadata(reference)
 
+  const cameraEntries = Object.fromEntries(
+    Object.entries(cameraConfig ?? {}).map(([key, value]) => [
+      `camera_${key}`,
+      value,
+    ]),
+  )
+
   await updateMetadata(reference, {
     customMetadata: {
       ...existing.customMetadata,
+      ...cameraEntries,
       photo_time: photoTime,
       upload_time: existing.timeCreated,
       user_id: userId,
