@@ -1,106 +1,108 @@
 # Android camera module: MVVM review
 
-Reviewed 2026-11-16 on `review/android-camera-mvvm`, base `origin/main` `941aff9`.
+Reviewed 2026-11-16 on `review/android-camera-mvvm`, base `origin/main` `941aff9`. Line references (`:N`) point at `NativeIdentificationCameraView.kt` on that base.
 Scope: `modules/native-identification-camera/android/src/main/java/…/*.kt` (7 files, 1,877 lines). Source read only; nothing compiled or driven.
 
 ## Basis
 
-No project doc defines MVVM. Searched `docs/`, `src/`, `modules/` for "MVVM" / "view model": no hits. Standard used:
+The Android contract comes from official guidance. Project docs only add local conventions.
 
-- **Model**: domain state + policy; no Android `View`/`Context`; JVM-testable.
-- **ViewModel**: owns screen/session state as one source of truth; exposes state + commands; holds no `View` references.
-- **View**: renders state, forwards input; no policy, no I/O.
+- **UI logic vs business logic** ([State holders and UI state](https://developer.android.com/topic/architecture/ui-layer/stateholders#ui-logic-and-its-state-holder)):
+  - Business logic implements product requirements on app data.
+  - UI logic decides how state is shown and how the UI reacts to input.
+  - Simple UI logic may live inline in the UI. When it grows complex, a plain-class state holder is recommended.
+- **ViewModel placement** ([Views architecture recommendations](https://developer.android.com/topic/architecture/views/recommendations-views)): use screen-level ViewModels, not ViewModels inside reusable UI components.
+- **This seam:**
+  - `NativeIdentificationCameraView` is a reusable native component.
+  - Its screen-level state holder is the JS layer (`useNativeCameraCapture`).
+  - So an `androidx.lifecycle.ViewModel` in the view would go against the guidance. A plain-class state holder fits.
+- **Local conventions:**
+  - `native-code.md` §5: logic must be extracted into a pure class before a JVM test can reach it.
+  - `domain.md`: camera seam and capture-tuning vocabulary.
+  - Neither defines MVVM. A search of `docs/`, `src/` and `modules/` for "MVVM" / "view model" found nothing.
 
-Repo rules applied: `native-code.md` §5 (extract logic into pure classes to test it); `domain.md` (camera seam, capture tuning).
+How findings are classed:
 
-Constraint: an Expo view has no `ViewModelStoreOwner`, so `androidx.lifecycle.ViewModel` doesn't fit. On this seam, JS hooks (`useNativeCameraCapture`) act as the screen ViewModel. Native MVVM here = a thin view over a plain-Kotlin session controller plus pure models.
+- **Defect**: demonstrated wrong behaviour, with evidence.
+- **Recommendation**: a complexity or testability improvement. It is not a violation.
+- **Withdrawn**: the claim didn't hold.
 
-## Layer map
+## Responsibility map
 
-| File                                  | Lines | Role today                                                                                                                       | Fit            |
-| ------------------------------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| `NativeIdentificationCameraModule.kt` | 107   | Binding: props → view fields, async functions → view methods                                                                     | Good           |
-| `ViewZoom.kt`                         | 42    | Model: immutable zoom value, limits, inverse mapping; tested                                                                     | Good           |
-| `RawJpegSettlement.kt`                | 98    | Model: RAW+JPEG settlement state machine; tested                                                                                 | Good           |
-| `CaptureTuning.kt`                    | 109   | Model: priorities → capture mode, ZSL fallback rule                                                                              | Good           |
-| `FieldCaptureConfig.kt`               | 283   | Model: specs, device capability, `resolve`; tested                                                                               | Good           |
-| `CaptureSettings.kt`                  | 74    | Model: per-capture metadata map                                                                                                  | Good, untested |
-| `NativeIdentificationCameraView.kt`   | 1,164 | View + ViewModel + data layer: rendering, gestures, session lifecycle, capture orchestration, file I/O, EXIF, telemetry, tracing | **Violates**   |
-
-Summary: the models are clean, pure, and well tested. The view has absorbed every other layer.
+| File                                  | Lines | Responsibilities                                                                                                                                  | Assessment                                   |
+| ------------------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| `NativeIdentificationCameraModule.kt` | 107   | Binding: props → view fields; view-scoped async functions → view methods                                                                          | Fits                                         |
+| `ViewZoom.kt`                         | 42    | UI-logic state: zoom value, limits, inverse mapping; tested                                                                                       | Fits                                         |
+| `RawJpegSettlement.kt`                | 98    | Business logic: RAW+JPEG outcome; tested                                                                                                          | Fits                                         |
+| `CaptureTuning.kt`                    | 109   | Business logic: priorities → capture mode, ZSL fallback                                                                                           | Fits                                         |
+| `FieldCaptureConfig.kt`               | 283   | Business logic: specs, device capability, `resolve`; tested                                                                                       | Fits                                         |
+| `CaptureSettings.kt`                  | 74    | Business logic: per-capture metadata                                                                                                              | Fits; untested                               |
+| `NativeIdentificationCameraView.kt`   | 1,164 | UI logic (preview, zoom label, gestures, prop adaptation) + session lifecycle + capture orchestration + data operations (files, EXIF) + telemetry | Mixed: UI logic is fine; see F2 for the rest |
 
 ## Findings
 
-Ranked by severity. P1: correctness risk or blocks testability of core behaviour. P2: material layering gap. P3: cleanup.
+### F1: withdrawn (false positive)
 
-### F1 (P1): `focus`/`setSubjectRegion` touch `PreviewView` off the main thread
+The original claim: `focus` and `setSubjectRegion` touch `PreviewView` off the main thread. That is wrong.
 
-`AsyncFunction` defaults to `Queues.DEFAULT` → `appContext.modulesQueue` (checked in `expo-modules-core` `AsyncFunctionComponent.dispatchOnQueue`). `focus` → `focusPreviewPoint` reads `previewView.width/height` and calls `previewView.meteringPointFactory` (`NativeIdentificationCameraView.kt:1117-1125`) on that background queue. `PreviewView` is a UI-thread class. `diagnostic(...)` also dispatches events from there. `capture` already hops to main via `post` (`:765`). Focus doesn't.
+- A module-level `AsyncFunction` defaults to `Queues.DEFAULT`.
+- Expo's [Module API reference](https://docs.expo.dev/modules/module-api/#asyncfunction-1) specifies the main queue for an `AsyncFunction` declared in a `View`. `expo-modules-core` 58.0.30 does the same: `ViewDefinitionBuilder.build()` calls `runOnQueue(Queues.MAIN)` for every view async function.
+- `capture`, `focus` and `setSubjectRegion` are all view-scoped, so all three run on main.
+- The view's comments claimed a caller's thread, and that misled the review. Those comments are corrected, and `@Volatile` is gone from `viewZoom` and the bound-session state.
 
-- Failure: the metering point is built from stale or torn layout state, or the call throws on stricter builds. A tap focuses the wrong spot, or fails without any visible sign.
-- MVVM cause: there is no single owner of the threading rule. The view is both the UI object and the command handler.
-- Fix: run `focus`/`setSubjectRegion` with `.runOnQueue(Queues.MAIN)` in the module, or `post` the body as `capture` does. Needs a device drive.
+### F2 (recommendation): move session lifecycle, capture orchestration and data operations out of the view
 
-### F2 (P1): the view is a god object; session logic can't be unit-tested
+Evidence is complexity and missing tests, not a broken rule. The view holds three kinds of non-UI work:
 
-`NativeIdentificationCameraView` mixes, in one class:
+1. Session lifecycle: deferred rebind coalescing, bind, unbind (`:220-227`, `:485-499`, `:608-735`). This is complex logic, so the Android guidance points to a plain-class state holder.
+2. Capture orchestration: single vs RAW+JPEG path, settlement wiring, timeout (`:756-974`). This is business logic.
+3. Data operations: temp-file creation, bitmap bounds decode, EXIF orientation, result assembly, DNG deletion (`:864-867`, `:989-1066`).
 
-1. Rendering: `PreviewView`, zoom label, `onLayout`.
-2. Input: the scale detector, `onInterceptTouchEvent`, tap mapping.
-3. Session state machine: `needsRebind`, `rebindScheduled`, `applyPendingConfiguration`, `bindCamera`, `unbindCamera` (`:220-227`, `:485-499`, `:608-735`).
-4. Capture orchestration: flash mapping, the single vs RAW+JPEG path, timeouts (`:756-974`).
-5. Data layer: temp-file creation, bitmap bounds decode, EXIF orientation, result-map assembly (`:864-867`, `:989-1066`).
-6. Telemetry: event-payload shaping, Perfetto sections, logcat (`:333-378`, throughout).
+The UI logic can stay: preview implementation mode, zoom reset and label, gestures, tap mapping.
 
-`native-code.md` §5 says new logic must be extracted into a pure class to be testable. Five behaviours here have no test and can't get one in place:
+These behaviours have no test and can't get one in place (`native-code.md` §5):
 
-- The rebind coalescing rule (the provider callback and the prop batch can arrive in either order; one bind each).
+- Rebind coalescing (provider callback vs prop batch, either order; one bind each).
 - The EXIF quarter-turn → width/height swap.
-- The flash string → mode mapping.
 - The frame-rate range choice (`maxWithOrNull` on lower, then upper).
 - The focus-rejection reasons.
 
-Fix: see Target shape.
+Proposal: see Target shape. The value is testability and a smaller view. There is no correctness gain to claim.
 
-### F3 (P2): bound-session state is seven loose fields, not one value
+### F3 (recommendation, done): bound-session state as one value
 
-`boundSessionConfig`, `imageCaptureUseCase`, `camera`, `boundTuning`, `boundZslSupported`, `boundFieldConfig` and `boundFrameRateRange` (`:198-218`) are set one by one in `bindCamera` (`:662-668`) and cleared one by one in `unbindCamera` (`:721-728`). Some are `@Volatile` and some aren't. The comments say which threads read them.
+Before this change, `boundSessionConfig`, `imageCaptureUseCase`, `camera`, `boundTuning`, `boundZslSupported`, `boundFieldConfig` and `boundFrameRateRange` (`:198-218`) were set one by one in `bindCamera` (`:662-668`) and cleared one by one in `unbindCamera` (`:721-728`). A field added later could be missed in either place.
 
-- MVVM cause: there is no single state object, so you can't snapshot the state or assert on it. A field added later can be missed in either place.
-- Fix: use one immutable `BoundSession` data class, held in one `var boundSession: BoundSession?`. Bind assigns it once; unbind nulls it. Readers take one snapshot, as `focus` already does with `viewZoom`.
-- **Status: fixed** on `refactor/android-camera-bound-session`, which adds `BoundSession.kt`. `capture` takes one snapshot per request. The view's `runningCaptureMode` fallback to the live `tuning` is gone: it was unreachable, because a capture without a bound session is rejected first. Needs a compile and a test drive.
+- **Done:** `BoundSession.kt`.
+  - One `var boundSession: BoundSession?`: bind assigns it once; unbind clears it.
+  - `capture` snapshots it once per request.
+  - The view's `runningCaptureMode` fallback to the live `tuning` is removed; it was unreachable.
+- No runtime regression was found by source comparison. Needs a compile and a test drive.
 
-### F4 (P2): policy lives in the view, not the model
+### F4 (recommendation): small extractions in the capture setup
 
-- Lens facing: `position == "front"` → `LENS_FACING_*` (`:619-625`), and the normalisation in the `position` setter (`:238`).
-- Flash: `"on"/"auto"/else` → `FLASH_MODE_*` (`:772-776`).
-- Frame-rate range choice (`:599-601`). This is tuning policy, but it isn't in `CaptureTuning`.
-- The highest-resolution `ResolutionSelector` block is duplicated in `buildImageCapture` (`:504-512`) and `buildFieldImageCapture` (`:554-563`).
+- Frame-rate range choice (`:599-601`): capture policy that sits outside `CaptureTuning`. Moving it there gives it a JVM test.
+- The highest-resolution `ResolutionSelector` block is duplicated in `buildImageCapture` (`:504-512`) and `buildFieldImageCapture` (`:554-563`). Concrete cleanup: one `highResolutionSelector()` helper.
+- Not findings: lens facing (`:619-625`, `:238`) and flash (`:772-776`) map prop strings onto CameraX constants. That is UI-logic adaptation and may stay inline. Extract it only if a test needs it.
 
-Fix: move each into the model layer as a pure function (`CaptureTuning.chooseFrameRateRange(ranges)`, a `FlashMode.fromProp`, a `LensPosition.fromProp`). Keep one `highResolutionSelector()` helper. Each then gets a JVM test.
+### F5: withdrawn as an architecture finding; one open question
 
-### F5 (P2): prop setters bypass the one configuration path
+- `pinchZoom` switches `implementationMode` and resets the zoom inline (`:285-290`). That is UI logic, allowed inline.
+- `disableLowLightBoost` calls camera control from its setter (`:276`). Setting it back to `false` doesn't re-enable boost. Bind never enables boost either, so this is a defect only if CameraX enables low-light boost by default. That default is not verified here. **Open question; needs device evidence.**
 
-Most setters only set `needsRebind`, and `applyPendingConfiguration` applies the batch. Two act immediately:
+### F6 (recommendation, P3): typed payloads for the native contract
 
-- `disableLowLightBoost` calls camera control directly (`:276`). Setting it back to `false` does nothing until the next bind, and doesn't request one.
-- `pinchZoom` switches `implementationMode` and resets the zoom inline (`:285-290`).
+Event and result maps are built inline. `onCameraReady` uses camelCase keys (`requestedCaptureTuning`, `:679`), while `onCameraDiagnostic` uses snake_case (`requested_capture_tuning`, `:693`). With no Kotlin-side types, drift against `src/types.ts` goes unchecked.
 
-- MVVM cause: state flows two ways. Some changes go through the batch; others mutate the session from a setter.
-- Fix: route every prop through the controller's `apply(props)`. Decide there what each change costs: rebind, a live control call, or view-only.
-
-### F6 (P3): the native contract is string-typed, with mixed key casing
-
-Props and options use raw strings (`position`, `flashMode`). Event and result maps are built inline, and `onCameraReady` uses camelCase keys (`requestedCaptureTuning`, `:679`) while `onCameraDiagnostic` uses snake_case (`requested_capture_tuning`, `:693`). `domain.md` marks the camera telemetry vocabulary "under review — do not extend". So this is not a rename request. The finding: payload shapes have no typed model on the Kotlin side, so drift against `src/types.ts` goes unchecked.
-
-- Fix: typed payload data classes, or `Record`s, each with one `toMap()`. Don't rename keys until the vocabulary review ends.
+- Proposal: typed payload data classes, each with one `toMap()`.
+- `domain.md` marks this vocabulary "under review — do not extend", so don't rename keys.
 
 ## Target shape
 
 ```
 Module (binding only)
-  └─ View: PreviewView, zoom label, gestures; renders ViewZoom; forwards commands
-       └─ CameraSessionController (plain Kotlin; main-thread confined)
+  └─ View: PreviewView, zoom label, gestures, prop adaptation (UI logic)
+       └─ CameraSessionController (plain-class state holder; main-thread confined)
             ├─ state: BoundSession? (one immutable value)
             ├─ apply(props), capture(opts), focus(pt)
             ├─ CaptureFileInspector: (w, h, exifOrientation) → reported size  [pure]
@@ -110,15 +112,14 @@ Module (binding only)
 
 The controller takes `ProcessCameraProvider`, `LifecycleOwner` and an event sink as constructor dependencies. Its CameraX calls still need a device. Its decisions (rebind coalescing, settlement wiring, payloads) become JVM-testable behind a fake provider seam.
 
-Suggested order, smallest first. Each step is independently shippable, and each needs a compile, and a device drive where it touches CameraX:
+Suggested order, smallest first. Each step ships alone and needs a compile, plus a device drive where it touches CameraX:
 
-1. F1: main-queue focus (one line in the module).
-2. F4: extract the pure policy functions, with tests.
-3. F3: introduce `BoundSession` (done).
-4. F2/F5: extract `CameraSessionController`; the view shrinks to rendering and input.
+1. F4: frame-rate choice into `CaptureTuning`, one `highResolutionSelector()`, with tests.
+2. F3: `BoundSession` (done).
+3. F2: extract `CameraSessionController` and the data-operation helpers.
 
 ## Verification
 
 - Read every main-source Kotlin file in full.
-- Read `expo-modules-core` `AsyncFunctionComponent` and `BaseAsyncFunctionComponent` for the default queue.
-- Not compiled. No JVM tests run. Not driven on a device. F1's runtime effect is inferred from the threading, not observed.
+- Read `expo-modules-core` `AsyncFunctionComponent`, `BaseAsyncFunctionComponent` and `ViewDefinitionBuilder` (58.0.30) for function queues.
+- Not compiled. No JVM tests run. Not driven on a device.
