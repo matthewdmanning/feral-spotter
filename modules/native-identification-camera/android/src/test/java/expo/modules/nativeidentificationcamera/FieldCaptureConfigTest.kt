@@ -100,7 +100,81 @@ class FieldCaptureConfigTest {
           context
         )
         assertTrue(context, config.jpegQuality in 1..100)
+
+        assertPreferenceHonoured(condition, device, config, context)
+        assertSettingsNameEveryKeySet(config, context)
       }
     }
   }
+
+  /**
+   * The other half of the contract: a safe value is not enough, it must be the
+   * condition's most-preferred value the device advertises. Without this a
+   * resolver that ignores every preference, or stops asking for RAW, passes.
+   */
+  private fun assertPreferenceHonoured(
+    condition: FieldCondition,
+    device: FieldCaptureDevice,
+    config: FieldCaptureConfig,
+    context: String
+  ) {
+    val spec = condition.spec
+    val expectedMode = spec.captureModes.firstOrNull {
+      it != ImageCapture.CAPTURE_MODE_ZERO_SHUTTER_LAG || device.zslSupported
+    } ?: ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY
+    assertEquals(context, expectedMode, config.captureMode)
+    assertEquals(
+      context,
+      spec.outputFormats.first { it in device.outputFormats || it == ImageCapture.OUTPUT_FORMAT_JPEG },
+      config.outputFormat
+    )
+    assertEquals(context, spec.highResolutionPool, config.highResolutionPool)
+    assertEquals(context, spec.jpegQuality, config.jpegQuality)
+
+    // Under ZSL the processing keys are deliberately unset (checked above).
+    if (config.captureMode != ImageCapture.CAPTURE_MODE_ZERO_SHUTTER_LAG) {
+      assertEquals(context, firstIn(spec.noiseReductionModes, device.noiseReductionModes), config.noiseReductionMode)
+      assertEquals(context, firstIn(spec.edgeModes, device.edgeModes), config.edgeMode)
+      assertEquals(context, firstIn(spec.hotPixelModes, device.hotPixelModes), config.hotPixelMode)
+    }
+    val oisOn = CameraMetadata.LENS_OPTICAL_STABILIZATION_MODE_ON
+    assertEquals(
+      context,
+      if (spec.opticalStabilization && oisOn in device.opticalStabilizationModes) oisOn else null,
+      config.opticalStabilizationMode
+    )
+  }
+
+  /**
+   * The photo's metadata must name what ran: a key set on the still request
+   * appears by name, and an unset key is absent rather than reported as a
+   * value it never had.
+   */
+  private fun assertSettingsNameEveryKeySet(config: FieldCaptureConfig, context: String) {
+    val settings = CaptureSettings.of(
+      tuning = CaptureTuning.NEITHER,
+      fieldConfig = config,
+      captureMode = config.captureMode,
+      jpegQuality = config.jpegQuality,
+      frameRateRange = null
+    )
+    val keys = mapOf(
+      "noise_reduction_mode" to config.noiseReductionMode,
+      "edge_mode" to config.edgeMode,
+      "hot_pixel_mode" to config.hotPixelMode,
+      "optical_stabilization_mode" to config.opticalStabilizationMode
+    )
+    for ((key, value) in keys) {
+      if (value == null) {
+        assertNull("$context: $key", settings[key])
+      } else {
+        assertTrue("$context: $key=${settings[key]}", settings[key]?.startsWith("mode_") == false)
+      }
+    }
+    assertEquals(context, config.condition.telemetryName, settings["field_condition"])
+    assertEquals(context, FieldCaptureConfig.outputFormatName(config.outputFormat), settings["output_format"])
+  }
+
+  private fun firstIn(preferred: List<Int>, advertised: Set<Int>): Int? =
+    preferred.firstOrNull { it in advertised }
 }

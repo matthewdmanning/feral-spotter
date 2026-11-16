@@ -43,6 +43,11 @@ interface PhotoState {
   clearPhotos: (deferFileDeletion?: boolean) => void
 }
 
+/** Every local file a photo owns: the JPEG, and its DNG sidecar if any. */
+function photoFiles(photo: SubmissionPhoto): string[] {
+  return photo.raw_uri ? [photo.uri, photo.raw_uri] : [photo.uri]
+}
+
 // ─── Slots ────────────────────────────────────────────────────────────────────
 
 /**
@@ -120,7 +125,7 @@ export const usePhotoStore = create<PhotoState>()(
       removePhoto: (localId) =>
         set((s) => {
           const removed = s.photos.find((p) => p.local_id === localId)
-          if (removed) deleteCapturedPhotoFile(removed.uri)
+          if (removed) photoFiles(removed).forEach(deleteCapturedPhotoFile)
           const photos = s.photos.filter((p) => p.local_id !== localId)
           return {
             photos,
@@ -131,7 +136,9 @@ export const usePhotoStore = create<PhotoState>()(
 
       clearPhotos: (deferFileDeletion = false) =>
         set((s) => {
-          const uris = s.photos.map((p) => p.uri)
+          // Runs after a successful send and on every discard, so a DNG
+          // sidecar never outlives its Sighting.
+          const uris = s.photos.flatMap(photoFiles)
           const schedule =
             typeof requestIdleCallback === 'function'
               ? (callback: () => void) => requestIdleCallback(callback)

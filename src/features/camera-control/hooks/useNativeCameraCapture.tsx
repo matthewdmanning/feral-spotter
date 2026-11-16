@@ -15,6 +15,7 @@ import { useCapturedPhotoWorkflow } from '@/src/features/camera-control/hooks/us
 import { useConsentStore } from '@/src/shared/consent/useConsentStore'
 import { useSettingsStore } from '@/src/features/settings/hooks/useSettingsStore'
 import { CAMERA_FIELD_CONDITION } from '@/src/shared/config/constants'
+import { nativeCameraConfig } from '@/src/features/camera-control/lib/cameraConfig'
 import { captureEvent, EVENTS } from '@/src/shared/analytics/analytics'
 import type { ImagePostprocessor } from '@/src/features/camera-control/lib/pipeline'
 import { startLocationCapture } from '@/src/core/location/liveFix'
@@ -124,6 +125,9 @@ export function useNativeCameraCapture(
         requested_capture_tuning:
           requestedCaptureTuning.current ?? 'unreported',
         capture_mode: event?.nativeEvent?.captureMode ?? 'unreported',
+        // Tells field-config sessions apart from tuning sessions.
+        field_condition: event?.nativeEvent?.fieldCondition ?? 'none',
+        output_format: event?.nativeEvent?.outputFormat ?? 'jpeg',
         ready_duration_ms: Date.now() - openedAt,
       })
     },
@@ -187,7 +191,22 @@ export function useNativeCameraCapture(
         : captured
       const processedAt = performanceChecks ? Date.now() : null
 
-      const submission = persistCapturedPhoto(processed, shutterTime)
+      const submission = persistCapturedPhoto(
+        {
+          ...processed,
+          cameraConfig: nativeCameraConfig({
+            platform: Platform.OS,
+            position,
+            flashMode,
+            maxDetail,
+            motionPriority,
+            lowLightBoostDisabled: disableLowLightBoost,
+            subjectMetering,
+            captured,
+          }),
+        },
+        shutterTime,
+      )
 
       captureEvent(EVENTS.PHOTO_CAPTURED, {
         flash_mode: flashMode,
@@ -212,6 +231,9 @@ export function useNativeCameraCapture(
               requested_capture_tuning:
                 requestedCaptureTuning.current ?? 'unreported',
               capture_mode: captured.captureMode ?? 'unreported',
+              field_condition:
+                captured.captureSettings?.field_condition ?? 'none',
+              output_format: captured.captureSettings?.output_format ?? 'jpeg',
               capture_duration_ms: capturedAt - captureStartedAt,
               postprocess_duration_ms: processedAt - capturedAt,
               capture_pipeline_duration_ms: processedAt - captureStartedAt,

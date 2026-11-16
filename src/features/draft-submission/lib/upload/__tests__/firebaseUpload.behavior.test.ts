@@ -38,7 +38,7 @@ describe('Firebase submission upload behavior', () => {
     )
   })
 
-  it('preserves existing custom metadata and stamps finalized fields from object metadata', async () => {
+  it('preserves existing custom metadata and stamps finalized fields and camera settings', async () => {
     jest.mocked(getMetadata).mockResolvedValueOnce({
       timeCreated: '2026-04-02T03:04:05.000Z',
       customMetadata: { source: 'camera', keep: 'yes' },
@@ -50,6 +50,9 @@ describe('Firebase submission upload behavior', () => {
       '2026-04-01T00:00:00.000Z',
       34.1,
       -82.2,
+      // A camera key can never shadow user_id, which storage.rules checks:
+      // every camera entry is prefixed.
+      { capture_mode: 'zero_shutter_lag', user_id: 'someone-else' },
     )
 
     const objectRef = expect.objectContaining({
@@ -60,6 +63,8 @@ describe('Firebase submission upload behavior', () => {
       customMetadata: {
         source: 'camera',
         keep: 'yes',
+        camera_capture_mode: 'zero_shutter_lag',
+        camera_user_id: 'someone-else',
         photo_time: '2026-04-01T00:00:00.000Z',
         upload_time: '2026-04-02T03:04:05.000Z',
         user_id: 'user-4',

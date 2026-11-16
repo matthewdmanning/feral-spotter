@@ -6,10 +6,16 @@ export type NativeFlashMode = 'off' | 'on' | 'auto'
 /**
  * Android only. A field condition selects a candidate still-capture config
  * (`FieldCaptureConfig.kt`) in place of the capture tuning. The preview is the
- * same whichever is set.
+ * same whichever is set. The names must match `FieldCondition.telemetryName`
+ * in Kotlin; this list is the only JS copy.
  */
-export type NativeFieldCondition =
-  'low_light' | 'distant_motion' | 'fine_detail'
+export const NATIVE_FIELD_CONDITIONS = [
+  'low_light',
+  'distant_motion',
+  'fine_detail',
+] as const
+
+export type NativeFieldCondition = (typeof NATIVE_FIELD_CONDITIONS)[number]
 
 /**
  * A capture result. The view reports what it produced and nothing more: the
@@ -25,8 +31,16 @@ export interface NativeCapturedPhoto {
   /**
    * Android only: the DNG written beside the JPEG when the field capture config
    * resolved to RAW+JPEG. `uri` is still the JPEG. Absent when no DNG was kept.
+   * It is a cache file; the draft deletes it after a send or a discard.
    */
   rawUri?: string
+  /**
+   * Android only: the settings this capture ran with (`CaptureSettings.kt`),
+   * by name, as strings — capture mode, tuning, field condition, output
+   * format, JPEG quality, frame-rate range, and each Camera2 key it set.
+   * Written to the photo's Storage metadata as-is.
+   */
+  captureSettings?: Readonly<Record<string, string>>
 }
 
 /**

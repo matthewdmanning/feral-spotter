@@ -163,6 +163,7 @@ export async function sendDraft(
         photoTimeFor(p),
         latitude,
         longitude,
+        p.camera_config,
       ),
     ),
   )

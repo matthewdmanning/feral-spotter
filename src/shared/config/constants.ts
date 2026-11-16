@@ -5,7 +5,11 @@
  */
 
 import Constants from 'expo-constants'
-import type { NativeFieldCondition } from '@/modules/native-identification-camera'
+// The defining module, not the package index: the index loads the native view.
+import {
+  NATIVE_FIELD_CONDITIONS,
+  type NativeFieldCondition,
+} from '@/modules/native-identification-camera/src/types'
 import { getAppVersion } from '@/src/shared/utils/appVersion'
 
 /** True in development or pre-release builds. Gates analytics events. */
@@ -30,16 +34,10 @@ export type FeatureFlag = keyof typeof FEATURE_FLAGS
  */
 export const APP_VERSION: string = getAppVersion()
 
-const FIELD_CONDITIONS: readonly NativeFieldCondition[] = [
-  'low_light',
-  'distant_motion',
-  'fine_detail',
-]
-
 const asFieldCondition = (
   value: string | undefined,
 ): NativeFieldCondition | null =>
-  FIELD_CONDITIONS.find((condition) => condition === value) ?? null
+  NATIVE_FIELD_CONDITIONS.find((condition) => condition === value) ?? null
 
 /**
  * Android test-drive selector for a candidate field capture config

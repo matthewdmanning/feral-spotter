@@ -12,9 +12,25 @@ import androidx.camera.core.ImageCapture
  *
  * Scope: these configure the ImageCapture use case only — its builder options
  * and Camera2 still-request keys set through the CameraX 1.7 interop API
- * (`ImageCapture.Builder.camera2Interop`). Still-request keys override the
- * repeating request for the still alone, so the preview stream is untouched:
- * no repeating key, frame-rate range or low-light-boost state changes here.
+ * (`ImageCapture.Builder.camera2Interop`). A still-request key overrides the
+ * same key for the still alone (Camera2Interop reference), so no preview key
+ * changes here.
+ *
+ * What the still inherits from the session (checked 2026-11-16):
+ * - The session's frame-rate range. CameraX writes it into the session
+ *   parameters as CONTROL_AE_TARGET_FPS_RANGE, and builds the still request
+ *   from those merged parameters (1.7.0-rc02
+ *   UseCaseCameraRequestControlImpl.issueSingleCaptureAsync). Auto-exposure
+ *   keeps each frame inside that range, so the still's exposure time cannot
+ *   pass 1 / the range's lower bound. With motion priority on, the session
+ *   takes the range with the highest lower bound: a 30–30 range caps the
+ *   still near 1/30 s. These configs do not change the range.
+ * - The auto-exposure state the preview frames converged on.
+ *
+ * Low-light boost is not part of a still capture: CameraX documents it for
+ * the preview, video and image-analysis streams, keeps it on the preview
+ * during an ImageCapture capture, and turns it off above 30 FPS
+ * (CameraControl.enableLowLightBoostAsync reference).
  *
  * Status: CANDIDATES. The values come from the reference docs
  * (docs/references/2026-11-14-android-camera-capture-parameters.md and
@@ -25,20 +41,30 @@ import androidx.camera.core.ImageCapture
 enum class FieldCondition(
   /** Reported in telemetry and accepted as the `fieldCondition` prop. */
   val telemetryName: String,
-  private val spec: FieldCaptureSpec
+  /** Internal so the resolver's test can check preferences, not just safety. */
+  internal val spec: FieldCaptureSpec
 ) {
   /**
    * Dim light: dusk, night, shade under cars and porches.
    *
-   * - MAXIMIZE_QUALITY: no ring-buffer frame, the HAL may spend time on
-   *   multi-frame processing. Latency matters less than noise here.
+   * This config changes how the still is processed, not how long it is
+   * exposed. Exposure comes from auto-exposure inside the session's
+   * frame-rate range (class note above), so with motion priority on it buys
+   * no extra light. Motion priority off leaves CameraX's default range,
+   * which may allow longer exposures; that is a preview change too.
+   *
+   * - MAXIMIZE_QUALITY: CameraX documents only that images "may take longer
+   *   to capture". Whether the device adds multi-frame processing is not
+   *   documented.
    * - Normal-size pool, not the high-resolution one: high-resolution modes on
    *   quad-Bayer sensors read out unbinned pixels, which are noisier in low
    *   light than the binned default size.
-   * - RAW+JPEG: the DNG keeps the shadow data the JPEG pipeline crushes.
+   * - RAW+JPEG: the DNG keeps sensor data from before the JPEG pipeline's
+   *   noise reduction, tone mapping and compression.
    * - Noise reduction HIGH_QUALITY, edge FAST: sharpening amplifies noise, so
    *   edge enhancement stays at the no-cost level.
-   * - Hot-pixel correction HIGH_QUALITY: long exposures surface hot pixels.
+   * - Hot-pixel correction HIGH_QUALITY: with exposure capped, auto-exposure
+   *   raises sensor gain in dim light, and high gain makes hot pixels show.
    */
   LOW_LIGHT(
     telemetryName = "low_light",

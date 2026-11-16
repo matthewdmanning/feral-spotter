@@ -140,8 +140,14 @@ describe('useSubmissionSubmit submit flow', () => {
   })
 
   // #264 amendment to ADR-0002/ADR-0003: each photo's own Storage object must
-  // carry location/time/upload-time/hashed-uid, not just metadata.json.
-  it('finalizes each uploaded photo with the hashed uid, submission location, and captured_at', async () => {
+  // carry location/time/upload-time/hashed-uid, not just metadata.json — and,
+  // for a camera capture, the camera settings it was taken with.
+  it('finalizes each uploaded photo with the hashed uid, submission location, captured_at and camera config', async () => {
+    const cameraConfig = {
+      backend: 'camerax',
+      capture_mode: 'maximize_quality',
+      field_condition: 'low_light',
+    }
     useSubmissionStore.setState({
       submission: {
         location_type: 'pin',
@@ -158,6 +164,7 @@ describe('useSubmissionSubmit submit flow', () => {
           uploaded: true,
           cloud_storage_path: 'gs://bucket/uploaded.jpg',
           cloud_storage_url: 'https://cdn/uploaded.jpg',
+          camera_config: cameraConfig,
         }),
       ],
     })
@@ -174,6 +181,7 @@ describe('useSubmissionSubmit submit flow', () => {
       '2026-08-01T10:00:00.000Z',
       12.5,
       -45.5,
+      cameraConfig,
     )
   })
 
@@ -207,6 +215,7 @@ describe('useSubmissionSubmit submit flow', () => {
       'gs://bucket/uploaded.jpg',
       'uid-owner',
       '2026-08-01T09:45:00.000Z',
+      undefined,
       undefined,
       undefined,
     )
@@ -252,6 +261,8 @@ describe('useSubmissionSubmit submit flow', () => {
       // literal (which only matches on a UTC test runner).
       new Date('2026-08-01T09:30:00').toISOString(),
       undefined,
+      undefined,
+      // A Library pick carries no camera config.
       undefined,
     )
   })

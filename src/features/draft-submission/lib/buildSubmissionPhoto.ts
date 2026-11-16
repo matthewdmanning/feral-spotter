@@ -4,7 +4,7 @@
  * now-deleted usePhotoSession.ts so useLibraryPhotoPicker can reuse it.
  */
 
-import type { SubmissionPhoto } from '@/src/shared/types'
+import type { PhotoCameraConfig, SubmissionPhoto } from '@/src/shared/types'
 import type * as ImagePicker from 'expo-image-picker'
 import { randomUUID } from 'expo-crypto'
 
@@ -61,6 +61,10 @@ export interface CapturedFrame {
   uri: string
   width: number
   height: number
+  /** A DNG written beside `uri` (Android RAW+JPEG captures only). */
+  rawUri?: string
+  /** The camera settings the capture ran with. */
+  cameraConfig?: PhotoCameraConfig
 }
 
 /**
@@ -99,5 +103,9 @@ export function buildSubmissionPhotoFromCapture(
     width: frame.width,
     height: frame.height,
     captured_at: capturedAt,
+    ...(frame.rawUri !== undefined && { raw_uri: frame.rawUri }),
+    ...(frame.cameraConfig !== undefined && {
+      camera_config: frame.cameraConfig,
+    }),
   }
 }

@@ -26,6 +26,7 @@ import {
 import { useSettingsStore } from '@/src/features/settings/hooks/useSettingsStore'
 import { gallerySavePermission } from '@/src/features/permissions/lib/gallerySavePermission'
 import {
+  deleteCapturedPhotoFile,
   releaseCapturedPhotoFile,
   retainCapturedPhotoFile,
 } from '@/src/features/draft-submission/lib/capturedPhotoFiles'
@@ -120,30 +121,37 @@ export function useCapturedPhotoWorkflow({
    */
   const persistCapturedPhoto = useCallback(
     (frame: CapturedFrame, shutterTime: string): SubmissionPhoto => {
-      if (
-        !acceptsNewPhotos(useDraftStartupStore.getState().phase) ||
-        usePhotoStore.getState().source === 'library'
-      ) {
-        throw new Error('Camera capture is not available')
+      try {
+        if (
+          !acceptsNewPhotos(useDraftStartupStore.getState().phase) ||
+          usePhotoStore.getState().source === 'library'
+        ) {
+          throw new Error('Camera capture is not available')
+        }
+        // Backstop for a burst frame already in flight at the cap.
+        if (isAtPhotoLimit()) throw new Error('Photo limit reached')
+        const submission = buildSubmissionPhotoFromCapture(frame, shutterTime)
+
+        if (keepOnDevice) {
+          retainCapturedPhotoFile(submission.uri)
+          pendingGallerySaves.current.push(submission.uri)
+        }
+
+        addPhoto(submission)
+        // The stored copy carries its upload slot; the upload needs it.
+        const stored = usePhotoStore
+          .getState()
+          .photos.find((p) => p.local_id === submission.local_id)
+        if (!stored) throw new Error('Photo limit reached')
+        setCapturedPhotos((prev) => [...prev, stored])
+
+        return stored
+      } catch (error) {
+        // A DNG whose photo never joined the draft has no other owner to
+        // delete it, and it is never saved to the gallery.
+        if (frame.rawUri) deleteCapturedPhotoFile(frame.rawUri)
+        throw error
       }
-      // Backstop for a burst frame already in flight at the cap.
-      if (isAtPhotoLimit()) throw new Error('Photo limit reached')
-      const submission = buildSubmissionPhotoFromCapture(frame, shutterTime)
-
-      if (keepOnDevice) {
-        retainCapturedPhotoFile(submission.uri)
-        pendingGallerySaves.current.push(submission.uri)
-      }
-
-      addPhoto(submission)
-      // The stored copy carries its upload slot; the upload needs it.
-      const stored = usePhotoStore
-        .getState()
-        .photos.find((p) => p.local_id === submission.local_id)
-      if (!stored) throw new Error('Photo limit reached')
-      setCapturedPhotos((prev) => [...prev, stored])
-
-      return stored
     },
     [addPhoto, keepOnDevice],
   )

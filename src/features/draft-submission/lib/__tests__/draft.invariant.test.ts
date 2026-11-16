@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { File, Paths } from 'expo-file-system'
 import { useActiveCatFlowStore } from '@/src/features/draft-submission/hooks/useActiveCatFlowStore'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
@@ -16,6 +17,13 @@ import {
  * including Submission metadata and draft identifiers that have no cat/photo
  * marker. Seed every draft-owned store before testing either teardown verb.
  */
+
+// The supplied mock helper is outside the package's public exports map.
+const { __resetMockFileSystem } = jest.requireActual(
+  require
+    .resolve('expo-file-system/package.json')
+    .replace('package.json', 'mocks/FileSystem.ts'),
+)
 
 const mockStopLocationCapture = jest.fn()
 jest.mock('@/src/core/location/liveFix', () => ({
@@ -161,6 +169,34 @@ describe('draft teardown — survival invariant (#292)', () => {
       expect(mockStopLocationCapture).toHaveBeenCalled()
     },
   )
+
+  // A RAW+JPEG capture's DNG sits in the app cache with no gallery copy and
+  // no upload, so the draft is its only owner: both verbs must delete it, or
+  // every Sighting leaves tens of megabytes behind.
+  it.each([
+    ['discardDraft', discardDraft],
+    ['completeDraft', completeDraft],
+  ])('%s deletes every file a photo owns, its DNG included', async (_name, teardown) => {
+    __resetMockFileSystem()
+    const jpeg = new File(Paths.cache, 'capture.jpg')
+    jpeg.create()
+    const dng = new File(Paths.cache, 'raw-sidecars', 'raw-1.dng')
+    dng.create({ intermediates: true })
+    usePhotoStore.getState().addPhoto({
+      local_id: 'raw-photo',
+      uri: jpeg.uri,
+      raw_uri: dng.uri,
+      uploaded: false,
+      upload_progress: 0,
+      width: 100,
+      height: 100,
+    })
+    expect([jpeg.exists, dng.exists]).toEqual([true, true])
+
+    await teardown()
+
+    expect([jpeg.exists, dng.exists]).toEqual([false, false])
+  })
 
   // ── #293: "no metadata ⇒ no photo", client best-effort half ─────────────
 
