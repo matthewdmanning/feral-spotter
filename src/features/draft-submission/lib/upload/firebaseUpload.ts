@@ -43,12 +43,56 @@ import type {
 import {
   metadataObjectPath,
   photoObjectPath,
+  rawPhotoObjectPath,
   submissionFolder,
 } from '@/src/features/draft-submission/lib/upload/submissionLayout'
+import { extensionOf } from '@/src/shared/utils/photoFormat'
 
 const BUCKET_URL = 'gs://project-e3d5659d-bc4f-438f-88c.firebasestorage.app'
 
 let storageInstance: FirebaseStorage | null = null
+
+const DNG_CONTENT_TYPE = 'image/x-adobe-dng'
+
+/** Use this function to choose the Storage MIME for a JPEG-family photo path. */
+function photoContentType(uri: string): string {
+  switch (extensionOf(uri)) {
+    case 'png':
+      return 'image/png'
+    case 'heic':
+      return 'image/heic'
+    case 'heif':
+      return 'image/heif'
+    default:
+      return 'image/jpeg'
+  }
+}
+
+/** Use this function to upload one local file while mapping task progress. */
+async function uploadFile(
+  reference: StorageReference,
+  localUri: string,
+  metadata:
+    | { contentType: string; customMetadata?: Record<string, string> }
+    | undefined,
+  onProgress: ((percent: number) => void) | undefined,
+  progressStart: number,
+  progressSpan: number,
+): Promise<void> {
+  const task = metadata
+    ? putFile(reference, localUri, metadata)
+    : putFile(reference, localUri)
+  if (onProgress) {
+    task.on('state_changed', (snapshot) => {
+      if (snapshot.totalBytes <= 0) return
+      onProgress(
+        progressStart +
+          (snapshot.bytesTransferred / snapshot.totalBytes) * progressSpan,
+      )
+    })
+  }
+  await task
+}
 
 // One lazily-created, memoized Storage instance so the emulator connection
 // (which errors if called more than once per instance) only ever happens
@@ -91,24 +135,74 @@ export async function uploadSubmissionPhoto(
   if (photo.upload_slot == null) {
     throw new Error(`[uploadSubmissionPhoto] ${photo.local_id} has no slot`)
   }
-  const objectPath = photoObjectPath(
-    uid,
-    submissionId,
-    photo.upload_slot,
-    photo.uri,
-  )
-  const reference = getSubmissionRef(objectPath)
+  const jpegPath =
+    photo.cloud_storage_path ??
+    photoObjectPath(uid, submissionId, photo.upload_slot, photo.uri)
+  const jpegReference = getSubmissionRef(jpegPath)
+  const rawPath = photo.raw_uri
+    ? (photo.raw_cloud_storage_path ??
+      rawPhotoObjectPath(uid, submissionId, photo.upload_slot))
+    : undefined
+  const rawUri = photo.raw_uri
+  const rawReference = rawPath ? getSubmissionRef(rawPath) : undefined
+  const uploadJpeg = !photo.uploaded || photo.cloud_storage_path == null
+  const uploadRaw = rawPath != null && photo.raw_cloud_storage_path == null
 
-  const task = putFile(reference, photo.uri)
-  if (onProgress) {
-    task.on('state_changed', (snapshot) => {
-      onProgress((snapshot.bytesTransferred / snapshot.totalBytes) * 100)
+  if (uploadJpeg) {
+    await uploadFile(
+      jpegReference,
+      photo.uri,
+      rawPath
+        ? {
+            contentType: photoContentType(photo.uri),
+            customMetadata: { paired_dng_path: rawPath },
+          }
+        : undefined,
+      onProgress,
+      0,
+      rawPath ? 50 : 100,
+    )
+  } else if (rawPath && uploadRaw) {
+    const existing = await getMetadata(jpegReference)
+    await updateMetadata(jpegReference, {
+      customMetadata: {
+        ...(existing.customMetadata ?? {}),
+        paired_dng_path: rawPath,
+      },
     })
   }
-  await task
 
-  const cloud_storage_url = await getDownloadURL(reference)
-  return { cloud_storage_path: objectPath, cloud_storage_url }
+  if (rawReference && rawPath && uploadRaw) {
+    if (!rawUri)
+      throw new Error(
+        `[uploadSubmissionPhoto] ${photo.local_id} has no DNG uri`,
+      )
+    await uploadFile(
+      rawReference,
+      rawUri,
+      {
+        contentType: DNG_CONTENT_TYPE,
+        customMetadata: { paired_jpeg_path: jpegPath },
+      },
+      onProgress,
+      uploadJpeg ? 50 : 0,
+      uploadJpeg ? 50 : 100,
+    )
+  }
+
+  const cloud_storage_url =
+    photo.cloud_storage_url ?? (await getDownloadURL(jpegReference))
+  const raw_cloud_storage_url = rawReference
+    ? (photo.raw_cloud_storage_url ?? (await getDownloadURL(rawReference)))
+    : undefined
+  return {
+    cloud_storage_path: jpegPath,
+    cloud_storage_url,
+    ...(rawPath && {
+      raw_cloud_storage_path: rawPath,
+      raw_cloud_storage_url,
+    }),
+  }
 }
 
 /**
@@ -238,15 +332,19 @@ export async function deleteSubmissionUploads(
  * and metadata.json lists only the photos still in the Submission.
  */
 export async function deleteSubmissionPhoto(
-  cloudStoragePath: string,
+  ...cloudStoragePaths: string[]
 ): Promise<void> {
   if (UPLOADS_MOCK) return
-  try {
-    await deleteObject(getSubmissionRef(cloudStoragePath))
-  } catch (error) {
-    console.warn(
-      `[firebaseUpload] best-effort delete failed for ${cloudStoragePath}`,
-      error,
-    )
-  }
+  await Promise.all(
+    [...new Set(cloudStoragePaths)].map(async (cloudStoragePath) => {
+      try {
+        await deleteObject(getSubmissionRef(cloudStoragePath))
+      } catch (error) {
+        console.warn(
+          `[firebaseUpload] best-effort delete failed for ${cloudStoragePath}`,
+          error,
+        )
+      }
+    }),
+  )
 }

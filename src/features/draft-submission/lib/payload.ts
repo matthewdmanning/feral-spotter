@@ -124,11 +124,22 @@ export function buildSubmissionPayload(params: {
           longitude,
         }))
       : []
+  const photoPairs = uploadedPhotos.flatMap((photo) =>
+    photo.raw_cloud_storage_path
+      ? [
+          {
+            jpeg_path: photo.cloud_storage_path,
+            dng_path: photo.raw_cloud_storage_path,
+          },
+        ]
+      : [],
+  )
 
   return {
     submission,
     cats: catsWithBoxes,
     photo_paths: uploadedPhotos.map((p) => p.cloud_storage_path),
+    ...(photoPairs.length > 0 && { photo_pairs: photoPairs }),
     ...(photoLocations.length > 0 && { photo_locations: photoLocations }),
   }
 }

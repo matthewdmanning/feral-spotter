@@ -181,6 +181,32 @@ describe('buildSubmissionPayload', () => {
     expect(payload.submission).toEqual(submission)
   })
 
+  it('links a paired DNG to its JPEG without inventing one for JPEG-only photos', () => {
+    const jpegOnly = buildSubmissionPayload({
+      submission,
+      catsWithBoxes: [],
+      uploadedPhotos: [uploadedPhoto],
+    })
+    expect(jpegOnly.photo_pairs).toBeUndefined()
+
+    const withRaw = buildSubmissionPayload({
+      submission,
+      catsWithBoxes: [],
+      uploadedPhotos: [
+        {
+          ...uploadedPhoto,
+          raw_cloud_storage_path: 'submissions/u/s/p1.dng',
+        },
+      ],
+    })
+    expect(withRaw.photo_pairs).toEqual([
+      {
+        jpeg_path: 'submissions/u/s/p1.jpg',
+        dng_path: 'submissions/u/s/p1.dng',
+      },
+    ])
+  })
+
   it('omits photo_locations entirely when the submission has no GPS fix', () => {
     const { latitude: _latitude, longitude: _longitude, ...noFix } = submission
 

@@ -144,6 +144,22 @@ describe('orphan-photo retention sweep', () => {
     ])
   })
 
+  it('keeps the DNG in a submitted JPEG pair with its metadata-bearing prefix', async () => {
+    mockGetFiles.mockResolvedValueOnce([
+      [
+        object('submissions/u/kept/photo-0.jpg', old),
+        object('submissions/u/kept/photo-0.dng', old),
+        object('submissions/u/kept/metadata.json', old),
+      ],
+    ])
+
+    await sweepPhotosWithoutMetadata.run({
+      scheduleTime: new Date(now).toISOString(),
+    })
+
+    expect(mockDeleteFile).not.toHaveBeenCalled()
+  })
+
   it('deletes only old orphan prefixes even when another user has submitted the same id', async () => {
     mockGetFiles.mockResolvedValueOnce([
       [

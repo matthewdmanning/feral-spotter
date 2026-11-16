@@ -77,6 +77,13 @@ class RawJpegSettlementTest {
       }
       assertEquals("$history", expected, settlement.feed(history.last()))
       assertEquals("$history", expected, settlement.outcome)
+      if (expected is Outcome.Photo) {
+        assertEquals(
+          "$history delivered format",
+          if (expected.rawKept) "raw_jpeg" else "jpeg",
+          expected.deliveredFormat
+        )
+      }
       // Settled, so no timer is left to fire and nothing late changes it.
       assertFalse("$history", settlement.awaitingOtherFile)
       assertNull("$history", settlement.feed(Event.Saved(raw = false)))
@@ -94,5 +101,18 @@ class RawJpegSettlementTest {
       assertEquals(Outcome.Failed, settlement.onTimeout())
       assertFalse(settlement.awaitingOtherFile)
     }
+  }
+
+  /** Use this function to verify a missing second file settles on the delivered JPEG. */
+  @Test
+  fun aSavedJpegWithoutRawSettlesAsJpegOnTimeout() {
+    val settlement = RawJpegSettlement()
+
+    assertNull(settlement.onSaved(isRaw = false))
+    assertTrue(settlement.awaitingOtherFile)
+    val outcome = settlement.onTimeout()
+
+    assertEquals(Outcome.Photo(rawKept = false), outcome)
+    assertEquals("jpeg", (outcome as Outcome.Photo).deliveredFormat)
   }
 }

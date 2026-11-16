@@ -101,7 +101,9 @@ Low-light cost of unbinned output:
 - A quad-pattern RAW appears only in a RAW-only max-res request on a remosaic-reprocessing device. `SENSOR_INFO_COLOR_FILTER_ARRANGEMENT` cannot describe a quad pattern [O-CC]. Check `SENSOR_INFO_BINNING_FACTOR` and `SENSOR_RAW_BINNING_FACTOR_USED` before writing a DNG [O-CC][O-CRes].
 - Samsung: in low light "16 pixels merge together to function as a 12.5MP sensor". Conventional 50 MP sensors are "typically limited to maintaining 12.5MP resolution at 2x zoom" [S-SAM].
 
-**Do (INF):** stay in `DEFAULT` (binned) for every dusk or shade capture.
+**Do (INF):** use `DEFAULT` (typically binned) as the low-light baseline; compare
+it with `MAXIMUM_RESOLUTION` on the target device before claiming a noise or
+detail advantage.
 
 ### 3b. Pixel 7 specifics
 
@@ -115,7 +117,7 @@ Low-light cost of unbinned output:
 | Pixel 8 Pro: Open Camera "would only let me select up to 12 MP"; Pixel Camera offered 50 MP (one user report)                                                       | [S-GOS, forum] |
 | CameraX `ResolutionSelector`: max-res sizes — "This mode does not allow applications to select those ultra high resolutions"                                        | [O-RS]         |
 
-- Expected RAW: about 12.5 MP binned. **DEVICE TEST:** read `pixelArraySize`, capabilities and RAW_SENSOR sizes.
+- Hypothesis: RAW may be about 12.5 MP binned. **DEVICE TEST:** read `pixelArraySize`, capabilities and RAW_SENSOR sizes.
 - Binned effective pixel ≈ 2.4 µm (INF: 2×2 of 1.2 µm).
 
 ### 3c. Multi-camera and lens switching
@@ -543,17 +545,20 @@ Per-shot result keys (via `Camera2Interop.Extender.setSessionCaptureCallback` on
 
 ## 13. Current code vs this guide
 
-| Area             | Current [D-CODE][D-CT]                        | Finding                                                             | §    |
-| ---------------- | --------------------------------------------- | ------------------------------------------------------------------- | ---- |
-| Output format    | No `setOutputFormat`; JPEG only [D-REF §11]   | RAW needs `getSupportedOutputFormats` gate + `setOutputFormat`      | 10   |
-| Motion priority  | Pins fps range with highest lower bound       | Caps exposure at dusk; does not force a fast shutter                | 4a–b |
-| Default tuning   | Both priorities true → ZSL                    | ZSL skips precapture; HAL ZSL may return a pre-tap frame            | 8    |
-| Max detail       | `PREFER_HIGHER_RESOLUTION` + highest strategy | Cannot reach max-res; binned is better in low light anyway          | 3    |
-| Tap / subject AF | Default 0.15 point, `FLAG_AF \| FLAG_AE`      | Too large under UI zoom; scale by 1/zoom                            | 5c   |
-| OIS              | Not set                                       | HAL default; set ON explicitly and log                              | 6    |
-| Lens shading map | Not set                                       | DNG lacks GainMap unless ON                                         | 10b  |
-| Preview zoom     | PreviewView scale 1–5x                        | Sensor zoom is sharper and DNG-safe for RAW-only                    | 11   |
-| Low-light boost  | Opt-out prop                                  | AE mode likely absent on Pixel 7; Play-services LLB is preview-only | 4i   |
+| Area             | Current [D-CODE][D-CT]                        | Finding                                                             | §      |
+| ---------------- | --------------------------------------------- | ------------------------------------------------------------------- | ------ |
+| Output format    | No `setOutputFormat`; JPEG only [D-REF §11]   | RAW needs `getSupportedOutputFormats` gate + `setOutputFormat`      | 10     |
+| Motion priority  | Pins fps range with highest lower bound       | Caps exposure at dusk; does not force a fast shutter                | 4a–b   |
+| Default tuning   | Both priorities true → ZSL                    | ZSL skips precapture; HAL ZSL may return a pre-tap frame            | 8      |
+| Resolution       | `PREFER_HIGHER_RESOLUTION` + highest strategy | Output pool/latency tradeoff; max sensor mode is separate           | 2a, 3a |
+| Tap / subject AF | Default 0.15 point, `FLAG_AF \| FLAG_AE`      | Too large under UI zoom; scale by 1/zoom                            | 5c     |
+| OIS              | Not set                                       | HAL default; set ON explicitly and log                              | 6      |
+| Lens shading map | Not set                                       | DNG lacks GainMap unless ON                                         | 10b    |
+| Preview zoom     | PreviewView scale 1–5x                        | Sensor zoom is sharper and DNG-safe for RAW-only                    | 11     |
+| Low-light boost  | Opt-out prop                                  | AE mode likely absent on Pixel 7; Play-services LLB is preview-only | 4i     |
+
+The selector's output pool does not guarantee a noise or fine-detail benefit;
+measure the selected configuration on the target device.
 
 ---
 

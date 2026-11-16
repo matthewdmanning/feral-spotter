@@ -2,6 +2,7 @@
 import type { PhotoUploadResponse, SubmissionPhoto } from '@/src/shared/types'
 import {
   cancelQueuedUploads,
+  cancelPhotoUpload,
   uploadNewPhoto,
 } from '@/src/features/draft-submission/lib/upload/uploadNewPhoto'
 
@@ -11,8 +12,11 @@ const mockPending: {
 }[] = []
 let mockInFlight = 0
 let mockPeakInFlight = 0
+const mockRetainFile = jest.fn()
+const mockReleaseFile = jest.fn()
 
 jest.mock('@/src/features/draft-submission/lib/upload/firebaseUpload', () => ({
+  deleteSubmissionPhoto: jest.fn(),
   uploadSubmissionPhoto: jest.fn(
     () =>
       new Promise<PhotoUploadResponse>((resolve, reject) => {
@@ -31,6 +35,10 @@ jest.mock('@/src/features/draft-submission/lib/upload/firebaseUpload', () => ({
       }),
   ),
 }))
+jest.mock('@/src/features/draft-submission/lib/capturedPhotoFiles', () => ({
+  releaseCapturedPhotoFile: (...args: unknown[]) => mockReleaseFile(...args),
+  retainCapturedPhotoFile: (...args: unknown[]) => mockRetainFile(...args),
+}))
 
 const photo = (n: number): SubmissionPhoto => ({
   local_id: `photo-${n}`,
@@ -48,6 +56,8 @@ beforeEach(() => {
   mockPending.length = 0
   mockInFlight = 0
   mockPeakInFlight = 0
+  mockRetainFile.mockReset()
+  mockReleaseFile.mockReset()
 })
 afterEach(() => jest.restoreAllMocks())
 
@@ -116,4 +126,74 @@ it('retries a failed photo once, and a torn-down draft gets no results', async (
   })
   await drainTasks()
   expect(updatePhoto).not.toHaveBeenCalled()
+})
+
+it('hands a canceled completed pair to cleanup instead of the next draft store', async () => {
+  const updatePhoto = jest.fn()
+  const cleanup = jest.fn()
+  uploadNewPhoto(
+    { ...photo(11), raw_uri: 'file:///cache/11.dng' },
+    'uid',
+    'submission',
+    updatePhoto,
+    cleanup,
+  )
+  await drainTasks()
+  expect(mockRetainFile).toHaveBeenCalledWith('file:///cache/11.jpg')
+  expect(mockRetainFile).toHaveBeenCalledWith('file:///cache/11.dng')
+  cancelQueuedUploads()
+  mockPending.shift()!.resolve({
+    cloud_storage_path: 'submissions/uid/submission/photo-0.jpg',
+    cloud_storage_url: 'https://example.com/11.jpg',
+    raw_cloud_storage_path: 'submissions/uid/submission/photo-0.dng',
+    raw_cloud_storage_url: 'https://example.com/11.dng',
+  })
+  await drainTasks()
+
+  expect(updatePhoto).not.toHaveBeenCalled()
+  expect(cleanup).toHaveBeenCalledWith(
+    expect.objectContaining({
+      raw_cloud_storage_path: expect.stringContaining('.dng'),
+    }),
+  )
+  expect(mockReleaseFile).toHaveBeenCalledWith('file:///cache/11.jpg')
+  expect(mockReleaseFile).toHaveBeenCalledWith('file:///cache/11.dng')
+})
+
+it('serializes a canceled slot before its replacement can start', async () => {
+  const updatePhoto = jest.fn()
+  const oldPhoto = { ...photo(12), upload_slot: 0 }
+  const replacement = { ...photo(13), upload_slot: 0 }
+
+  uploadNewPhoto(oldPhoto, 'uid', 'submission', updatePhoto)
+  await drainTasks()
+  expect(mockPending).toHaveLength(1)
+  cancelPhotoUpload(oldPhoto.local_id)
+
+  uploadNewPhoto(replacement, 'uid', 'submission', updatePhoto)
+  await drainTasks()
+  expect(mockPending).toHaveLength(1)
+
+  mockPending.shift()!.resolve({
+    cloud_storage_path: 'old.jpg',
+    cloud_storage_url: 'old-url',
+    raw_cloud_storage_path: 'old.dng',
+    raw_cloud_storage_url: 'old-raw-url',
+  })
+  await drainTasks()
+  expect(mockPending).toHaveLength(1)
+
+  mockPending.shift()!.resolve({
+    cloud_storage_path: 'replacement.jpg',
+    cloud_storage_url: 'replacement-url',
+  })
+  await drainTasks()
+  expect(updatePhoto).toHaveBeenLastCalledWith(replacement.local_id, {
+    uploaded: true,
+    upload_progress: 100,
+    cloud_storage_path: 'replacement.jpg',
+    cloud_storage_url: 'replacement-url',
+    raw_cloud_storage_path: undefined,
+    raw_cloud_storage_url: undefined,
+  })
 })

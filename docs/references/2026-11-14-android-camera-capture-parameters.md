@@ -57,6 +57,7 @@ Zero shutter lag (ZSL) rules:
 
 - Neither mode selects sizes from `SCALER_STREAM_CONFIGURATION_MAP_MAXIMUM_RESOLUTION` [S3].
 - Those ultra-high sizes belong to the maximum-resolution sensor pixel mode. Some devices support it from Android 12 [S3].
+- These modes choose an output-size pool and its capture-time tradeoff; they do not select sensor binning, and no noise or fine-detail benefit is guaranteed without device measurement.
 
 ### 2b. Resolution strategy
 

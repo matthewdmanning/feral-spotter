@@ -165,6 +165,7 @@ it.each(['android', 'ios'] as const)(
         'picker-user',
         submissionId,
         updatePhoto,
+        expect.any(Function),
       )
     })
     expect(useSubmissionStore.getState().submission).toEqual(

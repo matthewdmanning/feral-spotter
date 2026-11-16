@@ -32,10 +32,14 @@ export interface SubmissionPhoto {
   upload_slot?: number
   /**
    * The DNG a RAW+JPEG camera capture wrote beside `uri`, in the app cache.
-   * Never uploaded. Deleted with the photo: on removal, after a send, or when
-   * the draft is discarded.
+   * It is uploaded byte-for-byte when present, then deleted with the photo on
+   * removal, after a successful send, or when the draft is discarded.
    */
   raw_uri?: string
+  /** The stable Storage object path for the paired DNG, once both files upload. */
+  raw_cloud_storage_path?: string
+  /** Download URL for the paired DNG, once both files upload. */
+  raw_cloud_storage_url?: string
   /** How the camera was set for this capture. Camera captures only. */
   camera_config?: PhotoCameraConfig
 }

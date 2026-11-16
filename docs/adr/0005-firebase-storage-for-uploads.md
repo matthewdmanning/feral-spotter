@@ -220,3 +220,40 @@ app can produce against `storage.rules` in the emulator, parses it with the
 functions module, and checks the shared numbers agree. A change to one copy
 that the others miss fails that test instead of reaching a device.
 _2026-11-01: code paths updated for the feature-folder layout ([PROJECT_STRUCTURE.md](../PROJECT_STRUCTURE.md)). Decision unchanged._
+
+## Amendment 2026-11-16: RAW+JPEG delivery is one slotted pair
+
+The field camera's `RAW+JPEG` result contains the JPEG used by the app and an
+original DNG sidecar. When `SubmissionPhoto.raw_uri` is present, the client
+uploads both bytes without transformation:
+
+- JPEG: `photo-N.<jpeg-extension>` (the existing slot object).
+- DNG: `photo-N.dng` (the same `N`, so it does not consume another photo slot).
+
+The DNG write uses `image/x-adobe-dng` and is strictly bounded to less than
+64 MiB. Existing JPEG-family objects remain below 20 MiB. The rules still
+compare the owner uid directly and still cap a Submission at slots 0 through
+9; a `photo-10.dng` or a DNG over the bound is denied.
+
+Both objects carry reciprocal custom metadata: the JPEG has
+`paired_dng_path`, and the DNG has `paired_jpeg_path`. The final
+`metadata.json` keeps the existing `photo_paths` JPEG list and adds optional
+`photo_pairs` entries with `{jpeg_path, dng_path}`. A JPEG-only photo emits no
+pair entry. The pair is considered uploaded only after both transfers finish;
+an old persisted `uploaded: true` JPEG with a local `raw_uri` is repaired on
+the next upload sync and remains retryable if the DNG transfer fails.
+
+The in-repo backend boundary is `functions/src/organizations/api.ts`, which
+reads `metadata.json` for organization projections. It validates pair paths,
+same-slot pairing, and duplicate pair entries but intentionally continues to
+project only `photo_paths`; raw delivery to organizations is not authorized by
+this change. The scheduled orphan sweep retains every object in a prefix once
+that prefix has `metadata.json`, so a submitted DNG pair is kept. There is no
+ML/denoising consumer in this repository; any downstream raw consumer must
+read the documented `photo_pairs` manifest.
+
+Cost sizing is bounded without assuming a live storage price: at most 10
+photo slots per Submission, each with one JPEG under 20 MiB and, when present,
+one DNG under 64 MiB, for a worst-case upload envelope below 840 MiB per
+Submission (strict inequalities make the actual maximum one byte lower per
+object). The existing 256 KiB metadata bound is unchanged.

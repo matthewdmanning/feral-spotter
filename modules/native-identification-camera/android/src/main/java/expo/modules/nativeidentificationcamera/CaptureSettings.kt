@@ -9,6 +9,8 @@ import androidx.camera.core.ImageCapture
  * `camera_<key>`, so a photo exported without metadata.json still says how it
  * was taken.
  *
+ * `camera_id` is the logical CameraX/Camera2 id selected at bind time; it does
+ * not claim which physical lens a logical multi-camera used for a frame.
  * Values are strings because Storage custom metadata holds only strings. A
  * Camera2 key the capture did not set is left out: the device default ran,
  * and no value here could name it.
@@ -20,11 +22,15 @@ object CaptureSettings {
     captureMode: Int,
     jpegQuality: Int,
     /** "lower-upper" FPS, or null when the session used CameraX's default. */
-    frameRateRange: String?
+    frameRateRange: String?,
+    zslDisabledByConfig: Boolean = false,
+    cameraId: String? = null
   ): Map<String, String> = buildMap {
     put("capture_tuning", tuning.telemetryName)
     put("capture_mode", CaptureTuning.captureModeName(captureMode))
     put("jpeg_quality", jpegQuality.toString())
+    put("zsl_disabled_by_config", zslDisabledByConfig.toString())
+    cameraId?.let { put("camera_id", it) }
     frameRateRange?.let { put("frame_rate_range", it) }
     if (fieldConfig == null) {
       put("output_format", FieldCaptureConfig.outputFormatName(ImageCapture.OUTPUT_FORMAT_JPEG))

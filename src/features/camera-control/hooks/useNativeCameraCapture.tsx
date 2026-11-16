@@ -125,6 +125,9 @@ export function useNativeCameraCapture(
         requested_capture_tuning:
           requestedCaptureTuning.current ?? 'unreported',
         capture_mode: event?.nativeEvent?.captureMode ?? 'unreported',
+        ...(event?.nativeEvent?.zslDisabledByConfig != null && {
+          zsl_disabled_by_config: event.nativeEvent.zslDisabledByConfig,
+        }),
         // Tells field-config sessions apart from tuning sessions.
         field_condition: event?.nativeEvent?.fieldCondition ?? 'none',
         output_format: event?.nativeEvent?.outputFormat ?? 'jpeg',
@@ -234,6 +237,9 @@ export function useNativeCameraCapture(
               field_condition:
                 captured.captureSettings?.field_condition ?? 'none',
               output_format: captured.captureSettings?.output_format ?? 'jpeg',
+              delivered_format:
+                captured.captureSettings?.delivered_format ??
+                (captured.rawUri ? 'raw_jpeg' : 'jpeg'),
               capture_duration_ms: capturedAt - captureStartedAt,
               postprocess_duration_ms: processedAt - capturedAt,
               capture_pipeline_duration_ms: processedAt - captureStartedAt,
@@ -289,7 +295,8 @@ export function useNativeCameraCapture(
 
   const applySubjectRegion = useCallback(
     async (region: NormalizedSubjectRegion | null) => {
-      if (!subjectMetering || !cameraRef.current) return false
+      if (!cameraRef.current || (!subjectMetering && region !== null))
+        return false
       return cameraRef.current.setSubjectRegion(region)
     },
     [subjectMetering],

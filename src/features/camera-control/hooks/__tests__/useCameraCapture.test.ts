@@ -330,6 +330,7 @@ describe('useCameraCapture handleTakePhoto', () => {
       'test-uid',
       'test-submission',
       expect.any(Function),
+      expect.any(Function),
     )
   })
 })

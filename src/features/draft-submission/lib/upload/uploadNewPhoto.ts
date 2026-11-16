@@ -12,7 +12,12 @@
  * photo already queued or in flight is never queued twice.
  */
 import { uploadSubmissionPhoto } from '@/src/features/draft-submission/lib/upload/firebaseUpload'
-import type { SubmissionPhoto } from '@/src/shared/types'
+import { reservePhotoSlot } from '@/src/features/draft-submission/lib/upload/photoSlotQueue'
+import {
+  releaseCapturedPhotoFile,
+  retainCapturedPhotoFile,
+} from '@/src/features/draft-submission/lib/capturedPhotoFiles'
+import type { PhotoUploadResponse, SubmissionPhoto } from '@/src/shared/types'
 import { LogBox } from 'react-native'
 
 // Keeps the failure in Metro's console for debugging without popping an
@@ -37,7 +42,11 @@ const MAX_CONCURRENT_UPLOADS = 2
  */
 const PROGRESS_UPDATE_INTERVAL_MS = 250
 
-const queued: { localId: string; run: () => Promise<void> }[] = []
+const queued: {
+  localId: string
+  run: () => Promise<void>
+  releaseSlot: () => void
+}[] = []
 // Queued or in flight, by local_id: the guard against double-queuing.
 const pending = new Set<string>()
 let activeUploadCount = 0
@@ -64,6 +73,7 @@ function notifyQueueChange(): void {
 }
 
 function startNextUpload(): void {
+  // ponytail: waiting replacements share the cap; skip blocked slots if churn hurts throughput.
   if (activeUploadCount >= MAX_CONCURRENT_UPLOADS) return
   const next = queued.shift()
   if (!next) return
@@ -82,36 +92,71 @@ export function uploadNewPhoto(
   uid: string,
   submissionId: string,
   updatePhoto: (localId: string, patch: Partial<SubmissionPhoto>) => void,
+  onStale?: (result?: PhotoUploadResponse) => Promise<void> | void,
 ): void {
   if (pending.has(photo.local_id)) return
   pending.add(photo.local_id)
   const startedIn = generation
   cancelled.delete(photo.local_id)
+  const slotReservation = reservePhotoSlot(
+    `${uid}/${submissionId}/${photo.upload_slot ?? photo.local_id}`,
+  )
   const isCurrent = () =>
     startedIn === generation && !cancelled.has(photo.local_id)
   queued.push({
     localId: photo.local_id,
+    releaseSlot: slotReservation.release,
     run: async () => {
-      if (!isCurrent()) return
+      if (!slotReservation.ready) await slotReservation.wait
+      if (!isCurrent()) {
+        slotReservation.release()
+        return
+      }
       let lastProgressAt = 0
+      const localFiles = [photo.uri, photo.raw_uri].filter(
+        (uri): uri is string => uri != null,
+      )
+      localFiles.forEach((uri) => retainCapturedPhotoFile(uri))
       try {
-        const { cloud_storage_path, cloud_storage_url } =
-          await uploadSubmissionPhoto(photo, uid, submissionId, (percent) => {
+        const result = await uploadSubmissionPhoto(
+          photo,
+          uid,
+          submissionId,
+          (percent) => {
             const now = Date.now()
             if (!isCurrent()) return
             if (now - lastProgressAt < PROGRESS_UPDATE_INTERVAL_MS) return
             lastProgressAt = now
             updatePhoto(photo.local_id, { upload_progress: percent })
-          })
-        if (!isCurrent()) return
+          },
+        )
+        if (!isCurrent()) {
+          await onStale?.(result)
+          return
+        }
+        const {
+          cloud_storage_path,
+          cloud_storage_url,
+          raw_cloud_storage_path,
+          raw_cloud_storage_url,
+        } = result
         updatePhoto(photo.local_id, {
           uploaded: true,
           upload_progress: 100,
           cloud_storage_path,
           cloud_storage_url,
+          raw_cloud_storage_path,
+          raw_cloud_storage_url,
         })
       } catch (error) {
+        if (!isCurrent()) {
+          await onStale?.()
+          return
+        }
         console.error('[uploadNewPhoto]', photo.local_id, error)
+      } finally {
+        localFiles.forEach((uri) => releaseCapturedPhotoFile(uri))
+        slotReservation.release()
       }
     },
   })
@@ -126,6 +171,7 @@ export function cancelPhotoUpload(localId: string): void {
   cancelled.add(localId)
   const index = queued.findIndex((item) => item.localId === localId)
   if (index >= 0) {
+    queued[index].releaseSlot()
     queued.splice(index, 1)
     pending.delete(localId)
     notifyQueueChange()
@@ -140,7 +186,10 @@ export function cancelPhotoUpload(localId: string): void {
  */
 export function cancelQueuedUploads(): void {
   generation += 1
-  for (const item of queued) pending.delete(item.localId)
+  for (const item of queued) {
+    item.releaseSlot()
+    pending.delete(item.localId)
+  }
   queued.length = 0
   notifyQueueChange()
 }
