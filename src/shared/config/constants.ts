@@ -5,6 +5,7 @@
  */
 
 import Constants from 'expo-constants'
+import type { NativeFieldCondition } from '@/modules/native-identification-camera'
 import { getAppVersion } from '@/src/shared/utils/appVersion'
 
 /** True in development or pre-release builds. Gates analytics events. */
@@ -28,6 +29,27 @@ export type FeatureFlag = keyof typeof FEATURE_FLAGS
  * gates, so Settings never shows a version the gates disagree with.
  */
 export const APP_VERSION: string = getAppVersion()
+
+const FIELD_CONDITIONS: readonly NativeFieldCondition[] = [
+  'low_light',
+  'distant_motion',
+  'fine_detail',
+]
+
+const asFieldCondition = (
+  value: string | undefined,
+): NativeFieldCondition | null =>
+  FIELD_CONDITIONS.find((condition) => condition === value) ?? null
+
+/**
+ * Android test-drive selector for a candidate field capture config
+ * (`low_light`, `distant_motion`, `fine_detail`). Set
+ * EXPO_PUBLIC_CAMERA_FIELD_CONDITION in `.env.android.local`. Unset or unknown
+ * means null: the capture tuning builds the photo, as before. No settings UI
+ * yet: the configs are candidates awaiting a field comparison.
+ */
+export const CAMERA_FIELD_CONDITION: NativeFieldCondition | null =
+  asFieldCondition(process.env.EXPO_PUBLIC_CAMERA_FIELD_CONDITION)
 
 // Shared with storage.rules and functions/ (see config/submissionLimits.ts).
 export {

@@ -14,6 +14,7 @@ import {
 import { useCapturedPhotoWorkflow } from '@/src/features/camera-control/hooks/useCapturedPhotoWorkflow'
 import { useConsentStore } from '@/src/shared/consent/useConsentStore'
 import { useSettingsStore } from '@/src/features/settings/hooks/useSettingsStore'
+import { CAMERA_FIELD_CONDITION } from '@/src/shared/config/constants'
 import { captureEvent, EVENTS } from '@/src/shared/analytics/analytics'
 import type { ImagePostprocessor } from '@/src/features/camera-control/lib/pipeline'
 import { startLocationCapture } from '@/src/core/location/liveFix'
@@ -48,6 +49,9 @@ export function useNativeCameraCapture(
   // Android only: it zooms the preview there. iOS zooms the camera itself, so
   // a zoomed iOS capture is a cropped capture.
   const pinchZoom = Platform.OS === 'android'
+  // Android only: the iOS view has no field capture configs.
+  const fieldCondition =
+    Platform.OS === 'android' ? CAMERA_FIELD_CONDITION : null
   const performanceChecks = useSettingsStore(
     (s) => s.settings.camera_performance_checks === true,
   )
@@ -305,6 +309,7 @@ export function useNativeCameraCapture(
     canCapture,
     maxDetail,
     motionPriority,
+    fieldCondition,
     disableLowLightBoost,
     subjectMetering,
     pinchZoom,

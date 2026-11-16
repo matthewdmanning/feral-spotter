@@ -7,6 +7,7 @@ export type {
   NativeCapturedPhoto,
   NativeCameraPosition,
   NativeCaptureOptions,
+  NativeFieldCondition,
   NativeFlashMode,
   NativeIdentificationCameraProps,
   NativeIdentificationCameraRef,

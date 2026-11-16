@@ -63,6 +63,11 @@ class NativeIdentificationCameraModule : Module() {
         view.motionPriority = value
       }
 
+      // Android only. A FieldCondition name; null or unknown keeps the capture tuning.
+      Prop("fieldCondition") { view: NativeIdentificationCameraView, value: String? ->
+        view.fieldCondition = FieldCondition.fromProp(value)
+      }
+
       Prop("disableLowLightBoost") { view: NativeIdentificationCameraView, value: Boolean ->
         view.disableLowLightBoost = value
       }

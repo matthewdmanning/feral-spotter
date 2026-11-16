@@ -65,16 +65,8 @@ enum class CaptureTuning(
    * support and whenever flash is ON or AUTO
    * (developer.android.com/media/camera/camerax/take-photo/zsl).
    */
-  @OptIn(ExperimentalZeroShutterLag::class)
-  fun resolvedCaptureMode(zslSupported: Boolean, flashMode: Int): Int {
-    val requested = captureMode()
-    val zslFallsBack = !zslSupported || flashMode != ImageCapture.FLASH_MODE_OFF
-    return if (requested == ImageCapture.CAPTURE_MODE_ZERO_SHUTTER_LAG && zslFallsBack) {
-      ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY
-    } else {
-      requested
-    }
-  }
+  fun resolvedCaptureMode(zslSupported: Boolean, flashMode: Int): Int =
+    runningCaptureMode(captureMode(), zslSupported, flashMode)
 
   /**
    * Whether to ask for the highest available resolution even when that costs
@@ -89,6 +81,20 @@ enum class CaptureTuning(
   fun prefersFrameRateRange(): Boolean = motionPriority
 
   companion object {
+    /**
+     * The mode CameraX runs for a requested mode. Shared with the field capture
+     * configs, which request their own mode but fall back by the same rule.
+     */
+    @OptIn(ExperimentalZeroShutterLag::class)
+    fun runningCaptureMode(requested: Int, zslSupported: Boolean, flashMode: Int): Int {
+      val zslFallsBack = !zslSupported || flashMode != ImageCapture.FLASH_MODE_OFF
+      return if (requested == ImageCapture.CAPTURE_MODE_ZERO_SHUTTER_LAG && zslFallsBack) {
+        ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY
+      } else {
+        requested
+      }
+    }
+
     fun of(maxDetail: Boolean, motionPriority: Boolean): CaptureTuning =
       entries.first { it.maxDetail == maxDetail && it.motionPriority == motionPriority }
 

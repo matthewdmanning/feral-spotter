@@ -352,6 +352,11 @@ Command: `adb shell dumpsys media.camera`, filtered by key name. Run on 2026-11-
 
 ## 11. Build observations — this app
 
+> **Superseded 2026-11-16:** the module now declares CameraX 1.7.0-rc02, so the
+> app resolves every CameraX artifact to rc02 and builder `camera2Interop` is
+> available. Rows below describe the build before that change. See
+> [the implementation note](../implementations/2026-11-16-camerax-1.7-field-capture-configs.md).
+
 | Observation                                                                                                                      | Source       |
 | -------------------------------------------------------------------------------------------------------------------------------- | ------------ |
 | The camera module declares CameraX 1.6.2 (`camera-core`, `camera-camera2`, `camera-lifecycle`, `camera-view`).                   | [D2]         |
