@@ -176,27 +176,30 @@ describe('draft teardown — survival invariant (#292)', () => {
   it.each([
     ['discardDraft', discardDraft],
     ['completeDraft', completeDraft],
-  ])('%s deletes every file a photo owns, its DNG included', async (_name, teardown) => {
-    __resetMockFileSystem()
-    const jpeg = new File(Paths.cache, 'capture.jpg')
-    jpeg.create()
-    const dng = new File(Paths.cache, 'raw-sidecars', 'raw-1.dng')
-    dng.create({ intermediates: true })
-    usePhotoStore.getState().addPhoto({
-      local_id: 'raw-photo',
-      uri: jpeg.uri,
-      raw_uri: dng.uri,
-      uploaded: false,
-      upload_progress: 0,
-      width: 100,
-      height: 100,
-    })
-    expect([jpeg.exists, dng.exists]).toEqual([true, true])
+  ])(
+    '%s deletes every file a photo owns, its DNG included',
+    async (_name, teardown) => {
+      __resetMockFileSystem()
+      const jpeg = new File(Paths.cache, 'capture.jpg')
+      jpeg.create()
+      const dng = new File(Paths.cache, 'raw-sidecars', 'raw-1.dng')
+      dng.create({ intermediates: true })
+      usePhotoStore.getState().addPhoto({
+        local_id: 'raw-photo',
+        uri: jpeg.uri,
+        raw_uri: dng.uri,
+        uploaded: false,
+        upload_progress: 0,
+        width: 100,
+        height: 100,
+      })
+      expect([jpeg.exists, dng.exists]).toEqual([true, true])
 
-    await teardown()
+      await teardown()
 
-    expect([jpeg.exists, dng.exists]).toEqual([false, false])
-  })
+      expect([jpeg.exists, dng.exists]).toEqual([false, false])
+    },
+  )
 
   // ── #293: "no metadata ⇒ no photo", client best-effort half ─────────────
 
