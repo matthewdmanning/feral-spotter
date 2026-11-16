@@ -41,7 +41,7 @@ The original claim: `focus` and `setSubjectRegion` touch `PreviewView` off the m
 - But `ViewDefinitionBuilder.build()` forces **every view-scoped** `AsyncFunction` onto `Queues.MAIN` (`expo-modules-core` 58.0.30).
 - `capture`, `focus` and `setSubjectRegion` are all declared inside `View(...)`, so all three already run on main.
 - The view's own comments said they ran on a caller's thread, and that misled the review. Those comments are now corrected: `viewZoom`, the bound-session fields and the `capture` `post`.
-- Residual: `@Volatile` on `viewZoom` and the bound-session fields is unneeded. It is harmless, so it is left in place.
+- The `@Volatile` markers on `viewZoom`, `boundSessionConfig`, `imageCaptureUseCase` and `camera` guarded against a thread hop that never happens. They are removed, and the state is documented as main-thread confined.
 
 ### F2 (P1): the view is a god object; session logic can't be unit-tested
 
@@ -66,10 +66,10 @@ Fix: see Target shape.
 
 ### F3 (P2): bound-session state is seven loose fields, not one value
 
-`boundSessionConfig`, `imageCaptureUseCase`, `camera`, `boundTuning`, `boundZslSupported`, `boundFieldConfig` and `boundFrameRateRange` (`:198-218`) are set one by one in `bindCamera` (`:662-668`) and cleared one by one in `unbindCamera` (`:721-728`). Some are `@Volatile` and some aren't. The comments say which threads read them.
+`boundSessionConfig`, `imageCaptureUseCase`, `camera`, `boundTuning`, `boundZslSupported`, `boundFieldConfig` and `boundFrameRateRange` (`:198-218`) are set one by one in `bindCamera` (`:662-668`) and cleared one by one in `unbindCamera` (`:721-728`). All are main-thread confined (see F1).
 
 - MVVM cause: there is no single state object, so you can't snapshot the state or assert on it. A field added later can be missed in either place.
-- Fix: use one immutable `BoundSession` data class, held in one `@Volatile var session: BoundSession?`. Bind assigns it once; unbind nulls it. Readers take one snapshot, as `focus` already does with `viewZoom`.
+- Fix: use one immutable `BoundSession` data class, held in one `var session: BoundSession?`. Bind assigns it once; unbind nulls it. Readers take one snapshot, as `focus` already does with `viewZoom`.
 
 ### F4 (P2): policy lives in the view, not the model
 

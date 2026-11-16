@@ -131,7 +131,6 @@ class NativeIdentificationCameraView(
   // The zoom always centres on the preview. The scale is kept in `viewZoom`, an
   // immutable value read by focus, and copied onto previewView by
   // applyViewZoom. Its limits are the one place the zoom range is set.
-  @Volatile
   private var viewZoom = ViewZoom.initial()
 
   private val scaleGestureDetector = ScaleGestureDetector(
@@ -189,14 +188,12 @@ class NativeIdentificationCameraView(
 
   private var cameraProvider: ProcessCameraProvider? = null
 
-  // Written by bindCamera/unbindCamera and read by capture and focus, all on
-  // the main thread: expo-modules-core runs every view-scoped AsyncFunction on
-  // Queues.MAIN (ViewDefinitionBuilder.build). @Volatile is kept as a guard,
-  // not a requirement.
-  @Volatile
+  // The bound session's state is main-thread confined. bindCamera and
+  // unbindCamera write it; capture, focus and setSubjectRegion read it. All
+  // four run on the main thread: expo-modules-core runs every view-scoped
+  // AsyncFunction on Queues.MAIN (ViewDefinitionBuilder.build).
   private var boundSessionConfig: SessionConfig? = null
 
-  @Volatile
   private var imageCaptureUseCase: ImageCapture? = null
 
   // The tuning and ZSL support of the bound session, so a capture reports the
@@ -212,7 +209,6 @@ class NativeIdentificationCameraView(
   // default. It bounds the still's auto-exposure too, so each photo reports it.
   private var boundFrameRateRange: Range<Int>? = null
 
-  @Volatile
   private var camera: Camera? = null
 
   // Prop setters record that a rebind is needed rather than performing one.
