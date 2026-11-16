@@ -13,7 +13,7 @@ import {
 } from '@/src/shared/lib/submissionCache'
 
 /**
- * Fire a PostHog event, but only when IS_PRERELEASE is true and the user has
+ * Fire a PostHog event, but only when IS_RELEASE_CANDIDATE is true and the user has
  * accepted the data-collection disclosure. Includes submission metadata as
  * event properties.
  */

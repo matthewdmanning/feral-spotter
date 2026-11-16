@@ -135,29 +135,35 @@ When a Gradle build fails and you want the error rather than the whole log:
 npm run clean-debug  # expo prebuild --clean, then gradlew assembleDebug, filtered
 ```
 
-### Pre-release build
+### Release candidate and stable builds
 
 ```bash
-npm run build:prerelease  # prebuild --clean, then gradlew assembleRelease
+npm run build:rc      # prebuild --clean, then gradlew assembleRelease
+npm run build:stable  # prebuild --clean, then gradlew assembleRelease
 ```
 
-A standalone (JS bundled, no Metro, no dev client) release APK for sideloading,
-with test features on. It sets `APP_VARIANT=prerelease` (`app.config.js` then
-sets `extra.isPrerelease`, so `IS_PRERELEASE` is true, and appends " (pre)" to
-the launcher label) and `EXPO_PUBLIC_EXPERIMENTAL_CAMERA=true` (inlined into the
-bundle). The applicationId is unchanged, because `google-services.json` is bound
-to it, so the APK installs over a release build. The build needs no device.
-Prebuild runs with `--clean`, so run a plain prebuild before the next
-non-pre-release build. Install with
+Both make a standalone (JS bundled, no Metro, no dev client) release APK for
+sideloading. Neither is a debug build. Both run `scripts/build-release.sh`.
+
+| Type              | `APP_VARIANT` | `IS_RELEASE_CANDIDATE` | Test features                          | Launcher label | Tag           |
+| ----------------- | ------------- | ---------------------- | -------------------------------------- | -------------- | ------------- |
+| Release candidate | `rc`          | `true` (analytics on)  | `EXPO_PUBLIC_EXPERIMENTAL_CAMERA=true` | `… (rc)`       | `vX.Y.Z-rc.N` |
+| Stable            | unset         | `false`                | off                                    | unchanged      | `vX.Y.Z`      |
+
+The applicationId is unchanged, because `google-services.json` is bound to it,
+so each APK installs over the other. The build needs no device. Prebuild runs
+with `--clean` for both types, so the launcher label always matches the type.
+Install with
 `adb install -r android/app/build/outputs/apk/release/app-release.apk`.
 
-Tag a pre-release `vX.Y.Z-pre.N`, for example `v0.1.0-pre.1`. The Expo `version`
-in `app.json` stays plain `X.Y.Z`: `isVersionReleased` compares it with semver,
-and a `-pre` suffix would sort below `X.Y.Z` and close release gates.
+The Expo `version` in `app.json` stays plain `X.Y.Z` for both types:
+`isVersionReleased` compares it with semver, and an `-rc` suffix would sort
+below `X.Y.Z` and close release gates.
 
-To add a test feature to the variant, add its `EXPO_PUBLIC_*` name to
-`PRERELEASE_FLAGS` in the script and read it in `src/shared/config/constants.ts`.
-Not tested on a device or in a Gradle build as of 2026-11-14.
+To add a test feature to the release candidate, add its `EXPO_PUBLIC_*` name to
+`RELEASE_CANDIDATE_FLAGS` in the script and read it in
+`src/shared/config/constants.ts`. Not tested on a device or in a Gradle build
+as of 2026-11-14.
 
 ### The JDK, and why the build is pinned
 

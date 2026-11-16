@@ -4,7 +4,7 @@
  * spots, and handles refresh.
  */
 
-import { EVENTS, IS_PRERELEASE } from '@/src/shared/analytics/analytics'
+import { EVENTS, IS_RELEASE_CANDIDATE } from '@/src/shared/analytics/analytics'
 import { fireAnalyticsEvent } from '@/src/features/draft-submission/lib/analytics'
 import { useAuth } from '@/src/features/auth/lib/useAuth'
 import {
@@ -55,7 +55,7 @@ async function readHistory(): Promise<History> {
 }
 
 function fireViewed(all: SubmissionCacheFile[]) {
-  if (IS_PRERELEASE && all.length > 0) {
+  if (IS_RELEASE_CANDIDATE && all.length > 0) {
     all.forEach((cache) => fireAnalyticsEvent(EVENTS.REPORTS_VIEWED, cache))
   }
 }
