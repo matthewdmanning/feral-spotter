@@ -129,10 +129,8 @@ class NativeIdentificationCameraView(
   // zoom would crop the saved photo too. The photo must stay full field and
   // full resolution, so the zoom here only magnifies what the user looks at.
   // The zoom always centres on the preview. The scale is kept in `viewZoom`, an
-  // immutable value read by focus on a caller's thread, and copied onto
-  // previewView by applyViewZoom. Its limits are the one place the zoom range
-  // is set.
-  @Volatile
+  // immutable value read by focus, and copied onto previewView by
+  // applyViewZoom. Its limits are the one place the zoom range is set.
   private var viewZoom = ViewZoom.initial()
 
   private val scaleGestureDetector = ScaleGestureDetector(
@@ -154,7 +152,7 @@ class NativeIdentificationCameraView(
             // Stays 1.0 if the photo is still full field. -1 means the session
             // went away before the pinch ended.
             "sensor_zoom_ratio" to
-              (camera?.cameraInfo?.zoomState?.value?.zoomRatio?.toDouble() ?: -1.0),
+              (boundSession?.camera?.cameraInfo?.zoomState?.value?.zoomRatio?.toDouble() ?: -1.0),
             "camera_position" to position
           )
         )
@@ -190,32 +188,8 @@ class NativeIdentificationCameraView(
 
   private var cameraProvider: ProcessCameraProvider? = null
 
-  // Written on the main thread from bindCamera/unbindCamera and read by capture
-  // and focus, which arrive on an Expo async caller's thread. @Volatile makes
-  // that read see the latest write; capture additionally hops to the main
-  // thread before it touches CameraX, matching the explicit session-queue hops
-  // the iOS view makes.
-  @Volatile
-  private var boundSessionConfig: SessionConfig? = null
-
-  @Volatile
-  private var imageCaptureUseCase: ImageCapture? = null
-
-  // The tuning and ZSL support of the bound session, so a capture reports the
-  // mode that session runs even while a prop change waits for its rebind.
-  private var boundTuning: CaptureTuning? = null
-  private var boundZslSupported = false
-
-  // The field capture config the bound use case was built from, or null when
-  // the capture tuning built it. Read by capture on the main thread.
-  private var boundFieldConfig: FieldCaptureConfig? = null
-
-  // The frame-rate range the bound session asked for, or null for CameraX's
-  // default. It bounds the still's auto-exposure too, so each photo reports it.
-  private var boundFrameRateRange: Range<Int>? = null
-
-  @Volatile
-  private var camera: Camera? = null
+  // The bound session, or null while none is bound. See BoundSession.
+  private var boundSession: BoundSession? = null
 
   // Prop setters record that a rebind is needed rather than performing one.
   // Expo calls OnViewDidUpdateProps once after a whole prop batch, so two
@@ -273,7 +247,7 @@ class NativeIdentificationCameraView(
     set(value) {
       if (field == value) return
       field = value
-      if (value) camera?.let(::disableLowLightBoostIfSupported)
+      if (value) boundSession?.camera?.let(::disableLowLightBoostIfSupported)
     }
 
   var subjectMetering: Boolean = false
@@ -659,13 +633,16 @@ class NativeIdentificationCameraView(
         sessionConfig
       )
 
-      boundSessionConfig = sessionConfig
-      imageCaptureUseCase = imageCapture
-      camera = boundCamera
-      boundTuning = activeTuning
-      boundZslSupported = boundCamera.cameraInfo.isZslSupported
-      boundFieldConfig = fieldConfig
-      boundFrameRateRange = frameRateRange
+      val session = BoundSession(
+        sessionConfig = sessionConfig,
+        imageCapture = imageCapture,
+        camera = boundCamera,
+        tuning = activeTuning,
+        zslSupported = boundCamera.cameraInfo.isZslSupported,
+        fieldConfig = fieldConfig,
+        frameRateRange = frameRateRange
+      )
+      boundSession = session
       if (disableLowLightBoost) {
         disableLowLightBoostIfSupported(boundCamera)
       }
@@ -673,7 +650,7 @@ class NativeIdentificationCameraView(
       // CameraX runs. Flash is set per capture, so this assumes flash off and
       // each capture reports its own mode.
       val readyCaptureMode = CaptureTuning.captureModeName(
-        runningCaptureMode(ImageCapture.FLASH_MODE_OFF)
+        session.runningCaptureMode(ImageCapture.FLASH_MODE_OFF)
       )
       val readyFields = mutableMapOf<String, Any>(
         "requestedCaptureTuning" to activeTuning.telemetryName,
@@ -692,7 +669,7 @@ class NativeIdentificationCameraView(
           "bind_count" to bindCount,
           "requested_capture_tuning" to activeTuning.telemetryName,
           "capture_mode" to readyCaptureMode,
-          "zsl_supported" to boundZslSupported,
+          "zsl_supported" to session.zslSupported,
           "camera_position" to position,
           "max_detail" to maxDetail,
           "motion_priority" to motionPriority,
@@ -718,18 +695,13 @@ class NativeIdentificationCameraView(
   private fun unbindCamera() = traced(SECTION_UNBIND) {
     val provider = cameraProvider ?: return@traced
     abandonFirstFrameSection()
-    val wasBound = boundSessionConfig != null
-    boundSessionConfig?.let { provider.unbind(it) }
-    boundSessionConfig = null
-    imageCaptureUseCase = null
-    camera = null
-    boundTuning = null
-    boundFieldConfig = null
-    boundFrameRateRange = null
+    val session = boundSession
+    session?.let { provider.unbind(it.sessionConfig) }
+    boundSession = null
     // CameraX zoom resets when the camera closes; the view zoom does the same,
     // so a new session never starts zoomed.
     resetViewZoom()
-    if (wasBound) {
+    if (session != null) {
       diagnostic("session_unbound", mapOf("bind_count" to bindCount))
     }
   }
@@ -754,42 +726,46 @@ class NativeIdentificationCameraView(
   }
 
   fun capture(options: NativeCaptureOptions, promise: Promise) {
-    // The section starts here, before the main-thread hop, so the trace shows
-    // the whole wait from the JavaScript call to the saved file.
+    // The section starts here, before the post, so the trace shows the whole
+    // wait from the JavaScript call to the saved file.
     val captureCookie = captureCookies.incrementAndGet()
     val calledAtNs = System.nanoTime()
     beginSection(SECTION_CAPTURE, captureCookie)
 
-    // CameraX use cases are bound on the main thread, so the capture request
-    // joins them there instead of touching them from the caller's thread.
+    // Already on the main thread (view-scoped AsyncFunction). The post defers
+    // the request behind any queued rebind, so it reads the session that rebind
+    // leaves rather than the one it is about to tear down.
     post {
-      val imageCapture = imageCaptureUseCase ?: run {
+      // One snapshot for the whole request, so every value below comes from
+      // the same session.
+      val session = boundSession ?: run {
         endSection(SECTION_CAPTURE, captureCookie)
         promise.reject("ERR_CAMERA_NOT_READY", "Camera is not ready", null)
         return@post
       }
+      val imageCapture = session.imageCapture
 
       imageCapture.flashMode = when (options.flashMode) {
         "on" -> ImageCapture.FLASH_MODE_ON
         "auto" -> ImageCapture.FLASH_MODE_AUTO
         else -> ImageCapture.FLASH_MODE_OFF
       }
-      val requestedTuning = boundTuning ?: tuning
-      val runningMode = runningCaptureMode(imageCapture.flashMode)
+      val requestedTuning = session.tuning
+      val runningMode = session.runningCaptureMode(imageCapture.flashMode)
       val captureMode = CaptureTuning.captureModeName(runningMode)
       val settings = CaptureSettings.of(
         tuning = requestedTuning,
-        fieldConfig = boundFieldConfig,
+        fieldConfig = session.fieldConfig,
         captureMode = runningMode,
         jpegQuality = imageCapture.jpegQuality,
-        frameRateRange = boundFrameRateRange?.let { "${it.lower}-${it.upper}" }
+        frameRateRange = session.frameRateRange?.let { "${it.lower}-${it.upper}" }
       )
 
       val outputFile = File(context.cacheDir, "${UUID.randomUUID()}.jpg")
       val outputOptions = ImageCapture.OutputFileOptions.Builder(outputFile).build()
       val requestedAt = System.currentTimeMillis()
 
-      if (boundFieldConfig?.writesRaw == true) {
+      if (session.fieldConfig?.writesRaw == true) {
         takeRawAndJpeg(
           imageCapture,
           outputFile,
@@ -842,15 +818,6 @@ class NativeIdentificationCameraView(
         }
       )
     }
-  }
-
-  /**
-   * The capture mode CameraX runs for the bound use case at this flash mode:
-   * the field capture config's mode when one built it, else the tuning's.
-   */
-  private fun runningCaptureMode(flashMode: Int): Int {
-    val requested = boundFieldConfig?.captureMode ?: (boundTuning ?: tuning).captureMode()
-    return CaptureTuning.runningCaptureMode(requested, boundZslSupported, flashMode)
   }
 
   /**
@@ -1110,7 +1077,7 @@ class NativeIdentificationCameraView(
       report(false, "out_of_bounds")
       return false
     }
-    val boundCamera = camera ?: run {
+    val boundCamera = boundSession?.camera ?: run {
       report(false, "no_bound_camera")
       return false
     }

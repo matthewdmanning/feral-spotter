@@ -67,7 +67,8 @@ Fix: see Target shape.
 `boundSessionConfig`, `imageCaptureUseCase`, `camera`, `boundTuning`, `boundZslSupported`, `boundFieldConfig` and `boundFrameRateRange` (`:198-218`) are set one by one in `bindCamera` (`:662-668`) and cleared one by one in `unbindCamera` (`:721-728`). Some are `@Volatile` and some aren't. The comments say which threads read them.
 
 - MVVM cause: there is no single state object, so you can't snapshot the state or assert on it. A field added later can be missed in either place.
-- Fix: use one immutable `BoundSession` data class, held in one `@Volatile var session: BoundSession?`. Bind assigns it once; unbind nulls it. Readers take one snapshot, as `focus` already does with `viewZoom`.
+- Fix: use one immutable `BoundSession` data class, held in one `var boundSession: BoundSession?`. Bind assigns it once; unbind nulls it. Readers take one snapshot, as `focus` already does with `viewZoom`.
+- **Status: fixed** on `refactor/android-camera-bound-session`, which adds `BoundSession.kt`. `capture` takes one snapshot per request. The view's `runningCaptureMode` fallback to the live `tuning` is gone: it was unreachable, because a capture without a bound session is rejected first. Needs a compile and a test drive.
 
 ### F4 (P2): policy lives in the view, not the model
 
@@ -113,7 +114,7 @@ Suggested order, smallest first. Each step is independently shippable, and each 
 
 1. F1: main-queue focus (one line in the module).
 2. F4: extract the pure policy functions, with tests.
-3. F3: introduce `BoundSession`.
+3. F3: introduce `BoundSession` (done).
 4. F2/F5: extract `CameraSessionController`; the view shrinks to rendering and input.
 
 ## Verification
