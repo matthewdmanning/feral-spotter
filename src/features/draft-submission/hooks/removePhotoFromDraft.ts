@@ -8,7 +8,11 @@
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
-import { cancelPhotoUpload } from '@/src/features/draft-submission/lib/upload/draftUploads'
+import { useAuthStore } from '@/src/features/auth/lib/authStore'
+import {
+  cancelPhotoUpload,
+  deletePhotoUploads,
+} from '@/src/features/draft-submission/lib/upload/draftUploads'
 import { deleteSubmissionPhoto } from '@/src/features/draft-submission/lib/upload/firebaseUpload'
 
 export function removePhotoFromDraft(localId: string): void {
@@ -16,13 +20,27 @@ export function removePhotoFromDraft(localId: string): void {
     .getState()
     .photos.find((p) => p.local_id === localId)
   if (!photo) return
+  const submissionId = usePhotoStore.getState().submissionId
+  const uid = useAuthStore.getState().user?.uid
+  // Reserve the remote mutation before publishing the slot as free. A store
+  // subscriber can synchronously add a replacement after removePhoto().
+  if (
+    uid &&
+    submissionId &&
+    photo.upload_slot != null &&
+    (photo.cloud_storage_path || photo.raw_cloud_storage_path || photo.raw_uri)
+  ) {
+    // A failed pair may have written only the JPEG before the DNG failed, so
+    // derive both stable paths even when the store never received a response.
+    deletePhotoUploads(photo, uid, submissionId)
+  } else if (photo.cloud_storage_path) {
+    void deleteSubmissionPhoto(
+      photo.cloud_storage_path,
+      ...(photo.raw_cloud_storage_path ? [photo.raw_cloud_storage_path] : []),
+    )
+  }
   cancelPhotoUpload(localId)
   useBoundingBoxStore.getState().removeBoxesForPhoto(localId)
   useSubmissionStore.getState().forgetPhoto(localId)
   usePhotoStore.getState().removePhoto(localId)
-  // "No metadata ⇒ no photo" (#293): an uploaded copy of a removed photo
-  // must not stay in the Submission folder.
-  if (photo.uploaded && photo.cloud_storage_path) {
-    void deleteSubmissionPhoto(photo.cloud_storage_path)
-  }
 }

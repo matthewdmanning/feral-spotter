@@ -155,15 +155,20 @@ export async function sendDraft(
   // photos (blocked above), not a metadata patch on an already-fully-
   // uploaded photo — don't fail an otherwise-successful submission over a
   // flaky-network patch failure.
+  const finalizeTargets = uploadedPhotos.flatMap((p) => {
+    const paths = [p.cloud_storage_path]
+    if (p.raw_cloud_storage_path) paths.push(p.raw_cloud_storage_path)
+    return paths.map((path) => ({ localId: p.local_id, path, photo: p }))
+  })
   const finalizeResults = await Promise.allSettled(
-    uploadedPhotos.map((p) =>
+    finalizeTargets.map(({ path, photo }) =>
       finalizeSubmissionPhotoMetadata(
-        p.cloud_storage_path,
+        path,
         userId,
-        photoTimeFor(p),
+        photoTimeFor(photo),
         latitude,
         longitude,
-        p.camera_config,
+        photo.camera_config,
       ),
     ),
   )
@@ -171,7 +176,7 @@ export async function sendDraft(
     if (result.status === 'rejected') {
       console.error(
         '[send] finalizeSubmissionPhotoMetadata',
-        uploadedPhotos[i].local_id,
+        finalizeTargets[i].localId,
         result.reason,
       )
     }

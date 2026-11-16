@@ -15,6 +15,7 @@ import {
   METADATA_FILE_NAME as APP_METADATA,
   metadataObjectPath,
   photoObjectPath,
+  rawPhotoObjectPath,
   submissionPrefix as appSubmissionPrefix,
 } from '@/src/features/draft-submission/lib/upload/submissionLayout'
 import { UPLOAD_PHOTO_EXTENSIONS } from '@/src/shared/utils/photoFormat'
@@ -100,6 +101,12 @@ it('every slot the app can name is a photo the rules accept and functions parse'
       'image/jpeg',
     ),
   )
+
+  const dng = rawPhotoObjectPath(UID, SUB, 0)
+  expect(parseSubmissionObject(dng)).toEqual(
+    expect.objectContaining({ uid: UID, submissionId: SUB, isMetadata: false }),
+  )
+  await assertSucceeds(write(dng, new Uint8Array([1]), 'image/x-adobe-dng'))
 })
 
 it('every accepted format is one the rules accept', async () => {

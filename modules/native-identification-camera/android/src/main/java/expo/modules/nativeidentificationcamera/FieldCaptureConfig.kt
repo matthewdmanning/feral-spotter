@@ -56,9 +56,9 @@ enum class FieldCondition(
    * - MAXIMIZE_QUALITY: CameraX documents only that images "may take longer
    *   to capture". Whether the device adds multi-frame processing is not
    *   documented.
-   * - Normal-size pool, not the high-resolution one: high-resolution modes on
-   *   quad-Bayer sensors read out unbinned pixels, which are noisier in low
-   *   light than the binned default size.
+   * - Normal-size pool, not the high-resolution one: the high-resolution pool
+   *   may add capture latency. This choice makes no binning or noise claim;
+   *   the low-light benefit is unmeasured.
    * - RAW+JPEG: the DNG keeps sensor data from before the JPEG pipeline's
    *   noise reduction, tone mapping and compression.
    * - Noise reduction HIGH_QUALITY, edge FAST: sharpening amplifies noise, so
@@ -123,11 +123,15 @@ enum class FieldCondition(
    * A close, still subject where markings decide identification: ear tips,
    * coat pattern, eye colour.
    *
-   * - MAXIMIZE_QUALITY with the high-resolution pool: the most pixels the
-   *   device offers to CameraX, at the cost of capture time.
-   * - RAW+JPEG: the DNG is an unprocessed reference for fine texture.
-   * - JPEG quality 100, noise reduction and edge HIGH_QUALITY: the slowest,
-   *   best-quality processing path.
+   * - MAXIMIZE_QUALITY with the high-resolution pool: asks CameraX to prefer
+   *   higher output dimensions at the cost of capture latency. The selected
+   *   dimensions are recorded per capture; identification benefit is
+   *   unmeasured and this is not a feature-quality guarantee.
+   * - RAW+JPEG: the DNG preserves the sensor output alongside the JPEG; the
+   *   downstream benefit is unmeasured.
+   * - JPEG quality 100, noise reduction and edge HIGH_QUALITY: these settings
+   *   may trade latency for processing quality; they are not a guarantee of
+   *   feature quality.
    */
   FINE_DETAIL(
     telemetryName = "fine_detail",

@@ -22,6 +22,11 @@ export interface SubmissionObject {
   isMetadata: boolean
 }
 
+/** Use this function to recognize an accepted JPEG or paired DNG object name. */
+export function isSubmissionPhotoFileName(fileName: string): boolean {
+  return /^photo-[0-9]\.(jpg|jpeg|png|heic|heif|dng)$/.test(fileName)
+}
+
 /** Parses a Submission object path; null for anything else. */
 export function parseSubmissionObject(name: string): SubmissionObject | null {
   const match = OBJECT_PATH.exec(name)

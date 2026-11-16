@@ -49,6 +49,8 @@ export interface SubmissionApiPayload {
     }[]
   }[]
   photo_paths: string[]
+  /** JPEG/DNG pairs. DNGs stay out of photo_paths for existing consumers. */
+  photo_pairs?: { jpeg_path: string; dng_path: string }[]
   /** GPS fix captured at photo-take time, keyed by cloud_storage_path. Omitted entries have no fix. */
   photo_locations?: { path: string; latitude: number; longitude: number }[]
 }
@@ -56,4 +58,6 @@ export interface SubmissionApiPayload {
 export interface PhotoUploadResponse {
   cloud_storage_path: string
   cloud_storage_url: string
+  raw_cloud_storage_path?: string
+  raw_cloud_storage_url?: string
 }

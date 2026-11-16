@@ -74,14 +74,24 @@ service firebase.storage {
       }
 
       // The 10-photo cap (MAX_PHOTOS in src/config/constants.ts), enforced
-      // by name: a Submission's photos can only be photo-0 … photo-9, so
-      // no Submission can hold an eleventh. Exact and synchronous; no
-      // counter. Overwriting a slot is allowed: it replaces a photo, it
-      // does not add one, and it is how Submit patches customMetadata.
+      // by name: a Submission's JPEG slots can only be photo-0 … photo-9.
+      // A paired photo-N.dng occupies the same slot, not an eleventh one.
+      // Exact and synchronous; no counter. Overwriting a slot is allowed: it
+      // replaces a photo, and it is how Submit patches customMetadata.
       function isValidPhotoWrite() {
-        return fileName.matches('photo-[0-9][.](jpg|jpeg|png|heic|heif)')
-               && request.resource.size < 20 * 1024 * 1024
-               && request.resource.contentType.matches('image/(jpeg|png|heic|heif)')
+        return fileName.matches('photo-[0-9][.](jpg|jpeg|png|heic|heif|dng)')
+               && (
+                 (
+                   !fileName.matches('photo-[0-9][.]dng')
+                   && request.resource.size < 20 * 1024 * 1024
+                   && request.resource.contentType.matches('image/(jpeg|png|heic|heif)')
+                 )
+                 || (
+                   fileName.matches('photo-[0-9][.]dng')
+                   && request.resource.size < 64 * 1024 * 1024
+                   && request.resource.contentType == 'image/x-adobe-dng'
+                 )
+               )
                && hasOwnUserId(uid);
       }
     }

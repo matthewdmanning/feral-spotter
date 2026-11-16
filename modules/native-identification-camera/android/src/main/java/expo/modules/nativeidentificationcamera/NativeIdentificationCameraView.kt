@@ -25,6 +25,7 @@ import androidx.annotation.OptIn
 import androidx.camera.camera2.interop.Camera2Interop
 import androidx.camera.camera2.interop.ExperimentalCamera2Interop
 import androidx.camera.camera2.interop.camera2Interop
+import androidx.camera.camera2.interop.cameraId
 import androidx.camera.camera2.interop.cameraCharacteristics
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraInfo
@@ -206,6 +207,14 @@ class NativeIdentificationCameraView(
   private var boundTuning: CaptureTuning? = null
   private var boundZslSupported = false
 
+  // The selected logical CameraX/Camera2 id is part of each capture's
+  // settings; it does not claim which physical lens a logical camera used.
+  private var boundCameraId: String? = null
+
+  private var boundZslDisabledByConfig = false
+
+  private val focusActionOwnership = FocusActionOwnership()
+
   // The field capture config the bound use case was built from, or null when
   // the capture tuning built it. Read by capture on the main thread.
   private var boundFieldConfig: FieldCaptureConfig? = null
@@ -277,6 +286,11 @@ class NativeIdentificationCameraView(
     }
 
   var subjectMetering: Boolean = false
+    set(value) {
+      if (field == value) return
+      field = value
+      if (!value) cancelSubjectFocus("subject_metering_disabled")
+    }
 
   var pinchZoom: Boolean = false
     set(value) {
@@ -511,6 +525,8 @@ class NativeIdentificationCameraView(
       builder.setResolutionSelector(selector)
     }
 
+    // Label-only audit fix: retain the requested mode and let CameraX apply
+    // its own fallback for a resolution configuration that cannot run ZSL.
     builder.setCaptureMode(tuning.captureMode())
 
     return builder.build()
@@ -664,8 +680,13 @@ class NativeIdentificationCameraView(
       camera = boundCamera
       boundTuning = activeTuning
       boundZslSupported = boundCamera.cameraInfo.isZslSupported
+      boundCameraId = cameraInfo.cameraId
       boundFieldConfig = fieldConfig
       boundFrameRateRange = frameRateRange
+      boundZslDisabledByConfig =
+        (fieldConfig?.captureMode ?: activeTuning.captureMode()) ==
+          ImageCapture.CAPTURE_MODE_ZERO_SHUTTER_LAG &&
+          (fieldConfig?.highResolutionPool ?: activeTuning.prefersHighestResolution())
       if (disableLowLightBoost) {
         disableLowLightBoostIfSupported(boundCamera)
       }
@@ -677,7 +698,8 @@ class NativeIdentificationCameraView(
       )
       val readyFields = mutableMapOf<String, Any>(
         "requestedCaptureTuning" to activeTuning.telemetryName,
-        "captureMode" to readyCaptureMode
+        "captureMode" to readyCaptureMode,
+        "zslDisabledByConfig" to boundZslDisabledByConfig
       )
       if (fieldConfig != null) {
         readyFields["fieldCondition"] = fieldConfig.condition.telemetryName
@@ -693,6 +715,8 @@ class NativeIdentificationCameraView(
           "requested_capture_tuning" to activeTuning.telemetryName,
           "capture_mode" to readyCaptureMode,
           "zsl_supported" to boundZslSupported,
+          "zsl_disabled_by_config" to boundZslDisabledByConfig,
+          "camera_id" to (boundCameraId ?: "unknown"),
           "camera_position" to position,
           "max_detail" to maxDetail,
           "motion_priority" to motionPriority,
@@ -724,11 +748,14 @@ class NativeIdentificationCameraView(
     imageCaptureUseCase = null
     camera = null
     boundTuning = null
+    boundCameraId = null
+    boundZslDisabledByConfig = false
     boundFieldConfig = null
     boundFrameRateRange = null
     // CameraX zoom resets when the camera closes; the view zoom does the same,
     // so a new session never starts zoomed.
     resetViewZoom()
+    focusActionOwnership.invalidateAll()
     if (wasBound) {
       diagnostic("session_unbound", mapOf("bind_count" to bindCount))
     }
@@ -751,6 +778,20 @@ class NativeIdentificationCameraView(
   private fun disableLowLightBoostIfSupported(boundCamera: Camera) {
     if (!boundCamera.cameraInfo.isLowLightBoostSupported) return
     boundCamera.cameraControl.enableLowLightBoostAsync(false)
+  }
+
+  /**
+   * Use this function to cancel a subject-owned focus action without touching
+   * a tap-owned action. CameraX cancels the active action, while ownership
+   * invalidates any completion callback that is already queued.
+   */
+  private fun cancelSubjectFocus(reason: String) {
+    if (focusActionOwnership.cancelIfOwned(FocusActionOwner.SUBJECT) == null) return
+    camera?.cameraControl?.cancelFocusAndMetering()
+    diagnostic(
+      "focus_cancelled",
+      mapOf("owner" to "subject", "reason" to reason)
+    )
   }
 
   fun capture(options: NativeCaptureOptions, promise: Promise) {
@@ -782,7 +823,9 @@ class NativeIdentificationCameraView(
         fieldConfig = boundFieldConfig,
         captureMode = runningMode,
         jpegQuality = imageCapture.jpegQuality,
-        frameRateRange = boundFrameRateRange?.let { "${it.lower}-${it.upper}" }
+        frameRateRange = boundFrameRateRange?.let { "${it.lower}-${it.upper}" },
+        zslDisabledByConfig = boundZslDisabledByConfig,
+        cameraId = boundCameraId
       )
 
       val outputFile = File(context.cacheDir, "${UUID.randomUUID()}.jpg")
@@ -817,7 +860,8 @@ class NativeIdentificationCameraView(
                 requestedAt,
                 requestedTuning,
                 captureMode,
-                settings
+                settings,
+                deliveredFormat = "jpeg"
               )
             }
             endSection(SECTION_CAPTURE, captureCookie)
@@ -850,7 +894,12 @@ class NativeIdentificationCameraView(
    */
   private fun runningCaptureMode(flashMode: Int): Int {
     val requested = boundFieldConfig?.captureMode ?: (boundTuning ?: tuning).captureMode()
-    return CaptureTuning.runningCaptureMode(requested, boundZslSupported, flashMode)
+    return CaptureTuning.runningCaptureMode(
+      requested,
+      boundZslSupported,
+      flashMode,
+      boundZslDisabledByConfig
+    )
   }
 
   /**
@@ -908,7 +957,8 @@ class NativeIdentificationCameraView(
               requestedTuning,
               captureMode,
               settings,
-              rawSidecar
+              rawSidecar,
+              deliveredFormat = outcome.deliveredFormat
             )
           }
           endSection(SECTION_CAPTURE, captureCookie)
@@ -932,6 +982,14 @@ class NativeIdentificationCameraView(
       }
     }
 
+    /** Use this function when one RAW/JPEG callback arrives without settling the pair. */
+    fun armTimeoutIfNeeded() {
+      if (!settlement.awaitingOtherFile || timeout != null) return
+      val waitOut = Runnable { settlement.onTimeout()?.let(::settle) }
+      timeout = waitOut
+      postDelayed(waitOut, RawJpegSettlement.PER_FILE_WAIT_MS)
+    }
+
     imageCapture.takePicture(
       ImageCapture.OutputFileOptions.Builder(rawFile).build(),
       ImageCapture.OutputFileOptions.Builder(jpegFile).build(),
@@ -943,7 +1001,7 @@ class NativeIdentificationCameraView(
             (if (isRaw) rawFile else jpegFile).delete()
             return
           }
-          settlement.onSaved(isRaw)?.let(::settle)
+          settlement.onSaved(isRaw)?.let(::settle) ?: armTimeoutIfNeeded()
         }
 
         override fun onError(exception: ImageCaptureException) {
@@ -963,10 +1021,8 @@ class NativeIdentificationCameraView(
           val outcome = settlement.onError(exception.imageCaptureError)
           if (outcome != null) {
             settle(outcome)
-          } else if (settlement.awaitingOtherFile && timeout == null) {
-            val waitOut = Runnable { settlement.onTimeout()?.let(::settle) }
-            timeout = waitOut
-            postDelayed(waitOut, RawJpegSettlement.PER_FILE_WAIT_MS)
+          } else {
+            armTimeoutIfNeeded()
           }
         }
       }
@@ -993,7 +1049,8 @@ class NativeIdentificationCameraView(
     requestedTuning: CaptureTuning,
     captureMode: String,
     settings: Map<String, String>,
-    rawFile: File? = null
+    rawFile: File? = null,
+    deliveredFormat: String
   ) {
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
     BitmapFactory.decodeFile(outputFile.absolutePath, bounds)
@@ -1033,12 +1090,17 @@ class NativeIdentificationCameraView(
     val reportedWidth = if (quarterTurned) bounds.outHeight else bounds.outWidth
     val reportedHeight = if (quarterTurned) bounds.outWidth else bounds.outHeight
 
+    val captureSettings = settings + mapOf(
+      "delivered_format" to deliveredFormat,
+      "output_width" to reportedWidth.toString(),
+      "output_height" to reportedHeight.toString()
+    )
     val result = mutableMapOf<String, Any>(
       "uri" to android.net.Uri.fromFile(outputFile).toString(),
       "width" to reportedWidth,
       "height" to reportedHeight,
       "captureMode" to captureMode,
-      "captureSettings" to settings
+      "captureSettings" to captureSettings
     )
     if (rawFile != null) result["rawUri"] = android.net.Uri.fromFile(rawFile).toString()
     promise.resolve(result)
@@ -1058,6 +1120,9 @@ class NativeIdentificationCameraView(
         "camera_position" to position,
         "requested_capture_tuning" to requestedTuning.telemetryName,
         "capture_mode" to captureMode,
+        "zsl_disabled_by_config" to (settings["zsl_disabled_by_config"] ?: "false"),
+        "delivered_format" to deliveredFormat,
+        "camera_id" to (settings["camera_id"] ?: "unknown"),
         "field_condition" to (settings["field_condition"] ?: "none"),
         "raw_file_bytes" to (rawFile?.length() ?: -1L),
         "elapsed_ms" to (System.currentTimeMillis() - requestedAt)
@@ -1075,7 +1140,8 @@ class NativeIdentificationCameraView(
       zoom.previewFraction(normalizedX.toFloat()).toDouble(),
       zoom.previewFraction(normalizedY.toFloat()).toDouble(),
       normalizedX,
-      normalizedY
+      normalizedY,
+      FocusActionOwner.TAP
     )
   }
 
@@ -1088,7 +1154,8 @@ class NativeIdentificationCameraView(
     previewX: Double,
     previewY: Double,
     requestedX: Double = previewX,
-    requestedY: Double = previewY
+    requestedY: Double = previewY,
+    owner: FocusActionOwner
   ): Boolean {
     // Reported whether or not it is applied: a tap that arrives but is refused
     // looks identical on screen to a tap that never arrived.
@@ -1123,16 +1190,54 @@ class NativeIdentificationCameraView(
       (previewX.coerceIn(0.0, 1.0) * previewView.width).toFloat(),
       (previewY.coerceIn(0.0, 1.0) * previewView.height).toFloat()
     )
+    val token = focusActionOwnership.begin(owner)
+    // CameraX's default auto-cancel duration is 5 seconds; retain that tap
+    // default so this action does not leave 3A locked indefinitely.
     val action = FocusMeteringAction.Builder(
       point,
       FocusMeteringAction.FLAG_AF or FocusMeteringAction.FLAG_AE
-    ).build()
-    boundCamera.cameraControl.startFocusAndMetering(action)
+    ).setAutoCancelDuration(5, java.util.concurrent.TimeUnit.SECONDS).build()
+    val future = try {
+      boundCamera.cameraControl.startFocusAndMetering(action)
+    } catch (error: Throwable) {
+      focusActionOwnership.cancelIfOwned(owner)
+      diagnostic(
+        "focus_completed",
+        mapOf(
+          "owner" to owner.name.lowercase(Locale.US),
+          "success" to false,
+          "reason" to "start_failed",
+          "message" to (error.message ?: error.toString())
+        )
+      )
+      report(false, "start_failed")
+      return false
+    }
+    future.addListener({
+      if (!focusActionOwnership.isCurrent(token)) return@addListener
+      val success = try {
+        future.get().isFocusSuccessful
+      } catch (error: Throwable) {
+        false
+      }
+      if (!focusActionOwnership.markCompletionReported(token)) return@addListener
+      diagnostic(
+        "focus_completed",
+        mapOf(
+          "owner" to owner.name.lowercase(Locale.US),
+          "success" to success,
+          "reason" to if (success) "focused" else "not_focused"
+        )
+      )
+    }, ContextCompat.getMainExecutor(context))
     report(true, "started")
     return true
   }
 
   fun setSubjectRegion(region: NativeSubjectRegion?): Boolean {
+    if (region == null) {
+      cancelSubjectFocus("subject_region_cleared")
+    }
     if (!subjectMetering || region == null) {
       // Without this, a run with camera_subject_metering off is silent and
       // looks the same as a tap that never reached the view at all.
@@ -1147,7 +1252,8 @@ class NativeIdentificationCameraView(
     }
     return focusPreviewPoint(
       region.x + region.width / 2.0,
-      region.y + region.height / 2.0
+      region.y + region.height / 2.0,
+      owner = FocusActionOwner.SUBJECT
     )
   }
 

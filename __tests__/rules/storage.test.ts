@@ -22,10 +22,12 @@ const PROJECT_ID = 'demo-feral-spotter'
 const BUCKET_URL = `gs://${PROJECT_ID}.appspot.com`
 const SMALL_IMAGE = new Uint8Array([1, 2, 3, 4])
 const OVERSIZED_IMAGE = new Uint8Array(21 * 1024 * 1024) // over the 20MB cap
+const OVERSIZED_DNG = new Uint8Array(65 * 1024 * 1024) // over the 64MB DNG cap
 const SMALL_JSON = new Uint8Array([0x7b, 0x7d]) // '{}'
 const OVERSIZED_JSON = new Uint8Array(257 * 1024) // over the 256KB cap
 const OWNER_UID = 'uid-owner'
 const JPEG = { contentType: 'image/jpeg' }
+const DNG = { contentType: 'image/x-adobe-dng' }
 const JSON_TYPE = { contentType: 'application/json' }
 
 let testEnv: RulesTestEnvironment
@@ -90,6 +92,24 @@ describe('storage.rules — photos', () => {
       uploadBytes(photoOf(OWNER_UID), SMALL_IMAGE, {
         contentType: 'application/pdf',
       }),
+    )
+  })
+
+  it('allows an owner DNG in the paired slot and rejects bad DNG writes', async () => {
+    await assertSucceeds(
+      uploadBytes(photoOf(OWNER_UID, 'photo-0.dng'), SMALL_IMAGE, DNG),
+    )
+    await assertFails(
+      uploadBytes(photoOf(OWNER_UID, 'photo-1.dng'), SMALL_IMAGE, JPEG),
+    )
+    await assertFails(
+      uploadBytes(photoOf(OWNER_UID, 'photo-2.dng'), OVERSIZED_DNG, DNG),
+    )
+    await assertFails(
+      uploadBytes(photoOf('uid-attacker', 'photo-3.dng'), SMALL_IMAGE, DNG),
+    )
+    await assertFails(
+      uploadBytes(photoOf(OWNER_UID, 'photo-10.dng'), SMALL_IMAGE, DNG),
     )
   })
 

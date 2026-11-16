@@ -150,6 +150,84 @@ describe('uploadSubmissionPhoto', () => {
     })
   })
 
+  it('uploads a DNG beside its JPEG and writes reciprocal pair metadata', async () => {
+    const result = await uploadSubmissionPhoto(
+      { ...photo('file:///cache/a.jpg'), raw_uri: 'file:///cache/a.dng' },
+      'uid-1',
+      'sub-1',
+    )
+
+    expect(putFile).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        fullPath: 'submissions/uid-1/sub-1/photo-3.jpg',
+      }),
+      'file:///cache/a.jpg',
+      {
+        contentType: 'image/jpeg',
+        customMetadata: {
+          paired_dng_path: 'submissions/uid-1/sub-1/photo-3.dng',
+        },
+      },
+    )
+    expect(putFile).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        fullPath: 'submissions/uid-1/sub-1/photo-3.dng',
+      }),
+      'file:///cache/a.dng',
+      {
+        contentType: 'image/x-adobe-dng',
+        customMetadata: {
+          paired_jpeg_path: 'submissions/uid-1/sub-1/photo-3.jpg',
+        },
+      },
+    )
+    expect(result).toEqual({
+      cloud_storage_path: 'submissions/uid-1/sub-1/photo-3.jpg',
+      cloud_storage_url: 'https://example.com/mock.jpg',
+      raw_cloud_storage_path: 'submissions/uid-1/sub-1/photo-3.dng',
+      raw_cloud_storage_url: 'https://example.com/mock.jpg',
+    })
+  })
+
+  it('repairs the JPEG link when an old uploaded photo still has a local DNG', async () => {
+    jest.mocked(getMetadata).mockResolvedValueOnce({
+      customMetadata: { source: 'camera' },
+    } as never)
+
+    await uploadSubmissionPhoto(
+      {
+        ...photo('file:///cache/a.jpg'),
+        uploaded: true,
+        cloud_storage_path: 'submissions/uid-1/sub-1/photo-3.jpg',
+        cloud_storage_url: 'jpeg-url',
+        raw_uri: 'file:///cache/a.dng',
+      },
+      'uid-1',
+      'sub-1',
+    )
+
+    expect(updateMetadata).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fullPath: 'submissions/uid-1/sub-1/photo-3.jpg',
+      }),
+      {
+        customMetadata: {
+          source: 'camera',
+          paired_dng_path: 'submissions/uid-1/sub-1/photo-3.dng',
+        },
+      },
+    )
+    expect(putFile).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        fullPath: 'submissions/uid-1/sub-1/photo-3.dng',
+      }),
+      'file:///cache/a.dng',
+      expect.objectContaining({ contentType: 'image/x-adobe-dng' }),
+    )
+  })
+
   it('refuses a photo with no slot rather than write a name the rules deny', async () => {
     await expect(
       uploadSubmissionPhoto(

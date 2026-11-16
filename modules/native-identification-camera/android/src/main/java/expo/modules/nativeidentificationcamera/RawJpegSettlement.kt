@@ -24,7 +24,11 @@ import androidx.camera.core.ImageCapture
 class RawJpegSettlement {
   sealed interface Outcome {
     /** The JPEG is the photo; [rawKept] says whether the DNG is kept beside it. */
-    data class Photo(val rawKept: Boolean) : Outcome
+    data class Photo(val rawKept: Boolean) : Outcome {
+      /** The format delivered to the caller after both file outcomes settle. */
+      val deliveredFormat: String
+        get() = if (rawKept) "raw_jpeg" else "jpeg"
+    }
 
     /** No JPEG: the capture fails. */
     data object Failed : Outcome
@@ -40,7 +44,7 @@ class RawJpegSettlement {
 
   /** True while a per-file error waits for the other file's report. */
   val awaitingOtherFile: Boolean
-    get() = outcome == null && fileFailures > 0
+    get() = outcome == null && (fileFailures > 0 || jpegSaved xor rawSaved)
 
   /** Returns the outcome if this report settles the capture, else null. */
   fun onSaved(isRaw: Boolean): Outcome? {

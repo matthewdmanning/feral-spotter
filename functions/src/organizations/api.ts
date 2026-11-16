@@ -20,6 +20,7 @@ import {
 } from './domain'
 import { mutateLedger, type LedgerMutation } from './ledger'
 import { errorCode, RequestError } from './errors'
+import { isSubmissionPhotoFileName } from '../submissionLayout'
 
 const CATALOG_PATH = defineString('ORGANIZATIONS_CATALOG_PATH', {
   default: 'organizations/catalog.json',
@@ -152,18 +153,63 @@ async function readSubmission(uid: string, submissionId: string) {
     }
     cats: Record<string, unknown>[]
     photo_paths: string[]
+    photo_pairs?: { jpeg_path: string; dng_path: string }[]
   }
+  /** Use this function to reject metadata paths outside the owning Submission. */
+  const pathInSubmission = (value: unknown): value is string => {
+    if (typeof value !== 'string' || !value.startsWith(prefix)) return false
+    const fileName = value.slice(prefix.length)
+    return (
+      fileName.length > 0 &&
+      !fileName.includes('/') &&
+      fileName !== 'metadata.json'
+    )
+  }
+  /** Use this function to admit only supported artifact names in a pair. */
+  const pairedPathInSubmission = (value: unknown): value is string =>
+    pathInSubmission(value) &&
+    isSubmissionPhotoFileName(value.slice(prefix.length))
+  const validPhotoPaths =
+    Array.isArray(metadata.photo_paths) &&
+    metadata.photo_paths.every((path) => pathInSubmission(path))
+  const pairJpegs = new Set<string>()
+  const pairDngs = new Set<string>()
+  const validPhotoPairs =
+    metadata.photo_pairs == null ||
+    (validPhotoPaths &&
+      Array.isArray(metadata.photo_pairs) &&
+      metadata.photo_pairs.every((pair) => {
+        if (
+          pair == null ||
+          !pairedPathInSubmission(pair.jpeg_path) ||
+          !pairedPathInSubmission(pair.dng_path) ||
+          pair.jpeg_path.endsWith('.dng') ||
+          !pair.dng_path.endsWith('.dng') ||
+          !metadata.photo_paths.includes(pair.jpeg_path)
+        )
+          return false
+        const jpegSlot = pair.jpeg_path
+          .slice(prefix.length)
+          .replace(/\.[^.]+$/, '')
+        const dngSlot = pair.dng_path
+          .slice(prefix.length)
+          .replace(/\.[^.]+$/, '')
+        if (
+          jpegSlot !== dngSlot ||
+          pairJpegs.has(pair.jpeg_path) ||
+          pairDngs.has(pair.dng_path)
+        )
+          return false
+        pairJpegs.add(pair.jpeg_path)
+        pairDngs.add(pair.dng_path)
+        return true
+      }))
   if (
     !Array.isArray(metadata.cats) ||
     metadata.cats.length < 1 ||
     !Array.isArray(metadata.photo_paths) ||
-    metadata.photo_paths.some(
-      (path) =>
-        typeof path !== 'string' ||
-        !path.startsWith(prefix) ||
-        path.slice(prefix.length).includes('/') ||
-        path.endsWith('metadata.json'),
-    )
+    !validPhotoPaths ||
+    !validPhotoPairs
   )
     throw new RequestError(400, 'Invalid submitted sighting')
   return metadata

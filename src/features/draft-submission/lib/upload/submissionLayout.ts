@@ -12,6 +12,9 @@ import { extensionOf } from '@/src/shared/utils/photoFormat'
 
 export const METADATA_FILE_NAME = 'metadata.json'
 
+/** DNG object name extension and MIME contract shared by upload code and rules. */
+export const RAW_PHOTO_EXTENSION = 'dng'
+
 /** A Submission's folder as a Storage reference path (no trailing slash). */
 export function submissionFolder(uid: string, submissionId: string): string {
   return `submissions/${uid}/${submissionId}`
@@ -36,6 +39,20 @@ export function photoObjectPath(
   }
   const ext = extensionOf(uri) ?? 'jpg'
   return `${submissionPrefix(uid, submissionId)}photo-${slot}.${ext}`
+}
+
+/** Use this function to name the DNG paired with a slotted JPEG upload. */
+export function rawPhotoObjectPath(
+  uid: string,
+  submissionId: string,
+  slot: number,
+): string {
+  if (!Number.isInteger(slot) || slot < 0 || slot >= MAX_PHOTOS) {
+    throw new Error(
+      `[submissionLayout] slot ${slot} is outside 0…${MAX_PHOTOS - 1}`,
+    )
+  }
+  return `${submissionPrefix(uid, submissionId)}photo-${slot}.${RAW_PHOTO_EXTENSION}`
 }
 
 export function metadataObjectPath(uid: string, submissionId: string): string {

@@ -60,13 +60,21 @@ enum class CaptureTuning(
   }
 
   /**
+   * Whether the requested ZSL mode is disabled by the high-resolution pool
+   * selector, whose priority is capture dimensions over capture rate.
+   */
+  @OptIn(ExperimentalZeroShutterLag::class)
+  fun zslDisabledByConfig(): Boolean =
+    captureMode() == ImageCapture.CAPTURE_MODE_ZERO_SHUTTER_LAG && prefersHighestResolution()
+
+  /**
    * The mode CameraX actually runs, which captureMode() only requests.
    * ZERO_SHUTTER_LAG falls back to MINIMIZE_LATENCY on a camera without ZSL
    * support and whenever flash is ON or AUTO
    * (developer.android.com/media/camera/camerax/take-photo/zsl).
    */
   fun resolvedCaptureMode(zslSupported: Boolean, flashMode: Int): Int =
-    runningCaptureMode(captureMode(), zslSupported, flashMode)
+    runningCaptureMode(captureMode(), zslSupported, flashMode, zslDisabledByConfig())
 
   /**
    * Whether to ask for the highest available resolution even when that costs
@@ -86,8 +94,14 @@ enum class CaptureTuning(
      * configs, which request their own mode but fall back by the same rule.
      */
     @OptIn(ExperimentalZeroShutterLag::class)
-    fun runningCaptureMode(requested: Int, zslSupported: Boolean, flashMode: Int): Int {
-      val zslFallsBack = !zslSupported || flashMode != ImageCapture.FLASH_MODE_OFF
+    fun runningCaptureMode(
+      requested: Int,
+      zslSupported: Boolean,
+      flashMode: Int,
+      zslDisabledByConfig: Boolean = false
+    ): Int {
+      val zslFallsBack =
+        zslDisabledByConfig || !zslSupported || flashMode != ImageCapture.FLASH_MODE_OFF
       return if (requested == ImageCapture.CAPTURE_MODE_ZERO_SHUTTER_LAG && zslFallsBack) {
         ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY
       } else {

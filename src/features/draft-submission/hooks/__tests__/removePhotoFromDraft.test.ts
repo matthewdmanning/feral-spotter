@@ -5,6 +5,7 @@ import { removePhotoFromDraft } from '@/src/features/draft-submission/hooks/remo
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
+import { useAuthStore } from '@/src/features/auth/lib/authStore'
 
 /**
  * A photo lives in three stores and an upload. The camera's discard used to
@@ -40,6 +41,7 @@ beforeEach(() => {
       width: 10,
       height: 10,
       cloud_storage_path: 'cloud/p1',
+      raw_cloud_storage_path: 'cloud/p1.dng',
     },
     {
       local_id: 'p2',
@@ -73,11 +75,19 @@ it('removes the photo from every store, its upload and its cloud copy', () => {
   expect(cat.photo_local_ids).toEqual(['p2'])
   expect(cat.profile_photo_local_id).toBeUndefined()
   expect(cancelPhotoUpload).toHaveBeenCalledWith('p1')
-  expect(deleteSubmissionPhoto).toHaveBeenCalledWith('cloud/p1')
+  expect(deleteSubmissionPhoto).toHaveBeenCalledWith('cloud/p1', 'cloud/p1.dng')
 })
 
-it('deletes no cloud copy for a photo that never finished uploading', () => {
+it('deletes partial pair objects after a DNG failure', async () => {
+  useAuthStore.setState({ user: { uid: 'uid-1' } as never, isReady: true })
+  usePhotoStore.setState({ submissionId: 'sub-1' })
+  usePhotoStore.getState().updatePhoto('p2', { raw_uri: 'file:///p2.dng' })
+
   removePhotoFromDraft('p2')
+  await new Promise((resolve) => setImmediate(resolve))
   expect(cancelPhotoUpload).toHaveBeenCalledWith('p2')
-  expect(deleteSubmissionPhoto).not.toHaveBeenCalled()
+  expect(deleteSubmissionPhoto).toHaveBeenCalledWith(
+    'submissions/uid-1/sub-1/photo-1.jpg',
+    'submissions/uid-1/sub-1/photo-1.dng',
+  )
 })

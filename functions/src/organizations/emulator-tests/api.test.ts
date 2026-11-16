@@ -80,7 +80,13 @@ async function signedInUser(
   await save(`submissions/${uid}/sighting/metadata.json`, {
     submission: { ...sighting, report_injured: true },
     cats: [{ health_label: 'poor', local_id: 'internal' }],
-    photo_paths: [`submissions/${uid}/sighting/cat.jpg`],
+    photo_paths: [`submissions/${uid}/sighting/photo-0.jpg`],
+    photo_pairs: [
+      {
+        jpeg_path: `submissions/${uid}/sighting/photo-0.jpg`,
+        dng_path: `submissions/${uid}/sighting/photo-0.dng`,
+      },
+    ],
   })
   const { idToken } = (await response.json()) as { idToken: string }
   return { uid, email: `${uid}@example.test`, token: idToken }
@@ -183,6 +189,26 @@ test('a user cannot grant access to another user’s sighting', async () => {
   expect(
     (await call({ action: 'list' }, owner.token)).body!.permissions,
   ).toEqual([])
+})
+
+test('a mismatched JPEG/DNG pair is rejected before an organization grant', async () => {
+  const { uid, token } = await signedInUser('bad-pair')
+  await save(`submissions/${uid}/sighting/metadata.json`, {
+    submission: { latitude: 1, longitude: 1 },
+    cats: [{ health_label: 'poor', local_id: 'internal' }],
+    photo_paths: [`submissions/${uid}/sighting/photo-0.jpg`],
+    photo_pairs: [
+      {
+        jpeg_path: `submissions/${uid}/sighting/photo-0.jpg`,
+        dng_path: `submissions/${uid}/sighting/photo-1.dng`,
+      },
+    ],
+  })
+
+  expect(await call(grant('first', {}, 'bad-pair-grant'), token)).toEqual({
+    status: 400,
+    body: { requiresConfirmation: false },
+  })
 })
 
 // Concurrency lives in __tests__/ledgerConcurrency: this emulator ignores generation preconditions.

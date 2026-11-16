@@ -52,6 +52,8 @@ export interface NativeCapturedPhoto {
 export interface NativeCameraReadyEvent {
   requestedCaptureTuning?: string
   captureMode?: string
+  /** Android only: the bound resolution configuration disables ZSL. */
+  zslDisabledByConfig?: boolean
   /** Android only, present when a field condition built the capture use case. */
   fieldCondition?: NativeFieldCondition
   /** Android only: `jpeg` or `raw_jpeg`, after the device's format check. */
