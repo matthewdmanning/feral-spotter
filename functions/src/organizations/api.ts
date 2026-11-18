@@ -7,6 +7,7 @@ import {
   covers,
   DEFAULT_CACHE_RADIUS_KM,
   effectiveSharingSettings,
+  isSharedPhotoPath,
   projectData,
   SHARING_FIELD_KEYS,
   validId,
@@ -182,7 +183,7 @@ export async function makePermission(
     data: projectData({
       cats: metadata.cats,
       location,
-      photoPaths: metadata.photo_paths,
+      photoPaths: metadata.photo_paths.filter(isSharedPhotoPath),
       settings: request.settings,
       anonymous: request.anonymous,
       email,

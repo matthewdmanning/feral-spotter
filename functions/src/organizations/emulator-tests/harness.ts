@@ -64,10 +64,16 @@ export async function save(path: string, value: unknown) {
 export async function signedInUser(
   label: string,
   sighting = { latitude: 1.00123, longitude: 1.00456 },
+  /** The Auth profile name members see; null for an account without one. */
+  displayName: string | null = `${label.split('-').at(-1)} name`,
 ) {
   const uid = `${fixtureId}-${label}-${createdUids.length}`
   createdUids.push(uid)
-  await getAuth().createUser({ uid, email: `${uid}@example.test` })
+  await getAuth().createUser({
+    uid,
+    email: `${uid}@example.test`,
+    ...(displayName === null ? {} : { displayName }),
+  })
   const response = await fetch(
     `${requireLoopback('FIREBASE_AUTH_EMULATOR_HOST')}/identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=emulator-only`,
     {

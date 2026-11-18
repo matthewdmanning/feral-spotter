@@ -7,6 +7,7 @@ import { useAnnotatePass } from '@/src/features/annotate/hooks/useAnnotatePass'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
 
 /**
  * Drives carousel position and the final-photo completion against the real
@@ -18,30 +19,9 @@ jest.mock('expo-router', () => ({
 }))
 
 const THREE_PHOTOS = [
-  {
-    local_id: 'photo-1',
-    uri: 'a',
-    uploaded: false,
-    upload_progress: 0,
-    width: 1,
-    height: 1,
-  },
-  {
-    local_id: 'photo-2',
-    uri: 'b',
-    uploaded: false,
-    upload_progress: 0,
-    width: 1,
-    height: 1,
-  },
-  {
-    local_id: 'photo-3',
-    uri: 'c',
-    uploaded: false,
-    upload_progress: 0,
-    width: 1,
-    height: 1,
-  },
+  submissionPhoto({ uri: 'a', width: 1, height: 1 }),
+  submissionPhoto({ local_id: 'photo-2', uri: 'b', width: 1, height: 1 }),
+  submissionPhoto({ local_id: 'photo-3', uri: 'c', width: 1, height: 1 }),
 ]
 
 const box = {
@@ -130,6 +110,11 @@ describe('useAnnotatePass — carousel navigation (model-based test)', () => {
   }
 
   const journeys = [
+    { name: 'starts on the first photo', events: [] },
+    {
+      name: 'confirming a box advances to the next photo',
+      events: [{ type: 'CONFIRM' }],
+    },
     {
       name: 'not-in-photo advances and completes on the last photo after a confirmed box',
       events: [

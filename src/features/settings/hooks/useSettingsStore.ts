@@ -23,7 +23,6 @@ export interface AppSettings {
   camera_motion_priority: boolean
   camera_disable_low_light_boost: boolean
   camera_subject_metering: boolean
-  camera_pinch_zoom: boolean
 }
 
 interface SettingsState {
@@ -74,7 +73,6 @@ const DEFAULT_SETTINGS: AppSettings = {
     process.env.EXPO_PUBLIC_CAMERA_SUBJECT_METERING,
     false,
   ),
-  camera_pinch_zoom: true,
 }
 
 /**

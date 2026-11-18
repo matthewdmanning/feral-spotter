@@ -1,9 +1,11 @@
-import { ActivityIndicator, Text, View } from 'react-native'
+import { ActivityIndicator, View } from 'react-native'
+import { Text } from '@/src/shared/ui/atoms/Text'
+import { organizationCopy } from '@/src/shared/config/text'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './styles'
 
 export function OrganizationLoading({
-  label = 'Loading organizations…',
+  label = organizationCopy.loading,
 }: {
   label?: string
 }) {

@@ -73,7 +73,7 @@ it('skips a falsy child without losing the others', async () => {
   expect(screen.getByText('Only')).toBeOnTheScreen()
 })
 
-it('stacks measured narrow rows at default scale and keeps both actions usable when wide', async () => {
+it('stacks measured narrow rows and keeps both actions usable when wide', async () => {
   setFontScale(1)
   const cancel = jest.fn()
   const confirm = jest.fn()

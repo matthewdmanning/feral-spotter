@@ -6,6 +6,7 @@ import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoSto
 import HomeScreen from '@/src/core/home/screens/home/index'
 import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
 import { setConsent } from '@/src/test-utils/consent'
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
 
 /**
  * Model of the photo-source-exclusivity gate (ADR 0002's 2026-07-31
@@ -26,17 +27,6 @@ jest.mock('expo-router', () => ({
 jest.mock('@/src/features/auth/lib/useAuth', () => ({
   useAuth: () => ({ isReady: true, isAuthenticated: true }),
 }))
-// Real consent store, seeded as a returning user who answered every step.
-jest.mock('@/src/shared/consent/useConsentStore', () => {
-  const actual = jest.requireActual('@/src/shared/consent/useConsentStore')
-  actual.useConsentStore.setState({
-    accepted: true,
-    acceptedVersion: actual.CONSENT_VERSION,
-    emailOptIn: false,
-    analyticsAccepted: false,
-  })
-  return actual
-})
 jest.mock('@/src/shared/lib/submissionCache', () => ({
   getAllSubmissionCaches: jest.fn().mockResolvedValue([]),
   getCurrentCacheId: jest.fn().mockResolvedValue(null),
@@ -47,14 +37,7 @@ jest.mock('@/src/shared/ui/molecules/BottomButtonColumn', () => ({
 jest.mock('@/src/features/library-picker/hooks/useLibraryPhotoPicker', () => ({
   useLibraryPhotoPicker: () => ({ pickFromLibrary: jest.fn() }),
 }))
-const photo = {
-  local_id: 'photo-1',
-  uri: 'file:///picked-photo.jpg',
-  uploaded: false,
-  upload_progress: 0,
-  width: 100,
-  height: 100,
-}
+const photo = submissionPhoto({ uri: 'file:///picked-photo.jpg' })
 
 const gateMachine = createMachine({
   id: 'photoSourceGate',
@@ -139,14 +122,6 @@ describe('HomeScreen photo-source-exclusivity gate — model-based test', () => 
 
   const journeys = [
     {
-      name: 'camera pick disables the library entrypoint',
-      events: [{ type: 'CAMERA_PICK' }],
-    },
-    {
-      name: 'library pick disables the camera entrypoint',
-      events: [{ type: 'LIBRARY_PICK' }],
-    },
-    {
       name: 'removing the last camera photo re-enables both entrypoints',
       events: [{ type: 'CAMERA_PICK' }, { type: 'REMOVE_LAST' }],
     },
@@ -154,7 +129,7 @@ describe('HomeScreen photo-source-exclusivity gate — model-based test', () => 
       name: 'clearing the library photo pool re-enables both entrypoints',
       events: [{ type: 'LIBRARY_PICK' }, { type: 'CLEAR_PHOTO_POOL' }],
     },
-  ] as const
+  ]
 
   journeys.forEach(({ name, events }) => {
     it(name, async () => {

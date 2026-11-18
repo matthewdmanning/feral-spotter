@@ -3,17 +3,16 @@ import React from 'react'
 import { router } from 'expo-router'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
+import CreateSubmissionScreen from '@/src/features/draft-submission/screens/create/index'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import { observedCat } from '@/src/test-utils/catFixtures'
-import { submissionPhoto } from '@/src/test-utils/photoFixtures'
-import CreateSubmissionScreen from '@/src/features/draft-submission/screens/create/index'
 
 /**
  * Model of the bottom "add more photos" action (#156): label and press
  * behavior are driven entirely by `usePhotoStore().source` (ADR 0002
  * amendment's single-source-by-construction field) — no new state needed.
- * Real draft stores keep the screen and workflow subscriptions in sync.
+ * The photo and submission stores are real, seeded per test.
  */
 
 const mockPickFromLibrary = jest.fn()
@@ -28,8 +27,6 @@ jest.mock('expo-router', () => ({
     navigate: jest.fn(),
   },
 }))
-
-jest.mock('expo-crypto', () => ({ randomUUID: jest.fn(() => 'sub-1') }))
 
 jest.mock('@/src/shared/lib/submissionCache', () => ({
   createSubmissionCache: jest.fn().mockResolvedValue({}),
@@ -70,15 +67,13 @@ const sourceMachine = createMachine({
 })
 
 describe('Submission Details add-more-photos action — model-based test', () => {
-  let rerender: (ui: React.ReactElement) => void
   let getByText: Awaited<ReturnType<typeof render>>['getByText']
 
   beforeEach(async () => {
-    usePhotoStore.setState({ source: 'camera', photos: [submissionPhoto()] })
+    usePhotoStore.setState({ source: 'camera' })
     useSubmissionStore.setState({ cats: [observedCat()] })
     const result = await render(<CreateSubmissionScreen />)
     getByText = result.getByText
-    rerender = result.rerender
   })
 
   const model = createTestModel(sourceMachine)
@@ -101,11 +96,9 @@ describe('Submission Details add-more-photos action — model-based test', () =>
     events: {
       SWITCH_TO_LIBRARY: async () => {
         await act(() => usePhotoStore.setState({ source: 'library' }))
-        await rerender(<CreateSubmissionScreen />)
       },
       SWITCH_TO_CAMERA: async () => {
         await act(() => usePhotoStore.setState({ source: 'camera' }))
-        await rerender(<CreateSubmissionScreen />)
       },
     },
   }

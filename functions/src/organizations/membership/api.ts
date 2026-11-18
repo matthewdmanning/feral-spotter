@@ -1,10 +1,15 @@
 import type { OrganizationExtension } from '../api'
 import { readCatalog, readLedger, readOrganization } from '../store'
-import { validId } from '../domain'
+import { coverageCenter, validId } from '../domain'
 import { RequestError } from '../errors'
 import { requireOrganizationAccess } from '../permissions'
-import { joinOrganization, leaveOrganization, renameMember } from './service'
-import { isActiveMember, readMemberships, roster } from './store'
+import { joinOrganization, leaveOrganization } from './service'
+import {
+  activeMemberCount,
+  isActiveMember,
+  readMemberships,
+  roster,
+} from './store'
 import type { LeaveChoice, MembershipList } from './domain'
 
 async function list(uid: string): Promise<MembershipList> {
@@ -13,15 +18,28 @@ async function list(uid: string): Promise<MembershipList> {
     readCatalog(),
   ])
   return {
-    memberships: Object.values(records).map((member) => ({
-      organizationId: member.organizationId,
-      organizationName:
-        catalog.organizations.find((o) => o.id === member.organizationId)
-          ?.name ?? 'Unavailable organization',
-      displayName: member.displayName,
-      status: member.status,
-      leaving: !!member.exit,
-    })),
+    memberships: await Promise.all(
+      Object.values(records).map(async (member) => {
+        const organization = catalog.organizations.find(
+          (o) => o.id === member.organizationId,
+        )
+        return {
+          organizationId: member.organizationId,
+          organizationName: organization?.name ?? 'Unavailable organization',
+          status: member.status,
+          leaving: !!member.exit,
+          memberCount: organization
+            ? await activeMemberCount(member.organizationId)
+            : null,
+          location: organization
+            ? {
+                label: organization.location ?? null,
+                center: coverageCenter(organization.coverage),
+              }
+            : null,
+        }
+      }),
+    ),
   }
 }
 
@@ -33,7 +51,6 @@ export const membershipExtension: OrganizationExtension = async (
   const actions = [
     'memberships',
     'joinOrganization',
-    'renameMember',
     'organizationMembers',
     'leaveOrganization',
     'resumeLeaving',
@@ -51,7 +68,7 @@ export const membershipExtension: OrganizationExtension = async (
     return true
   }
   if (body.action === 'joinOrganization') {
-    await joinOrganization(uid, body.code, body.displayName)
+    await joinOrganization(uid, body.code)
     res.json(await list(uid))
     return true
   }
@@ -66,8 +83,6 @@ export const membershipExtension: OrganizationExtension = async (
     res.json(page)
     return true
   }
-  if (body.action === 'renameMember')
-    await renameMember(uid, organizationId, body.displayName)
   if (body.action === 'reviewLeaving') {
     const member = (await readMemberships(uid))[organizationId]
     requireOrganizationAccess(

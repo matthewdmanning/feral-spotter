@@ -1,12 +1,12 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { getAuth } from 'firebase-admin/auth'
 import { db, readOrganization } from '../store'
-import { changeMembership, readMemberships } from './store'
+import { changeMembership, readMemberships, renameMemberships } from './store'
 import { makePermission, validateGrant } from '../api'
 import { readLedger, updateLedger } from '../store'
 import { validId, type Permission } from '../domain'
 import { RequestError } from '../errors'
-import { memberName, type LeaveChoice } from './domain'
+import { memberName, type LeaveChoice, type Membership } from './domain'
 
 const invitePath = (code: string) =>
   `organizationInvites/${createHash('sha256').update(code).digest('hex')}`
@@ -18,19 +18,19 @@ export async function createInvite(organizationId: string) {
   return code
 }
 
-export async function joinOrganization(
-  uid: string,
-  code: unknown,
-  name: unknown,
-) {
+/** The Firebase Auth profile name: read-only here, shared by every membership. */
+async function accountName(uid: string): Promise<string> {
+  try {
+    return memberName((await getAuth().getUser(uid)).displayName)
+  } catch {
+    throw new RequestError(400, 'Account name required')
+  }
+}
+
+export async function joinOrganization(uid: string, code: unknown) {
   if (typeof code !== 'string' || !/^[a-zA-Z0-9_-]{32}$/.test(code.trim()))
     throw new RequestError(400, 'Invalid invite code')
-  let displayName: string
-  try {
-    displayName = memberName(name)
-  } catch {
-    throw new RequestError(400, 'Invalid display name')
-  }
+  const displayName = await accountName(uid)
   const invite = (await db().doc(invitePath(code.trim())).get()).data()
   if (!invite || !validId(invite.organizationId))
     throw new RequestError(404, 'Invalid invite code')
@@ -52,31 +52,19 @@ export async function joinOrganization(
       },
     }
   })
+  // A changed profile name reaches every existing membership too.
+  await renameMemberships(uid, displayName)
 }
 
-export async function renameMember(
-  uid: string,
-  organizationId: string,
-  name: unknown,
-) {
-  let displayName: string
-  try {
-    displayName = memberName(name)
-  } catch {
-    throw new RequestError(400, 'Invalid display name')
-  }
-  await changeMembership(uid, organizationId, (records) => {
-    const member = records[organizationId]
-    if (
-      !member ||
-      !['active', 'pending'].includes(member.status) ||
-      member.exit
+/** Names one leave attempt's block and its ledger receipts. */
+function leaveToken(uid: string, organizationId: string, member: Membership) {
+  const { mutationId, attempt } = member.exit!
+  return createHash('sha256')
+    .update(
+      `${uid}/${organizationId}/${member.requestId}/${mutationId}/${attempt}`,
     )
-      throw new RequestError(403, 'Membership unavailable')
-    return { ...records, [organizationId]: { ...member, displayName } }
-  })
+    .digest('hex')
 }
-
 /** A durable saga: block grants, change permissions, end membership, release the block. */
 export async function leaveOrganization(
   uid: string,
@@ -111,14 +99,14 @@ export async function leaveOrganization(
       return records
     }
     if (member.status === 'left' || member.status === 'removed') return records
-    return { ...records, [organizationId]: { ...member, exit: choice } }
+    // A fresh attempt id: an aborted attempt's receipts never satisfy a retry.
+    const exit = { ...choice, attempt: randomBytes(16).toString('hex') }
+    return { ...records, [organizationId]: { ...member, exit } }
   })
   const member = records[organizationId]
   if (!member.exit) return
   const saved = member.exit
-  const token = createHash('sha256')
-    .update(`${uid}/${organizationId}/${member.requestId}/${saved.mutationId}`)
-    .digest('hex')
+  const token = leaveToken(uid, organizationId, member)
   await updateLedger(uid, `block-${token}`, async () => ({
     type: 'blockOrganization',
     organizationId,
@@ -231,6 +219,22 @@ export async function moderateMembership(
       `remove-${randomBytes(16).toString('hex')}`,
       async () => ({ type: 'revokeOrganization', organizationId }),
     )
+    // A leave that could not finish still holds its block; removal ends it.
+    const stuck = (await readMemberships(uid))[organizationId]
+    if (stuck?.exit?.attempt) {
+      const token = leaveToken(uid, organizationId, stuck)
+      try {
+        await updateLedger(uid, `release-${token}`, async () => ({
+          type: 'unblockOrganization',
+          organizationId,
+          token,
+        }))
+      } catch (error) {
+        // 409: the attempt never placed its block, or already released it.
+        if (!(error instanceof RequestError && error.status === 409))
+          throw error
+      }
+    }
     await changeMembership(uid, organizationId, (records) => {
       const { exit: _exit, ...current } = records[organizationId]
       return { ...records, [organizationId]: { ...current, status: 'removed' } }

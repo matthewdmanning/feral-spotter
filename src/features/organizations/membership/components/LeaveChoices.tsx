@@ -1,5 +1,7 @@
 import { Fragment as ReactFragment, useState, useEffect, useRef } from 'react'
-import { Text, Pressable } from 'react-native'
+import { Pressable } from 'react-native'
+import { Text } from '@/src/shared/ui/atoms/Text'
+import { formatCopy, organizationCopy } from '@/src/shared/config/text'
 import { randomUUID } from 'expo-crypto'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { CheckboxBox } from '@/src/shared/ui/atoms/CheckboxBox'
@@ -8,7 +10,6 @@ import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import {
   DEFAULT_SHARING,
   SHARING_FIELD_KEYS,
-  SHARING_FIELD_LABELS,
 } from '@/src/shared/types/Organizations'
 import { useOrganizationSharingStore } from '@/src/features/organizations/hooks/useOrganizationSharingStore'
 import {
@@ -29,6 +30,7 @@ export function LeaveChoices({
   busy: boolean
   onLeave: (choice: LeaveChoice) => Promise<boolean>
 }) {
+  const copy = organizationCopy.leave
   const saved =
     useOrganizationSharingStore.getState().accounts[uid]?.settings ??
     DEFAULT_SHARING
@@ -75,28 +77,22 @@ export function LeaveChoices({
   )
   return (
     <>
-      <Text style={styles.body}>
-        Leaving unshares all your Sightings from this organization by default.
-        Copies already received cannot be recalled.
-      </Text>
-      {checkbox('Keep sharing my existing Sightings', keep, () => {
+      <Text style={styles.body}>{copy.disclosure}</Text>
+      {checkbox(copy.keep, keep, () => {
         setKeep(!keep)
         reset()
       })}
       {keep && (
         <>
-          <Text style={styles.hint}>
-            Choose again for all existing shares. Cat count and approximate area
-            remain included. Future Sightings are not shared automatically.
-          </Text>
-          {checkbox('Anonymous', anonymous, () => {
+          <Text style={styles.hint}>{copy.retainedDisclosure}</Text>
+          {checkbox(organizationCopy.submission.anonymous, anonymous, () => {
             setAnonymous(!anonymous)
             reset()
           })}
           {SHARING_FIELD_KEYS.map((key) => (
             <ReactFragment key={key}>
               {checkbox(
-                `Share ${SHARING_FIELD_LABELS[key].toLowerCase()}`,
+                organizationCopy.sharingSettings.shareFieldLabels[key],
                 settings.fields[key],
                 () => {
                   setSettings({
@@ -113,7 +109,7 @@ export function LeaveChoices({
           ))}
           {settings.fields.name && !anonymous && (
             <TextField
-              label="Name to share"
+              label={organizationCopy.sharingSettings.nameField}
               value={settings.name}
               maxLength={200}
               editable={!busy && !loading}
@@ -125,7 +121,7 @@ export function LeaveChoices({
           )}
           {settings.fields.phone && !anonymous && (
             <TextField
-              label="Phone to share"
+              label={organizationCopy.sharingSettings.phoneField}
               value={settings.phone}
               maxLength={50}
               editable={!busy && !loading}
@@ -138,13 +134,14 @@ export function LeaveChoices({
           )}
           {settings.fields.email && !anonymous && (
             <Text style={styles.body}>
-              Email to share: {email ?? 'No email available'}
+              {formatCopy(organizationCopy.sharingSettings.emailValue, {
+                email:
+                  email ?? organizationCopy.sharingSettings.emailUnavailable,
+              })}
             </Text>
           )}
           <Text style={styles.hint}>
-            {anonymous
-              ? 'Anonymous overrides name, email, and phone.'
-              : 'Selected contact fields are shared with the organization; member views exclude contact information.'}
+            {anonymous ? copy.anonymousDisclosure : copy.contactDisclosure}
           </Text>
           {!reviewed && (
             <AppButton
@@ -175,10 +172,7 @@ export function LeaveChoices({
                     })
                   })
                   .catch((error) => {
-                    if (!isRequestCancelled(error))
-                      setError(
-                        'Unable to review current shares. Retry or leave and unshare everything.',
-                      )
+                    if (!isRequestCancelled(error)) setError(copy.reviewFailed)
                   })
                   .finally(() => {
                     if (pendingReview.current === controller) {
@@ -188,13 +182,13 @@ export function LeaveChoices({
                   })
               }}
             >
-              Review retained sharing
+              {copy.review}
             </AppButton>
           )}
           {reviewed && review && (
-            <Text
-              style={styles.body}
-            >{`Confirm these choices for ${review.shareCount} existing Sightings before leaving.`}</Text>
+            <Text style={styles.body}>
+              {formatCopy(copy.reviewSummary, { count: review.shareCount })}
+            </Text>
           )}
         </>
       )}
@@ -214,18 +208,14 @@ export function LeaveChoices({
           setChoice(submitted)
           void onLeave(submitted).then((success) => {
             if (!success) {
-              setError(
-                'Leaving is incomplete. Refresh memberships and resume if a leave operation is pending.',
-              )
+              setError(copy.incomplete)
               setReview(null)
               setChoice(null)
             }
           })
         }}
       >
-        {keep
-          ? 'Confirm sharing and leave'
-          : 'Leave and unshare all my Sightings'}
+        {keep ? copy.confirmKeep : copy.confirmRevoke}
       </AppButton>
     </>
   )

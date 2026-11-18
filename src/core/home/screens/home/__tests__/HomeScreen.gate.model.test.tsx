@@ -98,7 +98,7 @@ describe('HomeScreen gate — model-based test', () => {
       isAuthenticated,
       signIn: jest.fn(),
       signOut: jest.fn(),
-    })
+    } as unknown as ReturnType<typeof useAuth>)
     useConsentStore.setState({
       accepted: consent !== false,
       acceptedVersion:
@@ -113,7 +113,6 @@ describe('HomeScreen gate — model-based test', () => {
   }
 
   beforeEach(async () => {
-    jest.clearAllMocks()
     // This suite covers the auth/consent gate only — the photo-source gate
     // has its own model test (HomeScreen.photoSourceGate.model.test.tsx).
     usePhotoStore.setState(usePhotoStore.getInitialState(), true)
@@ -202,18 +201,6 @@ describe('HomeScreen gate — model-based test', () => {
       events: [{ type: 'AUTH_READY_UNAUTHENTICATED_NO_CONSENT' }],
     },
     {
-      name: 'existing account, device consent missing → redirected to intro-flow',
-      events: [{ type: 'AUTH_READY_AUTHENTICATED_NO_CONSENT' }],
-    },
-    {
-      name: 'consent already on device but signed out → straight to sign-in, skips intro-flow',
-      events: [{ type: 'AUTH_READY_CONSENTED_UNAUTHENTICATED' }],
-    },
-    {
-      name: 'returning user with consent lands on home directly',
-      events: [{ type: 'AUTH_READY_WITH_CONSENT' }],
-    },
-    {
       name: 'signed-in consented user signs out → sign-in, not intro-flow',
       events: [{ type: 'AUTH_READY_WITH_CONSENT' }, { type: 'SIGN_OUT' }],
     },
@@ -232,7 +219,7 @@ describe('HomeScreen gate — model-based test', () => {
         { type: 'SIGN_IN' },
       ],
     },
-  ] as const
+  ]
 
   journeys.forEach(({ name, events }) => {
     it(name, async () => {

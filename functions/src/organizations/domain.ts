@@ -8,6 +8,8 @@ export interface Organization {
   name: string
   active: boolean
   coverage: Coverage
+  /** Optional human-readable area, such as a city; cards fall back to the coverage center. */
+  location?: string
 }
 export interface Catalog {
   version: string
@@ -111,6 +113,16 @@ export function validLocation(value: {
     Number.isFinite(longitude) &&
     Math.abs(longitude) <= 180
   )
+}
+/** Center of the coverage bounding box: a stable, non-precise area reference. */
+export function coverageCenter(coverage: Coverage): Location {
+  const points = polygonsOf(coverage).flatMap(([outer]) => outer)
+  const longitudes = points.map(([longitude]) => longitude)
+  const latitudes = points.map(([, latitude]) => latitude)
+  return {
+    latitude: (Math.min(...latitudes) + Math.max(...latitudes)) / 2,
+    longitude: (Math.min(...longitudes) + Math.max(...longitudes)) / 2,
+  }
 }
 function polygonsOf(coverage: Coverage): Position[][][] {
   return coverage.type === 'Polygon'
@@ -272,6 +284,10 @@ export function parseCatalog(input: unknown): Catalog {
       !org.name.trim() ||
       org.name.length > 200 ||
       typeof org.active !== 'boolean' ||
+      (org.location !== undefined &&
+        (typeof org.location !== 'string' ||
+          !org.location.trim() ||
+          org.location.length > 200)) ||
       !org.coverage ||
       !['Polygon', 'MultiPolygon'].includes(org.coverage.type)
     )
@@ -331,6 +347,11 @@ export function generalLocation(
     east: +(west + 0.01).toFixed(2),
   }
 }
+/** Organizations receive JPEG photos only; other formats are never offered. */
+export function isSharedPhotoPath(path: string): boolean {
+  return /^photo-[0-9]\.(jpg|jpeg)$/.test(path.split('/').pop() ?? '')
+}
+
 const CAT_DETAIL_KEYS = [
   'age',
   'ear_tipped',

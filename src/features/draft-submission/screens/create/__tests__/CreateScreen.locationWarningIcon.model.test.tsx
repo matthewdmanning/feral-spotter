@@ -4,6 +4,8 @@ import React from 'react'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import CreateSubmissionScreen from '@/src/features/draft-submission/screens/create/index'
+import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
+import { observedCat } from '@/src/test-utils/catFixtures'
 import { submissionCopy } from '@/src/shared/config/text'
 
 /**
@@ -20,8 +22,6 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({}),
   router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() },
 }))
-
-jest.mock('expo-crypto', () => ({ randomUUID: jest.fn(() => 'sub-1') }))
 
 jest.mock('@/src/shared/lib/submissionCache', () => ({
   createSubmissionCache: jest.fn().mockResolvedValue({}),
@@ -43,45 +43,6 @@ jest.mock('@/src/core/location/liveFix', () => ({
   }),
 }))
 
-interface MockSubmission {
-  location_type: string
-  time_type: string
-  latitude?: number
-  longitude?: number
-  accuracy?: number | null
-}
-
-let mockSubmission: MockSubmission
-
-jest.mock('@/src/shared/hooks/useSubmissionStore', () => ({
-  useSubmissionStore: (
-    sel: (s: {
-      submission: MockSubmission
-      cats: {
-        local_id: string
-        age: string
-        pattern: string
-        hair_length: string
-      }[]
-      setSubmissionLocation: jest.Mock
-      setManualTime: jest.Mock
-    }) => unknown,
-  ) =>
-    sel({
-      submission: mockSubmission,
-      cats: [
-        {
-          local_id: 'cat-1',
-          age: 'adult',
-          pattern: 'tabby',
-          hair_length: 'short',
-        },
-      ],
-      setSubmissionLocation: jest.fn(),
-      setManualTime: jest.fn(),
-    }),
-}))
-
 const gateMachine = createMachine({
   id: 'locationWarningIcon',
   initial: 'unmounted',
@@ -101,7 +62,10 @@ const gateMachine = createMachine({
 describe('Submission Details location-warning icon — model-based test', () => {
   const model = createTestModel(gateMachine)
 
-  const mount = async () => await render(<CreateSubmissionScreen />)
+  const mount = async () => {
+    useSubmissionStore.setState({ cats: [observedCat()] })
+    await render(<CreateSubmissionScreen />)
+  }
 
   const testParams = {
     states: {
@@ -123,27 +87,28 @@ describe('Submission Details location-warning icon — model-based test', () => 
     },
     events: {
       MOUNT_NO_FIX: async () => {
-        mockSubmission = { location_type: 'device', time_type: 'device' }
         await mount()
       },
       MOUNT_LOW_ACCURACY: async () => {
-        mockSubmission = {
-          location_type: 'device',
-          time_type: 'device',
-          latitude: 34.68,
-          longitude: -82.83,
-          accuracy: 200,
-        }
+        useSubmissionStore.setState((state) => ({
+          submission: {
+            ...state.submission,
+            latitude: 34.68,
+            longitude: -82.83,
+            accuracy: 200,
+          },
+        }))
         await mount()
       },
       MOUNT_GOOD_FIX: async () => {
-        mockSubmission = {
-          location_type: 'device',
-          time_type: 'device',
-          latitude: 34.68,
-          longitude: -82.83,
-          accuracy: 10,
-        }
+        useSubmissionStore.setState((state) => ({
+          submission: {
+            ...state.submission,
+            latitude: 34.68,
+            longitude: -82.83,
+            accuracy: 10,
+          },
+        }))
         await mount()
       },
     },
@@ -171,7 +136,6 @@ describe('Submission Details location-warning icon — model-based test', () => 
   })
 
   it('tapping the icon while warning is shown opens the map picker', async () => {
-    mockSubmission = { location_type: 'device', time_type: 'device' }
     await mount()
     await userEvent.press(
       screen.getByLabelText(
@@ -182,13 +146,14 @@ describe('Submission Details location-warning icon — model-based test', () => 
   })
 
   it('tapping the icon once a good fix is acquired does nothing (disabled)', async () => {
-    mockSubmission = {
-      location_type: 'device',
-      time_type: 'device',
-      latitude: 34.68,
-      longitude: -82.83,
-      accuracy: 10,
-    }
+    useSubmissionStore.setState((state) => ({
+      submission: {
+        ...state.submission,
+        latitude: 34.68,
+        longitude: -82.83,
+        accuracy: 10,
+      },
+    }))
     await mount()
     await userEvent.press(
       screen.getByLabelText(submissionCopy.location.acquiredAccessibility),
@@ -197,13 +162,15 @@ describe('Submission Details location-warning icon — model-based test', () => 
   })
 
   it('reopens the map picker for a previously selected manual location', async () => {
-    mockSubmission = {
-      location_type: 'pin',
-      time_type: 'device',
-      latitude: 10,
-      longitude: 20,
-      accuracy: null,
-    }
+    useSubmissionStore.setState((state) => ({
+      submission: {
+        ...state.submission,
+        location_type: 'pin',
+        latitude: 10,
+        longitude: 20,
+        accuracy: null,
+      },
+    }))
     await mount()
 
     await userEvent.press(

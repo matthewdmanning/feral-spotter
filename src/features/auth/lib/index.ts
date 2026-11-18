@@ -32,7 +32,11 @@ function createDevAuthProvider(): IAuthProvider {
     // gated flow without a real provider, so it ignores which one was used.
     signInWithProvider: grantStub,
     signInWithEmail: grantStub,
-    registerWithEmail: grantStub,
+    registerWithEmail: async (_email, _password, displayName) => {
+      currentUser = { ...DEV_STUB_USER, displayName }
+      notify()
+      return currentUser
+    },
     // The stub has no verification mail: the new address applies at once.
     changeEmail: async (newEmail) => {
       if (!currentUser) throw new Error('NOT_SIGNED_IN')

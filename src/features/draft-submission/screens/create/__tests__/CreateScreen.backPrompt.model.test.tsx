@@ -4,11 +4,10 @@ import { router } from 'expo-router'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
+import CreateSubmissionScreen from '@/src/features/draft-submission/screens/create/index'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import { observedCat } from '@/src/test-utils/catFixtures'
-import { submissionPhoto } from '@/src/test-utils/photoFixtures'
-import CreateSubmissionScreen from '@/src/features/draft-submission/screens/create/index'
 import { pressDialogButton } from '@/src/test-utils/dialog'
 
 /**
@@ -34,8 +33,6 @@ jest.mock('expo-router', () => ({
     navigate: jest.fn(),
   },
 }))
-
-jest.mock('expo-crypto', () => ({ randomUUID: jest.fn(() => 'sub-1') }))
 
 jest.mock('@/src/shared/lib/submissionCache', () => ({
   createSubmissionCache: jest.fn().mockResolvedValue({}),
@@ -100,9 +97,9 @@ describe('Submission Details hardware Back — model-based test', () => {
 
   beforeEach(async () => {
     mockFocused = true
-    usePhotoStore.setState({ source: 'camera', photos: [submissionPhoto()] })
-    useSubmissionStore.setState({ cats: [observedCat()] })
     useUIStore.setState({ dialog: null })
+    usePhotoStore.setState({ source: 'camera' })
+    useSubmissionStore.setState({ cats: [observedCat()] })
     lastBackHandled = false
     const result = await render(<CreateSubmissionScreen />)
     rerender = result.rerender

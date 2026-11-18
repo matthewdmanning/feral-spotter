@@ -40,11 +40,7 @@ async function joinApproved(account: Account, organizationId: string) {
 async function requestToJoin(account: Account, organizationId: string) {
   const code = await createInvite(organizationId)
   const response = await call(
-    {
-      action: 'joinOrganization',
-      code,
-      displayName: `${organizationId} member`,
-    },
+    { action: 'joinOrganization', code },
     account.token,
   )
   expect(response.status).toBe(200)

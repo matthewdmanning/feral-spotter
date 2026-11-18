@@ -6,11 +6,6 @@ import { fakeOrganizationsService } from '@/src/test-utils/organizationsService'
 import { DEFAULT_SHARING } from '@/src/shared/types/Organizations'
 import type { LeaveChoice } from '@/functions/src/organizations/membership/domain'
 
-jest.mock('expo-crypto', () => ({
-  ...jest.requireActual('expo-crypto'),
-  randomUUID: () => 'leave-test',
-}))
-
 beforeEach(() => {
   useAuthStore.setState({
     user: { uid: 'member', email: 'member@example.test' },
@@ -42,16 +37,16 @@ test('default leaving revokes everything, while retained sharing needs explicit 
   )
   expect(
     screen.getByRole('checkbox', {
-      name: 'Keep sharing my existing Sightings',
+      name: 'Keep sharing my existing sightings',
     }),
   ).not.toBeChecked()
   await user.press(
-    screen.getByRole('button', { name: 'Leave and unshare all my Sightings' }),
+    screen.getByRole('button', { name: 'Leave and unshare all my sightings' }),
   )
   expect(choices[0]).toMatchObject({ mode: 'revoke' })
   await user.press(
     screen.getByRole('checkbox', {
-      name: 'Keep sharing my existing Sightings',
+      name: 'Keep sharing my existing sightings',
     }),
   )
   expect(
@@ -63,7 +58,7 @@ test('default leaving revokes everything, while retained sharing needs explicit 
   )
   expect(
     await screen.findByText(
-      'Confirm these choices for 3 existing Sightings before leaving.',
+      '3 existing sightings retain these sharing permissions.',
     ),
   ).toBeOnTheScreen()
   await user.press(screen.getByRole('checkbox', { name: 'Share cat details' }))
