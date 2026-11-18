@@ -139,3 +139,17 @@ tags:
 **Purpose:** Remove older-install upgrade paths because the project has no active users or data to migrate.
 **Change:** Removed the deprecated photo_links cache field and read fallback. Sighting photo counts use the current photos array; drafts without submitted read paths count zero.
 **Verification:** Full client suite: 120 suites / 550 tests. Functions: 8 suites / 65 tests. Type checks and focused lint pass. Organization integration: 23 emulator scenarios; Rules: 24 tests. No deployment or device check.
+
+## 2026-11-12 — fix: permission placement in Sighting detail
+
+**Purpose:** Selectively port the review branch's sighting-level permission placement.
+**Change:** Organization permissions appear after the sighting summary and before
+Cats Recorded, retaining the cloud-Submission-ID condition and existing revocation
+behavior. The rendered-screen regression checks this order with real permissions
+and confirms that a sighting without a cloud ID omits the card. Native layout has
+not been exercised on a device.
+
+## 2026-11-15 — refactor
+
+**Purpose:** Share map framing with the Shared Sightings map instead of duplicating it.
+**Change:** `mapViewForSpots`, `MapSize` and the Google map UI settings moved to `src/shared/lib/mapView.ts`. The map height is now the `layout.mapHeight` theme token. Behavior is unchanged. See [organization sharing](2026-11-09-feat-organization-sharing.md).

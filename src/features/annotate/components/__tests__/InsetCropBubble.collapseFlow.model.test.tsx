@@ -4,6 +4,7 @@ import { act, userEvent, render } from '@testing-library/react-native'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import { InsetCropBubble } from '@/src/features/annotate/components/InsetCropBubble'
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
 
 /**
  * Models the bubble's own collapse/expand flow (#202): defaults collapsed
@@ -28,14 +29,7 @@ beforeEach(() => {
   usePhotoStore.setState({
     ...usePhotoStore.getInitialState(),
     photos: [
-      {
-        local_id: 'photo-1',
-        uri: 'file://photo-1.jpg',
-        width: 1000,
-        height: 1000,
-        uploaded: false,
-        upload_progress: 0,
-      },
+      submissionPhoto({ uri: 'file://photo-1.jpg', width: 1000, height: 1000 }),
     ],
   })
   useBoundingBoxStore.setState(useBoundingBoxStore.getInitialState())

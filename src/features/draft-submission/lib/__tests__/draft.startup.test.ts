@@ -13,6 +13,7 @@ import {
 } from '@/src/shared/lib/submissionCache'
 import { deleteSubmissionUploads } from '@/src/features/draft-submission/lib/upload/firebaseUpload'
 import { discardUnsurvivingDraft } from '@/src/features/draft-submission/lib/draft'
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
 
 /**
  * The start-up survival rule (#424): a draft outlives the process only while
@@ -38,17 +39,12 @@ const HOUR_MS = 60 * 60 * 1000
 const CACHE_ID = 'cache-1'
 
 const seedDraft = (updatedAt: number | null) => {
-  useSubmissionStore.setState((s) => ({
-    submission: { ...s.submission, address: 'Draft address' },
+  useSubmissionStore.setState((state) => ({
+    submission: { ...state.submission, address: 'Draft address' },
   }))
-  usePhotoStore.getState().addPhoto({
-    local_id: 'photo-1',
-    uri: 'file://photo-1.jpg',
-    uploaded: false,
-    upload_progress: 0,
-    width: 100,
-    height: 100,
-  })
+  usePhotoStore
+    .getState()
+    .addPhoto(submissionPhoto({ uri: 'file://photo-1.jpg' }))
   usePhotoStore.setState({ updated_at: updatedAt })
 }
 
@@ -75,14 +71,12 @@ describe('discardUnsurvivingDraft (#424)', () => {
   it('signals capture readiness after a surviving draft is decided', async () => {
     seedDraft(NOW - SUBMISSION_STALE_MS + HOUR_MS)
     const onCaptureReady = jest.fn(() =>
-      usePhotoStore.getState().addPhoto({
-        local_id: 'photo-new',
-        uri: 'file://photo-new.jpg',
-        uploaded: false,
-        upload_progress: 0,
-        width: 100,
-        height: 100,
-      }),
+      usePhotoStore.getState().addPhoto(
+        submissionPhoto({
+          local_id: 'photo-new',
+          uri: 'file://photo-new.jpg',
+        }),
+      ),
     )
 
     await discardUnsurvivingDraft(NOW, onCaptureReady)
@@ -153,14 +147,9 @@ describe('discardUnsurvivingDraft (#424)', () => {
 
     const startup = discardUnsurvivingDraft(NOW, () => {
       expect(oldFile.exists).toBe(true)
-      usePhotoStore.getState().addPhoto({
-        local_id: 'photo-new',
-        uri: newFile.uri,
-        uploaded: false,
-        upload_progress: 0,
-        width: 100,
-        height: 100,
-      })
+      usePhotoStore
+        .getState()
+        .addPhoto(submissionPhoto({ local_id: 'photo-new', uri: newFile.uri }))
     })
 
     await deleteStarted.promise
@@ -180,8 +169,8 @@ describe('discardUnsurvivingDraft (#424)', () => {
   })
 
   it('discards draft data that has no photo behind it', async () => {
-    useSubmissionStore.setState((s) => ({
-      submission: { ...s.submission, address: 'Orphan address' },
+    useSubmissionStore.setState((state) => ({
+      submission: { ...state.submission, address: 'Orphan address' },
     }))
     await discardUnsurvivingDraft(NOW)
     expect(useSubmissionStore.getState().submission.address).toBeUndefined()

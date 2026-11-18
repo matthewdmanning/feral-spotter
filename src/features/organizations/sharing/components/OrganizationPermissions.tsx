@@ -9,6 +9,7 @@ import {
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import { TextButton } from '@/src/shared/ui/atoms/TextButton'
 import { useAuth } from '@/src/features/auth/lib/useAuth'
+import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { showAlert } from '@/src/shared/hooks/useUIStore'
 import {
   useOrganizationSharingStore,
@@ -23,6 +24,7 @@ import {
   includedSummary,
 } from '@/src/features/organizations/sharing/lib/sharing'
 import { styles } from '@/src/features/organizations/components/styles'
+import { formatInlineDateTime } from '@/src/shared/utils/formatDateTime'
 
 function reviewMessage({ grant, organizationName }: ReviewedGrant): string {
   const contact = [
@@ -47,8 +49,10 @@ function reviewMessage({ grant, organizationName }: ReviewedGrant): string {
 /** Existing permissions stay manageable even after a flag is turned off. */
 export function OrganizationPermissions({
   submissionId,
+  organizationId,
 }: {
   submissionId?: string
+  organizationId?: string
 }) {
   const { user } = useAuth()
   const enabled = useOrganizationsFlag((s) => s.enabled)
@@ -66,29 +70,55 @@ export function OrganizationPermissions({
   if (!user || !hydrated) return null
   const uid = user.uid
   const permissions = account.ledger.permissions.filter(
-    (p) => !submissionId || p.submissionId === submissionId,
+    (p) =>
+      (!organizationId || p.organizationId === organizationId) &&
+      (!submissionId || p.submissionId === submissionId),
   )
   const pending = account.outbox.filter(
     (p) =>
-      !submissionId ||
-      p.action === 'revokeOrganization' ||
-      (p.action === 'revoke' && p.submissionId === submissionId) ||
-      (p.action === 'grant' && p.grant.submissionId === submissionId),
+      (!organizationId || p.organizationId === organizationId) &&
+      (!submissionId ||
+        p.action === 'revokeOrganization' ||
+        (p.action === 'revoke' && p.submissionId === submissionId) ||
+        (p.action === 'grant' && p.grant.submissionId === submissionId)),
   )
-  if (!permissions.length && !pending.length) return null
+  if (!organizationId && !permissions.length && !pending.length) return null
   const copy = organizationCopy.permissions
-  const revoke = (organizationId: string, sightingId?: string) =>
-    showAlert(copy.revokeTitle, copy.revokeMessage, [
-      { text: commonCopy.cancel, style: 'cancel' },
-      {
-        text: copy.revoke,
-        style: 'destructive',
-        onPress: () =>
-          useOrganizationSharingStore
-            .getState()
-            .revoke(uid, organizationId, sightingId),
-      },
-    ])
+  /** `sharedAt` names the sighting by when it was shared; ids mean nothing to people. */
+  const revoke = (targetId: string, sightingId?: string, sharedAt?: string) => {
+    const name =
+      permissions.find((p) => p.organizationId === targetId)
+        ?.organizationName ??
+      pending.find((p) => p.organizationId === targetId)?.organizationName ??
+      FALLBACK_ORGANIZATION_NAME
+    showAlert(
+      copy.revokeTitle,
+      formatCopy(
+        !sightingId
+          ? copy.revokeOrganizationMessage
+          : sharedAt
+            ? copy.revokeSharedSightingMessage
+            : copy.revokeSightingMessage,
+        {
+          organization: name,
+          date: sharedAt ? formatInlineDateTime(sharedAt) : '',
+        },
+      ),
+      [
+        { text: commonCopy.cancel, style: 'cancel' },
+        {
+          text: copy.revoke,
+          style: 'destructive',
+          onPress: () => {
+            if (useAuthStore.getState().user?.uid !== uid) return
+            useOrganizationSharingStore
+              .getState()
+              .revoke(uid, targetId, sightingId)
+          },
+        },
+      ],
+    )
+  }
   const review = async (item: PendingOrganizationAction) => {
     const state = useOrganizationSharingStore.getState()
     let reviewed: ReviewedGrant | null
@@ -122,14 +152,28 @@ export function OrganizationPermissions({
     ])
   }
   const organizations = [
-    ...new Map(
-      permissions.map((p) => [p.organizationId, p.organizationName]),
-    ).entries(),
+    ...new Map([
+      ...permissions
+        .filter((p) => !p.revokedAt)
+        .map((p) => [p.organizationId, p.organizationName] as const),
+      ...pending
+        .filter((p) => p.action === 'grant')
+        .map(
+          (p) =>
+            [
+              p.organizationId,
+              p.organizationName ?? FALLBACK_ORGANIZATION_NAME,
+            ] as const,
+        ),
+    ]).entries(),
   ]
   return (
     <GlassSurface kind="card" style={styles.card}>
       <Text style={styles.title}>{copy.title}</Text>
       <Text style={styles.hint}>{copy.deliveryNotice}</Text>
+      {organizationId && !permissions.length && !pending.length && (
+        <Text style={styles.body}>{copy.noPermissions}</Text>
+      )}
       {permissions.map((permission) => {
         const revoking = pending.some(
           (item) =>
@@ -139,7 +183,10 @@ export function OrganizationPermissions({
                 item.submissionId === permission.submissionId)),
         )
         return (
-          <View key={`${permission.organizationId}-${permission.submissionId}`}>
+          <View
+            style={styles.permissionGroup}
+            key={`${permission.organizationId}-${permission.submissionId}`}
+          >
             <Text style={styles.body}>
               {formatCopy(copy.permissionStatus, {
                 organization: permission.organizationName,
@@ -150,22 +197,47 @@ export function OrganizationPermissions({
                     : copy.permissionSaved,
               })}
             </Text>
-            {submissionId && !permission.revokedAt && !revoking && (
-              <TextButton
-                tone="danger"
-                onPress={() =>
-                  revoke(permission.organizationId, permission.submissionId)
-                }
-              >
-                {copy.revokeForSighting}
-              </TextButton>
+            {organizationId && !permission.revokedAt && (
+              <Text style={styles.hint}>
+                {formatCopy(copy.sightingDetails, {
+                  date: formatInlineDateTime(permission.confirmedAt),
+                  fields: includedSummary(
+                    {
+                      fields: permission.fields,
+                      name: permission.data.contact?.name ?? '',
+                      phone: permission.data.contact?.phone ?? '',
+                    },
+                    permission.anonymous,
+                  ),
+                })}
+              </Text>
             )}
+            {(submissionId || organizationId) &&
+              !permission.revokedAt &&
+              !revoking && (
+                <TextButton
+                  tone="danger"
+                  onPress={() =>
+                    revoke(
+                      permission.organizationId,
+                      permission.submissionId,
+                      organizationId ? permission.confirmedAt : undefined,
+                    )
+                  }
+                >
+                  {organizationId
+                    ? formatCopy(copy.revokeNamedSighting, {
+                        date: formatInlineDateTime(permission.confirmedAt),
+                      })
+                    : copy.revokeForSighting}
+                </TextButton>
+              )}
           </View>
         )
       })}
       {pending.map((item) =>
         item.action === 'grant' ? (
-          <View key={item.mutationId}>
+          <View style={styles.permissionGroup} key={item.mutationId}>
             <Text style={styles.body}>
               {formatCopy(copy.pendingStatus, {
                 organization:

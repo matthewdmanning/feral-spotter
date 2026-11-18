@@ -29,11 +29,6 @@ jest.mock('expo-router', () => ({
 jest.mock('@/src/core/location/liveFix', () => ({
   stopLocationCapture: jest.fn(),
 }))
-// The supplied expo-crypto mock returns no UUIDs.
-jest.mock('expo-crypto', () => ({
-  ...jest.requireActual('expo-crypto'),
-  randomUUID: jest.fn(),
-}))
 jest.mock('@/src/features/draft-submission/lib/upload/firebaseUpload', () => ({
   uploadSubmissionMetadata: jest.fn().mockResolvedValue(undefined),
   finalizeSubmissionPhotoMetadata: jest.fn().mockResolvedValue(undefined),
@@ -143,6 +138,8 @@ test.each(['unchanged', 'withdrawn', 'anonymous'] as const)(
       )
     if (choice === 'anonymous')
       await user.press(form.getByRole('checkbox', { name: 'Anonymous' }))
+    // The real screen leaves after completion; avoid starting a new draft here.
+    await form.unmount()
     await act(async () => {
       releaseUpload()
       expect(await sending).toEqual({ kind: 'sent' })

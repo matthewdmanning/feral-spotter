@@ -1,5 +1,7 @@
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { authProvider } from '@/src/features/auth/lib'
+import { ORGANIZATION_REQUEST_TIMEOUT_MS } from '@/src/shared/config/constants'
+import { organizationCopy } from '@/src/shared/config/text'
 
 export class OrganizationSyncError extends Error {
   constructor(readonly status: number) {
@@ -13,33 +15,38 @@ export class OrganizationSyncError extends Error {
   }
 }
 function organizationErrorMessageForStatus(status: number): string {
+  const errors = organizationCopy.errors
   switch (status) {
     case 400:
-      return 'Check your invite code, display name, or sharing choices and try again.'
+      return errors.invalid
     case 401:
-      return 'Your session has expired. Sign in again to continue.'
+      return errors.sessionExpired
     case 403:
-      return 'You no longer have access. Refresh your memberships to check their status.'
+      return errors.accessLost
     case 404:
-      return 'The invite, organization, or shared Sighting is unavailable.'
+      return errors.unavailable
     case 409:
-      return 'Choices changed. Refresh and review again, or resume the pending leave operation.'
+      return errors.changed
     case 408:
-      return 'The request timed out. A change may still complete; refresh before retrying.'
+      return errors.timedOut
     case 429:
-      return 'The service limit was reached. Retry later, or leave without retaining shares.'
+      return errors.limit
     case 502:
     case 503:
     case 504:
-      return 'The organization service is temporarily unavailable. Please retry.'
+      return errors.serviceUnavailable
     default:
-      return 'Unable to connect. Check your connection and retry.'
+      return errors.connection
   }
 }
 export const organizationErrorMessage = (error: unknown): string =>
   error instanceof OrganizationSyncError
     ? error.message
-    : 'Unable to complete this request. Please retry.'
+    : organizationCopy.errors.unexpected
+/** The account can no longer see this data; a temporary failure is not this. */
+export const isAccessLost = (error: unknown) =>
+  error instanceof OrganizationSyncError &&
+  [401, 403, 404].includes(error.status)
 export const isRequestCancelled = (error: unknown) =>
   error instanceof Error && error.name === 'AbortError'
 function cancelled() {
@@ -67,7 +74,7 @@ export async function organizationRequest<T>(
   const timer = setTimeout(() => {
     timedOut = true
     controller.abort()
-  }, 15000)
+  }, ORGANIZATION_REQUEST_TIMEOUT_MS)
   let rejectInterrupted: () => void = () => {}
   const interrupted = new Promise<never>((_resolve, reject) => {
     rejectInterrupted = () => reject(cancelled())

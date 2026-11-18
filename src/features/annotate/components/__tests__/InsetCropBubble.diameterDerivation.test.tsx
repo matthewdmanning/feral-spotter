@@ -4,6 +4,7 @@ import { render } from '@testing-library/react-native'
 import { StyleSheet, Dimensions } from 'react-native'
 import { InsetCropBubble } from '@/src/features/annotate/components/InsetCropBubble'
 import { computeBubbleDiameter } from '@/src/features/annotate/lib/diameter'
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
 
 /**
  * Pins the normalized-box -> dp -> diameter derivation, not just the pure
@@ -40,14 +41,7 @@ beforeEach(() => {
   usePhotoStore.setState({
     ...usePhotoStore.getInitialState(),
     photos: [
-      {
-        local_id: 'photo-1',
-        uri: 'file://photo-1.jpg',
-        width: 1000,
-        height: 1000,
-        uploaded: false,
-        upload_progress: 0,
-      },
+      submissionPhoto({ uri: 'file://photo-1.jpg', width: 1000, height: 1000 }),
     ],
   })
   useBoundingBoxStore.setState(useBoundingBoxStore.getInitialState())

@@ -122,3 +122,21 @@ export const ENTRYPOINT_BUFFER_PERCENT = 0.2
  * start to wrap.
  */
 export const BUTTON_ROW_STACK_FONT_SCALE = 1.3
+
+/**
+ * Decimal places for an organization's coverage-center fallback location:
+ * two places is about 1 km, enough to name an area without a precise point.
+ */
+export const COVERAGE_CENTER_FRACTION_DIGITS = 2
+
+/**
+ * Open organization views refresh this often, and a membership read stays
+ * fresh this long: shared data changes on people's time, not by the second.
+ */
+export const ORGANIZATION_REFRESH_INTERVAL_MS = 30_000
+/** An organization request gives up after this, so a stalled call can be retried. */
+export const ORGANIZATION_REQUEST_TIMEOUT_MS = 15_000
+/** A shared approximate area is a 0.01° grid cell; more places add nothing. */
+export const APPROXIMATE_AREA_FRACTION_DIGITS = 2
+/** Five places is about 1 m: the precision a phone fix actually has. */
+export const PRECISE_LOCATION_FRACTION_DIGITS = 5

@@ -1,8 +1,3 @@
-// NetInfo's native reachability callbacks are unavailable under the RN Jest preset.
-jest.mock('@react-native-community/netinfo', () =>
-  require('@react-native-community/netinfo/jest/netinfo-mock'),
-)
-
 // Reanimated 4.7's own test environment (its Jest guide), instead of the
 // per-file 'react-native-reanimated/mock' it replaced.
 require('react-native-reanimated').setUpTests()
@@ -14,6 +9,14 @@ require('react-native-gesture-handler/jestSetup')
 jest.mock('react-native-worklets', () => ({
   ...jest.requireActual('react-native-worklets'),
   getUIRuntimeHolder: () => undefined,
+}))
+
+// jest-expo's expo-crypto mock returns undefined from randomUUID; ids must be
+// unique. Keep the other real exports. A test needing a fixed id sets it with
+// jest.mocked(randomUUID).mockReturnValue(...).
+jest.mock('expo-crypto', () => ({
+  ...jest.requireActual('expo-crypto'),
+  randomUUID: jest.fn(() => require('node:crypto').randomUUID()),
 }))
 
 // Use the library's mock so real styles resolve against real app tokens.
@@ -42,12 +45,17 @@ beforeEach(async () => {
   mmkvInstance.clearAll()
 })
 
+// MSW intercepts fetch at the network boundary (mswjs.io/docs/api/setup-server).
+// Unhandled requests fail, so no test reaches a real host.
+const { server } = require('./src/test-utils/mswServer')
+beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
+afterEach(() => server.resetHandlers())
+afterAll(() => server.close())
+
 // Return every Zustand store to its initial state (__mocks__/zustand.ts).
 const { act } = require('react')
-const { queryClient } = require('./src/shared/lib/queryClient')
 afterEach(() => {
   act(() => {
     globalThis.__zustandStoreResets?.forEach((reset) => reset())
-    queryClient.clear()
   })
 })

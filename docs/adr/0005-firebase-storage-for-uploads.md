@@ -260,4 +260,4 @@ Cost sizing is bounded without assuming a live storage price: at most 10
 photo slots per Submission, each with one JPEG under 20 MiB and, when present,
 one DNG under 64 MiB, for a worst-case upload envelope below 840 MiB per
 Submission (strict inequalities make the actual maximum one byte lower per
- object). The existing 256 KiB metadata bound is unchanged.
+object). The existing 256 KiB metadata bound is unchanged.

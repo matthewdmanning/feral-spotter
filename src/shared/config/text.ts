@@ -55,6 +55,7 @@ export const authCopy = {
   createOne: 'Create one',
   noAccount: 'No account? ',
   divider: 'or',
+  name: 'Name',
   email: 'Email',
   password: 'Password',
   confirmPassword: 'Confirm password',
@@ -90,6 +91,8 @@ export const authCopy = {
 export const validationCopy = {
   missingCatObservation: 'At least one cat observation is required.',
   missingPhoto: 'At least one photo is required.',
+  missingNameTitle: 'Missing name',
+  missingNameMessage: 'Enter the name organization members will see.',
   missingEmailTitle: 'Missing email',
   missingEmailMessage: 'Enter an email address.',
   weakPasswordTitle: 'Weak password',
@@ -100,6 +103,146 @@ export const validationCopy = {
 
 // Organization copy owner.
 export const organizationCopy = {
+  loading: 'Loading organizations…',
+  errors: {
+    invalid: 'Check your invite code or sharing choices and try again.',
+    sessionExpired: 'Your session has expired. Sign in again to continue.',
+    accessLost:
+      'You no longer have access. Refresh your memberships to check their status.',
+    unavailable: 'The invite, organization, or shared sighting is unavailable.',
+    changed:
+      'Choices changed. Refresh and review again, or resume the pending leave operation.',
+    timedOut:
+      'The request timed out. A change may still complete; refresh before retrying.',
+    limit:
+      'The service limit was reached. Retry later, or leave without retaining shares.',
+    serviceUnavailable:
+      'The organization service is temporarily unavailable. Please retry.',
+    connection: 'Unable to connect. Check your connection and retry.',
+    unexpected: 'Unable to complete this request. Please retry.',
+  },
+  pinInteractions: {
+    comments: 'Comments',
+    loadingComments: 'Loading comments…',
+    loadingReactions: 'Loading reactions…',
+    updatingReaction: 'Updating reaction…',
+    noComments: 'No comments yet.',
+    you: 'You',
+    formerMember: 'Former member',
+    delete: 'Delete',
+    deleting: 'Deleting…',
+    deleteOwnComment: 'Delete your comment',
+    loadMore: 'Load more comments',
+    retryComments: 'Retry comments',
+    retryReactions: 'Retry reactions',
+    addComment: 'Add a comment',
+    postComment: 'Post comment',
+    posted: 'Posted',
+    commentLimit:
+      'You reached the comment limit. Delete old comments to post more.',
+    reaction: '{label}, {count}',
+    reactionFace: '{emoji} {count}',
+  },
+  membership: {
+    title: 'Organizations',
+    signIn: 'Sign in to join an organization.',
+    offline: 'Connect to manage memberships.',
+    loading: 'Loading memberships…',
+    refresh: 'Refresh memberships',
+    join: 'Join an organization',
+    disclosure:
+      'Members see your account name. Joining does not share sightings or contact details.',
+    nameRequired: 'Your account needs a name to join an organization.',
+    inviteCode: 'Invite code',
+    request: 'Request membership',
+    empty: 'No memberships or pending requests.',
+    statuses: {
+      pending: 'Pending approval',
+      active: 'Active member',
+      rejected: 'Request declined',
+      removed: 'Membership removed',
+      left: 'Membership ended',
+    },
+    leavingIncomplete: 'Leaving incomplete',
+    resumeLeaving: 'Resume leaving',
+    members: 'Members',
+    cancelLeaving: 'Cancel leaving',
+    cancelRequest: 'Cancel request',
+    leave: 'Leave organization',
+    memberCount: { one: '1 member', other: '{count} members' },
+    locationNear: 'Near {latitude}, {longitude}',
+    arrange: 'Arrange',
+    saveOrder: 'Save',
+    move: 'Move {name}',
+  },
+  leave: {
+    disclosure:
+      'Leaving unshares all your sightings unless you retain sharing. Copies already received cannot be recalled.',
+    keep: 'Keep sharing my existing sightings',
+    retainedDisclosure:
+      'Retained shares include cat count and approximate area. Future sightings are not shared automatically.',
+    anonymousDisclosure: 'Anonymous shares exclude your name, email and phone.',
+    contactDisclosure:
+      'Selected contact details are shared with the organization. Member views exclude contact information.',
+    review: 'Review retained sharing',
+    reviewSummary:
+      '{count} existing sightings retain these sharing permissions.',
+    reviewFailed:
+      'Current shares are unavailable. Retry or leave and unshare all sightings.',
+    incomplete:
+      'Leaving is incomplete. Refresh memberships to check its status.',
+    confirmKeep: 'Confirm sharing and leave',
+    confirmRevoke: 'Leave and unshare all my sightings',
+  },
+  overview: {
+    title: 'Organization',
+    privacy: 'Privacy settings',
+    closePrivacy: 'Close privacy settings',
+    privacyDescription: 'Members see your account name.',
+    open: 'View {name}',
+    signIn: 'Sign in to view your organization.',
+    offline: 'Connect to load your organization.',
+    unavailable: 'This organization is not in your memberships.',
+    loading: 'Loading organization…',
+    refresh: 'Refresh organization',
+    sharedSightings: 'Shared Sightings',
+  },
+  sharedSightings: {
+    title: 'Shared Sightings',
+    mapNotice:
+      'Shaded areas show approximate locations. Pins show precise locations shared by the observer.',
+    mapLabel: 'Shared Sightings map. Shaded areas are approximate locations.',
+    signIn: 'Sign in to view shared sightings.',
+    unavailable: 'Organization sharing is currently unavailable.',
+    loading: 'Loading shared sightings…',
+    offline: 'Connect to view shared sightings.',
+    refresh: 'Refresh shared sightings',
+    empty: 'No shared sightings.',
+    emptyPage: 'No shared sightings on this page. Load more to continue.',
+    loadMore: 'Load more sightings',
+    item: 'Sighting {number}: {cats} · {location}',
+    preciseLocation: 'Precise location',
+    approximateArea: 'Approximate area',
+    catCount: { one: '1 cat', other: '{count} cats' },
+    preciseValue: '{latitude}, {longitude}',
+    areaValue:
+      'Approximate area: {south} to {north} latitude, {west} to {east} longitude',
+    cat: 'Cat {number}',
+    photo: 'Shared cat photo {number}',
+    loadingPhoto: 'Loading photo…',
+    retryPhoto: 'Retry photo',
+  },
+  members: {
+    title: 'Members',
+    notice: 'Only display names are shared in this list.',
+    signIn: 'Sign in to view members.',
+    offline: 'Connect to view members.',
+    loading: 'Loading members…',
+    refresh: 'Refresh members',
+    empty: 'No members to display.',
+    emptyPage: 'No members on this page. Load more to continue.',
+    loadMore: 'Load more members',
+  },
   listSeparator: ', ',
   sharingSettings: {
     title: 'Organization sharing',
@@ -160,6 +303,16 @@ export const organizationCopy = {
     reviewCurrentCoverage:
       '{organization}: {fields}. {contact} Current coverage will be checked before permission is saved.',
     revokeTitle: 'Revoke organization access?',
+    revokeSightingMessage:
+      'Revoke {organization}’s access to this sighting? This stops future access. Copies already received cannot be recalled.',
+    revokeSharedSightingMessage:
+      'Revoke {organization}’s access to the sighting shared {date}? This stops future access. Copies already received cannot be recalled.',
+    revokeOrganizationMessage:
+      'Revoke {organization}’s access to all your sightings, including pending permissions? This stops future access. Copies already received cannot be recalled.',
+    noPermissions:
+      'No saved or pending sharing permissions for this organization.',
+    sightingDetails: 'Sighting shared {date}: {fields}',
+    revokeNamedSighting: 'Revoke access to the sighting shared {date}',
     revokeMessage:
       'This stops future access. Copies already received cannot be recalled.',
     revoke: 'Revoke',

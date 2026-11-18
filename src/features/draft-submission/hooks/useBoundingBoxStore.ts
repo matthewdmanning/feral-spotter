@@ -218,6 +218,10 @@ export const useBoundingBoxStore = create<BoundingBoxState>()(
       name: 'bounding-box-store',
       skipHydration: true,
       storage: createJSONStorage(() => asyncStorage),
+      // Installs are saved at v2. Without a migrate, zustand drops a store
+      // saved at another version, so stored drafts pass through unchanged.
+      version: 2,
+      migrate: (persisted) => persisted as BoundingBoxState,
     },
   ),
 )

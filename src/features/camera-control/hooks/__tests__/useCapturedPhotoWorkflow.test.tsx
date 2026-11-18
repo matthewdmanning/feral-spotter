@@ -1,6 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native'
 import { File, Paths } from 'expo-file-system'
 import { Asset } from 'expo-media-library'
+import { randomUUID } from 'expo-crypto'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useCapturedPhotoWorkflow } from '@/src/features/camera-control/hooks/useCapturedPhotoWorkflow'
 import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
@@ -12,11 +13,6 @@ const { __resetMockFileSystem } = jest.requireActual(
     .resolve('expo-file-system/package.json')
     .replace('package.json', 'mocks/FileSystem.ts'),
 )
-
-let mockId = 0
-jest.mock('expo-crypto', () => ({
-  randomUUID: () => `photo-${++mockId}`,
-}))
 
 const mockAssetCreate = jest.fn()
 const mockPermissionCheck = jest.fn(async (..._args: unknown[]) => true)
@@ -65,7 +61,10 @@ beforeEach(async () => {
   mockAssetCreate.mockResolvedValue(undefined)
   mockPermissionCheck.mockReset()
   mockPermissionCheck.mockResolvedValue(true)
-  mockId = 0
+  let id = 0
+  jest
+    .mocked(randomUUID)
+    .mockImplementation(() => `photo-${++id}` as ReturnType<typeof randomUUID>)
 })
 
 it('keeps preview active during restoration and enables capture before cleanup finishes', async () => {
