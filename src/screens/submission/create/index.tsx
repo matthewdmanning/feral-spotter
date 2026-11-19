@@ -277,6 +277,14 @@ export default function CreateSubmissionScreen() {
         </Text>
       </Pressable>
 
+      {/* #375: "Finished!" is a hard block at zero cats (#265), and the
+          button said nothing about it. */}
+      {cats.length === 0 && (
+        <Text style={styles.disabledReason}>
+          Describe at least one cat before you finish.
+        </Text>
+      )}
+
       <Pressable
         onPress={handleDone}
         disabled={cats.length === 0}

@@ -106,6 +106,13 @@ export const styles = StyleSheet.create((theme, rt) => ({
     fontSize: theme.typography.sm,
     fontWeight: '600',
   },
+  // #375: the reason "Finished!" is disabled.
+  disabledReason: {
+    color: theme.colors.muted,
+    fontSize: theme.typography.sm,
+    textAlign: 'center',
+    paddingBottom: theme.spacing.sm,
+  },
   doneBtn: {
     minHeight: 48,
     justifyContent: 'center',

@@ -3,17 +3,14 @@
 # If prettier rewrites anything, the push is blocked so you commit the result
 # first (a pre-push hook can't amend commits already being pushed).
 #
-# No-op unless PRETTIER_BASE is set (CI sets it; local pushes don't) — see
+# Base branch defaults to origin/main; PRETTIER_BASE overrides it. See
 # scripts/format-changed.mjs for why local base-branch guessing was dropped.
+#
+# --fail-on-change makes the script itself decide whether prettier rewrote
+# anything, scoped to the files it was given. Do not reinstate a bare
+# `git diff --quiet` check here: it fires on any dirty file in the tree and
+# blocks pushes over edits prettier never touched.
 #
 # Enable once per clone:  git config core.hooksPath .githooks
 
-node scripts/format-changed.mjs || exit 1
-
-if ! git diff --quiet; then
-  echo ""
-  echo "prettier reformatted changed files (see above)."
-  echo "Commit the changes, then push again."
-  git --no-pager diff --name-only
-  exit 1
-fi
+node scripts/format-changed.mjs --fail-on-change || exit 1

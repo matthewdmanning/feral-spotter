@@ -178,6 +178,17 @@ describe('Cat List with no cats left (#299)', () => {
     expect(router.replace).not.toHaveBeenCalled()
   })
 
+  // #375: "Finished!" is disabled at zero cats, so the screen must say what
+  // the user has to do first.
+  it('says why Finished! is disabled while no cat is recorded', async () => {
+    mockParams = { removed: '1' }
+    render(<CreateSubmissionScreen />)
+
+    await waitFor(() =>
+      expect(screen.getByText(/Describe at least one cat/)).toBeTruthy(),
+    )
+  })
+
   it('offers annotate or describe after the last cat is removed, and does not redirect', async () => {
     // `removed` is what the Cat Form's remove sets when it lands back here.
     mockParams = { removed: '1' }
