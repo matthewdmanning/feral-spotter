@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Text } from '@/src/shared/ui/atoms/Text'
 import { View } from 'react-native'
 import { formatCopy, organizationCopy } from '@/src/shared/config/text'
@@ -6,12 +5,10 @@ import { formatCopy, organizationCopy } from '@/src/shared/config/text'
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import { TextField } from '@/src/shared/ui/atoms/TextField'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
-import { useAuth } from '@/src/features/auth/lib/useAuth'
 import {
-  useOrganizationSharingStore,
-  EMPTY_ORGANIZATION_ACCOUNT,
-} from '@/src/features/organizations/hooks/useOrganizationSharingStore'
-import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
+  useSharingSettingsFormViewModel,
+  useSharingSettingsViewModel,
+} from '@/src/features/organizations/viewmodels/useSharingSettingsViewModel'
 import {
   SHARING_FIELD_KEYS,
   type SharingSettings as SharingConfiguration,
@@ -20,36 +17,29 @@ import { SharingCheckbox } from './SharingCheckbox'
 import { styles } from './styles'
 
 export function SharingSettings() {
-  const { user } = useAuth()
-  const enabled = useOrganizationsFlag((s) => s.enabled)
-  const hydrated = useOrganizationSharingStore((s) => s.hydrated)
-  const saved = useOrganizationSharingStore((s) =>
-    user
-      ? (s.accounts[user.uid]?.settings ?? EMPTY_ORGANIZATION_ACCOUNT.settings)
-      : EMPTY_ORGANIZATION_ACCOUNT.settings,
-  )
-  if (!enabled || !user || !hydrated) return null
-  // A different account starts from its own saved values.
+  const model = useSharingSettingsViewModel()
+  if (!model) return null
   return (
     <SharingSettingsForm
-      key={user.uid}
-      uid={user.uid}
-      email={user.email}
-      saved={saved}
+      key={model.uid}
+      email={model.email}
+      saved={model.saved}
+      onSave={model.save}
     />
   )
 }
 
 function SharingSettingsForm({
-  uid,
   email,
   saved,
+  onSave,
 }: {
-  uid: string
   email: string | null
   saved: SharingConfiguration
+  onSave: (settings: SharingConfiguration) => void
 }) {
-  const [draft, setDraft] = useState(saved)
+  const { draft, setField, setName, setPhone } =
+    useSharingSettingsFormViewModel(saved)
   const labels = organizationCopy.sharingSettings.shareFieldLabels
   return (
     <GlassSurface kind="card" style={styles.card}>
@@ -65,9 +55,7 @@ function SharingSettingsForm({
           <SharingCheckbox
             label={labels[key]}
             checked={draft.fields[key]}
-            onChange={(value) =>
-              setDraft({ ...draft, fields: { ...draft.fields, [key]: value } })
-            }
+            onChange={(value) => setField(key, value)}
           />
           {key === 'name' && draft.fields.name && (
             <TextField
@@ -75,7 +63,7 @@ function SharingSettingsForm({
               value={draft.name}
               maxLength={200}
               autoComplete="name"
-              onChangeText={(name) => setDraft({ ...draft, name })}
+              onChangeText={setName}
             />
           )}
           {key === 'email' && draft.fields.email && (
@@ -93,16 +81,12 @@ function SharingSettingsForm({
               maxLength={50}
               keyboardType="phone-pad"
               autoComplete="tel"
-              onChangeText={(phone) => setDraft({ ...draft, phone })}
+              onChangeText={setPhone}
             />
           )}
         </View>
       ))}
-      <AppButton
-        onPress={() =>
-          useOrganizationSharingStore.getState().configure(uid, draft)
-        }
-      >
+      <AppButton onPress={() => onSave(draft)}>
         {organizationCopy.sharingSettings.save}
       </AppButton>
     </GlassSurface>

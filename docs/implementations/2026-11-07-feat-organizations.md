@@ -92,6 +92,11 @@ No new project IDs, bucket identifiers, or credentials are committed.
 
 Client tests fake the organizations service at `fetch` (`src/test-utils/organizationsService.ts`), so the app's request wrapper and status mapping run. Expo Crypto UUID generation is explicitly controlled because its supplied mock does not return UUIDs.
 
+## 2026-11-19 — refactor: separate organization view models
+
+**Purpose:** Keep organization workflow decisions out of the sharing views and make the feature's MVVM responsibilities easier to follow.
+**Change:** Added view models for Submission organization sharing and Settings sharing preferences. They coordinate account state, directory eligibility, consent signatures, editable drafts, and persistence actions; the existing organization domain/service modules and persisted stores remain the models, while the components render and dispatch view model state.
+
 ## Verification status
 
 - Passing: full client suite (105 suites, 491 tests); Functions suite (65 tests); Firebase emulator rules suite (39 tests); real HTTP/Auth/Storage integration journey (1 test).

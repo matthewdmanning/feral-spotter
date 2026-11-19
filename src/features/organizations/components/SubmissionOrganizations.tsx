@@ -1,4 +1,3 @@
-import { useEffect, useMemo } from 'react'
 import { Text } from '@/src/shared/ui/atoms/Text'
 import {
   commonCopy,
@@ -9,90 +8,35 @@ import {
 import { router } from 'expo-router'
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import { TextButton } from '@/src/shared/ui/atoms/TextButton'
-import { useAuth } from '@/src/features/auth/lib/useAuth'
-import {
-  useSubmissionStore,
-  type OrganizationSharingDraft,
-} from '@/src/shared/hooks/useSubmissionStore'
-import { useOrganizationDirectory } from '@/src/features/organizations/hooks/useOrganizationDirectory'
-import {
-  useOrganizationSharingStore,
-  EMPTY_ORGANIZATION_ACCOUNT,
-} from '@/src/features/organizations/hooks/useOrganizationSharingStore'
-import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
-import { sharingSignature } from '@/src/features/organizations/lib/consent'
+import { useSubmissionOrganizationsViewModel } from '@/src/features/organizations/viewmodels/useSubmissionOrganizationsViewModel'
 import { includedSummary } from '@/src/features/organizations/lib/sharing'
 import { SharingCheckbox } from './SharingCheckbox'
 import { styles } from './styles'
 
 export function SubmissionOrganizations() {
-  const { user } = useAuth()
-  const enabled = useOrganizationsFlag((s) => s.enabled)
-  const hydrated = useOrganizationSharingStore((s) => s.hydrated)
-  const submission = useSubmissionStore((s) => s.submission)
-  const storedDraft = useSubmissionStore((s) => s.organizationSharing)
-  const setDraft = useSubmissionStore((s) => s.setOrganizationSharing)
-  const account = useOrganizationSharingStore((s) =>
-    user
-      ? (s.accounts[user.uid] ?? EMPTY_ORGANIZATION_ACCOUNT)
-      : EMPTY_ORGANIZATION_ACCOUNT,
-  )
-  const directory = useOrganizationDirectory(
-    submission.latitude,
-    submission.longitude,
-  )
-  const draft = storedDraft?.ownerUid === user?.uid ? storedDraft : null
-  const eligibleIds = useMemo(
-    () => directory.organizations.map((org) => org.id),
-    [directory.organizations],
-  )
-  useEffect(() => {
-    if (!user || !enabled || !hydrated || !directory.cache) return
-    const selectedIds = (draft?.selectedIds ?? account.preferredIds).filter(
-      (id) => eligibleIds.includes(id),
-    )
-    const next: OrganizationSharingDraft = draft
-      ? { ...draft, selectedIds, catalogVersion: directory.cache.version }
-      : {
-          ownerUid: user.uid,
-          selectedIds,
-          anonymous: true,
-          catalogVersion: directory.cache.version,
-          confirmedSignature: null,
-        }
-    next.organizationNames = Object.fromEntries(
-      directory.organizations.map((org) => [org.id, org.name]),
-    )
-    if (!draft || JSON.stringify(next) !== JSON.stringify(draft))
-      setDraft({ ...next, confirmedSignature: null })
-  }, [
+  const model = useSubmissionOrganizationsViewModel()
+  const {
     user,
     enabled,
     hydrated,
-    directory.cache,
-    account.preferredIds,
+    submission,
+    setSubmission,
+    account,
+    directory,
     draft,
-    setDraft,
-    eligibleIds,
-    directory.organizations,
-  ])
+    signature,
+    patch,
+    setConfirmed,
+  } = model
   if (!enabled || !user || !hydrated) return null
   const copy = organizationCopy.submission
-  const signature = draft
-    ? sharingSignature(draft, account, submission, user.email)
-    : null
-  const patch = (value: Partial<OrganizationSharingDraft>) => {
-    if (draft) setDraft({ ...draft, ...value, confirmedSignature: null })
-  }
   return (
     <GlassSurface kind="card" style={styles.card}>
       <Text style={styles.title}>{copy.title}</Text>
       <SharingCheckbox
         label={copy.injuredCat}
         checked={submission.report_injured === true}
-        onChange={(report_injured) =>
-          useSubmissionStore.getState().setSubmission({ report_injured })
-        }
+        onChange={(report_injured) => setSubmission({ report_injured })}
       />
       <Text style={styles.hint}>{copy.noContactNotice}</Text>
       {submission.latitude == null || submission.longitude == null ? (
@@ -186,12 +130,7 @@ export function SubmissionOrganizations() {
           <SharingCheckbox
             label={copy.confirmSharing}
             checked={draft.confirmedSignature === signature}
-            onChange={(checked) =>
-              setDraft({
-                ...draft,
-                confirmedSignature: checked ? signature : null,
-              })
-            }
+            onChange={(checked) => setConfirmed(checked)}
           />
           <TextButton onPress={() => patch({ selectedIds: [] })}>
             {copy.declineSharing}
