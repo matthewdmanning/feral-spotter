@@ -2,6 +2,12 @@ import { StyleSheet } from 'react-native-unistyles'
 
 export const styles = StyleSheet.create((theme, rt) => ({
   root: { flex: 1, backgroundColor: theme.colors.cameraBackground },
+  // The preview is the only in-flow child of root -- the chrome, the flash
+  // overlay and the thumbnail strip are all absolutely positioned -- so flex
+  // fills the screen. It must not use absolute insets: the native camera view
+  // resolves `position: absolute` with all four insets to full width and zero
+  // height, which left the preview blank while the session streamed normally.
+  cameraFill: { flex: 1 },
   flashOverlay: { backgroundColor: theme.colors.flashEffect, zIndex: 10 },
   topBar: {
     position: 'absolute',

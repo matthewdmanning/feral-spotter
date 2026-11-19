@@ -55,6 +55,10 @@ public final class NativeIdentificationCameraModule: Module {
         view.disableLowLightBoost = value
       }
 
+      Prop("pinchZoom") { (view: NativeIdentificationCameraView, value: Bool) in
+        view.pinchZoom = value
+      }
+
       Prop("subjectMetering") { (view: NativeIdentificationCameraView, value: Bool) in
         view.subjectMetering = value
       }

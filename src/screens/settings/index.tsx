@@ -81,6 +81,12 @@ const PHOTO_TOGGLES = [
     platform: null,
   },
   {
+    key: 'camera_pinch_zoom',
+    label: 'Pinch to Zoom',
+    desc: 'Allow pinch to zoom the camera preview; a zoomed capture is a cropped capture',
+    platform: null,
+  },
+  {
     key: 'camera_performance_checks',
     label: 'Camera Performance Checks',
     desc: 'Attach comparable camera timing data to PostHog events for A/B testing',

@@ -14,6 +14,27 @@ export interface NativeCapturedPhoto {
   height: number
 }
 
+/**
+ * What the view reports once a session is bound. captureTuning names the
+ * resolved tuning combination and captureMode is the platform's own capture
+ * mode constant, so a profiling run can tell which mode actually ran instead of
+ * inferring it from the settings that asked for it.
+ */
+export interface NativeCameraReadyEvent {
+  captureTuning?: string
+  captureMode?: number
+}
+
+/**
+ * One session diagnostic from the native view. `event` names what happened and
+ * the rest of the payload is whatever that event reports, so the React Native
+ * layer can forward it without knowing the set of events.
+ */
+export interface NativeCameraDiagnosticEvent {
+  event: string
+  [field: string]: string | number | boolean | undefined
+}
+
 export interface NativeCaptureOptions {
   flashMode: NativeFlashMode
 }
@@ -38,7 +59,17 @@ export interface NativeIdentificationCameraProps {
   motionPriority: boolean
   disableLowLightBoost: boolean
   subjectMetering: boolean
-  onCameraReady?: () => void
+  /**
+   * Pinch to zoom. Off by default: a zoomed capture is a cropped capture, and
+   * an identification photograph is worth more at full sensor width.
+   */
+  pinchZoom: boolean
+  /** Driven by the camera_performance_checks setting. Off means the view reports nothing. */
+  diagnostics: boolean
+  onCameraReady?: (event: { nativeEvent?: NativeCameraReadyEvent }) => void
+  onCameraDiagnostic?: (event: {
+    nativeEvent?: NativeCameraDiagnosticEvent
+  }) => void
   onCameraError?: (event: { nativeEvent?: { message?: string } }) => void
   style?: StyleProp<ViewStyle>
 }

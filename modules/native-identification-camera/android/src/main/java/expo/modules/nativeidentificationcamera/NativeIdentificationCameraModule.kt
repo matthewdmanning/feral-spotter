@@ -38,7 +38,14 @@ class NativeIdentificationCameraModule : Module() {
     Name("NativeIdentificationCamera")
 
     View(NativeIdentificationCameraView::class) {
-      Events("onCameraReady", "onCameraError")
+      Events("onCameraReady", "onCameraError", "onCameraDiagnostic")
+
+      // Expo calls this once after a whole prop batch. The prop setters only
+      // record that a rebind is needed, so two settings changed together cost
+      // one camera session teardown instead of one each.
+      OnViewDidUpdateProps { view: NativeIdentificationCameraView ->
+        view.applyPendingConfiguration()
+      }
 
       Prop("isActive") { view: NativeIdentificationCameraView, value: Boolean ->
         view.isActive = value
@@ -62,6 +69,14 @@ class NativeIdentificationCameraModule : Module() {
 
       Prop("subjectMetering") { view: NativeIdentificationCameraView, value: Boolean ->
         view.subjectMetering = value
+      }
+
+      Prop("pinchZoom") { view: NativeIdentificationCameraView, value: Boolean ->
+        view.pinchZoom = value
+      }
+
+      Prop("diagnostics") { view: NativeIdentificationCameraView, value: Boolean ->
+        view.diagnostics = value
       }
 
       AsyncFunction("capture") {
