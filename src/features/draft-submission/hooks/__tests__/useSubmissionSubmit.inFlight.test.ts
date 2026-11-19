@@ -67,7 +67,7 @@ function confirmSubmit(): Promise<void> | void {
     .getState()
     .dialog?.buttons.find((b) => b.text === 'Submit')
   useUIStore.setState({ dialog: null })
-  return confirm!.onPress!() as Promise<void> | void
+  return confirm!.onPress!()
 }
 
 beforeEach(async () => {

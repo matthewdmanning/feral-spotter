@@ -9,6 +9,7 @@ import type {
   LocationMethod,
   TimeMethod,
 } from '@/src/shared/lib/submissionCache'
+import type { LibraryPickTimeResult } from '@/src/shared/utils/libraryPickTime'
 import type {
   CatAge,
   CatColor,
@@ -83,11 +84,15 @@ interface SubmissionState {
   submission: SubmissionDraft
 
   addCat: (cat: ObservedCat) => void
-  updateCat: (localId: string, patch: Partial<ObservedCat>) => void
+  updateCat: (
+    localId: string,
+    patch: Partial<Omit<ObservedCat, 'local_id'>>,
+  ) => void
   removeCat: (localId: string) => void
   /** Drops a removed photo from every cat's photo references. */
   forgetPhoto: (photoLocalId: string) => void
-  setSubmission: (patch: Partial<SubmissionDraft>) => void
+  setLibraryTime: (time: LibraryPickTimeResult) => void
+  setReportInjured: (injured: boolean) => void
   setLocationType: (v: LocationMethod) => void
   setSubmissionLocation: (loc: SubmissionLocation) => void
   setManualTime: (v: string) => void
@@ -105,8 +110,15 @@ export const useSubmissionStore = create<SubmissionState>()(
   persist(
     (set) => ({
       organizationSharing: null,
+      // Teardown clears the location first; stale form callbacks must not
+      // recreate sharing after clearDraft(), even before navigation finishes.
       setOrganizationSharing: (organizationSharing) =>
-        set({ organizationSharing }),
+        set((s) =>
+          organizationSharing !== null &&
+          (s.submission.latitude == null || s.submission.longitude == null)
+            ? s
+            : { organizationSharing },
+        ),
       cats: [],
       submission: { ...DEFAULT_SUBMISSION },
 
@@ -143,12 +155,25 @@ export const useSubmissionStore = create<SubmissionState>()(
       updateCat: (localId, patch) =>
         set((s) => ({
           cats: s.cats.map((c) =>
-            c.local_id === localId ? { ...c, ...patch } : c,
+            c.local_id === localId
+              ? { ...c, ...patch, local_id: c.local_id }
+              : c,
           ),
         })),
 
-      setSubmission: (patch) =>
-        set((s) => ({ submission: { ...s.submission, ...patch } })),
+      setLibraryTime: ({ time_type, captured_at }) =>
+        set((s) => ({
+          submission: {
+            ...s.submission,
+            time_type,
+            captured_at: time_type === 'device' ? captured_at : undefined,
+            manual_time:
+              time_type === 'manual' ? s.submission.manual_time : undefined,
+          },
+        })),
+
+      setReportInjured: (report_injured) =>
+        set((s) => ({ submission: { ...s.submission, report_injured } })),
 
       setLocationType: (v) =>
         set((s) => ({
@@ -179,7 +204,14 @@ export const useSubmissionStore = create<SubmissionState>()(
         })),
 
       setManualTime: (v) =>
-        set((s) => ({ submission: { ...s.submission, manual_time: v } })),
+        set((s) => ({
+          submission: {
+            ...s.submission,
+            time_type: 'manual',
+            captured_at: undefined,
+            manual_time: v,
+          },
+        })),
 
       clearDraft: () =>
         set({
@@ -191,10 +223,14 @@ export const useSubmissionStore = create<SubmissionState>()(
     {
       name: 'submission-store',
       onRehydrateStorage: () => (state) => {
+        // Legacy choices may have no location. Invalidate their confirmation
+        // even when the live-form setter would reject that update.
         if (state?.organizationSharing)
-          state.setOrganizationSharing({
-            ...state.organizationSharing,
-            confirmedSignature: null,
+          useSubmissionStore.setState({
+            organizationSharing: {
+              ...state.organizationSharing,
+              confirmedSignature: null,
+            },
           })
       },
       skipHydration: true,

@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect } from 'react'
 import { Text } from 'react-native'
 import { router } from 'expo-router'
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
@@ -8,6 +8,7 @@ import {
   useSubmissionStore,
   type OrganizationSharingDraft,
 } from '@/src/shared/hooks/useSubmissionStore'
+import { reconcileSharingDraft } from '@/src/features/organizations/lib/draft'
 import { useOrganizationDirectory } from '@/src/features/organizations/hooks/useOrganizationDirectory'
 import {
   useOrganizationSharingStore,
@@ -26,6 +27,7 @@ export function SubmissionOrganizations() {
   const submission = useSubmissionStore((s) => s.submission)
   const storedDraft = useSubmissionStore((s) => s.organizationSharing)
   const setDraft = useSubmissionStore((s) => s.setOrganizationSharing)
+  const setReportInjured = useSubmissionStore((s) => s.setReportInjured)
   const account = useOrganizationSharingStore((s) =>
     user
       ? (s.accounts[user.uid] ?? EMPTY_ORGANIZATION_ACCOUNT)
@@ -36,38 +38,33 @@ export function SubmissionOrganizations() {
     submission.longitude,
   )
   const draft = storedDraft?.ownerUid === user?.uid ? storedDraft : null
-  const eligibleIds = useMemo(
-    () => directory.organizations.map((org) => org.id),
-    [directory.organizations],
-  )
   useEffect(() => {
-    if (!user || !enabled || !hydrated || !directory.cache) return
-    const selectedIds = (draft?.selectedIds ?? account.preferredIds).filter(
-      (id) => eligibleIds.includes(id),
+    if (
+      !user ||
+      !enabled ||
+      !hydrated ||
+      !directory.cache ||
+      submission.latitude == null ||
+      submission.longitude == null
     )
-    const next: OrganizationSharingDraft = draft
-      ? { ...draft, selectedIds, catalogVersion: directory.cache.version }
-      : {
-          ownerUid: user.uid,
-          selectedIds,
-          anonymous: true,
-          catalogVersion: directory.cache.version,
-          confirmedSignature: null,
-        }
-    next.organizationNames = Object.fromEntries(
-      directory.organizations.map((org) => [org.id, org.name]),
-    )
-    if (!draft || JSON.stringify(next) !== JSON.stringify(draft))
-      setDraft({ ...next, confirmedSignature: null })
+      return
+    const next = reconcileSharingDraft(draft, {
+      ownerUid: user.uid,
+      preferredIds: account.preferredIds,
+      catalogVersion: directory.cache.version,
+      organizations: directory.organizations,
+    })
+    if (next !== draft) setDraft(next)
   }, [
     user,
     enabled,
     hydrated,
     directory.cache,
+    submission.latitude,
+    submission.longitude,
     account.preferredIds,
     draft,
     setDraft,
-    eligibleIds,
     directory.organizations,
   ])
   if (!enabled || !user || !hydrated) return null
@@ -83,9 +80,7 @@ export function SubmissionOrganizations() {
       <SharingCheckbox
         label="Report an injured cat"
         checked={submission.report_injured === true}
-        onChange={(report_injured) =>
-          useSubmissionStore.getState().setSubmission({ report_injured })
-        }
+        onChange={setReportInjured}
       />
       <Text style={styles.hint}>
         This does not contact or notify an organization. No rescue response is

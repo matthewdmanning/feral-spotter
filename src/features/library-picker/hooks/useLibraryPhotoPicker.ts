@@ -37,7 +37,7 @@ export interface LibraryPhotoPickerResult {
 export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
   const addPhotos = usePhotoStore((s) => s.addPhotos)
   const setLocationType = useSubmissionStore((s) => s.setLocationType)
-  const setSubmission = useSubmissionStore((s) => s.setSubmission)
+  const setLibraryTime = useSubmissionStore((s) => s.setLibraryTime)
 
   const pickFromLibrary = useCallback(async () => {
     if (!(await draftReadyOrAlert())) return
@@ -126,10 +126,10 @@ export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
       .getState()
       .photos.map((photo) => parseExifDateTime(photo.exif?.timestamp))
     const { time_type, captured_at } = classifyLibraryPickTime(capturedAts)
-    setSubmission({ time_type, captured_at })
+    setLibraryTime({ time_type, captured_at })
 
     router.navigate('/submission/create')
-  }, [addPhotos, setLocationType, setSubmission])
+  }, [addPhotos, setLocationType, setLibraryTime])
 
   return { pickFromLibrary }
 }

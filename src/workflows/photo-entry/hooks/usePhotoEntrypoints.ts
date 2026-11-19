@@ -1,5 +1,5 @@
 /**
- * hooks/usePhotoEntrypoints.ts
+ * workflows/photo-entry/hooks/usePhotoEntrypoints.ts
  * The two photo entrypoints and the single-source rule (ADR 0002
  * amendment): once the draft's pool holds photos from one source, the
  * other source is disabled until the draft is sent or reset, and "add more

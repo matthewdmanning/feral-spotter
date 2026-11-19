@@ -1,6 +1,6 @@
 # Rules Excluded From the Grep-Scoped Audit
 
-These rules from `docs/COMBINED_STYLE_GUIDE.md` have no reliable, judgment-free grep signal, so they're excluded from `docs/code-audit-grep-plan.md`. Checking them requires reading a full file (or full function/class) and applying design judgment, not confirming a textual match — a different process from the grep-scoped audit, not covered by this plan.
+These rules from `docs/code_standards/COMBINED_STYLE_GUIDE.md` have no reliable, judgment-free grep signal, so they're excluded from `docs/code_standards/code-audit-grep-plan.md`. Checking them requires reading a full file (or full function/class) and applying design judgment, not confirming a textual match — a different process from the grep-scoped audit, not covered by this plan.
 
 "Partial" rows have a heuristic pattern that narrows candidates but still needs judgment on every match. "Manual" rows have no useful textual signal at all — a full read is the only option.
 

@@ -61,15 +61,17 @@ const initialPersistedState = Object.fromEntries(
 )
 
 const buildFullDraft = () => {
-  useSubmissionStore.getState().setSubmission({
-    location_type: 'pin',
-    time_type: 'manual',
-    address: 'Draft Map picker location',
-    latitude: 34.6834,
-    longitude: -82.8374,
-    accuracy: 5,
-    manual_time: '2026-08-01T10:00:00.000Z',
-    captured_at: '2026-08-01T09:00:00.000Z',
+  useSubmissionStore.setState({
+    submission: {
+      location_type: 'pin',
+      time_type: 'manual',
+      address: 'Draft Map picker location',
+      latitude: 34.6834,
+      longitude: -82.8374,
+      accuracy: 5,
+      manual_time: '2026-08-01T10:00:00.000Z',
+      captured_at: '2026-08-01T09:00:00.000Z',
+    },
   })
   useSubmissionStore.getState().addCat({
     local_id: CAT_ID,
