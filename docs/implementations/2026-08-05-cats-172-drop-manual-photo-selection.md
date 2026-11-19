@@ -136,3 +136,8 @@ above is exactly what #174 closes.
 bubble (design decided in #168), now rendered on both `annotate` and Cat
 Form instead of Cat Form alone. Full detail:
 [2026-08-06-cats-174-inset-crop-bubble.md](2026-08-06-cats-174-inset-crop-bubble.md).
+
+## 2026-11-19 — refactor
+
+**Purpose:** close the open question above: `annotation_enabled` had no writer, reader or toggle.
+**Change:** removed from `AppSettings` and `DEFAULT_SETTINGS` (`useSettingsStore.ts`); dropped the stale store mock in `CatObservationScreen.insetCropHeaderZone.test.tsx` (real store now). Existing installs keep the key in storage; nothing reads it.
