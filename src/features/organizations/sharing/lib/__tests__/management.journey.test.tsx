@@ -73,7 +73,7 @@ test('review uses the current email and global settings; cancellation still work
   state.enqueue('owner', {
     action: 'grant',
     organizationId: 'rescue',
-    organizationName: 'Rescue',
+    organizationName: 'Rescue $& {fields}',
     requiresConfirmation: true,
     grant: buildGrant({
       organizationId: 'rescue',
@@ -93,7 +93,12 @@ test('review uses the current email and global settings; cancellation still work
       return {
         version: 'current',
         organizations: [
-          { id: 'rescue', name: 'Rescue', active: true, coverage: null! },
+          {
+            id: 'rescue',
+            name: 'Rescue $& {fields}',
+            active: true,
+            coverage: null!,
+          },
         ],
       }
     if (action === 'list') return { epochs: { rescue: 1 }, permissions: [] }
@@ -105,7 +110,7 @@ test('review uses the current email and global settings; cancellation still work
     expect(useUIStore.getState().dialog?.title).toBe('Confirm sharing again'),
   )
   expect(useUIStore.getState().dialog!.message).toBe(
-    'Rescue: cat count, approximate area, Email. Contact: current@example.test. Current coverage will be checked before permission is saved.',
+    'Rescue $& {fields}: cat count, approximate area, Email. Contact: current@example.test. Current coverage will be checked before permission is saved.',
   )
   await pressDialogButton('Share this sighting')
   await waitFor(() =>

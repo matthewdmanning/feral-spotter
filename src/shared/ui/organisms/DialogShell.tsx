@@ -9,7 +9,8 @@
 
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import type { ReactNode } from 'react'
-import { Modal, ScrollView, Text, View } from 'react-native'
+import { Text } from '@/src/shared/ui/atoms/Text'
+import { Modal, ScrollView, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { dialogShell } from '@/src/shared/ui/organisms/dialogShell.styles'
 

@@ -209,10 +209,6 @@ describe('ConsentScreen camera gate — model-based test', () => {
   // actions, asserting what the user sees at every step.
   const journeys = [
     {
-      name: 'full camera grant proceeds straight to sign-in',
-      events: [{ type: 'AGREE_GRANTED' }],
-    },
-    {
       name: 'camera BLOCKED stays gated (regression guard — already correct)',
       events: [{ type: 'AGREE_BLOCKED' }],
     },

@@ -17,6 +17,7 @@ import {
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import { showAlert, showError } from '@/src/shared/hooks/useUIStore'
+import { formatCopy, submissionCopy } from '@/src/shared/config/text'
 import {
   isDraftBusy,
   submitDraft,
@@ -34,16 +35,6 @@ export interface SubmissionSubmitResult {
   isSubmitting: boolean
 }
 
-// #377: both failure paths leave every draft store intact, so both messages
-// say so — a user who just lost 30 seconds has no other reason to believe it.
-// They read differently because the next action differs: a stalled upload
-// needs a better connection, a rejected send only needs a second attempt.
-// The underlying error text goes to the console, never to the user.
-const UPLOAD_STALLED_MESSAGE =
-  'Your photos did not finish uploading. This sighting is saved on this device. Check your connection, then tap Submit Sighting to send it again.'
-const SUBMIT_FAILED_MESSAGE =
-  'The sighting did not reach the server. It is saved on this device. Tap Submit Sighting to send it again.'
-
 /** True while a submit runs; the screen disables draft controls. */
 export function useDraftBusy(): boolean {
   return useSyncExternalStore(subscribeDraftBusy, isDraftBusy, isDraftBusy)
@@ -57,16 +48,22 @@ function report(outcome: SubmitOutcome): void {
       router.replace('/')
       return
     case 'incomplete':
-      showError('Sighting Incomplete', outcome.messages.join('\n'))
+      showError(
+        submissionCopy.alerts.incompleteTitle,
+        outcome.messages.join('\n'),
+      )
       return
     case 'sharing-unconfirmed':
-      showError('Confirm organization sharing', outcome.message)
+      showError(submissionCopy.alerts.sharingUnconfirmedTitle, outcome.message)
       return
     case 'uploads-unfinished':
-      showError('Photos Still Uploading', UPLOAD_STALLED_MESSAGE)
+      showError(
+        submissionCopy.alerts.uploadStalledTitle,
+        submissionCopy.alerts.uploadStalled,
+      )
       return
     case 'failed':
-      showError('Sighting Failed', SUBMIT_FAILED_MESSAGE)
+      showError(submissionCopy.alerts.failedTitle, submissionCopy.alerts.failed)
       return
     // 'busy' and 'superseded' need no message: another submit is running,
     // or the draft it started for is gone.
@@ -84,12 +81,23 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
     // One submit at a time; the confirm would be a second chance to tap.
     if (isDraftBusy()) return
     showAlert(
-      'Submit Sighting',
-      `Submit ${catCount} cat${catCount !== 1 ? 's' : ''} and ${photoCount} photo${photoCount !== 1 ? 's' : ''}?`,
+      submissionCopy.alerts.submitTitle,
+      formatCopy(submissionCopy.alerts.confirm, {
+        catCount,
+        catLabel:
+          catCount === 1
+            ? submissionCopy.alerts.cat
+            : submissionCopy.alerts.cats,
+        photoCount,
+        photoLabel:
+          photoCount === 1
+            ? submissionCopy.alerts.photo
+            : submissionCopy.alerts.photos,
+      }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: submissionCopy.alerts.cancel, style: 'cancel' },
         {
-          text: 'Submit',
+          text: submissionCopy.alerts.submit,
           style: 'default',
           onPress: () => submitDraft().then(report),
         },

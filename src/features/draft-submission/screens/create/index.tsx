@@ -25,7 +25,8 @@ import { CaretUpIcon } from 'phosphor-react-native/src/icons/CaretUp'
 import { CheckCircleIcon } from 'phosphor-react-native/src/icons/CheckCircle'
 import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle'
 import { useCallback, useState } from 'react'
-import { Pressable, ScrollView, Text, View } from 'react-native'
+import { Text } from '@/src/shared/ui/atoms/Text'
+import { Pressable, ScrollView, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import {
   describeCat,
@@ -168,6 +169,8 @@ export default function CreateSubmissionScreen() {
           )}
         </GlassSurface>
 
+        {photos.length > 0 && <SubmissionOrganizations />}
+
         <View style={styles.catList}>
           <Text style={styles.catListTitle}>Cats Recorded</Text>
           {cats.map((cat) => {
@@ -252,7 +255,6 @@ export default function CreateSubmissionScreen() {
             </AppButton>
           )}
         </View>
-        {photos.length > 0 && <SubmissionOrganizations />}
       </ScrollView>
 
       {/* Actions pinned to the bottom. The primary action is last, on the

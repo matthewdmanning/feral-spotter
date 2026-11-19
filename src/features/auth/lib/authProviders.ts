@@ -1,4 +1,5 @@
 import { getAppVersion, isVersionReleased } from '@/src/shared/utils/appVersion'
+import { authCopy } from '@/src/shared/config/text'
 
 /**
  * The federated identity providers the app can sign in with. Email/password
@@ -29,11 +30,11 @@ export interface FederatedProviderConfig {
  * the 1.0.0 build before these are unblocked.
  */
 export const FEDERATED_PROVIDERS: readonly FederatedProviderConfig[] = [
-  { id: 'google', label: 'Continue with Google', releasedInVersion: '0.1.0' },
-  { id: 'apple', label: 'Continue with Apple', releasedInVersion: '1.0.0' },
+  { id: 'google', label: authCopy.providerGoogle, releasedInVersion: '0.1.0' },
+  { id: 'apple', label: authCopy.providerApple, releasedInVersion: '1.0.0' },
   {
     id: 'facebook',
-    label: 'Continue with Facebook',
+    label: authCopy.providerFacebook,
     releasedInVersion: '1.0.0',
   },
 ]

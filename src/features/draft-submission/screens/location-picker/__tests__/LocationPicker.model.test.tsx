@@ -3,6 +3,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from '@testing-library/react-native'
 import { router } from 'expo-router'
 import React from 'react'
@@ -158,4 +159,13 @@ describe('Location picker — flow (model-based)', () => {
       await path.test(testParams)
     })
   })
+})
+
+it('bounds the map and pin together while keeping footer height outside their viewport', async () => {
+  await render(<LocationPickerScreen />)
+  const viewport = screen.getByTestId('location-map-viewport')
+  expect(within(viewport).getByTestId('camera-move')).toBeOnTheScreen()
+  expect(within(viewport).getByTestId('location-map-pin')).toBeOnTheScreen()
+  expect(within(viewport).queryByText('Set location')).toBeNull()
+  expect(screen.getByText('Set location')).toBeOnTheScreen()
 })

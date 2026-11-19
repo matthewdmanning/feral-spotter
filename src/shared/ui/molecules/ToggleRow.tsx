@@ -1,4 +1,5 @@
-import { Pressable, Switch, Text, View } from 'react-native'
+import { Text } from '@/src/shared/ui/atoms/Text'
+import { Pressable, Switch, View } from 'react-native'
 import { withUnistyles } from 'react-native-unistyles'
 import { styles } from './ToggleRow.styles'
 

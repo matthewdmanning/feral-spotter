@@ -210,3 +210,14 @@ Tests: `useSubmissionSubmit.inFlight.test.ts` (lock, retry, cleared draft, Faile
 **Purpose:** Remove older-install upgrade paths because the project has no active users or data to migrate.
 **Change:** Removed rehydration-time slot assignment for pre-slot photo pools. New photos receive upload slots at insertion. Current interrupted-write repair for an empty pool with a stale source lock remains.
 **Verification:** Full client suite: 120 suites / 550 tests. Functions: 8 suites / 65 tests. Type checks and focused lint pass. Organization integration: 23 emulator scenarios; Rules: 24 tests. No deployment or device check.
+
+## 2026-11-11 — refactor
+
+**Purpose:** Move submission confirmation, failure and discard copy to its canonical
+configuration owner as requested by second-pass SP2.
+**Change:** Submit and discard/exit UI consume the submission namespace in the
+existing shared text configuration, including named count templates and camera-roll
+notices. No lifecycle state transition, validation requirement or persistence
+boundary changes. Shared validation messages also consume centralized copy.
+See [shared UI work](2026-10-28-ui-component-spacing-alignment.md) and the
+[review](../reviews/2026-11-11-review-ui-ux.md) for verification.

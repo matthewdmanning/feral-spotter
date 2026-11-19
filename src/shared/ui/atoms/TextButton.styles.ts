@@ -11,6 +11,7 @@ export const styles = StyleSheet.create((theme) => ({
   },
   label: {
     ...theme.textVariants.labelSmall,
+    flexShrink: 1,
     variants: {
       tone: {
         accent: { color: theme.colors.accent },

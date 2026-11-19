@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { authCopy, commonCopy, formatCopy } from '@/src/shared/config/text'
 import { showError, showSuccess } from '@/src/shared/hooks/useUIStore'
 import { authProvider } from '@/src/features/auth/lib'
 
@@ -12,7 +13,7 @@ export function useChangeEmail() {
   const submit = async () => {
     const address = newEmail.trim()
     if (!LOOKS_LIKE_EMAIL.test(address)) {
-      showError('Error', 'Enter a valid email address')
+      showError(commonCopy.error, authCopy.validEmailMessage)
       return
     }
     setBusy(true)
@@ -20,18 +21,18 @@ export function useChangeEmail() {
       await authProvider.changeEmail(address)
       setNewEmail('')
       showSuccess(
-        'Check your email',
-        `We sent a link to ${address}. Your email changes once you follow it.`,
+        authCopy.checkYourEmailTitle,
+        formatCopy(authCopy.emailChangeSentMessage, { email: address }),
       )
     } catch (err) {
       console.error('[settings] change email failed:', err)
       const needsSignIn =
         (err as { code?: string }).code === 'auth/requires-recent-login'
       showError(
-        'Could not change email',
+        authCopy.changeEmailFailedTitle,
         needsSignIn
-          ? 'Sign out and sign in again, then try once more.'
-          : 'Something went wrong. Please try again.',
+          ? authCopy.recentSignInRequiredMessage
+          : authCopy.retryMessage,
       )
     } finally {
       setBusy(false)

@@ -164,6 +164,8 @@ const layout = {
   cardPadding: spacing.lg,
   stackGap: spacing.md,
   sectionGap: spacing.xxl,
+  contentMaxWidth: 640,
+  annotationActionAreaMaxHeight: '50%',
 } as const
 
 const iconSize = {
@@ -222,14 +224,21 @@ const reticle = {
 const borderWidth = {
   frame: 1.5,
   selected: 3,
+  control: 1,
 } as const
+
+const interaction = { pressScale: 0.97 } as const
 
 /** Feedback on a touched card or other surface that is not a button. */
 const opacity = {
   pressed: 0.7,
 } as const
 
+const controlWidth = { choice: 112, action: 128 } as const
+
 const sharedTokens = {
+  controlWidth,
+  interaction,
   catPalette,
   reticle,
   borderWidth,

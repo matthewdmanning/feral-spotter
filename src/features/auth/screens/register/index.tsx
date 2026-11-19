@@ -1,6 +1,9 @@
+import { useHeaderHeight } from 'expo-router/react-navigation'
 import { showAlert } from '@/src/shared/hooks/useUIStore'
+import { authCopy, navigationCopy } from '@/src/shared/config/text'
 import { useState } from 'react'
-import { View, Text } from 'react-native'
+import { Text } from '@/src/shared/ui/atoms/Text'
+import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native'
 import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import { TextField } from '@/src/shared/ui/atoms/TextField'
@@ -10,6 +13,7 @@ import { validateRegistration } from '@/src/shared/utils/validation'
 import { styles } from './index.styles'
 
 export default function RegisterScreen() {
+  const headerHeight = useHeaderHeight()
   const { registerWithEmail } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -24,41 +28,48 @@ export default function RegisterScreen() {
     }
     void attempt(() => registerWithEmail(email.trim(), password), {
       tag: '[register]',
-      title: 'Registration failed',
-      message: 'Could not create the account. Try a different email.',
+      title: authCopy.registrationFailedTitle,
+      message: authCopy.registrationFailedMessage,
     })
   }
 
   return (
-    <View style={styles.root}>
+    <KeyboardAvoidingView
+      style={styles.root}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={headerHeight}
+    >
       <AmbientBackground />
-      <View style={styles.content}>
-        <Text style={styles.title}>Create your account</Text>
-        <Text style={styles.subtitle}>Sign up with an email and password.</Text>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={styles.title}>{authCopy.registrationTitle}</Text>
+        <Text style={styles.subtitle}>{authCopy.registrationSubtitle}</Text>
 
         <View style={styles.fields}>
           <TextField
             value={email}
             onChangeText={setEmail}
-            placeholder="Email"
+            placeholder={authCopy.email}
             autoComplete="email"
             keyboardType="email-address"
             inputMode="email"
-            accessibilityLabel="Email"
+            accessibilityLabel={authCopy.email}
           />
           <TextField
             value={password}
             onChangeText={setPassword}
-            placeholder="Password"
+            placeholder={authCopy.password}
             secureTextEntry
-            accessibilityLabel="Password"
+            accessibilityLabel={authCopy.password}
           />
           <TextField
             value={confirm}
             onChangeText={setConfirm}
-            placeholder="Confirm password"
+            placeholder={authCopy.confirmPassword}
             secureTextEntry
-            accessibilityLabel="Confirm password"
+            accessibilityLabel={authCopy.confirmPassword}
           />
         </View>
 
@@ -66,12 +77,12 @@ export default function RegisterScreen() {
           <AppButton
             onPress={handleRegister}
             loading={busy}
-            accessibilityLabel="Create account"
+            accessibilityLabel={navigationCopy.createAccount}
           >
-            Create account
+            {navigationCopy.createAccount}
           </AppButton>
         </View>
-      </View>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   )
 }

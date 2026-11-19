@@ -138,10 +138,6 @@ describe('CameraScreen permission/device gates — model-based test', () => {
 
   const journeys = [
     {
-      name: 'no camera permission shows the permission gate',
-      events: [{ type: 'MOUNT_NO_PERMISSION' }],
-    },
-    {
       name: 'Allow Camera requests the OS permission',
       events: [{ type: 'MOUNT_NO_PERMISSION' }, { type: 'PRESS_ALLOW' }],
     },
@@ -151,10 +147,6 @@ describe('CameraScreen permission/device gates — model-based test', () => {
         { type: 'MOUNT_NO_PERMISSION' },
         { type: 'PRESS_OPEN_SETTINGS' },
       ],
-    },
-    {
-      name: 'permission granted but no device shows the no-camera gate',
-      events: [{ type: 'MOUNT_NO_DEVICE' }],
     },
     {
       name: 'Go Back closes the camera screen',

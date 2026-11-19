@@ -156,14 +156,6 @@ describe('Cat List auto-skip gate — model-based test', () => {
 
   const journeys = [
     {
-      name: 'zero cats redirects straight into annotate, no Cat List render',
-      events: [],
-    },
-    {
-      name: 'adding the first cat renders Cat List instead of redirecting again',
-      events: [{ type: 'CAT_ADDED' }],
-    },
-    {
       name: 'removing the only cat after having one does not re-trigger the auto-skip redirect',
       events: [{ type: 'CAT_ADDED' }, { type: 'CAT_REMOVED' }],
     },

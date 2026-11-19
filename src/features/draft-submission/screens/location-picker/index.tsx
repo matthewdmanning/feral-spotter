@@ -13,7 +13,8 @@ import { GoogleMaps } from 'expo-maps'
 import { router } from 'expo-router'
 import { MapPinIcon } from 'phosphor-react-native/src/icons/MapPin'
 import { useCallback } from 'react'
-import { Text, View } from 'react-native'
+import { Text } from '@/src/shared/ui/atoms/Text'
+import { View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
 import {
@@ -45,21 +46,27 @@ export default function LocationPickerScreen() {
 
   return (
     <View style={styles.root}>
-      <GoogleMaps.View
-        style={styles.map}
-        cameraPosition={{ coordinates: seed, zoom: DEFAULT_ZOOM }}
-        onCameraMove={handleCameraMove}
-      />
-
-      {/* Fixed centre pin — a non-interactive overlay, not a map marker. The
-          tip sits at the map centre (translated up by its own height). */}
-      <View style={styles.pinOverlay} pointerEvents="none">
-        <MapPinIcon
-          size={theme.iconSize.xxl}
-          color={theme.colors.accent}
-          weight="fill"
-          style={styles.pin}
+      <View style={styles.map} testID="location-map-viewport">
+        <GoogleMaps.View
+          style={styles.map}
+          cameraPosition={{ coordinates: seed, zoom: DEFAULT_ZOOM }}
+          onCameraMove={handleCameraMove}
         />
+
+        {/* Fixed centre pin — a non-interactive overlay, not a map marker. The
+          tip sits at the map centre (translated up by its own height). */}
+        <View
+          testID="location-map-pin"
+          style={styles.pinOverlay}
+          pointerEvents="none"
+        >
+          <MapPinIcon
+            size={theme.iconSize.xxl}
+            color={theme.colors.accent}
+            weight="fill"
+            style={styles.pin}
+          />
+        </View>
       </View>
 
       <View style={styles.footer}>

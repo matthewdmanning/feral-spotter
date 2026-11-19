@@ -45,7 +45,6 @@ export function HierarchicalSegmentedControl<
         value={group}
         onChange={(next) => onChange(next, undefined)}
         accessibilityLabel={label}
-        numberOfLines={2}
       />
       {chosen && (
         <>
@@ -55,7 +54,6 @@ export function HierarchicalSegmentedControl<
             value={value}
             onChange={(next) => onChange(group, next)}
             accessibilityLabel={`${label} — ${chosen.label}`}
-            numberOfLines={2}
           />
         </>
       )}

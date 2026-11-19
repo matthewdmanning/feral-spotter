@@ -17,7 +17,8 @@ import { TextButton } from '@/src/shared/ui/atoms/TextButton'
 import { useBackHandler } from '@/src/shared/hooks/useBackHandler'
 import { router } from 'expo-router'
 import { useCallback, useState } from 'react'
-import { Text, View } from 'react-native'
+import { Text } from '@/src/shared/ui/atoms/Text'
+import { ScrollView, View } from 'react-native'
 import { styles } from './index.styles'
 
 const { slides, dataAgreementLinkLabel, exitWarningTitle, exitWarningBody } =
@@ -63,7 +64,10 @@ export default function IntroFlowScreen() {
   return (
     <View style={styles.root}>
       <AmbientBackground />
-      <View style={styles.slideContent}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.slideContent}
+      >
         <Text style={styles.header} accessibilityRole="header">
           {slide.header}
         </Text>
@@ -81,7 +85,7 @@ export default function IntroFlowScreen() {
             {dataAgreementLinkLabel}
           </TextButton>
         )}
-      </View>
+      </ScrollView>
 
       <View style={styles.footer}>
         <ButtonRow>

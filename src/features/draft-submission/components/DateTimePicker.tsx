@@ -11,7 +11,8 @@ import { useDateTimePicker } from '@/src/features/draft-submission/hooks/useDate
 import RNDateTimePicker from '@react-native-community/datetimepicker'
 import { CalendarIcon } from 'phosphor-react-native/src/icons/Calendar'
 import { ClockIcon } from 'phosphor-react-native/src/icons/Clock'
-import { Platform, Pressable, Text, View } from 'react-native'
+import { Text } from '@/src/shared/ui/atoms/Text'
+import { Platform, Pressable, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './DateTimePicker.styles'
 

@@ -124,3 +124,32 @@ Each assertion was checked by mutation rather than assumed load-bearing:
 **Change:** Added `dangerSurface` and `warningSurface` to both themes and pointed `cardError`/`cardWarn` at them. Dark keeps the exact values that were hardcoded, so dark is visually unchanged; light gets pale washes (`#FEF2F2`, `#FFFBEB`) that the near-black light text reads against comfortably. Recorded against #327, which owns hardcoded component colour generally — two further instances (`ErrorBoundary`'s `#FF6B6B`, `PhotoPreviewModal`'s annotation blue) are noted there and left alone.
 
 No test. The change is four token values and two references; a test asserting `cardError` uses `theme.colors.dangerSurface` would restate the implementation. The general guard — no hardcoded colour in a stylesheet — cannot be written without a maintained allowlist, since several hardcoded colours are deliberate (the camera screen's black, `shadowColor: '#000'`, the photo viewer's opaque backdrop), and the testing policy warns off exactly that shape. Catching this class properly needs the #329 device sweep in all three theme modes.
+
+## 2026-11-11 — fix
+
+**Purpose:** Enforce the UI review's text scaling and input readability requirements.
+**Change:** Added `shared/config/text.ts` with the shared 2.0 multiplier and a
+shared `Text` wrapper that forces scaling on and the ceiling after caller props.
+All app-owned React Native text, including nested text, loading/error/dialog and
+stack-title text, uses it. `TextField` applies the same policy after input props.
+Native tabs, native map labels and OS date pickers remain platform-owned; their
+SDKs do not expose the React Native Text ceiling. Their actual system-size
+behavior is not proven by the wrapper tests and still needs native validation.
+
+Strong input-border pairs against input fill calculate to 3.683614:1 light and
+4.529205:1 dark (see the review for exact measured values). A focused input uses
+the accent boundary. No theme palette was changed. New control-width tokens
+support wrapping choices and action groups; text itself is never manually scaled.
+`Text.scaling.test.tsx` checks nested text/input overrides cannot remove the cap
+or disable scaling. See [shared layout changes](2026-10-28-ui-component-spacing-alignment.md)
+and the [review](../reviews/2026-11-11-review-ui-ux.md) for validation limits.
+
+## 2026-11-11 — refactor
+
+**Purpose:** Remove the duplicated authored sizing/scaling values identified in SP3.
+**Change:** The shared theme defines semantic content width, choice-track border,
+pressed-button scale and annotation action-height allocation. Auth, Settings,
+segmented choices and annotation consume those roles; the track-width calculation
+uses the same border token as the drawn track. Structural side counts and actual
+measurements remain layout inputs. See [shared UI work](2026-10-28-ui-component-spacing-alignment.md)
+and the [review](../reviews/2026-11-11-review-ui-ux.md) for checks and limitations.

@@ -4,7 +4,8 @@
  * Submission Details and the Sighting view list a cat's answers this way.
  */
 
-import { Text, View } from 'react-native'
+import { Text } from '@/src/shared/ui/atoms/Text'
+import { View } from 'react-native'
 import { styles } from './FieldRow.styles'
 
 interface FieldRowProps {

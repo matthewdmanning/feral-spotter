@@ -11,7 +11,8 @@
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import { TextButton } from '@/src/shared/ui/atoms/TextButton'
-import { Modal, ScrollView, Text, View } from 'react-native'
+import { Text } from '@/src/shared/ui/atoms/Text'
+import { Modal, ScrollView, View } from 'react-native'
 import { useState } from 'react'
 import { styles } from './TutorialOverlay.styles'
 

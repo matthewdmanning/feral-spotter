@@ -10,6 +10,7 @@
  * functions (most of them) work unchanged; AlertHost draws the result.
  */
 
+import { commonCopy } from '@/src/shared/config/text'
 import { asyncStorage } from '@/src/shared/lib/storage'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
@@ -76,7 +77,7 @@ export function showAlert(
       title,
       message,
       // Alert.alert's own default when no buttons are given.
-      buttons: buttons?.length ? buttons : [{ text: 'OK' }],
+      buttons: buttons?.length ? buttons : [{ text: commonCopy.ok }],
     },
   })
 }

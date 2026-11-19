@@ -16,7 +16,8 @@ import {
   useUIStore,
   type AlertButton,
 } from '@/src/shared/hooks/useUIStore'
-import { Text, View } from 'react-native'
+import { Text } from '@/src/shared/ui/atoms/Text'
+import { View } from 'react-native'
 import { DialogShell } from '@/src/shared/ui/organisms/DialogShell'
 import { styles } from './AlertHost.styles'
 

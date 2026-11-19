@@ -8,7 +8,8 @@
  */
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import type { PhotoSource } from '@/src/features/draft-submission/hooks/usePhotoStore'
-import { Text, View } from 'react-native'
+import { Text } from '@/src/shared/ui/atoms/Text'
+import { View } from 'react-native'
 import { styles } from './PhotoDraftNotice.styles'
 
 type DraftOrigin = 'restored' | 'in-session'

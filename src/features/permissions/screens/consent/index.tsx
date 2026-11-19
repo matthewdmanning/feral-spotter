@@ -8,7 +8,8 @@ import { confirmExitApp } from '@/src/shared/hooks/confirmExitApp'
 import { useBackHandler } from '@/src/shared/hooks/useBackHandler'
 import { useConsentPermissions } from '@/src/features/permissions/hooks/useConsentPermissions'
 import { useCallback } from 'react'
-import { Linking, ScrollView, Text, View } from 'react-native'
+import { Text } from '@/src/shared/ui/atoms/Text'
+import { Linking, ScrollView, View } from 'react-native'
 import { styles } from './index.styles'
 
 const PERMISSION_BLOCKED_BODY =

@@ -3,8 +3,8 @@ import { CheckCircleIcon } from 'phosphor-react-native/src/icons/CheckCircle'
 import { ClockIcon } from 'phosphor-react-native/src/icons/Clock'
 import { PaperPlaneRightIcon } from 'phosphor-react-native/src/icons/PaperPlaneRight'
 import { XCircleIcon } from 'phosphor-react-native/src/icons/XCircle'
+import { Text } from '@/src/shared/ui/atoms/Text'
 import {
-  Text,
   View,
   type StyleProp,
   type TextStyle,

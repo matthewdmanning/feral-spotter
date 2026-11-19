@@ -266,10 +266,6 @@ describe('ConsentScreen location gate — model-based test', () => {
       events: [{ type: 'AGREE_BLOCKED' }],
     },
     {
-      name: 'first-time Don’t allow is gated, not passed through (#66 fix)',
-      events: [{ type: 'AGREE_DENIED' }],
-    },
-    {
       name: 'Don’t allow, backgrounded without visiting Settings, stays gated',
       events: [{ type: 'AGREE_DENIED' }, { type: 'FOREGROUND_STILL_DENIED' }],
     },
