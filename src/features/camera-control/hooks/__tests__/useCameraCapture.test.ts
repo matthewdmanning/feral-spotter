@@ -152,6 +152,22 @@ describe('useCameraCapture navigation', () => {
   })
 })
 
+describe('useCameraCapture low-light boost', () => {
+  it('enables boost on supported devices despite stale settings', async () => {
+    useSettingsStore.setState((state) => ({
+      settings: {
+        ...state.settings,
+        camera_disable_low_light_boost: true,
+        improved_camera_capture: false,
+      },
+    }))
+
+    const { result } = await renderHook(() => useCameraCapture())
+
+    expect(result.current.enableLowLightBoost).toBe(true)
+  })
+})
+
 describe('useCameraCapture handleTakePhoto', () => {
   it('reports PHOTO_CAPTURE_FAILED when capturePhoto throws', async () => {
     mockCapturePhoto.mockRejectedValueOnce(new Error('device busy'))

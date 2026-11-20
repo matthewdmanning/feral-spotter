@@ -75,7 +75,6 @@ public final class NativeIdentificationCameraView: ExpoView {
   private var captureDelegates: [Int64: NativePhotoCaptureDelegate] = [:]
   private var defaultFormats: [String: AVCaptureDevice.Format] = [:]
   private var defaultPhotoDimensions: [String: CMVideoDimensions] = [:]
-  private var defaultLowLightBoost: [String: Bool] = [:]
   private var rotationCoordinator: Any?
   private var previewRotationObservation: NSKeyValueObservation?
   private var captureRotationObservation: NSKeyValueObservation?
@@ -211,11 +210,6 @@ public final class NativeIdentificationCameraView: ExpoView {
       if defaultPhotoDimensions[device.uniqueID] == nil {
         defaultPhotoDimensions[device.uniqueID] = photoOutput.maxPhotoDimensions
       }
-      if device.isLowLightBoostSupported && defaultLowLightBoost[device.uniqueID] == nil {
-        defaultLowLightBoost[device.uniqueID] =
-          device.automaticallyEnablesLowLightBoostWhenAvailable
-      }
-
       configureDevicePolicy(device)
       configureOutput(for: device)
       session.commitConfiguration()
@@ -309,11 +303,7 @@ public final class NativeIdentificationCameraView: ExpoView {
       }
 
       if device.isLowLightBoostSupported {
-        if disableLowLightBoost {
-          device.automaticallyEnablesLowLightBoostWhenAvailable = false
-        } else if let defaultValue = defaultLowLightBoost[device.uniqueID] {
-          device.automaticallyEnablesLowLightBoostWhenAvailable = defaultValue
-        }
+        device.automaticallyEnablesLowLightBoostWhenAvailable = true
       }
 
       if motionPriority, let cap = motionPreservingExposureCap(for: device) {

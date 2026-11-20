@@ -21,6 +21,7 @@ export const styles = StyleSheet.create((theme) => ({
     borderColor: theme.colors.borderStrong,
     boxShadow: theme.depth.well,
   },
+  rowSingle: { flexWrap: 'nowrap' },
   // Base option — combined with selected/idle variant below
   option: {
     flexGrow: 1,
@@ -32,6 +33,8 @@ export const styles = StyleSheet.create((theme) => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  // Equal shares of one row: let a long label shrink instead of wrapping.
+  optionSingle: { flexShrink: 1, minWidth: 0 },
   // Named variants for selected state — applied as array in JSX
   optionSelected: {
     backgroundColor: theme.colors.selection,

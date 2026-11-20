@@ -1,4 +1,5 @@
 import { settingsCopy } from '@/src/features/settings/copy/settingsCopy'
+import { useSettingsStore } from '@/src/features/settings/hooks/useSettingsStore'
 import {
   authCopy,
   commonCopy,
@@ -23,6 +24,10 @@ import { ToggleRow } from '@/src/shared/ui/molecules/ToggleRow'
 import { DialogShell } from '@/src/shared/ui/organisms/DialogShell'
 import { visiblePhotoToggles } from '@/src/features/settings/config/photoToggles'
 import {
+  CAPTURE_PRIORITY_SETTINGS,
+  type CapturePriority,
+} from '@/src/features/settings/config/capturePriority'
+import {
   getHapticsEnabled,
   selectionHaptic,
   setHapticsEnabled,
@@ -31,7 +36,6 @@ import { saveEmailOptIn } from '@/src/features/permissions/hooks/saveEmailOptIn'
 import { useChangeEmail } from '@/src/features/auth/hooks/useChangeEmail'
 import { useConsentStore } from '@/src/shared/consent/useConsentStore'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
-import { useSettingsDraft } from '@/src/features/settings/hooks/useSettingsDraft'
 import { APP_VERSION, FEATURE_FLAGS } from '@/src/shared/config/constants'
 import { router } from 'expo-router'
 import { FileTextIcon } from 'phosphor-react-native/src/icons/FileText'
@@ -47,26 +51,47 @@ const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
   { value: 'dark', label: settingsCopy.themeDark },
 ]
 
+const CAPTURE_PRIORITY_OPTIONS: {
+  value: CapturePriority
+  label: string
+}[] = [
+  { value: 'speed', label: settingsCopy.capturePrioritySpeed },
+  { value: 'balanced', label: settingsCopy.capturePriorityBalanced },
+  { value: 'quality', label: settingsCopy.capturePriorityQuality },
+]
+
 const VISIBLE_TOGGLES = visiblePhotoToggles(FEATURE_FLAGS, Platform.OS)
 const PHOTO_TOGGLES = VISIBLE_TOGGLES.filter((toggle) => !toggle.flag)
 const DEVELOPER_TOGGLES = VISIBLE_TOGGLES.filter((toggle) => toggle.flag)
+
+const CAPTURE_PRIORITY_PLATFORMS = ['android', 'ios']
 
 export default function SettingsScreen() {
   const { theme } = useUnistyles()
   const [themeMode, setSelectedThemeMode] = useState<ThemeMode>(getThemeMode)
   const [hapticsOn, setHapticsOn] = useState(getHapticsEnabled)
-  // Like the theme, this applies at once rather than waiting for Save.
+  // Like every setting here, this applies at once.
   const toggleHaptics = (next: boolean) => {
     setHapticsEnabled(next)
     setHapticsOn(next)
     selectionHaptic()
   }
   // Email updates are an opt-in kept in the consent store; like the theme and
-  // haptics, a change applies at once rather than waiting for Save.
+  // haptics, a change applies at once.
   const emailOptIn = useConsentStore((s) => s.emailOptIn === true)
   const accountEmail = useAuthStore((s) => s.user?.email)
   const changeEmail = useChangeEmail()
-  const { draft, patch, handleSave, handleDiscard } = useSettingsDraft()
+  const settings = useSettingsStore((s) => s.settings)
+  const updateSetting = useSettingsStore((s) => s.updateSetting)
+  const updateSettings = useSettingsStore((s) => s.updateSettings)
+  const capturePriority = settings.camera_max_detail
+    ? settings.camera_motion_priority
+      ? 'balanced'
+      : 'quality'
+    : 'speed'
+  const showCapturePriority =
+    FEATURE_FLAGS.experimentalCamera &&
+    CAPTURE_PRIORITY_PLATFORMS.includes(Platform.OS)
 
   return (
     <KeyboardAvoidingView
@@ -78,7 +103,6 @@ export default function SettingsScreen() {
         <View style={styles.inner}>
           <View style={styles.header}>
             <Text style={styles.title}>{navigationCopy.settings}</Text>
-            <Text style={styles.subtitle}>{settingsCopy.screenSubtitle}</Text>
           </View>
 
           <GlassSurface kind="card" style={styles.card}>
@@ -95,14 +119,12 @@ export default function SettingsScreen() {
               }}
               accessibilityLabel={settingsCopy.theme}
             />
-            <Text style={styles.hint}>{settingsCopy.systemAppearanceHint}</Text>
           </GlassSurface>
 
           <GlassSurface kind="card" style={styles.card}>
-            <Text style={styles.cardTitle}>{settingsCopy.hapticFeedback}</Text>
+            <Text style={styles.groupTitle}>{settingsCopy.hapticFeedback}</Text>
             <ToggleRow
               label={settingsCopy.vibrationOnTouch}
-              hint={settingsCopy.hapticHint}
               value={hapticsOn}
               onValueChange={toggleHaptics}
             />
@@ -112,7 +134,6 @@ export default function SettingsScreen() {
             <Text style={styles.cardTitle}>{settingsCopy.communications}</Text>
             <ToggleRow
               label={settingsCopy.emailUpdates}
-              hint={settingsCopy.emailUpdatesHint}
               value={emailOptIn}
               onValueChange={saveEmailOptIn}
             />
@@ -147,28 +168,33 @@ export default function SettingsScreen() {
                     {title === settingsCopy.developer && (
                       <Text style={styles.groupTitle}>{title}</Text>
                     )}
-                    {toggles.map(({ key, label, desc }, i) => (
+                    {toggles.map(({ key, label }, i) => (
                       <Fragment key={key}>
                         {i > 0 && <View style={styles.divider} />}
                         <ToggleRow
                           label={label}
-                          hint={desc}
-                          value={draft[key]}
-                          onValueChange={(value) => patch(key, value)}
+                          value={settings[key]}
+                          onValueChange={(value) => updateSetting(key, value)}
                         />
                       </Fragment>
                     ))}
                   </View>
                 ),
             )}
-            <ButtonRow>
-              <AppButton variant="secondary" onPress={handleDiscard}>
-                {settingsCopy.discardPhotos}
-              </AppButton>
-              <AppButton onPress={handleSave}>
-                {settingsCopy.savePhotos}
-              </AppButton>
-            </ButtonRow>
+            {showCapturePriority && (
+              <SegmentedControl
+                label={settingsCopy.capturePriority}
+                options={CAPTURE_PRIORITY_OPTIONS}
+                value={capturePriority}
+                required
+                singleRow
+                onChange={(next) => {
+                  if (!next) return
+                  updateSettings(CAPTURE_PRIORITY_SETTINGS[next])
+                }}
+                accessibilityLabel={settingsCopy.capturePriority}
+              />
+            )}
           </GlassSurface>
 
           <GlassSurface kind="card" style={styles.card}>

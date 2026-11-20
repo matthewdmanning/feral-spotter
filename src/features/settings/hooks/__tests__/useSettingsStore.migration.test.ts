@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const persisted = (version: number) =>
   JSON.stringify({
-    state: { settings: { native_camera_capture: false } },
+    state: { settings: { keep_photos_on_device: false } },
     version,
   })
 
@@ -28,6 +28,23 @@ const loadRehydrated = async (stored: string | null) => {
 describe('useSettingsStore migration', () => {
   it.each([0, 1])('keeps settings saved at v%i', async (version) => {
     const settings = await loadRehydrated(persisted(version))
-    expect(settings.native_camera_capture).toBe(false)
+    expect(settings.keep_photos_on_device).toBe(false)
+  })
+
+  it('normalizes a legacy false/false capture priority to Balanced', async () => {
+    const settings = await loadRehydrated(
+      JSON.stringify({
+        state: {
+          settings: {
+            camera_max_detail: false,
+            camera_motion_priority: false,
+          },
+        },
+        version: 1,
+      }),
+    )
+
+    expect(settings.camera_max_detail).toBe(true)
+    expect(settings.camera_motion_priority).toBe(true)
   })
 })
