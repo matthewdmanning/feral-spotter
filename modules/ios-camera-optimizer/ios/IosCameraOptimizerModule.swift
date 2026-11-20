@@ -29,7 +29,7 @@ public final class IosCameraOptimizerModule: Module {
       }
 
       if device.isLowLightBoostSupported {
-        device.automaticallyEnablesLowLightBoostWhenAvailable = false
+        device.automaticallyEnablesLowLightBoostWhenAvailable = true
       }
 
       guard let exposureCap = self.motionPreservingExposureCap(for: device) else {

@@ -114,8 +114,7 @@ export function useCameraCapture(): CameraCaptureResult {
     fallbackQualityPrioritization,
   )
 
-  const enableLowLightBoost =
-    improvedCapture && Boolean(device?.supportsLowLightBoost)
+  const enableLowLightBoost = Boolean(device?.supportsLowLightBoost)
   const burstStopRequested = useRef(false)
   // Mirrors isTakingPhoto so handleTakePhoto can read it without listing state
   // it sets itself as a dependency, which recreated the callback twice per

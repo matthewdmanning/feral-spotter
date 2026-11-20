@@ -52,4 +52,30 @@ class CaptureTuningTest {
     assertEquals(latency, CaptureTuning.runningCaptureMode(zsl, true, ImageCapture.FLASH_MODE_AUTO))
     assertEquals(zsl, CaptureTuning.runningCaptureMode(zsl, true, ImageCapture.FLASH_MODE_OFF))
   }
+
+  /** Use this function to verify low-light boost never shares an incompatible FPS range. */
+  @Test
+  fun lowLightBoostUsesThirtyFpsOrLessWhenSupported() {
+    assertEquals(
+      24 to 30,
+      CaptureTuning.selectFrameRateBoundsForLowLightBoost(
+        listOf(15 to 30, 24 to 30, 30 to 60),
+        lowLightBoostSupported = true
+      )
+    )
+    assertEquals(
+      30 to 60,
+      CaptureTuning.selectFrameRateBoundsForLowLightBoost(
+        listOf(15 to 30, 30 to 60),
+        lowLightBoostSupported = false
+      )
+    )
+    assertEquals(
+      null,
+      CaptureTuning.selectFrameRateBoundsForLowLightBoost(
+        listOf(30 to 60),
+        lowLightBoostSupported = true
+      )
+    )
+  }
 }

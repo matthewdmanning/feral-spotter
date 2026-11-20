@@ -252,7 +252,6 @@ class NativeIdentificationCameraView(
     set(value) {
       if (field == value) return
       field = value
-      if (value) boundSession?.camera?.let(::disableLowLightBoostIfSupported)
     }
 
   var subjectMetering: Boolean = false
@@ -578,13 +577,17 @@ class NativeIdentificationCameraView(
     tuning: CaptureTuning
   ): Pair<SessionConfig, Range<Int>?> {
     val builder = SessionConfig.Builder(preview, imageCapture)
-    if (!tuning.prefersFrameRateRange()) return builder.build() to null
+    if (!tuning.prefersFrameRateRange() && !cameraInfo.isLowLightBoostSupported) {
+      return builder.build() to null
+    }
 
     val probeConfig = builder.build()
     val supportedRanges = cameraInfo.getSupportedFrameRateRanges(probeConfig)
-    val preferredRange = supportedRanges.maxWithOrNull(
-      compareBy<Range<Int>> { it.lower }.thenBy { it.upper }
+    val preferredRangeBounds = CaptureTuning.selectFrameRateBoundsForLowLightBoost(
+      supportedRanges.map { it.lower to it.upper },
+      cameraInfo.isLowLightBoostSupported
     ) ?: return probeConfig to null
+    val preferredRange = Range(preferredRangeBounds.first, preferredRangeBounds.second)
 
     builder.setFrameRateRange(preferredRange)
     return builder.build() to preferredRange
@@ -660,9 +663,7 @@ class NativeIdentificationCameraView(
             (fieldConfig?.highResolutionPool ?: activeTuning.prefersHighestResolution())
       )
       boundSession = session
-      if (disableLowLightBoost) {
-        disableLowLightBoostIfSupported(boundCamera)
-      }
+      enableLowLightBoostIfSupported(boundCamera, frameRateRange)
       // requestedCaptureTuning names the settings that asked; captureMode names the mode
       // CameraX runs. Flash is set per capture, so this assumes flash off and
       // each capture reports its own mode.
@@ -693,7 +694,7 @@ class NativeIdentificationCameraView(
           "camera_position" to position,
           "max_detail" to maxDetail,
           "motion_priority" to motionPriority,
-          "low_light_boost_disabled" to disableLowLightBoost,
+          "low_light_boost_disabled" to false,
           "low_light_boost_supported" to boundCamera.cameraInfo.isLowLightBoostSupported,
           "bind_duration_ms" to (System.currentTimeMillis() - startedAt)
         ) + (fieldConfig?.diagnosticFields() ?: mapOf("field_condition" to "none"))
@@ -728,6 +729,10 @@ class NativeIdentificationCameraView(
   }
 
   /**
+   * Use this function after binding a supported CameraX camera to request
+   * automatic low-light boost and report incompatible active configurations
+   * through diagnostics.
+   *
    * Low-light boost is a preview feature, not a still-capture mode. CameraX
    * documents it for the preview, video and image-analysis streams, keeps it
    * on the preview while an ImageCapture capture runs, and turns it off when
@@ -738,12 +743,48 @@ class NativeIdentificationCameraView(
    * while it is active inherits that exposure: compare the photo's EXIF
    * exposure time with it on and off on a device.
    *
-   * Turning it off is opt-in, and only where the device says it supports the
-   * control at all.
+   * The compatibility prop is ignored: supported devices always request
+   * automatic boost, while CameraX reports any incompatible active config via
+   * the returned future.
    */
-  private fun disableLowLightBoostIfSupported(boundCamera: Camera) {
+  private fun enableLowLightBoostIfSupported(
+    boundCamera: Camera,
+    frameRateRange: Range<Int>?
+  ) {
     if (!boundCamera.cameraInfo.isLowLightBoostSupported) return
-    boundCamera.cameraControl.enableLowLightBoostAsync(false)
+    val future = try {
+      boundCamera.cameraControl.enableLowLightBoostAsync(true)
+    } catch (error: Throwable) {
+      diagnostic(
+        "low_light_boost_enable_failed",
+        mapOf(
+          "frame_rate_range" to (frameRateRange?.let { "${it.lower}-${it.upper}" } ?: "default"),
+          "message" to (error.message ?: error.toString())
+        )
+      )
+      return
+    }
+    future.addListener({
+      try {
+        future.get()
+        diagnostic(
+          "low_light_boost_enabled",
+          mapOf(
+            "frame_rate_range" to
+              (frameRateRange?.let { "${it.lower}-${it.upper}" } ?: "default")
+          )
+        )
+      } catch (error: Throwable) {
+        diagnostic(
+          "low_light_boost_enable_failed",
+          mapOf(
+            "frame_rate_range" to
+              (frameRateRange?.let { "${it.lower}-${it.upper}" } ?: "default"),
+            "message" to (error.message ?: error.toString())
+          )
+        )
+      }
+    }, ContextCompat.getMainExecutor(context))
   }
 
   /**
