@@ -5,6 +5,9 @@ import UIKit
 
 final class NativePhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate {
   private let completion: (Result<[String: Any], Error>) -> Void
+  private var processedResult: Result<[String: Any], Error>?
+  private var outputURL: URL?
+  private var didComplete = false
 
   init(completion: @escaping (Result<[String: Any], Error>) -> Void) {
     self.completion = completion
@@ -15,31 +18,56 @@ final class NativePhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate 
     didFinishProcessingPhoto photo: AVCapturePhoto,
     error: Error?
   ) {
+    guard processedResult == nil, !didComplete else { return }
+
     if let error {
-      completion(.failure(error))
+      processedResult = .failure(error)
       return
     }
 
     guard let data = photo.fileDataRepresentation() else {
-      completion(.failure(NativeCameraError.photoDataUnavailable))
+      processedResult = .failure(NativeCameraError.photoDataUnavailable)
       return
     }
 
+    let url = FileManager.default.temporaryDirectory
+      .appendingPathComponent(UUID().uuidString)
+      .appendingPathExtension("jpg")
+    outputURL = url
     do {
-      let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent(UUID().uuidString)
-        .appendingPathExtension("jpg")
       try data.write(to: url, options: .atomic)
       let dimensions = photo.resolvedSettings.photoDimensions
-      completion(.success([
+      processedResult = .success([
         "uri": url.absoluteString,
         "width": Int(dimensions.width),
         "height": Int(dimensions.height),
         "capturedAt": ISO8601DateFormatter().string(from: Date())
-      ]))
+      ])
     } catch {
-      completion(.failure(error))
+      try? FileManager.default.removeItem(at: url)
+      outputURL = nil
+      processedResult = .failure(error)
     }
+  }
+
+  /** Use this function to settle the buffered result and clean up once the capture ends. */
+  func photoOutput(
+    _ output: AVCapturePhotoOutput,
+    didFinishCaptureFor resolvedSettings: AVCaptureResolvedPhotoSettings,
+    error: Error?
+  ) {
+    guard !didComplete else { return }
+    didComplete = true
+
+    if let error {
+      if let outputURL {
+        try? FileManager.default.removeItem(at: outputURL)
+      }
+      completion(.failure(error))
+      return
+    }
+
+    completion(processedResult ?? .failure(NativeCameraError.photoDataUnavailable))
   }
 }
 
@@ -61,6 +89,7 @@ public final class NativeIdentificationCameraView: ExpoView {
   }
 
   let onCameraReady = EventDispatcher()
+  let onCameraDiagnostic = EventDispatcher()
   let onCameraError = EventDispatcher()
 
   private let session = AVCaptureSession()
@@ -74,7 +103,7 @@ public final class NativeIdentificationCameraView: ExpoView {
   private var currentDevice: AVCaptureDevice?
   private var captureDelegates: [Int64: NativePhotoCaptureDelegate] = [:]
   private var defaultFormats: [String: AVCaptureDevice.Format] = [:]
-  private var defaultPhotoDimensions: [String: CMVideoDimensions] = [:]
+  private var sessionGeneration: UInt = 0
   private var rotationCoordinator: Any?
   private var previewRotationObservation: NSKeyValueObservation?
   private var captureRotationObservation: NSKeyValueObservation?
@@ -112,6 +141,8 @@ public final class NativeIdentificationCameraView: ExpoView {
   }
 
   var subjectMetering = false
+
+  var diagnostics = false
 
   /**
    Pinch to zoom. Off by default, matching Android: a zoomed capture is a
@@ -176,12 +207,14 @@ public final class NativeIdentificationCameraView: ExpoView {
   }
 
   private func configureSession() {
+    sessionGeneration &+= 1
     session.beginConfiguration()
     session.sessionPreset = .photo
 
     if let currentInput {
       session.removeInput(currentInput)
       self.currentInput = nil
+      self.currentDevice = nil
     }
 
     do {
@@ -207,9 +240,6 @@ public final class NativeIdentificationCameraView: ExpoView {
       if defaultFormats[device.uniqueID] == nil {
         defaultFormats[device.uniqueID] = device.activeFormat
       }
-      if defaultPhotoDimensions[device.uniqueID] == nil {
-        defaultPhotoDimensions[device.uniqueID] = photoOutput.maxPhotoDimensions
-      }
       configureDevicePolicy(device)
       configureOutput(for: device)
       session.commitConfiguration()
@@ -218,12 +248,25 @@ public final class NativeIdentificationCameraView: ExpoView {
         guard let self else { return }
         self.configureOrientation(for: device)
         self.onCameraReady([:])
+        self.diagnostic(
+          "session_bound",
+          [
+            "camera_position": self.position == .front ? "front" : "back",
+            "max_detail": self.maxDetail,
+            "motion_priority": self.motionPriority,
+            "low_light_boost_disabled": self.disableLowLightBoost
+          ]
+        )
       }
       updateRunningState()
     } catch {
       session.commitConfiguration()
       DispatchQueue.main.async { [weak self] in
         self?.onCameraError(["message": String(describing: error)])
+        self?.diagnostic(
+          "session_bind_failed",
+          ["message": String(describing: error)]
+        )
       }
     }
   }
@@ -254,15 +297,15 @@ public final class NativeIdentificationCameraView: ExpoView {
   }
 
   private func configureOutput(for device: AVCaptureDevice) {
-    if maxDetail,
-       let largest = device.activeFormat.supportedMaxPhotoDimensions.max(by: {
-         Int64($0.width) * Int64($0.height) < Int64($1.width) * Int64($1.height)
-       }) {
-      photoOutput.maxPhotoDimensions = largest
-    } else if let original = defaultPhotoDimensions[device.uniqueID],
-              original.width > 0,
-              original.height > 0 {
-      photoOutput.maxPhotoDimensions = original
+    let supportedDimensions = device.activeFormat.supportedMaxPhotoDimensions
+    if maxDetail, let dimensions = supportedDimensions.max(by: {
+      Int64($0.width) * Int64($0.height) < Int64($1.width) * Int64($1.height)
+    }) {
+      photoOutput.maxPhotoDimensions = dimensions
+    } else if let dimensions = supportedDimensions.min(by: {
+      Int64($0.width) * Int64($0.height) < Int64($1.width) * Int64($1.height)
+    }) {
+      photoOutput.maxPhotoDimensions = dimensions
     }
 
     photoOutput.maxPhotoQualityPrioritization = qualityPrioritization
@@ -399,6 +442,7 @@ public final class NativeIdentificationCameraView: ExpoView {
         }
       } else if self.session.isRunning {
         self.session.stopRunning()
+        self.diagnostic("session_unbound")
       }
     }
   }
@@ -439,9 +483,16 @@ public final class NativeIdentificationCameraView: ExpoView {
       )
       settings.photoQualityPrioritization = self.qualityPrioritization
 
-      if self.maxDetail {
-        settings.maxPhotoDimensions = self.photoOutput.maxPhotoDimensions
-      }
+      #if DEBUG
+      let dimensions = self.photoOutput.maxPhotoDimensions
+      assert(
+        device.activeFormat.supportedMaxPhotoDimensions.contains {
+          $0.width == dimensions.width && $0.height == dimensions.height
+        },
+        "photo dimensions must belong to the active format"
+      )
+      #endif
+      settings.maxPhotoDimensions = self.photoOutput.maxPhotoDimensions
 
       switch options.flashMode {
       case "on":
@@ -454,14 +505,32 @@ public final class NativeIdentificationCameraView: ExpoView {
 
       let id = settings.uniqueID
       let delegate = NativePhotoCaptureDelegate { [weak self] result in
-        self?.sessionQueue.async {
-          self?.captureDelegates[id] = nil
+        guard let self else {
+          switch result {
+          case .success(let value): promise.resolve(value)
+          case .failure(let error): promise.reject(error)
+          }
+          return
         }
-        switch result {
-        case .success(let value):
-          promise.resolve(value)
-        case .failure(let error):
-          promise.reject(error)
+        self.sessionQueue.async {
+          self.captureDelegates[id] = nil
+          switch result {
+          case .success(let value):
+            self.diagnostic(
+              "capture_saved",
+              [
+                "output_width": value["width"] as? Int ?? 0,
+                "output_height": value["height"] as? Int ?? 0
+              ]
+            )
+            promise.resolve(value)
+          case .failure(let error):
+            self.diagnostic(
+              "capture_failed",
+              ["message": String(describing: error)]
+            )
+            promise.reject(error)
+          }
         }
       }
       self.captureDelegates[id] = delegate
@@ -469,27 +538,117 @@ public final class NativeIdentificationCameraView: ExpoView {
     }
   }
 
-  func focus(normalizedX: Double, normalizedY: Double) -> Bool {
+  func focus(normalizedX: Double, normalizedY: Double, promise: Promise) {
+    requestMeteringPoint(
+      normalizedX: normalizedX,
+      normalizedY: normalizedY,
+      owner: "tap",
+      promise: promise
+    )
+  }
+
+  func setSubjectRegion(_ region: NativeSubjectRegion?, promise: Promise) {
+    guard subjectMetering, let region else {
+      diagnostic(
+        "subject_region_ignored",
+        [
+          "subject_metering": subjectMetering,
+          "region_present": region != nil
+        ]
+      )
+      promise.resolve(false)
+      return
+    }
+    requestMeteringPoint(
+      normalizedX: region.x + region.width / 2,
+      normalizedY: region.y + region.height / 2,
+      owner: "subject",
+      promise: promise
+    )
+  }
+
+  /** Use this function to convert preview coordinates on the main queue and apply them only to the current lens session. */
+  private func requestMeteringPoint(
+    normalizedX: Double,
+    normalizedY: Double,
+    owner: String,
+    promise: Promise
+  ) {
     guard normalizedX >= 0,
           normalizedX <= 1,
           normalizedY >= 0,
           normalizedY <= 1 else {
-      return false
+      diagnostic(
+        "focus_requested",
+        ["owner": owner, "accepted": false, "reason": "out_of_bounds"]
+      )
+      promise.resolve(false)
+      return
     }
 
-    let layerPoint = CGPoint(
-      x: bounds.width * normalizedX,
-      y: bounds.height * normalizedY
-    )
-    let devicePoint = previewLayer.captureDevicePointConverted(fromLayerPoint: layerPoint)
-    return applyMeteringPoint(devicePoint, includeExposure: true)
-  }
+    sessionQueue.async { [weak self] in
+      guard let self, let device = self.currentDevice else {
+        self?.diagnostic(
+          "focus_requested",
+          ["owner": owner, "accepted": false, "reason": "no_bound_camera"]
+        )
+        promise.resolve(false)
+        return
+      }
+      let generation = self.sessionGeneration
+      let deviceID = device.uniqueID
+      self.diagnostic(
+        "focus_requested",
+        ["owner": owner, "accepted": true, "reason": "started"]
+      )
 
-  func setSubjectRegion(_ region: NativeSubjectRegion?) -> Bool {
-    guard subjectMetering, let region else { return false }
-    let centerX = region.x + region.width / 2
-    let centerY = region.y + region.height / 2
-    return focus(normalizedX: centerX, normalizedY: centerY)
+      DispatchQueue.main.async { [weak self] in
+        guard let self else {
+          promise.resolve(false)
+          return
+        }
+        guard self.bounds.width > 0, self.bounds.height > 0 else {
+          promise.resolve(false)
+          return
+        }
+
+        let layerPoint = CGPoint(
+          x: self.bounds.width * normalizedX,
+          y: self.bounds.height * normalizedY
+        )
+        let devicePoint = self.previewLayer.captureDevicePointConverted(
+          fromLayerPoint: layerPoint
+        )
+
+        self.sessionQueue.async { [weak self] in
+          guard let self else {
+            promise.resolve(false)
+            return
+          }
+          guard self.sessionGeneration == generation,
+                self.currentDevice?.uniqueID == deviceID,
+                self.session.isRunning else {
+            self.diagnostic(
+              "focus_request_completed",
+              ["owner": owner, "success": false, "reason": "stale_session"]
+            )
+            promise.resolve(false)
+            return
+          }
+
+          let success = self.applyMeteringPoint(devicePoint, includeExposure: true)
+          self.diagnostic(
+            "focus_request_completed",
+            [
+              "owner": owner,
+              "success": success,
+              "reason": success ? "applied" : "configuration_failed"
+            ]
+          )
+          promise.resolve(success)
+        }
+      }
+    }
   }
 
   private func applyMeteringPoint(
@@ -516,6 +675,14 @@ public final class NativeIdentificationCameraView: ExpoView {
       return true
     } catch {
       return false
+    }
+  }
+
+  /** Use this function to emit opt-in session, capture, and focus diagnostics to the JavaScript consumer. */
+  private func diagnostic(_ event: String, _ fields: [String: Any] = [:]) {
+    DispatchQueue.main.async { [weak self] in
+      guard let self, self.diagnostics else { return }
+      self.onCameraDiagnostic(fields.merging(["event": event]) { current, _ in current })
     }
   }
 
