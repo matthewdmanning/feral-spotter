@@ -394,3 +394,11 @@ flow on a device.
 **Issue #460:** [The issue](https://github.com/matthewdmanning/feral-spotter/issues/460) requests a review of Android native photo functions, rather than specifying a slider. This UI gives the previously independent priority inputs one explicit choice, and the boost change addresses the missing Android enable call. The full review remains incomplete: the subject-region producer is still absent, and reported capture mode is still inferred from configuration and documented fallback rules. RAW+JPEG support added later also supersedes the issue's original all-JPEG observation.
 
 **Verification:** Full JavaScript suite: 137 suites / 626 tests passed. App, server, and test type checking passed after regenerating stale Expo route declarations with `expo customize tsconfig.json`. Lint passed with the same three existing import-order warnings in `BottomButtonColumn.tsx`; changed-file Prettier and `git diff --check` passed. JDK 17 Android `:native-identification-camera:compileReleaseKotlin` and `:native-identification-camera:testDebugUnitTest` passed (16 JVM tests across five suites), including supported, unsupported, and incompatible FPS-range choices. The rendered Settings journey checks staged edits, Discard, all three saved mappings, removed toggles, and flag/backend visibility. No iOS compile or physical camera/visual test performed. The Pixel 7 was disconnected; no updated APK was installed.
+
+## 2026-11-20 — fix
+
+**Purpose:** Prevent the legacy iOS camera optimizer from partially applying an unsupported policy or losing the original settings when a restore lock fails.
+
+**Change:** Validate the exposure cap while holding the device lock before saving or changing settings. Acquire the device lock before consuming the saved restore state, preserving it for a retry if locking throws. The native identification camera audit changes are recorded in [Native camera audit fixes](2026-11-16-camera-native-audit-fixes.md).
+
+**Verification:** Source review only on Windows; no Swift/Xcode toolchain or iPhone verification. Needs test drive: an unusable exposure cap must leave settings untouched, and a failed restore lock followed by retry must restore the original exposure mode and boost preference.

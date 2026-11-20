@@ -22,6 +22,10 @@ public final class IosCameraOptimizerModule: Module {
       try device.lockForConfiguration()
       defer { device.unlockForConfiguration() }
 
+      guard let exposureCap = self.motionPreservingExposureCap(for: device) else {
+        return false
+      }
+
       self.saveStateIfNeeded(for: device)
 
       if device.isExposureModeSupported(.continuousAutoExposure) {
@@ -30,10 +34,6 @@ public final class IosCameraOptimizerModule: Module {
 
       if device.isLowLightBoostSupported {
         device.automaticallyEnablesLowLightBoostWhenAvailable = true
-      }
-
-      guard let exposureCap = self.motionPreservingExposureCap(for: device) else {
-        return false
       }
 
       device.activeMaxExposureDuration = exposureCap
@@ -45,10 +45,10 @@ public final class IosCameraOptimizerModule: Module {
         return false
       }
 
-      let previousState = self.takeSavedState(for: deviceId)
-
       try device.lockForConfiguration()
       defer { device.unlockForConfiguration() }
+
+      let previousState = self.takeSavedState(for: deviceId)
 
       // The active format may have changed since optimization was applied.
       // Resetting to AVFoundation's current-format default is safer than
