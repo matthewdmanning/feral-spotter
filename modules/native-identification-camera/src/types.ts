@@ -94,6 +94,7 @@ export interface NativeIdentificationCameraProps {
   motionPriority: boolean
   /** Android only. Absent or null keeps the capture tuning. */
   fieldCondition?: NativeFieldCondition | null
+  /** Retained for compatibility; automatic low-light boost is always requested when supported. */
   disableLowLightBoost: boolean
   subjectMetering: boolean
   /**

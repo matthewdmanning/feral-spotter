@@ -23,6 +23,8 @@ interface SegmentedControlProps<T extends string | number> {
    * selected option clears it (a cat attribute left unset).
    */
   required?: boolean
+  /** Keep every option on one row, sharing the width equally. */
+  singleRow?: boolean
 }
 
 interface SegmentedRowProps<T extends string | number> {
@@ -32,6 +34,8 @@ interface SegmentedRowProps<T extends string | number> {
   accessibilityLabel: string
   /** See SegmentedControlProps.required. */
   required?: boolean
+  /** See SegmentedControlProps.singleRow. */
+  singleRow?: boolean
 }
 
 /** The track of options alone, for controls that stack more than one. */
@@ -41,6 +45,7 @@ export function SegmentedRow<T extends string | number>({
   onChange,
   accessibilityLabel,
   required = false,
+  singleRow = false,
 }: SegmentedRowProps<T>) {
   const { theme } = useUnistyles()
   const { width, fontScale } = useWindowDimensions()
@@ -56,7 +61,7 @@ export function SegmentedRow<T extends string | number>({
   )
   return (
     <View
-      style={styles.row}
+      style={[styles.row, singleRow && styles.rowSingle]}
       accessibilityLabel={accessibilityLabel}
       onLayout={(event) => setMeasuredWidth(event.nativeEvent.layout.width)}
     >
@@ -72,7 +77,8 @@ export function SegmentedRow<T extends string | number>({
             }}
             style={({ pressed }) => [
               styles.option,
-              { flexBasis: optionWidth },
+              { flexBasis: singleRow ? 0 : optionWidth },
+              singleRow && styles.optionSingle,
               selected ? styles.optionSelected : styles.optionIdle,
               pressed && styles.optionPressed,
             ]}
@@ -97,6 +103,7 @@ export function SegmentedControl<T extends string | number>({
   onChange,
   accessibilityLabel,
   required,
+  singleRow,
 }: SegmentedControlProps<T>) {
   return (
     <View style={styles.container}>
@@ -107,6 +114,7 @@ export function SegmentedControl<T extends string | number>({
         onChange={onChange}
         accessibilityLabel={accessibilityLabel ?? label}
         required={required}
+        singleRow={singleRow}
       />
     </View>
   )

@@ -41,9 +41,9 @@ export function useNativeCameraCapture(
   const motionPriority = useSettingsStore(
     (s) => s.settings.camera_motion_priority !== false,
   )
-  const disableLowLightBoost = useSettingsStore(
-    (s) => s.settings.camera_disable_low_light_boost === true,
-  )
+  // Compatibility prop; the native camera enables automatic low-light boost
+  // whenever the device supports it.
+  const disableLowLightBoost = false
   const subjectMetering = useSettingsStore(
     (s) => s.settings.camera_subject_metering === true,
   )

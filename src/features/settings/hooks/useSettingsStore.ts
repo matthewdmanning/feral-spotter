@@ -4,16 +4,20 @@
  */
 
 import { asyncStorage } from '@/src/shared/lib/storage'
+import { CAPTURE_PRIORITY_SETTINGS } from '@/src/features/settings/config/capturePriority'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 
 export interface AppSettings {
   keep_photos_on_device: boolean
   skip_photo_remove_confirm: boolean
+  /**
+   * @deprecated The native camera is the capture backend, so this has no
+   * Settings control. It only still shapes the VisionCamera fallback.
+   */
   improved_camera_capture: boolean
   ios_improved_camera_capture: boolean
   camera_performance_checks: boolean
-  native_camera_capture: boolean
   camera_max_detail: boolean
   camera_motion_priority: boolean
   camera_disable_low_light_boost: boolean
@@ -42,8 +46,8 @@ const envDefault = (value: string | undefined, shipped: boolean): boolean =>
   value === undefined || value === '' ? shipped : value === 'true'
 
 /**
- * Three camera settings ship off and have to be on for a native-camera test
- * drive, which meant three manual toggles at the start of every run. An Android
+ * Camera settings that ship off have to be on for a native-camera test drive,
+ * which meant manual toggles at the start of every run. An Android
  * drive sets them in `.env.android.local`, which only `npm run android` loads,
  * so no other platform and no release build is affected.
  *
@@ -60,10 +64,6 @@ const DEFAULT_SETTINGS: AppSettings = {
     process.env.EXPO_PUBLIC_CAMERA_PERFORMANCE_CHECKS,
     false,
   ),
-  native_camera_capture: envDefault(
-    process.env.EXPO_PUBLIC_NATIVE_CAMERA_CAPTURE,
-    true,
-  ),
   camera_max_detail: true,
   camera_motion_priority: true,
   camera_disable_low_light_boost: false,
@@ -73,16 +73,36 @@ const DEFAULT_SETTINGS: AppSettings = {
   ),
 }
 
+/**
+ * Use this function when settings enter or leave the persisted store so the
+ * legacy false/false capture pair is represented by the canonical Balanced
+ * choice. It relies on `CAPTURE_PRIORITY_SETTINGS` for that canonical pair.
+ */
+function normalizeSettings(settings: AppSettings): AppSettings {
+  if (settings.camera_max_detail || settings.camera_motion_priority) {
+    return settings
+  }
+
+  return {
+    ...settings,
+    ...CAPTURE_PRIORITY_SETTINGS.balanced,
+  }
+}
+
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
       settings: { ...DEFAULT_SETTINGS },
 
       updateSetting: (key, value) =>
-        set((s) => ({ settings: { ...s.settings, [key]: value } })),
+        set((s) => ({
+          settings: normalizeSettings({ ...s.settings, [key]: value }),
+        })),
 
       updateSettings: (patch) =>
-        set((s) => ({ settings: { ...s.settings, ...patch } })),
+        set((s) => ({
+          settings: normalizeSettings({ ...s.settings, ...patch }),
+        })),
     }),
     {
       name: 'settings-store',
@@ -97,10 +117,10 @@ export const useSettingsStore = create<SettingsState>()(
         )?.settings
         return {
           ...current,
-          settings: {
+          settings: normalizeSettings({
             ...DEFAULT_SETTINGS,
             ...persistedSettings,
-          },
+          }),
         }
       },
     },
