@@ -33,7 +33,7 @@ public final class NativeIdentificationCameraModule: Module {
     Name("NativeIdentificationCamera")
 
     View(NativeIdentificationCameraView.self) {
-      Events("onCameraReady", "onCameraError")
+      Events("onCameraReady", "onCameraError", "onCameraDiagnostic")
 
       Prop("isActive") { (view: NativeIdentificationCameraView, value: Bool) in
         view.isActive = value
@@ -63,19 +63,23 @@ public final class NativeIdentificationCameraModule: Module {
         view.subjectMetering = value
       }
 
+      Prop("diagnostics") { (view: NativeIdentificationCameraView, value: Bool) in
+        view.diagnostics = value
+      }
+
       AsyncFunction("capture") {
         (view: NativeIdentificationCameraView, options: NativeCaptureOptions, promise: Promise) in
         view.capture(options: options, promise: promise)
       }
 
       AsyncFunction("focus") {
-        (view: NativeIdentificationCameraView, point: NativePoint) -> Bool in
-        view.focus(normalizedX: point.x, normalizedY: point.y)
+        (view: NativeIdentificationCameraView, point: NativePoint, promise: Promise) in
+        view.focus(normalizedX: point.x, normalizedY: point.y, promise: promise)
       }
 
       AsyncFunction("setSubjectRegion") {
-        (view: NativeIdentificationCameraView, region: NativeSubjectRegion?) -> Bool in
-        view.setSubjectRegion(region)
+        (view: NativeIdentificationCameraView, region: NativeSubjectRegion?, promise: Promise) in
+        view.setSubjectRegion(region, promise: promise)
       }
     }
   }

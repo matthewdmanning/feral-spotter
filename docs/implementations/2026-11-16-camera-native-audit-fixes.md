@@ -74,3 +74,13 @@ tags:
 
 - [x] The TypeScript caller forwards a null subject region even when subject metering is disabled; the focused hook regression covers the native ownership cancellation boundary.
 - [ ] A device run should compare delivered dimensions and capture latency across the field conditions before treating any quality or low-light benefit as measured.
+
+## 2026-11-20 — fix
+
+**Purpose:** Address the iOS source audit of `main` at `f57d37c5`: invalid dimensions after a lens switch, captures without a processed-photo callback, focus racing a flip, and missing native performance diagnostics.
+
+**Change:** Choose photo dimensions from the active format for every capture priority. Buffer the processed-photo result and settle once at AVFoundation's terminal capture callback, retaining the delegate until then and cleaning up a photo file if the terminal capture fails. Convert preview coordinates on the main queue and validate the session before applying focus on the session queue. Export the existing `diagnostics` prop and `onCameraDiagnostic` event contract on iOS. The legacy optimizer's validation and restore-retry fix is recorded in the [camera implementation note](2026-08-01-sprint-camera-implementation.md#2026-11-20--fix).
+
+**API basis:** Apple requires [output dimensions to match the active format](https://developer.apple.com/documentation/avfoundation/avcapturephotooutput/maxphotodimensions) and identifies the [terminal callback as the capture cleanup point](<https://developer.apple.com/documentation/avfoundation/avcapturephotocapturedelegate/photooutput(_:didfinishcapturefor:error:)>).
+
+**Verification:** Needs test drive. A DEBUG assertion before capture checks the real output dimensions against the active format; lens-switch regression trips that assertion before AVFoundation capture. It has not been executed here. This Windows host has no Swift compiler, Xcode, or iPhone; source and whitespace checks do not establish native compilation or device behavior. On an iPhone, flip lenses repeatedly under Speed / Balanced / Quality, tap during flips, verify error recovery allows the next capture, and compare native diagnostics with Camera Performance Checks on and off. No Android build or device change is part of this patch.
