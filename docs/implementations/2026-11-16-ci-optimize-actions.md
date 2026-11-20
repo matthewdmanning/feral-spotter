@@ -72,7 +72,7 @@ tags:
 Repeat the workflow validation with [actionlint](https://github.com/rhysd/actionlint/blob/main/docs/install.md):
 
 ```sh
-actionlint -shellcheck= .github/workflows/ci.yml .github/workflows/commitlint.yml .github/workflows/codeql.yml
+actionlint -shellcheck= .github/workflows/ci.yml .github/workflows/commitlint.yml
 ```
 
 **Unverified:**
@@ -85,3 +85,11 @@ actionlint -shellcheck= .github/workflows/ci.yml .github/workflows/commitlint.ym
 
 - [ ] Run a post-publication warm-cache CI comparison and report observed archive size and timings.
 - `actions/setup-node`'s npm cache remains a package-tarball cache; it does not replace the exact `node_modules` archive.
+
+## 2026-11-20 — fix
+
+**Purpose:** Remove the Swift CodeQL build requested after PR #482's failing autobuild.
+
+**Change:** Delete `.github/workflows/codeql.yml`, whose only analysis language was Swift, rather than retain an empty language matrix. The failed run also reported that GitHub's default CodeQL setup was enabled and rejected this advanced workflow's upload; no repository security settings are changed.
+
+**Verification:** Review confirms the removed workflow contained only Swift. Formatting and whitespace checks cover this change; application tests do not exercise workflow removal. Hosted CI must confirm the updated PR checks.
