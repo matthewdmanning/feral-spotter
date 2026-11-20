@@ -4,6 +4,8 @@ import androidx.annotation.OptIn
 import androidx.camera.core.ExperimentalZeroShutterLag
 import androidx.camera.core.ImageCapture
 
+private const val LOW_LIGHT_BOOST_MAX_FPS = 30
+
 /**
  * How the two tuning priorities map to a CameraX capture mode.
  *
@@ -111,6 +113,22 @@ enum class CaptureTuning(
 
     fun of(maxDetail: Boolean, motionPriority: Boolean): CaptureTuning =
       entries.first { it.maxDetail == maxDetail && it.motionPriority == motionPriority }
+
+    /**
+     * Use this function to choose supported session frame-rate bounds that do
+     * not disable automatic low-light boost.
+     */
+    internal fun selectFrameRateBoundsForLowLightBoost(
+      supportedRanges: List<Pair<Int, Int>>,
+      lowLightBoostSupported: Boolean
+    ): Pair<Int, Int>? {
+      val candidates = if (lowLightBoostSupported) {
+        supportedRanges.filter { it.second <= LOW_LIGHT_BOOST_MAX_FPS }
+      } else {
+        supportedRanges
+      }
+      return candidates.maxWithOrNull(compareBy<Pair<Int, Int>> { it.first }.thenBy { it.second })
+    }
 
     /** Reported in telemetry, so the resolved mode reads by name, not constant. */
     @OptIn(ExperimentalZeroShutterLag::class)
