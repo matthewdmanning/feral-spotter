@@ -1,29 +1,32 @@
 import {
   FEDERATED_PROVIDERS,
   isFederatedProviderReleased,
-  type FederatedProviderConfig,
 } from '@/src/features/auth/lib/authProviders'
+import { FEATURE_FLAGS } from '@/src/shared/config/constants'
 
-const byId = (id: string): FederatedProviderConfig =>
-  FEDERATED_PROVIDERS.find((p) => p.id === id) as FederatedProviderConfig
+const allOff = Object.fromEntries(
+  Object.keys(FEATURE_FLAGS).map((flag) => [flag, false]),
+) as Record<keyof typeof FEATURE_FLAGS, boolean>
 
-describe('federated provider release/version gate', () => {
-  it('lists google, apple and facebook', () => {
-    expect(FEDERATED_PROVIDERS.map((p) => p.id)).toEqual([
-      'google',
-      'apple',
-      'facebook',
+describe('federated provider feature flags', () => {
+  it('releases google but blocks apple and facebook by default', () => {
+    expect(
+      FEDERATED_PROVIDERS.map((p) => [p.id, isFederatedProviderReleased(p)]),
+    ).toEqual([
+      ['google', true],
+      ['apple', false],
+      ['facebook', false],
     ])
   })
 
-  it('releases google but blocks apple and facebook at the current 0.1.0 line', () => {
-    expect(isFederatedProviderReleased(byId('google'), '0.1.0')).toBe(true)
-    expect(isFederatedProviderReleased(byId('apple'), '0.1.0')).toBe(false)
-    expect(isFederatedProviderReleased(byId('facebook'), '0.1.0')).toBe(false)
-  })
-
-  it('unblocks apple and facebook once the app reaches their release version', () => {
-    expect(isFederatedProviderReleased(byId('apple'), '1.0.0')).toBe(true)
-    expect(isFederatedProviderReleased(byId('facebook'), '1.2.0')).toBe(true)
-  })
+  it.each(FEDERATED_PROVIDERS)(
+    'releases $id only when its own flag is on',
+    (provider) => {
+      expect(isFederatedProviderReleased(provider, allOff)).toBe(false)
+      const released = FEDERATED_PROVIDERS.filter((p) =>
+        isFederatedProviderReleased(p, { ...allOff, [provider.flag]: true }),
+      )
+      expect(released.map((p) => p.id)).toEqual([provider.id])
+    },
+  )
 })

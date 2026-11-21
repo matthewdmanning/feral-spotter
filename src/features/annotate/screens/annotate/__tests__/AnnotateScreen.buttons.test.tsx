@@ -18,8 +18,8 @@ import type { TestInstance } from 'test-renderer'
  * disabled state. Carousel/InsetCropBubble/TutorialOverlay are mocked away:
  * the carousel only mounts after an onLayout measurement react-test-renderer
  * never fires, and the other two are covered by their own tests
- * (InsetCropBubble.collapseFlow.model.test.tsx) or are unreachable in this
- * dev version (tutorial is version-gated past the current app version).
+ * (InsetCropBubble.collapseFlow.model.test.tsx) or are rendered as null
+ * here (TutorialOverlay).
  */
 
 jest.mock('expo-router', () => ({

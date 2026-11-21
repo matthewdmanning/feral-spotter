@@ -1,4 +1,4 @@
-import { getAppVersion, isVersionReleased } from '@/src/shared/utils/appVersion'
+import { FEATURE_FLAGS, type FeatureFlag } from '@/src/shared/config/constants'
 import { authCopy } from '@/src/shared/config/text'
 
 /**
@@ -13,48 +13,35 @@ export interface FederatedProviderConfig {
   /** Button label, e.g. "Continue with Google". */
   label: string
   /**
-   * The app version at which this provider goes live. A provider is only
-   * usable once the running app's version is >= this tag; until then its
-   * button renders but its press is blocked (see {@link isFederatedProviderReleased}).
-   * This is the release/version gate: flip a provider on by shipping the app
-   * version that also carries its completed Console + native setup.
+   * The feature flag that releases this provider. Until it is on, the
+   * provider's button renders but its press is blocked (see
+   * {@link isFederatedProviderReleased}).
    */
-  releasedInVersion: string
+  flag: FeatureFlag
 }
 
-/**
- * Google is live as of the current line; Apple and Facebook are fully wired in
- * code but gated to a future release because their Firebase Console providers
- * and native credentials (Apple Services ID, Facebook App ID) are not yet
- * provisioned. See docs for the external-setup checklist that must ship with
- * the 1.0.0 build before these are unblocked.
- */
 export const FEDERATED_PROVIDERS: readonly FederatedProviderConfig[] = [
-  { id: 'google', label: authCopy.providerGoogle, releasedInVersion: '0.1.0' },
-  { id: 'apple', label: authCopy.providerApple, releasedInVersion: '1.0.0' },
-  {
-    id: 'facebook',
-    label: authCopy.providerFacebook,
-    releasedInVersion: '1.0.0',
-  },
+  { id: 'google', label: authCopy.providerGoogle, flag: 'googleSignIn' },
+  { id: 'apple', label: authCopy.providerApple, flag: 'appleSignIn' },
+  { id: 'facebook', label: authCopy.providerFacebook, flag: 'facebookSignIn' },
 ]
 
 /**
- * Whether a provider's release/version gate has been reached, so its button
- * may be pressed. Unreleased providers are shown but blocked.
+ * Whether a provider's feature flag is on, so its button may be pressed.
+ * Unreleased providers are shown but blocked.
  */
 export function isFederatedProviderReleased(
   provider: FederatedProviderConfig,
-  appVersion: string = getAppVersion(),
+  flags: Readonly<Record<FeatureFlag, boolean>> = FEATURE_FLAGS,
 ): boolean {
-  return isVersionReleased(provider.releasedInVersion, appVersion)
+  return flags[provider.flag]
 }
 
 /**
- * Runtime guard for the sign-in path: throws unless the provider's release/
- * version gate is met. Belt-and-suspenders with the disabled sign-in buttons —
- * it keeps the not-yet-verified Apple/Facebook flows from executing in a build
- * that hasn't reached their release, even if reached programmatically.
+ * Runtime guard for the sign-in path: throws unless the provider's feature
+ * flag is on. Belt-and-suspenders with the disabled sign-in buttons — it
+ * keeps the not-yet-verified Apple/Facebook flows from executing, even if
+ * reached programmatically.
  */
 export function assertFederatedProviderReleased(
   providerId: FederatedProviderId,

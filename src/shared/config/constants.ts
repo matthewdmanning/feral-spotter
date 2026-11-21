@@ -10,29 +10,34 @@ import {
   NATIVE_FIELD_CONDITIONS,
   type NativeFieldCondition,
 } from '@/modules/native-identification-camera/src/types'
-import { getAppVersion } from '@/src/shared/utils/appVersion'
 
 /** True in development or release candidate builds. Gates analytics events. */
 export const IS_RELEASE_CANDIDATE: boolean =
   Boolean(Constants.expoConfig?.extra?.isReleaseCandidate) || __DEV__
 
 /**
- * Feature flags. Each is off in a release build unless its EXPO_PUBLIC_*
- * variable is "true" at bundle time. `experimentalCamera` is also on in
- * development.
+ * Build-time feature flags, kept in source control. They do not depend on
+ * analytics consent or the network, so every user gets the same value.
+ * Off means the old behavior. To release a feature, set its flag to true
+ * and ship a build. Remove the flag once the feature is stable.
  */
 export const FEATURE_FLAGS = {
+  /** On in development, or when EXPO_PUBLIC_EXPERIMENTAL_CAMERA is "true" at bundle time. */
   experimentalCamera:
     __DEV__ || process.env.EXPO_PUBLIC_EXPERIMENTAL_CAMERA === 'true',
+  googleSignIn: true,
+  /** Off until the Firebase Console provider and Apple Services ID exist. */
+  appleSignIn: false,
+  /** Off until the Firebase Console provider and Facebook App ID exist. */
+  facebookSignIn: false,
+  /** Alpha milestone (docs/planning/2026-07-12-mvp-alpha-beta-roadmap.md, decision 10). On in development. */
+  annotationTutorial: __DEV__,
 } as const
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS
 
-/**
- * App version from Expo config. Same source and fallback as the release
- * gates, so Settings never shows a version the gates disagree with.
- */
-export const APP_VERSION: string = getAppVersion()
+/** App version from Expo config, shown in Settings. */
+export const APP_VERSION: string = Constants.expoConfig?.version ?? '0.0.0'
 
 const asFieldCondition = (
   value: string | undefined,
