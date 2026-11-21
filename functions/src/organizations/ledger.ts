@@ -52,7 +52,10 @@ export function mutateLedger(
       )
         throw RequestError.confirmAgain('Permission revoked; confirm again')
       if (!existing) next.permissions.push(permission)
+      break
     }
+    default:
+      throw new RequestError(400, 'Invalid action')
   }
   return next
 }

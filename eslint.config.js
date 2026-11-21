@@ -88,7 +88,13 @@ module.exports = defineConfig([
   // copies of the repo); linting them is redundant and slow. ESLint flat config
   // does not read .gitignore, so ignore them explicitly.
   {
-    ignores: ['dist/*', '.claude/**', 'ts-ailiot/**', 'functions/**'],
+    ignores: [
+      'dist/*',
+      '.claude/**',
+      'ts-ailiot/**',
+      'functions/lib/**',
+      'functions/node_modules/**',
+    ],
   },
   {
     files: ['babel.config.js'],
@@ -109,7 +115,7 @@ module.exports = defineConfig([
   // JS config files (which use CommonJS/`require`) are unaffected.
   {
     files: ['**/*.ts', '**/*.tsx'],
-    ignores: ['**/__tests__/**'],
+    ignores: ['**/__tests__/**', '**/emulator-tests/**'],
     languageOptions: {
       parserOptions: {
         // Enable type-aware linting so rules that need type information can run
@@ -217,6 +223,17 @@ module.exports = defineConfig([
     },
   },
   ...boundaryBlocks,
+  // functions/ is its own Node TypeScript project with no @/ alias, so its
+  // relative imports are allowed. Metro does not bundle it, so Expo's
+  // inline-env rule does not apply.
+  {
+    files: ['functions/**/*.ts', 'functions/*.js'],
+    languageOptions: { globals: globals.node },
+    rules: {
+      '@typescript-eslint/no-restricted-imports': 'off',
+      'expo/no-dynamic-env-var': 'off',
+    },
+  },
   // No module-level import cycles. The TypeScript resolver follows the @/ alias.
   {
     files: ['src/**/*.ts', 'src/**/*.tsx'],
