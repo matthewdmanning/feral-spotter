@@ -137,33 +137,53 @@ npm run clean-debug  # expo prebuild --clean, then gradlew assembleDebug, filter
 
 ### Release candidate and stable builds
 
+Release builds run only in `.github/workflows/release.yml`. Merges never start
+them. To release, publish a GitHub Release with a SemVer tag:
+
 ```bash
-npm run build:rc      # prebuild --clean, then gradlew assembleRelease
-npm run build:stable  # prebuild --clean, then gradlew assembleRelease
+gh release create v0.2.1-rc.1 --prerelease --generate-notes
+gh release create v0.2.1 --generate-notes
 ```
 
-Both make a standalone (JS bundled, no Metro, no dev client) release APK for
-sideloading. Neither is a debug build. Both run `scripts/build-release.sh`.
+The workflow sets every build value from the release. No file holds a version.
 
-| Type              | `APP_VARIANT` | `IS_RELEASE_CANDIDATE` | Test features                          | Launcher label | Tag           |
-| ----------------- | ------------- | ---------------------- | -------------------------------------- | -------------- | ------------- |
-| Release candidate | `rc`          | `true` (analytics on)  | `EXPO_PUBLIC_EXPERIMENTAL_CAMERA=true` | `… (rc)`       | `vX.Y.Z-rc.N` |
-| Stable            | unset         | `false`                | off                                    | unchanged      | `vX.Y.Z`      |
+| Value            | Source                              | Example (`v0.2.1-rc.1`) |
+| ---------------- | ----------------------------------- | ----------------------- |
+| `versionName`    | Tag without `v` (`android.version`) | `0.2.1-rc.1`            |
+| `versionCode`    | `github.run_number`                 | `41`                    |
+| Expo `version`   | Tag without pre-release part        | `0.2.1`                 |
+| `APP_VARIANT`    | `rc` when "pre-release" is set      | `rc`                    |
+| RC test features | `EXPO_PUBLIC_EXPERIMENTAL_CAMERA`   | `true`                  |
+| Launcher label   | `… (rc)` for a pre-release          | `feral-spotter (rc)`    |
+
+The workflow stops when the tag and the "pre-release" setting disagree. It
+builds a universal APK and an AAB for all four ABIs, prints the APK metadata
+(`aapt dump badging`) in the job log, and attaches
+`feral-spotter-<tag>.apk` and `feral-spotter-<tag>.aab` to the release.
 
 The applicationId is unchanged, because `google-services.json` is bound to it,
-so each APK installs over the other. The build needs no device. Prebuild runs
-with `--clean` for both types, so the launcher label always matches the type.
-Install with
-`adb install -r android/app/build/outputs/apk/release/app-release.apk`.
+so each APK installs over the other. Expo `version` stays `X.Y.Z`:
+`isVersionReleased` compares it with SemVer, and `-rc.N` sorts below `X.Y.Z`.
+Issue #484 replaces that gate with feature flags.
 
-The Expo `version` in `app.json` stays plain `X.Y.Z` for both types:
-`isVersionReleased` compares it with semver, and an `-rc` suffix would sort
-below `X.Y.Z` and close release gates.
+A local build has no release env. It uses the latest `v*` tag as its version,
+or `0.0.0` when no tag exists, and `versionCode` 1.
 
-To add a test feature to the release candidate, add its `EXPO_PUBLIC_*` name to
-`RELEASE_CANDIDATE_FLAGS` in the script and read it in
-`src/shared/config/constants.ts`. Not tested on a device or in a Gradle build
-as of 2026-11-14.
+The build job reads its secrets and variables from the `production`
+Environment, and it waits for a required reviewer to approve. It has
+read-only repository access. A separate `publish` job has no secrets and
+attaches the artifacts to the release.
+
+| Kind     | Name                                                                                     |
+| -------- | ---------------------------------------------------------------------------------------- |
+| Secret   | `GOOGLE_SERVICES_JSON_BASE64` (`base64 -w 0 google-services.json`), `ANDROID_GEOLOCATOR` |
+| Secret   | `EXPO_PUBLIC_EMAIL_SYNC_URL`, `EXPO_PUBLIC_ORGANIZATIONS_API_URL`                        |
+| Variable | `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`, `POSTHOG_PROJECT_TOKEN`, `POSTHOG_HOST`              |
+
+To add a release candidate test feature, add its `EXPO_PUBLIC_*` name to the
+workflow `env` with `${{ github.event.release.prerelease }}`, and read it in
+`src/shared/config/constants.ts`. Artifacts are signed with the template debug
+key until issue #330 adds a release keystore.
 
 ### The JDK, and why the build is pinned
 
