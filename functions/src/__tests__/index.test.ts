@@ -5,8 +5,12 @@ jest.mock('firebase-admin/app', () => ({
 }))
 
 const mockSetCustomUserClaims = jest.fn().mockResolvedValue(undefined)
+const mockGetUser = jest.fn()
 jest.mock('firebase-admin/auth', () => ({
-  getAuth: jest.fn(() => ({ setCustomUserClaims: mockSetCustomUserClaims })),
+  getAuth: jest.fn(() => ({
+    getUser: mockGetUser,
+    setCustomUserClaims: mockSetCustomUserClaims,
+  })),
 }))
 
 const mockGetFiles = jest.fn()
@@ -47,6 +51,7 @@ describe('resolveTesterClaim', () => {
   })
 
   it('sets allowedTester true for an allowlisted email (case-insensitive)', async () => {
+    mockGetUser.mockResolvedValueOnce({ customClaims: { researcher: true } })
     await resolveTesterClaim(
       authEvent({
         uid: 'uid-1',
@@ -61,7 +66,26 @@ describe('resolveTesterClaim', () => {
     })
   })
 
+  it('keeps a cap claim written after the sign-in event snapshot', async () => {
+    mockGetUser.mockResolvedValueOnce({
+      customClaims: { submissionCapReached: true },
+    })
+    await resolveTesterClaim(
+      authEvent({
+        uid: 'uid-3',
+        email: 'tester@example.com',
+        customClaims: {},
+      }),
+    )
+
+    expect(mockSetCustomUserClaims).toHaveBeenCalledWith('uid-3', {
+      submissionCapReached: true,
+      allowedTester: true,
+    })
+  })
+
   it('sets allowedTester false for a non-allowlisted email', async () => {
+    mockGetUser.mockResolvedValueOnce({ customClaims: undefined })
     await resolveTesterClaim(
       authEvent({
         uid: 'uid-2',

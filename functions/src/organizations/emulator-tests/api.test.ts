@@ -338,4 +338,26 @@ test('capacity limits reject new grants with 429 but never block revocation', as
   )
   expect(revoke.status).toBe(200)
   expect(revoke.body!.permissions[0].revokedAt).toBeDefined()
+  const tombstone = await call(
+    {
+      action: 'revoke',
+      organizationId: 'second',
+      submissionId: 'unknown',
+      mutationId: 'tombstone-at-limit',
+    },
+    token,
+  )
+  expect(tombstone.status).toBe(429)
+  const repeat = await call(
+    {
+      action: 'revoke',
+      organizationId: 'first',
+      submissionId: 'sighting',
+      mutationId: 'repeat-revoke',
+    },
+    token,
+  )
+  expect(repeat.status).toBe(200)
+  const [after] = await bucket().file(path).download()
+  expect(JSON.parse(after.toString()).applied).not.toContain('repeat-revoke')
 })
