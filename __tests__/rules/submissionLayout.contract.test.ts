@@ -22,8 +22,15 @@ import { UPLOAD_PHOTO_EXTENSIONS } from '@/src/shared/utils/photoFormat'
 import {
   MAX_SUBMISSIONS_PER_UID as SERVER_MAX_SUBMISSIONS,
   METADATA_FILE_NAME as SERVER_METADATA,
+  MAX_PHOTO_BYTES,
+  MAX_RAW_PHOTO_BYTES,
   SUBMISSION_CAP_CLAIM,
+  UPLOAD_GRANTS_CLAIM,
+  grantToken,
+  isSubmissionPhotoFileName,
   parseSubmissionObject,
+  photoFileName,
+  rawPhotoFileName,
   submissionPrefix as serverSubmissionPrefix,
 } from '@/functions/src/submissionLayout'
 
@@ -55,9 +62,27 @@ beforeAll(async () => {
 })
 afterAll(() => testEnv.cleanup())
 
+// The grant functions/ would issue for this name (#486).
+const grantClaims = (name: string) => {
+  const object = parseSubmissionObject(name)
+  return object && isSubmissionPhotoFileName(object.fileName)
+    ? {
+        [UPLOAD_GRANTS_CLAIM]: {
+          [object.submissionId]: {
+            e: Date.now() + 60_000,
+            f: [grantToken(object.fileName)],
+          },
+        },
+      }
+    : undefined
+}
+
 const write = (name: string, bytes: Uint8Array, contentType: string) =>
   uploadBytes(
-    ref(testEnv.authenticatedContext(UID).storage(BUCKET_URL), name),
+    ref(
+      testEnv.authenticatedContext(UID, grantClaims(name)).storage(BUCKET_URL),
+      name,
+    ),
     bytes,
     { contentType },
   )
@@ -78,11 +103,23 @@ it('app and functions agree on the shared names and numbers', () => {
   expect(
     fs.readFileSync(path.resolve(__dirname, '../../storage.rules'), 'utf8'),
   ).toContain(`'${SUBMISSION_CAP_CLAIM}'`)
+  const rules = fs.readFileSync(
+    path.resolve(__dirname, '../../storage.rules'),
+    'utf8',
+  )
+  expect(rules).toContain(`'${UPLOAD_GRANTS_CLAIM}'`)
+  expect(rules).toContain(`${MAX_PHOTO_BYTES / 1024 / 1024} * 1024 * 1024`)
+  expect(rules).toContain(`${MAX_RAW_PHOTO_BYTES / 1024 / 1024} * 1024 * 1024`)
 })
 
 it('every slot the app can name is a photo the rules accept and functions parse', async () => {
   for (let slot = 0; slot < MAX_PHOTOS; slot += 1) {
-    const name = photoObjectPath(UID, SUB, slot, `file:///p${slot}.jpg`)
+    const name = photoObjectPath(UID, SUB, slot)
+    // #487: one JPEG-family name per slot, the one functions/ grants.
+    expect(name).toBe(`${appSubmissionPrefix(UID, SUB)}${photoFileName(slot)}`)
+    expect(rawPhotoObjectPath(UID, SUB, slot)).toBe(
+      `${appSubmissionPrefix(UID, SUB)}${rawPhotoFileName(slot)}`,
+    )
     expect(parseSubmissionObject(name)).toEqual(
       expect.objectContaining({
         uid: UID,
@@ -93,7 +130,7 @@ it('every slot the app can name is a photo the rules accept and functions parse'
     await assertSucceeds(write(name, new Uint8Array([1]), 'image/jpeg'))
   }
   // The app cannot name an eleventh slot, and the rules refuse one anyway.
-  expect(() => photoObjectPath(UID, SUB, MAX_PHOTOS, 'file:///x.jpg')).toThrow()
+  expect(() => photoObjectPath(UID, SUB, MAX_PHOTOS)).toThrow()
   await assertFails(
     write(
       `${appSubmissionPrefix(UID, SUB)}photo-${MAX_PHOTOS}.jpg`,
@@ -109,9 +146,9 @@ it('every slot the app can name is a photo the rules accept and functions parse'
   await assertSucceeds(write(dng, new Uint8Array([1]), 'image/x-adobe-dng'))
 })
 
-it('every accepted format is one the rules accept', async () => {
+it('every accepted format is one the rules accept under the slot name', async () => {
   for (const ext of UPLOAD_PHOTO_EXTENSIONS) {
-    const name = photoObjectPath(UID, `${SUB}-fmt`, 0, `file:///p.${ext}`)
+    const name = photoObjectPath(UID, `${SUB}-fmt`, 0)
     await assertSucceeds(write(name, new Uint8Array([1]), MIME[ext]))
   }
 })

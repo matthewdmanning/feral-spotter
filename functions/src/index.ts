@@ -18,10 +18,18 @@ import {
   METADATA_FILE_NAME,
   SUBMISSION_CAP_CLAIM,
   SUBMISSIONS_ROOT,
+  UPLOAD_GRANTS_CLAIM,
   parseSubmissionObject,
   submissionPrefix,
+  uploadQuotaLedgerPath,
   userPrefix,
 } from './submissionLayout'
+import {
+  handleAdmitPhotoUpload,
+  type AdmissionPorts,
+  type QuotaLedger,
+  type UploadGrants,
+} from './uploads/admission'
 import { defineSecret, defineString } from 'firebase-functions/params'
 import { onCall, onRequest } from 'firebase-functions/v2/https'
 import {
@@ -314,5 +322,83 @@ export const deleteAccount = onCall(
       accounts: authAccountStore,
     }),
 )
+
+// #486: the only issuer of upload grants. See uploads/admission.ts.
+export async function publishUploadGrants(
+  uid: string,
+  grants: UploadGrants,
+): Promise<void> {
+  const { customClaims } = await getAuth().getUser(uid)
+  await getAuth().setCustomUserClaims(uid, {
+    ...customClaims,
+    [UPLOAD_GRANTS_CLAIM]: grants,
+  })
+}
+
+export const uploadAdmissionPorts: AdmissionPorts = {
+  verifyIdToken: (token) => getAuth().verifyIdToken(token),
+  readLedger: async (uid) => {
+    const file = getStorage()
+      .bucket(BUCKET_NAME)
+      .file(uploadQuotaLedgerPath(uid))
+    try {
+      const [metadata] = await file.getMetadata()
+      const generation = Number(metadata.generation)
+      const [bytes] = await getStorage()
+        .bucket(BUCKET_NAME)
+        .file(uploadQuotaLedgerPath(uid), { generation })
+        .download()
+      return { value: JSON.parse(bytes.toString()) as QuotaLedger, generation }
+    } catch (error) {
+      if ((error as { code?: unknown }).code === 404)
+        return { value: { grants: {} }, generation: 0 }
+      throw error
+    }
+  },
+  writeLedger: async (uid, value, generation) => {
+    try {
+      await getStorage()
+        .bucket(BUCKET_NAME)
+        .file(uploadQuotaLedgerPath(uid))
+        .save(JSON.stringify(value), {
+          resumable: false,
+          contentType: 'application/json',
+          preconditionOpts: { ifGenerationMatch: generation },
+        })
+      return true
+    } catch (error) {
+      if ((error as { code?: unknown }).code === 412) return false
+      throw error
+    }
+  },
+  listStored: async (uid) => {
+    const [files] = await getStorage()
+      .bucket(BUCKET_NAME)
+      .getFiles({ prefix: userPrefix(uid) })
+    return new Map(
+      files.map((file) => [file.name, Number(file.metadata?.size ?? 0)]),
+    )
+  },
+  publishGrants: publishUploadGrants,
+  now: () => Date.now(),
+}
+
+export const admitPhotoUpload = onRequest(async (req, res) => {
+  if (req.method !== 'POST') {
+    res.status(405).end()
+    return
+  }
+  try {
+    const { status, body } = await handleAdmitPhotoUpload(
+      { authorization: req.header('authorization'), body: req.body },
+      uploadAdmissionPorts,
+    )
+    if (body) res.status(status).json(body)
+    else res.status(status).end()
+  } catch (error) {
+    console.error('[admission] failed', error)
+    res.status(502).end()
+  }
+})
 
 export { organizationsApi } from './organizations/api'

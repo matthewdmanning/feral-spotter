@@ -47,6 +47,7 @@ import {
   submissionFolder,
 } from '@/src/features/draft-submission/lib/upload/submissionLayout'
 import { extensionOf } from '@/src/shared/utils/photoFormat'
+import { admitPhotoUpload } from '@/src/features/draft-submission/lib/upload/uploadAdmission'
 
 const BUCKET_URL = 'gs://project-e3d5659d-bc4f-438f-88c.firebasestorage.app'
 
@@ -72,16 +73,12 @@ function photoContentType(uri: string): string {
 async function uploadFile(
   reference: StorageReference,
   localUri: string,
-  metadata:
-    | { contentType: string; customMetadata?: Record<string, string> }
-    | undefined,
+  metadata: { contentType: string; customMetadata?: Record<string, string> },
   onProgress: ((percent: number) => void) | undefined,
   progressStart: number,
   progressSpan: number,
 ): Promise<void> {
-  const task = metadata
-    ? putFile(reference, localUri, metadata)
-    : putFile(reference, localUri)
+  const task = putFile(reference, localUri, metadata)
   if (onProgress) {
     task.on('state_changed', (snapshot) => {
       if (snapshot.totalBytes <= 0) return
@@ -135,9 +132,13 @@ export async function uploadSubmissionPhoto(
   if (photo.upload_slot == null) {
     throw new Error(`[uploadSubmissionPhoto] ${photo.local_id} has no slot`)
   }
+  const uploadJpeg = !photo.uploaded || photo.cloud_storage_path == null
+  // New bytes always go to the slot's one photo-N.jpg (#487). A persisted
+  // path is kept only for a JPEG that is already up.
   const jpegPath =
-    photo.cloud_storage_path ??
-    photoObjectPath(uid, submissionId, photo.upload_slot, photo.uri)
+    uploadJpeg || photo.cloud_storage_path == null
+      ? photoObjectPath(uid, submissionId, photo.upload_slot)
+      : photo.cloud_storage_path
   const jpegReference = getSubmissionRef(jpegPath)
   const rawPath = photo.raw_uri
     ? (photo.raw_cloud_storage_path ??
@@ -145,19 +146,85 @@ export async function uploadSubmissionPhoto(
     : undefined
   const rawUri = photo.raw_uri
   const rawReference = rawPath ? getSubmissionRef(rawPath) : undefined
-  const uploadJpeg = !photo.uploaded || photo.cloud_storage_path == null
   const uploadRaw = rawPath != null && photo.raw_cloud_storage_path == null
+  const slot = photo.upload_slot
 
+  const transfer = () =>
+    transferPhotoBytes({
+      photo,
+      jpegPath,
+      jpegReference,
+      rawPath,
+      rawReference,
+      rawUri,
+      uploadJpeg,
+      uploadRaw,
+      onProgress,
+    })
+  if (uploadJpeg || uploadRaw) {
+    // #486: bytes need an upload grant. A token that lost its grant to an
+    // out-of-order claim write is refused once; ask again and retry.
+    await admitPhotoUpload(submissionId, slot, uploadRaw)
+    try {
+      await transfer()
+    } catch (error) {
+      if ((error as { code?: string }).code !== 'storage/unauthorized')
+        throw error
+      await admitPhotoUpload(submissionId, slot, uploadRaw, { force: true })
+      await transfer()
+    }
+  } else {
+    await transfer()
+  }
+
+  const cloud_storage_url =
+    !uploadJpeg && photo.cloud_storage_url
+      ? photo.cloud_storage_url
+      : await getDownloadURL(jpegReference)
+  const raw_cloud_storage_url = rawReference
+    ? (photo.raw_cloud_storage_url ?? (await getDownloadURL(rawReference)))
+    : undefined
+  return {
+    cloud_storage_path: jpegPath,
+    cloud_storage_url,
+    ...(rawPath && {
+      raw_cloud_storage_path: rawPath,
+      raw_cloud_storage_url,
+    }),
+  }
+}
+
+/** Use this function to write a slot's pending JPEG, DNG and pair link. */
+async function transferPhotoBytes({
+  photo,
+  jpegPath,
+  jpegReference,
+  rawPath,
+  rawReference,
+  rawUri,
+  uploadJpeg,
+  uploadRaw,
+  onProgress,
+}: {
+  photo: SubmissionPhoto
+  jpegPath: string
+  jpegReference: StorageReference
+  rawPath: string | undefined
+  rawReference: StorageReference | undefined
+  rawUri: string | undefined
+  uploadJpeg: boolean
+  uploadRaw: boolean
+  onProgress: ((percent: number) => void) | undefined
+}): Promise<void> {
   if (uploadJpeg) {
+    // The name is always .jpg, so the type must be explicit (#487).
     await uploadFile(
       jpegReference,
       photo.uri,
-      rawPath
-        ? {
-            contentType: photoContentType(photo.uri),
-            customMetadata: { paired_dng_path: rawPath },
-          }
-        : undefined,
+      {
+        contentType: photoContentType(photo.uri),
+        ...(rawPath && { customMetadata: { paired_dng_path: rawPath } }),
+      },
       onProgress,
       0,
       rawPath ? 50 : 100,
@@ -188,20 +255,6 @@ export async function uploadSubmissionPhoto(
       uploadJpeg ? 50 : 0,
       uploadJpeg ? 50 : 100,
     )
-  }
-
-  const cloud_storage_url =
-    photo.cloud_storage_url ?? (await getDownloadURL(jpegReference))
-  const raw_cloud_storage_url = rawReference
-    ? (photo.raw_cloud_storage_url ?? (await getDownloadURL(rawReference)))
-    : undefined
-  return {
-    cloud_storage_path: jpegPath,
-    cloud_storage_url,
-    ...(rawPath && {
-      raw_cloud_storage_path: rawPath,
-      raw_cloud_storage_url,
-    }),
   }
 }
 

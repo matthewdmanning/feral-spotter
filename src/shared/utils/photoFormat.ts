@@ -1,7 +1,7 @@
 /**
  * utils/photoFormat.ts
  * The photo formats a Submission accepts. storage.rules allows exactly these
- * (photo-N.jpg|jpeg|png|heic|heif, image/jpeg|png|heic|heif); a photo in
+ * types (image/jpeg|png|heic|heif, stored as photo-N.jpg, #487); a photo in
  * any other format would be refused on upload and sit un-uploaded.
  */
 

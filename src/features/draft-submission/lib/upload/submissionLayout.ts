@@ -8,7 +8,6 @@
  */
 
 import { MAX_PHOTOS } from '@/src/shared/config/submissionLimits'
-import { extensionOf } from '@/src/shared/utils/photoFormat'
 
 export const METADATA_FILE_NAME = 'metadata.json'
 
@@ -25,20 +24,22 @@ export function submissionPrefix(uid: string, submissionId: string): string {
   return `${submissionFolder(uid, submissionId)}/`
 }
 
-/** Object path of the photo in `slot` (0 … MAX_PHOTOS-1). */
+/**
+ * Object path of the photo in `slot` (0 … MAX_PHOTOS-1). Always `.jpg`,
+ * whatever the photo's format: one JPEG-family object per slot (#487). Its
+ * real type travels in contentType.
+ */
 export function photoObjectPath(
   uid: string,
   submissionId: string,
   slot: number,
-  uri: string,
 ): string {
   if (!Number.isInteger(slot) || slot < 0 || slot >= MAX_PHOTOS) {
     throw new Error(
       `[submissionLayout] slot ${slot} is outside 0…${MAX_PHOTOS - 1}`,
     )
   }
-  const ext = extensionOf(uri) ?? 'jpg'
-  return `${submissionPrefix(uid, submissionId)}photo-${slot}.${ext}`
+  return `${submissionPrefix(uid, submissionId)}photo-${slot}.jpg`
 }
 
 /** Use this function to name the DNG paired with a slotted JPEG upload. */

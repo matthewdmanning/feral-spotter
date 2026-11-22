@@ -229,3 +229,32 @@ before the cleanup call returns. Production deletion timing is unchanged.
 **Purpose:** After a successful submit, Back from Home re-opened the Camera (#453).
 **Change:** Every flow exit to Home calls `goHome()` (`src/shared/lib/navigation.ts`, `router.dismissTo('/')`) instead of `router.replace('/')`: `replace` swapped only the top screen and left the Camera under the new Home; `dismissTo` pops to the Home already on the root stack. Sites: submit `'sent'` (`useSubmissionSubmit`), Reset/Discard (`discardDraftAndGoHome`), abandoning a pass with no recorded cat (`abandonCatPass`), and `GoHomeGate`. Submit still navigates after the draft teardown, as #189 requires. Entry/consent `replace` calls are unchanged: replacing onboarding is intended. Thumbnail half: [2026-08-01-sprint-camera-implementation.md](2026-08-01-sprint-camera-implementation.md).
 **Verification:** submit-flow, reset, catPass and active-cat-flow tests assert `dismissTo('/')`. Stack behaviour read from expo-router 58.0.28 source; not driven on a device.
+
+## 2026-11-22 — fix
+
+**Purpose:** Security audit 2026-11-21, F-01/F-03. A slot could hold five
+JPEG-family objects (#487), and no limit bounded one uid's total bytes (#486).
+**Change:** Every non-DNG photo is `photo-N.jpg` with its real
+`contentType`. Photo bytes need an `uploadGrants` claim from the new
+`admitPhotoUpload` function, which enforces a hard 20 GiB / 5,000-object
+quota per uid through a CAS-written ledger. Design: ADR-0005's 2026-11-22
+amendment.
+**Tests:**
+
+- `functions/src/uploads/__tests__/admission.test.ts`: byte and object
+  limits, orphans counted, reservation lifetime, open-Submission limit; two
+  concurrent admissions cannot both spend the last headroom.
+- `__tests__/rules/storage.test.ts`: no grant, expired grant or wrong name
+  refuses bytes; metadata-only patch needs no grant; legacy names stay
+  patchable; the ledger is server-only.
+- `__tests__/rules/submissionLayout.contract.test.ts`: app names equal the
+  names functions/ grants and the rules accept; byte bounds agree.
+- `firebaseUpload.behavior.test.ts`: grant then token refresh before bytes;
+  one re-admission on `storage/unauthorized`; a refused grant writes nothing.
+
+**Verification:** typecheck, lint (0 errors), Jest 121 suites, rules
+emulator 30 tests, functions 72 tests. Unverified: live deploy, Functions
+emulator test drive, device drive, real GCS `ifGenerationMatch`.
+**Deploy:** deploy `admitPhotoUpload` and `storage.rules` together; set
+the `EXPO_PUBLIC_UPLOAD_ADMISSION_URL` release secret. Older app builds
+cannot upload photos once the rules deploy.

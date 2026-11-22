@@ -106,6 +106,14 @@ export const STORAGE_EMULATOR_PORT = 9199
 export const EMAIL_SYNC_URL: string | undefined =
   process.env.EXPO_PUBLIC_EMAIL_SYNC_URL || undefined
 
+/**
+ * URL of the `admitPhotoUpload` Cloud Function (#486). storage.rules refuses
+ * photo bytes without the upload grant it issues, so unset means photo
+ * uploads fail. Kept in env: it embeds the Firebase project id.
+ */
+export const UPLOAD_ADMISSION_URL: string | undefined =
+  process.env.EXPO_PUBLIC_UPLOAD_ADMISSION_URL || undefined
+
 /** Autosave debounce for text inputs (ms). */
 export const AUTOSAVE_TEXT_MS = 800
 

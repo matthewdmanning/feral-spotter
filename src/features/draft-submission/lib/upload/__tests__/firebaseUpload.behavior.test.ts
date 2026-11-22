@@ -14,6 +14,31 @@ import {
   uploadSubmissionMetadata,
   uploadSubmissionPhoto,
 } from '@/src/features/draft-submission/lib/upload/firebaseUpload'
+import { getAuth } from '@react-native-firebase/auth'
+import { resetHeldUploadGrants } from '@/src/features/draft-submission/lib/upload/uploadAdmission'
+
+jest.mock('@/src/shared/config/constants', () => ({
+  ...jest.requireActual('@/src/shared/config/constants'),
+  UPLOAD_ADMISSION_URL: 'https://admission.test/',
+}))
+
+// #486: the admission endpoint is a network boundary; the ID token is the
+// native Auth boundary.
+const getIdToken = jest.fn(async (_force?: boolean) => 'id-token')
+const admission = jest.fn(
+  async (_url: string, _init: RequestInit) =>
+    ({
+      ok: true,
+      status: 200,
+      json: async () => ({ expiresAt: Date.now() + 30 * 60 * 1000 }),
+    }) as Response,
+)
+beforeEach(() => {
+  resetHeldUploadGrants()
+  jest.mocked(getAuth).mockReturnValue({ currentUser: { getIdToken } } as never)
+  global.fetch = admission as unknown as typeof fetch
+})
+
 describe('Firebase submission upload behavior', () => {
   it('writes the serialized submission to its owned metadata object as JSON', async () => {
     const payload = { id: 'sub-7', photos: [{ cloud_storage_path: 'p.jpg' }] }
@@ -132,17 +157,20 @@ describe('uploadSubmissionPhoto', () => {
     upload_slot: 3,
   })
 
+  // #487: one JPEG-family object per slot, whatever the format.
   it.each([
-    ['file:///cache/a.jpg', 'jpg'],
-    ['file:///cache/A.JPG', 'jpg'],
-    ['file:///cache/a.heic', 'heic'],
-    ['file:///cache/no-extension', 'jpg'],
-  ])('stores %s under the owner path with .%s', async (uri, ext) => {
+    ['file:///cache/a.jpg', 'image/jpeg'],
+    ['file:///cache/A.JPG', 'image/jpeg'],
+    ['file:///cache/a.heic', 'image/heic'],
+    ['file:///cache/a.png', 'image/png'],
+    ['file:///cache/no-extension', 'image/jpeg'],
+  ])('stores %s as the slot photo-3.jpg typed %s', async (uri, type) => {
     const result = await uploadSubmissionPhoto(photo(uri), 'uid-1', 'sub-1')
-    const path = `submissions/uid-1/sub-1/photo-3.${ext}`
+    const path = 'submissions/uid-1/sub-1/photo-3.jpg'
     expect(putFile).toHaveBeenCalledWith(
       expect.objectContaining({ fullPath: path }),
       uri,
+      { contentType: type },
     )
     expect(result).toEqual({
       cloud_storage_path: path,
@@ -226,6 +254,71 @@ describe('uploadSubmissionPhoto', () => {
       'file:///cache/a.dng',
       expect.objectContaining({ contentType: 'image/x-adobe-dng' }),
     )
+  })
+
+  it('asks for a grant, then refreshes the token, before writing bytes', async () => {
+    const order: string[] = []
+    admission.mockImplementationOnce(async (url, init) => {
+      order.push(`admit ${url} ${String(init.body)}`)
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ expiresAt: Date.now() + 60_000 }),
+      } as Response
+    })
+    getIdToken.mockImplementation(async (force) => {
+      order.push(`token ${String(force)}`)
+      return 'id-token'
+    })
+    jest.mocked(putFile).mockImplementationOnce((() => {
+      order.push('putFile')
+      return Object.assign(Promise.resolve(), { on: jest.fn() })
+    }) as never)
+
+    await uploadSubmissionPhoto(
+      { ...photo('file:///cache/a.jpg'), raw_uri: 'file:///cache/a.dng' },
+      'uid-1',
+      'sub-1',
+    )
+
+    expect(order.slice(0, 4)).toEqual([
+      'token false',
+      'admit https://admission.test/ {"submissionId":"sub-1","slot":3,"raw":true}',
+      'token true',
+      'putFile',
+    ])
+  })
+
+  it('asks again once when the token lost its grant', async () => {
+    jest
+      .mocked(putFile)
+      .mockImplementationOnce((() =>
+        Object.assign(
+          Promise.reject(
+            Object.assign(new Error('denied'), {
+              code: 'storage/unauthorized',
+            }),
+          ),
+          { on: jest.fn() },
+        )) as never)
+
+    await uploadSubmissionPhoto(photo('file:///cache/a.jpg'), 'uid-1', 'sub-1')
+
+    expect(admission).toHaveBeenCalledTimes(2)
+    expect(putFile).toHaveBeenCalledTimes(2)
+  })
+
+  it('writes nothing when the quota refuses the grant', async () => {
+    admission.mockResolvedValueOnce({
+      ok: false,
+      status: 429,
+      json: async () => ({ error: 'quota_exceeded' }),
+    } as Response)
+
+    await expect(
+      uploadSubmissionPhoto(photo('file:///cache/a.jpg'), 'uid-1', 'sub-1'),
+    ).rejects.toMatchObject({ status: 429, reason: 'quota_exceeded' })
+    expect(putFile).not.toHaveBeenCalled()
   })
 
   it('refuses a photo with no slot rather than write a name the rules deny', async () => {

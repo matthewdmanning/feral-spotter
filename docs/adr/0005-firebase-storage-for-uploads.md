@@ -257,3 +257,47 @@ photo slots per Submission, each with one JPEG under 20 MiB and, when present,
 one DNG under 64 MiB, for a worst-case upload envelope below 840 MiB per
 Submission (strict inequalities make the actual maximum one byte lower per
 object). The existing 256 KiB metadata bound is unchanged.
+
+## Amendment 2026-11-22: one JPEG-family name per slot; hard per-uid upload quota
+
+Source: security audit of 2026-11-21, F-01/F-03
+([#487](https://github.com/matthewdmanning/feral-spotter/issues/487),
+[#486](https://github.com/matthewdmanning/feral-spotter/issues/486)).
+
+**Naming (#487).** Every non-DNG photo is `photo-N.jpg`, whatever its format;
+its real type is its `contentType` (`image/jpeg|png|heic|heif`). A slot holds
+at most one `photo-N.jpg` and one `photo-N.dng`. `photoObjectPath` no longer
+reads the photo URI. `isSubmissionPhotoFileName` accepts only `jpg|dng`;
+readers (`readSubmission`) use `isStoredPhotoFileName`, which still accepts
+pre-#487 names. Nothing downstream read the extension for type.
+
+**Quota (#486).** Owner decision: release needs a hard per-uid quota; the
+250-Submission cap stays soft. Limits: 20 GiB and 5,000 objects per uid,
+over every object under `submissions/{uid}/` (orphans included) in the one
+release bucket.
+
+- New photo bytes need an **upload grant**: Auth claim
+  `uploadGrants = { [submissionId]: { e: expiryMs, f: ['3.jpg', '3.dng'] } }`.
+  `storage.rules` checks the token (`photo-` prefix dropped) and `e`.
+  Without a grant, a client may only patch `customMetadata` (same size,
+  `md5Hash`, `contentType`).
+- `admitPhotoUpload` (Cloud Function, `functions/src/uploads/admission.ts`)
+  is the only issuer. It reserves 20 MiB per JPEG and 64 MiB per DNG token,
+  counts stored sizes (max of stored and reserved for a granted name), and
+  refuses with 429 past either limit.
+- Admissions serialize per uid through `upload-quota/{uid}/ledger.json`
+  (server-only), written with `ifGenerationMatch`. The ledger is
+  authoritative; a claim is always a copy of some ledger version, so every
+  grant a token can carry is counted. A stale or lost claim only refuses an
+  upload; the client re-admits once on `storage/unauthorized`.
+- A grant is writable 30 min. Its reservation lasts 7 days more (a resumable
+  session's lifetime), so a late-finishing upload was already counted.
+- At most 3 open Submissions per uid hold grants, keeping the claim under
+  Auth's 1000-byte limit.
+- The app calls the endpoint at `EXPO_PUBLIC_UPLOAD_ADMISSION_URL`, then
+  force-refreshes its ID token. Unset, photo uploads fail.
+- Account erasure deletes the ledger with the uid's Submissions.
+
+**Not covered.** `metadata.json` stays on the rules path under the soft
+250 cap: past it, a stale claim admits new 256 KiB objects for up to an
+hour.

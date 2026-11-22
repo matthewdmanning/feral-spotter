@@ -48,10 +48,12 @@ export function createStorageSubmissionStore(bucket: string): SubmissionStore {
   return {
     // userPrefix ends in '/': a bare prefix would also match every uid that
     // starts with the same characters.
-    deleteUserSubmissions: (uid) =>
-      getStorage()
-        .bucket(bucket)
-        .deleteFiles({ prefix: userPrefix(uid) }),
+    // The upload-quota ledger (#486) only holds grants for these objects.
+    deleteUserSubmissions: async (uid) => {
+      const storage = getStorage().bucket(bucket)
+      await storage.deleteFiles({ prefix: userPrefix(uid) })
+      await storage.deleteFiles({ prefix: `upload-quota/${uid}/` })
+    },
     // The trailing slash keeps one uid's permissions separate from another's.
     // This removes the ledger and any future per-user organization snapshots.
     deleteUserOrganizationPermissions: (uid) =>
