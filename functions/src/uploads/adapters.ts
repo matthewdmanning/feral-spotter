@@ -7,12 +7,14 @@ import { getAuth } from 'firebase-admin/auth'
 import { getStorage } from 'firebase-admin/storage'
 import {
   UPLOAD_GRANTS_CLAIM,
+  parseSubmissionObject,
   personLedgerPath,
   uidIndexPath,
   userPrefix,
 } from '../submissionLayout'
 import {
   emptyLedger,
+  ERASED_ACCOUNT,
   retireUid,
   type AdmissionPorts,
   type PersonIndex,
@@ -22,6 +24,16 @@ import {
 
 const code = (error: unknown) => (error as { code?: unknown } | null)?.code
 const LEDGER_WRITE_ATTEMPTS = 6
+
+interface PersonPointer {
+  personId?: string
+  erasing?: true
+  deleteSightings?: boolean
+}
+
+function decodePointer(bytes: Buffer): PersonPointer {
+  return JSON.parse(bytes.toString()) as PersonPointer
+}
 
 /** Use this function to copy one uid's live grants into its custom claims. */
 export async function publishUploadGrants(
@@ -91,7 +103,8 @@ export function createPersonIndex(
   const read = async (path: string) => {
     try {
       const [bytes] = await bucket().file(path).download()
-      return (JSON.parse(bytes.toString()) as { personId: string }).personId
+      const pointer = decodePointer(bytes)
+      return pointer.erasing ? ERASED_ACCOUNT : pointer.personId
     } catch (error) {
       if (code(error) === 404) return undefined
       throw error
@@ -129,7 +142,13 @@ export function createUploadAdmissionPorts(
   const bucket = () => getStorage().bucket(bucketName)
   const ledgers = ledgerStore(bucketName)
   return {
-    verifyIdToken: (token) => getAuth().verifyIdToken(token),
+    verifyIdToken: async (token) => {
+      const auth = getAuth()
+      const { uid } = await auth.verifyIdToken(token)
+      const { email, emailVerified, disabled } = await auth.getUser(uid)
+      if (disabled) throw new Error('Account disabled')
+      return { uid, email, emailVerified }
+    },
     index: createPersonIndex(bucketName, identityKey),
     readLedger: ledgers.read,
     writeLedger: ledgers.write,
@@ -148,38 +167,95 @@ export function createUploadAdmissionPorts(
 }
 
 /**
- * Use this function at account erasure: retire the uid from its person's
- * ledger, then drop its pointer. The person and email pointers stay, so a
- * new account with the same email inherits the limits. Idempotent.
+ * Mark the UID as erasing before touching its ledger. Keep the person
+ * binding until retirement succeeds, so an interrupted erasure can retry.
  */
 export async function retireUploadIdentity(
   bucketName: string,
   uid: string,
   sightingsDeleted: boolean,
 ): Promise<void> {
-  const pointer = getStorage().bucket(bucketName).file(uidIndexPath(uid))
-  let personId: string
-  try {
-    const [bytes] = await pointer.download()
-    personId = (JSON.parse(bytes.toString()) as { personId: string }).personId
-  } catch (error) {
-    if (code(error) === 404) return
-    throw error
-  }
+  const marker = await updateErasurePointer(bucketName, uid, sightingsDeleted)
+  if (!marker.personId) return
+  const personId = marker.personId
   const ledgers = ledgerStore(bucketName)
   for (let attempt = 0; ; attempt++) {
     const { value, generation } = await ledgers.read(personId)
+    // Even an empty ledger must advance its generation to fence a first
+    // admission that saw the original pointer and is about to write.
     if (
-      generation === 0 ||
-      (await ledgers.write(
+      await ledgers.write(
         personId,
-        retireUid(value, uid, sightingsDeleted),
+        retireUid(value, uid, marker.deleteSightings === true),
         generation,
-      ))
+      )
     )
       break
     if (attempt + 1 >= LEDGER_WRITE_ATTEMPTS)
       throw new Error('Concurrent ledger update; retry')
   }
-  await pointer.delete({ ignoreNotFound: true })
+  if (marker.deleteSightings)
+    await updateErasurePointer(bucketName, uid, true, true)
+}
+
+async function updateErasurePointer(
+  bucketName: string,
+  uid: string,
+  deleteSightings: boolean,
+  retirementComplete = false,
+): Promise<PersonPointer> {
+  const bucket = getStorage().bucket(bucketName)
+  const path = uidIndexPath(uid)
+  const file = bucket.file(path)
+  for (let attempt = 0; attempt < LEDGER_WRITE_ATTEMPTS; attempt++) {
+    let generation = 0
+    let current: PersonPointer = {}
+    try {
+      const [metadata] = await file.getMetadata()
+      generation = Number(metadata.generation)
+      const [bytes] = await bucket.file(path, { generation }).download()
+      current = decodePointer(bytes)
+    } catch (error) {
+      if (code(error) !== 404) throw error
+      if (generation !== 0) continue
+    }
+    const next: PersonPointer = {
+      erasing: true,
+      personId: retirementComplete ? undefined : current.personId,
+      deleteSightings: current.deleteSightings === true || deleteSightings,
+    }
+    try {
+      await file.save(JSON.stringify(next), {
+        resumable: false,
+        contentType: 'application/json',
+        preconditionOpts: { ifGenerationMatch: generation },
+      })
+      return next
+    } catch (error) {
+      if (code(error) !== 412) throw error
+    }
+  }
+  throw new Error('Concurrent erasure pointer update; retry')
+}
+
+/** Remove an object finalized under a grant that predates account erasure. */
+export async function deleteLateErasedUpload(
+  bucketName: string,
+  name: string,
+  generation: number,
+): Promise<boolean> {
+  const object = parseSubmissionObject(name)
+  if (!object) return false
+  const bucket = getStorage().bucket(bucketName)
+  let marker: PersonPointer
+  try {
+    const [bytes] = await bucket.file(uidIndexPath(object.uid)).download()
+    marker = decodePointer(bytes)
+  } catch (error) {
+    if (code(error) === 404) return false
+    throw error
+  }
+  if (!marker.erasing || !marker.deleteSightings) return false
+  await bucket.file(name, { generation }).delete({ ignoreNotFound: true })
+  return true
 }

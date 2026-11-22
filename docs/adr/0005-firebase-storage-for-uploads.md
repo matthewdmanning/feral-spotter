@@ -316,13 +316,16 @@ adding a sign-in method with the same email, must not reset limits; the
 Submission cap counts for life; bytes stay live usage; the email is kept
 only as a keyed hash.
 
-- **Person.** Every uid that signs in with the same normalized email
+- **Person.** Every uid with the same verified, normalized email
   (trimmed, lower-case). A uid keeps the person it was first bound to, so
-  an email change moves nothing; each new email it uses is bound to that
-  person if still free. No email: a person of its own (`uid-<uid>`).
-- **Index.** Write-once pointers (`ifGenerationMatch: 0`):
-  `upload-quota/uids/{uid}.json` and `upload-quota/emails/{key}.json` →
-  person id. `key` = HMAC-SHA256(secret `UPLOAD_IDENTITY_KEY`, email). The
+  an email change moves nothing. Admission reads the current Firebase Auth
+  record and requires verification for accounts with an email. The app can
+  send the verification link when the user tries to submit. An account
+  without an email has its own ledger.
+- **Index.** `upload-quota/uids/{sha256(uid)}.json` and
+  `upload-quota/emails/{key}.json` point to the person. The UID pointer
+  also records erasure, using generation preconditions to stop concurrent
+  admissions. `key` = HMAC-SHA256(secret `UPLOAD_IDENTITY_KEY`, email). The
   ledger and index never store an address. Rotating the secret splits
   every person from their history.
 - **Ledger.** `upload-quota/persons/{personId}/ledger.json`: `uids`,
@@ -335,11 +338,15 @@ only as a keyed hash.
   The `submissionCapReached` claim stays as a soft per-uid check.
 - **Bytes and objects: live, summed over the person's uids**, plus every
   open reservation, any uid's.
-- **Erasure** (`retireUploadIdentity`, before Sightings are deleted): the
-  uid's grants and pointer go. If Sightings are deleted, its Submissions
-  fold into `retiredSubmissions`, so no id of it remains. Kept Sightings
-  stay stored and keep counting. The person ledger and email pointer stay.
+- **Erasure** starts by blocking new grants. Existing claims can outlive
+  the Auth account, and resumable sessions can finish later, so their
+  reservations remain in the ledger through expiry. When the user chooses
+  to delete Sightings, their Submission IDs fold into `retiredSubmissions`.
+  The Storage finalize handler deletes late uploads, and the next admission
+  after the reservations and objects are gone drops that UID from the
+  ledger. Kept Sightings stay stored and keep counting.
 - **Residual.** A new email address is a new person; Submissions erased
   before their uid ever reached the admission endpoint are not counted.
-- **Privacy.** The keyed hash, the person's other uids and a Submission
-  count outlive erasure. The privacy notice should say so.
+- **Privacy.** The keyed email hash, a hashed UID erasure record, the
+  person's other uids and a Submission count outlive erasure. The privacy
+  notice should say so.

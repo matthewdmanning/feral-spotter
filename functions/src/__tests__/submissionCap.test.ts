@@ -15,6 +15,11 @@ const mockMissing = new Set<string>()
 jest.mock('firebase-admin/storage', () => ({
   getStorage: () => ({
     bucket: () => ({
+      file: () => ({
+        download: async () => {
+          throw Object.assign(new Error('Not found'), { code: 404 })
+        },
+      }),
       getFiles: async ({
         prefix,
         matchGlob,

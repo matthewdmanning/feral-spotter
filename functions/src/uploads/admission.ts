@@ -6,7 +6,7 @@
  * which storage.rules checks. This endpoint is the only issuer.
  *
  * Limits belong to a person, not an account. A person is every uid that
- * ever signed in with the same email, through any sign-in method. Their
+ * signed in with the same verified email, through any sign-in method. Their
  * ledger survives account erasure, so deleting and recreating an account
  * resets nothing:
  * - Submissions: 250 per person, counted for life. A metadata grant spends
@@ -40,6 +40,7 @@ import {
   rawPhotoFileName,
   submissionPrefix,
   uidIndexPath,
+  uidKey,
 } from '../submissionLayout'
 
 /** Grant tokens (`3.jpg`, `3.dng`, `metadata.json`) for one Submission, writable until `e` (epoch ms). */
@@ -59,12 +60,15 @@ export interface PersonLedger {
   submissions: string[]
   /** Submissions of erased accounts whose Sightings were deleted. */
   retiredSubmissions: number
+  /** Erased accounts whose late uploads still need to be counted. */
+  deletedUids: string[]
 }
 export const emptyLedger = (): PersonLedger => ({
   uids: [],
   grants: {},
   submissions: [],
   retiredSubmissions: 0,
+  deletedUids: [],
 })
 
 /** One Submission and the grant tokens asked for. */
@@ -83,12 +87,14 @@ const LEDGER_WRITE_ATTEMPTS = 6
 
 export class AdmissionError extends Error {
   constructor(
-    readonly status: 400 | 429,
+    readonly status: 400 | 403 | 429,
     readonly reason:
       | 'invalid_request'
       | 'quota_exceeded'
       | 'submission_cap_reached'
-      | 'too_many_open_submissions',
+      | 'too_many_open_submissions'
+      | 'email_verification_required'
+      | 'account_erasing',
   ) {
     super(reason)
   }
@@ -187,9 +193,12 @@ export function admit(
   // Lifetime Submissions: every one admitted, plus any stored before the
   // ledger knew of it (written before #486 deployed).
   const submissions = new Set(ledger.submissions)
+  const storedUids = new Set<string>()
   for (const name of stored.keys()) {
+    const owner = name.split('/')[1]
+    storedUids.add(owner)
     const object = parseSubmissionObject(name)
-    if (object?.isMetadata)
+    if (object?.isMetadata && !ledger.deletedUids.includes(owner))
       submissions.add(`${object.uid}/${object.submissionId}`)
   }
   const key = `${uid}/${request.submissionId}`
@@ -214,38 +223,45 @@ export function admit(
   )
     throw new AdmissionError(429, 'quota_exceeded')
 
+  const deletedUids = ledger.deletedUids.filter(
+    (owner) => grants[owner] || storedUids.has(owner),
+  )
+  const uids = ledger.uids.filter(
+    (owner) =>
+      !ledger.deletedUids.includes(owner) || deletedUids.includes(owner),
+  )
   return {
-    uids: [...new Set([...ledger.uids, uid])],
+    uids: [...new Set([...uids, uid])],
     grants,
     submissions: [...submissions],
     retiredSubmissions: ledger.retiredSubmissions,
+    deletedUids,
   }
 }
 
 /**
- * Use this function when an account is erased. Its grants go. If its
- * Sightings are deleted too, its Submissions fold into a bare count, so the
- * ledger keeps no id of it but the person's lifetime total is unchanged.
- * Kept Sightings stay stored, so their uid keeps counting. Idempotent.
+ * Keep existing reservations through erasure. If Sightings are deleted,
+ * fold their IDs into the lifetime count while the UID stays in the live
+ * accounting until both its stored objects and reservations are gone.
  */
 export function retireUid(
   ledger: PersonLedger,
   uid: string,
   sightingsDeleted: boolean,
 ): PersonLedger {
-  const grants = { ...ledger.grants }
-  delete grants[uid]
-  if (!sightingsDeleted) return { ...ledger, grants }
+  if (!sightingsDeleted || !ledger.uids.includes(uid)) return ledger
   const mine = ledger.submissions.filter((key) => key.startsWith(`${uid}/`))
   return {
-    uids: ledger.uids.filter((u) => u !== uid),
-    grants,
+    ...ledger,
     submissions: ledger.submissions.filter((key) => !key.startsWith(`${uid}/`)),
     retiredSubmissions: ledger.retiredSubmissions + mine.length,
+    deletedUids: [...new Set([...ledger.deletedUids, uid])],
   }
 }
 
-/** Write-once pointers from a uid or an email key to its person. */
+export const ERASED_ACCOUNT = 'erased'
+
+/** Person pointers; a UID pointer can transition to ERASED_ACCOUNT. */
 export interface PersonIndex {
   read(path: string): Promise<string | undefined>
   /** Binds `path` to `personId` unless already bound; returns the binding. */
@@ -262,8 +278,8 @@ export function normalizeEmail(email: string): string {
 /**
  * Use this function to find, or found, the person a uid belongs to. A uid
  * keeps the person it was first bound to, so changing email moves nothing.
- * Every email the uid signs in with is bound to that person if still free,
- * so a later account with any of them joins it.
+ * Every verified email is bound to that person if still free, so a later
+ * account with any of them joins it.
  */
 export async function resolvePerson(
   index: PersonIndex,
@@ -279,15 +295,21 @@ export async function resolvePerson(
     person = await index.bind(
       uidIndexPath(uid),
       fromEmail ??
-        (email ? index.emailKey(normalizeEmail(email)) : `uid-${uid}`),
+        (email ? index.emailKey(normalizeEmail(email)) : `uid-${uidKey(uid)}`),
     )
   }
+  if (person === ERASED_ACCOUNT)
+    throw new AdmissionError(403, 'account_erasing')
   if (emailPath) await index.bind(emailPath, person)
   return person
 }
 
 export interface AdmissionPorts {
-  verifyIdToken(token: string): Promise<{ uid: string; email?: string }>
+  verifyIdToken(token: string): Promise<{
+    uid: string
+    email?: string
+    emailVerified?: boolean
+  }>
   index: PersonIndex
   readLedger(
     personId: string,
@@ -319,22 +341,31 @@ export async function handleAdmitPhotoUpload(
   if (!token) return { status: 401 }
   let uid: string
   let email: string | undefined
+  let emailVerified: boolean | undefined
   try {
-    ;({ uid, email } = await ports.verifyIdToken(token))
+    ;({ uid, email, emailVerified } = await ports.verifyIdToken(token))
   } catch {
     return { status: 401 }
   }
   try {
     const request = parseAdmitRequest(body)
+    if (email && emailVerified !== true)
+      throw new AdmissionError(403, 'email_verification_required')
     const person = await resolvePerson(ports.index, uid, email)
     for (let attempt = 0; attempt < LEDGER_WRITE_ATTEMPTS; attempt++) {
       const { value, generation } = await ports.readLedger(person)
-      // Listed after the ledger read: an object written under a grant this
-      // admission prunes has already landed, so it is in the listing.
-      const stored = await ports.listStored([...new Set([...value.uids, uid])])
+      // The reservation cutoff must precede the listing, so an object
+      // finalized while we list is still covered by its reservation.
       const now = ports.now()
+      const stored = await ports.listStored([...new Set([...value.uids, uid])])
+      // Check after reading the ledger. Erasure marks the pointer first
+      // and advances the ledger generation, fencing any concurrent write.
+      if ((await ports.index.read(uidIndexPath(uid))) === ERASED_ACCOUNT)
+        throw new AdmissionError(403, 'account_erasing')
       const next = admit(value, stored, uid, request, now)
       if (!(await ports.writeLedger(person, next, generation))) continue
+      if ((await ports.index.read(uidIndexPath(uid))) === ERASED_ACCOUNT)
+        throw new AdmissionError(403, 'account_erasing')
       await ports.publishGrants(uid, liveGrants(next.grants[uid], now))
       return {
         status: 200,

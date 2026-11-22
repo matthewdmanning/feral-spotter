@@ -23,8 +23,8 @@ export interface SubmissionStore {
   /** Delete every organization-permission snapshot under the uid's folder. */
   deleteUserOrganizationPermissions(uid: string): Promise<void>
   /**
-   * Retire the uid from its person's upload ledger (#486). The ledger stays:
-   * a new account with the same email inherits the upload limits.
+   * Fence admissions before cleanup and keep outstanding reservations
+   * accounted for through erasure.
    */
   retireUploadIdentity(uid: string, sightingsDeleted: boolean): Promise<void>
 }
@@ -53,10 +53,10 @@ export async function eraseAccount(
   { uid, email, deleteSightings }: ErasureRequest,
   ports: ErasurePorts,
 ): Promise<void> {
+  await ports.submissions.retireUploadIdentity(uid, deleteSightings)
   if (email) await ports.email.remove(email)
   await ports.analytics.erasePerson(uid)
   await ports.submissions.deleteUserOrganizationPermissions(uid)
-  await ports.submissions.retireUploadIdentity(uid, deleteSightings)
   if (deleteSightings) await ports.submissions.deleteUserSubmissions(uid)
   await ports.accounts.deleteUser(uid)
 }

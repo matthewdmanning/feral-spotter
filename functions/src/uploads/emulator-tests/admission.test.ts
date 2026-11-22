@@ -12,7 +12,11 @@ import { resolve } from 'node:path'
 import { deleteApp, initializeApp, type App } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 import { getStorage } from 'firebase-admin/storage'
-import { createUploadAdmissionPorts, retireUploadIdentity } from '../adapters'
+import {
+  createUploadAdmissionPorts,
+  deleteLateErasedUpload,
+  retireUploadIdentity,
+} from '../adapters'
 import type { PersonLedger } from '../admission'
 import { UPLOAD_QUOTA_ROOT } from '../../submissionLayout'
 import { handleAdmitPhotoUpload } from '../admission'
@@ -159,6 +163,11 @@ test('erasing the account and signing up again with the same email keeps the cou
   const second = `${uid}-second`
   await getAuth().createUser({ uid: first, email })
   const metadata = { submissionId: 'sub-erased', metadata: true }
+  expect(await admitRequest(metadata, first)).toEqual({
+    status: 403,
+    body: { error: 'email_verification_required' },
+  })
+  await getAuth().updateUser(first, { emailVerified: true })
   expect((await admitRequest(metadata, first)).status).toBe(200)
 
   // The erasure pipeline's upload steps, then the Auth user.
@@ -168,7 +177,21 @@ test('erasing the account and signing up again with the same email keeps the cou
     .deleteFiles({ prefix: `submissions/${first}/` })
   await getAuth().deleteUser(first)
 
-  await getAuth().createUser({ uid: second, email })
+  const lateObject = getStorage()
+    .bucket(bucketName)
+    .file(`submissions/${first}/sub-erased/metadata.json`)
+  await lateObject.save('{}')
+  const [lateMetadata] = await lateObject.getMetadata()
+  expect(
+    await deleteLateErasedUpload(
+      bucketName,
+      lateObject.name,
+      Number(lateMetadata.generation),
+    ),
+  ).toBe(true)
+  expect(await lateObject.exists()).toEqual([false])
+
+  await getAuth().createUser({ uid: second, email, emailVerified: true })
   expect((await admitRequest(metadata, second)).status).toBe(200)
 
   const [files] = await getStorage()
@@ -182,7 +205,7 @@ test('erasing the account and signing up again with the same email keeps the cou
   )
   expect(people.filter((p) => p.uids.includes(second))).toEqual([
     expect.objectContaining({
-      uids: [second],
+      uids: [first, second],
       submissions: [`${second}/sub-erased`],
       retiredSubmissions: 1,
     }),

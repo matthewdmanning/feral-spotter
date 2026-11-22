@@ -8,12 +8,18 @@ import {
   MAX_PHOTO_BYTES,
   MAX_UPLOAD_BYTES_PER_UID,
   UPLOAD_GRANTS_CLAIM,
+  uidIndexPath,
 } from '../../submissionLayout'
-import { createUploadAdmissionPorts, retireUploadIdentity } from '../adapters'
+import {
+  createUploadAdmissionPorts,
+  deleteLateErasedUpload,
+  retireUploadIdentity,
+} from '../adapters'
 import { handleAdmitPhotoUpload, type PersonLedger } from '../admission'
 
 const mockObjects = new Map<string, { generation: number; text: string }>()
 const mockSizes = new Map<string, number>()
+const mockUsers = new Map<string, { email: string; emailVerified: boolean }>()
 const mockClaims = new Map<string, Record<string, unknown>>()
 const tick = () => new Promise((resolve) => setImmediate(resolve))
 const notFound = () => Object.assign(new Error('not found'), { code: 404 })
@@ -53,6 +59,7 @@ jest.mock('firebase-admin/storage', () => ({
         },
         delete: async () => {
           mockObjects.delete(path)
+          mockSizes.delete(path)
         },
       }),
       getFiles: async ({ prefix }: { prefix: string }) => [
@@ -65,13 +72,10 @@ jest.mock('firebase-admin/storage', () => ({
 }))
 jest.mock('firebase-admin/auth', () => ({
   getAuth: () => ({
-    // Test tokens are "uid|email".
-    verifyIdToken: async (token: string) => {
-      const [uid, email] = token.split('|')
-      return { uid, email }
-    },
+    verifyIdToken: async (uid: string) => ({ uid }),
     getUser: async (uid: string) => ({
       uid,
+      ...mockUsers.get(uid),
       customClaims: mockClaims.get(uid),
     }),
     setCustomUserClaims: async (
@@ -85,11 +89,15 @@ jest.mock('firebase-admin/auth', () => ({
 
 const EMAIL = 'me@example.com'
 const ports = createUploadAdmissionPorts('bucket', () => 'test-key')
-const admitAs = (uid: string, body: unknown, email = EMAIL) =>
-  handleAdmitPhotoUpload(
-    { authorization: `Bearer ${uid}|${email}`, body },
-    ports,
-  )
+const admitAs = (
+  uid: string,
+  body: unknown,
+  email = EMAIL,
+  emailVerified = true,
+) => {
+  mockUsers.set(uid, { email, emailVerified })
+  return handleAdmitPhotoUpload({ authorization: `Bearer ${uid}`, body }, ports)
+}
 const slot = (submissionId: string) => ({ submissionId, slot: 0, raw: false })
 const ledgers = (): PersonLedger[] =>
   [...mockObjects]
@@ -100,6 +108,7 @@ beforeEach(() => {
   mockObjects.clear()
   mockSizes.clear()
   mockClaims.clear()
+  mockUsers.clear()
 })
 
 test('concurrent admissions retry the generation conflict and cannot overspend', async () => {
@@ -157,7 +166,7 @@ test('erasing and recreating the account keeps the lifetime count', async () => 
   expect((await admitAs('uid-new', metadata('s2'))).status).toBe(200)
   expect(ledgers()).toEqual([
     expect.objectContaining({
-      uids: ['uid-new'],
+      uids: ['uid-old', 'uid-new'],
       submissions: ['uid-new/s2'],
       retiredSubmissions: 1,
     }),
@@ -171,3 +180,82 @@ test('the ledger and its index never hold the email address', async () => {
     'example.com',
   )
 })
+
+test('an unverified account cannot bind or spend quota for its claimed email', async () => {
+  expect(await admitAs('unverified', slot('s1'), EMAIL, false)).toEqual({
+    status: 403,
+    body: { error: 'email_verification_required' },
+  })
+  expect(mockObjects.size).toBe(0)
+  expect(mockClaims.size).toBe(0)
+  expect((await admitAs('owner', slot('s1'))).status).toBe(200)
+  expect(ledgers()[0].uids).toEqual(['owner'])
+})
+
+test('erasure fences an admission that already read the ledger', async () => {
+  expect((await admitAs('uid-old', slot('s1'))).status).toBe(200)
+  const claims = mockClaims.get('uid-old')
+  let resume!: () => void
+  let loaded!: () => void
+  const paused = new Promise<void>((resolve) => {
+    loaded = resolve
+  })
+  const resumeWrite = new Promise<void>((resolve) => {
+    resume = resolve
+  })
+  const incoming = handleAdmitPhotoUpload(
+    { authorization: 'Bearer uid-old', body: slot('s2') },
+    {
+      ...ports,
+      writeLedger: async (...args) => {
+        loaded()
+        await resumeWrite
+        return ports.writeLedger(...args)
+      },
+    },
+  )
+
+  await paused
+  try {
+    await retireUploadIdentity('bucket', 'uid-old', true)
+  } finally {
+    resume()
+  }
+  expect(await incoming).toEqual({
+    status: 403,
+    body: { error: 'account_erasing' },
+  })
+  expect(mockClaims.get('uid-old')).toEqual(claims)
+  expect(Object.keys(ledgers()[0].grants['uid-old'])).toEqual(['s1'])
+})
+
+test('erasure of a UID with no pointer blocks a first admission', async () => {
+  await retireUploadIdentity('bucket', 'uid-old', true)
+  expect((await admitAs('uid-old', slot('s1'))).status).toBe(403)
+  expect(ledgers()).toHaveLength(0)
+  expect(JSON.parse(mockObjects.get(uidIndexPath('uid-old'))!.text)).toEqual({
+    erasing: true,
+    deleteSightings: true,
+  })
+})
+
+test.each([true, false])(
+  'preserves reservations and honors deleteSightings=%s for late uploads',
+  async (deleteSightings) => {
+    expect((await admitAs('uid-old', slot('s1'))).status).toBe(200)
+    await retireUploadIdentity('bucket', 'uid-old', deleteSightings)
+    mockSizes.set(
+      'submissions/uid-new/old/photo-0.jpg',
+      MAX_UPLOAD_BYTES_PER_UID - MAX_PHOTO_BYTES,
+    )
+    expect((await admitAs('uid-new', slot('s2'))).status).toBe(429)
+
+    const latePhoto = 'submissions/uid-old/s1/photo-0.jpg'
+    mockSizes.set(latePhoto, 100)
+    expect(await deleteLateErasedUpload('bucket', latePhoto, 1)).toBe(
+      deleteSightings,
+    )
+    expect(mockSizes.has(latePhoto)).toBe(!deleteSightings)
+    expect((await admitAs('uid-new', slot('s2'))).status).toBe(429)
+  },
+)

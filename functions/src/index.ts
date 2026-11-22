@@ -23,7 +23,10 @@ import {
   userPrefix,
 } from './submissionLayout'
 import { handleAdmitPhotoUpload } from './uploads/admission'
-import { createUploadAdmissionPorts } from './uploads/adapters'
+import {
+  createUploadAdmissionPorts,
+  deleteLateErasedUpload,
+} from './uploads/adapters'
 import { defineSecret, defineString } from 'firebase-functions/params'
 import { onCall, onRequest } from 'firebase-functions/v2/https'
 import {
@@ -114,7 +117,11 @@ async function syncCapForObject(name: string): Promise<void> {
 
 export const onSubmissionSubmitted = onObjectFinalized(
   { bucket: BUCKET_NAME, retry: true },
-  (event) => syncCapForObject(event.data.name),
+  async ({ data }) => {
+    if (await deleteLateErasedUpload(BUCKET_NAME, data.name, data.generation))
+      return
+    await syncCapForObject(data.name)
+  },
 )
 
 export const onSubmissionDeleted = onObjectDeleted(

@@ -42,15 +42,15 @@ it.each([
   [
     true,
     [
+      'uploadIdentity',
       'email',
       'analytics',
       'permissions',
-      'uploadIdentity',
       'sightings',
       'auth',
     ],
   ],
-  [false, ['email', 'analytics', 'permissions', 'uploadIdentity', 'auth']],
+  [false, ['uploadIdentity', 'email', 'analytics', 'permissions', 'auth']],
 ])('deleteSightings=%s erases in order: %j', async (deleteSightings, order) => {
   const { ports, calls } = fakePorts()
   await handleDeleteAccount(request({ deleteSightings }), ports, NOW)

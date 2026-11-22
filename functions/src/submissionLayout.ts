@@ -5,6 +5,8 @@
  * functions/ is its own TypeScript project.
  */
 
+import { createHash } from 'node:crypto'
+
 export const METADATA_FILE_NAME = 'metadata.json'
 
 /**
@@ -102,9 +104,13 @@ export function emailIndexPath(emailKey: string): string {
   return `${UPLOAD_QUOTA_ROOT}emails/${emailKey}.json`
 }
 
-/** Write-once pointer from a uid to its person; removed at erasure. */
+/** Pointer from a hashed Firebase uid to its person or erasure record. */
 export function uidIndexPath(uid: string): string {
-  return `${UPLOAD_QUOTA_ROOT}uids/${uid}.json`
+  return `${UPLOAD_QUOTA_ROOT}uids/${uidKey(uid)}.json`
+}
+
+export function uidKey(uid: string): string {
+  return createHash('sha256').update(uid).digest('hex')
 }
 
 /** Parses a Submission object path; null for anything else. */

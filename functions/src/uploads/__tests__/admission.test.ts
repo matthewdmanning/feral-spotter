@@ -230,10 +230,11 @@ describe('retireUid', () => {
 
   it('folds an erased account’s Submissions into a count, keeping the total', () => {
     const retired = retireUid(ledger, UID, true)
-    expect(retired.uids).toEqual(['uid-b'])
+    expect(retired.uids).toEqual([UID, 'uid-b'])
+    expect(retired.deletedUids).toEqual([UID])
     expect(retired.submissions).toEqual(['uid-b/b'])
     expect(retired.retiredSubmissions).toBe(1)
-    expect(retired.grants).not.toHaveProperty(UID)
+    expect(retired.grants[UID]).toEqual(ledger.grants[UID])
     // A retry changes nothing.
     expect(retireUid(retired, UID, true)).toEqual(retired)
   })
@@ -242,7 +243,25 @@ describe('retireUid', () => {
     const kept = retireUid(ledger, UID, false)
     expect(kept.uids).toContain(UID)
     expect(kept.submissions).toContain(`${UID}/a`)
-    expect(kept.grants).not.toHaveProperty(UID)
+    expect(kept.grants[UID]).toEqual(ledger.grants[UID])
+  })
+
+  it('removes a deleted UID once its objects and reservations are gone', () => {
+    const retired = retireUid(ledger, UID, true)
+    const afterExpiry = NOW + UPLOAD_GRANT_TTL_MS + RESERVATION_MS
+    const late = new Map([[name(UID, 'a', 'metadata.json'), 1]])
+    const whileStored = admit(
+      retired,
+      late,
+      'uid-b',
+      req('c', 0, false),
+      afterExpiry,
+    )
+    expect(whileStored.uids).toContain(UID)
+    expect(whileStored.submissions).toEqual(['uid-b/b'])
+    expect(
+      admit(whileStored, new Map(), 'uid-b', req('c', 0, false), afterExpiry),
+    ).toMatchObject({ uids: ['uid-b'], deletedUids: [], retiredSubmissions: 1 })
   })
 })
 
@@ -291,7 +310,9 @@ describe('resolvePerson', () => {
 
   it('gives an account without an email a person of its own', async () => {
     const index = fakeIndex()
-    expect(await resolvePerson(index, 'uid-1', undefined)).toBe('uid-uid-1')
+    expect(await resolvePerson(index, 'uid-1', undefined)).toMatch(
+      /^uid-[a-f0-9]{64}$/,
+    )
   })
 })
 
@@ -302,7 +323,11 @@ function fakePorts(stored: Map<string, number>) {
   const ports: AdmissionPorts = {
     verifyIdToken: async (token) => {
       if (!token.startsWith('good-')) throw new Error('bad token')
-      return { uid: token.slice(5), email: 'me@example.com' }
+      return {
+        uid: token.slice(5),
+        email: 'me@example.com',
+        emailVerified: true,
+      }
     },
     index: fakeIndex(),
     readLedger: async (person) => {

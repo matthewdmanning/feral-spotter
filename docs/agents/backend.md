@@ -22,7 +22,7 @@ off-limits" below before touching anything Firestore-shaped.
     names `photo-0` … `photo-9`; each photo's `upload_slot` names it. A
     slot holds one `photo-N.jpg` (any JPEG-family type, real type in
     `contentType`) and one `photo-N.dng` (#487).
-  - Hard limits per person: every uid with the same email, through any
+  - Hard limits per person: every uid with the same verified email, through any
     sign-in method. They survive account erasure (#486, ADR-0005's
     2026-11-22 amendments):
     - 250 Submissions for life. Deleting refunds nothing.
@@ -32,8 +32,9 @@ off-limits" below before touching anything Firestore-shaped.
     after counting the object. The app needs
     `EXPO_PUBLIC_UPLOAD_ADMISSION_URL`.
   - State: `upload-quota/persons/{personId}/ledger.json`, CAS-written.
-    Write-once pointers find the person by uid and by an HMAC of the email
-    (secret `UPLOAD_IDENTITY_KEY`). No address is stored.
+    Pointers find the person by hashed uid and by an HMAC of the verified email
+    (secret `UPLOAD_IDENTITY_KEY`). Erasure blocks new grants and preserves
+    reservations for uploads still in flight. No address is stored.
   - `submissionCapReached` remains a soft per-uid claim check.
 - **Final submission (cats + metadata)**: uploaded to Cloud Storage as
   `metadata.json` alongside the photos — see

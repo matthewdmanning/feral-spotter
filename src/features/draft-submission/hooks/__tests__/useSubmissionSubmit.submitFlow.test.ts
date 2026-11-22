@@ -3,6 +3,11 @@ import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { act, renderHook } from '@testing-library/react-native'
 import { router } from 'expo-router'
+import {
+  getAuth,
+  reload,
+  sendEmailVerification,
+} from '@react-native-firebase/auth'
 
 import { useSubmissionSubmit } from '@/src/features/draft-submission/hooks/useSubmissionSubmit'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
@@ -99,6 +104,50 @@ describe('useSubmissionSubmit submit flow', () => {
 
     expect(router.dismissTo).toHaveBeenCalledWith('/')
     expect(router.replace).not.toHaveBeenCalled()
+  })
+
+  it('lets an unverified user request a link and retry the same draft after verifying', async () => {
+    usePhotoStore.setState({
+      photos: [
+        photo({
+          uploaded: true,
+          cloud_storage_path: 'gs://bucket/uploaded.jpg',
+          cloud_storage_url: 'https://cdn/uploaded.jpg',
+        }),
+      ],
+    })
+    const user = {
+      uid: 'uid-owner',
+      email: 'me@example.test',
+      emailVerified: false,
+    }
+    const auth = { currentUser: user } as ReturnType<typeof getAuth>
+    const authMock = jest.mocked(getAuth).mockReturnValue(auth)
+    const reloadMock = jest.mocked(reload)
+    reloadMock
+      .mockResolvedValueOnce(undefined)
+      .mockImplementationOnce(async () => {
+        user.emailVerified = true
+      })
+    jest.mocked(sendEmailVerification).mockResolvedValueOnce(undefined)
+    jest.mocked(uploadSubmissionMetadata).mockResolvedValue(undefined)
+    try {
+      const { result } = await renderHook(() => useSubmissionSubmit())
+      await act(() => result.current.handleDone())
+      await pressDialogButton('Submit')
+      await pressDialogButton('Send verification link')
+      expect(sendEmailVerification).toHaveBeenCalledWith(user)
+      expect(uploadSubmissionMetadata).not.toHaveBeenCalled()
+
+      await pressDialogButton('OK')
+      await act(() => result.current.handleDone())
+      await pressDialogButton('Submit')
+      expect(uploadSubmissionMetadata).toHaveBeenCalledTimes(1)
+    } finally {
+      authMock.mockReturnValue({ currentUser: null } as ReturnType<
+        typeof getAuth
+      >)
+    }
   })
 
   it('only submits photos with both a cloud path and url, among uploaded photos', async () => {
