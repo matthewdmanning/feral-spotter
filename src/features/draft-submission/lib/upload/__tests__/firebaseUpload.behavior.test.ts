@@ -290,17 +290,15 @@ describe('uploadSubmissionPhoto', () => {
   })
 
   it('asks again once when the token lost its grant', async () => {
-    jest
-      .mocked(putFile)
-      .mockImplementationOnce((() =>
-        Object.assign(
-          Promise.reject(
-            Object.assign(new Error('denied'), {
-              code: 'storage/unauthorized',
-            }),
-          ),
-          { on: jest.fn() },
-        )) as never)
+    jest.mocked(putFile).mockImplementationOnce((() =>
+      Object.assign(
+        Promise.reject(
+          Object.assign(new Error('denied'), {
+            code: 'storage/unauthorized',
+          }),
+        ),
+        { on: jest.fn() },
+      )) as never)
 
     await uploadSubmissionPhoto(photo('file:///cache/a.jpg'), 'uid-1', 'sub-1')
 
