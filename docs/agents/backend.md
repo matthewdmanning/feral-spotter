@@ -68,16 +68,29 @@ Storage `9199`, Functions `5001`). The emulators load the repo's
 `storage.rules`, not the live ruleset; the two can differ (see "Live project
 can lag the repo").
 
+From the repo root, install the Functions dependencies with
+`npm ci --prefix functions` after the root `npm ci`. Select the same Firebase
+project as the app's native configuration. On a fresh checkout, run
+`npx firebase login` and `npx firebase use --add`, then select that project
+and give it the `default` alias in the local `.firebaserc`. Use that project
+ID in the upload admission URL below. The launcher uses the active Firebase
+project, so if you previously switched projects, select the app's project
+again with `npx firebase use default`.
+
 Start the suite with `npm run emulators`. It builds `functions/`, then starts
-Auth, Storage and Functions.
+Auth, Storage and Functions. Check that the Functions startup log shows the
+app's project in the `admitPhotoUpload` URL.
 
 Functions params follow the Firebase standard:
 
 - Non-secret params (`defineString`): `functions/.env`, committed.
 - Secrets (`defineSecret`): Secret Manager. The emulator reads them there
-  too, unless `functions/.secret.local` overrides them.
+  too, unless `functions/.secret.local` overrides them. For local uploads,
+  set `UPLOAD_IDENTITY_KEY` in that file to a separate local value and keep
+  it stable across emulator sessions that share data.
 
-Then set:
+Export these values in the shell that starts Expo. Shell values take
+precedence over the GitHub values pulled into `.env.development.local`.
 
 | Env var                              | Value                                                       | Notes                                                                                   |
 | ------------------------------------ | ----------------------------------------------------------- | --------------------------------------------------------------------------------------- |

@@ -14,7 +14,7 @@
     "prepare": "git config core.hooksPath .githooks",
     "start": "expo start",
     "android": "expo run:android",
-    "env:pull": "bash scripts/pull-github-variables.sh",
+    "env:pull": "node scripts/pull-github-variables.mjs",
     "ios": "expo run:ios",
     "web": "expo start --web",
     "compat": "npx rn-compatibility-checker ./package.json",

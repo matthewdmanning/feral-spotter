@@ -42,12 +42,12 @@ adb shell setprop log.tag.FirebaseApp DEBUG
   to see, not a reload.
 - **Backend mode is three-way: mock / emulator / live.** The documented
   default for a test drive is the Firebase Local Emulator Suite
-  (`EXPO_PUBLIC_USE_FIREBASE_EMULATOR=true` + `firebase emulators:start`) —
-  see [backend.md](backend.md) for the flags and why live-Firebase
-  test-driving is discouraged. `EXPO_PUBLIC_AUTH_MOCK=true` in local dev
+  (`npm run emulators`). Follow the project setup and export the app settings
+  in [backend.md](backend.md#test-drive-posture-emulator-by-default).
+  `EXPO_PUBLIC_AUTH_MOCK=true` in local dev
   envs means sign-in/profile behavior is mocked and skips Firebase
-  entirely, so it can never verify rules or real Auth behavior. Check
-  `.env.local` **and** the app's startup mode log before trusting any
+  entirely, so it can never verify rules or real Auth behavior. Check the
+  shell, Expo env files, and the app's startup mode log before trusting any
   auth-flow or upload observation as representative — the three modes look
   alike in the UI.
 - Screen-state verification technique: `adb shell uiautomator dump` +

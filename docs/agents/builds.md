@@ -32,7 +32,8 @@ build on a device, see [test-driving.md](test-driving.md). For backend modes
   variables to `.env.<mode>.local`. Expo loads that file first for the
   build's mode: debug is `development`, release is `production`. The GitHub
   environment defaults to the mode's name. Rerun it after a variable
-  changes.
+  changes. If a value cannot be represented in Expo's env format, the
+  command reports the variable name and preserves the current file.
 - GitHub secrets cannot be read back, so local builds keep secrets in
   `.env.local`.
 - Keep each value in one source. Do not copy a GitHub variable into a
