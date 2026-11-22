@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/src/test-utils/mswServer'
 import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
+import { FEATURE_FLAGS } from '@/src/shared/config/constants'
 
 let nextId = 0
 jest.mock('expo-constants', () => {
@@ -67,6 +68,24 @@ beforeEach(() => {
       return HttpResponse.json(evaluation)
     }),
   )
+})
+
+test('the build-time flag enables Organizations without a PostHog request', async () => {
+  const flags = FEATURE_FLAGS as { organizations: boolean }
+  const original = flags.organizations
+  flags.organizations = true
+  evaluation = null
+  useOrganizationsFlag.setState({
+    enabled: false,
+    pinInteractionsEnabled: false,
+  })
+  try {
+    await useOrganizationsFlag.getState().refresh()
+    expect(useOrganizationsFlag.getState().enabled).toBe(true)
+    expect(requests).toHaveLength(0)
+  } finally {
+    flags.organizations = original
+  }
 })
 
 test('evaluates both flags once without analytics, account identity or location; fresh cached flags work offline', async () => {
