@@ -22,6 +22,11 @@ import {
   submissionPrefix,
   userPrefix,
 } from './submissionLayout'
+import { handleAdmitPhotoUpload } from './uploads/admission'
+import {
+  createUploadAdmissionPorts,
+  deleteLateErasedUpload,
+} from './uploads/adapters'
 import { defineSecret, defineString } from 'firebase-functions/params'
 import { onCall, onRequest } from 'firebase-functions/v2/https'
 import {
@@ -112,7 +117,11 @@ async function syncCapForObject(name: string): Promise<void> {
 
 export const onSubmissionSubmitted = onObjectFinalized(
   { bucket: BUCKET_NAME, retry: true },
-  (event) => syncCapForObject(event.data.name),
+  async ({ data }) => {
+    if (await deleteLateErasedUpload(BUCKET_NAME, data.name, data.generation))
+      return
+    await syncCapForObject(data.name)
+  },
 )
 
 export const onSubmissionDeleted = onObjectDeleted(
@@ -313,6 +322,35 @@ export const deleteAccount = onCall(
       submissions: createStorageSubmissionStore(BUCKET_NAME),
       accounts: authAccountStore,
     }),
+)
+
+// #486: the only issuer of upload grants. See uploads/admission.ts.
+// HMAC key for the email-keyed person index: the ledger never stores an
+// address. Rotating it splits every person from their history.
+const UPLOAD_IDENTITY_KEY = defineSecret('UPLOAD_IDENTITY_KEY')
+const uploadAdmissionPorts = createUploadAdmissionPorts(BUCKET_NAME, () =>
+  UPLOAD_IDENTITY_KEY.value(),
+)
+
+export const admitPhotoUpload = onRequest(
+  { secrets: [UPLOAD_IDENTITY_KEY] },
+  async (req, res) => {
+    if (req.method !== 'POST') {
+      res.status(405).end()
+      return
+    }
+    try {
+      const { status, body } = await handleAdmitPhotoUpload(
+        { authorization: req.header('authorization'), body: req.body },
+        uploadAdmissionPorts,
+      )
+      if (body) res.status(status).json(body)
+      else res.status(status).end()
+    } catch (error) {
+      console.error('[admission] failed', error)
+      res.status(502).end()
+    }
+  },
 )
 
 export { organizationsApi } from './organizations/api'

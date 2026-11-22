@@ -14,8 +14,9 @@
 export const MAX_PHOTOS = 10
 
 /**
- * Maximum Submissions per uid (#270), enforced server-side through the
- * submissionCapReached claim. Documentation here; the contract test keeps
- * it equal to functions/.
+ * Maximum Submissions per person, for life (#270, #486). A person is every
+ * account with the same email. admitPhotoUpload enforces it; deleting
+ * Submissions or the account refunds nothing. Documentation here; the
+ * contract test keeps it equal to functions/.
  */
 export const MAX_SUBMISSIONS_PER_UID = 250

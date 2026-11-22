@@ -20,5 +20,7 @@ module.exports = {
   OAuthProvider: jest.fn(() => ({ credential: jest.fn() })),
   onAuthStateChanged: jest.fn(() => () => {}),
   verifyBeforeUpdateEmail: jest.fn(),
+  reload: jest.fn(),
+  sendEmailVerification: jest.fn(),
   signOut: jest.fn(),
 }

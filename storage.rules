@@ -49,8 +49,11 @@ service firebase.storage {
 
       // Final submission (cats + submission metadata), one small JSON blob
       // per submission.
+      // Like a photo, metadata.json needs an upload grant (#486), so it is
+      // counted against the uid's hard quota before it lands.
       function isValidMetadataWrite() {
-        return request.resource.size < 256 * 1024
+        return hasUploadGrant()
+               && request.resource.size < 256 * 1024
                // Not exact equality — native uploadString() may send
                // 'application/json; charset=utf-8', which exact match denies.
                && request.resource.contentType.matches('application/json(;.*)?')
@@ -73,16 +76,24 @@ service firebase.storage {
                || request.resource.metadata.user_id == uid;
       }
 
-      // The 10-photo cap (MAX_PHOTOS in src/config/constants.ts), enforced
-      // by name: a Submission's JPEG slots can only be photo-0 … photo-9.
-      // A paired photo-N.dng occupies the same slot, not an eleventh one.
-      // Exact and synchronous; no counter. Overwriting a slot is allowed: it
-      // replaces a photo, and it is how Submit patches customMetadata.
+      // The 10-photo cap (MAX_PHOTOS in src/shared/config/submissionLimits.ts),
+      // enforced by name: a slot holds one photo-N.jpg (any JPEG-family
+      // type; the real type is its contentType, #487) and one paired
+      // photo-N.dng. photo-0 … photo-9 only. Exact and synchronous.
       function isValidPhotoWrite() {
-        return fileName.matches('photo-[0-9][.](jpg|jpeg|png|heic|heif|dng)')
+        return (isGrantedPhotoWrite() || isMetadataOnlyPhotoUpdate())
+               && hasOwnUserId(uid);
+      }
+
+      // New bytes need an upload grant (#486): the uploadGrants claim, which
+      // only functions/' admitPhotoUpload sets, after it has counted the
+      // object against the uid's hard quota. Overwriting a granted slot
+      // replaces a photo rather than adding one.
+      function isGrantedPhotoWrite() {
+        return hasUploadGrant()
                && (
                  (
-                   !fileName.matches('photo-[0-9][.]dng')
+                   fileName.matches('photo-[0-9][.]jpg')
                    && request.resource.size < 20 * 1024 * 1024
                    && request.resource.contentType.matches('image/(jpeg|png|heic|heif)')
                  )
@@ -91,8 +102,27 @@ service firebase.storage {
                    && request.resource.size < 64 * 1024 * 1024
                    && request.resource.contentType == 'image/x-adobe-dng'
                  )
-               )
-               && hasOwnUserId(uid);
+               );
+      }
+
+      // Grant tokens drop the 'photo-' prefix ('3.jpg'; 'metadata.json' as is)
+      // to fit Auth's 1000-byte claim limit. grantToken() in functions/
+      // matches this.
+      function hasUploadGrant() {
+        let grant = request.auth.token.get('uploadGrants', {}).get(submissionId, null);
+        return grant != null
+               && request.time.toMillis() < grant.e
+               && fileName.replace('^photo-', '') in grant.f;
+      }
+
+      // Submit patches customMetadata on a photo already counted. Names
+      // written before #487 (photo-N.heic, …) stay patchable.
+      function isMetadataOnlyPhotoUpdate() {
+        return resource != null
+               && fileName.matches('photo-[0-9][.](jpg|jpeg|png|heic|heif|dng)')
+               && request.resource.size == resource.size
+               && request.resource.md5Hash == resource.md5Hash
+               && request.resource.contentType == resource.contentType;
       }
     }
   }

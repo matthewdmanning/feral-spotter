@@ -172,11 +172,11 @@ Environment, and it waits for a required reviewer to approve. It has
 read-only repository access. A separate `publish` job has no secrets and
 attaches the artifacts to the release.
 
-| Kind     | Name                                                                                     |
-| -------- | ---------------------------------------------------------------------------------------- |
-| Secret   | `GOOGLE_SERVICES_JSON_BASE64` (`base64 -w 0 google-services.json`), `ANDROID_GEOLOCATOR` |
-| Secret   | `EXPO_PUBLIC_EMAIL_SYNC_URL`, `EXPO_PUBLIC_ORGANIZATIONS_API_URL`                        |
-| Variable | `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`, `POSTHOG_PROJECT_TOKEN`, `POSTHOG_HOST`              |
+| Kind     | Name                                                                                                  |
+| -------- | ----------------------------------------------------------------------------------------------------- |
+| Secret   | `GOOGLE_SERVICES_JSON_BASE64` (`base64 -w 0 google-services.json`), `ANDROID_GEOLOCATOR`              |
+| Secret   | `EXPO_PUBLIC_EMAIL_SYNC_URL`, `EXPO_PUBLIC_ORGANIZATIONS_API_URL`, `EXPO_PUBLIC_UPLOAD_ADMISSION_URL` |
+| Variable | `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`, `POSTHOG_PROJECT_TOKEN`, `POSTHOG_HOST`                           |
 
 To add a release candidate test feature, add its `EXPO_PUBLIC_*` name to the
 workflow `env` with `${{ github.event.release.prerelease }}`, and read it in

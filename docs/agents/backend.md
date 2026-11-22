@@ -19,11 +19,23 @@ off-limits" below before touching anything Firestore-shaped.
   [ADR-0005](../adr/0005-firebase-storage-for-uploads.md).
 - **Upload limits, no database** (ADR-0005's 2026-11-03 amendment):
   - 10 photos per Submission: `storage.rules` accepts only the object
-    names `photo-0` … `photo-9`; each photo's `upload_slot` names it.
-  - 250 Submissions per uid: `functions/` counts the uid's `metadata.json`
-    objects and sets the Auth custom claim `submissionCapReached`, which
-    `storage.rules` checks. The cap is soft: a client token can keep a
-    stale claim for up to an hour. Do not treat 250 as a hard quota.
+    names `photo-0` … `photo-9`; each photo's `upload_slot` names it. A
+    slot holds one `photo-N.jpg` (any JPEG-family type, real type in
+    `contentType`) and one `photo-N.dng` (#487).
+  - Hard limits per person: every uid with the same verified email, through any
+    sign-in method. They survive account erasure (#486, ADR-0005's
+    2026-11-22 amendments):
+    - 250 Submissions for life. Deleting refunds nothing.
+    - 20 GiB / 5,000 live objects, summed over the person's uids.
+  - Every client write (photos and `metadata.json`) needs the
+    `uploadGrants` claim. Only the `admitPhotoUpload` function issues it,
+    after counting the object. The app needs
+    `EXPO_PUBLIC_UPLOAD_ADMISSION_URL`.
+  - State: `upload-quota/persons/{personId}/ledger.json`, CAS-written.
+    Pointers find the person by hashed uid and by an HMAC of the verified email
+    (secret `UPLOAD_IDENTITY_KEY`). Erasure blocks new grants and preserves
+    reservations for uploads still in flight. No address is stored.
+  - `submissionCapReached` remains a soft per-uid claim check.
 - **Final submission (cats + metadata)**: uploaded to Cloud Storage as
   `metadata.json` alongside the photos — see
   [ADR-0005](../adr/0005-firebase-storage-for-uploads.md). Not a database
@@ -37,19 +49,21 @@ Firebase. Live-project test-driving risks real user data and produces
 infrastructure-level errors that have nothing to do with the code under
 test — a 412 bucket-permission error once cost a session's debugging time
 at the wrong layer. Ports come from `firebase.json` as-is (Auth `9099`,
-Storage `9199`); emulator mode needs **no change** to
+Storage `9199`, Functions `5001`); emulator mode needs **no change** to
 `storage.rules`, so it exercises the actually-deployed
 rules.
 
 Start the suite (`firebase emulators:start`), then set:
 
-| Env var                              | Value                 | Notes                                                                                   |
-| ------------------------------------ | --------------------- | --------------------------------------------------------------------------------------- |
-| `EXPO_PUBLIC_USE_FIREBASE_EMULATOR`  | `true`                | Off by default, never inferred from `__DEV__`                                           |
-| `EXPO_PUBLIC_FIREBASE_EMULATOR_HOST` | `localhost` (default) | Use `10.0.2.2` on an Android emulator; `localhost` + `adb reverse` on a physical device |
+| Env var                              | Value                                                       | Notes                                                                                   |
+| ------------------------------------ | ----------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `EXPO_PUBLIC_USE_FIREBASE_EMULATOR`  | `true`                                                      | Off by default, never inferred from `__DEV__`                                           |
+| `EXPO_PUBLIC_FIREBASE_EMULATOR_HOST` | `localhost` (default)                                       | Use `10.0.2.2` on an Android emulator; `localhost` + `adb reverse` on a physical device |
+| `EXPO_PUBLIC_UPLOAD_ADMISSION_URL`   | `http://<host>:5001/<project>/us-central1/admitPhotoUpload` | Photo uploads need a grant (#486); run the Functions emulator too                       |
 
-On a physical Android device, tunnel both ports before you open the app:
-`adb reverse tcp:9099 tcp:9099` and `adb reverse tcp:9199 tcp:9199`. The
+On a physical Android device, tunnel the ports before you open the app:
+`adb reverse tcp:9099 tcp:9099`, `adb reverse tcp:9199 tcp:9199` and
+`adb reverse tcp:5001 tcp:5001`. The
 tunnels are lost when the adb server restarts.
 
 React Native Firebase changes `localhost` and `127.0.0.1` to `10.0.2.2` on

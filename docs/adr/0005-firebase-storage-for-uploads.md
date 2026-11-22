@@ -257,3 +257,96 @@ photo slots per Submission, each with one JPEG under 20 MiB and, when present,
 one DNG under 64 MiB, for a worst-case upload envelope below 840 MiB per
 Submission (strict inequalities make the actual maximum one byte lower per
 object). The existing 256 KiB metadata bound is unchanged.
+
+## Amendment 2026-11-22: one JPEG-family name per slot; hard per-uid upload quota
+
+Source: security audit of 2026-11-21, F-01/F-03
+([#487](https://github.com/matthewdmanning/feral-spotter/issues/487),
+[#486](https://github.com/matthewdmanning/feral-spotter/issues/486)).
+
+**Naming (#487).** Every non-DNG photo is `photo-N.jpg`, whatever its format;
+its real type is its `contentType` (`image/jpeg|png|heic|heif`). A slot holds
+at most one `photo-N.jpg` and one `photo-N.dng`. `photoObjectPath` no longer
+reads the photo URI. `isSubmissionPhotoFileName` accepts only `jpg|dng`;
+readers (`readSubmission`) use `isStoredPhotoFileName`, which still accepts
+pre-#487 names. Nothing downstream read the extension for type.
+
+**Quota (#486).** Owner decision: release needs a hard per-uid quota; the
+250-Submission cap stays soft. Limits: 20 GiB and 5,000 objects per uid,
+over every object under `submissions/{uid}/` (orphans included) in the one
+release bucket.
+
+- New photo bytes need an **upload grant**: Auth claim
+  `uploadGrants = { [submissionId]: { e: expiryMs, f: ['3.jpg', '3.dng'] } }`.
+  `storage.rules` checks the token (`photo-` prefix dropped) and `e`.
+  Without a grant, a client may only patch `customMetadata` (same size,
+  `md5Hash`, `contentType`).
+- `admitPhotoUpload` (Cloud Function, `functions/src/uploads/admission.ts`)
+  is the only issuer. It reserves 20 MiB per JPEG and 64 MiB per DNG token,
+  counts stored sizes (max of stored and reserved for a granted name), and
+  refuses with 429 past either limit.
+- Admissions serialize per uid through `upload-quota/{uid}/ledger.json`
+  (server-only), written with `ifGenerationMatch`. The ledger is
+  authoritative; a claim is always a copy of some ledger version, so every
+  grant a token can carry is counted. A stale or lost claim only refuses an
+  upload; the client re-admits once on `storage/unauthorized`.
+- A grant is writable 30 min. Its reservation lasts 7 days more (a resumable
+  session's lifetime), so a late-finishing upload was already counted.
+- At most 3 open Submissions per uid hold grants, keeping the claim under
+  Auth's 1000-byte limit.
+- The app calls the endpoint at `EXPO_PUBLIC_UPLOAD_ADMISSION_URL`, then
+  force-refreshes its ID token. Unset, photo uploads fail.
+- Account erasure deletes the ledger with the uid's Submissions.
+
+**metadata.json.** Also needs a grant (token `metadata.json`, reserves
+256 KiB), asked for with `{ submissionId, metadata: true }`. The soft
+250 cap claim still applies on top. The quota therefore covers every
+client-written object.
+
+**Verification.** The ledger adapter is tested against a fake bucket that
+enforces `ifGenerationMatch`; the Storage emulator ignores it. An emulator
+test (`functions/src/uploads/emulator-tests/`) runs a real ID token, the
+real rules and the real handler end to end.
+
+## Amendment 2026-11-22: upload limits belong to a person and survive erasure
+
+Supersedes the per-uid ledger and "the 250-Submission cap stays soft" in the
+amendment above. Owner decisions: erasing and recreating an account, or
+adding a sign-in method with the same email, must not reset limits; the
+Submission cap counts for life; bytes stay live usage; the email is kept
+only as a keyed hash.
+
+- **Person.** Every uid with the same verified, normalized email
+  (trimmed, lower-case). A uid keeps the person it was first bound to, so
+  an email change moves nothing. Admission reads the current Firebase Auth
+  record and requires verification for accounts with an email. The app can
+  send the verification link when the user tries to submit. An account
+  without an email has its own ledger.
+- **Index.** `upload-quota/uids/{sha256(uid)}.json` and
+  `upload-quota/emails/{key}.json` point to the person. The UID pointer
+  also records erasure, using generation preconditions to stop concurrent
+  admissions. `key` = HMAC-SHA256(secret `UPLOAD_IDENTITY_KEY`, email). The
+  ledger and index never store an address. Rotating the secret splits
+  every person from their history.
+- **Ledger.** `upload-quota/persons/{personId}/ledger.json`: `uids`,
+  per-uid `grants`, `submissions` (`uid/submissionId`) and
+  `retiredSubmissions`. CAS-written; admissions serialize per person.
+- **Cap: 250 Submissions per person, for life, hard.** A metadata grant for
+  a new Submission spends one; a resend of an admitted one does not.
+  Deleting a Submission refunds nothing. Stored `metadata.json` objects
+  the ledger never saw (pre-deploy) are counted at the next admission.
+  The `submissionCapReached` claim stays as a soft per-uid check.
+- **Bytes and objects: live, summed over the person's uids**, plus every
+  open reservation, any uid's.
+- **Erasure** starts by blocking new grants. Existing claims can outlive
+  the Auth account, and resumable sessions can finish later, so their
+  reservations remain in the ledger through expiry. When the user chooses
+  to delete Sightings, their Submission IDs fold into `retiredSubmissions`.
+  The Storage finalize handler deletes late uploads, and the next admission
+  after the reservations and objects are gone drops that UID from the
+  ledger. Kept Sightings stay stored and keep counting.
+- **Residual.** A new email address is a new person; Submissions erased
+  before their uid ever reached the admission endpoint are not counted.
+- **Privacy.** The keyed email hash, a hashed UID erasure record, the
+  person's other uids and a Submission count outlive erasure. The privacy
+  notice should say so.

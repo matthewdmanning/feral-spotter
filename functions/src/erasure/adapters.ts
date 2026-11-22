@@ -3,6 +3,7 @@
  * deployment parameters, never from literals here.
  */
 
+import { retireUploadIdentity } from '../uploads/adapters'
 import { getAuth } from 'firebase-admin/auth'
 import { getStorage } from 'firebase-admin/storage'
 import { userPrefix } from '../submissionLayout'
@@ -52,6 +53,8 @@ export function createStorageSubmissionStore(bucket: string): SubmissionStore {
       getStorage()
         .bucket(bucket)
         .deleteFiles({ prefix: userPrefix(uid) }),
+    retireUploadIdentity: (uid, sightingsDeleted) =>
+      retireUploadIdentity(bucket, uid, sightingsDeleted),
     // The trailing slash keeps one uid's permissions separate from another's.
     // This removes the ledger and any future per-user organization snapshots.
     deleteUserOrganizationPermissions: (uid) =>

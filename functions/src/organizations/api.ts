@@ -21,7 +21,7 @@ import {
 } from './domain'
 import { mutateLedger, type LedgerMutation } from './ledger'
 import { errorCode, RequestError } from './errors'
-import { isSubmissionPhotoFileName } from '../submissionLayout'
+import { isStoredPhotoFileName } from '../submissionLayout'
 
 const CATALOG_PATH = defineString('ORGANIZATIONS_CATALOG_PATH', {
   default: 'organizations/catalog.json',
@@ -182,8 +182,7 @@ async function readSubmission(uid: string, submissionId: string) {
   }
   /** Use this function to admit only supported artifact names in a pair. */
   const pairedPathInSubmission = (value: unknown): value is string =>
-    pathInSubmission(value) &&
-    isSubmissionPhotoFileName(value.slice(prefix.length))
+    pathInSubmission(value) && isStoredPhotoFileName(value.slice(prefix.length))
   const validPhotoPaths =
     Array.isArray(metadata.photo_paths) &&
     metadata.photo_paths.every((path) => pathInSubmission(path))

@@ -229,3 +229,81 @@ before the cleanup call returns. Production deletion timing is unchanged.
 **Purpose:** After a successful submit, Back from Home re-opened the Camera (#453).
 **Change:** Every flow exit to Home calls `goHome()` (`src/shared/lib/navigation.ts`, `router.dismissTo('/')`) instead of `router.replace('/')`: `replace` swapped only the top screen and left the Camera under the new Home; `dismissTo` pops to the Home already on the root stack. Sites: submit `'sent'` (`useSubmissionSubmit`), Reset/Discard (`discardDraftAndGoHome`), abandoning a pass with no recorded cat (`abandonCatPass`), and `GoHomeGate`. Submit still navigates after the draft teardown, as #189 requires. Entry/consent `replace` calls are unchanged: replacing onboarding is intended. Thumbnail half: [2026-08-01-sprint-camera-implementation.md](2026-08-01-sprint-camera-implementation.md).
 **Verification:** submit-flow, reset, catPass and active-cat-flow tests assert `dismissTo('/')`. Stack behaviour read from expo-router 58.0.28 source; not driven on a device.
+
+## 2026-11-22 — fix
+
+**Purpose:** Security audit 2026-11-21, F-01/F-03. A slot could hold five
+JPEG-family objects (#487), and no limit bounded one uid's total bytes (#486).
+**Change:** Every non-DNG photo is `photo-N.jpg` with its real
+`contentType`. Photo bytes need an `uploadGrants` claim from the new
+`admitPhotoUpload` function, which enforces a hard 20 GiB / 5,000-object
+quota per uid through a CAS-written ledger. Design: ADR-0005's 2026-11-22
+amendment.
+**Tests:**
+
+- `functions/src/uploads/__tests__/admission.test.ts`: byte and object
+  limits, orphans counted, reservation lifetime, open-Submission limit; two
+  concurrent admissions cannot both spend the last headroom.
+- `__tests__/rules/storage.test.ts`: no grant, expired grant or wrong name
+  refuses bytes; metadata-only patch needs no grant; legacy names stay
+  patchable; the ledger is server-only.
+- `__tests__/rules/submissionLayout.contract.test.ts`: app names equal the
+  names functions/ grants and the rules accept; byte bounds agree.
+- `firebaseUpload.behavior.test.ts`: grant then token refresh before bytes;
+  one re-admission on `storage/unauthorized`; a refused grant writes nothing.
+
+**Verification:** typecheck, lint (0 errors), Jest 121 suites, rules
+emulator 30 tests, functions 72 tests. Unverified: live deploy, Functions
+emulator test drive, device drive, real GCS `ifGenerationMatch`.
+**Deploy:** deploy `admitPhotoUpload` and `storage.rules` together; set
+the `EXPO_PUBLIC_UPLOAD_ADMISSION_URL` release secret. Older app builds
+cannot upload photos once the rules deploy.
+
+## 2026-11-22 — fix (follow-up)
+
+**Purpose:** Close gaps left by the quota change above.
+**Change:** `metadata.json` now needs a grant and counts against the quota.
+Ledger adapters moved to `functions/src/uploads/adapters.ts`. Repo git
+hooks are now executable.
+**Tests:**
+
+- `uploads/__tests__/adaptersConcurrency.test.ts`: real adapter and handler
+  over a fake bucket with real generation preconditions; concurrent
+  admissions cannot overspend, and claims keep other entries.
+- `uploads/emulator-tests/admission.test.ts` (runs in
+  `npm run test:organizations:emulator`): real token, rules and handler;
+  only granted names open. A rule that skips the grant fails it.
+- Rules and behavior tests: metadata without a grant is refused.
+
+**Verification:** Jest 561, rules 31, functions 75, emulator lane 17,
+gitleaks clean. Still unverified: live deploy and a device drive (no
+device or project credentials here).
+
+## 2026-11-22 — fix (persistent per-person limits)
+
+**Purpose:** Erasing and recreating an account, or adding a sign-in method
+with the same email, reset the cap and quota.
+**Change:** Limits move from a per-uid ledger to a per-person ledger that
+survives erasure. A person is found through write-once uid and
+HMAC-of-email pointers. The 250 cap now counts for life and is enforced at
+the metadata grant. Erasure retires the uid (`retireUploadIdentity`)
+instead of deleting the ledger. New secret: `UPLOAD_IDENTITY_KEY`. Design:
+ADR-0005's last 2026-11-22 amendment.
+**Tests:**
+
+- `uploads/__tests__/admission.test.ts`: bytes summed over a person's
+  uids and reservations; lifetime cap across accounts and erasures, with
+  no refund and pre-deploy metadata counted; `retireUid` folding;
+  `resolvePerson` for second sign-in methods, email changes, erasure and
+  case.
+- `uploads/__tests__/adaptersConcurrency.test.ts`: real adapters over a
+  generation-checked fake bucket. Concurrent first sign-ins share one
+  person; erase-and-recreate keeps the count; no address is stored.
+- `uploads/emulator-tests/admission.test.ts`: the same erase-and-recreate
+  path on the Auth and Storage emulators.
+- `__tests__/eraseAccount.test.ts`: the retire step runs before Sightings
+  are deleted and before the Auth user.
+
+**Deploy:** set the `UPLOAD_IDENTITY_KEY` Firebase secret before
+`admitPhotoUpload`. Never rotate it. Update the privacy notice: a keyed
+email hash and a Submission count outlive erasure.

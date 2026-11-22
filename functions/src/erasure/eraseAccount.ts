@@ -22,6 +22,11 @@ export interface SubmissionStore {
   deleteUserSubmissions(uid: string): Promise<void>
   /** Delete every organization-permission snapshot under the uid's folder. */
   deleteUserOrganizationPermissions(uid: string): Promise<void>
+  /**
+   * Fence admissions before cleanup and keep outstanding reservations
+   * accounted for through erasure.
+   */
+  retireUploadIdentity(uid: string, sightingsDeleted: boolean): Promise<void>
 }
 
 export interface AccountStore {
@@ -48,6 +53,7 @@ export async function eraseAccount(
   { uid, email, deleteSightings }: ErasureRequest,
   ports: ErasurePorts,
 ): Promise<void> {
+  await ports.submissions.retireUploadIdentity(uid, deleteSightings)
   if (email) await ports.email.remove(email)
   await ports.analytics.erasePerson(uid)
   await ports.submissions.deleteUserOrganizationPermissions(uid)

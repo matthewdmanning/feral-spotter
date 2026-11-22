@@ -77,6 +77,12 @@ export const authCopy = {
   addEmailTitle: 'Add your email',
   sendVerificationLink: 'Send verification link',
   checkYourEmailTitle: 'Check your email',
+  verifyEmailTitle: 'Verify your email',
+  verifyEmailBeforeSubmitting:
+    'Verify your email address to submit a Sighting.',
+  verificationSentMessage:
+    'Follow the link in your email, then try submitting again.',
+  verificationSendFailedTitle: 'Could not send verification email',
   emailChangeSentMessage:
     'We sent a link to {email}. Your email changes once you follow it.',
   validEmailMessage: 'Enter a valid email address',

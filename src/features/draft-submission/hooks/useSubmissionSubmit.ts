@@ -17,7 +17,12 @@ import {
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import { showAlert, showError } from '@/src/shared/hooks/useUIStore'
-import { formatCopy, submissionCopy } from '@/src/shared/config/text'
+import { authCopy, formatCopy, submissionCopy } from '@/src/shared/config/text'
+import {
+  getAuth,
+  reload,
+  sendEmailVerification,
+} from '@react-native-firebase/auth'
 import {
   isDraftBusy,
   submitDraft,
@@ -72,6 +77,55 @@ function report(outcome: SubmitOutcome): void {
   }
 }
 
+async function submitWithVerifiedEmail(): Promise<void> {
+  const auth = getAuth()
+  const user = auth.currentUser
+  if (user?.email && user.emailVerified === false) {
+    const draftId = usePhotoStore.getState().submissionId
+    try {
+      await reload(user)
+    } catch {
+      report({ kind: 'failed' })
+      return
+    }
+    const current = auth.currentUser
+    if (
+      current?.uid !== user.uid ||
+      usePhotoStore.getState().submissionId !== draftId
+    )
+      return
+    if (current.email && !current.emailVerified) {
+      showAlert(
+        authCopy.verifyEmailTitle,
+        authCopy.verifyEmailBeforeSubmitting,
+        [
+          { text: submissionCopy.alerts.cancel, style: 'cancel' },
+          {
+            text: authCopy.sendVerificationLink,
+            onPress: async () => {
+              if (auth.currentUser?.uid !== current.uid) return
+              try {
+                await sendEmailVerification(current)
+                showAlert(
+                  authCopy.checkYourEmailTitle,
+                  authCopy.verificationSentMessage,
+                )
+              } catch {
+                showError(
+                  authCopy.verificationSendFailedTitle,
+                  authCopy.retryMessage,
+                )
+              }
+            },
+          },
+        ],
+      )
+      return
+    }
+  }
+  report(await submitDraft())
+}
+
 export function useSubmissionSubmit(): SubmissionSubmitResult {
   const catCount = useSubmissionStore((s) => s.cats.length)
   const photoCount = usePhotoStore((s) => s.photos.length)
@@ -99,7 +153,7 @@ export function useSubmissionSubmit(): SubmissionSubmitResult {
         {
           text: submissionCopy.alerts.submit,
           style: 'default',
-          onPress: () => submitDraft().then(report),
+          onPress: submitWithVerifiedEmail,
         },
       ],
     )

@@ -40,7 +40,7 @@ async function cleanupStaleUpload(
     (photo.upload_slot == null
       ? undefined
       : (photo.cloud_storage_path ??
-        photoObjectPath(uid, submissionId, photo.upload_slot, photo.uri)))
+        photoObjectPath(uid, submissionId, photo.upload_slot)))
   const dngPath =
     result?.raw_cloud_storage_path ??
     (photo.raw_uri && photo.upload_slot != null
@@ -63,7 +63,7 @@ export function deletePhotoUploads(
       ? [photo.cloud_storage_path, photo.raw_cloud_storage_path]
       : [
           photo.cloud_storage_path ??
-            photoObjectPath(uid, submissionId, photo.upload_slot, photo.uri),
+            photoObjectPath(uid, submissionId, photo.upload_slot),
           photo.raw_cloud_storage_path ??
             (photo.raw_uri
               ? rawPhotoObjectPath(uid, submissionId, photo.upload_slot)

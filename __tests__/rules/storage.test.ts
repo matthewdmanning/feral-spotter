@@ -71,10 +71,32 @@ const objectAt = (
     : testEnv.unauthenticatedContext()
   return ref(context.storage(BUCKET_URL), name)
 }
-const photoOf = (uid: string | null, file = 'photo-0.jpg', sub = 'sub-1') =>
-  objectAt(uid, `submissions/${OWNER_UID}/${sub}/${file}`)
-const metadataOf = (claims?: Record<string, unknown>, sub = 'sub-1') =>
-  objectAt(OWNER_UID, `submissions/${OWNER_UID}/${sub}/metadata.json`, claims)
+// #486: photo bytes need an upload grant. Tests that are not about grants
+// hold one for every slot of their Submission.
+const ALL_TOKENS = Array.from({ length: 10 }, (_, i) => [
+  `${i}.jpg`,
+  `${i}.dng`,
+]).flat()
+const grantFor = (sub: string, f = ALL_TOKENS, e = Date.now() + 60_000) => ({
+  uploadGrants: { [sub]: { e, f } },
+})
+const photoOf = (
+  uid: string | null,
+  file = 'photo-0.jpg',
+  sub = 'sub-1',
+  claims: Record<string, unknown> | null = grantFor(sub),
+) =>
+  objectAt(uid, `submissions/${OWNER_UID}/${sub}/${file}`, claims ?? undefined)
+// Holds a metadata grant unless `granted` is false (#486).
+const metadataOf = (
+  claims?: Record<string, unknown>,
+  sub = 'sub-1',
+  granted = true,
+) =>
+  objectAt(OWNER_UID, `submissions/${OWNER_UID}/${sub}/metadata.json`, {
+    ...(granted ? grantFor(sub, ['metadata.json']) : {}),
+    ...claims,
+  })
 
 describe('storage.rules — photos', () => {
   it('lets the owner upload a valid image into a slot', async () => {
@@ -116,7 +138,9 @@ describe('storage.rules — photos', () => {
   // The 10-photo cap is the object name: photo-0 … photo-9 only.
   it.each([
     ['photo-9.jpg', true],
-    ['photo-0.heic', true],
+    // #487: one JPEG-family name per slot; the type is the contentType.
+    ['photo-0.heic', false],
+    ['photo-0.jpeg', false],
     ['photo-10.jpg', false],
     ['photo.jpg', false],
     ['3f2a.jpg', false],
@@ -169,12 +193,104 @@ describe('storage.rules — photos', () => {
     const stranger = objectAt(
       'uid-stranger',
       'submissions/uid-stranger/sub-1/photo-0.jpg',
+      grantFor('sub-1'),
     )
     await assertSucceeds(uploadBytes(stranger, SMALL_IMAGE, JPEG))
   })
 })
 
+// #486: functions/' admitPhotoUpload is the only issuer of grants, after it
+// counts the object against the uid's quota. Without one, no new bytes.
+describe('storage.rules — upload grants', () => {
+  const at = (
+    claims: Record<string, unknown> | null,
+    file = 'photo-0.jpg',
+    sub = 'sub-1',
+  ) => photoOf(OWNER_UID, file, sub, claims)
+
+  it('refuses bytes without a live grant for that exact name', async () => {
+    await assertFails(uploadBytes(at(null), SMALL_IMAGE, JPEG))
+    await assertFails(
+      uploadBytes(
+        at(grantFor('sub-1', ['0.jpg'], Date.now() - 1)),
+        SMALL_IMAGE,
+        JPEG,
+      ),
+    )
+    const jpegOnly = grantFor('sub-1', ['0.jpg'])
+    await assertSucceeds(uploadBytes(at(jpegOnly), SMALL_IMAGE, JPEG))
+    await assertFails(
+      uploadBytes(at(jpegOnly, 'photo-0.dng'), SMALL_IMAGE, DNG),
+    )
+    await assertFails(
+      uploadBytes(at(jpegOnly, 'photo-1.jpg'), SMALL_IMAGE, JPEG),
+    )
+    await assertFails(
+      uploadBytes(at(jpegOnly, 'photo-0.jpg', 'sub-2'), SMALL_IMAGE, JPEG),
+    )
+    // A legacy extension is refused even if a token names it.
+    await assertFails(
+      uploadBytes(
+        at(grantFor('sub-1', ['0.heic']), 'photo-0.heic'),
+        SMALL_IMAGE,
+        {
+          contentType: 'image/heic',
+        },
+      ),
+    )
+  })
+
+  it('stores a HEIC photo under the slot .jpg name with its real type (#487)', async () => {
+    await assertSucceeds(
+      uploadBytes(at(grantFor('sub-1')), SMALL_IMAGE, {
+        contentType: 'image/heic',
+      }),
+    )
+  })
+
+  it('lets Submit patch customMetadata without a grant, but not change bytes', async () => {
+    await assertSucceeds(uploadBytes(at(grantFor('sub-1')), SMALL_IMAGE, JPEG))
+    await assertSucceeds(
+      updateMetadata(at(null), {
+        customMetadata: { photo_time: '2026-08-01T10:00:00.000Z' },
+      }),
+    )
+    await assertFails(uploadBytes(at(null), new Uint8Array([9, 9]), JPEG))
+  })
+
+  it('keeps a photo stored before #487 patchable', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await uploadBytes(
+        ref(
+          context.storage(BUCKET_URL),
+          `submissions/${OWNER_UID}/sub-1/photo-0.heic`,
+        ),
+        SMALL_IMAGE,
+        { contentType: 'image/heic' },
+      )
+    })
+    await assertSucceeds(
+      updateMetadata(at(null, 'photo-0.heic'), {
+        customMetadata: { user_id: OWNER_UID },
+      }),
+    )
+  })
+})
+
 describe('storage.rules — metadata.json', () => {
+  it('refuses metadata.json without a grant, even under the cap (#486)', async () => {
+    await assertFails(
+      uploadBytes(metadataOf(undefined, 'sub-1', false), SMALL_JSON, JSON_TYPE),
+    )
+    await assertFails(
+      uploadBytes(
+        metadataOf(grantFor('sub-1', ['0.jpg'])),
+        SMALL_JSON,
+        JSON_TYPE,
+      ),
+    )
+  })
+
   it('accepts JSON, with or without a charset suffix', async () => {
     await assertSucceeds(uploadBytes(metadataOf(), SMALL_JSON, JSON_TYPE))
     await assertSucceeds(
@@ -229,13 +345,14 @@ describe('storage.rules — deletes (#293)', () => {
   })
 })
 
-describe('organization service objects remain server-only', () => {
+describe('service objects remain server-only', () => {
   it.each(['owner', 'other', 'anonymous'])(
     'denies direct catalog and ledger reads/writes for %s',
     async (actor) => {
       const paths = [
         'organizations/catalog.json',
         'organization-permissions/owner/ledger.json',
+        'upload-quota/owner/ledger.json',
       ]
       await testEnv.withSecurityRulesDisabled(async (context) => {
         for (const objectPath of paths)

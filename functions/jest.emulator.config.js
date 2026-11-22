@@ -2,6 +2,9 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
-  testMatch: ['<rootDir>/src/organizations/emulator-tests/**/*.test.ts'],
+  testMatch: [
+    '<rootDir>/src/organizations/emulator-tests/**/*.test.ts',
+    '<rootDir>/src/uploads/emulator-tests/**/*.test.ts',
+  ],
   testTimeout: 30000,
 }
