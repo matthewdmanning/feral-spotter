@@ -142,8 +142,13 @@ export async function resolveTesterClaim(
   if (!uid) return
   if (event.data?.customClaims?.allowedTester === allowedTester) return
 
+  // Merge into the current claims, not the event's snapshot: the snapshot
+  // can predate a submissionCapReached write, and this write would drop it.
+  // ponytail: read-then-write still races syncSubmissionCapClaim by
+  // milliseconds; serialize claim writes if a lost claim is ever seen.
+  const { customClaims } = await getAuth().getUser(uid)
   await getAuth().setCustomUserClaims(uid, {
-    ...event.data?.customClaims,
+    ...customClaims,
     allowedTester,
   })
 }

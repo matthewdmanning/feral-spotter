@@ -22,7 +22,8 @@ off-limits" below before touching anything Firestore-shaped.
     names `photo-0` … `photo-9`; each photo's `upload_slot` names it.
   - 250 Submissions per uid: `functions/` counts the uid's `metadata.json`
     objects and sets the Auth custom claim `submissionCapReached`, which
-    `storage.rules` checks.
+    `storage.rules` checks. The cap is soft: a client token can keep a
+    stale claim for up to an hour. Do not treat 250 as a hard quota.
 - **Final submission (cats + metadata)**: uploaded to Cloud Storage as
   `metadata.json` alongside the photos — see
   [ADR-0005](../adr/0005-firebase-storage-for-uploads.md). Not a database

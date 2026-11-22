@@ -1,0 +1,103 @@
+# Builds Android release artifacts when a GitHub Release is published.
+# Publish a release by hand: tag vX.Y.Z (stable) or vX.Y.Z-rc.N with
+# "Set as a pre-release" (release candidate). Merges never start this.
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # Reads the release secrets, so it waits for approval on the "production"
+  # Environment and can only read the repository.
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: production
+    env:
+      TAG: ${{ github.event.release.tag_name }}
+      ANDROID_VERSION_CODE: ${{ github.run_number }}
+      APP_VARIANT: ${{ github.event.release.prerelease && 'rc' || '' }}
+      # Release candidate test features.
+      EXPO_PUBLIC_EXPERIMENTAL_CAMERA: ${{ github.event.release.prerelease }}
+      ANDROID_GEOLOCATOR: ${{ secrets.ANDROID_GEOLOCATOR }}
+      # Not implemented yet. Uncomment when the features ship.
+      # EXPO_PUBLIC_EMAIL_SYNC_URL: ${{ secrets.EXPO_PUBLIC_EMAIL_SYNC_URL }}
+      # EXPO_PUBLIC_ORGANIZATIONS_API_URL: ${{ secrets.EXPO_PUBLIC_ORGANIZATIONS_API_URL }}
+      EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: ${{ vars.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID }}
+      POSTHOG_PROJECT_TOKEN: ${{ vars.POSTHOG_PROJECT_TOKEN }}
+      POSTHOG_HOST: ${{ vars.POSTHOG_HOST }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set APP_VERSION from the tag
+        run: |
+          # A pre-release must carry a SemVer pre-release part, and a stable release must not.
+          case "$TAG" in
+            v*-*) [ "$APP_VARIANT" = rc ] || { echo "::error::$TAG needs 'pre-release' set"; exit 1; } ;;
+            v*)   [ -z "$APP_VARIANT" ] || { echo "::error::$TAG is stable; unset 'pre-release'"; exit 1; } ;;
+            *)    echo "::error::tag must start with v"; exit 1 ;;
+          esac
+          echo "APP_VERSION=${TAG#v}" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - run: npm ci
+
+      # Stored as one Base64 line: log masking fails on multi-line JSON.
+      - name: Write google-services.json
+        run: printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > google-services.json
+        env:
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+
+      - run: npx expo prebuild --platform android --clean
+
+      # Overrides plugins/withPixel7Architecture.js, so the artifacts run on
+      # every Android ABI.
+      - name: Build universal APK and AAB
+        working-directory: android
+        run: ./gradlew assembleRelease bundleRelease -PreactNativeArchitectures=armeabi-v7a,arm64-v8a,x86,x86_64
+
+      - name: Name artifacts and print APK metadata
+        run: |
+          out=android/app/build/outputs
+          mkdir -p dist-release
+          cp "$out/apk/release/app-release.apk" "dist-release/feral-spotter-$TAG.apk"
+          cp "$out/bundle/release/app-release.aab" "dist-release/feral-spotter-$TAG.aab"
+          aapt="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/aapt"
+          "$aapt" dump badging "dist-release/feral-spotter-$TAG.apk" | grep -E "^package|application-label:|native-code:"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: dist-release/
+          if-no-files-found: error
+
+  # Has write access but no secrets.
+  publish:
+    needs: android
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
+          path: dist-release
+      - run: gh release upload "${{ github.event.release.tag_name }}" dist-release/* --clobber --repo "${{ github.repository }}"
+        env:
+          GH_TOKEN: ${{ github.token }}

@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'node:util'
 import { getAuth } from 'firebase-admin/auth'
 import { getStorage } from 'firebase-admin/storage'
 import type { Request } from 'firebase-functions/v2/https'
@@ -83,13 +84,27 @@ async function updateLedger(
     const { value, generation } = await readLedger(uid)
     if (value.applied.includes(id)) return value
     mutation ??= await build()
-    const next = {
-      ...mutateLedger(value, mutation, new Date().toISOString()),
-      applied: [...value.applied, id],
-    }
-    // Bound one user's ledger independently of the upload cap; revocations stay available.
+    const mutated = mutateLedger(value, mutation, new Date().toISOString())
+    // A repeated revocation changes nothing, so it is not recorded and cannot grow the ledger.
     if (
-      mutation.type === 'grant' &&
+      mutation.type !== 'grant' &&
+      isDeepStrictEqual(mutated, {
+        epochs: value.epochs,
+        permissions: value.permissions,
+        revokedPairs: value.revokedPairs ?? [],
+      })
+    )
+      return value
+    const next = { ...mutated, applied: [...value.applied, id] }
+    // Bound one user's ledger independently of the upload cap. At the limit,
+    // only a mutation that revokes an existing permission is accepted. Those
+    // are bounded by MAX_PERMISSIONS. No grant is accepted at the limit, so a
+    // refused tombstone or epoch bump cannot let a stale grant through.
+    const revokesExisting = next.permissions.some(
+      (p, i) => p.revokedAt && !value.permissions[i]?.revokedAt,
+    )
+    if (
+      !revokesExisting &&
       (next.permissions.length > MAX_PERMISSIONS ||
         next.applied.length > MAX_APPLIED_MUTATIONS)
     )
