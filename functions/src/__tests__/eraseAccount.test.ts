@@ -26,6 +26,7 @@ function fakePorts(failAt?: string) {
     submissions: {
       deleteUserSubmissions: step('sightings'),
       deleteUserOrganizationPermissions: step('permissions'),
+      retireUploadIdentity: step('uploadIdentity'),
     },
     accounts: { deleteUser: step('auth') },
   }
@@ -38,8 +39,18 @@ const request = (data: unknown, authTime = NOW - 60) => ({
 })
 
 it.each([
-  [true, ['email', 'analytics', 'permissions', 'sightings', 'auth']],
-  [false, ['email', 'analytics', 'permissions', 'auth']],
+  [
+    true,
+    [
+      'email',
+      'analytics',
+      'permissions',
+      'uploadIdentity',
+      'sightings',
+      'auth',
+    ],
+  ],
+  [false, ['email', 'analytics', 'permissions', 'uploadIdentity', 'auth']],
 ])('deleteSightings=%s erases in order: %j', async (deleteSightings, order) => {
   const { ports, calls } = fakePorts()
   await handleDeleteAccount(request({ deleteSightings }), ports, NOW)

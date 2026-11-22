@@ -278,3 +278,32 @@ hooks are now executable.
 **Verification:** Jest 561, rules 31, functions 75, emulator lane 17,
 gitleaks clean. Still unverified: live deploy and a device drive (no
 device or project credentials here).
+
+## 2026-11-22 — fix (persistent per-person limits)
+
+**Purpose:** Erasing and recreating an account, or adding a sign-in method
+with the same email, reset the cap and quota.
+**Change:** Limits move from a per-uid ledger to a per-person ledger that
+survives erasure. A person is found through write-once uid and
+HMAC-of-email pointers. The 250 cap now counts for life and is enforced at
+the metadata grant. Erasure retires the uid (`retireUploadIdentity`)
+instead of deleting the ledger. New secret: `UPLOAD_IDENTITY_KEY`. Design:
+ADR-0005's last 2026-11-22 amendment.
+**Tests:**
+
+- `uploads/__tests__/admission.test.ts`: bytes summed over a person's
+  uids and reservations; lifetime cap across accounts and erasures, with
+  no refund and pre-deploy metadata counted; `retireUid` folding;
+  `resolvePerson` for second sign-in methods, email changes, erasure and
+  case.
+- `uploads/__tests__/adaptersConcurrency.test.ts`: real adapters over a
+  generation-checked fake bucket. Concurrent first sign-ins share one
+  person; erase-and-recreate keeps the count; no address is stored.
+- `uploads/emulator-tests/admission.test.ts`: the same erase-and-recreate
+  path on the Auth and Storage emulators.
+- `__tests__/eraseAccount.test.ts`: the retire step runs before Sightings
+  are deleted and before the Auth user.
+
+**Deploy:** set the `UPLOAD_IDENTITY_KEY` Firebase secret before
+`admitPhotoUpload`. Never rotate it. Update the privacy notice: a keyed
+email hash and a Submission count outlive erasure.

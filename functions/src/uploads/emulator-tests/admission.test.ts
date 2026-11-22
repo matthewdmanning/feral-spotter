@@ -11,7 +11,10 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { deleteApp, initializeApp, type App } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
-import { createUploadAdmissionPorts } from '../adapters'
+import { getStorage } from 'firebase-admin/storage'
+import { createUploadAdmissionPorts, retireUploadIdentity } from '../adapters'
+import type { PersonLedger } from '../admission'
+import { UPLOAD_QUOTA_ROOT } from '../../submissionLayout'
 import { handleAdmitPhotoUpload } from '../admission'
 
 let app: App
@@ -33,14 +36,14 @@ function requireLoopback(name: string): string {
 }
 
 /** A fresh ID token, carrying the uid's current custom claims. */
-async function idToken(): Promise<string> {
+async function idToken(forUid = uid): Promise<string> {
   const response = await fetch(
     `${authOrigin}/identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=emulator-only`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        token: await getAuth().createCustomToken(uid),
+        token: await getAuth().createCustomToken(forUid),
         returnSecureToken: true,
       }),
     },
@@ -72,10 +75,10 @@ async function clientUpload(
   return response.status
 }
 
-const admitRequest = async (body: unknown) =>
+const admitRequest = async (body: unknown, forUid = uid) =>
   handleAdmitPhotoUpload(
-    { authorization: `Bearer ${await idToken()}`, body },
-    createUploadAdmissionPorts(bucketName),
+    { authorization: `Bearer ${await idToken(forUid)}`, body },
+    createUploadAdmissionPorts(bucketName, () => 'emulator-only-key'),
   )
 
 beforeAll(async () => {
@@ -142,7 +145,47 @@ test('a grant reaches a refreshed token and opens exactly the granted names', as
 })
 
 test('stored objects count against the next admission', async () => {
-  const ports = createUploadAdmissionPorts(bucketName)
-  const stored = await ports.listStored(uid)
+  const ports = createUploadAdmissionPorts(
+    bucketName,
+    () => 'emulator-only-key',
+  )
+  const stored = await ports.listStored([uid])
   expect(stored.get(`submissions/${uid}/${submissionId}/photo-0.jpg`)).toBe(3)
+})
+
+test('erasing the account and signing up again with the same email keeps the count', async () => {
+  const email = `admission-${process.pid}-${Date.now()}@example.test`
+  const first = `${uid}-first`
+  const second = `${uid}-second`
+  await getAuth().createUser({ uid: first, email })
+  const metadata = { submissionId: 'sub-erased', metadata: true }
+  expect((await admitRequest(metadata, first)).status).toBe(200)
+
+  // The erasure pipeline's upload steps, then the Auth user.
+  await retireUploadIdentity(bucketName, first, true)
+  await getStorage()
+    .bucket(bucketName)
+    .deleteFiles({ prefix: `submissions/${first}/` })
+  await getAuth().deleteUser(first)
+
+  await getAuth().createUser({ uid: second, email })
+  expect((await admitRequest(metadata, second)).status).toBe(200)
+
+  const [files] = await getStorage()
+    .bucket(bucketName)
+    .getFiles({ prefix: `${UPLOAD_QUOTA_ROOT}persons/` })
+  const people = await Promise.all(
+    files.map(
+      async (file) =>
+        JSON.parse((await file.download())[0].toString()) as PersonLedger,
+    ),
+  )
+  expect(people.filter((p) => p.uids.includes(second))).toEqual([
+    expect.objectContaining({
+      uids: [second],
+      submissions: [`${second}/sub-erased`],
+      retiredSubmissions: 1,
+    }),
+  ])
+  await getAuth().deleteUser(second)
 })

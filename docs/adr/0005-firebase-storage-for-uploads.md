@@ -307,3 +307,39 @@ client-written object.
 enforces `ifGenerationMatch`; the Storage emulator ignores it. An emulator
 test (`functions/src/uploads/emulator-tests/`) runs a real ID token, the
 real rules and the real handler end to end.
+
+## Amendment 2026-11-22: upload limits belong to a person and survive erasure
+
+Supersedes the per-uid ledger and "the 250-Submission cap stays soft" in the
+amendment above. Owner decisions: erasing and recreating an account, or
+adding a sign-in method with the same email, must not reset limits; the
+Submission cap counts for life; bytes stay live usage; the email is kept
+only as a keyed hash.
+
+- **Person.** Every uid that signs in with the same normalized email
+  (trimmed, lower-case). A uid keeps the person it was first bound to, so
+  an email change moves nothing; each new email it uses is bound to that
+  person if still free. No email: a person of its own (`uid-<uid>`).
+- **Index.** Write-once pointers (`ifGenerationMatch: 0`):
+  `upload-quota/uids/{uid}.json` and `upload-quota/emails/{key}.json` →
+  person id. `key` = HMAC-SHA256(secret `UPLOAD_IDENTITY_KEY`, email). The
+  ledger and index never store an address. Rotating the secret splits
+  every person from their history.
+- **Ledger.** `upload-quota/persons/{personId}/ledger.json`: `uids`,
+  per-uid `grants`, `submissions` (`uid/submissionId`) and
+  `retiredSubmissions`. CAS-written; admissions serialize per person.
+- **Cap: 250 Submissions per person, for life, hard.** A metadata grant for
+  a new Submission spends one; a resend of an admitted one does not.
+  Deleting a Submission refunds nothing. Stored `metadata.json` objects
+  the ledger never saw (pre-deploy) are counted at the next admission.
+  The `submissionCapReached` claim stays as a soft per-uid check.
+- **Bytes and objects: live, summed over the person's uids**, plus every
+  open reservation, any uid's.
+- **Erasure** (`retireUploadIdentity`, before Sightings are deleted): the
+  uid's grants and pointer go. If Sightings are deleted, its Submissions
+  fold into `retiredSubmissions`, so no id of it remains. Kept Sightings
+  stay stored and keep counting. The person ledger and email pointer stay.
+- **Residual.** A new email address is a new person; Submissions erased
+  before their uid ever reached the admission endpoint are not counted.
+- **Privacy.** The keyed hash, the person's other uids and a Submission
+  count outlive erasure. The privacy notice should say so.

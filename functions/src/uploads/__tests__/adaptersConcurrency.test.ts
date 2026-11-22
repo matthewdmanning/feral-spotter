@@ -1,17 +1,16 @@
 /**
  * The Storage emulator ignores `ifGenerationMatch`, so the emulator lane
- * cannot show the ledger adapter serializes admissions. This fakes GCS at
- * the Admin SDK boundary with real generations and the 412 precondition,
- * then runs the real adapter and handler (#486).
+ * cannot show the adapters serialize admissions or bind pointers once. This
+ * fakes GCS at the Admin SDK boundary with real generations and the 412
+ * precondition, then runs the real adapters and handler (#486).
  */
 import {
   MAX_PHOTO_BYTES,
   MAX_UPLOAD_BYTES_PER_UID,
   UPLOAD_GRANTS_CLAIM,
-  uploadQuotaLedgerPath,
 } from '../../submissionLayout'
-import { createUploadAdmissionPorts } from '../adapters'
-import { handleAdmitPhotoUpload } from '../admission'
+import { createUploadAdmissionPorts, retireUploadIdentity } from '../adapters'
+import { handleAdmitPhotoUpload, type PersonLedger } from '../admission'
 
 const mockObjects = new Map<string, { generation: number; text: string }>()
 const mockSizes = new Map<string, number>()
@@ -32,7 +31,11 @@ jest.mock('firebase-admin/storage', () => ({
         download: async () => {
           await tick()
           const value = mockObjects.get(path)
-          if (!value || options?.generation !== value.generation)
+          if (
+            !value ||
+            (options?.generation !== undefined &&
+              options.generation !== value.generation)
+          )
             throw notFound()
           return [Buffer.from(value.text)]
         },
@@ -48,6 +51,9 @@ jest.mock('firebase-admin/storage', () => ({
             throw Object.assign(new Error('precondition'), { code: 412 })
           mockObjects.set(path, { generation: generation + 1, text })
         },
+        delete: async () => {
+          mockObjects.delete(path)
+        },
       }),
       getFiles: async ({ prefix }: { prefix: string }) => [
         [...mockSizes]
@@ -59,7 +65,11 @@ jest.mock('firebase-admin/storage', () => ({
 }))
 jest.mock('firebase-admin/auth', () => ({
   getAuth: () => ({
-    verifyIdToken: async (token: string) => ({ uid: token }),
+    // Test tokens are "uid|email".
+    verifyIdToken: async (token: string) => {
+      const [uid, email] = token.split('|')
+      return { uid, email }
+    },
     getUser: async (uid: string) => ({
       uid,
       customClaims: mockClaims.get(uid),
@@ -73,16 +83,18 @@ jest.mock('firebase-admin/auth', () => ({
   }),
 }))
 
-const UID = 'uid-1'
-const ports = createUploadAdmissionPorts('bucket')
-const admitSlot = (submissionId: string) =>
+const EMAIL = 'me@example.com'
+const ports = createUploadAdmissionPorts('bucket', () => 'test-key')
+const admitAs = (uid: string, body: unknown, email = EMAIL) =>
   handleAdmitPhotoUpload(
-    {
-      authorization: `Bearer ${UID}`,
-      body: { submissionId, slot: 0, raw: false },
-    },
+    { authorization: `Bearer ${uid}|${email}`, body },
     ports,
   )
+const slot = (submissionId: string) => ({ submissionId, slot: 0, raw: false })
+const ledgers = (): PersonLedger[] =>
+  [...mockObjects]
+    .filter(([path]) => path.includes('/persons/'))
+    .map(([, { text }]) => JSON.parse(text) as PersonLedger)
 
 beforeEach(() => {
   mockObjects.clear()
@@ -92,28 +104,70 @@ beforeEach(() => {
 
 test('concurrent admissions retry the generation conflict and cannot overspend', async () => {
   mockSizes.set(
-    `submissions/${UID}/old/photo-0.jpg`,
+    'submissions/uid-1/old/photo-0.jpg',
     MAX_UPLOAD_BYTES_PER_UID - MAX_PHOTO_BYTES,
   )
 
-  const results = await Promise.all([admitSlot('s1'), admitSlot('s2')])
+  const results = await Promise.all([
+    admitAs('uid-1', slot('s1')),
+    admitAs('uid-1', slot('s2')),
+  ])
 
   expect(results.map((r) => r.status).sort()).toEqual([200, 429])
-  const ledger = JSON.parse(mockObjects.get(uploadQuotaLedgerPath(UID))!.text)
-  expect(Object.keys(ledger.grants)).toHaveLength(1)
+  const [ledger] = ledgers()
+  expect(Object.keys(ledger.grants['uid-1'])).toHaveLength(1)
   expect(
-    Object.keys(mockClaims.get(UID)![UPLOAD_GRANTS_CLAIM] as object),
-  ).toEqual(Object.keys(ledger.grants))
+    Object.keys(mockClaims.get('uid-1')![UPLOAD_GRANTS_CLAIM] as object),
+  ).toEqual(Object.keys(ledger.grants['uid-1']))
 })
 
-test('concurrent admissions with headroom both land in the ledger', async () => {
-  mockClaims.set(UID, { submissionCapReached: true })
-
-  const results = await Promise.all([admitSlot('s1'), admitSlot('s2')])
-
+test('two sign-in methods with one email share one ledger and one quota', async () => {
+  // Concurrent first admissions race to bind the same email pointer.
+  const results = await Promise.all([
+    admitAs('uid-google', slot('s1')),
+    admitAs('uid-password', slot('s2')),
+  ])
   expect(results.map((r) => r.status)).toEqual([200, 200])
-  const ledger = JSON.parse(mockObjects.get(uploadQuotaLedgerPath(UID))!.text)
-  expect(Object.keys(ledger.grants).sort()).toEqual(['s1', 's2'])
-  // Publishing keeps the uid's other claims.
-  expect(mockClaims.get(UID)).toMatchObject({ submissionCapReached: true })
+  expect(ledgers()).toHaveLength(1)
+  expect(ledgers()[0].uids.sort()).toEqual(['uid-google', 'uid-password'])
+
+  // One account's stored bytes leave no room for the other.
+  mockSizes.set(
+    'submissions/uid-google/s1/photo-1.jpg',
+    MAX_UPLOAD_BYTES_PER_UID,
+  )
+  expect((await admitAs('uid-password', slot('s3'))).status).toBe(429)
+
+  // Publishing keeps each uid's other claims.
+  mockSizes.clear()
+  mockClaims.set('uid-google', { submissionCapReached: true })
+  await admitAs('uid-google', slot('s1'))
+  expect(mockClaims.get('uid-google')).toMatchObject({
+    submissionCapReached: true,
+  })
+})
+
+test('erasing and recreating the account keeps the lifetime count', async () => {
+  const metadata = (submissionId: string) => ({ submissionId, metadata: true })
+  expect((await admitAs('uid-old', metadata('s1'))).status).toBe(200)
+
+  await retireUploadIdentity('bucket', 'uid-old', true)
+  await retireUploadIdentity('bucket', 'uid-old', true) // a retried erasure
+
+  expect((await admitAs('uid-new', metadata('s2'))).status).toBe(200)
+  expect(ledgers()).toEqual([
+    expect.objectContaining({
+      uids: ['uid-new'],
+      submissions: ['uid-new/s2'],
+      retiredSubmissions: 1,
+    }),
+  ])
+})
+
+test('the ledger and its index never hold the email address', async () => {
+  await admitAs('uid-1', slot('s1'), 'Me@Example.com')
+  expect(mockObjects.size).toBeGreaterThan(0)
+  expect(JSON.stringify([...mockObjects]).toLowerCase()).not.toContain(
+    'example.com',
+  )
 })

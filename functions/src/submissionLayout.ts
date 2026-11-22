@@ -7,7 +7,10 @@
 
 export const METADATA_FILE_NAME = 'metadata.json'
 
-/** Submissions per uid before storage.rules refuses a new metadata.json. */
+/**
+ * Submissions per person, for life (#486): admitPhotoUpload refuses the
+ * 251st metadata grant. storage.rules also checks a soft per-uid claim.
+ */
 export const MAX_SUBMISSIONS_PER_UID = 250
 
 /** Auth custom claim storage.rules reads for the Submission cap. */
@@ -85,9 +88,23 @@ export function fileNameForToken(token: string): string {
   return token === METADATA_FILE_NAME ? token : `photo-${token}`
 }
 
-/** Where one uid's quota ledger lives: outside submissions/, server-only. */
-export function uploadQuotaLedgerPath(uid: string): string {
-  return `upload-quota/${uid}/ledger.json`
+// Upload-limit state (#486), outside submissions/ and server-only. It
+// survives account erasure: limits belong to the person, not the account.
+export const UPLOAD_QUOTA_ROOT = 'upload-quota/'
+
+/** One person's ledger. */
+export function personLedgerPath(personId: string): string {
+  return `${UPLOAD_QUOTA_ROOT}persons/${personId}/ledger.json`
+}
+
+/** Write-once pointer from a keyed email hash to its person. */
+export function emailIndexPath(emailKey: string): string {
+  return `${UPLOAD_QUOTA_ROOT}emails/${emailKey}.json`
+}
+
+/** Write-once pointer from a uid to its person; removed at erasure. */
+export function uidIndexPath(uid: string): string {
+  return `${UPLOAD_QUOTA_ROOT}uids/${uid}.json`
 }
 
 /** Parses a Submission object path; null for anything else. */
