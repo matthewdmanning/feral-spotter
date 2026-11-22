@@ -11,10 +11,6 @@ import {
 } from '@react-native-firebase/auth'
 import { createFirebaseAuthProvider } from '@/src/features/auth/lib/firebaseAuthProvider'
 
-jest.mock('expo-constants', () => ({
-  __esModule: true,
-  default: { expoConfig: { version: '0.1.0' } },
-}))
 const firebaseUser = { uid: 'user-4', email: 'cat@example.com' }
 
 describe('Firebase auth provider', () => {

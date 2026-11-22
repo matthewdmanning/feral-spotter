@@ -10,14 +10,6 @@ import { router } from 'expo-router'
 import React from 'react'
 import SignInScreen from '@/src/features/auth/screens/sign-in/index'
 
-// Pin the app version at/above every provider's release tag so the federated
-// buttons are enabled and pressable in this suite. The gate logic itself is
-// covered by authProviders.test.ts.
-jest.mock('expo-constants', () => ({
-  __esModule: true,
-  default: { expoConfig: { version: '1.0.0' } },
-}))
-
 jest.mock('expo-router', () => ({
   router: { replace: jest.fn(), push: jest.fn() },
 }))

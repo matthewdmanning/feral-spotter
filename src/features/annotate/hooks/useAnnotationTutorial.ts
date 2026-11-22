@@ -5,7 +5,7 @@
  * entry only; a replay resets the status to 'unseen'.
  */
 
-import { isTutorialReleased } from '@/src/features/annotate/config/tutorial'
+import { FEATURE_FLAGS } from '@/src/shared/config/constants'
 import { useTutorialStore } from '@/src/features/annotate/hooks/useTutorialStore'
 import { EVENTS, captureEvent } from '@/src/shared/analytics/analytics'
 import { useState } from 'react'
@@ -16,7 +16,7 @@ export function useAnnotationTutorial() {
   const [startedAt, setStartedAt] = useState(0)
 
   return {
-    open: isTutorialReleased() && status === 'unseen',
+    open: FEATURE_FLAGS.annotationTutorial && status === 'unseen',
     onShow: () => {
       setStartedAt(Date.now())
       captureEvent(EVENTS.TUTORIAL_STARTED)

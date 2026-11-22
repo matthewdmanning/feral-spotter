@@ -5,20 +5,6 @@
  */
 
 import type { TutorialStep } from '@/src/shared/types/Tutorial'
-import { getAppVersion, isVersionReleased } from '@/src/shared/utils/appVersion'
-
-/**
- * Deferred to the Alpha milestone — see
- * docs/planning/2026-07-12-mvp-alpha-beta-roadmap.md, decision 10. Same
- * release-gate mechanism as the federated auth providers.
- */
-export const TUTORIAL_RELEASED_IN_VERSION = '1.0.0'
-
-export function isTutorialReleased(
-  appVersion: string = getAppVersion(),
-): boolean {
-  return __DEV__ || isVersionReleased(TUTORIAL_RELEASED_IN_VERSION, appVersion)
-}
 
 export const ANNOTATION_TUTORIAL_STEPS: TutorialStep[] = [
   {

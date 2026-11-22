@@ -162,9 +162,7 @@ builds a universal APK and an AAB for all four ABIs, prints the APK metadata
 `feral-spotter-<tag>.apk` and `feral-spotter-<tag>.aab` to the release.
 
 The applicationId is unchanged, because `google-services.json` is bound to it,
-so each APK installs over the other. Expo `version` stays `X.Y.Z`:
-`isVersionReleased` compares it with SemVer, and `-rc.N` sorts below `X.Y.Z`.
-Issue #484 replaces that gate with feature flags.
+so each APK installs over the other. Expo `version` stays `X.Y.Z`.
 
 A local build has no release env. It uses the latest `v*` tag as its version,
 or `0.0.0` when no tag exists, and `versionCode` 1.

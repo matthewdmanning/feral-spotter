@@ -81,7 +81,7 @@ First-run flow explaining the app's purpose and why each permission is needed. I
 _Avoid_: tutorial, walkthrough.
 
 **Tutorial**:
-In-feature guidance for a _complex_ operation — here, Box Annotation. Distinct from Onboarding. Implemented, version-gated (`isTutorialReleased()` in `src/features/annotate/config/tutorial.ts`). Per-device status in `useTutorialStore` as `annotation_tutorial_status`: `unseen` opens it on first Box Annotation entry; `skipped`/`completed` keep it closed. No replay path yet (matthewdmanning/feral-spotter#386).
+In-feature guidance for a _complex_ operation — here, Box Annotation. Distinct from Onboarding. Implemented, gated by the `annotationTutorial` feature flag (`FEATURE_FLAGS` in `src/shared/config/constants.ts`). Per-device status in `useTutorialStore` as `annotation_tutorial_status`: `unseen` opens it on first Box Annotation entry; `skipped`/`completed` keep it closed. No replay path yet (matthewdmanning/feral-spotter#386).
 _Avoid_: this word for anything in Onboarding.
 
 **Box Annotation**:

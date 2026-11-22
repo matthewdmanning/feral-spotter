@@ -8,9 +8,10 @@ import {
   PHOTO_TOGGLES,
   visiblePhotoToggles,
 } from '@/src/features/settings/config/photoToggles'
+import { FEATURE_FLAGS } from '@/src/shared/config/constants'
 
-const FLAGS_OFF = { experimentalCamera: false }
-const FLAGS_ON = { experimentalCamera: true }
+const FLAGS_OFF = { ...FEATURE_FLAGS, experimentalCamera: false }
+const FLAGS_ON = { ...FEATURE_FLAGS, experimentalCamera: true }
 
 it.each(['android', 'ios'])(
   'a build with flags off shows only the unflagged toggles for %s',
