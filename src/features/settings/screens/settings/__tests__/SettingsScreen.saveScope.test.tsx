@@ -10,14 +10,20 @@ jest.mock('expo-router', () => ({
   router: { back: jest.fn(), push: jest.fn() },
 }))
 
-const mutableFeatureFlags = FEATURE_FLAGS as { experimentalCamera: boolean }
+const mutableFeatureFlags = FEATURE_FLAGS as {
+  experimentalCamera: boolean
+  emailUpdates: boolean
+}
 const originalExperimentalCamera = mutableFeatureFlags.experimentalCamera
+const originalEmailUpdates = mutableFeatureFlags.emailUpdates
 
 afterEach(() => {
   mutableFeatureFlags.experimentalCamera = originalExperimentalCamera
+  mutableFeatureFlags.emailUpdates = originalEmailUpdates
 })
 
 it('applies a photo toggle and an instant choice to their stores at once', async () => {
+  mutableFeatureFlags.emailUpdates = true
   useAuthStore.setState({
     user: { uid: 'owner', email: 'observer@example.test' },
     isReady: true,

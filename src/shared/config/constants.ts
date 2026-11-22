@@ -32,6 +32,10 @@ export const FEATURE_FLAGS = {
   facebookSignIn: false,
   /** Alpha milestone (docs/planning/2026-07-12-mvp-alpha-beta-roadmap.md, decision 10). On in development. */
   annotationTutorial: __DEV__,
+  /** Off: hides the email opt-in step and the Settings toggle. */
+  emailUpdates: false,
+  /** On when EXPO_PUBLIC_ORGANIZATIONS is "true" at bundle time. Off falls back to the PostHog rollout. */
+  organizations: process.env.EXPO_PUBLIC_ORGANIZATIONS === 'true',
 } as const
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS

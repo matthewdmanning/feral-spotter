@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import Constants from 'expo-constants'
 import { randomUUID } from 'expo-crypto'
 import { asyncStorage } from '@/src/shared/lib/storage'
+import { FEATURE_FLAGS } from '@/src/shared/config/constants'
 
 interface FlagState {
   enabled: boolean
@@ -17,6 +18,11 @@ export const useOrganizationsFlag = create<FlagState>((set) => ({
     if (inFlight) return inFlight
     inFlight = (async () => {
       try {
+        // The build-time flag releases Organizations without PostHog.
+        if (FEATURE_FLAGS.organizations) {
+          set({ enabled: true })
+          return
+        }
         const apiKey = Constants.expoConfig?.extra?.posthogProjectToken as
           string | undefined
         const host = Constants.expoConfig?.extra?.posthogHost as

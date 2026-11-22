@@ -132,12 +132,16 @@ export default function SettingsScreen() {
 
           <GlassSurface kind="card" style={styles.card}>
             <Text style={styles.cardTitle}>{settingsCopy.communications}</Text>
-            <ToggleRow
-              label={settingsCopy.emailUpdates}
-              value={emailOptIn}
-              onValueChange={saveEmailOptIn}
-            />
-            <View style={styles.divider} />
+            {FEATURE_FLAGS.emailUpdates && (
+              <>
+                <ToggleRow
+                  label={settingsCopy.emailUpdates}
+                  value={emailOptIn}
+                  onValueChange={saveEmailOptIn}
+                />
+                <View style={styles.divider} />
+              </>
+            )}
             <Text style={styles.hint}>
               {formatCopy(settingsCopy.yourEmailTemplate, {
                 email: accountEmail ?? commonCopy.notAvailable,
