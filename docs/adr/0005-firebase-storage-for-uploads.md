@@ -298,6 +298,12 @@ release bucket.
   force-refreshes its ID token. Unset, photo uploads fail.
 - Account erasure deletes the ledger with the uid's Submissions.
 
-**Not covered.** `metadata.json` stays on the rules path under the soft
-250 cap: past it, a stale claim admits new 256 KiB objects for up to an
-hour.
+**metadata.json.** Also needs a grant (token `metadata.json`, reserves
+256 KiB), asked for with `{ submissionId, metadata: true }`. The soft
+250 cap claim still applies on top. The quota therefore covers every
+client-written object.
+
+**Verification.** The ledger adapter is tested against a fake bucket that
+enforces `ifGenerationMatch`; the Storage emulator ignores it. An emulator
+test (`functions/src/uploads/emulator-tests/`) runs a real ID token, the
+real rules and the real handler end to end.

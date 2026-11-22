@@ -28,17 +28,40 @@ const EXPIRY_MARGIN_MS = 60 * 1000
  * when a grant is held: a token can lose a grant to an out-of-order claim
  * write, and the server then republishes the full set.
  */
-export async function admitPhotoUpload(
+export function admitPhotoUpload(
   submissionId: string,
   slot: number,
   raw: boolean,
-  { force = false }: { force?: boolean } = {},
+  options: { force?: boolean } = {},
 ): Promise<void> {
-  const key = `${submissionId}/${slot}/${raw}`
+  return requestGrant(
+    `${submissionId}/${slot}/${raw}`,
+    { submissionId, slot, raw },
+    options,
+  )
+}
+
+/** Use this function before writing a Submission's metadata.json. */
+export function admitMetadataUpload(
+  submissionId: string,
+  options: { force?: boolean } = {},
+): Promise<void> {
+  return requestGrant(
+    `${submissionId}/metadata`,
+    { submissionId, metadata: true },
+    options,
+  )
+}
+
+async function requestGrant(
+  key: string,
+  request: Record<string, unknown>,
+  { force = false }: { force?: boolean },
+): Promise<void> {
   if (!force && (held.get(key) ?? 0) - EXPIRY_MARGIN_MS > Date.now()) return
   if (!UPLOAD_ADMISSION_URL) {
     throw new Error(
-      '[uploadAdmission] EXPO_PUBLIC_UPLOAD_ADMISSION_URL is not set; storage.rules refuses photos without a grant',
+      '[uploadAdmission] EXPO_PUBLIC_UPLOAD_ADMISSION_URL is not set; storage.rules refuses uploads without a grant',
     )
   }
   const user = getAuth().currentUser
@@ -49,7 +72,7 @@ export async function admitPhotoUpload(
       Authorization: `Bearer ${await user.getIdToken(false)}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ submissionId, slot, raw }),
+    body: JSON.stringify(request),
   })
   if (!response.ok) {
     const body = (await response.json().catch(() => null)) as {

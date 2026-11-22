@@ -47,7 +47,10 @@ import {
   submissionFolder,
 } from '@/src/features/draft-submission/lib/upload/submissionLayout'
 import { extensionOf } from '@/src/shared/utils/photoFormat'
-import { admitPhotoUpload } from '@/src/features/draft-submission/lib/upload/uploadAdmission'
+import {
+  admitMetadataUpload,
+  admitPhotoUpload,
+} from '@/src/features/draft-submission/lib/upload/uploadAdmission'
 
 const BUCKET_URL = 'gs://project-e3d5659d-bc4f-438f-88c.firebasestorage.app'
 
@@ -278,10 +281,21 @@ export async function uploadSubmissionMetadata(
 
   const objectPath = metadataObjectPath(uid, submissionId)
   const reference = getSubmissionRef(objectPath)
+  const write = () =>
+    uploadString(reference, JSON.stringify(payload), 'raw', {
+      contentType: 'application/json',
+    })
 
-  await uploadString(reference, JSON.stringify(payload), 'raw', {
-    contentType: 'application/json',
-  })
+  // #486: metadata.json counts against the quota, so it needs a grant too.
+  await admitMetadataUpload(submissionId)
+  try {
+    await write()
+  } catch (error) {
+    if ((error as { code?: string }).code !== 'storage/unauthorized')
+      throw error
+    await admitMetadataUpload(submissionId, { force: true })
+    await write()
+  }
 }
 
 /**

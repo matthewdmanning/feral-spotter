@@ -49,8 +49,11 @@ service firebase.storage {
 
       // Final submission (cats + submission metadata), one small JSON blob
       // per submission.
+      // Like a photo, metadata.json needs an upload grant (#486), so it is
+      // counted against the uid's hard quota before it lands.
       function isValidMetadataWrite() {
-        return request.resource.size < 256 * 1024
+        return hasUploadGrant()
+               && request.resource.size < 256 * 1024
                // Not exact equality — native uploadString() may send
                // 'application/json; charset=utf-8', which exact match denies.
                && request.resource.contentType.matches('application/json(;.*)?')
@@ -102,8 +105,9 @@ service firebase.storage {
                );
       }
 
-      // Grant tokens drop the 'photo-' prefix ('3.jpg') to fit Auth's
-      // 1000-byte claim limit; grantToken() in functions/ matches this.
+      // Grant tokens drop the 'photo-' prefix ('3.jpg'; 'metadata.json' as is)
+      // to fit Auth's 1000-byte claim limit. grantToken() in functions/
+      // matches this.
       function hasUploadGrant() {
         let grant = request.auth.token.get('uploadGrants', {}).get(submissionId, null);
         return grant != null

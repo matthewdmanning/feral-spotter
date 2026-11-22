@@ -68,12 +68,21 @@ export const UPLOAD_GRANT_TTL_MS = 30 * 60 * 1000
 /** Open grants per uid. Bounds the claim under Auth's 1000-byte limit. */
 export const MAX_GRANTED_SUBMISSIONS = 3
 
+/** storage.rules' metadata.json bound; a metadata grant reserves it. */
+export const MAX_METADATA_BYTES = 256 * 1024
+
 /**
- * Use this function to turn a photo file name into its grant token:
- * `photo-3.jpg` → `3.jpg`. storage.rules derives the same token.
+ * Use this function to turn a file name into its grant token:
+ * `photo-3.jpg` → `3.jpg`, `metadata.json` unchanged. storage.rules derives
+ * the same token.
  */
 export function grantToken(fileName: string): string {
   return fileName.replace(/^photo-/, '')
+}
+
+/** Use this function to invert grantToken. */
+export function fileNameForToken(token: string): string {
+  return token === METADATA_FILE_NAME ? token : `photo-${token}`
 }
 
 /** Where one uid's quota ledger lives: outside submissions/, server-only. */

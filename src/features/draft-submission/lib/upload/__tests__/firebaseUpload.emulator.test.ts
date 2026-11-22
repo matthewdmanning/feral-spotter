@@ -1,5 +1,3 @@
-import type { SubmissionApiPayload } from '@/src/shared/types'
-
 // USE_FIREBASE_EMULATOR is a module-level const baked in at first import, so
 // asserting both the on/off branches needs a fresh module per test —
 // jest.resetModules() + require() (not `import`, which needs
@@ -32,12 +30,12 @@ describe('firebaseUpload emulator wiring', () => {
     process.env.EXPO_PUBLIC_USE_FIREBASE_EMULATOR = 'true'
     process.env.EXPO_PUBLIC_FIREBASE_EMULATOR_HOST = 'test-host'
 
-    const { uploadSubmissionMetadata } = loadFirebaseUpload()
+    const { deleteSubmissionPhoto } = loadFirebaseUpload()
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- see file-header comment
     const { connectStorageEmulator } = require('@react-native-firebase/storage')
 
-    await uploadSubmissionMetadata({} as SubmissionApiPayload, 'uid1', 'sub1')
-    await uploadSubmissionMetadata({} as SubmissionApiPayload, 'uid1', 'sub2')
+    await deleteSubmissionPhoto('submissions/uid1/sub1/photo-0.jpg')
+    await deleteSubmissionPhoto('submissions/uid1/sub2/photo-0.jpg')
 
     expect(connectStorageEmulator).toHaveBeenCalledTimes(1)
     expect(connectStorageEmulator).toHaveBeenCalledWith(
@@ -48,11 +46,11 @@ describe('firebaseUpload emulator wiring', () => {
   })
 
   it('does not connect to the emulator when the flag is unset', async () => {
-    const { uploadSubmissionMetadata } = loadFirebaseUpload()
+    const { deleteSubmissionPhoto } = loadFirebaseUpload()
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- see file-header comment
     const { connectStorageEmulator } = require('@react-native-firebase/storage')
 
-    await uploadSubmissionMetadata({} as SubmissionApiPayload, 'uid1', 'sub1')
+    await deleteSubmissionPhoto('submissions/uid1/sub1/photo-0.jpg')
 
     expect(connectStorageEmulator).not.toHaveBeenCalled()
     expect(fetch).not.toHaveBeenCalled()
@@ -62,9 +60,9 @@ describe('firebaseUpload emulator wiring', () => {
     process.env.EXPO_PUBLIC_USE_FIREBASE_EMULATOR = 'true'
     process.env.EXPO_PUBLIC_FIREBASE_EMULATOR_HOST = 'test-host'
 
-    const { uploadSubmissionMetadata } = loadFirebaseUpload()
+    const { deleteSubmissionPhoto } = loadFirebaseUpload()
 
-    await uploadSubmissionMetadata({} as SubmissionApiPayload, 'uid1', 'sub1')
+    await deleteSubmissionPhoto('submissions/uid1/sub1/photo-0.jpg')
 
     expect(fetch).toHaveBeenCalledWith('http://test-host:9199')
   })
@@ -74,9 +72,9 @@ describe('firebaseUpload emulator wiring', () => {
     process.env.EXPO_PUBLIC_FIREBASE_EMULATOR_HOST = 'test-host'
     jest.mocked(fetch).mockRejectedValue(new Error('ECONNREFUSED'))
 
-    const { uploadSubmissionMetadata } = loadFirebaseUpload()
+    const { deleteSubmissionPhoto } = loadFirebaseUpload()
 
-    await uploadSubmissionMetadata({} as SubmissionApiPayload, 'uid1', 'sub1')
+    await deleteSubmissionPhoto('submissions/uid1/sub1/photo-0.jpg')
     // The reachability ping is fire-and-forget — let its rejection settle.
     await new Promise<void>((resolve) => setImmediate(resolve))
 

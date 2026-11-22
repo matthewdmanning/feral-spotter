@@ -63,6 +63,29 @@ describe('Firebase submission upload behavior', () => {
     )
   })
 
+  it('asks for a metadata grant before writing metadata.json (#486)', async () => {
+    admission.mockResolvedValueOnce({
+      ok: false,
+      status: 429,
+      json: async () => ({ error: 'quota_exceeded' }),
+    } as Response)
+
+    await expect(
+      uploadSubmissionMetadata(
+        { id: 'sub-7' } as unknown as SubmissionApiPayload,
+        'user-4',
+        'sub-7',
+      ),
+    ).rejects.toMatchObject({ status: 429, reason: 'quota_exceeded' })
+    expect(admission).toHaveBeenCalledWith(
+      'https://admission.test/',
+      expect.objectContaining({
+        body: JSON.stringify({ submissionId: 'sub-7', metadata: true }),
+      }),
+    )
+    expect(uploadString).not.toHaveBeenCalled()
+  })
+
   it('preserves existing custom metadata and stamps finalized fields and camera settings', async () => {
     jest.mocked(getMetadata).mockResolvedValueOnce({
       timeCreated: '2026-04-02T03:04:05.000Z',

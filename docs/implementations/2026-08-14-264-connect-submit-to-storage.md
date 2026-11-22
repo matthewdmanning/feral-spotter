@@ -258,3 +258,23 @@ emulator test drive, device drive, real GCS `ifGenerationMatch`.
 **Deploy:** deploy `admitPhotoUpload` and `storage.rules` together; set
 the `EXPO_PUBLIC_UPLOAD_ADMISSION_URL` release secret. Older app builds
 cannot upload photos once the rules deploy.
+
+## 2026-11-22 — fix (follow-up)
+
+**Purpose:** Close gaps left by the quota change above.
+**Change:** `metadata.json` now needs a grant and counts against the quota.
+Ledger adapters moved to `functions/src/uploads/adapters.ts`. Repo git
+hooks are now executable.
+**Tests:**
+
+- `uploads/__tests__/adaptersConcurrency.test.ts`: real adapter and handler
+  over a fake bucket with real generation preconditions; concurrent
+  admissions cannot overspend, and claims keep other entries.
+- `uploads/emulator-tests/admission.test.ts` (runs in
+  `npm run test:organizations:emulator`): real token, rules and handler;
+  only granted names open. A rule that skips the grant fails it.
+- Rules and behavior tests: metadata without a grant is refused.
+
+**Verification:** Jest 561, rules 31, functions 75, emulator lane 17,
+gitleaks clean. Still unverified: live deploy and a device drive (no
+device or project credentials here).

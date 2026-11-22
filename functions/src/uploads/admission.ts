@@ -16,18 +16,21 @@
 import { validId } from '../organizations/domain'
 import {
   MAX_GRANTED_SUBMISSIONS,
+  MAX_METADATA_BYTES,
   MAX_PHOTO_BYTES,
   MAX_RAW_PHOTO_BYTES,
   MAX_UPLOAD_BYTES_PER_UID,
   MAX_UPLOAD_OBJECTS_PER_UID,
+  METADATA_FILE_NAME,
   UPLOAD_GRANT_TTL_MS,
+  fileNameForToken,
   grantToken,
   photoFileName,
   rawPhotoFileName,
   submissionPrefix,
 } from '../submissionLayout'
 
-/** Grant tokens (`3.jpg`, `3.dng`) for one Submission, writable until `e` (epoch ms). */
+/** Grant tokens (`3.jpg`, `3.dng`, `metadata.json`) for one Submission, writable until `e` (epoch ms). */
 export interface SubmissionGrant {
   e: number
   f: string[]
@@ -36,10 +39,10 @@ export type UploadGrants = Record<string, SubmissionGrant>
 export interface QuotaLedger {
   grants: UploadGrants
 }
+/** One Submission and the grant tokens asked for. */
 export interface AdmitRequest {
   submissionId: string
-  slot: number
-  raw: boolean
+  tokens: string[]
 }
 
 // A resumable upload started under a grant can finish after the grant ends.
@@ -67,23 +70,54 @@ export function liveGrants(grants: UploadGrants, now: number): UploadGrants {
   )
 }
 
-/** Use this function to validate an admission request body. */
+/**
+ * Use this function to validate an admission request body: a photo slot,
+ * `{ submissionId, slot, raw }`, or the final metadata,
+ * `{ submissionId, metadata: true }`.
+ */
 export function parseAdmitRequest(body: unknown): AdmitRequest {
-  const value = body as Partial<AdmitRequest> | null
+  const value = body as {
+    submissionId?: unknown
+    slot?: unknown
+    raw?: unknown
+    metadata?: unknown
+  } | null
+  if (!value || !validId(value.submissionId))
+    throw new AdmissionError(400, 'invalid_request')
+  const { submissionId } = value
+  if (value.metadata !== undefined) {
+    if (
+      value.metadata !== true ||
+      value.slot !== undefined ||
+      value.raw !== undefined
+    )
+      throw new AdmissionError(400, 'invalid_request')
+    return { submissionId, tokens: [grantToken(METADATA_FILE_NAME)] }
+  }
+  const { slot, raw } = value
   if (
-    !value ||
-    !validId(value.submissionId) ||
-    !Number.isInteger(value.slot) ||
-    (value.slot as number) < 0 ||
-    (value.slot as number) >= SLOTS ||
-    typeof value.raw !== 'boolean'
+    typeof slot !== 'number' ||
+    !Number.isInteger(slot) ||
+    slot < 0 ||
+    slot >= SLOTS ||
+    typeof raw !== 'boolean'
   )
     throw new AdmissionError(400, 'invalid_request')
-  return value as AdmitRequest
+  return {
+    submissionId,
+    tokens: [
+      grantToken(photoFileName(slot)),
+      ...(raw ? [grantToken(rawPhotoFileName(slot))] : []),
+    ],
+  }
 }
 
 const reservedBytes = (token: string) =>
-  token.endsWith('.dng') ? MAX_RAW_PHOTO_BYTES : MAX_PHOTO_BYTES
+  token === METADATA_FILE_NAME
+    ? MAX_METADATA_BYTES
+    : token.endsWith('.dng')
+      ? MAX_RAW_PHOTO_BYTES
+      : MAX_PHOTO_BYTES
 
 /**
  * Use this function to decide one admission. `stored` maps each of the
@@ -102,10 +136,7 @@ export function admit(
       ([, grant]) => grant.e + RESERVATION_MS > now,
     ),
   )
-  const tokens = [
-    grantToken(photoFileName(request.slot)),
-    ...(request.raw ? [grantToken(rawPhotoFileName(request.slot))] : []),
-  ]
+  const { tokens } = request
   const current = grants[request.submissionId]
   grants[request.submissionId] = {
     e: now + UPLOAD_GRANT_TTL_MS,
@@ -117,7 +148,7 @@ export function admit(
   const usage = new Map(stored)
   for (const [submissionId, grant] of Object.entries(grants)) {
     for (const token of grant.f) {
-      const name = `${submissionPrefix(uid, submissionId)}photo-${token}`
+      const name = `${submissionPrefix(uid, submissionId)}${fileNameForToken(token)}`
       usage.set(name, Math.max(usage.get(name) ?? 0, reservedBytes(token)))
     }
   }

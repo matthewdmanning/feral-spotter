@@ -30,8 +30,8 @@ off-limits" below before touching anything Firestore-shaped.
     2026-11-22 amendment): photo bytes need the `uploadGrants` claim,
     issued only by the `admitPhotoUpload` function after it counts the
     object. Admissions serialize through `upload-quota/{uid}/ledger.json`.
-    The app needs `EXPO_PUBLIC_UPLOAD_ADMISSION_URL`. `metadata.json` is
-    outside the quota.
+    The app needs `EXPO_PUBLIC_UPLOAD_ADMISSION_URL`. `metadata.json` needs
+    a grant too.
 - **Final submission (cats + metadata)**: uploaded to Cloud Storage as
   `metadata.json` alongside the photos — see
   [ADR-0005](../adr/0005-firebase-storage-for-uploads.md). Not a database

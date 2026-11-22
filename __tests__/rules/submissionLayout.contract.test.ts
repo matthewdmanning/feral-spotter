@@ -65,7 +65,8 @@ afterAll(() => testEnv.cleanup())
 // The grant functions/ would issue for this name (#486).
 const grantClaims = (name: string) => {
   const object = parseSubmissionObject(name)
-  return object && isSubmissionPhotoFileName(object.fileName)
+  return object &&
+    (object.isMetadata || isSubmissionPhotoFileName(object.fileName))
     ? {
         [UPLOAD_GRANTS_CLAIM]: {
           [object.submissionId]: {

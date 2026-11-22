@@ -87,8 +87,16 @@ const photoOf = (
   claims: Record<string, unknown> | null = grantFor(sub),
 ) =>
   objectAt(uid, `submissions/${OWNER_UID}/${sub}/${file}`, claims ?? undefined)
-const metadataOf = (claims?: Record<string, unknown>, sub = 'sub-1') =>
-  objectAt(OWNER_UID, `submissions/${OWNER_UID}/${sub}/metadata.json`, claims)
+// Holds a metadata grant unless `granted` is false (#486).
+const metadataOf = (
+  claims?: Record<string, unknown>,
+  sub = 'sub-1',
+  granted = true,
+) =>
+  objectAt(OWNER_UID, `submissions/${OWNER_UID}/${sub}/metadata.json`, {
+    ...(granted ? grantFor(sub, ['metadata.json']) : {}),
+    ...claims,
+  })
 
 describe('storage.rules — photos', () => {
   it('lets the owner upload a valid image into a slot', async () => {
@@ -270,6 +278,19 @@ describe('storage.rules — upload grants', () => {
 })
 
 describe('storage.rules — metadata.json', () => {
+  it('refuses metadata.json without a grant, even under the cap (#486)', async () => {
+    await assertFails(
+      uploadBytes(metadataOf(undefined, 'sub-1', false), SMALL_JSON, JSON_TYPE),
+    )
+    await assertFails(
+      uploadBytes(
+        metadataOf(grantFor('sub-1', ['0.jpg'])),
+        SMALL_JSON,
+        JSON_TYPE,
+      ),
+    )
+  })
+
   it('accepts JSON, with or without a charset suffix', async () => {
     await assertSucceeds(uploadBytes(metadataOf(), SMALL_JSON, JSON_TYPE))
     await assertSucceeds(

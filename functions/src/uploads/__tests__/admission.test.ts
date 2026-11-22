@@ -1,5 +1,6 @@
 import {
   MAX_GRANTED_SUBMISSIONS,
+  MAX_METADATA_BYTES,
   MAX_PHOTO_BYTES,
   MAX_UPLOAD_BYTES_PER_UID,
   MAX_UPLOAD_OBJECTS_PER_UID,
@@ -10,6 +11,7 @@ import {
   RESERVATION_MS,
   admit,
   handleAdmitPhotoUpload,
+  parseAdmitRequest,
   type AdmissionPorts,
   type QuotaLedger,
   type UploadGrants,
@@ -26,6 +28,8 @@ const NOW = 1_800_000_000_000
 const empty: QuotaLedger = { grants: {} }
 const photo = (sub: string, file: string) =>
   `${submissionPrefix(UID, sub)}${file}`
+const req = (submissionId: string, slot: number, raw: boolean) =>
+  parseAdmitRequest({ submissionId, slot, raw })
 
 /** Stored objects that leave exactly `headroom` bytes under the quota. */
 function storedWithHeadroom(headroom: number): Map<string, number> {
@@ -36,26 +40,49 @@ function storedWithHeadroom(headroom: number): Map<string, number> {
 
 describe('admit', () => {
   it('reserves the per-object maximum for each granted name', () => {
-    const grants = admit(
-      UID,
-      empty,
-      new Map(),
-      { submissionId: 's1', slot: 3, raw: true },
-      NOW,
-    )
+    const grants = admit(UID, empty, new Map(), req('s1', 3, true), NOW)
     expect(grants).toEqual({
       s1: { e: NOW + UPLOAD_GRANT_TTL_MS, f: ['3.jpg', '3.dng'] },
     })
   })
 
   it('counts orphaned photos and refuses a grant past the byte quota', () => {
-    const request = { submissionId: 's1', slot: 0, raw: false }
+    const request = req('s1', 0, false)
     expect(() =>
       admit(UID, empty, storedWithHeadroom(MAX_PHOTO_BYTES), request, NOW),
     ).not.toThrow()
     expect(() =>
       admit(UID, empty, storedWithHeadroom(MAX_PHOTO_BYTES - 1), request, NOW),
     ).toThrow('quota_exceeded')
+  })
+
+  it('counts metadata.json against the quota like any other object', () => {
+    const metadata = parseAdmitRequest({ submissionId: 's1', metadata: true })
+    expect(metadata.tokens).toEqual(['metadata.json'])
+    expect(() =>
+      admit(UID, empty, storedWithHeadroom(MAX_METADATA_BYTES), metadata, NOW),
+    ).not.toThrow()
+    expect(() =>
+      admit(
+        UID,
+        empty,
+        storedWithHeadroom(MAX_METADATA_BYTES - 1),
+        metadata,
+        NOW,
+      ),
+    ).toThrow('quota_exceeded')
+    // Its reservation lands on the metadata name, not a photo name.
+    const grants = admit(UID, empty, new Map(), metadata, NOW)
+    const resent = new Map([[photo('s1', 'metadata.json'), MAX_METADATA_BYTES]])
+    expect(() =>
+      admit(
+        UID,
+        { grants },
+        new Map([...resent, ...storedWithHeadroom(MAX_METADATA_BYTES)]),
+        metadata,
+        NOW,
+      ),
+    ).not.toThrow()
   })
 
   it('refuses a grant past the object quota', () => {
@@ -65,29 +92,17 @@ describe('admit', () => {
         1,
       ]),
     )
-    expect(() =>
-      admit(
-        UID,
-        empty,
-        stored,
-        { submissionId: 'new', slot: 0, raw: false },
-        NOW,
-      ),
-    ).toThrow('quota_exceeded')
+    expect(() => admit(UID, empty, stored, req('new', 0, false), NOW)).toThrow(
+      'quota_exceeded',
+    )
     // Overwriting an object already stored adds none.
     expect(() =>
-      admit(
-        UID,
-        empty,
-        stored,
-        { submissionId: 's0', slot: 0, raw: false },
-        NOW,
-      ),
+      admit(UID, empty, stored, req('s0', 0, false), NOW),
     ).not.toThrow()
   })
 
   it('counts a re-admitted slot once', () => {
-    const request = { submissionId: 's1', slot: 0, raw: false }
+    const request = req('s1', 0, false)
     const first = admit(
       UID,
       empty,
@@ -107,7 +122,7 @@ describe('admit', () => {
   })
 
   it('keeps a reservation after its grant ends, until a resumable session would have', () => {
-    const request = { submissionId: 'other', slot: 0, raw: false }
+    const request = req('other', 0, false)
     const ended: UploadGrants = { s1: { e: NOW, f: ['0.jpg'] } }
     const stored = storedWithHeadroom(MAX_PHOTO_BYTES)
     expect(() =>
@@ -121,21 +136,9 @@ describe('admit', () => {
   it('limits open Submissions so the claim fits', () => {
     let grants: UploadGrants = {}
     for (let i = 0; i < MAX_GRANTED_SUBMISSIONS; i++)
-      grants = admit(
-        UID,
-        { grants },
-        new Map(),
-        { submissionId: `s${i}`, slot: 0, raw: false },
-        NOW,
-      )
+      grants = admit(UID, { grants }, new Map(), req(`s${i}`, 0, false), NOW)
     expect(() =>
-      admit(
-        UID,
-        { grants },
-        new Map(),
-        { submissionId: 'extra', slot: 0, raw: false },
-        NOW,
-      ),
+      admit(UID, { grants }, new Map(), req('extra', 0, false), NOW),
     ).toThrow('too_many_open_submissions')
     // An ended grant no longer occupies the claim.
     expect(() =>
@@ -143,7 +146,7 @@ describe('admit', () => {
         UID,
         { grants },
         new Map(),
-        { submissionId: 'extra', slot: 0, raw: false },
+        req('extra', 0, false),
         NOW + UPLOAD_GRANT_TTL_MS,
       ),
     ).not.toThrow()
@@ -217,6 +220,7 @@ describe('handleAdmitPhotoUpload', () => {
       { submissionId: 's', slot: 10, raw: false },
       { submissionId: '../x', slot: 0, raw: false },
       { submissionId: 's', slot: 0 },
+      { submissionId: 's', slot: 0, raw: false, metadata: true },
     ])
       expect((await call(ports, body)).status).toBe(400)
   })
