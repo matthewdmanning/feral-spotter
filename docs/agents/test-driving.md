@@ -10,6 +10,16 @@ Reports must be filed under `docs/test-drives`. Any screen captures must be save
 
 Check that PostHog analytics only fires with consent (unchecking analytics-consent must prevent `PostHogProvider` from mounting — no `posthog`/`[analytics]`/`captureEvent(`/`captureException(`/`fireAnalyticsEvent`). **Note the channel:** these calls surface in Metro's JSONL log (`.expo/dev/logs/start.log`, `metro:client_log` entries), not in `adb logcat` — `logcat` will show nothing even when the check is failing. Also check that GPS/location capture is actually firing (`startLocationCapture`/`[location]`/`FusedLocationProvider`/`GnssLocationProvider`/`LocationManagerService`/`watchPositionAsync`) — this one genuinely is in `logcat`, unfiltered (not pid-scoped — the location provider logs come from system processes, not the app's own pid). Write findings to a dated file in `docs/test-drives/run-notes/` (create the folder on first use). Every file written or updated during an emulator run — run-notes, punchlists, any other working doc — must record the git state it was tested against (`git rev-parse HEAD` + `git branch --show-current`) near the top.
 
+## Permission and consent prompts
+
+Approve every prompt yourself during a drive. Do not ask the user first.
+
+- Tap through the app's own consent screens: data agreement, analytics consent, and any other step in the consent flow.
+- Tap "Allow" on Android permission dialogs: location ("While using the app"), camera, photos and media, notifications.
+- Tap the dialog with `emulator_tools/tapd.sh` or `drive.sh`. Do not grant with `adb shell pm grant`; the drive must exercise the dialogs.
+- Analytics consent: first confirm that no analytics event fires (see "Every emulator run"). Then accept.
+- Ask the user only when a prompt needs a credential or a choice this file does not cover.
+
 ## Before every physical-device/emulator run: enable Firebase debug logging
 
 Native Firebase SDK logs (Storage, Auth) are silent by default — a failed
