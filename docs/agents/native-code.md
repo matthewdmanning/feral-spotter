@@ -119,15 +119,11 @@ carefully it was read.
 ## 6. Building
 
 ```bash
-npm run preandroid   # restart adb, clear app storage — do this first
-npm run android      # scripts/run-android.sh -> npx expo run:android
+npm run android      # npx expo run:android
 npm run ios          # Mac only
 ```
 
-`scripts/run-android.sh` layers `.env.android.local` on top of `.env.local` and
-echoes every key it defines, so a drive log records the settings the build
-actually got. Only that script reads that file; it is inert for iOS, for `expo
-start`, and for every other command.
+Build settings and env files: see [builds.md](builds.md).
 
 When a Gradle build fails and you want the error rather than the whole log:
 

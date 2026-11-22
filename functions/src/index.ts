@@ -269,7 +269,8 @@ export const sweepPhotosWithoutMetadata = onSchedule(
 const EMAIL_PROVIDER = defineString('EMAIL_PROVIDER', {
   default: DEFAULT_EMAIL_PROVIDER,
 })
-const EMAIL_LIST_ID = defineString('EMAIL_LIST_ID')
+// Empty until an email service provider is chosen.
+const EMAIL_LIST_ID = defineString('EMAIL_LIST_ID', { default: '' })
 const EMAIL_API_KEY = defineSecret('EMAIL_API_KEY')
 
 // Opt-in/out for email updates. The mailing-list service's API key stays

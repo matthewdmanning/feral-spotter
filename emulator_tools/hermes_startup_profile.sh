@@ -10,8 +10,7 @@
 #   (cd android && ./gradlew assembleRelease)
 #   adb install -r android/app/build/outputs/apk/release/app-release.apk
 #
-# Do not use `npm run android`: its preandroid step runs `pm clear` and
-# erases the login and permissions. `adb install -r` keeps app data.
+# `adb install -r` keeps app data: the login and permissions survive.
 #
 # A plain prebuild keeps the profiler in MainActivity.kt. To remove it from the
 # next build, run `npx expo prebuild --platform android --clean` without the

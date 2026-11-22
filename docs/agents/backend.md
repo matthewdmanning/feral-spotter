@@ -39,8 +39,23 @@ off-limits" below before touching anything Firestore-shaped.
 - **Final submission (cats + metadata)**: uploaded to Cloud Storage as
   `metadata.json` alongside the photos — see
   [ADR-0005](../adr/0005-firebase-storage-for-uploads.md). Not a database
-  write, not a separate Cloud Run/Functions endpoint.
-- **Tester allowlist**: not enforced yet (#267).
+  write. The client writes it to Storage, but only with an upload grant from
+  `admitPhotoUpload`, like a photo.
+- **Tester allowlist**: `gateTesterAllowlist` (`beforeUserSignedIn`) sets a
+  tester claim at sign-in. `storage.rules` does not check it yet (#267).
+
+## Live project can lag the repo
+
+Rules and Functions reach the live project only by a manual
+`firebase deploy`; no workflow deploys them. Before you trust a live drive,
+compare the live state with the repo:
+
+- `firebase functions:list` lists the deployed Functions.
+- The Firebase Rules API (`firebaserules.googleapis.com/v1/projects/<project>/releases`)
+  names the live Storage ruleset. Read it and compare it with `storage.rules`.
+
+A repo rule that needs a deployed Function (for example the `uploadGrants`
+claim from `admitPhotoUpload`) breaks every upload if the rule ships first.
 
 ## Test-drive posture: emulator by default
 
@@ -49,17 +64,26 @@ Firebase. Live-project test-driving risks real user data and produces
 infrastructure-level errors that have nothing to do with the code under
 test — a 412 bucket-permission error once cost a session's debugging time
 at the wrong layer. Ports come from `firebase.json` as-is (Auth `9099`,
-Storage `9199`, Functions `5001`); emulator mode needs **no change** to
-`storage.rules`, so it exercises the actually-deployed
-rules.
+Storage `9199`, Functions `5001`). The emulators load the repo's
+`storage.rules`, not the live ruleset; the two can differ (see "Live project
+can lag the repo").
 
-Start the suite (`firebase emulators:start`), then set:
+Start the suite with `npm run emulators`. It builds `functions/`, then starts
+Auth, Storage and Functions.
+
+Functions params follow the Firebase standard:
+
+- Non-secret params (`defineString`): `functions/.env`, committed.
+- Secrets (`defineSecret`): Secret Manager. The emulator reads them there
+  too, unless `functions/.secret.local` overrides them.
+
+Then set:
 
 | Env var                              | Value                                                       | Notes                                                                                   |
 | ------------------------------------ | ----------------------------------------------------------- | --------------------------------------------------------------------------------------- |
 | `EXPO_PUBLIC_USE_FIREBASE_EMULATOR`  | `true`                                                      | Off by default, never inferred from `__DEV__`                                           |
 | `EXPO_PUBLIC_FIREBASE_EMULATOR_HOST` | `localhost` (default)                                       | Use `10.0.2.2` on an Android emulator; `localhost` + `adb reverse` on a physical device |
-| `EXPO_PUBLIC_UPLOAD_ADMISSION_URL`   | `http://<host>:5001/<project>/us-central1/admitPhotoUpload` | Photo uploads need a grant (#486); run the Functions emulator too                       |
+| `EXPO_PUBLIC_UPLOAD_ADMISSION_URL`   | `http://<host>:5001/<project>/us-central1/admitPhotoUpload` | Photo uploads need a grant (#486); unset means the app refuses every upload             |
 
 On a physical Android device, tunnel the ports before you open the app:
 `adb reverse tcp:9099 tcp:9099`, `adb reverse tcp:9199 tcp:9199` and
@@ -126,16 +150,16 @@ frontmatter `description` does not mention Firestore. Re-run that check
 against the installed skill's `description` before adding any new one to
 this list; don't add by name/topic judgment:
 
-- `firebase:extension-to-functions-codebase`
-- `firebase:firebase-ai-logic-basics`
-- `firebase:firebase-app-hosting-basics`
-- `firebase:firebase-auth-basics`
-- `firebase:firebase-basics`
-- `firebase:firebase-crashlytics`
-- `firebase:firebase-data-connect`
-- `firebase:firebase-hosting-basics`
-- `firebase:firebase-remote-config-basics`
-- `firebase:xcode-project-setup`
+- `extension-to-functions-codebase`
+- `firebase-ai-logic-basics`
+- `firebase-app-hosting-basics`
+- `firebase-auth-basics`
+- `firebase-basics`
+- `firebase-crashlytics`
+- `firebase-data-connect`
+- `firebase-hosting-basics`
+- `firebase-remote-config-basics`
+- `xcode-project-setup`
 
 Never `firebase:firebase-firestore` (see above) or
 `firebase:firebase-security-rules-auditor` (its description only mentions
