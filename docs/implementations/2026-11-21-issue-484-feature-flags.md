@@ -15,10 +15,11 @@
 
 **Out of scope / not addressed:**
 
-- The release workflow from #483 still strips `-rc.N` from the Expo
-  `version`. The reason for that step is now gone. Change it on the #483
-  branch.
-- The `semver` dependency stays. The #483 branch uses it in `app.config.js`.
+- `app.config.js` (#483) still strips `-rc.N` from the Expo `version`. Its
+  old reason is gone; iOS `CFBundleShortVersionString` still needs `X.Y.Z`.
+  Only its comment changed.
+- The `semver` dependency stays. `app.config.js` uses it.
+- "Flag unavailable" cannot occur: build-time flags need no network.
 
 ## Intent
 

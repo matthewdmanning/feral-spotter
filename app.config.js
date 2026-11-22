@@ -32,7 +32,7 @@ module.exports = ({ config }) => ({
   ...config,
   // Launcher label tells a release candidate install apart from a stable one.
   name: isReleaseCandidate() ? `${config.name} (rc)` : config.name,
-  // X.Y.Z only: isVersionReleased compares it, and -rc.N would sort below it.
+  // X.Y.Z only: iOS CFBundleShortVersionString accepts only numeric parts.
   version: semver.coerce(releaseVersion).version,
   extra: {
     ...config.extra,
