@@ -1,5 +1,6 @@
 import AnnotateScreen from '@/src/features/annotate/screens/annotate/index'
 import {
+  returnToCatList,
   startCatPass,
   useCatListLanding,
 } from '@/src/features/draft-submission/hooks/catPass'
@@ -38,9 +39,13 @@ import { Pressable, Text } from 'react-native'
  * - Cat List after removal: the pass's cat id is cleared; stack holds Cat
  *   List alone; the dialog opens.
  * - Cat Form, Camera, or the Reset confirmation: after the chosen option.
+ * - Cat List, done with photos: the user chose Just Describe; Cat List
+ *   no longer asks by itself, also after a restart; Annotate Photos
+ *   still asks. A new photo ends this state.
  * - Torn down: Submit or Reset emptied the draft on Cat List; no dialog.
  * Events: open Cat List, Annotate Photos, remove the last photo, choose
- * each option, close the dialog with Back, tear the draft down.
+ * each option, return from Cat Form, add a photo, close the dialog with
+ * Back, tear the draft down.
  */
 
 jest.mock('react-native-reanimated-carousel', () => 'Carousel')
@@ -115,6 +120,41 @@ it('Cat List with no photos stays put and asks; Just Describe opens Cat Form', a
   ])
   await pressDialogButton(noPhotosCopy.justDescribe)
   expect(await screen.findByText('Cat Form')).toBeOnTheScreen()
+})
+
+it('after Just Describe, Cat List stops asking until Annotate Photos', async () => {
+  addPhoto()
+  await openCatList()
+  // Auto-skipped into Annotate; removing the only photo ends on Cat List.
+  await act(async () => {
+    removePhotoFromDraft('p1')
+  })
+  await pressDialogButton(noPhotosCopy.justDescribe)
+  expect(await screen.findByText('Cat Form')).toBeOnTheScreen()
+  // Save on Cat Form: back to Cat List.
+  await act(async () => {
+    recordCat()
+    returnToCatList()
+  })
+  expect(await screen.findByText('Annotate Photos')).toBeOnTheScreen()
+  expect(useUIStore.getState().dialog).toBeNull()
+  // Asking for Annotate still explains why it cannot open.
+  await userEvent.press(screen.getByText('Annotate Photos'))
+  expect(useUIStore.getState().dialog?.title).toBe(noPhotosCopy.title)
+})
+
+it('a restored draft the user finished photographing opens without asking', async () => {
+  recordCat()
+  usePhotoStore.setState({ done_adding_photos: true })
+  await openCatList()
+  expect(screen.getByText('Annotate Photos')).toBeOnTheScreen()
+  expect(useUIStore.getState().dialog).toBeNull()
+})
+
+it('adding a photo again re-arms the prompt for its removal', async () => {
+  usePhotoStore.setState({ done_adding_photos: true })
+  addPhoto()
+  expect(usePhotoStore.getState().done_adding_photos).toBe(false)
 })
 
 it('Cancel Sighting asks to confirm the reset', async () => {

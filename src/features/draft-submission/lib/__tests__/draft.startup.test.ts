@@ -14,10 +14,12 @@ import {
 import { deleteSubmissionUploads } from '@/src/features/draft-submission/lib/upload/firebaseUpload'
 import { discardUnsurvivingDraft } from '@/src/features/draft-submission/lib/draft'
 import { submissionPhoto } from '@/src/test-utils/photoFixtures'
+import { observedCat } from '@/src/test-utils/catFixtures'
 
 /**
  * The start-up survival rule (#424): a draft outlives the process only while
- * it holds a photo and was last changed within SUBMISSION_STALE_MS. Real
+ * it holds a photo or a cat (#503) and was last changed within
+ * SUBMISSION_STALE_MS. Real
  * stores, so a field the teardown forgets would show here.
  */
 
@@ -175,6 +177,24 @@ describe('discardUnsurvivingDraft (#424)', () => {
     await discardUnsurvivingDraft(NOW)
     expect(useSubmissionStore.getState().submission.address).toBeUndefined()
   })
+
+  it.each([
+    ['keeps', HOUR_MS, 1],
+    ['discards', SUBMISSION_STALE_MS + HOUR_MS, 0],
+  ])(
+    '%s a cat-only draft by its cache row’s last change (#503)',
+    async (_verb, rowAge, catsLeft) => {
+      // Just Describe records a cat with no photos: the pool has no date,
+      // so the draft's row dates it.
+      useSubmissionStore.getState().addCat(observedCat({ local_id: 'cat-1' }))
+      await createSubmissionCache(CACHE_ID, {
+        location_method: 'device',
+        time_method: 'device',
+      })
+      await discardUnsurvivingDraft(Date.now() + rowAge)
+      expect(useSubmissionStore.getState().cats).toHaveLength(catsLeft)
+    },
+  )
 
   it('discards an undated pool even when its current cache row is fresh', async () => {
     seedDraft(null)

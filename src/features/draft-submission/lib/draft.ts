@@ -142,9 +142,10 @@ async function whenHydrated(
 
 /**
  * Start-up survival rule (#424): a draft outlives the app process only while
- * it holds a photo and was last changed within SUBMISSION_STALE_MS. Anything
- * else is discarded in full — a draft with no photo has nothing worth keeping,
- * and a stale one would otherwise lock the other photo entrypoint for good.
+ * it holds a photo or a cat (#503) and was last changed within
+ * SUBMISSION_STALE_MS. Anything else is discarded in full — an empty draft
+ * has nothing worth keeping, and a stale one would otherwise lock the other
+ * photo entrypoint for good.
  *
  * Waits for every draft store to hydrate first: a store that hydrates after
  * the teardown would write its saved state back over the cleared one.
@@ -166,9 +167,19 @@ export async function discardUnsurvivingDraft(
   // row are the user's sent Sighting, not abandoned draft data.
   const sendStarted = row != null && row.status !== 'In Progress'
 
-  const updatedAt = updated_at
-  const isStale = updatedAt != null && now - updatedAt > SUBMISSION_STALE_MS
-  if (photos.length === 0 || isStale || !Number.isFinite(updatedAt ?? NaN)) {
+  // A cat-only draft (Just Describe, #503) has an undated pool; its row
+  // dates it instead.
+  const hasCats = useSubmissionStore.getState().cats.length > 0
+  const lastChange =
+    photos.length > 0
+      ? updated_at
+      : hasCats && row
+        ? Date.parse(row.updated_at)
+        : null
+  const survives =
+    Number.isFinite(lastChange ?? NaN) &&
+    now - (lastChange as number) <= SUBMISSION_STALE_MS
+  if (!survives) {
     const oldSubmissionId = usePhotoStore.getState().submissionId
     const uid = authProvider.getCurrentUser()?.uid
 

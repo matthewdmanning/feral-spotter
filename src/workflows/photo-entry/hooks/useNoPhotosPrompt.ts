@@ -10,7 +10,8 @@
  * Choices: get more photos from the draft's own source, describe a cat
  * without boxes, then Back to Cat List when cats exist, else Cancel
  * Sighting. Photos emptied while Cat List is focused mean the draft was
- * torn down (submit, Reset), so that asks nothing.
+ * torn down (submit, Reset), so that asks nothing. Just Describe marks the
+ * draft done with photos: from then on only `offer` asks, until a new photo.
  */
 
 import { confirmResetSubmission } from '@/src/features/draft-submission/hooks/confirmResetSubmission'
@@ -25,7 +26,6 @@ import { useCallback, useEffect, useRef } from 'react'
 
 export function useNoPhotosPrompt(): { offer: () => void } {
   const { camera, library } = usePhotoEntrypoints()
-  const noPhotos = usePhotoStore((s) => s.photos.length === 0)
   const isFocused = useIsFocused()
 
   const offer = useCallback(() => {
@@ -44,16 +44,26 @@ export function useNoPhotosPrompt(): { offer: () => void } {
           }
     showAlert(noPhotosCopy.title, noPhotosCopy.message, [
       getMore,
-      { text: noPhotosCopy.justDescribe, onPress: () => openCatForm() },
+      {
+        text: noPhotosCopy.justDescribe,
+        onPress: () => {
+          usePhotoStore.getState().markDoneAddingPhotos()
+          openCatForm()
+        },
+      },
       leave,
     ])
   }, [camera.open, library.open])
 
   // True when the next focused render should ask: opened with no photos,
-  // or the last photo went while another screen covered this one.
-  const pending = useRef(noPhotos)
+  // or the last photo went while another screen covered this one. Never
+  // once the user chose Just Describe.
+  const shouldAsk = usePhotoStore(
+    (s) => s.photos.length === 0 && !s.done_adding_photos,
+  )
+  const pending = useRef(shouldAsk)
   useEffect(() => {
-    if (!noPhotos) {
+    if (!shouldAsk) {
       pending.current = false
     } else if (!isFocused) {
       pending.current = true
@@ -61,7 +71,7 @@ export function useNoPhotosPrompt(): { offer: () => void } {
       pending.current = false
       offer()
     }
-  }, [noPhotos, isFocused, offer])
+  }, [shouldAsk, isFocused, offer])
 
   return { offer }
 }
