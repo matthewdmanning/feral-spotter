@@ -93,3 +93,10 @@ actionlint -shellcheck= .github/workflows/ci.yml .github/workflows/commitlint.ym
 **Change:** Delete `.github/workflows/codeql.yml`, whose only analysis language was Swift, rather than retain an empty language matrix. The failed run also reported that GitHub's default CodeQL setup was enabled and rejected this advanced workflow's upload; no repository security settings are changed.
 
 **Verification:** Review confirms the removed workflow contained only Swift. Formatting and whitespace checks cover this change; application tests do not exercise workflow removal. Hosted CI must confirm the updated PR checks.
+
+## 2026-11-23 — fix: CodeQL advanced workflow
+
+**Purpose:** Code scanning stopped. The last default-setup run was 2026-11-22 09:05 UTC (PR #490); main's push `101b6ea` and PRs #496–#498 got none, while CI ran.
+**Change:** `.github/workflows/codeql.yml` scans `javascript-typescript` and `actions` on pushes and PRs to main and weekly, with no build. It replaces the default setup (#482), which must be switched off: an advanced workflow cannot upload while the default setup is on. Swift and Kotlin stay unscanned, as after #482.
+
+**Verification:** Not run. The workflow's first run, on this PR, is the check. The cause of the stop is unconfirmed: the setting is not readable from the session.
