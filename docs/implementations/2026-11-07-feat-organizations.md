@@ -103,18 +103,29 @@ remains unverified. The Sighting detail permission placement is documented in th
 **Purpose:** Rebase onto main after #480–#490.
 **Change:** Main's GCS-ledger revocation fix and its emulator case are dropped: the Firestore store replaced that ledger. Main's upload-quota rules test stays. Main's new functions lint passes: the leave saga reads its saved choice through `validateGrant`, not non-null assertions.
 
-## 2026-11-23 — refactor: build flag is the master gate
+## 2026-11-23 — refactor: gate Organizations high; build flag is a global ON
 
-**Purpose:** Main must merge with Organizations off.
-**Change:** `FEATURE_FLAGS.organizations` (`EXPO_PUBLIC_ORGANIZATIONS`, default off) gates at the top:
+**Purpose:** Main must merge with Organizations off. Without analytics consent, PostHog must not be asked; the build flag decides.
+**Change:**
 
-- Root Stack: `Stack.Protected` hides every `organizations/*` route.
-- `AppProviders` mounts `OrganizationsRuntime` only when on, so off sends no sync, directory or flag request.
-- Screens gate their Organizations sections: Settings (entry, sharing defaults, permissions), Sighting detail (permissions), Create (sharing).
-- `useOrganizationsFlag.refresh`: off → disabled, no PostHog request. On → the PostHog rollout (`Organizations`, `PinInteractions`) decides. Previously on forced enabled; off fell back to PostHog.
+| Build flag | Data + analytics consent | Organizations   |
+| ---------- | ------------------------ | --------------- |
+| on         | any                      | on              |
+| off        | no                       | off, no request |
+| off        | yes                      | PostHog rollout |
 
-Leaf components keep their runtime rollout checks.
+- `PinInteractions` always comes from the rollout, so it needs consent.
+- The cache keeps the rollout result, never the build flag.
+- Gates read the evaluated flag (`useOrganizationsEnabled`): root Stack (`Stack.Protected`), Settings, Sighting detail, Create.
+- `OrganizationsRuntime` always mounts. It re-evaluates on a consent change. Off, it syncs only when items are pending, so revocations still go out.
+- Leaf components keep their runtime checks.
+- Supersedes the #484 note's "reads a PostHog flag without consent". Previously build on forced Organizations on and off fell back to an unconsented PostHog request.
 
-**Tests:** `organizationsFlag.test.ts` covers build-off (no request, disabled); PostHog cases run with the build flag on. `SettingsScreen.saveScope.test.tsx` checks the Settings entry follows the flag.
+**Tests:**
 
-**Verification:** See the PR. No device drive.
+- `organizationsFlag.test.ts`: build × consent × rollout table; cache excludes the build flag; PinInteractions with build on.
+- `OrganizationsRuntime.test.tsx`: off sends nothing; off still delivers a revocation; granting consent lets the rollout turn it on.
+- `SettingsScreen.saveScope.test.tsx`: the Settings entry follows build × consent × rollout.
+- `__tests__/RootLayout.organizations.test.tsx`: the real root layout opens `/organizations` only while on, and leaves it when turned off.
+
+**Verification:** typecheck, lint (0 errors), 138 suites / 650 tests. No device drive.

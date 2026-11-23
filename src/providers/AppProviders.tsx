@@ -34,7 +34,6 @@
 import { QueryClientProvider } from '@tanstack/react-query'
 import { createQueryClient } from '@/src/shared/lib/queryClient'
 import { OrganizationsRuntime } from '@/src/features/organizations/components/OrganizationsRuntime'
-import { FEATURE_FLAGS } from '@/src/shared/config/constants'
 import { AlertHost } from '@/src/shared/ui/organisms/AlertHost'
 import { ErrorBoundary } from '@/src/shared/ui/atoms/ErrorBoundary'
 import {
@@ -181,7 +180,7 @@ export function AppProviders({ children }: AppProvidersProps) {
       <GestureHandlerRootView style={{ flex: 1 }}>
         {__DEV__ && <ScreenTransitionLogger />}
         <SystemThemeSync />
-        {FEATURE_FLAGS.organizations && <OrganizationsRuntime />}
+        <OrganizationsRuntime />
         {/* Outside ErrorBoundary's children so a caught render error still
           leaves the app able to raise a dialog. */}
         <AlertHost />

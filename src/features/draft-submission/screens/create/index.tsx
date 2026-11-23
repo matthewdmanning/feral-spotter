@@ -1,4 +1,4 @@
-import { FEATURE_FLAGS } from '@/src/shared/config/constants'
+import { useOrganizationsEnabled } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 import { SubmissionOrganizations } from '@/src/features/organizations/sharing/components/SubmissionOrganizations'
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
@@ -44,6 +44,7 @@ const LOCATION_PICKER_ROUTE = '/submission/location-picker'
 
 export default function CreateSubmissionScreen() {
   const { theme } = useUnistyles()
+  const organizationsEnabled = useOrganizationsEnabled()
   const removeCatWithConfirm = useRemoveCat()
 
   const submission = useSubmissionStore((s) => s.submission)
@@ -176,7 +177,7 @@ export default function CreateSubmissionScreen() {
           )}
         </GlassSurface>
 
-        {FEATURE_FLAGS.organizations && photos.length > 0 && (
+        {organizationsEnabled && photos.length > 0 && (
           <SubmissionOrganizations />
         )}
 

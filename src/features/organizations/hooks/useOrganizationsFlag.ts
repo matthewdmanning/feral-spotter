@@ -3,6 +3,10 @@ import Constants from 'expo-constants'
 import { randomUUID } from 'expo-crypto'
 import { asyncStorage } from '@/src/shared/lib/storage'
 import { FEATURE_FLAGS } from '@/src/shared/config/constants'
+import {
+  hasAcceptedAnalytics,
+  hasAcceptedConsent,
+} from '@/src/shared/consent/useConsentStore'
 
 interface FlagState {
   enabled: boolean
@@ -10,17 +14,22 @@ interface FlagState {
   refresh: () => Promise<void>
 }
 let inFlight: Promise<void> | null = null
-/** Evaluates flags without starting the analytics SDK or sending capture/identify events. */
+/**
+ * Organizations is on when the build flag is on (a global ON), or when the
+ * PostHog rollout says so. PostHog is asked only after data and analytics
+ * consent; without both, the build flag alone decides. The request never
+ * starts the analytics SDK or sends capture/identify events.
+ */
 export const useOrganizationsFlag = create<FlagState>((set) => ({
-  enabled: false,
+  enabled: FEATURE_FLAGS.organizations,
   pinInteractionsEnabled: false,
   refresh: () => {
     if (inFlight) return inFlight
     inFlight = (async () => {
       try {
-        // The build-time flag is the master gate: off sends no request.
-        if (!FEATURE_FLAGS.organizations) {
-          set({ enabled: false, pinInteractionsEnabled: false })
+        const forced = FEATURE_FLAGS.organizations
+        if (!hasAcceptedConsent() || !hasAcceptedAnalytics()) {
+          set({ enabled: forced, pinInteractionsEnabled: false })
           return
         }
         const apiKey = Constants.expoConfig?.extra?.posthogProjectToken as
@@ -28,7 +37,7 @@ export const useOrganizationsFlag = create<FlagState>((set) => ({
         const host = Constants.expoConfig?.extra?.posthogHost as
           string | undefined
         if (!apiKey || !host) {
-          set({ enabled: false, pinInteractionsEnabled: false })
+          set({ enabled: forced, pinInteractionsEnabled: false })
           return
         }
         let distinctId = await asyncStorage.getItem(
@@ -56,13 +65,14 @@ export const useOrganizationsFlag = create<FlagState>((set) => ({
               previous.checkedAt <= Date.now() &&
               Date.now() - previous.checkedAt < 24 * 60 * 60 * 1000
             cachedInteractionsEnabled =
-              cachedEnabled && previous.pinInteractionsEnabled === true
+              (forced || cachedEnabled) &&
+              previous.pinInteractionsEnabled === true
           } catch {
             /* Ignore a corrupt cache and still request the current flag. */
           }
         }
         set({
-          enabled: cachedEnabled,
+          enabled: forced || cachedEnabled,
           pinInteractionsEnabled: cachedInteractionsEnabled,
         })
         const response = await fetch(`${host.replace(/\/$/, '')}/flags/?v=2`, {
@@ -80,16 +90,18 @@ export const useOrganizationsFlag = create<FlagState>((set) => ({
           flags?: Record<string, { enabled?: boolean }>
           errorsWhileComputingFlags?: boolean
         } | null
-        const enabled =
-          result?.errorsWhileComputingFlags !== true &&
-          result?.flags?.Organizations?.enabled === true
+        const valid = result?.errorsWhileComputingFlags !== true
+        const rolledOut =
+          valid && result?.flags?.Organizations?.enabled === true
+        const enabled = forced || rolledOut
         const pinInteractionsEnabled =
-          enabled && result?.flags?.PinInteractions?.enabled === true
+          enabled && valid && result?.flags?.PinInteractions?.enabled === true
         set({ enabled, pinInteractionsEnabled })
         await asyncStorage.setItem(
           'organizations-flag-v1',
           JSON.stringify({
-            enabled,
+            // The rollout result, so a later build without the flag cannot inherit it.
+            enabled: rolledOut,
             pinInteractionsEnabled,
             checkedAt: Date.now(),
           }),
@@ -103,6 +115,11 @@ export const useOrganizationsFlag = create<FlagState>((set) => ({
     return inFlight
   },
 }))
+
+/** Whether Organizations is on for this install. Gate screens and routes on this. */
+export function useOrganizationsEnabled() {
+  return useOrganizationsFlag((state) => state.enabled)
+}
 
 /** Pin interactions require both their own rollout and organization sharing. */
 export function usePinInteractionsFlag() {

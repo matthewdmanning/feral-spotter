@@ -3,12 +3,36 @@ import { router } from 'expo-router'
 import SettingsScreen from '@/src/features/settings/screens/settings'
 import { useSettingsStore } from '@/src/features/settings/hooks/useSettingsStore'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
-import { useConsentStore } from '@/src/shared/consent/useConsentStore'
+import {
+  CONSENT_VERSION,
+  useConsentStore,
+} from '@/src/shared/consent/useConsentStore'
 import { FEATURE_FLAGS } from '@/src/shared/config/constants'
+import { http, HttpResponse } from 'msw'
+import { server } from '@/src/test-utils/mswServer'
+import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 
 jest.mock('expo-router', () => ({
   router: { back: jest.fn(), push: jest.fn() },
 }))
+jest.mock('expo-constants', () => {
+  const actual = jest.requireActual('expo-constants')
+  return {
+    ...actual,
+    __esModule: true,
+    default: {
+      ...actual.default,
+      expoConfig: {
+        ...actual.default.expoConfig,
+        extra: {
+          ...actual.default.expoConfig?.extra,
+          posthogProjectToken: 'public-project-token',
+          posthogHost: 'https://flags.example.com',
+        },
+      },
+    },
+  }
+})
 
 const mutableFeatureFlags = FEATURE_FLAGS as {
   experimentalCamera: boolean
@@ -21,12 +45,31 @@ afterEach(() => {
   Object.assign(mutableFeatureFlags, originalFlags)
 })
 
-it.each([false, true])(
-  'shows the Organizations entry only when its build flag is %s',
-  async (on) => {
-    mutableFeatureFlags.organizations = on
+it.each([
+  // build flag, analytics consent, PostHog rollout → entry shown
+  [false, false, true, false],
+  [true, false, false, true],
+  [false, true, true, true],
+  [false, true, false, false],
+  [true, true, false, true],
+])(
+  'build flag %s, analytics consent %s, rollout %s: Organizations shown is %s',
+  async (build, analytics, rollout, shown) => {
+    mutableFeatureFlags.organizations = build
+    useConsentStore.setState({
+      accepted: true,
+      acceptedVersion: CONSENT_VERSION,
+      analyticsAccepted: analytics,
+    })
+    server.use(
+      http.post('https://flags.example.com/flags/', () =>
+        HttpResponse.json({ flags: { Organizations: { enabled: rollout } } }),
+      ),
+    )
+    useOrganizationsFlag.setState({ enabled: false })
+    await useOrganizationsFlag.getState().refresh()
     await render(<SettingsScreen />)
-    expect(screen.queryByText('Organizations') !== null).toBe(on)
+    expect(screen.queryByText('Organizations') !== null).toBe(shown)
   },
 )
 

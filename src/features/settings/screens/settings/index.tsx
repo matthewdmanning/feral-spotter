@@ -6,6 +6,7 @@ import {
   formatCopy,
   navigationCopy,
 } from '@/src/shared/config/text'
+import { useOrganizationsEnabled } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 import { SharingSettings } from '@/src/features/organizations/sharing/components/SharingSettings'
 import { OrganizationPermissions } from '@/src/features/organizations/sharing/components/OrganizationPermissions'
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
@@ -68,6 +69,7 @@ const CAPTURE_PRIORITY_PLATFORMS = ['android', 'ios']
 
 export default function SettingsScreen() {
   const { theme } = useUnistyles()
+  const organizationsEnabled = useOrganizationsEnabled()
   const [themeMode, setSelectedThemeMode] = useState<ThemeMode>(getThemeMode)
   const [hapticsOn, setHapticsOn] = useState(getHapticsEnabled)
   // Like every setting here, this applies at once.
@@ -157,7 +159,7 @@ export default function SettingsScreen() {
             )}
           </GlassSurface>
 
-          {FEATURE_FLAGS.organizations && (
+          {organizationsEnabled && (
             <>
               <TextButton onPress={() => router.push('/organizations')}>
                 Organizations

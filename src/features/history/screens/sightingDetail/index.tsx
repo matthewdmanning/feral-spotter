@@ -5,7 +5,7 @@
  * separately from the historical record.
  */
 
-import { FEATURE_FLAGS } from '@/src/shared/config/constants'
+import { useOrganizationsEnabled } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 import { OrganizationPermissions } from '@/src/features/organizations/sharing/components/OrganizationPermissions'
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
@@ -38,6 +38,7 @@ const CAT_PHOTO_SIZE = 96
 
 export default function SightingDetailScreen() {
   const { theme } = useUnistyles()
+  const organizationsEnabled = useOrganizationsEnabled()
   const params = useLocalSearchParams<{ id: string | string[] }>()
   const { sighting } = useSighting(firstParam(params.id) ?? '')
 
@@ -85,7 +86,7 @@ export default function SightingDetailScreen() {
           ))}
         </GlassSurface>
 
-        {FEATURE_FLAGS.organizations && sighting.cloud_submission_id && (
+        {organizationsEnabled && sighting.cloud_submission_id && (
           <OrganizationPermissions
             submissionId={sighting.cloud_submission_id}
           />

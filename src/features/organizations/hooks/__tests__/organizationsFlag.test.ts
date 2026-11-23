@@ -4,6 +4,10 @@ import { http, HttpResponse } from 'msw'
 import { server } from '@/src/test-utils/mswServer'
 import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 import { FEATURE_FLAGS } from '@/src/shared/config/constants'
+import {
+  CONSENT_VERSION,
+  useConsentStore,
+} from '@/src/shared/consent/useConsentStore'
 
 let nextId = 0
 const flags = FEATURE_FLAGS as { organizations: boolean }
@@ -37,6 +41,14 @@ let offline: boolean
 let invalidJSON: boolean
 let requests: { url: string; body: unknown }[]
 
+function grantConsent(analytics: boolean | null) {
+  useConsentStore.setState({
+    accepted: true,
+    acceptedVersion: CONSENT_VERSION,
+    analyticsAccepted: analytics,
+  })
+}
+
 /** A fresh, enabled evaluation, so each case must actively turn it off. */
 async function startEnabled() {
   useOrganizationsFlag.setState({ enabled: true, pinInteractionsEnabled: true })
@@ -53,8 +65,9 @@ afterEach(() => {
   flags.organizations = buildFlag
 })
 beforeEach(() => {
-  // The PostHog rollout applies only behind the build-time master flag.
-  flags.organizations = true
+  // Build flag off and full consent: the PostHog rollout decides.
+  flags.organizations = false
+  grantConsent(true)
   jest
     .mocked(randomUUID)
     .mockImplementation(
@@ -77,15 +90,62 @@ beforeEach(() => {
   )
 })
 
-test('the build-time flag off disables Organizations without a PostHog request', async () => {
+const ROLLOUT_ON = bothEnabled
+const ROLLOUT_OFF = {
+  flags: {
+    Organizations: { enabled: false },
+    PinInteractions: { enabled: false },
+  },
+}
+test.each([
+  // build flag, consent, rollout → enabled, PostHog asked
+  ['off', 'none', ROLLOUT_ON, false, false],
+  ['off', 'data only', ROLLOUT_ON, false, false],
+  ['on', 'none', ROLLOUT_OFF, true, false],
+  ['on', 'data only', ROLLOUT_OFF, true, false],
+  ['off', 'analytics', ROLLOUT_ON, true, true],
+  ['off', 'analytics', ROLLOUT_OFF, false, true],
+  ['on', 'analytics', ROLLOUT_OFF, true, true],
+] as const)(
+  'build flag %s, consent %s: rollout %j gives enabled=%s, asked PostHog=%s',
+  async (build, consent, rollout, enabled, asked) => {
+    flags.organizations = build === 'on'
+    if (consent === 'none') useConsentStore.setState({ accepted: false })
+    else grantConsent(consent === 'analytics' ? true : false)
+    // A fresh cached rollout must not count without analytics consent.
+    await startEnabled()
+    evaluation = rollout
+    await useOrganizationsFlag.getState().refresh()
+    expect(useOrganizationsFlag.getState().enabled).toBe(enabled)
+    expect(requests.length > 0).toBe(asked)
+  },
+)
+
+test('the build flag never reaches the rollout cache', async () => {
+  flags.organizations = true
+  evaluation = ROLLOUT_OFF
+  await useOrganizationsFlag.getState().refresh()
+  expect(useOrganizationsFlag.getState().enabled).toBe(true)
+  // A later build without the flag reads the cache offline.
   flags.organizations = false
-  await startEnabled()
+  offline = true
+  await useOrganizationsFlag.getState().refresh()
+  expect(useOrganizationsFlag.getState().enabled).toBe(false)
+})
+
+test('the build flag on still takes PinInteractions from the rollout', async () => {
+  flags.organizations = true
+  evaluation = {
+    flags: {
+      Organizations: { enabled: false },
+      PinInteractions: { enabled: true },
+    },
+  }
   await useOrganizationsFlag.getState().refresh()
   expect(useOrganizationsFlag.getState()).toMatchObject({
-    enabled: false,
-    pinInteractionsEnabled: false,
+    enabled: true,
+    pinInteractionsEnabled: true,
   })
-  expect(requests).toHaveLength(0)
 })
 
 test('evaluates both flags once without analytics, account identity or location; fresh cached flags work offline', async () => {

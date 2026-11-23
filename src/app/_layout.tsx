@@ -9,7 +9,7 @@
  * react-navigation does not re-render screens on screenOptions changes.
  */
 
-import { FEATURE_FLAGS } from '@/src/shared/config/constants'
+import { useOrganizationsEnabled } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 import { navigationCopy } from '@/src/shared/config/text'
 import { Text } from '@/src/shared/ui/atoms/Text'
 import '@/src/shared/config/unistyles'
@@ -34,6 +34,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {})
 
 export default function RootLayout() {
   const { theme } = useUnistyles()
+  const organizationsEnabled = useOrganizationsEnabled()
   const setOnlineStatus = useUIStore((s) => s.setOnlineStatus)
   const [fontsLoaded, fontError] = useFonts({
     Nunito_400Regular,
@@ -138,8 +139,8 @@ export default function RootLayout() {
           }}
         />
 
-        {/* Organizations exist only in builds with the feature flag on */}
-        <Stack.Protected guard={FEATURE_FLAGS.organizations}>
+        {/* Organizations routes exist only while the feature is on */}
+        <Stack.Protected guard={organizationsEnabled}>
           <Stack.Screen name="organizations/index" />
           <Stack.Screen name="organizations/[id]/index" />
           <Stack.Screen name="organizations/[id]/members" />
