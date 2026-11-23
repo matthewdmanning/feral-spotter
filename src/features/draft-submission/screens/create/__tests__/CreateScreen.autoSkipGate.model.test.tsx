@@ -1,3 +1,5 @@
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { act, render, waitFor } from '@testing-library/react-native'
 import React from 'react'
 import { router } from 'expo-router'
@@ -69,6 +71,8 @@ describe('Cat List auto-skip gate — model-based test', () => {
   let queryByText: Awaited<ReturnType<typeof render>>['queryByText']
 
   beforeEach(async () => {
+    // A pool to annotate: with none, Cat List asks instead (#503).
+    usePhotoStore.setState({ source: 'camera', photos: [submissionPhoto()] })
     const result = await render(<CreateSubmissionScreen />)
     queryByText = result.queryByText
   })

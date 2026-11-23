@@ -5,9 +5,17 @@ import { renderRouter } from 'expo-router/testing-library'
 import { Pressable, Text } from 'react-native'
 
 /**
- * A finished sign-in or Registration leaves nothing of the auth screens
- * behind: Back from the next step, or from Home, must not reopen Sign-in
- * for a user who is already signed in.
+ * Flow: Registration from Sign-in
+ * A new user on Sign-in taps to register, creates an account, and moves on
+ * to the consent steps. Nothing of Sign-in or Registration may remain
+ * behind: Back used to reopen Sign-in for a user already signed in.
+ *
+ * States:
+ * - Sign-in: the only screen on the stack.
+ * - Registration: pushed above Sign-in; "Create account" shown.
+ * - Next step: the first unanswered consent step, or Home; no screen to
+ *   go back to.
+ * Events: open Registration, tap Create account (sign-up succeeds).
  */
 
 const copy = { tag: '[test]', title: 'Failed', message: 'Try again.' }

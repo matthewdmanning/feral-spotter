@@ -1,3 +1,5 @@
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import {
   act,
   userEvent,
@@ -32,7 +34,7 @@ import CreateSubmissionScreen from '@/src/features/draft-submission/screens/crea
  * can actually sit in, with Submit disabled there (#265).
  */
 
-let mockParams: { removed?: string } = {}
+let mockParams: { noAutoSkip?: string } = {}
 
 jest.mock('expo-router', () => ({
   useIsFocused: () => true,
@@ -89,6 +91,8 @@ const DEFAULT_CATS: ObservedCat[] = [
 
 beforeEach(() => {
   useUIStore.setState({ dialog: null })
+  // A pool to annotate: with none, Cat List asks instead (#503).
+  usePhotoStore.setState({ source: 'camera', photos: [submissionPhoto()] })
   useSubmissionStore.setState({
     submission: { location_type: 'device', time_type: 'device' },
     cats: [],
@@ -221,7 +225,7 @@ describe('Cat List with no cats left (#299)', () => {
   // #375: "Submit Sighting" is disabled at zero cats, so the screen must say what
   // the user has to do first.
   it('says why Submit Sighting is disabled while no cat is recorded', async () => {
-    mockParams = { removed: '1' }
+    mockParams = { noAutoSkip: '1' }
     await render(<CreateSubmissionScreen />)
 
     await waitFor(() =>
@@ -234,8 +238,8 @@ describe('Cat List with no cats left (#299)', () => {
   })
 
   it('offers annotate or describe after the last cat is removed, and does not redirect', async () => {
-    // `removed` is what the Cat Form's remove sets when it lands back here.
-    mockParams = { removed: '1' }
+    // `noAutoSkip` is what the Cat Form's remove sets when it lands back here.
+    mockParams = { noAutoSkip: '1' }
     await render(<CreateSubmissionScreen />)
 
     await waitFor(() =>
@@ -246,7 +250,7 @@ describe('Cat List with no cats left (#299)', () => {
   })
 
   it('routes each choice to its own destination', async () => {
-    mockParams = { removed: '1' }
+    mockParams = { noAutoSkip: '1' }
     await render(<CreateSubmissionScreen />)
     await waitFor(() =>
       expect(screen.getByText('Annotate Photos')).toBeTruthy(),

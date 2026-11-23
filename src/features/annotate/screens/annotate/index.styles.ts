@@ -56,17 +56,4 @@ export const styles = StyleSheet.create((theme, rt) => ({
     textAlign: 'center',
     paddingHorizontal: theme.layout.gutter,
   },
-  empty: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: theme.spacing.lg,
-    padding: theme.layout.gutter,
-  },
-  emptyText: {
-    ...theme.textVariants.body,
-    color: theme.colors.muted,
-    textAlign: 'center',
-  },
 }))

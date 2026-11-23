@@ -77,8 +77,8 @@ Type checking, targeted ESLint, Prettier and whitespace checks passed.
 
 **Tests:**
 
-- `membership.journey.test.tsx`: no name entry, nameless accounts cannot join, card contents, and Arrange drag with Cancel discarding and Save persisting.
-- `organization.journey.test.tsx`: coverage-center fallback text.
+- `flow.memberships.test.tsx`: no name entry, nameless accounts cannot join, card contents, and Arrange drag with Cancel discarding and Save persisting.
+- `flow.organization.test.tsx`: coverage-center fallback text.
 - `firebaseAuthProvider.test.ts`: Registration names the account and re-reports it.
 - `validateRegistration.test.ts`: blank name blocks Registration.
 - `api.emulator.test.ts`: the Auth name is required and the client name ignored; count and fallback location; a profile rename reaches every roster.

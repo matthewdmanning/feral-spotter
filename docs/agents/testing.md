@@ -19,6 +19,34 @@ Write a test only when it would **catch a failure likely to actually occur** —
 - When a model test or journey asserts the same states, delete the hand-written cases it subsumes. Example: `src/core/home/screens/home/__tests__/HomeScreen.test.tsx` (4 hand cases) was fully covered by the gate model and removed.
 - Delete a test when the branch it covers becomes unreachable — an unreachable branch's test passes forever and proves nothing.
 
+## User-flow tests
+
+A user-flow test drives a user journey through UI: screens, the real router, dialogs, or a model of a UI flow. It carries the `flow.` prefix.
+
+### Describe the flow in plain language
+
+Open every user-flow test with a doc comment, directly after the imports, that a non-engineer can follow:
+
+```ts
+/**
+ * Flow: <journey name> (#issue)
+ * <Who starts where, does what, and what they should see. Why it matters:
+ * the failure the test catches.>
+ *
+ * States:
+ * - <state>: what the user sees; what the app holds (store, stack, server).
+ * - <state>: …
+ * Events: <user actions — taps, Back, sign-out — and outside changes —
+ * account switch, network failure, flag off>.
+ */
+```
+
+- Name states by what the user sees ("Cat List, asking what next"), and add the state behind them ("no photos; dialog open").
+- Use [domain.md](domain.md) terms: Submission in code, Sighting for user-facing names.
+- One block per file. A file with several journeys lists each under `Flow:`.
+- Keep it current: a change to the journey changes the description in the same commit.
+- A model test's machine is its state list; it still needs the plain-language story.
+
 ## Model-based tests
 
 ### When to build the model
@@ -105,10 +133,13 @@ Await asynchronous dialog callbacks themselves. A fixed number of `Promise.resol
 
 Put tests in a `__tests__/` folder beside the code. Root `__tests__/` holds only app-wide tests (`RootLayout`) and Firebase rules tests (`__tests__/rules/`). Name the file by test kind:
 
+- `flow.<subject>.test.tsx` — user-flow tests (see below). Prefix, not suffix, so `find -name 'flow.*'` lists every journey. Combines with a kind suffix: `flow.<subject>.model.test.tsx`.
 - `*.model.test.ts(x)` — XState model tests.
 - `*.invariant.test.ts` — invariants against real persisted state.
 - `*.emulator.test.ts` — tests against local Firebase emulators.
 - `*.test.ts(x)` — everything else.
+
+`flow.` replaces the old `*.journey.test` and `*.stack.test` suffixes. An existing model test of a UI flow takes the prefix, and a description, the next time it is edited.
 
 ### Jest config
 

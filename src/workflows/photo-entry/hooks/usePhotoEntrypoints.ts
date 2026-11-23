@@ -27,6 +27,8 @@ export interface PhotoEntrypoints {
 
 export function usePhotoEntrypoints(): PhotoEntrypoints {
   const source = usePhotoStore((s) => s.source)
+  // An emptied pool still reopens the source that started the draft.
+  const startedFrom = usePhotoStore((s) => s.source ?? s.last_source)
   const draftReady = useDraftStartupStore((s) => s.phase === 'ready')
   const { pickFromLibrary } = useLibraryPhotoPicker()
   const openCamera = useCallback(() => router.navigate('/camera'), [])
@@ -45,10 +47,10 @@ export function usePhotoEntrypoints(): PhotoEntrypoints {
         open: openLibrary,
       },
       addMore:
-        source === 'camera'
+        startedFrom === 'camera'
           ? { label: 'Take More Photos', open: openCamera }
           : { label: 'Select More Photos', open: openLibrary },
     }),
-    [draftReady, source, openCamera, openLibrary],
+    [draftReady, source, startedFrom, openCamera, openLibrary],
   )
 }

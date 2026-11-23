@@ -9,6 +9,22 @@ import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrga
 import { fakeOrganizationsService } from '@/src/test-utils/organizationsService'
 import { queryWrapper } from '@/src/test-utils/queryClient'
 
+/**
+ * Flow: browsing an organization's shared Sightings
+ * A member loads shared pins, taps More for a second page, and refreshes.
+ * A failed refresh, such as an outage during the 30 s poll, keeps both
+ * pages. When access is revoked, every shared result is cleared from
+ * memory. Another account sees none of them.
+ *
+ * States:
+ * - First page: the first pin shown.
+ * - Two pages: both pins shown; both still shown after a refresh.
+ * - Refresh failed: an error message; both pins still shown.
+ * - Revoked: no pins shown.
+ * - Other account: no pins shown.
+ * Events: More, Refresh (succeeds, fails, access revoked), switch account.
+ */
+
 function SharedView() {
   const query = useSharedSightings('org')
   return (

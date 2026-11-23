@@ -18,6 +18,7 @@ import { useDraftExitPrompt } from '@/src/features/draft-submission/hooks/useDra
 import { useDraftSync } from '@/src/features/draft-submission/hooks/useDraftSync'
 import { useSubmissionSubmit } from '@/src/features/draft-submission/hooks/useSubmissionSubmit'
 import { usePhotoEntrypoints } from '@/src/workflows/photo-entry/hooks/usePhotoEntrypoints'
+import { useNoPhotosPrompt } from '@/src/workflows/photo-entry/hooks/useNoPhotosPrompt'
 import { useRemoveCat } from '@/src/features/draft-submission/hooks/useRemoveCat'
 import { draftWarnings } from '@/src/features/draft-submission/lib/status'
 import { submissionCopy } from '@/src/shared/config/text'
@@ -89,8 +90,11 @@ export default function CreateSubmissionScreen() {
 
   // Annotate-first (ADR 0004): discovering a cat starts with boxing it, not
   // filling out a form — Cat Form is reached from annotate's Boxing
-  // Complete, not from here.
-  const handleAddCat = startCatPass
+  // Complete, not from here. With no photos, ask instead (#503).
+  const { offer: offerNoPhotos } = useNoPhotosPrompt()
+  const handleAddCat = useCallback(() => {
+    if (!startCatPass()) offerNoPhotos()
+  }, [offerNoPhotos])
 
   // Auto-skip in flight (#173) — nothing to show this frame. Only while the
   // redirect is actually pending: once cats hits 0 by removal instead, the

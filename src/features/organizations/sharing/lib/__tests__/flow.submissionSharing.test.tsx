@@ -22,6 +22,27 @@ import { confirmedSharing } from '@/src/features/organizations/sharing/lib/conse
 import { DEFAULT_SHARING, type Catalog } from '@/src/shared/types/Organizations'
 import { fakeOrganizationsService } from '@/src/test-utils/organizationsService'
 
+/**
+ * Flow: choosing organizations to share a Sighting with
+ * On Submission Details, the user picks the organizations covering their
+ * Sighting and confirms sharing. Changing a choice, such as ticking
+ * Anonymous, requires confirming again. A restart never reuses a
+ * confirmation silently. A fresh Sighting starts with no choices made.
+ *
+ * - Revocation: only revoking an organization that was picked withdraws
+ *   the confirmation.
+ * - Accounts: the list shows only organizations covering this Sighting;
+ *   another account never sees this user's choices; with the feature off,
+ *   choices are cleared.
+ * - Offline: a failed directory refresh keeps the saved list usable; a
+ *   corrupt saved list is ignored.
+ *
+ * States: organizations listed, picked, confirmed, unconfirmed after a
+ * change, restored after restart, cleared for a new Sighting or account.
+ * Events: pick, confirm, tick Anonymous, change settings, restart, new
+ * Sighting, revoke, switch account, flag off, refresh fails.
+ */
+
 jest.mock('expo-router', () => ({ router: { push: jest.fn() } }))
 const square = (x: number): [number, number][][] => [
   [

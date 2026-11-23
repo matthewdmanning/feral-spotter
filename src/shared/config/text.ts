@@ -48,6 +48,17 @@ export const commonCopy = {
   notConfigured: 'not configured',
 } as const
 
+// No-photos prompt copy owner (#503): shown instead of an empty Annotate.
+export const noPhotosCopy = {
+  title: 'No Photos to Annotate',
+  message: 'Get more photos, or describe a cat without boxing it.',
+  takePhotos: 'Take Photos',
+  uploadPhotos: 'Upload Photos',
+  justDescribe: 'Just Describe',
+  backToCatList: 'Back to Cat List',
+  cancelSighting: 'Cancel Sighting',
+} as const
+
 // Auth copy owner.
 export const authCopy = {
   signInSubtitle: 'Sign in to start submitting cat observations.',

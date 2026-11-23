@@ -1,3 +1,5 @@
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { act, screen } from '@testing-library/react-native'
 import {
   renderRouter,
@@ -17,10 +19,20 @@ import {
 import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 
 /**
- * The cat pass against the real router. Each pass leaves from Cat List and
- * comes back to it, so the stack must end where it started: a second Cat
- * List under the first kept a second Submission Details mounted, running
- * its own draft sync, for every cat recorded.
+ * Flow: the cat pass, Cat List → Annotate → Cat Form → Cat List
+ * With one cat recorded, the user taps Add a Cat, boxes it in Annotate, and
+ * reaches Cat Form. They save the cat or abandon it, or edit a cat and
+ * remove it. Each way ends on the one Cat List they started from: a
+ * replace used to leave a second Cat List, with its own draft sync, per cat.
+ *
+ * States:
+ * - Cat List: one cat recorded; one photo in the draft.
+ * - Annotate: pushed above Cat List.
+ * - Cat Form: replaces Annotate (new cat) or is pushed (edit).
+ * - Back on Cat List: the submission stack holds Cat List alone.
+ * - First cat: Cat Form reached by replaces, with no Cat List beneath;
+ *   leaving adds one in its place.
+ * Events: Add a Cat, Boxing Complete, Save, abandon, Edit, Remove.
  */
 
 const routes = {
@@ -57,6 +69,7 @@ async function run(step: () => void) {
 
 beforeEach(() => {
   useSubmissionStore.getState().clearDraft()
+  usePhotoStore.setState({ photos: [submissionPhoto()] })
   useSubmissionStore.getState().addCat(observedCat({ local_id: 'cat-1' }))
 })
 

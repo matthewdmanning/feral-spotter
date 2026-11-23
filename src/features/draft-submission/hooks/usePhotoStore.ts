@@ -22,6 +22,12 @@ export type PhotoSource = 'camera' | 'library' | null
 interface PhotoState {
   photos: SubmissionPhoto[]
   source: PhotoSource
+  // The entrypoint that last added photos. Unlike `source`, survives the
+  // pool emptying, so "get more photos" can reopen it; cleared with the draft.
+  last_source: PhotoSource
+  // The user chose Just Describe (#503): Cat List stops asking for photos
+  // by itself. A new photo or a cleared draft ends it.
+  done_adding_photos: boolean
   // Storage upload path key (submissions/{uid}/{submissionId}/...) — generated
   // on the first photo, since the submission-cache ID (Submission Details
   // screen) doesn't exist yet at capture time. Distinct ID space from that
@@ -41,6 +47,7 @@ interface PhotoState {
   updatePhoto: (localId: string, patch: Partial<SubmissionPhoto>) => void
   removePhoto: (localId: string) => void
   clearPhotos: (deferFileDeletion?: boolean) => void
+  markDoneAddingPhotos: () => void
 }
 
 /** Every local file a photo owns: the JPEG, and its DNG sidecar if any. */
@@ -83,6 +90,8 @@ export const usePhotoStore = create<PhotoState>()(
     (set) => ({
       photos: [],
       source: null,
+      last_source: null,
+      done_adding_photos: false,
       submissionId: null,
       updated_at: null,
       usedSlots: [],
@@ -96,6 +105,8 @@ export const usePhotoStore = create<PhotoState>()(
             ...slotted,
             photos: [...s.photos, ...slotted.photos],
             source: 'camera',
+            last_source: 'camera',
+            done_adding_photos: false,
             submissionId: s.submissionId ?? randomUUID(),
             updated_at: Date.now(),
           }
@@ -110,6 +121,8 @@ export const usePhotoStore = create<PhotoState>()(
             ...slotted,
             photos: [...s.photos, ...slotted.photos],
             source: 'library',
+            last_source: 'library',
+            done_adding_photos: false,
             submissionId: s.submissionId ?? randomUUID(),
             updated_at: Date.now(),
           }
@@ -150,11 +163,15 @@ export const usePhotoStore = create<PhotoState>()(
           return {
             photos: [],
             source: null,
+            last_source: null,
+            done_adding_photos: false,
             submissionId: null,
             updated_at: null,
             usedSlots: [],
           }
         }),
+
+      markDoneAddingPhotos: () => set({ done_adding_photos: true }),
     }),
     {
       name: 'photo-store',

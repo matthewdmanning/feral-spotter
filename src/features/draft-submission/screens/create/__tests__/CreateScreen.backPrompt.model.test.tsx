@@ -1,3 +1,4 @@
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
 import { act, render } from '@testing-library/react-native'
 import React from 'react'
 import { router } from 'expo-router'
@@ -98,7 +99,7 @@ describe('Submission Details hardware Back — model-based test', () => {
   beforeEach(async () => {
     mockFocused = true
     useUIStore.setState({ dialog: null })
-    usePhotoStore.setState({ source: 'camera' })
+    usePhotoStore.setState({ source: 'camera', photos: [submissionPhoto()] })
     useSubmissionStore.setState({ cats: [observedCat()] })
     lastBackHandled = false
     const result = await render(<CreateSubmissionScreen />)

@@ -10,10 +10,18 @@ import {
 import { Pressable, Text } from 'react-native'
 
 /**
- * Camera's Done against the real router. Submission Details opens Camera
- * for more photos, so Done must come back to that Submission Details, not
- * stack a second one above it: each copy runs its own draft sync, and Back
- * walked through every one.
+ * Flow: Camera Done, first time and after Take More Photos
+ * The user opens Camera from Home and taps Done, landing on Submission
+ * Details. Later they tap Take More Photos, take more, and tap Done again.
+ * They must return to the same Submission Details: Done used to stack a
+ * new copy each time, each running its own draft sync.
+ *
+ * States:
+ * - Home: Home alone on the stack.
+ * - Camera: Camera above Home; draft ready.
+ * - Submission Details: Home, then one Submission; Camera gone.
+ * - Camera again: opened above that Submission Details.
+ * Events: open Camera, tap Done, tap Take More Photos.
  */
 
 jest.mock('@shopify/flash-list', () => ({ FlashList: 'FlashList' }))

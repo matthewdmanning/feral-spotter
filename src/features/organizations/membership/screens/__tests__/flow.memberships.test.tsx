@@ -14,6 +14,27 @@ import {
 import { queryWrapper } from '@/src/test-utils/queryClient'
 import type { MembershipSummary } from '@/functions/src/organizations/membership/domain'
 
+/**
+ * Flow: requesting and managing organization memberships
+ * A signed-in user enters an invite code to request membership, waits for
+ * approval, and arranges their organization cards.
+ *
+ * - Joining: an account with no name cannot request; with a name, the
+ *   request shows "Pending approval", then "Active member" after refresh.
+ *   Cards show status, member count and area, never the user's name.
+ *   Switching accounts clears the cards and any typed code.
+ * - Arranging: Arrange hides the invite form; dragging reorders the cards;
+ *   Cancel restores the order; Save keeps it for this account.
+ * - Loading: the first load shows "Loading memberships…", not the empty
+ *   message; a failed load offers a retry.
+ * - Refresh during a request: returning to the app mid-request does not
+ *   drop the request's result.
+ *
+ * States: no memberships, pending, active, arranging, loading, failed.
+ * Events: type code, request, refresh, switch account, Arrange, drag,
+ * Cancel, Save, app foregrounded.
+ */
+
 test('the account name is never entered or shown on cards; cards show status, members and location; switching accounts clears forms', async () => {
   const user = userEvent.setup()
   useAuthStore.setState({

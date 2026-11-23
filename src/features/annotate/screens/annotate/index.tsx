@@ -8,9 +8,9 @@ import { ANNOTATION_TUTORIAL_STEPS } from '@/src/features/annotate/config/tutori
 import { useAnnotationTutorial } from '@/src/features/annotate/hooks/useAnnotationTutorial'
 import { useAnnotatePass } from '@/src/features/annotate/hooks/useAnnotatePass'
 import { useBackHandler } from '@/src/shared/hooks/useBackHandler'
-import { router } from 'expo-router'
+import { leaveEmptyPass } from '@/src/features/draft-submission/hooks/catPass'
 import { TrashIcon } from 'phosphor-react-native/src/icons/Trash'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Text } from '@/src/shared/ui/atoms/Text'
 import { Pressable, ScrollView, useWindowDimensions, View } from 'react-native'
 import Carousel from 'react-native-reanimated-carousel'
@@ -30,7 +30,6 @@ export default function AnnotateScreen() {
     handleConfirmBox,
     handleNotInPhoto,
     handleBoxingComplete,
-    clearActiveCat,
     handlePrevPhoto,
     handleLongPressRemove,
   } = useAnnotatePass()
@@ -43,29 +42,18 @@ export default function AnnotateScreen() {
   // every exit case: it falls back to handleAbandonPass itself whenever
   // there's no active cat or no confirmed boxes yet (useActiveCatFlow).
   //
-  // The empty state has no pass to protect: Back does what its "Go back"
-  // button does.
-  const leaveEmpty = () => {
-    clearActiveCat()
-    router.back()
-  }
-  useBackHandler(() => {
-    if (photos.length === 0) leaveEmpty()
-    return true
-  })
+  // Annotate never shows empty (#503): once the last photo is removed, the
+  // pass ends on Cat List, which asks what next. Nothing renders meanwhile.
+  const isEmpty = photos.length === 0
+  useEffect(() => {
+    if (isEmpty) leaveEmptyPass()
+  }, [isEmpty])
+  useBackHandler(() => true)
   const { width: screenWidth } = useWindowDimensions()
 
   const tutorial = useAnnotationTutorial()
 
-  if (photos.length === 0)
-    return (
-      <View style={styles.empty}>
-        <Text style={styles.emptyText}>No photos to review.</Text>
-        <AppButton variant="secondary" onPress={leaveEmpty}>
-          Go back
-        </AppButton>
-      </View>
-    )
+  if (isEmpty) return null
 
   const isFirst = currentIndex === 0
 
