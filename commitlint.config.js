@@ -36,5 +36,7 @@ module.exports = {
     // Commits imported with the former feral-spotter-docs history. That repo
     // never ran commitlint, and rewriting history would break the import.
     (message) => IMPORTED_DOCS_SUBJECTS.has(message.split('\n')[0].trim()),
+    // Dependabot bodies hold generated release-note tables with long lines.
+    (message) => /^Signed-off-by: dependabot\[bot\]/m.test(message),
   ],
 }
