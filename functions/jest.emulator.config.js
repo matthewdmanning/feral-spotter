@@ -1,7 +1,6 @@
 // Separate lane: these tests require loopback Auth, Firestore, and Storage emulators.
 module.exports = {
-  preset: 'ts-jest',
-  testEnvironment: 'node',
+  ...require('./jest.config'),
   testMatch: [
     '<rootDir>/src/organizations/emulator-tests/**/*.test.ts',
     '<rootDir>/src/uploads/emulator-tests/**/*.test.ts',
