@@ -17,8 +17,8 @@ import { observedCat } from '@/src/test-utils/catFixtures'
 
 /**
  * The Create screen's sharing card follows the evaluated Organizations flag:
- * the build flag is the master gate; when on, the PostHog rollout decides, and
- * only after analytics consent. The flag evaluation runs for real; PostHog is
+ * with analytics consent the PostHog rollout decides; without it the build flag
+ * does. The flag evaluation runs for real; PostHog is
  * the network boundary.
  */
 
@@ -86,10 +86,12 @@ afterEach(() => {
 
 it.each([
   // build flag, analytics consent, PostHog rollout → sharing card shown
-  [false, true, true, false],
-  [true, false, true, false],
-  [true, true, true, true],
+  [false, false, true, false],
+  [true, false, false, true],
+  [false, true, true, true],
+  [false, true, false, false],
   [true, true, false, false],
+  [true, true, true, true],
 ])(
   'build flag %s, analytics consent %s, rollout %s: sharing card shown is %s',
   async (build, analytics, rollout, shown) => {

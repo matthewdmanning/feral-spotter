@@ -75,8 +75,8 @@ test('off, it still delivers a pending revocation', async () => {
   await waitFor(() => expect(service.actions()).toEqual(['list', 'revoke']))
 })
 
-test('granting analytics consent lets the rollout turn Organizations on', async () => {
-  flags.organizations = true
+test('granting analytics consent lets the rollout override the build flag', async () => {
+  flags.organizations = false
   useUIStore.setState({ isOnline: false })
   await render(<OrganizationsRuntime />)
   await act(async () => {})

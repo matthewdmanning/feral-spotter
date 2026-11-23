@@ -47,10 +47,12 @@ afterEach(() => {
 
 it.each([
   // build flag, analytics consent, PostHog rollout → entry shown
-  [false, true, true, false],
-  [true, false, true, false],
-  [true, true, true, true],
+  [false, false, true, false],
+  [true, false, false, true],
+  [false, true, true, true],
+  [false, true, false, false],
   [true, true, false, false],
+  [true, true, true, true],
 ])(
   'build flag %s, analytics consent %s, rollout %s: Organizations shown is %s',
   async (build, analytics, rollout, shown) => {

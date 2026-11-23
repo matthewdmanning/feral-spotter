@@ -15,24 +15,25 @@ interface FlagState {
 }
 let inFlight: Promise<void> | null = null
 /**
- * The build flag is the master gate: off keeps Organizations off. On, the
- * PostHog rollout decides, asked only after data and analytics consent;
- * without both, Organizations stays off. The request never starts the
- * analytics SDK or sends capture/identify events.
+ * With data and analytics consent, the PostHog rollout decides, even against
+ * the build flag. The build flag is the default for everything else: no
+ * consent, no PostHog configuration, or no usable evaluation. The request
+ * never starts the analytics SDK or sends capture/identify events.
  */
 export const useOrganizationsFlag = create<FlagState>((set) => ({
-  enabled: false,
+  enabled: FEATURE_FLAGS.organizations,
   pinInteractionsEnabled: false,
   refresh: () => {
     if (inFlight) return inFlight
     inFlight = (async () => {
+      // PostHog is not asked, or gives no answer: the build flag decides.
+      const fallback = {
+        enabled: FEATURE_FLAGS.organizations,
+        pinInteractionsEnabled: false,
+      }
       try {
-        if (
-          !FEATURE_FLAGS.organizations ||
-          !hasAcceptedConsent() ||
-          !hasAcceptedAnalytics()
-        ) {
-          set({ enabled: false, pinInteractionsEnabled: false })
+        if (!hasAcceptedConsent() || !hasAcceptedAnalytics()) {
+          set(fallback)
           return
         }
         const apiKey = Constants.expoConfig?.extra?.posthogProjectToken as
@@ -40,7 +41,7 @@ export const useOrganizationsFlag = create<FlagState>((set) => ({
         const host = Constants.expoConfig?.extra?.posthogHost as
           string | undefined
         if (!apiKey || !host) {
-          set({ enabled: false, pinInteractionsEnabled: false })
+          set(fallback)
           return
         }
         let distinctId = await asyncStorage.getItem(
@@ -54,8 +55,7 @@ export const useOrganizationsFlag = create<FlagState>((set) => ({
           )
         }
         const cached = await asyncStorage.getItem('organizations-flag-v1')
-        let cachedEnabled = false
-        let cachedInteractionsEnabled = false
+        let before = fallback
         if (cached) {
           try {
             const previous = JSON.parse(cached) as {
@@ -63,20 +63,22 @@ export const useOrganizationsFlag = create<FlagState>((set) => ({
               pinInteractionsEnabled?: boolean
               checkedAt: number
             }
-            cachedEnabled =
-              previous.enabled === true &&
+            // A fresh cached evaluation, on or off, stands in until the reply.
+            if (
+              typeof previous.enabled === 'boolean' &&
               previous.checkedAt <= Date.now() &&
               Date.now() - previous.checkedAt < 24 * 60 * 60 * 1000
-            cachedInteractionsEnabled =
-              cachedEnabled && previous.pinInteractionsEnabled === true
+            )
+              before = {
+                enabled: previous.enabled,
+                pinInteractionsEnabled:
+                  previous.enabled && previous.pinInteractionsEnabled === true,
+              }
           } catch {
             /* Ignore a corrupt cache and still request the current flag. */
           }
         }
-        set({
-          enabled: cachedEnabled,
-          pinInteractionsEnabled: cachedInteractionsEnabled,
-        })
+        set(before)
         const response = await fetch(`${host.replace(/\/$/, '')}/flags/?v=2`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -92,11 +94,14 @@ export const useOrganizationsFlag = create<FlagState>((set) => ({
           flags?: Record<string, { enabled?: boolean }>
           errorsWhileComputingFlags?: boolean
         } | null
-        const enabled =
-          result?.errorsWhileComputingFlags !== true &&
-          result?.flags?.Organizations?.enabled === true
+        // An unusable evaluation says nothing about the rollout.
+        if (!result?.flags || result.errorsWhileComputingFlags === true) {
+          set(fallback)
+          return
+        }
+        const enabled = result.flags.Organizations?.enabled === true
         const pinInteractionsEnabled =
-          enabled && result?.flags?.PinInteractions?.enabled === true
+          enabled && result.flags.PinInteractions?.enabled === true
         set({ enabled, pinInteractionsEnabled })
         await asyncStorage.setItem(
           'organizations-flag-v1',
@@ -107,7 +112,7 @@ export const useOrganizationsFlag = create<FlagState>((set) => ({
           }),
         )
       } catch {
-        /* Fresh cached evaluation remains usable offline; initial state is off. */
+        /* Offline, a fresh cached evaluation or the build flag stays in effect. */
       }
     })().finally(() => {
       inFlight = null

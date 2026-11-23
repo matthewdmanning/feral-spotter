@@ -65,8 +65,8 @@ afterEach(() => {
   flags.organizations = buildFlag
 })
 beforeEach(() => {
-  // Build flag on and full consent: the PostHog rollout decides.
-  flags.organizations = true
+  // Full consent and the build flag off: the PostHog rollout decides.
+  flags.organizations = false
   grantConsent(true)
   jest
     .mocked(randomUUID)
@@ -99,12 +99,16 @@ const ROLLOUT_OFF = {
 }
 test.each([
   // build flag, consent, rollout → enabled, PostHog asked
+  // Without consent the build flag decides and PostHog is never asked.
   ['off', 'none', ROLLOUT_ON, false, false],
-  ['off', 'analytics', ROLLOUT_ON, false, false],
-  ['on', 'none', ROLLOUT_ON, false, false],
-  ['on', 'data only', ROLLOUT_ON, false, false],
-  ['on', 'analytics', ROLLOUT_ON, true, true],
+  ['off', 'data only', ROLLOUT_ON, false, false],
+  ['on', 'none', ROLLOUT_OFF, true, false],
+  ['on', 'data only', ROLLOUT_OFF, true, false],
+  // With analytics consent PostHog wins, either way.
+  ['off', 'analytics', ROLLOUT_ON, true, true],
   ['on', 'analytics', ROLLOUT_OFF, false, true],
+  ['on', 'analytics', ROLLOUT_ON, true, true],
+  ['off', 'analytics', ROLLOUT_OFF, false, true],
 ] as const)(
   'build flag %s, consent %s: rollout %j gives enabled=%s, asked PostHog=%s',
   async (build, consent, rollout, enabled, asked) => {
@@ -239,4 +243,36 @@ test('corrupt cached evaluation does not prevent an online refresh', async () =>
     enabled: true,
     pinInteractionsEnabled: true,
   })
+})
+
+test('an unusable evaluation falls back to the build flag, not to off', async () => {
+  flags.organizations = true
+  evaluation = { ...bothEnabled, errorsWhileComputingFlags: true }
+  await useOrganizationsFlag.getState().refresh()
+  expect(useOrganizationsFlag.getState()).toMatchObject({
+    enabled: true,
+    pinInteractionsEnabled: false,
+  })
+})
+
+test('offline with a fresh cached off evaluation, PostHog still wins over the build flag', async () => {
+  flags.organizations = true
+  await AsyncStorage.setItem(
+    'organizations-flag-v1',
+    JSON.stringify({
+      enabled: false,
+      pinInteractionsEnabled: false,
+      checkedAt: Date.now(),
+    }),
+  )
+  offline = true
+  await useOrganizationsFlag.getState().refresh()
+  expect(useOrganizationsFlag.getState().enabled).toBe(false)
+})
+
+test('offline with no cached evaluation, the build flag stands', async () => {
+  flags.organizations = true
+  offline = true
+  await useOrganizationsFlag.getState().refresh()
+  expect(useOrganizationsFlag.getState().enabled).toBe(true)
 })
