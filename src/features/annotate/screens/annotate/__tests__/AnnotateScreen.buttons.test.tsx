@@ -1,6 +1,5 @@
 import { act, userEvent, render, screen } from '@testing-library/react-native'
 import { useWindowDimensions } from 'react-native'
-import { router } from 'expo-router'
 import React from 'react'
 import { useAnnotatePass } from '@/src/features/annotate/hooks/useAnnotatePass'
 import AnnotateScreen from '@/src/features/annotate/screens/annotate/index'
@@ -100,17 +99,7 @@ describe('AnnotateScreen buttons', () => {
     jest.spyOn(buttonRowStyles, 'useVariants')
   })
 
-  it('empty photo pool: Go back clears the active cat and pops the screen', async () => {
-    jest
-      .mocked(useAnnotatePass)
-      .mockReturnValue({ ...baseAnnotatePass, photos: [] })
-    await render(<AnnotateScreen />)
-
-    await userEvent.press(screen.getByText('Go back'))
-
-    expect(clearActiveCat).toHaveBeenCalledTimes(1)
-    expect(router.back).toHaveBeenCalledTimes(1)
-  })
+  // Empty photo pool: AnnotateScreen.emptyPool.test.tsx, on the real router.
 
   it('first photo: Previous is disabled and does not call the handler', async () => {
     jest

@@ -1,7 +1,7 @@
 /**
  * hooks/catPass.ts
  * The cat pass: Cat List → Annotate → Cat Form and back. One module owns
- * the routes, push-vs-replace, the "last cat removed" landing signal and
+ * the routes, push-vs-replace, the "no auto-skip" landing signal and
  * the in-progress cat id (#292's one-owner rule), so screens call intents
  * ("start a pass", "abandon it", "back to Cat List") instead of each
  * knowing the rules.
@@ -18,6 +18,8 @@
  * - Abandoning with no cat recorded lands Home: Cat List's auto-skip would
  *   bounce straight back into Annotate.
  * - Removing the last cat lands on Cat List without the auto-skip (#299).
+ * - Annotate left with no photos offers three exits (#503): more photos,
+ *   Cat List without the auto-skip, or Cat Form to describe a cat.
  * - A cat left unfinished keeps no boxes and no id (#304).
  *
  * Plain functions read the stores fresh, so a confirm handler never acts on
@@ -35,7 +37,7 @@ const CAT_LIST = '/submission/create'
 const ANNOTATE = '/submission/annotate'
 const CAT_FORM = '/submission/cats'
 // Private to this module: Cat List reads it through useCatListLanding.
-const REMOVED_LAST_CAT_PARAM = 'removed'
+const NO_AUTO_SKIP_PARAM = 'noAutoSkip'
 
 const recordedCatIds = () =>
   useSubmissionStore.getState().cats.map((cat) => cat.local_id)
@@ -102,26 +104,51 @@ export function removeCatFromDraft(catId: string): void {
   clearActiveCatIfMatches(catId)
 }
 
-/** After removing a cat from Cat Form: Cat List, without the auto-skip. */
-export function returnToCatListAfterRemoval(): void {
+/** Cat List, without the auto-skip back into Annotate. */
+function returnToCatListWithoutAutoSkip(): void {
   router.dismissTo({
     pathname: CAT_LIST,
-    params: { [REMOVED_LAST_CAT_PARAM]: '1' },
+    params: { [NO_AUTO_SKIP_PARAM]: '1' },
   })
+}
+
+/** After removing a cat from Cat Form: Cat List, without the auto-skip. */
+export function returnToCatListAfterRemoval(): void {
+  returnToCatListWithoutAutoSkip()
+}
+
+// ─── Annotate with no photos left (#503) ────────────────────────────────────
+
+/** Opens a photo source; the caller passes the photo-entry rule's opener. */
+export function leavePassForMorePhotos(openSource: () => void): void {
+  startFreshPass()
+  openSource()
+}
+
+/** On to Cat List. It must not auto-skip back into an empty Annotate. */
+export function continueWithoutPhotos(): void {
+  startFreshPass()
+  returnToCatListWithoutAutoSkip()
+}
+
+/** Cat Form in Annotate's place, to describe a cat with no boxes. */
+export function skipAnnotating(): void {
+  startFreshPass()
+  router.replace(CAT_FORM)
 }
 
 /**
  * Cat List's landing rule (#173, #189, #299). Landing with nothing recorded
  * skips straight into Annotate, once, decided at mount: a live watch would
  * also fire when Reset empties the cats and race its navigation Home.
- * Landing because the last cat was removed does not skip. Returns whether
- * the skip is in flight, so Cat List renders nothing that frame.
+ * Landing after a removed last cat or an empty Annotate does not skip.
+ * Returns whether the skip is in flight, so Cat List renders nothing then.
  */
 export function useCatListLanding(): { autoSkipPending: boolean } {
-  const params = useLocalSearchParams<{ [REMOVED_LAST_CAT_PARAM]?: string }>()
-  const removedLastCat = params[REMOVED_LAST_CAT_PARAM] === '1'
+  const params = useLocalSearchParams<{ [NO_AUTO_SKIP_PARAM]?: string }>()
+  const noAutoSkip = params[NO_AUTO_SKIP_PARAM] === '1'
   const catCount = useSubmissionStore((state) => state.cats.length)
-  const [autoSkipPending] = useState(() => catCount === 0 && !removedLastCat)
+  const [autoSkipPending] = useState(() => catCount === 0 && !noAutoSkip)
   useEffect(() => {
     if (!autoSkipPending) return
     startFreshPass([])

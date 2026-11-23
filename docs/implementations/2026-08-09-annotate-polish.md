@@ -31,3 +31,8 @@ Also unverified: whether a fast double-tap could leak into the fling threshold, 
 - `npx eslint` on all changed files — clean
 - `npx jest` — 120/120 passing (full suite, no regressions)
 - Issue is labeled `needs-physical-device`; none of items 3/4 have had that pass yet.
+
+## 2026-11-23 — extension
+
+**Purpose:** Annotate with no photos left had only "Go back" (`router.back()`), which broke `catPass`'s named-destination rule (#203) and kept the unfinished cat's boxes (#503).
+**Change:** Emptying the pool opens a dialog: Take More Photos (Camera), Continue (Cat List, no auto-skip) or Skip Annotating (Cat Form in Annotate's place). Each runs `startFreshPass()` via new `catPass` intents. Back and the empty view's Choose Next Step reopen it. Copy: `annotateCopy` in `shared/config/text.ts`. Landing param renamed `removed` → `noAutoSkip`. Test: `AnnotateScreen.emptyPool.test.tsx` (real router, all three exits plus reopen).

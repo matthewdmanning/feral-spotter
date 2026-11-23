@@ -8,9 +8,15 @@ import { ANNOTATION_TUTORIAL_STEPS } from '@/src/features/annotate/config/tutori
 import { useAnnotationTutorial } from '@/src/features/annotate/hooks/useAnnotationTutorial'
 import { useAnnotatePass } from '@/src/features/annotate/hooks/useAnnotatePass'
 import { useBackHandler } from '@/src/shared/hooks/useBackHandler'
-import { router } from 'expo-router'
+import { annotateCopy } from '@/src/shared/config/text'
+import {
+  continueWithoutPhotos,
+  leavePassForMorePhotos,
+  skipAnnotating,
+} from '@/src/features/draft-submission/hooks/catPass'
+import { usePhotoEntrypoints } from '@/src/workflows/photo-entry/hooks/usePhotoEntrypoints'
 import { TrashIcon } from 'phosphor-react-native/src/icons/Trash'
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Text } from '@/src/shared/ui/atoms/Text'
 import { Pressable, ScrollView, useWindowDimensions, View } from 'react-native'
 import Carousel from 'react-native-reanimated-carousel'
@@ -30,7 +36,6 @@ export default function AnnotateScreen() {
     handleConfirmBox,
     handleNotInPhoto,
     handleBoxingComplete,
-    clearActiveCat,
     handlePrevPhoto,
     handleLongPressRemove,
   } = useAnnotatePass()
@@ -43,26 +48,37 @@ export default function AnnotateScreen() {
   // every exit case: it falls back to handleAbandonPass itself whenever
   // there's no active cat or no confirmed boxes yet (useActiveCatFlow).
   //
-  // The empty state has no pass to protect: Back does what its "Go back"
-  // button does.
-  const leaveEmpty = () => {
-    clearActiveCat()
-    router.back()
-  }
+  // No photos left (#503): ask what next instead of leaving. Back, and the
+  // empty view's button, reopen the question after Back dismisses it.
+  const isEmpty = photos.length === 0
+  const { camera } = usePhotoEntrypoints()
+  const offerNextStep = useCallback(() => {
+    showAlert(annotateCopy.noPhotosTitle, annotateCopy.noPhotosMessage, [
+      {
+        text: annotateCopy.takeMorePhotos,
+        onPress: () => leavePassForMorePhotos(camera.open),
+      },
+      { text: annotateCopy.continue, onPress: continueWithoutPhotos },
+      { text: annotateCopy.skipAnnotating, onPress: skipAnnotating },
+    ])
+  }, [camera.open])
+  useEffect(() => {
+    if (isEmpty) offerNextStep()
+  }, [isEmpty, offerNextStep])
   useBackHandler(() => {
-    if (photos.length === 0) leaveEmpty()
+    if (isEmpty) offerNextStep()
     return true
   })
   const { width: screenWidth } = useWindowDimensions()
 
   const tutorial = useAnnotationTutorial()
 
-  if (photos.length === 0)
+  if (isEmpty)
     return (
       <View style={styles.empty}>
-        <Text style={styles.emptyText}>No photos to review.</Text>
-        <AppButton variant="secondary" onPress={leaveEmpty}>
-          Go back
+        <Text style={styles.emptyText}>{annotateCopy.noPhotosBody}</Text>
+        <AppButton variant="secondary" onPress={offerNextStep}>
+          {annotateCopy.chooseNextStep}
         </AppButton>
       </View>
     )
