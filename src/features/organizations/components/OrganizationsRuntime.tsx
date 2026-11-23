@@ -6,11 +6,18 @@ import { useOrganizationSharingStore } from '@/src/features/organizations/hooks/
 import { useOrganizationDirectoryStore } from '@/src/features/organizations/hooks/useOrganizationDirectory'
 import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
+import { useConsentStore } from '@/src/shared/consent/useConsentStore'
 
+/** Off, it syncs only to deliver pending items such as revocations. */
 function syncPermissions() {
   const uid = useAuthStore.getState().user?.uid
-  if (uid && useOrganizationSharingStore.getState().hydrated)
-    void useOrganizationSharingStore.getState().sync(uid)
+  const sharing = useOrganizationSharingStore.getState()
+  if (!uid || !sharing.hydrated) return
+  if (
+    useOrganizationsFlag.getState().enabled ||
+    (sharing.accounts[uid]?.outbox.length ?? 0) > 0
+  )
+    void sharing.sync(uid)
 }
 /** Flag, then directory around the open draft's location (or the saved center), then permissions. */
 async function refreshAll() {
@@ -29,6 +36,12 @@ export function OrganizationsRuntime() {
   const uid = useAuthStore((s) => s.user?.uid)
   const hydrated = useOrganizationSharingStore((s) => s.hydrated)
   const enabled = useOrganizationsFlag((s) => s.enabled)
+  // Consent decides whether PostHog may be asked, so a change re-evaluates.
+  const analyticsAccepted = useConsentStore((s) => s.analyticsAccepted)
+  const consentAccepted = useConsentStore((s) => s.accepted)
+  useEffect(() => {
+    void useOrganizationsFlag.getState().refresh()
+  }, [analyticsAccepted, consentAccepted])
   useEffect(() => {
     if (!online) return
     void refreshAll()

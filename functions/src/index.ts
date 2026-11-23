@@ -353,4 +353,4 @@ export const admitPhotoUpload = onRequest(
   },
 )
 
-export { organizationsApi } from './organizations/api'
+export { organizationsApi } from './organizations/features'

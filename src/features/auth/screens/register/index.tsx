@@ -10,23 +10,25 @@ import { TextField } from '@/src/shared/ui/atoms/TextField'
 import { useAuthAttempt } from '@/src/features/auth/hooks/useAuthAttempt'
 import { useAuth } from '@/src/features/auth/lib/useAuth'
 import { validateRegistration } from '@/src/shared/utils/validation'
+import { MEMBER_NAME_MAX_LENGTH } from '@/functions/src/organizations/membership/domain'
 import { styles } from './index.styles'
 
 export default function RegisterScreen() {
   const headerHeight = useHeaderHeight()
   const { registerWithEmail } = useAuth()
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const { busy, attempt } = useAuthAttempt()
 
   const handleRegister = () => {
-    const problem = validateRegistration(email, password, confirm)
+    const problem = validateRegistration(name, email, password, confirm)
     if (problem) {
       showAlert(problem.title, problem.message)
       return
     }
-    void attempt(() => registerWithEmail(email.trim(), password), {
+    void attempt(() => registerWithEmail(email.trim(), password, name.trim()), {
       tag: '[register]',
       title: authCopy.registrationFailedTitle,
       message: authCopy.registrationFailedMessage,
@@ -48,6 +50,15 @@ export default function RegisterScreen() {
         <Text style={styles.subtitle}>{authCopy.registrationSubtitle}</Text>
 
         <View style={styles.fields}>
+          <TextField
+            value={name}
+            onChangeText={setName}
+            placeholder={authCopy.name}
+            autoComplete="name"
+            autoCapitalize="words"
+            maxLength={MEMBER_NAME_MAX_LENGTH}
+            accessibilityLabel={authCopy.name}
+          />
           <TextField
             value={email}
             onChangeText={setEmail}

@@ -1,13 +1,17 @@
 import { randomUUID } from 'expo-crypto'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { http, HttpResponse } from 'msw'
+import { server } from '@/src/test-utils/mswServer'
 import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
+import { FEATURE_FLAGS } from '@/src/shared/config/constants'
+import {
+  CONSENT_VERSION,
+  useConsentStore,
+} from '@/src/shared/consent/useConsentStore'
 
-// The supplied expo-crypto mock returns no UUIDs.
-jest.mock('expo-crypto', () => ({
-  ...jest.requireActual('expo-crypto'),
-  randomUUID: jest.fn(),
-}))
 let nextId = 0
+const flags = FEATURE_FLAGS as { organizations: boolean }
+const buildFlag = flags.organizations
 jest.mock('expo-constants', () => {
   const actual = jest.requireActual('expo-constants')
   return {
@@ -25,97 +29,250 @@ jest.mock('expo-constants', () => {
     },
   }
 })
-const originalFetch = global.fetch
-const fetchMock = jest.fn()
+
+const bothEnabled = {
+  flags: {
+    Organizations: { enabled: true },
+    PinInteractions: { enabled: true },
+  },
+}
+let evaluation: Record<string, unknown> | null
+let offline: boolean
+let invalidJSON: boolean
+let requests: { url: string; body: unknown }[]
+
+function grantConsent(analytics: boolean | null) {
+  useConsentStore.setState({
+    accepted: true,
+    acceptedVersion: CONSENT_VERSION,
+    analyticsAccepted: analytics,
+  })
+}
+
 /** A fresh, enabled evaluation, so each case must actively turn it off. */
 async function startEnabled() {
-  useOrganizationsFlag.setState({ enabled: true })
+  useOrganizationsFlag.setState({ enabled: true, pinInteractionsEnabled: true })
   await AsyncStorage.setItem(
     'organizations-flag-v1',
-    JSON.stringify({ enabled: true, checkedAt: Date.now() }),
+    JSON.stringify({
+      enabled: true,
+      pinInteractionsEnabled: true,
+      checkedAt: Date.now(),
+    }),
   )
 }
+afterEach(() => {
+  flags.organizations = buildFlag
+})
 beforeEach(() => {
+  // Full consent and the build flag off: the PostHog rollout decides.
+  flags.organizations = false
+  grantConsent(true)
   jest
     .mocked(randomUUID)
     .mockImplementation(
       () => `installation-${++nextId}` as ReturnType<typeof randomUUID>,
     )
-  global.fetch = fetchMock
-  fetchMock.mockReset()
-  useOrganizationsFlag.setState({ enabled: false })
-})
-afterAll(() => {
-  global.fetch = originalFetch
+  evaluation = bothEnabled
+  offline = false
+  invalidJSON = false
+  requests = []
+  server.use(
+    http.post('https://flags.example.com/flags/', async ({ request }) => {
+      requests.push({ url: request.url, body: await request.json() })
+      if (offline) return HttpResponse.error()
+      if (invalidJSON)
+        return new HttpResponse('{broken', {
+          headers: { 'Content-Type': 'application/json' },
+        })
+      return HttpResponse.json(evaluation)
+    }),
+  )
 })
 
-test('evaluates Organizations without analytics, identity or location; a fresh cached result works offline', async () => {
-  fetchMock.mockResolvedValue({
-    ok: true,
-    json: async () => ({ flags: { Organizations: { enabled: true } } }),
+const ROLLOUT_ON = bothEnabled
+const ROLLOUT_OFF = {
+  flags: {
+    Organizations: { enabled: false },
+    PinInteractions: { enabled: false },
+  },
+}
+test.each([
+  // build flag, consent, rollout → enabled, PostHog asked
+  // Without consent the build flag decides and PostHog is never asked.
+  ['off', 'none', ROLLOUT_ON, false, false],
+  ['off', 'data only', ROLLOUT_ON, false, false],
+  ['on', 'none', ROLLOUT_OFF, true, false],
+  ['on', 'data only', ROLLOUT_OFF, true, false],
+  // With analytics consent PostHog wins, either way.
+  ['off', 'analytics', ROLLOUT_ON, true, true],
+  ['on', 'analytics', ROLLOUT_OFF, false, true],
+  ['on', 'analytics', ROLLOUT_ON, true, true],
+  ['off', 'analytics', ROLLOUT_OFF, false, true],
+] as const)(
+  'build flag %s, consent %s: rollout %j gives enabled=%s, asked PostHog=%s',
+  async (build, consent, rollout, enabled, asked) => {
+    flags.organizations = build === 'on'
+    if (consent === 'none') useConsentStore.setState({ accepted: false })
+    else grantConsent(consent === 'analytics' ? true : false)
+    // A fresh cached rollout must not count without analytics consent.
+    await startEnabled()
+    evaluation = rollout
+    await useOrganizationsFlag.getState().refresh()
+    expect(useOrganizationsFlag.getState().enabled).toBe(enabled)
+    expect(requests.length > 0).toBe(asked)
+  },
+)
+
+test('evaluates both flags once without analytics, account identity or location; fresh cached flags work offline', async () => {
+  const first = useOrganizationsFlag.getState().refresh()
+  expect(useOrganizationsFlag.getState().refresh()).toBe(first)
+  await first
+  expect(useOrganizationsFlag.getState()).toMatchObject({
+    enabled: true,
+    pinInteractionsEnabled: true,
+  })
+  expect(requests).toHaveLength(1)
+  expect(requests[0]).toEqual({
+    url: 'https://flags.example.com/flags/?v=2',
+    body: {
+      token: 'public-project-token',
+      distinct_id: expect.any(String),
+      geoip_disable: true,
+    },
+  })
+  offline = true
+  useOrganizationsFlag.setState({
+    enabled: false,
+    pinInteractionsEnabled: false,
   })
   await useOrganizationsFlag.getState().refresh()
-  expect(useOrganizationsFlag.getState().enabled).toBe(true)
-  expect(fetchMock).toHaveBeenCalledTimes(1)
-  const [url, options] = fetchMock.mock.calls[0]
-  expect(url).toBe('https://flags.example.com/flags/?v=2')
-  expect(JSON.parse(options.body)).toEqual({
-    token: 'public-project-token',
-    distinct_id: expect.any(String),
-    geoip_disable: true,
+  expect(useOrganizationsFlag.getState()).toMatchObject({
+    enabled: true,
+    pinInteractionsEnabled: true,
   })
-  const installation = JSON.parse(options.body).distinct_id
-  fetchMock.mockRejectedValue(new Error('offline'))
-  useOrganizationsFlag.setState({ enabled: false })
-  await useOrganizationsFlag.getState().refresh()
-  expect(useOrganizationsFlag.getState().enabled).toBe(true)
-  expect(JSON.parse(fetchMock.mock.calls[1][1].body).distinct_id).toBe(
-    installation,
-  )
+  expect(requests[1].body).toEqual(requests[0].body)
   await AsyncStorage.setItem(
     'organizations-flag-v1',
     JSON.stringify({
       enabled: true,
+      pinInteractionsEnabled: true,
       checkedAt: Date.now() - 25 * 60 * 60 * 1000,
     }),
   )
   await useOrganizationsFlag.getState().refresh()
-  expect(useOrganizationsFlag.getState().enabled).toBe(false)
+  expect(useOrganizationsFlag.getState()).toMatchObject({
+    enabled: false,
+    pinInteractionsEnabled: false,
+  })
 })
 
-test.each<[string, () => Promise<unknown>]>([
-  ['an unknown flag', async () => ({})],
+test.each<[string, Record<string, unknown> | null]>([
+  ['unknown flags', {}],
   [
-    'an off flag',
-    async () => ({ flags: { Organizations: { enabled: false } } }),
-  ],
-  [
-    'an evaluation error',
-    async () => ({
-      flags: { Organizations: { enabled: true } },
-      errorsWhileComputingFlags: true,
-    }),
-  ],
-  ['a null body', async () => null],
-  [
-    'invalid JSON',
-    async () => {
-      throw new Error('invalid JSON')
+    'off parent',
+    {
+      flags: {
+        Organizations: { enabled: false },
+        PinInteractions: { enabled: true },
+      },
     },
   ],
-])('%s turns off a previously enabled flag', async (_name, json) => {
+  ['evaluation error', { ...bothEnabled, errorsWhileComputingFlags: true }],
+  ['null body', null],
+])('%s turns off previously enabled flags', async (_name, response) => {
   await startEnabled()
-  fetchMock.mockResolvedValue({ ok: true, json })
+  evaluation = response
   await useOrganizationsFlag.getState().refresh()
-  expect(useOrganizationsFlag.getState().enabled).toBe(false)
+  expect(useOrganizationsFlag.getState()).toMatchObject({
+    enabled: false,
+    pinInteractionsEnabled: false,
+  })
+})
+
+test.each([
+  ['missing', {}],
+  ['off', { PinInteractions: { enabled: false } }],
+])(
+  'an independently %s PinInteractions flag keeps shared Sightings available',
+  async (_name, child) => {
+    await startEnabled()
+    evaluation = { flags: { Organizations: { enabled: true }, ...child } }
+    await useOrganizationsFlag.getState().refresh()
+    expect(useOrganizationsFlag.getState()).toMatchObject({
+      enabled: true,
+      pinInteractionsEnabled: false,
+    })
+    // A successful off evaluation replaces a previously cached on evaluation.
+    offline = true
+    await useOrganizationsFlag.getState().refresh()
+    expect(useOrganizationsFlag.getState()).toMatchObject({
+      enabled: true,
+      pinInteractionsEnabled: false,
+    })
+  },
+)
+
+test('invalid JSON disables both flags instead of retaining an earlier on evaluation', async () => {
+  await startEnabled()
+  invalidJSON = true
+  await useOrganizationsFlag.getState().refresh()
+  expect(useOrganizationsFlag.getState()).toMatchObject({
+    enabled: false,
+    pinInteractionsEnabled: false,
+  })
+})
+
+test('a legacy cache never implicitly enables pin interactions', async () => {
+  await AsyncStorage.setItem(
+    'organizations-flag-v1',
+    JSON.stringify({ enabled: true, checkedAt: Date.now() }),
+  )
+  offline = true
+  await useOrganizationsFlag.getState().refresh()
+  expect(useOrganizationsFlag.getState()).toMatchObject({
+    enabled: true,
+    pinInteractionsEnabled: false,
+  })
 })
 
 test('corrupt cached evaluation does not prevent an online refresh', async () => {
   await AsyncStorage.setItem('organizations-flag-v1', '{broken')
-  fetchMock.mockResolvedValue({
-    ok: true,
-    json: async () => ({ flags: { Organizations: { enabled: true } } }),
+  await useOrganizationsFlag.getState().refresh()
+  expect(useOrganizationsFlag.getState()).toMatchObject({
+    enabled: true,
+    pinInteractionsEnabled: true,
   })
+})
+
+test('an unusable evaluation falls back to the build flag, not to off', async () => {
+  flags.organizations = true
+  evaluation = { ...bothEnabled, errorsWhileComputingFlags: true }
+  await useOrganizationsFlag.getState().refresh()
+  expect(useOrganizationsFlag.getState()).toMatchObject({
+    enabled: true,
+    pinInteractionsEnabled: false,
+  })
+})
+
+test('offline with a fresh cached off evaluation, PostHog still wins over the build flag', async () => {
+  flags.organizations = true
+  await AsyncStorage.setItem(
+    'organizations-flag-v1',
+    JSON.stringify({
+      enabled: false,
+      pinInteractionsEnabled: false,
+      checkedAt: Date.now(),
+    }),
+  )
+  offline = true
+  await useOrganizationsFlag.getState().refresh()
+  expect(useOrganizationsFlag.getState().enabled).toBe(false)
+})
+
+test('offline with no cached evaluation, the build flag stands', async () => {
+  flags.organizations = true
+  offline = true
   await useOrganizationsFlag.getState().refresh()
   expect(useOrganizationsFlag.getState().enabled).toBe(true)
 })

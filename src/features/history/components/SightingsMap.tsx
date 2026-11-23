@@ -26,12 +26,15 @@ import catPin9 from '@/assets/images/catPins/cat-pin-9.png'
 import catPinMany from '@/assets/images/catPins/cat-pin-many.png'
 import {
   MAX_BADGE_COUNT,
-  mapViewForSpots,
   pinBadge,
-  type MapSize,
   type PinBadge,
   type SightingSpot,
 } from '@/src/features/history/lib/history'
+import {
+  GOOGLE_MAP_UI_SETTINGS,
+  mapViewForSpots,
+  type MapSize,
+} from '@/src/shared/lib/mapView'
 import { Image, type ImageRef } from 'expo-image'
 import { AppleMaps, GoogleMaps } from 'expo-maps'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -89,12 +92,6 @@ interface SightingsMapProps {
   onSpotPress: (spot: SightingSpot) => void
   /** True while a finger is on the map — lets a parent pause its scroll. */
   onTouchActiveChange?: (active: boolean) => void
-}
-
-const GOOGLE_UI_SETTINGS = {
-  mapToolbarEnabled: false,
-  myLocationButtonEnabled: false,
-  zoomControlsEnabled: false,
 }
 
 export function SightingsMap({
@@ -211,7 +208,7 @@ export function SightingsMap({
           colorScheme={GoogleMaps.MapColorScheme.LIGHT}
           cameraPosition={cameraPosition}
           onMarkerClick={handleMarkerClick}
-          uiSettings={GOOGLE_UI_SETTINGS}
+          uiSettings={GOOGLE_MAP_UI_SETTINGS}
           markers={androidMarkers}
         />
       )}
