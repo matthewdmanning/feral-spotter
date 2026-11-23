@@ -55,8 +55,8 @@ const asFieldCondition = (
 /**
  * Android test-drive selector for a candidate field capture config
  * (`low_light`, `distant_motion`, `fine_detail`). Set
- * EXPO_PUBLIC_CAMERA_FIELD_CONDITION in `.env.android.local`. Unset or unknown
- * means null: the capture tuning builds the photo, as before. No settings UI
+ * EXPO_PUBLIC_CAMERA_FIELD_CONDITION as described in docs/agents/builds.md.
+ * Unset or unknown means the regular capture tuning is used. No settings UI
  * yet: the configs are candidates awaiting a field comparison.
  */
 export const CAMERA_FIELD_CONDITION: NativeFieldCondition | null =

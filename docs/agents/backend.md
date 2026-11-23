@@ -38,8 +38,23 @@ Organization data uses server-only Firestore (ADR-0008). Submission metadata and
 - **Final submission (cats + metadata)**: uploaded to Cloud Storage as
   `metadata.json` alongside the photos — see
   [ADR-0005](../adr/0005-firebase-storage-for-uploads.md). Not a database
-  write, not a separate Cloud Run/Functions endpoint.
-- **Tester allowlist**: not enforced yet (#267).
+  write. The client writes it to Storage, but only with an upload grant from
+  `admitPhotoUpload`, like a photo.
+- **Tester allowlist**: `gateTesterAllowlist` (`beforeUserSignedIn`) sets a
+  tester claim at sign-in. `storage.rules` does not check it yet (#267).
+
+## Live project can lag the repo
+
+Rules and Functions reach the live project only by a manual
+`firebase deploy`; no workflow deploys them. Before you trust a live drive,
+compare the live state with the repo:
+
+- `firebase functions:list` lists the deployed Functions.
+- The Firebase Rules API (`firebaserules.googleapis.com/v1/projects/<project>/releases`)
+  names the live Storage ruleset. Read it and compare it with `storage.rules`.
+
+A repo rule that needs a deployed Function (for example the `uploadGrants`
+claim from `admitPhotoUpload`) breaks every upload if the rule ships first.
 
 ## Test-drive posture: emulator by default
 
@@ -48,18 +63,39 @@ Firebase. Live-project test-driving risks real user data and produces
 infrastructure-level errors that have nothing to do with the code under
 test — a 412 bucket-permission error once cost a session's debugging time
 at the wrong layer. Ports come from `firebase.json` as-is (Auth `9099`,
-Storage `9199`, Functions `5001`, Firestore `8080`); emulator mode needs
-**no change** to
-`storage.rules`, so it exercises the actually-deployed
-rules.
+Storage `9199`, Functions `5001`, Firestore `8080`). The emulators load
+the repo's `storage.rules`, not the live ruleset; the two can differ (see
+"Live project can lag the repo").
 
-Start the suite (`firebase emulators:start`), then set:
+From the repo root, install the Functions dependencies with
+`npm ci --prefix functions` after the root `npm ci`. Select the same Firebase
+project as the app's native configuration. On a fresh checkout, run
+`npx firebase login` and `npx firebase use --add`, then select that project
+and give it the `default` alias in the local `.firebaserc`. Use that project
+ID in the upload admission URL below. The launcher uses the active Firebase
+project, so if you previously switched projects, select the app's project
+again with `npx firebase use default`.
+
+Start the suite with `npm run emulators`. It builds `functions/`, then starts
+Auth, Storage and Functions. Check that the Functions startup log shows the
+app's project in the `admitPhotoUpload` URL.
+
+Functions params follow the Firebase standard:
+
+- Non-secret params (`defineString`): `functions/.env`, committed.
+- Secrets (`defineSecret`): Secret Manager. The emulator reads them there
+  too, unless `functions/.secret.local` overrides them. For local uploads,
+  set `UPLOAD_IDENTITY_KEY` in that file to a separate local value and keep
+  it stable across emulator sessions that share data.
+
+Export these values in the shell that starts Expo. Shell values take
+precedence over the GitHub values pulled into `.env.development.local`.
 
 | Env var                              | Value                                                       | Notes                                                                                   |
 | ------------------------------------ | ----------------------------------------------------------- | --------------------------------------------------------------------------------------- |
 | `EXPO_PUBLIC_USE_FIREBASE_EMULATOR`  | `true`                                                      | Off by default, never inferred from `__DEV__`                                           |
 | `EXPO_PUBLIC_FIREBASE_EMULATOR_HOST` | `localhost` (default)                                       | Use `10.0.2.2` on an Android emulator; `localhost` + `adb reverse` on a physical device |
-| `EXPO_PUBLIC_UPLOAD_ADMISSION_URL`   | `http://<host>:5001/<project>/us-central1/admitPhotoUpload` | Photo uploads need a grant (#486); run the Functions emulator too                       |
+| `EXPO_PUBLIC_UPLOAD_ADMISSION_URL`   | `http://<host>:5001/<project>/us-central1/admitPhotoUpload` | Photo and metadata uploads need a grant (#486)                                          |
 
 On a physical Android device, tunnel the ports before you open the app:
 `adb reverse tcp:9099 tcp:9099`, `adb reverse tcp:9199 tcp:9199` and
@@ -74,17 +110,30 @@ because `10.0.2.2` does not exist on a physical device. The SDK reads
 With the remap off, an Android emulator needs
 `EXPO_PUBLIC_FIREBASE_EMULATOR_HOST=10.0.2.2` set explicitly.
 
-Wired in `src/features/auth/lib/firebaseAuthProvider.ts` (`connectAuthEmulator`) and
-`src/features/draft-submission/lib/upload/firebaseUpload.ts` (`connectStorageEmulator`). Both log the
-active mode at startup and **fail fast** if the flag is set but the suite
-isn't reachable — they never silently fall through to live Firebase. Read
-that startup line before trusting any auth/upload observation: mock,
-emulator and live are three different modes and their logs look alike.
+### Verify the connection before a drive
 
-`EXPO_PUBLIC_AUTH_MOCK` / `EXPO_PUBLIC_UPLOADS_MOCK` still exist as a
-third, fully-offline mode for UI work. They skip Firebase entirely, so
-they can never verify rules or real Auth/Storage behavior — don't reach
-for them when the backend is what's under test.
+1. Clear `EXPO_PUBLIC_AUTH_MOCK` and `EXPO_PUBLIC_UPLOADS_MOCK` for an
+   end-to-end emulator drive. Check the shell and Expo env files.
+2. Confirm that Expo's `EXPO_PUBLIC_UPLOAD_ADMISSION_URL` uses the emulator host,
+   port and project from the table above. Auth and Storage are routed by the
+   emulator flag. Upload admission uses its own URL.
+3. Look for `[firebase] mode: emulator` in the app log. That line reports Auth
+   mode. The Auth and Storage clients log failed emulator probes asynchronously.
+   Storage connects on first use.
+4. Use an emulator account with a verified email address for upload coverage.
+   Upload admission rejects accounts with unverified emails. Check the
+   emulator for both a photo and `metadata.json` before marking a
+   capture-to-submit run as passed.
+
+### Mock flags for UI work
+
+- `EXPO_PUBLIC_AUTH_MOCK=true` stubs sign-in in debug builds.
+- `EXPO_PUBLIC_UPLOADS_MOCK=true` skips the `metadata.json` write, photo
+  metadata updates, and photo deletion. Photo byte uploads still use
+  Firebase Storage and request an admission grant.
+
+Use the emulator path above to validate sign-in, photo uploads, and Storage
+rules together.
 
 ## Where a Node-side Auth/Storage/Firestore test goes
 
@@ -121,15 +170,15 @@ MCP resources:
 
 For Storage/Auth work, the previously approved skills are listed below. Firestore schema, query, index, and Rules guidance is allowed for organization work under ADR-0008; Submission files and upload limits follow ADR-0005.
 
-- `firebase:extension-to-functions-codebase`
-- `firebase:firebase-ai-logic-basics`
-- `firebase:firebase-app-hosting-basics`
-- `firebase:firebase-auth-basics`
-- `firebase:firebase-basics`
-- `firebase:firebase-crashlytics`
-- `firebase:firebase-data-connect`
-- `firebase:firebase-hosting-basics`
-- `firebase:firebase-remote-config-basics`
-- `firebase:xcode-project-setup`
+- `extension-to-functions-codebase`
+- `firebase-ai-logic-basics`
+- `firebase-app-hosting-basics`
+- `firebase-auth-basics`
+- `firebase-basics`
+- `firebase-crashlytics`
+- `firebase-data-connect`
+- `firebase-hosting-basics`
+- `firebase-remote-config-basics`
+- `xcode-project-setup`
 
 Firestore guidance applies to the organization backend.

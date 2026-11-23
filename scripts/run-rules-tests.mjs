@@ -1,4 +1,7 @@
-/** Runs rules tests against local emulators with an available Java 21+ runtime. */
+/**
+ * Runs rules tests against local emulators with an available Java 21+ runtime.
+ * With --app, builds functions/ and starts the emulators for a test drive instead.
+ */
 
 import { spawnSync } from 'node:child_process'
 import { existsSync, readdirSync } from 'node:fs'
@@ -9,6 +12,7 @@ import { fileURLToPath } from 'node:url'
 const require = createRequire(import.meta.url)
 const repoRoot = fileURLToPath(new URL('../', import.meta.url))
 const organizationsOnly = process.argv.includes('--organizations')
+const startForApp = process.argv.includes('--app')
 const MIN_MAJOR = 21
 const JAVA_ROOTS = [
   'C:/Program Files/Java',
@@ -60,7 +64,7 @@ function findJava() {
 const java = findJava()
 if (!java) {
   console.error(
-    `Rules tests require Java ${MIN_MAJOR}+. Set JAVA_HOME or RULES_TEST_JAVA_HOME, or put it on PATH.`,
+    `Firebase emulators require Java ${MIN_MAJOR}+. Set JAVA_HOME or RULES_TEST_JAVA_HOME, or put it on PATH.`,
   )
   process.exit(1)
 }
@@ -85,21 +89,38 @@ const localProxySupport = hasProxy
     ]
   : []
 
+// The Functions emulator loads functions/lib; only deploy runs the predeploy build.
+if (startForApp) {
+  const build = spawnSync('npm', ['--prefix', 'functions', 'run', 'build'], {
+    stdio: 'inherit',
+    cwd: repoRoot,
+    shell: process.platform === 'win32',
+  })
+  if (build.status !== 0) process.exit(build.status ?? 1)
+}
+
+const firebaseArgs = startForApp
+  ? // The app's own project (.firebaserc), so its tokens and uploads match.
+    ['emulators:start', '--only', 'auth,storage,functions,firestore']
+  : [
+      'emulators:exec',
+      '--project',
+      // A demo- project needs no real project: emulators only.
+      'demo-feral-spotter',
+      '--only',
+      'storage,auth,firestore',
+      organizationsOnly
+        ? 'npm --prefix functions run test:organizations:emulator'
+        : 'jest -c jest.rules.config.js --runInBand',
+    ]
+
 // Invoke the installed CLI directly: no npx download or platform-specific shell quoting.
 const { status, error } = spawnSync(
   process.execPath,
   [
     ...localProxySupport,
     require.resolve('firebase-tools/lib/bin/firebase.js'),
-    'emulators:exec',
-    '--project',
-    // A demo- project needs no real project: emulators only.
-    'demo-feral-spotter',
-    '--only',
-    'storage,auth,firestore',
-    organizationsOnly
-      ? 'npm --prefix functions run test:organizations:emulator'
-      : 'jest -c jest.rules.config.js --runInBand',
+    ...firebaseArgs,
   ],
   { stdio: 'inherit', cwd: repoRoot, env },
 )

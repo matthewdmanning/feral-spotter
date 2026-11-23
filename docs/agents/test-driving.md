@@ -6,9 +6,42 @@ This is the authoritative document for **test drives** — testing app functiona
 
 Reports must be filed under `docs/test-drives`. Any screen captures must be saved to `docs/test-drives/screen-captures`. Logs must be saved to a session unique file under `docs/test-drives/logs`. All files must follow project file format specifications.
 
+## Before launching the app
+
+1. Choose the [build type](builds.md#local-builds) and follow the
+   [Firebase setup and connection checks](backend.md#test-drive-posture-emulator-by-default).
+   Use the emulator suite for routine drives.
+2. Start with fresh app data for onboarding, first-run permission prompts, or
+   changed camera defaults. `npm run android` preserves app data, and saved
+   settings take precedence over build defaults. To reset a disposable Android
+   test installation, use `adb -s <serial> shell pm clear com.mmanning.feralspotter`.
+   This erases that installation's local app data, including drafts.
+3. For a USB-connected Android device that cannot reach Metro over LAN, run
+   `adb -s <serial> reverse tcp:8081 tcp:8081` and open
+   `http://localhost:8081` in the dev client. The backend guide lists the
+   additional ports for Firebase.
+4. Enable Firebase debug logging as described below. Use the
+   [Android drive tools](../../emulator_tools/) to inspect the screen and
+   interact with the app.
+
 ## Every emulator run
 
 Check that PostHog analytics only fires with consent (unchecking analytics-consent must prevent `PostHogProvider` from mounting — no `posthog`/`[analytics]`/`captureEvent(`/`captureException(`/`fireAnalyticsEvent`). **Note the channel:** these calls surface in Metro's JSONL log (`.expo/dev/logs/start.log`, `metro:client_log` entries), not in `adb logcat` — `logcat` will show nothing even when the check is failing. Also check that GPS/location capture is actually firing (`startLocationCapture`/`[location]`/`FusedLocationProvider`/`GnssLocationProvider`/`LocationManagerService`/`watchPositionAsync`) — this one genuinely is in `logcat`, unfiltered (not pid-scoped — the location provider logs come from system processes, not the app's own pid). Write findings to a dated file in `docs/test-drives/run-notes/` (create the folder on first use). Every file written or updated during an emulator run — run-notes, punchlists, any other working doc — must record the git state it was tested against (`git rev-parse HEAD` + `git branch --show-current`) near the top.
+
+## Permission and consent prompts
+
+Follow the scenario's expected choice for each prompt. For a happy-path drive
+on a test device or account, accept the app's consent steps and grant the
+Android permissions needed by the scenario. For denial and recovery checks,
+follow the [manual QA checklist](../qa_checklist.md).
+
+- Exercise the app's consent screens and Android's permission dialogs with
+  [the drive tools](../../emulator_tools/) or touch input. Granting permissions
+  through `adb shell pm grant` bypasses the dialogs.
+- For analytics coverage, verify the absence of events before consent, then
+  test opt-in or opt-out as the scenario requires.
+- Ask the user when a prompt needs their credentials or a choice outside
+  the test scenario.
 
 ## Before every physical-device/emulator run: enable Firebase debug logging
 
@@ -30,16 +63,6 @@ adb shell setprop log.tag.FirebaseApp DEBUG
   session, 2026-08-09, root cause unresolved). `CI=1` disables Fast
   Refresh, so code changes need a fresh `npm run android` / Metro restart
   to see, not a reload.
-- **Backend mode is three-way: mock / emulator / live.** The documented
-  default for a test drive is the Firebase Local Emulator Suite
-  (`EXPO_PUBLIC_USE_FIREBASE_EMULATOR=true` + `firebase emulators:start`) —
-  see [backend.md](backend.md) for the flags and why live-Firebase
-  test-driving is discouraged. `EXPO_PUBLIC_AUTH_MOCK=true` in local dev
-  envs means sign-in/profile behavior is mocked and skips Firebase
-  entirely, so it can never verify rules or real Auth behavior. Check
-  `.env.local` **and** the app's startup mode log before trusting any
-  auth-flow or upload observation as representative — the three modes look
-  alike in the UI.
 - Screen-state verification technique: `adb shell uiautomator dump` +
   `adb pull` (prefix with `MSYS_NO_PATHCONV=1` in git-bash, or
   `/sdcard/...` paths get mangled into Windows paths), parse
@@ -55,11 +78,4 @@ adb shell setprop log.tag.FirebaseApp DEBUG
 - Take a screenshot when the success criteria is itself visual appearance
   (not just "does this element exist / not crash"). Save to
   `docs/test-drives/screen-captures/`, filename
-  `YYYY-MM-DD_appeareance-question.png`.
-- `expo run:android` builds only the ABI(s) of whatever device is connected
-  _when the build starts_ (e.g. `x86_64` for an emulator), then fails to
-  install with `INSTALL_FAILED_NO_MATCHING_ABIS` on a different-ABI target
-  (e.g. `arm64-v8a` physical devices). If the target device changes
-  mid-build (emulator closed, physical device connected), rebuild rather
-  than reinstalling the existing APK. Check the connected device's ABI
-  first with `adb shell getprop ro.product.cpu.abi`.
+  `YYYY-MM-DD_appearance-question.png`.
