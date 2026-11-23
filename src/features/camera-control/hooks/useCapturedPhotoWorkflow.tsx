@@ -206,9 +206,11 @@ export function useCapturedPhotoWorkflow({
     setPosition((p) => (p === 'back' ? 'front' : 'back'))
   }, [onBeforeFlip])
 
+  // Pops back to the Submission Details that opened Camera for more photos,
+  // or takes Camera's place. navigate pushed another above Camera each time.
   const handleDone = useCallback(() => {
     void draftReadyOrAlert().then((ready) => {
-      if (ready) router.navigate('/submission/create')
+      if (ready) router.dismissTo('/submission/create')
     })
   }, [])
   const handleClose = useCallback(() => router.back(), [])

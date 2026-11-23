@@ -10,7 +10,11 @@
  * - Annotate is replaced in when Cat List lands with nothing recorded
  *   (#173), and pushed otherwise.
  * - Leaving a pass names its destination, never router.back() (#203): the
- *   first cat's Annotate sits on Camera after the auto-skip's replace.
+ *   first cat's Annotate has no Cat List beneath it after the auto-skip's
+ *   replace.
+ * - Returning to Cat List pops to the one already on the stack, adding one
+ *   only when the auto-skip replaced it away. A replace stacked another Cat
+ *   List, with its own draft sync, on every pass.
  * - Abandoning with no cat recorded lands Home: Cat List's auto-skip would
  *   bounce straight back into Annotate.
  * - Removing the last cat lands on Cat List without the auto-skip (#299).
@@ -82,13 +86,13 @@ export function finishBoxing(): void {
  */
 export function abandonCatPass(): void {
   startFreshPass()
-  if (recordedCatIds().length > 0) router.replace(CAT_LIST)
+  if (recordedCatIds().length > 0) router.dismissTo(CAT_LIST)
   else goHome()
 }
 
 /** Back to Cat List after saving a cat, or from a stale edit link. */
 export function returnToCatList(): void {
-  router.replace(CAT_LIST)
+  router.dismissTo(CAT_LIST)
 }
 
 /** Removes a saved cat with its boxes; clears it if it was in progress. */
@@ -100,7 +104,7 @@ export function removeCatFromDraft(catId: string): void {
 
 /** After removing a cat from Cat Form: Cat List, without the auto-skip. */
 export function returnToCatListAfterRemoval(): void {
-  router.replace({
+  router.dismissTo({
     pathname: CAT_LIST,
     params: { [REMOVED_LAST_CAT_PARAM]: '1' },
   })

@@ -6,7 +6,7 @@
 
 import { nextConsentRoute } from '@/src/shared/consent/consentFlow'
 import { showAlert } from '@/src/shared/hooks/useUIStore'
-import { router } from 'expo-router'
+import { startOver } from '@/src/shared/lib/navigation'
 import { useCallback, useRef, useState } from 'react'
 
 export interface AuthFailureCopy {
@@ -38,7 +38,8 @@ export function useAuthAttempt(): {
       setBusy(true)
       try {
         await run()
-        router.replace(nextConsentRoute())
+        // Sign-in stays under Registration; neither may stay under Home.
+        startOver(nextConsentRoute())
       } catch (err) {
         if (isCancellation(err)) return
         console.error(`${failure.tag} failed:`, err)

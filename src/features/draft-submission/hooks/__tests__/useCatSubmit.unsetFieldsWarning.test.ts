@@ -18,7 +18,7 @@ import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
  */
 
 jest.mock('expo-router', () => ({
-  router: { back: jest.fn(), replace: jest.fn() },
+  router: { back: jest.fn(), replace: jest.fn(), dismissTo: jest.fn() },
 }))
 jest.mock('@/src/shared/analytics/analytics', () => ({
   ...jest.requireActual('@/src/shared/analytics/analytics'),
@@ -89,7 +89,7 @@ describe('useCatSubmit — missing-field warning (#205)', () => {
     await pressDialogButton('Cancel')
     expect(useSubmissionStore.getState().cats).toEqual([])
     expect(useActiveCatFlowStore.getState().activeCatId).toBe('active-cat-id')
-    expect(router.replace).not.toHaveBeenCalled()
+    expect(router.dismissTo).not.toHaveBeenCalled()
 
     await act(() => result.current.handleSave())
     await pressDialogButton('Save anyway')
@@ -109,7 +109,7 @@ describe('useCatSubmit — missing-field warning (#205)', () => {
       },
     ])
     expect(useActiveCatFlowStore.getState().activeCatId).toBeNull()
-    expect(router.replace).toHaveBeenCalledWith('/submission/create')
+    expect(router.dismissTo).toHaveBeenCalledWith('/submission/create')
   })
 
   it('does not warn when Unknown/Unsure was deliberately chosen for every field', async () => {
@@ -135,6 +135,6 @@ describe('useCatSubmit — missing-field warning (#205)', () => {
       },
     ])
     expect(useActiveCatFlowStore.getState().activeCatId).toBeNull()
-    expect(router.replace).toHaveBeenCalledWith('/submission/create')
+    expect(router.dismissTo).toHaveBeenCalledWith('/submission/create')
   })
 })
