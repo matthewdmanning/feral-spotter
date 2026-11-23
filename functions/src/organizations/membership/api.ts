@@ -103,7 +103,7 @@ export const membershipExtension: OrganizationExtension = async (
     await leaveOrganization(
       uid,
       organizationId,
-      (body.choice as LeaveChoice) ?? ({} as LeaveChoice),
+      body.choice as LeaveChoice | undefined,
     )
   if (body.action === 'resumeLeaving') {
     const member = (await readMemberships(uid))[organizationId]

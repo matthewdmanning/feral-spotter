@@ -57,19 +57,35 @@ export async function joinOrganization(uid: string, code: unknown) {
 }
 
 /** Names one leave attempt's block and its ledger receipts. */
-function leaveToken(uid: string, organizationId: string, member: Membership) {
-  const { mutationId, attempt } = member.exit!
+function leaveToken(
+  uid: string,
+  organizationId: string,
+  member: Membership,
+  { mutationId, attempt }: LeaveChoice,
+) {
   return createHash('sha256')
     .update(
       `${uid}/${organizationId}/${member.requestId}/${mutationId}/${attempt}`,
     )
     .digest('hex')
 }
+/** The sharing confirmation a keep-shares leave re-applies to every active share. */
+const keptGrant = (organizationId: string, choice: LeaveChoice) =>
+  validateGrant({
+    submissionId: 'review',
+    organizationId,
+    epoch: choice.epoch,
+    catalogVersion: choice.catalogVersion,
+    settings: choice.settings,
+    anonymous: choice.anonymous,
+    contactEmail: choice.contactEmail,
+    disclosureVersion: 1,
+  })
 /** A durable saga: block grants, change permissions, end membership, release the block. */
 export async function leaveOrganization(
   uid: string,
   organizationId: string,
-  choice: LeaveChoice,
+  choice: LeaveChoice | undefined,
   status: 'left' | 'removed' = 'left',
 ) {
   if (
@@ -79,17 +95,7 @@ export async function leaveOrganization(
   )
     throw new RequestError(400, 'Invalid leaving choice')
   // Validate before reserving the operation, so malformed input cannot trap a membership.
-  if (choice.mode === 'keep')
-    validateGrant({
-      submissionId: 'review',
-      organizationId,
-      epoch: choice.epoch,
-      catalogVersion: choice.catalogVersion,
-      settings: choice.settings,
-      anonymous: choice.anonymous,
-      contactEmail: choice.contactEmail,
-      disclosureVersion: 1,
-    })
+  if (choice.mode === 'keep') keptGrant(organizationId, choice)
   const records = await changeMembership(uid, organizationId, (records) => {
     const member = records[organizationId]
     if (!member) throw new RequestError(404, 'Membership unavailable')
@@ -106,7 +112,7 @@ export async function leaveOrganization(
   const member = records[organizationId]
   if (!member.exit) return
   const saved = member.exit
-  const token = leaveToken(uid, organizationId, member)
+  const token = leaveToken(uid, organizationId, member, saved)
   await updateLedger(uid, `block-${token}`, async () => ({
     type: 'blockOrganization',
     organizationId,
@@ -120,6 +126,7 @@ export async function leaveOrganization(
       }))
     } else {
       await updateLedger(uid, `leave-${token}`, async () => {
+        const kept = keptGrant(organizationId, saved)
         const ledger = await readLedger(uid)
         const active = ledger.permissions.filter(
           (p) => p.organizationId === organizationId && !p.revokedAt,
@@ -129,23 +136,17 @@ export async function leaveOrganization(
         for (const permission of active)
           permissions.push(
             await makePermission(uid, account.email, {
+              ...kept,
               submissionId: permission.submissionId,
-              organizationId,
-              catalogVersion: saved.catalogVersion!,
-              epoch: saved.epoch!,
-              settings: saved.settings!,
-              anonymous: saved.anonymous!,
-              contactEmail: saved.contactEmail,
-              disclosureVersion: 1,
             }),
           )
         // Validate directory/email even when there are no existing shares.
         const { catalog } = await readOrganization(organizationId)
         if (
-          catalog.version !== saved.catalogVersion ||
-          (!saved.anonymous &&
-            saved.settings!.fields.email &&
-            (account.email ?? null) !== saved.contactEmail)
+          catalog.version !== kept.catalogVersion ||
+          (!kept.anonymous &&
+            kept.settings.fields.email &&
+            (account.email ?? null) !== kept.contactEmail)
         )
           throw RequestError.confirmAgain(
             'Sharing choices changed; review again',
@@ -153,7 +154,7 @@ export async function leaveOrganization(
         return {
           type: 'replaceOrganization',
           organizationId,
-          epoch: saved.epoch!,
+          epoch: kept.epoch,
           token,
           permissions,
         }
@@ -222,7 +223,7 @@ export async function moderateMembership(
     // A leave that could not finish still holds its block; removal ends it.
     const stuck = (await readMemberships(uid))[organizationId]
     if (stuck?.exit?.attempt) {
-      const token = leaveToken(uid, organizationId, stuck)
+      const token = leaveToken(uid, organizationId, stuck, stuck.exit)
       try {
         await updateLedger(uid, `release-${token}`, async () => ({
           type: 'unblockOrganization',

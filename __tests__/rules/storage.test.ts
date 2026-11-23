@@ -8,6 +8,7 @@ import {
 } from '@firebase/rules-unit-testing'
 import {
   deleteObject,
+  getMetadata,
   listAll,
   type StorageReference,
   ref,
@@ -348,9 +349,7 @@ describe('service objects remain server-only', () => {
   it.each(['owner', 'other', 'anonymous'])(
     'denies direct upload quota reads/writes for %s',
     async (actor) => {
-      const paths = [
-        'upload-quota/owner/ledger.json',
-      ]
+      const paths = ['upload-quota/owner/ledger.json']
       await testEnv.withSecurityRulesDisabled(async (context) => {
         for (const objectPath of paths)
           await uploadBytes(

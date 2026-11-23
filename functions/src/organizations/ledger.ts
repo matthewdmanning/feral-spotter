@@ -25,8 +25,9 @@ export function mutateLedger(
   now: string,
 ): PermissionLedger {
   const revokedPairs = [...(ledger.revokedPairs ?? [])]
+  const blocked: Record<string, string> = { ...ledger.blockedOrganizations }
   const next: PermissionLedger = {
-    blockedOrganizations: { ...ledger.blockedOrganizations },
+    blockedOrganizations: blocked,
     epochs: { ...ledger.epochs },
     permissions: ledger.permissions.map((p) => ({ ...p })),
     revokedPairs,
@@ -39,23 +40,20 @@ export function mutateLedger(
     )
   switch (mutation.type) {
     case 'blockOrganization':
-      if (
-        next.blockedOrganizations![organizationId] &&
-        next.blockedOrganizations![organizationId] !== mutation.token
-      )
+      if (blocked[organizationId] && blocked[organizationId] !== mutation.token)
         throw RequestError.confirmAgain(
           'Another permission update is in progress',
         )
-      next.blockedOrganizations![organizationId] = mutation.token
+      blocked[organizationId] = mutation.token
       break
     case 'unblockOrganization':
-      if (next.blockedOrganizations![organizationId] !== mutation.token)
+      if (blocked[organizationId] !== mutation.token)
         throw RequestError.confirmAgain('Permission update changed')
-      delete next.blockedOrganizations![organizationId]
+      delete blocked[organizationId]
       break
     case 'replaceOrganization': {
       if (
-        next.blockedOrganizations![organizationId] !== mutation.token ||
+        blocked[organizationId] !== mutation.token ||
         mutation.epoch !== (next.epochs[organizationId] ?? 0)
       )
         throw RequestError.confirmAgain('Permissions changed; review again')
@@ -78,12 +76,11 @@ export function mutateLedger(
       next.epochs[organizationId] = mutation.epoch + 1
       next.permissions = next.permissions.map((p) => {
         if (p.organizationId !== organizationId || p.revokedAt) return p
-        return {
-          ...mutation.permissions.find(
-            (replacement) => replacement.submissionId === p.submissionId,
-          )!,
-          epoch: mutation.epoch + 1,
-        }
+        // The check above guarantees one replacement per active share.
+        const replacement = mutation.permissions.find(
+          (candidate) => candidate.submissionId === p.submissionId,
+        )
+        return replacement ? { ...replacement, epoch: mutation.epoch + 1 } : p
       })
       break
     }

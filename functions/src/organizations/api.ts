@@ -1,4 +1,4 @@
-import { getAuth } from 'firebase-admin/auth'
+import { getAuth, type DecodedIdToken } from 'firebase-admin/auth'
 import { getStorage } from 'firebase-admin/storage'
 import type { Request } from 'firebase-functions/v2/https'
 import type { Response } from 'express'
@@ -215,7 +215,7 @@ function parseMutation(
   throw new RequestError(400, 'Invalid action')
 }
 export type OrganizationExtension = (
-  identity: import('firebase-admin/auth').DecodedIdToken,
+  identity: DecodedIdToken,
   body: Record<string, unknown>,
   res: Response,
 ) => Promise<boolean>

@@ -255,13 +255,14 @@ export async function updateLedger(
         )
     }
     const now = new Date().toISOString()
+    const revokedPairs: string[] = []
     const base: PermissionLedger = {
       epochs: { [mutation.organizationId]: state.epoch ?? 0 },
       blockedOrganizations: state.blockedToken
         ? { [mutation.organizationId]: state.blockedToken }
         : {},
       permissions: [],
-      revokedPairs: [],
+      revokedPairs,
     }
     let target: FirebaseFirestore.DocumentReference | undefined
     let existing: StoredPermission | undefined
@@ -277,7 +278,7 @@ export async function updateLedger(
         const permission = effectivePermission(existing, state)
         if (permission) base.permissions.push(permission)
         else if (existing.revokedAt)
-          base.revokedPairs!.push(`${mutation.organizationId}/${submissionId}`)
+          revokedPairs.push(`${mutation.organizationId}/${submissionId}`)
       }
     }
     let replacements: FirebaseFirestore.QuerySnapshot | undefined
