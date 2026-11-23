@@ -3,14 +3,55 @@ import CoreMedia
 import ExpoModulesCore
 import UIKit
 
+/**
+ One capture, one settlement.
+
+ `didFinishProcessingPhoto` carries the photo; its result is buffered.
+ `didFinishCaptureFor` is AVFoundation's terminal callback: it arrives even when
+ no photo was produced, and settles with the buffered result. The view can also
+ settle a capture from outside, when the session stops or the view is recycled
+ and AVFoundation may never deliver the terminal callback.
+
+ Every path goes through `settle`, which fires the completion exactly once under
+ a lock. A failure that wins the race deletes any photo file already written.
+ */
 final class NativePhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate {
   private let completion: (Result<[String: Any], Error>) -> Void
+  private let settlementLock = NSLock()
   private var processedResult: Result<[String: Any], Error>?
   private var outputURL: URL?
-  private var didComplete = false
+  private var hasSettled = false
 
   init(completion: @escaping (Result<[String: Any], Error>) -> Void) {
     self.completion = completion
+  }
+
+  /// Fires the completion once. Callable from any thread; later calls are dropped.
+  func settle(_ result: Result<[String: Any], Error>) {
+    settlementLock.lock()
+    if hasSettled {
+      settlementLock.unlock()
+      return
+    }
+    hasSettled = true
+    let orphanedURL: URL?
+    if case .failure = result { orphanedURL = outputURL } else { orphanedURL = nil }
+    settlementLock.unlock()
+    if let orphanedURL {
+      try? FileManager.default.removeItem(at: orphanedURL)
+    }
+    completion(result)
+  }
+
+  private func buffer(_ result: Result<[String: Any], Error>, url: URL? = nil) {
+    settlementLock.lock()
+    defer { settlementLock.unlock() }
+    guard !hasSettled, processedResult == nil else {
+      if let url, hasSettled { try? FileManager.default.removeItem(at: url) }
+      return
+    }
+    processedResult = result
+    outputURL = url
   }
 
   func photoOutput(
@@ -18,35 +59,33 @@ final class NativePhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate 
     didFinishProcessingPhoto photo: AVCapturePhoto,
     error: Error?
   ) {
-    guard processedResult == nil, !didComplete else { return }
-
     if let error {
-      processedResult = .failure(error)
+      buffer(.failure(error))
       return
     }
 
     guard let data = photo.fileDataRepresentation() else {
-      processedResult = .failure(NativeCameraError.photoDataUnavailable)
+      buffer(.failure(NativeCameraError.photoDataUnavailable))
       return
     }
 
     let url = FileManager.default.temporaryDirectory
       .appendingPathComponent(UUID().uuidString)
       .appendingPathExtension("jpg")
-    outputURL = url
     do {
       try data.write(to: url, options: .atomic)
       let dimensions = photo.resolvedSettings.photoDimensions
-      processedResult = .success([
-        "uri": url.absoluteString,
-        "width": Int(dimensions.width),
-        "height": Int(dimensions.height),
-        "capturedAt": ISO8601DateFormatter().string(from: Date())
-      ])
+      buffer(
+        .success([
+          "uri": url.absoluteString,
+          "width": Int(dimensions.width),
+          "height": Int(dimensions.height)
+        ]),
+        url: url
+      )
     } catch {
       try? FileManager.default.removeItem(at: url)
-      outputURL = nil
-      processedResult = .failure(error)
+      buffer(.failure(error))
     }
   }
 
@@ -56,18 +95,14 @@ final class NativePhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate 
     didFinishCaptureFor resolvedSettings: AVCaptureResolvedPhotoSettings,
     error: Error?
   ) {
-    guard !didComplete else { return }
-    didComplete = true
-
     if let error {
-      if let outputURL {
-        try? FileManager.default.removeItem(at: outputURL)
-      }
-      completion(.failure(error))
+      settle(.failure(error))
       return
     }
-
-    completion(processedResult ?? .failure(NativeCameraError.photoDataUnavailable))
+    settlementLock.lock()
+    let buffered = processedResult
+    settlementLock.unlock()
+    settle(buffered ?? .failure(NativeCameraError.captureInterrupted))
   }
 }
 
@@ -77,6 +112,28 @@ enum NativeCameraError: Error {
   case cannotAddOutput
   case notReady
   case photoDataUnavailable
+  /// The capture ended without producing a photo and without an error of its own.
+  case captureInterrupted
+  /// The session stopped while a capture was still in flight.
+  case sessionStopped
+}
+
+/**
+ The state this view changes on the shared `AVCaptureDevice`, as it was before
+ the view touched it.
+
+ `AVCaptureDevice` is shared per process, so every setting here outlives the
+ view. Without a restore, leaving this screen left the VisionCamera path running
+ under this view's format, exposure cap and low-light policy the next time the
+ camera opened.
+ */
+private struct SavedDeviceState {
+  let format: AVCaptureDevice.Format
+  let photoDimensions: CMVideoDimensions
+  let focusMode: AVCaptureDevice.FocusMode
+  let exposureMode: AVCaptureDevice.ExposureMode
+  let automaticLowLightBoost: Bool?
+  let videoZoomFactor: CGFloat
 }
 
 public final class NativeIdentificationCameraView: ExpoView {
@@ -102,11 +159,25 @@ public final class NativeIdentificationCameraView: ExpoView {
   private var currentInput: AVCaptureDeviceInput?
   private var currentDevice: AVCaptureDevice?
   private var captureDelegates: [Int64: NativePhotoCaptureDelegate] = [:]
-  private var defaultFormats: [String: AVCaptureDevice.Format] = [:]
+  private var savedDeviceStates: [String: SavedDeviceState] = [:]
   private var sessionGeneration: UInt = 0
   private var rotationCoordinator: Any?
   private var previewRotationObservation: NSKeyValueObservation?
   private var captureRotationObservation: NSKeyValueObservation?
+
+  /**
+   Configuration is deferred to `applyPendingConfiguration`, which Expo calls
+   once per prop batch through `OnViewDidUpdateProps`. Mount used to configure
+   the session twice: once from `init` with the default position, then again
+   when the `position` prop arrived. Each pass is a full
+   `beginConfiguration` → device selection → input → `commitConfiguration`, and
+   device selection alone walks up to four device types.
+
+   The first flag starts true rather than being set by a prop setter, because a
+   prop that arrives equal to its default does not change and so sets nothing.
+   */
+  private var needsSessionConfiguration = true
+  private var needsPolicyUpdate = false
 
   var isActive = false {
     didSet { updateRunningState() }
@@ -115,28 +186,28 @@ public final class NativeIdentificationCameraView: ExpoView {
   var position = AVCaptureDevice.Position.back {
     didSet {
       guard oldValue != position else { return }
-      reconfigure()
+      needsSessionConfiguration = true
     }
   }
 
   var maxDetail = true {
     didSet {
       guard oldValue != maxDetail else { return }
-      reconfigurePolicy()
+      needsPolicyUpdate = true
     }
   }
 
   var motionPriority = true {
     didSet {
       guard oldValue != motionPriority else { return }
-      reconfigurePolicy()
+      needsPolicyUpdate = true
     }
   }
 
   var disableLowLightBoost = false {
     didSet {
       guard oldValue != disableLowLightBoost else { return }
-      reconfigurePolicy()
+      needsPolicyUpdate = true
     }
   }
 
@@ -159,6 +230,10 @@ public final class NativeIdentificationCameraView: ExpoView {
     action: #selector(handlePinch(_:))
   )
 
+  private var tuning: CaptureTuning {
+    CaptureTuning.of(maxDetail: maxDetail, motionPriority: motionPriority)
+  }
+
   public required init(appContext: AppContext? = nil) {
     super.init(appContext: appContext)
     clipsToBounds = true
@@ -166,7 +241,24 @@ public final class NativeIdentificationCameraView: ExpoView {
     previewLayer.session = session
     pinchRecognizer.isEnabled = pinchZoom
     addGestureRecognizer(pinchRecognizer)
-    reconfigure()
+  }
+
+  /**
+   Applies one batch of prop changes. Called once per prop batch, so changing
+   `maxDetail`, `motionPriority` and `disableLowLightBoost` together costs one
+   configuration cycle rather than three.
+   */
+  func applyPendingConfiguration() {
+    if needsSessionConfiguration {
+      needsSessionConfiguration = false
+      needsPolicyUpdate = false
+      reconfigure()
+      return
+    }
+    if needsPolicyUpdate {
+      needsPolicyUpdate = false
+      reconfigurePolicy()
+    }
   }
 
   private func reconfigure() {
@@ -190,6 +282,8 @@ public final class NativeIdentificationCameraView: ExpoView {
     if position == .front {
       types = [.builtInTrueDepthCamera, .builtInWideAngleCamera]
     } else {
+      // Widest first: a multi-camera device can switch lenses as zoom changes,
+      // which a single wide-angle device cannot.
       types = [
         .builtInTripleCamera,
         .builtInDualWideCamera,
@@ -209,9 +303,14 @@ public final class NativeIdentificationCameraView: ExpoView {
   private func configureSession() {
     sessionGeneration &+= 1
     session.beginConfiguration()
+    // `.photo` is the only preset that gives the photo output the device's full
+    // still-image dimensions; the video presets cap it at their own resolution.
     session.sessionPreset = .photo
 
     if let currentInput {
+      // Restore the outgoing device before dropping it, or a position flip
+      // leaves the previous camera configured for this view forever.
+      restoreDeviceState(for: currentInput.device)
       session.removeInput(currentInput)
       self.currentInput = nil
       self.currentDevice = nil
@@ -237,23 +336,23 @@ public final class NativeIdentificationCameraView: ExpoView {
         session.addOutput(photoOutput)
       }
 
-      if defaultFormats[device.uniqueID] == nil {
-        defaultFormats[device.uniqueID] = device.activeFormat
-      }
+      saveDeviceStateIfNeeded(for: device)
       configureDevicePolicy(device)
       configureOutput(for: device)
       session.commitConfiguration()
 
+      let resolved = tuning
       DispatchQueue.main.async { [weak self] in
         guard let self else { return }
         self.configureOrientation(for: device)
-        self.onCameraReady([:])
+        self.onCameraReady(["requestedCaptureTuning": resolved.telemetryName])
         self.diagnostic(
           "session_bound",
           [
             "camera_position": self.position == .front ? "front" : "back",
             "max_detail": self.maxDetail,
             "motion_priority": self.motionPriority,
+            "capture_tuning": resolved.telemetryName,
             "low_light_boost_disabled": self.disableLowLightBoost
           ]
         )
@@ -278,13 +377,15 @@ public final class NativeIdentificationCameraView: ExpoView {
   }
 
   private func configureFormat(_ device: AVCaptureDevice) {
-    if !maxDetail {
-      if let original = defaultFormats[device.uniqueID] {
+    guard tuning.prefersHighestResolution else {
+      if let original = savedDeviceStates[device.uniqueID]?.format {
         device.activeFormat = original
       }
       return
     }
 
+    // Formats are ranked by the still-image dimensions they support, not by
+    // their video dimensions, because this session only ever takes photos.
     guard let bestFormat = device.formats.max(by: {
       photoPixelCount($0) < photoPixelCount($1)
     }) else {
@@ -297,8 +398,10 @@ public final class NativeIdentificationCameraView: ExpoView {
   }
 
   private func configureOutput(for device: AVCaptureDevice) {
+    // Dimensions always come from the active format: a saved value can belong
+    // to another lens's format, which AVFoundation rejects at capture.
     let supportedDimensions = device.activeFormat.supportedMaxPhotoDimensions
-    if maxDetail, let dimensions = supportedDimensions.max(by: {
+    if tuning.prefersHighestResolution, let dimensions = supportedDimensions.max(by: {
       Int64($0.width) * Int64($0.height) < Int64($1.width) * Int64($1.height)
     }) {
       photoOutput.maxPhotoDimensions = dimensions
@@ -308,26 +411,17 @@ public final class NativeIdentificationCameraView: ExpoView {
       photoOutput.maxPhotoDimensions = dimensions
     }
 
-    photoOutput.maxPhotoQualityPrioritization = qualityPrioritization
+    photoOutput.maxPhotoQualityPrioritization = tuning.qualityPrioritization
 
     if #available(iOS 17.0, *) {
+      // Both keep recent frames on hand so the returned photo is closer to the
+      // moment of the shutter press. Each is gated on its own support flag: the
+      // combination that supports them depends on the format chosen above.
+      let wantsLowLag = tuning.prefersZeroShutterLag
       photoOutput.isZeroShutterLagEnabled =
-        motionPriority && photoOutput.isZeroShutterLagSupported
+        wantsLowLag && photoOutput.isZeroShutterLagSupported
       photoOutput.isFastCapturePrioritizationEnabled =
-        motionPriority && photoOutput.isFastCapturePrioritizationSupported
-    }
-  }
-
-  private var qualityPrioritization: AVCapturePhotoOutput.QualityPrioritization {
-    switch (maxDetail, motionPriority) {
-    case (true, true):
-      return .balanced
-    case (true, false):
-      return .quality
-    case (false, true):
-      return .speed
-    case (false, false):
-      return .balanced
+        wantsLowLag && photoOutput.isFastCapturePrioritizationSupported
     }
   }
 
@@ -338,6 +432,8 @@ public final class NativeIdentificationCameraView: ExpoView {
 
       configureFormat(device)
 
+      // Continuous modes rather than one-shot: the subject is an animal that
+      // moves between the preview settling and the shutter press.
       if device.isFocusModeSupported(.continuousAutoFocus) {
         device.focusMode = .continuousAutoFocus
       }
@@ -349,9 +445,11 @@ public final class NativeIdentificationCameraView: ExpoView {
         device.automaticallyEnablesLowLightBoostWhenAvailable = true
       }
 
-      if motionPriority, let cap = motionPreservingExposureCap(for: device) {
+      if tuning.prefersExposureCap,
+         let cap = CameraExposurePolicy.motionPreservingExposureCap(for: device) {
         device.activeMaxExposureDuration = cap
       } else {
+        // `.invalid` is AVFoundation's "no cap of mine", not zero.
         device.activeMaxExposureDuration = .invalid
       }
     } catch {
@@ -361,35 +459,92 @@ public final class NativeIdentificationCameraView: ExpoView {
     }
   }
 
-  private func motionPreservingExposureCap(for device: AVCaptureDevice) -> CMTime? {
-    let format = device.activeFormat
-    let systemCap = device.activeMaxExposureDuration
-    let frameDuration = device.activeVideoMinFrameDuration
-
-    var candidate: CMTime?
-    if isUsableDuration(systemCap) {
-      candidate = systemCap
-    }
-    if isUsableDuration(frameDuration) {
-      candidate = candidate.map {
-        CMTimeCompare(frameDuration, $0) < 0 ? frameDuration : $0
-      } ?? frameDuration
-    }
-
-    guard var cap = candidate else { return nil }
-    if CMTimeCompare(cap, format.minExposureDuration) < 0 {
-      cap = format.minExposureDuration
-    }
-    if CMTimeCompare(cap, format.maxExposureDuration) > 0 {
-      cap = format.maxExposureDuration
-    }
-    return cap
+  private func saveDeviceStateIfNeeded(for device: AVCaptureDevice) {
+    guard savedDeviceStates[device.uniqueID] == nil else { return }
+    savedDeviceStates[device.uniqueID] = SavedDeviceState(
+      format: device.activeFormat,
+      photoDimensions: photoOutput.maxPhotoDimensions,
+      focusMode: device.focusMode,
+      exposureMode: device.exposureMode,
+      automaticLowLightBoost: device.isLowLightBoostSupported
+        ? device.automaticallyEnablesLowLightBoostWhenAvailable
+        : nil,
+      videoZoomFactor: device.videoZoomFactor
+    )
   }
 
-  private func isUsableDuration(_ duration: CMTime) -> Bool {
-    duration.isValid &&
-      !duration.isIndefinite &&
-      CMTimeCompare(duration, .zero) > 0
+  /**
+   Puts the shared device back as it was found. Must run whenever this view
+   stops owning the device: a position flip, or the view leaving the window.
+   */
+  private func restoreDeviceState(for device: AVCaptureDevice) {
+    guard let saved = savedDeviceStates.removeValue(forKey: device.uniqueID) else { return }
+
+    do {
+      try device.lockForConfiguration()
+      defer { device.unlockForConfiguration() }
+
+      device.activeFormat = saved.format
+      // The format may differ from the one the cap was computed under, so drop
+      // the cap outright rather than restore a duration from another format.
+      device.activeMaxExposureDuration = .invalid
+      if device.isFocusModeSupported(saved.focusMode) {
+        device.focusMode = saved.focusMode
+      }
+      if device.isExposureModeSupported(saved.exposureMode) {
+        device.exposureMode = saved.exposureMode
+      }
+      if device.isLowLightBoostSupported, let boost = saved.automaticLowLightBoost {
+        device.automaticallyEnablesLowLightBoostWhenAvailable = boost
+      }
+      device.videoZoomFactor = saved.videoZoomFactor
+    } catch {
+      // Nothing useful to report: the view is going away.
+    }
+
+    if saved.photoDimensions.width > 0, saved.photoDimensions.height > 0 {
+      photoOutput.maxPhotoDimensions = saved.photoDimensions
+    }
+  }
+
+  /**
+   The teardown hook. Fabric calls this when it unmounts the component view,
+   which is the point where this view stops owning the shared device.
+
+   `OnViewDestroys` is Android-only, and `deinit` does not run while JavaScript
+   still holds the ref, so neither one works here. `didMoveToWindow` is the
+   wrong signal as well: it also fires on transient detaches, so it would
+   restore the device and re-apply the policy over and over.
+
+   Fabric recycles component views, so this instance may be mounted again with
+   a fresh set of props. Everything that describes the old session is therefore
+   cleared, and `needsSessionConfiguration` is set so the next prop batch
+   configures from scratch.
+   */
+  public override func prepareForRecycle() {
+    super.prepareForRecycle()
+
+    previewRotationObservation = nil
+    captureRotationObservation = nil
+    rotationCoordinator = nil
+    needsSessionConfiguration = true
+    needsPolicyUpdate = false
+
+    sessionQueue.async { [weak self] in
+      guard let self else { return }
+      self.settleAllPendingCaptures(with: .sessionStopped)
+      if self.session.isRunning {
+        self.session.stopRunning()
+      }
+      if let device = self.currentDevice {
+        self.restoreDeviceState(for: device)
+      }
+      if let input = self.currentInput {
+        self.session.removeInput(input)
+      }
+      self.currentInput = nil
+      self.currentDevice = nil
+    }
   }
 
   private func configureOrientation(for device: AVCaptureDevice) {
@@ -437,13 +592,26 @@ public final class NativeIdentificationCameraView: ExpoView {
     sessionQueue.async { [weak self] in
       guard let self else { return }
       if self.isActive {
-        if !self.session.isRunning {
-          self.session.startRunning()
-        }
+        // Nothing to start until an input exists; `configureSession` calls back
+        // here once it has one.
+        guard self.currentDevice != nil, !self.session.isRunning else { return }
+        self.session.startRunning()
       } else if self.session.isRunning {
+        // Stopping cancels any capture in flight, and AVFoundation may not
+        // deliver a callback for it. Settle here so the shutter re-enables.
+        self.settleAllPendingCaptures(with: .sessionStopped)
         self.session.stopRunning()
         self.diagnostic("session_unbound")
       }
+    }
+  }
+
+  /// Must be called on `sessionQueue`, which owns `captureDelegates`.
+  private func settleAllPendingCaptures(with error: NativeCameraError) {
+    let pending = captureDelegates.values
+    captureDelegates.removeAll()
+    for delegate in pending {
+      delegate.settle(.failure(error))
     }
   }
 
@@ -481,7 +649,7 @@ public final class NativeIdentificationCameraView: ExpoView {
       let settings = AVCapturePhotoSettings(
         format: [AVVideoCodecKey: AVVideoCodecType.jpeg]
       )
-      settings.photoQualityPrioritization = self.qualityPrioritization
+      settings.photoQualityPrioritization = self.tuning.qualityPrioritization
 
       #if DEBUG
       let dimensions = self.photoOutput.maxPhotoDimensions
@@ -691,6 +859,11 @@ public final class NativeIdentificationCameraView: ExpoView {
     captureRotationObservation = nil
     if session.isRunning {
       session.stopRunning()
+    }
+    // Backstop only. `prepareForRecycle` is what restores the device in
+    // practice; this runs whenever the last reference happens to drop.
+    if let device = currentDevice {
+      restoreDeviceState(for: device)
     }
   }
 }
