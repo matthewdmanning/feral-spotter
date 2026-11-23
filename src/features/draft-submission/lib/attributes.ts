@@ -201,8 +201,8 @@ export type CatAttributeValues = {
  * A default ("Unknown"/"Unsure") is a real value (docs/agents/domain.md), so
  * it is listed like any other: some defaults are not selectable options (Age,
  * Hair Length, Pattern, Color and Health have no Unknown button), so a value with no
- * matching option is shown by its own name, capitalized. A field the saved
- * cat lacks (a draft from before the field existed) reads as its default.
+ * matching option is shown by its own name, capitalized. Unavailable values
+ * display their Unknown/Unsure defaults.
  */
 export function describeCat(
   cat: CatAttributeValues,

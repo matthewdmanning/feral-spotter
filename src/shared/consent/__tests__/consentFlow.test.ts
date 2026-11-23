@@ -2,6 +2,17 @@ import { nextConsentRoute } from '@/src/shared/consent/consentFlow'
 import { routeAfterDeviceConsent } from '@/src/features/permissions/lib/deviceConsentRoute'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { useConsentStore } from '@/src/shared/consent/useConsentStore'
+import { FEATURE_FLAGS } from '@/src/shared/config/constants'
+
+const mutableFeatureFlags = FEATURE_FLAGS as { emailUpdates: boolean }
+const originalEmailUpdates = mutableFeatureFlags.emailUpdates
+
+beforeEach(() => {
+  mutableFeatureFlags.emailUpdates = true
+})
+afterEach(() => {
+  mutableFeatureFlags.emailUpdates = originalEmailUpdates
+})
 
 describe('nextConsentRoute', () => {
   beforeEach(() =>
@@ -10,6 +21,11 @@ describe('nextConsentRoute', () => {
 
   it('starts with the email step for a user who has not chosen', () => {
     expect(nextConsentRoute()).toBe('/email-opt-in')
+  })
+
+  it('skips the email step while the email feature is off', () => {
+    mutableFeatureFlags.emailUpdates = false
+    expect(nextConsentRoute()).toBe('/analytics-consent')
   })
 
   it.each([true, false])(

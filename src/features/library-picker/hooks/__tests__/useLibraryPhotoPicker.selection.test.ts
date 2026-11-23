@@ -10,6 +10,7 @@ import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import { useLibraryPhotoPicker } from '@/src/features/library-picker/hooks/useLibraryPhotoPicker'
 import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
 
 // Avoid the unrelated hook barrel; keep both persisted stores real.
 jest.mock('expo-router', () => ({ router: { navigate: jest.fn() } }))
@@ -97,14 +98,12 @@ it('keeps a camera capture that arrives while the library picker is open', async
   jest
     .spyOn(ImagePicker, 'launchImageLibraryAsync')
     .mockImplementationOnce(async () => {
-      usePhotoStore.getState().addPhoto({
-        local_id: 'field-photo',
-        uri: 'file:///camera.jpg',
-        width: 100,
-        height: 100,
-        uploaded: false,
-        upload_progress: 0,
-      })
+      usePhotoStore.getState().addPhoto(
+        submissionPhoto({
+          local_id: 'field-photo',
+          uri: 'file:///camera.jpg',
+        }),
+      )
       return { canceled: false, assets }
     })
   const { result } = await renderHook(() => useLibraryPhotoPicker())

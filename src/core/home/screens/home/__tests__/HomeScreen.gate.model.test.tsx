@@ -10,6 +10,7 @@ import {
 } from '@/src/shared/consent/useConsentStore'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import HomeScreen from '@/src/core/home/screens/home/index'
+import { nextConsentRoute } from '@/src/shared/consent/consentFlow'
 
 jest.mock('expo-router', () => ({
   useIsFocused: () => true,
@@ -151,7 +152,7 @@ describe('HomeScreen gate — model-based test', () => {
       },
       unansweredStep: async () => {
         await waitFor(() =>
-          expect(router.replace).toHaveBeenCalledWith('/email-opt-in'),
+          expect(router.replace).toHaveBeenCalledWith(nextConsentRoute()),
         )
       },
     },

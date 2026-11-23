@@ -40,8 +40,6 @@ jest.mock('expo-router', () => ({
   router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() },
 }))
 
-jest.mock('expo-crypto', () => ({ randomUUID: jest.fn(() => 'sub-1') }))
-
 jest.mock('@/src/shared/lib/submissionCache', () => ({
   createSubmissionCache: jest.fn().mockResolvedValue({}),
   getCurrentCacheId: jest.fn().mockResolvedValue('cache-1'),
@@ -80,7 +78,7 @@ const DEFAULT_CATS: ObservedCat[] = [
     photo_local_ids: [],
     photos_reviewed: true,
   },
-  // Legacy drafts can lack attributes added after the cat was saved.
+  // Incomplete cache data still needs a readable card.
   {
     local_id: 'cat-2',
     age: 'kitten',

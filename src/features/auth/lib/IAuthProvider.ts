@@ -3,6 +3,8 @@ import type { FederatedProviderId } from './authProviders'
 export interface AuthUser {
   uid: string
   email: string | null
+  /** Account profile name: from the federated provider, or entered at email Registration. */
+  displayName?: string | null
 }
 
 export interface IAuthProvider {
@@ -12,8 +14,12 @@ export interface IAuthProvider {
   signInWithProvider(providerId: FederatedProviderId): Promise<AuthUser>
   /** Sign in to an existing email/password account (non-federated path). */
   signInWithEmail(email: string, password: string): Promise<AuthUser>
-  /** Registration: create a new email/password account and sign in. */
-  registerWithEmail(email: string, password: string): Promise<AuthUser>
+  /** Registration: create a new email/password account with its name, and sign in. */
+  registerWithEmail(
+    email: string,
+    password: string,
+    displayName: string,
+  ): Promise<AuthUser>
   /**
    * Start an email change. The new address takes effect once the user follows
    * the verification link sent to it. Rejects `auth/requires-recent-login`

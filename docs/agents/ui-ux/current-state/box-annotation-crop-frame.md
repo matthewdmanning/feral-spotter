@@ -1,3 +1,14 @@
+---
+topic: box-annotation-crop-frame
+status: active
+last_reviewed: 2026-11-02
+governs:
+  - src/features/annotate/hooks/useBoundingBoxFrame.ts
+  - src/features/annotate/lib/boxResize.ts
+  - src/features/annotate/screens/annotate/index.tsx
+derives_from: []
+---
+
 # Box Annotation Crop Frame Design Decision
 
 ## Context

@@ -101,14 +101,14 @@ if (startForApp) {
 
 const firebaseArgs = startForApp
   ? // The app's own project (.firebaserc), so its tokens and uploads match.
-    ['emulators:start', '--only', 'auth,storage,functions']
+    ['emulators:start', '--only', 'auth,storage,functions,firestore']
   : [
       'emulators:exec',
       '--project',
       // A demo- project needs no real project: emulators only.
       'demo-feral-spotter',
       '--only',
-      'storage,auth',
+      'storage,auth,firestore',
       organizationsOnly
         ? 'npm --prefix functions run test:organizations:emulator'
         : 'jest -c jest.rules.config.js --runInBand',

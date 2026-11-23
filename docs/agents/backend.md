@@ -5,8 +5,7 @@ and which Firebase MCP resources and skills are approved to use. Ratified
 design decisions live in `docs/adr/`; this file is the map to them plus the
 bits not yet ratified.
 
-This project does not use Firestore at all — see "Firestore skills are
-off-limits" below before touching anything Firestore-shaped.
+Organization data uses server-only Firestore (ADR-0008). Submission metadata and photos remain in Cloud Storage; upload counts and limits retain their existing implementation.
 
 ## Current architecture
 
@@ -17,7 +16,7 @@ off-limits" below before touching anything Firestore-shaped.
   `submissions/{uid}/{submissionId}/{fileName}` (raw Firebase Auth uid, not
   a hash — see ADR-0005's 2026-08-16 amendment). See
   [ADR-0005](../adr/0005-firebase-storage-for-uploads.md).
-- **Upload limits, no database** (ADR-0005's 2026-11-03 amendment):
+- **Upload limits, no database for Submissions** (ADR-0005's 2026-11-03 amendment):
   - 10 photos per Submission: `storage.rules` accepts only the object
     names `photo-0` … `photo-9`; each photo's `upload_slot` names it. A
     slot holds one `photo-N.jpg` (any JPEG-family type, real type in
@@ -64,9 +63,9 @@ Firebase. Live-project test-driving risks real user data and produces
 infrastructure-level errors that have nothing to do with the code under
 test — a 412 bucket-permission error once cost a session's debugging time
 at the wrong layer. Ports come from `firebase.json` as-is (Auth `9099`,
-Storage `9199`, Functions `5001`). The emulators load the repo's
-`storage.rules`, not the live ruleset; the two can differ (see "Live project
-can lag the repo").
+Storage `9199`, Functions `5001`, Firestore `8080`). The emulators load
+the repo's `storage.rules`, not the live ruleset; the two can differ (see
+"Live project can lag the repo").
 
 From the repo root, install the Functions dependencies with
 `npm ci --prefix functions` after the root `npm ci`. Select the same Firebase
@@ -136,7 +135,7 @@ With the remap off, an Android emulator needs
 Use the emulator path above to validate sign-in, photo uploads, and Storage
 rules together.
 
-## Where a Node-side Auth/Storage test goes
+## Where a Node-side Auth/Storage/Firestore test goes
 
 Use the existing lane — don't invent a second one:
 `@firebase/rules-unit-testing` + `jest.rules.config.js` (plain-Node
@@ -154,13 +153,11 @@ only.
 For test-drive _mechanics_ (device setup, logging channels, per-run
 checks), see [test-driving.md](test-driving.md).
 
-## Firestore skills are off-limits
+## Organization Firestore boundary
 
-Never load `firebase:firebase-firestore` or any other skill scoped to
-Firestore schema/query/index design in this project. The project has no
-Firestore surface: counts and limits live in Storage object names and Auth
-custom claims. If a task seems to call for Firestore, that's a signal to
-stop and confirm scope with the user rather than loading it.
+Firestore stores organization data under ADR-0008. The authenticated Functions API is the only client entrypoint. Firestore Rules deny direct access, including membership/role writes. Server transactions enforce ownership, deletion guards, epochs, and idempotency; feature adapters supply member authorization.
+
+Firestore joins the local Auth/Storage emulator lane on port 8080 (`npm run test:rules` starts all three). Use the configured local emulators for verification; an unavailable Firestore service returns a retryable error. Organization schema, indexes, and fresh setup instructions live in the implementation note and saved spec.
 
 ## Approved resources
 
@@ -171,10 +168,7 @@ MCP resources:
 - `firebase://guides/init/auth`
 - `firebase://guides/app_id`
 
-Skills — only these, filtered mechanically by one rule: the skill's
-frontmatter `description` does not mention Firestore. Re-run that check
-against the installed skill's `description` before adding any new one to
-this list; don't add by name/topic judgment:
+For Storage/Auth work, the previously approved skills are listed below. Firestore schema, query, index, and Rules guidance is allowed for organization work under ADR-0008; Submission files and upload limits follow ADR-0005.
 
 - `extension-to-functions-codebase`
 - `firebase-ai-logic-basics`
@@ -187,7 +181,4 @@ this list; don't add by name/topic judgment:
 - `firebase-remote-config-basics`
 - `xcode-project-setup`
 
-Never `firebase:firebase-firestore` (see above) or
-`firebase:firebase-security-rules-auditor` (its description only mentions
-Firestore, even though its checklist also covers Storage rules) — excluded
-by the same mechanical rule, not a judgment call.
+Firestore guidance applies to the organization backend.

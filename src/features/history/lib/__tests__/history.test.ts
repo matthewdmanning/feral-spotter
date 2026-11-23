@@ -2,7 +2,6 @@ import type { SubmissionCacheFile } from '@/src/shared/lib/submissionCache'
 import { observedCat } from '@/src/test-utils/catFixtures'
 import {
   groupSightingsBySpot,
-  mapViewForSpots,
   ownSightings,
   pinBadge,
   profilePicUri,
@@ -10,9 +9,9 @@ import {
   sightingCardAction,
   sightingTime,
   sortBySightingTime,
-  type MapSize,
   type SpotCoordinates,
 } from '@/src/features/history/lib/history'
+import { mapViewForSpots, type MapSize } from '@/src/shared/lib/mapView'
 
 function sighting(
   id: string,

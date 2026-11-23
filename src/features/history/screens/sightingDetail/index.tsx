@@ -5,7 +5,8 @@
  * separately from the historical record.
  */
 
-import { OrganizationPermissions } from '@/src/features/organizations/components/OrganizationPermissions'
+import { useOrganizationsEnabled } from '@/src/features/organizations/hooks/useOrganizationsFlag'
+import { OrganizationPermissions } from '@/src/features/organizations/sharing/components/OrganizationPermissions'
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
 import { CatCrop } from '@/src/shared/ui/atoms/CatCrop'
@@ -37,6 +38,7 @@ const CAT_PHOTO_SIZE = 96
 
 export default function SightingDetailScreen() {
   const { theme } = useUnistyles()
+  const organizationsEnabled = useOrganizationsEnabled()
   const params = useLocalSearchParams<{ id: string | string[] }>()
   const { sighting } = useSighting(firstParam(params.id) ?? '')
 
@@ -84,6 +86,12 @@ export default function SightingDetailScreen() {
           ))}
         </GlassSurface>
 
+        {organizationsEnabled && sighting.cloud_submission_id && (
+          <OrganizationPermissions
+            submissionId={sighting.cloud_submission_id}
+          />
+        )}
+
         <Text style={styles.sectionTitle}>Cats Recorded</Text>
         {sighting.cats.length === 0 && (
           <Text style={styles.emptyBody}>No cats recorded.</Text>
@@ -104,11 +112,6 @@ export default function SightingDetailScreen() {
             ))}
           </GlassSurface>
         ))}
-        {sighting.cloud_submission_id && (
-          <OrganizationPermissions
-            submissionId={sighting.cloud_submission_id}
-          />
-        )}
       </ScrollView>
     </View>
   )

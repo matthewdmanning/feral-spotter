@@ -6,6 +6,7 @@ import {
   signInWithCredential,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  updateProfile,
   verifyBeforeUpdateEmail,
   signOut as firebaseSignOut,
 } from '@react-native-firebase/auth'
@@ -14,36 +15,43 @@ import { createFirebaseAuthProvider } from '@/src/features/auth/lib/firebaseAuth
 const firebaseUser = { uid: 'user-4', email: 'cat@example.com' }
 
 describe('Firebase auth provider', () => {
-  it.each([
-    {
-      method: 'signInWithEmail' as const,
-      operation: signInWithEmailAndPassword,
-    },
-    {
-      method: 'registerWithEmail' as const,
-      operation: createUserWithEmailAndPassword,
-    },
-  ])(
-    'maps $method results to the public user shape',
-    async ({ method, operation }) => {
-      jest
-        .mocked(operation)
-        .mockResolvedValueOnce({ user: firebaseUser } as never)
-      const provider = createFirebaseAuthProvider()
+  it('maps email sign-in results to the public user shape', async () => {
+    jest
+      .mocked(signInWithEmailAndPassword)
+      .mockResolvedValueOnce({ user: firebaseUser } as never)
 
-      await expect(
-        provider[method]('cat@example.com', 'secret'),
-      ).resolves.toEqual({
-        uid: 'user-4',
-        email: 'cat@example.com',
-      })
-      expect(operation).toHaveBeenCalledWith(
-        getAuth(),
-        'cat@example.com',
-        'secret',
-      )
-    },
-  )
+    await expect(
+      createFirebaseAuthProvider().signInWithEmail('cat@example.com', 'secret'),
+    ).resolves.toEqual({ uid: 'user-4', email: 'cat@example.com' })
+    expect(signInWithEmailAndPassword).toHaveBeenCalledWith(
+      getAuth(),
+      'cat@example.com',
+      'secret',
+    )
+  })
+
+  it('names a registered account and re-reports it, since sign-in fired before the name existed', async () => {
+    jest
+      .mocked(createUserWithEmailAndPassword)
+      .mockResolvedValueOnce({ user: firebaseUser } as never)
+    const provider = createFirebaseAuthProvider()
+    const reported = jest.fn()
+    provider.onAuthStateChanged(reported)
+
+    await expect(
+      provider.registerWithEmail('cat@example.com', 'secret', 'Cat Friend'),
+    ).resolves.toEqual({
+      uid: 'user-4',
+      email: 'cat@example.com',
+      displayName: 'Cat Friend',
+    })
+    expect(updateProfile).toHaveBeenCalledWith(firebaseUser, {
+      displayName: 'Cat Friend',
+    })
+    expect(reported).toHaveBeenLastCalledWith(
+      expect.objectContaining({ uid: 'user-4', displayName: 'Cat Friend' }),
+    )
+  })
 
   it('exchanges both Google tokens for a Firebase session in a released build', async () => {
     const credential = { providerId: 'google.com', token: 'credential' }

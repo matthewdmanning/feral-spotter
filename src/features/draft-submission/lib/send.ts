@@ -23,7 +23,7 @@ import {
   transitionSubmission,
   updateSubmissionCache,
 } from '@/src/shared/lib/submissionCache'
-import { confirmedSharing } from '@/src/features/organizations/lib/consent'
+import { confirmedSharing } from '@/src/features/organizations/sharing/lib/consent'
 import {
   buildCacheMetadata,
   buildSubmissionPayload,
@@ -39,10 +39,8 @@ import {
   finalizeSubmissionPhotoMetadata,
   uploadSubmissionMetadata,
 } from '@/src/features/draft-submission/lib/upload/firebaseUpload'
-import {
-  buildGrant,
-  FALLBACK_ORGANIZATION_NAME,
-} from '@/src/features/organizations/lib/sharing'
+import { buildGrant } from '@/src/features/organizations/lib/permissions'
+import { FALLBACK_ORGANIZATION_NAME } from '@/src/features/organizations/sharing/lib/sharing'
 import type { SubmissionPhoto } from '@/src/shared/types'
 
 /** The sharing choice submitDraft confirmed, or null when nothing is shared. */

@@ -119,3 +119,9 @@ modified, uncommitted. PR should target `sprint/cat-annotate-flow`
 (not `main`) per the branch-off reasoning above, so `gh pr create`'s
 default base needs to be overridden explicitly with `--base
 sprint/cat-annotate-flow`.
+
+## 2026-11-09 — refactor: greenfield persistence
+
+**Purpose:** Remove older-install upgrade paths because the project has no active users or data to migrate.
+**Change:** Removed the bounding-box persistence version upgrade/reset handler. Current annotation state uses the initial schema directly; cat-photo associations derive from the current box store.
+**Verification:** Full client suite: 120 suites / 550 tests. Functions: 8 suites / 65 tests. Type checks and focused lint pass. Organization integration: 23 emulator scenarios; Rules: 24 tests. No deployment or device check.
