@@ -8,24 +8,16 @@ Prerequisites:
 
 - Node.js **24.x** and npm.
 - Android SDK/build tools and a connected device or emulator for Android; macOS and Xcode for iOS.
-- A JDK compatible with the native build toolchain. The Firebase emulator rules lane uses JDK 21.
+- Java for Android builds and Firebase emulators. Follow the [toolchain setup](docs/agents/builds.md#toolchain-and-troubleshooting).
 - Project-specific Firebase native configuration (`google-services.json` / `GoogleService-Info.plist`) and provider setup for real sign-in. Obtain these from the maintainer; do not commit private credentials.
 
 ```bash
 npm ci
-npm run env:pull -- development
 ```
 
-See the [build guide](docs/agents/builds.md) for GitHub environment variables and local settings. Configure the environment for the intended backend mode. Use the [local Firebase emulator instructions](docs/agents/backend.md#test-drive-posture-emulator-by-default) for Auth/Storage testing without production data. Fully offline development stubs are also available with `EXPO_PUBLIC_AUTH_MOCK=true` and `EXPO_PUBLIC_UPLOADS_MOCK=true`; those do not validate Firebase behavior.
-
-```bash
-npx expo prebuild --clean
-npm run android
-# macOS, after completing iOS native configuration:
-npm run ios
-```
-
-`prebuild --clean` regenerates the native projects; put persistent native changes in config plugins or local modules. See [native development guidance](docs/agents/native-code.md).
+1. [Configure development build settings](docs/agents/builds.md#pull-settings-from-github), including GitHub CLI access or manual setup.
+2. [Choose a backend mode](docs/agents/backend.md#test-drive-posture-emulator-by-default). For testing Auth and photo uploads without production data, set up the Firebase emulators before launching the app.
+3. [Build and launch the app](docs/agents/builds.md#local-builds).
 
 ## Check changes
 

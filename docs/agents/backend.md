@@ -96,7 +96,7 @@ precedence over the GitHub values pulled into `.env.development.local`.
 | ------------------------------------ | ----------------------------------------------------------- | --------------------------------------------------------------------------------------- |
 | `EXPO_PUBLIC_USE_FIREBASE_EMULATOR`  | `true`                                                      | Off by default, never inferred from `__DEV__`                                           |
 | `EXPO_PUBLIC_FIREBASE_EMULATOR_HOST` | `localhost` (default)                                       | Use `10.0.2.2` on an Android emulator; `localhost` + `adb reverse` on a physical device |
-| `EXPO_PUBLIC_UPLOAD_ADMISSION_URL`   | `http://<host>:5001/<project>/us-central1/admitPhotoUpload` | Photo uploads need a grant (#486); unset means the app refuses every upload             |
+| `EXPO_PUBLIC_UPLOAD_ADMISSION_URL`   | `http://<host>:5001/<project>/us-central1/admitPhotoUpload` | Photo and metadata uploads need a grant (#486)                                          |
 
 On a physical Android device, tunnel the ports before you open the app:
 `adb reverse tcp:9099 tcp:9099`, `adb reverse tcp:9199 tcp:9199` and
@@ -111,17 +111,30 @@ because `10.0.2.2` does not exist on a physical device. The SDK reads
 With the remap off, an Android emulator needs
 `EXPO_PUBLIC_FIREBASE_EMULATOR_HOST=10.0.2.2` set explicitly.
 
-Wired in `src/features/auth/lib/firebaseAuthProvider.ts` (`connectAuthEmulator`) and
-`src/features/draft-submission/lib/upload/firebaseUpload.ts` (`connectStorageEmulator`). Both log the
-active mode at startup and **fail fast** if the flag is set but the suite
-isn't reachable — they never silently fall through to live Firebase. Read
-that startup line before trusting any auth/upload observation: mock,
-emulator and live are three different modes and their logs look alike.
+### Verify the connection before a drive
 
-`EXPO_PUBLIC_AUTH_MOCK` / `EXPO_PUBLIC_UPLOADS_MOCK` still exist as a
-third, fully-offline mode for UI work. They skip Firebase entirely, so
-they can never verify rules or real Auth/Storage behavior — don't reach
-for them when the backend is what's under test.
+1. Clear `EXPO_PUBLIC_AUTH_MOCK` and `EXPO_PUBLIC_UPLOADS_MOCK` for an
+   end-to-end emulator drive. Check the shell and Expo env files.
+2. Confirm that Expo's `EXPO_PUBLIC_UPLOAD_ADMISSION_URL` uses the emulator host,
+   port and project from the table above. Auth and Storage are routed by the
+   emulator flag. Upload admission uses its own URL.
+3. Look for `[firebase] mode: emulator` in the app log. That line reports Auth
+   mode. The Auth and Storage clients log failed emulator probes asynchronously.
+   Storage connects on first use.
+4. Use an emulator account with a verified email address for upload coverage.
+   Upload admission rejects accounts with unverified emails. Check the
+   emulator for both a photo and `metadata.json` before marking a
+   capture-to-submit run as passed.
+
+### Mock flags for UI work
+
+- `EXPO_PUBLIC_AUTH_MOCK=true` stubs sign-in in debug builds.
+- `EXPO_PUBLIC_UPLOADS_MOCK=true` skips the `metadata.json` write, photo
+  metadata updates, and photo deletion. Photo byte uploads still use
+  Firebase Storage and request an admission grant.
+
+Use the emulator path above to validate sign-in, photo uploads, and Storage
+rules together.
 
 ## Where a Node-side Auth/Storage test goes
 

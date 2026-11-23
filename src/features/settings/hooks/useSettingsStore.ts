@@ -47,14 +47,9 @@ const envDefault = (value: string | undefined, shipped: boolean): boolean =>
   value === undefined || value === '' ? shipped : value === 'true'
 
 /**
- * Camera settings that ship off have to be on for a native-camera test drive,
- * which meant manual toggles at the start of every run. An Android
- * drive sets them in `.env.android.local`, which only `npm run android` loads,
- * so no other platform and no release build is affected.
- *
- * These are defaults, not overrides: a value already persisted wins, which is
- * what `merge` below does. `npm run android` clears app storage first, so a
- * drive starts from these.
+ * Camera test-drive flags set build defaults. Persisted settings take
+ * precedence through `merge` below. See docs/agents/builds.md for environment
+ * files and docs/agents/test-driving.md for a fresh test installation.
  */
 const DEFAULT_SETTINGS: AppSettings = {
   keep_photos_on_device: true,
