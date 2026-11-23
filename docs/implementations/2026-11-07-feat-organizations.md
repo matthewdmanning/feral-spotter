@@ -126,6 +126,7 @@ remains unverified. The Sighting detail permission placement is documented in th
 - `organizationsFlag.test.ts`: build × consent × rollout table; cache excludes the build flag; PinInteractions with build on.
 - `OrganizationsRuntime.test.tsx`: off sends nothing; off still delivers a revocation; granting consent lets the rollout turn it on.
 - `SettingsScreen.saveScope.test.tsx`: the Settings entry follows build × consent × rollout.
+- `CreateScreen.organizationsGate.test.tsx`: the Create sharing card follows build × consent × rollout, and needs a photo.
 - `__tests__/RootLayout.organizations.test.tsx`: the real root layout opens `/organizations` only while on, and leaves it when turned off.
 
-**Verification:** typecheck, lint (0 errors), 138 suites / 650 tests. No device drive.
+**Verification:** typecheck, lint (0 errors), 139 suites / 656 tests. No device drive.
