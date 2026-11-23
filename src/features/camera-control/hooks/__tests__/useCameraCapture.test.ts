@@ -141,7 +141,7 @@ describe('useCameraCapture navigation', () => {
     result.current.handleClose()
     expect(router.back).toHaveBeenCalledTimes(1)
   })
-  // handleDone: useCapturedPhotoWorkflow.stack.test.tsx, on the real router.
+  // handleDone: flow.cameraDone.test.tsx, on the real router.
 })
 
 describe('useCameraCapture low-light boost', () => {

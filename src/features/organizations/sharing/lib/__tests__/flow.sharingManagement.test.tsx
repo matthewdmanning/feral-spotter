@@ -16,6 +16,23 @@ import { buildGrant } from '@/src/features/organizations/lib/permissions'
 import { DEFAULT_SHARING } from '@/src/shared/types/Organizations'
 import { fakeOrganizationsService } from '@/src/test-utils/organizationsService'
 
+/**
+ * Flow: managing sharing preferences and permissions
+ * - Preferences: the user ticks Share name and types a name. Nothing is
+ *   saved until they tap Save; then it is saved for this account only.
+ *   Switching accounts shows that account's own, empty, preferences.
+ * - Reviewing a grant: a past share needs confirming again. Review shows
+ *   what will be shared, using the current email and current settings,
+ *   not the ones saved with the old grant; sharing sends exactly that.
+ * - Cancelling: with Organizations switched off, Review is hidden, but the
+ *   user can still cancel a permission; offline it shows as pending.
+ *
+ * States: unsaved preferences, saved for this account, review dialog
+ * open, grant sent, Review hidden (flag off), revocation pending.
+ * Events: tick, type, Save, switch account, Review sharing, Share this
+ * sighting, flag off, Cancel sharing permission, Revoke.
+ */
+
 let nextId = 0
 const pressDialogButton = async (text: string) =>
   await act(async () => {

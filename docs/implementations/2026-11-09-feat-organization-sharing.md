@@ -38,7 +38,7 @@ See [combined verification](2026-11-07-feat-organizations.md#verification) for c
 - `useOrganizationPager` clears pages only when access is lost (`isAccessLost`: 401/403/404); other failures keep them beside the error.
 - Auto-refresh (30 s) runs only while one page is loaded; after "load more", refresh is manual. TanStack refetches every loaded page in sequence.
 - `sharedPhoto` pins the Storage generation as returned, without `Number()` conversion.
-- Test: `sharedSightings.journey.test.tsx` asserts a 503 refresh keeps both pages; it failed before the fix. Pin interactions use the same pager: [pin interactions](2026-11-09-pin-interactions.md).
+- Test: `flow.sharedSightings.test.tsx` asserts a 503 refresh keeps both pages; it failed before the fix. Pin interactions use the same pager: [pin interactions](2026-11-09-pin-interactions.md).
 
 ## 2026-11-12 — fix
 
@@ -76,6 +76,6 @@ Type checking, targeted ESLint, Prettier and whitespace checks passed.
 - `useVisibleQueryScope` counts visible screens per query and removes data one tick after the last one leaves. Before this, opening an organization dropped the shared memberships query and fetched it again.
 - `MemberCard` closes its leave choices on a status change through state, not a remount key.
 
-**Tests:** `SharedSightingsScreen.test.tsx` checks readable cat details, the singular label and one-at-a-time photo requests. `organization.journey.test.tsx` checks that opening an organization reuses the list's query; it failed before the fix.
+**Tests:** `SharedSightingsScreen.test.tsx` checks readable cat details, the singular label and one-at-a-time photo requests. `flow.organization.test.tsx` checks that opening an organization reuses the list's query; it failed before the fix.
 
 **Verification:** `npm run typecheck`, ESLint (0 errors), Prettier and `npx jest` (137 suites, 612 tests) passed. Map framing, pan stability, scroll pausing, both themes and glass remain unverified on a device: no emulator or adb here.

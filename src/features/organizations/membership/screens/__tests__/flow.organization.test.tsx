@@ -16,6 +16,27 @@ import {
 import { queryWrapper } from '@/src/test-utils/queryClient'
 import type { MembershipSummary } from '@/functions/src/organizations/membership/domain'
 
+/**
+ * Flow: opening one organization, and its privacy settings
+ * From the memberships list, a member opens an organization. It shows
+ * their approval status and the area it covers. Refresh updates pending
+ * to approved. Shared Sightings appears only once sharing is switched on.
+ * Another account never sees this member's organization.
+ * Privacy settings apply to this organization only and need confirmation.
+ * A revocation made offline shows as pending, even with sharing switched
+ * off.
+ *
+ * States:
+ * - Organization open: pending; area shown ("Near …"); no Members button;
+ *   no second load of the memberships list.
+ * - Approved: after refresh.
+ * - Sharing on: Shared Sightings shown.
+ * - Other account: the organization is gone.
+ * - Privacy: per organization; "Revocation pending connection" when offline.
+ * Events: open, refresh, sharing switched on or off, switch account,
+ * change privacy, confirm.
+ */
+
 test('open an organization, refresh approval, honor sharing rollout, and clear another account’s membership', async () => {
   const user = userEvent.setup()
   useAuthStore.setState({ user: { uid: 'member', email: null }, isReady: true })

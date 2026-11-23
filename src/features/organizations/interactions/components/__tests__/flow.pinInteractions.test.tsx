@@ -16,6 +16,23 @@ import {
   type PinComment,
 } from '@/functions/src/organizations/interactions/domain'
 
+/**
+ * Flow: reacting to and commenting on a shared pin
+ * A member opens a shared pin, reacts with a heart, and posts a comment.
+ * The first post's reply is lost, so the app shows an error and keeps the
+ * typed text; the retry must not post the comment twice. The member can
+ * delete only their own comment.
+ *
+ * States:
+ * - Pin open: an earlier comment from a former member shows as "Former
+ *   member"; the heart count is 0.
+ * - Reacted: the heart shows as selected, with the count raised.
+ * - Post failed: an alert shows; the comment text is still in the box.
+ * - Posted: the comment shows once, by "You", with a delete control.
+ * - Deleted: the member's comment is gone; others' comments remain.
+ * Events: tap heart, post comment (reply lost), retry, delete own comment.
+ */
+
 const PIN = 'a'.repeat(64)
 
 /**

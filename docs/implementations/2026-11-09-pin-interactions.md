@@ -64,10 +64,10 @@
 
 **Model or flow covered:** Pin access and thread state against real emulators.
 
-| Test file                                                                                       | What it verifies                                                                                                                                                                                                       |
-| ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `functions/src/organizations/emulator-tests/pinInteractions.model.test.ts`                      | Outsiders refused; exact response keys (no uid); retried comment stored once; repeated reactions count once; unsharing refuses access but keeps data; departed author unnamed; `delete` policy removes their comments. |
-| `src/features/organizations/interactions/components/__tests__/pinInteractions.journey.test.tsx` | Reaction toggle and selected state; lost post response retried with the same mutation id (one comment); text kept on failure, cleared on success; delete shown only on own comments.                                   |
+| Test file                                                                                    | What it verifies                                                                                                                                                                                                       |
+| -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `functions/src/organizations/emulator-tests/pinInteractions.model.test.ts`                   | Outsiders refused; exact response keys (no uid); retried comment stored once; repeated reactions count once; unsharing refuses access but keeps data; departed author unnamed; `delete` policy removes their comments. |
+| `src/features/organizations/interactions/components/__tests__/flow.pinInteractions.test.tsx` | Reaction toggle and selected state; lost post response retried with the same mutation id (one comment); text kept on failure, cleared on success; delete shown only on own comments.                                   |
 
 Both tests were checked against a planted fault: an always-true authorizer fails 3 emulator journeys; a fresh mutation id per attempt fails the client journey.
 

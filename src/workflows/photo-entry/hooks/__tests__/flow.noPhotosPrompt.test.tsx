@@ -24,9 +24,23 @@ import {
 import { Pressable, Text } from 'react-native'
 
 /**
- * No photos to annotate (#503), on the real router with the real Annotate.
- * Annotate never shows empty: Cat List asks instead, with the draft's own
- * photo source, Just Describe, and Back to Cat List or Cancel Sighting.
+ * Flow: no photos to annotate (#503)
+ * The user's Sighting has no photos left: they never had one, or they
+ * removed the last one in Annotate. Annotate must never open empty. Cat
+ * List asks instead: get more photos from the Sighting's own source, Just
+ * Describe a cat, or Back to Cat List (cats recorded) / Cancel Sighting
+ * (none recorded).
+ *
+ * States:
+ * - Cat List, asking: no photos; the dialog is open; no jump into Annotate.
+ * - Annotate: at least one photo; pushed above Cat List, or in its place
+ *   for the first cat.
+ * - Cat List after removal: the pass's cat id is cleared; stack holds Cat
+ *   List alone; the dialog opens.
+ * - Cat Form, Camera, or the Reset confirmation: after the chosen option.
+ * - Torn down: Submit or Reset emptied the draft on Cat List; no dialog.
+ * Events: open Cat List, Annotate Photos, remove the last photo, choose
+ * each option, close the dialog with Back, tear the draft down.
  */
 
 jest.mock('react-native-reanimated-carousel', () => 'Carousel')

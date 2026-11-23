@@ -25,11 +25,11 @@ Home, not Camera.
 
 ## Tests
 
-| Test file                                                                             | What it verifies                                                                          |
-| ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `src/features/draft-submission/hooks/__tests__/catPass.stack.test.tsx`                | Real router: save, abandon and remove each end on one Cat List; replace-chain still lands |
-| `src/features/camera-control/hooks/__tests__/useCapturedPhotoWorkflow.stack.test.tsx` | Real router: Done from Home and after Take More Photos leaves `[index, submission]`       |
-| `src/features/auth/hooks/__tests__/useAuthAttempt.stack.test.tsx`                     | Real router: Registration from Sign-in leaves nothing to go back to                       |
+| Test file                                                              | What it verifies                                                                          |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `src/features/draft-submission/hooks/__tests__/flow.catPass.test.tsx`  | Real router: save, abandon and remove each end on one Cat List; replace-chain still lands |
+| `src/features/camera-control/hooks/__tests__/flow.cameraDone.test.tsx` | Real router: Done from Home and after Take More Photos leaves `[index, submission]`       |
+| `src/features/auth/hooks/__tests__/flow.authAttempt.test.tsx`          | Real router: Registration from Sign-in leaves nothing to go back to                       |
 
 Each failed before its fix. Mocked-router expectations moved from `replace` /
 `navigate` to `dismissTo`; the subsumed `useCameraCapture` handleDone case was
