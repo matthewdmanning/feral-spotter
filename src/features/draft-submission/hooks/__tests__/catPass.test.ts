@@ -50,7 +50,7 @@ it('abandoning with a cat recorded keeps that cat and lands on Cat List', () => 
   abandonCatPass()
   expect(boxesOf('cat-new')).toEqual([])
   expect(boxesOf('cat-1')).toHaveLength(1)
-  expect(router.replace).toHaveBeenCalledWith('/submission/create')
+  expect(router.dismissTo).toHaveBeenCalledWith('/submission/create')
 })
 
 it('removing the in-progress cat clears its boxes, record and id', () => {

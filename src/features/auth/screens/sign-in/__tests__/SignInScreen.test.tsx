@@ -12,7 +12,12 @@ import SignInScreen from '@/src/features/auth/screens/sign-in/index'
 import { nextConsentRoute } from '@/src/shared/consent/consentFlow'
 
 jest.mock('expo-router', () => ({
-  router: { replace: jest.fn(), push: jest.fn() },
+  router: {
+    replace: jest.fn(),
+    push: jest.fn(),
+    canDismiss: () => false,
+    dismissAll: jest.fn(),
+  },
 }))
 
 const mockSignInWithEmail = jest.fn()

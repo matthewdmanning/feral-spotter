@@ -7,7 +7,13 @@ import { router } from 'expo-router'
  * One attempt at a time: a second tap while the first runs does nothing.
  * A dismissed provider sheet is silent; any other failure alerts.
  */
-jest.mock('expo-router', () => ({ router: { replace: jest.fn() } }))
+jest.mock('expo-router', () => ({
+  router: {
+    replace: jest.fn(),
+    canDismiss: () => false,
+    dismissAll: jest.fn(),
+  },
+}))
 jest.mock('@/src/shared/consent/consentFlow', () => ({
   nextConsentRoute: () => '/consent',
 }))

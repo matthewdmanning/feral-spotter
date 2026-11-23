@@ -128,3 +128,8 @@ renders the annotate-or-describe empty state instead of redirecting. Details in
   #189's reason for not watching `cats.length` live still holds.
 - **First-pass auto-skip is unchanged and must stay that way.** Arriving with
   nothing recorded still replaces into annotate; only the removal path opts out.
+
+## 2026-11-23 — fix
+
+**Purpose:** Returning to Cat List with `router.replace` stacked a second Cat List per cat pass.
+**Change:** `catPass` returns with `router.dismissTo`; the auto-skip landing rule is unchanged. Details: [2026-11-23-fix-hooks-navigation-logic-review](2026-11-23-fix-hooks-navigation-logic-review.md).

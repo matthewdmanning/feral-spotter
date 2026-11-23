@@ -402,3 +402,8 @@ flow on a device.
 **Change:** Validate the exposure cap while holding the device lock before saving or changing settings. Acquire the device lock before consuming the saved restore state, preserving it for a retry if locking throws. The native identification camera audit changes are recorded in [Native camera audit fixes](2026-11-16-camera-native-audit-fixes.md).
 
 **Verification:** Source review only on Windows; no Swift/Xcode toolchain or iPhone verification. Needs test drive: an unusable exposure cap must leave settings untouched, and a failed restore lock followed by retry must restore the original exposure mode and boost preference.
+
+## 2026-11-23 — fix
+
+**Purpose:** Camera Done pushed another Submission Details after each Take More Photos.
+**Change:** Done uses `router.dismissTo('/submission/create')`, so Camera no longer stays beneath Submission Details. Details: [2026-11-23-fix-hooks-navigation-logic-review](2026-11-23-fix-hooks-navigation-logic-review.md).

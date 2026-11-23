@@ -221,6 +221,6 @@ describe('useActiveCatFlow — model-based test', () => {
     })
 
     await act(() => hook.result.current.handleAbandonPass())
-    expect(router.replace).toHaveBeenCalledWith('/submission/create')
+    expect(router.dismissTo).toHaveBeenCalledWith('/submission/create')
   })
 })

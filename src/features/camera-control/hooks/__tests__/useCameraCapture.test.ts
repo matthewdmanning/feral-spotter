@@ -18,7 +18,7 @@ jest.mock('expo-location', () => ({
 
 let mockIsFocused = true
 jest.mock('expo-router', () => ({
-  router: { back: jest.fn(), navigate: jest.fn() },
+  router: { back: jest.fn(), navigate: jest.fn(), dismissTo: jest.fn() },
   useIsFocused: () => mockIsFocused,
 }))
 
@@ -141,16 +141,7 @@ describe('useCameraCapture navigation', () => {
     result.current.handleClose()
     expect(router.back).toHaveBeenCalledTimes(1)
   })
-
-  it('handleDone navigates to /submission/create after startup is ready', async () => {
-    const { result } = await renderHook(() => useCameraCapture())
-    await act(async () => {
-      result.current.handleDone()
-      await waitFor(() =>
-        expect(router.navigate).toHaveBeenCalledWith('/submission/create'),
-      )
-    })
-  })
+  // handleDone: useCapturedPhotoWorkflow.stack.test.tsx, on the real router.
 })
 
 describe('useCameraCapture low-light boost', () => {
