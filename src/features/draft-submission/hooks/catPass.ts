@@ -18,8 +18,8 @@
  * - Abandoning with no cat recorded lands Home: Cat List's auto-skip would
  *   bounce straight back into Annotate.
  * - Removing the last cat lands on Cat List without the auto-skip (#299).
- * - Annotate left with no photos offers three exits (#503): more photos,
- *   Cat List without the auto-skip, or Cat Form to describe a cat.
+ * - Annotate never opens or stays empty (#503): no photos means no
+ *   auto-skip, and removing the last one ends the pass on Cat List.
  * - A cat left unfinished keeps no boxes and no id (#304).
  *
  * Plain functions read the stores fresh, so a confirm handler never acts on
@@ -28,6 +28,7 @@
 
 import { useActiveCatFlowStore } from '@/src/features/draft-submission/hooks/useActiveCatFlowStore'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import { goHome } from '@/src/shared/lib/navigation'
 import { router, useLocalSearchParams } from 'expo-router'
@@ -64,10 +65,15 @@ export function startFreshPass(recorded: string[] = recordedCatIds()): void {
 
 // ─── Intents ─────────────────────────────────────────────────────────────────
 
-/** "Add a Cat" / "Annotate Photos" from Cat List. */
-export function startCatPass(): void {
+/**
+ * "Add a Cat" / "Annotate Photos" from Cat List. Refused with no photos to
+ * annotate (#503); returns whether Annotate opened.
+ */
+export function startCatPass(): boolean {
+  if (usePhotoStore.getState().photos.length === 0) return false
   startFreshPass()
   router.push(ANNOTATE)
+  return true
 }
 
 /** Opens Cat Form: for a saved cat to edit, or to describe a new one. */
@@ -117,38 +123,32 @@ export function returnToCatListAfterRemoval(): void {
   returnToCatListWithoutAutoSkip()
 }
 
-// ─── Annotate with no photos left (#503) ────────────────────────────────────
-
-/** Opens a photo source; the caller passes the photo-entry rule's opener. */
-export function leavePassForMorePhotos(openSource: () => void): void {
-  startFreshPass()
-  openSource()
-}
-
-/** On to Cat List. It must not auto-skip back into an empty Annotate. */
-export function continueWithoutPhotos(): void {
+/**
+ * Annotate's last photo was removed (#503). Annotate never shows empty: the
+ * pass ends on Cat List, which offers the no-photos choices.
+ */
+export function leaveEmptyPass(): void {
   startFreshPass()
   returnToCatListWithoutAutoSkip()
-}
-
-/** Cat Form in Annotate's place, to describe a cat with no boxes. */
-export function skipAnnotating(): void {
-  startFreshPass()
-  router.replace(CAT_FORM)
 }
 
 /**
  * Cat List's landing rule (#173, #189, #299). Landing with nothing recorded
  * skips straight into Annotate, once, decided at mount: a live watch would
  * also fire when Reset empties the cats and race its navigation Home.
- * Landing after a removed last cat or an empty Annotate does not skip.
+ * Landing after a removed last cat or an emptied Annotate, or with no
+ * photos to annotate, does not skip.
  * Returns whether the skip is in flight, so Cat List renders nothing then.
  */
 export function useCatListLanding(): { autoSkipPending: boolean } {
   const params = useLocalSearchParams<{ [NO_AUTO_SKIP_PARAM]?: string }>()
   const noAutoSkip = params[NO_AUTO_SKIP_PARAM] === '1'
   const catCount = useSubmissionStore((state) => state.cats.length)
-  const [autoSkipPending] = useState(() => catCount === 0 && !noAutoSkip)
+  // No photos: Annotate would open empty, so Cat List stays (#503).
+  const hasPhotos = usePhotoStore((state) => state.photos.length > 0)
+  const [autoSkipPending] = useState(
+    () => catCount === 0 && !noAutoSkip && hasPhotos,
+  )
   useEffect(() => {
     if (!autoSkipPending) return
     startFreshPass([])

@@ -8,15 +8,9 @@ import { ANNOTATION_TUTORIAL_STEPS } from '@/src/features/annotate/config/tutori
 import { useAnnotationTutorial } from '@/src/features/annotate/hooks/useAnnotationTutorial'
 import { useAnnotatePass } from '@/src/features/annotate/hooks/useAnnotatePass'
 import { useBackHandler } from '@/src/shared/hooks/useBackHandler'
-import { annotateCopy } from '@/src/shared/config/text'
-import {
-  continueWithoutPhotos,
-  leavePassForMorePhotos,
-  skipAnnotating,
-} from '@/src/features/draft-submission/hooks/catPass'
-import { usePhotoEntrypoints } from '@/src/workflows/photo-entry/hooks/usePhotoEntrypoints'
+import { leaveEmptyPass } from '@/src/features/draft-submission/hooks/catPass'
 import { TrashIcon } from 'phosphor-react-native/src/icons/Trash'
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Text } from '@/src/shared/ui/atoms/Text'
 import { Pressable, ScrollView, useWindowDimensions, View } from 'react-native'
 import Carousel from 'react-native-reanimated-carousel'
@@ -48,40 +42,18 @@ export default function AnnotateScreen() {
   // every exit case: it falls back to handleAbandonPass itself whenever
   // there's no active cat or no confirmed boxes yet (useActiveCatFlow).
   //
-  // No photos left (#503): ask what next instead of leaving. Back, and the
-  // empty view's button, reopen the question after Back dismisses it.
+  // Annotate never shows empty (#503): once the last photo is removed, the
+  // pass ends on Cat List, which asks what next. Nothing renders meanwhile.
   const isEmpty = photos.length === 0
-  const { camera } = usePhotoEntrypoints()
-  const offerNextStep = useCallback(() => {
-    showAlert(annotateCopy.noPhotosTitle, annotateCopy.noPhotosMessage, [
-      {
-        text: annotateCopy.takeMorePhotos,
-        onPress: () => leavePassForMorePhotos(camera.open),
-      },
-      { text: annotateCopy.continue, onPress: continueWithoutPhotos },
-      { text: annotateCopy.skipAnnotating, onPress: skipAnnotating },
-    ])
-  }, [camera.open])
   useEffect(() => {
-    if (isEmpty) offerNextStep()
-  }, [isEmpty, offerNextStep])
-  useBackHandler(() => {
-    if (isEmpty) offerNextStep()
-    return true
-  })
+    if (isEmpty) leaveEmptyPass()
+  }, [isEmpty])
+  useBackHandler(() => true)
   const { width: screenWidth } = useWindowDimensions()
 
   const tutorial = useAnnotationTutorial()
 
-  if (isEmpty)
-    return (
-      <View style={styles.empty}>
-        <Text style={styles.emptyText}>{annotateCopy.noPhotosBody}</Text>
-        <AppButton variant="secondary" onPress={offerNextStep}>
-          {annotateCopy.chooseNextStep}
-        </AppButton>
-      </View>
-    )
+  if (isEmpty) return null
 
   const isFirst = currentIndex === 0
 

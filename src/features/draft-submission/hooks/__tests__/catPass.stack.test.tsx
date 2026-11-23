@@ -1,3 +1,5 @@
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { act, screen } from '@testing-library/react-native'
 import {
   renderRouter,
@@ -57,6 +59,7 @@ async function run(step: () => void) {
 
 beforeEach(() => {
   useSubmissionStore.getState().clearDraft()
+  usePhotoStore.setState({ photos: [submissionPhoto()] })
   useSubmissionStore.getState().addCat(observedCat({ local_id: 'cat-1' }))
 })
 

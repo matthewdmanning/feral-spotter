@@ -1,3 +1,5 @@
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
+import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import {
   act,
   userEvent,
@@ -89,6 +91,8 @@ const DEFAULT_CATS: ObservedCat[] = [
 
 beforeEach(() => {
   useUIStore.setState({ dialog: null })
+  // A pool to annotate: with none, Cat List asks instead (#503).
+  usePhotoStore.setState({ source: 'camera', photos: [submissionPhoto()] })
   useSubmissionStore.setState({
     submission: { location_type: 'device', time_type: 'device' },
     cats: [],
