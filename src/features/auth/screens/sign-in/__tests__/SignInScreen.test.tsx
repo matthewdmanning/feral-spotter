@@ -9,6 +9,7 @@ import { router } from 'expo-router'
 
 import React from 'react'
 import SignInScreen from '@/src/features/auth/screens/sign-in/index'
+import { nextConsentRoute } from '@/src/shared/consent/consentFlow'
 
 // Pin the app version at/above every provider's release tag so the federated
 // buttons are enabled and pressable in this suite. The gate logic itself is
@@ -41,7 +42,7 @@ describe('SignInScreen', () => {
     await userEvent.press(screen.getByLabelText('Sign in'))
 
     await waitFor(() =>
-      expect(router.replace).toHaveBeenCalledWith('/email-opt-in'),
+      expect(router.replace).toHaveBeenCalledWith(nextConsentRoute()),
     )
     expect(mockSignInWithEmail).toHaveBeenCalledWith('a@b.com', 'secret')
   })
@@ -67,7 +68,7 @@ describe('SignInScreen', () => {
     await userEvent.press(screen.getByLabelText('Continue with Google'))
 
     await waitFor(() =>
-      expect(router.replace).toHaveBeenCalledWith('/email-opt-in'),
+      expect(router.replace).toHaveBeenCalledWith(nextConsentRoute()),
     )
     expect(mockSignInWithProvider).toHaveBeenCalledWith('google')
   })
