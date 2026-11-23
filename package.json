@@ -97,7 +97,7 @@
     "eslint-import-resolver-typescript": "^3.6.3",
     "expo-doctor": "~1.19.10",
     "firebase": "^12.17.1",
-    "firebase-tools": "^15.26.0",
+    "firebase-tools": "^15.37.0",
     "globals": "^16.5.0",
     "jest": "~30.5.2",
     "jest-expo": "~58.0.13",
