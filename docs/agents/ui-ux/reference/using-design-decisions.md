@@ -16,7 +16,7 @@ Never change a `agents/ui-ux/current-state/` file unless the user has explicitly
 
 ## Before writing or editing a file here
 
-Read [design-decision-template.md](design-decision-template.md) first, if you haven't already this session. Every design-decisions file follows that structure (Context / Design Specifications / Reason) — no dates, change history, implementation detail, filenames, commit/PR references, or analysis.
+Read [design-decision-template.md](design-decision-template.md) first, if you haven't already this session. Every design-decisions file follows that structure: required frontmatter (`topic`, `status`, `last_reviewed`, `governs`, `derives_from`), then a body of Context / Design Specifications / Reason. Dates, code paths and issue refs belong only in frontmatter; the body has no dates, change history, implementation detail, filenames, commit/PR references, or analysis.
 
 ## What belongs in a design-decisions file
 
@@ -25,7 +25,7 @@ Only the **current state** of the design — what the UI/UX is supposed to look 
 ## Metadata
 
 - Design metadata lives in `docs/agents/ui-ux/current-state/design-metadata`. Those files are meant only for in-depth debugging. Do not read when writing, modifying, or reviewing code.
-- No change history, no dates, no "supersedes X" narrative, no decision log.
+- No change history, no dates (outside frontmatter), no "supersedes X" narrative, no decision log.
 - No issue tracking. A design-decisions file records the target state, not open bugs or TODOs against it.
 
 ## Codebase vs. design-decisions mismatches

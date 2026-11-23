@@ -31,10 +31,17 @@ export interface RegistrationProblem {
  * Returns the first problem, or null when the form can be sent.
  */
 export function validateRegistration(
+  name: string,
   email: string,
   password: string,
   confirm: string,
 ): RegistrationProblem | null {
+  if (!name.trim()) {
+    return {
+      title: validationCopy.missingNameTitle,
+      message: validationCopy.missingNameMessage,
+    }
+  }
   if (!email.trim()) {
     return {
       title: validationCopy.missingEmailTitle,

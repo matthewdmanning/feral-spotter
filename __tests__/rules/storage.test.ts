@@ -347,13 +347,9 @@ describe('storage.rules — deletes (#293)', () => {
 
 describe('service objects remain server-only', () => {
   it.each(['owner', 'other', 'anonymous'])(
-    'denies direct catalog and ledger reads/writes for %s',
+    'denies direct upload quota reads/writes for %s',
     async (actor) => {
-      const paths = [
-        'organizations/catalog.json',
-        'organization-permissions/owner/ledger.json',
-        'upload-quota/owner/ledger.json',
-      ]
+      const paths = ['upload-quota/owner/ledger.json']
       await testEnv.withSecurityRulesDisabled(async (context) => {
         for (const objectPath of paths)
           await uploadBytes(

@@ -12,7 +12,7 @@ the photo's real date, `metadata.time_method: "device"`.
 
 ## What's not verified — this ticket's scope
 
-Per [domain.md](../../agents/domain.md)'s "Library pick" definition, a
+Per [domain.md](../../../agents/domain.md)'s "Library pick" definition, a
 picked photo with **no** EXIF timestamp should trigger Manual time instead.
 This path was never exercised — no EXIF-less photo was available on the
 test device.
@@ -45,4 +45,4 @@ Windows via text-mode CRLF translation). Submission cache lives in
 
 - `tdd` — if this reveals a bug (not just confirms working behavior), model
   the time-type state machine (`device` / `manual`, trigger conditions)
-  per [testing.md](../../agents/testing.md).
+  per [testing.md](../../../agents/testing.md).

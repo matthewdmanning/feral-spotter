@@ -1,0 +1,50 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "organizationPermissions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ownerUid", "order": "ASCENDING" },
+        { "fieldPath": "organizationId", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "organizationMemberships",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "organizationId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "pinComments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "pinId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": [
+    {
+      "collectionGroup": "organizationPermissions",
+      "fieldPath": "permission",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "organizations",
+      "fieldPath": "coverageJson",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "organizationMemberships",
+      "fieldPath": "exit",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pinComments",
+      "fieldPath": "body",
+      "indexes": []
+    }
+  ]
+}

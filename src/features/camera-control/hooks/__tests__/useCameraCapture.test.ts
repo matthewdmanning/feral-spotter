@@ -2,6 +2,7 @@ import { act, renderHook, waitFor } from '@testing-library/react-native'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { router } from 'expo-router'
 import { AppState } from 'react-native'
+import { randomUUID } from 'expo-crypto'
 import { useCameraCapture } from '@/src/features/camera-control/hooks/useCameraCapture'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useSettingsStore } from '@/src/features/settings/hooks/useSettingsStore'
@@ -71,7 +72,6 @@ jest.mock('expo-media-library', () => ({
   requestPermissionsAsync: (...args: unknown[]) =>
     mockRequestPermissionsAsync(...args),
 }))
-jest.mock('expo-crypto', () => ({ randomUUID: () => 'test-id' }))
 
 const mockCaptureEvent = jest.fn()
 jest.mock('@/src/shared/analytics/analytics', () => ({
@@ -80,6 +80,7 @@ jest.mock('@/src/shared/analytics/analytics', () => ({
 }))
 
 beforeEach(() => {
+  jest.mocked(randomUUID).mockReturnValue('test-id')
   mockIsFocused = true
   mockCapturePhoto.mockReset()
   mockAssetCreate.mockReset()

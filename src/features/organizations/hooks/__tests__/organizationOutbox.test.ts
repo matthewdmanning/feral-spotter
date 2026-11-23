@@ -4,15 +4,10 @@ import { waitFor } from '@testing-library/react-native'
 import { useOrganizationSharingStore } from '@/src/features/organizations/hooks/useOrganizationSharingStore'
 import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
-import { buildGrant } from '@/src/features/organizations/lib/sharing'
+import { buildGrant } from '@/src/features/organizations/lib/permissions'
 import { DEFAULT_SHARING } from '@/src/shared/types/Organizations'
 import { fakeOrganizationsService } from '@/src/test-utils/organizationsService'
 
-// The supplied expo-crypto mock returns no UUIDs.
-jest.mock('expo-crypto', () => ({
-  ...jest.requireActual('expo-crypto'),
-  randomUUID: jest.fn(),
-}))
 let nextId = 0
 const grant = buildGrant({
   submissionId: 'sighting',

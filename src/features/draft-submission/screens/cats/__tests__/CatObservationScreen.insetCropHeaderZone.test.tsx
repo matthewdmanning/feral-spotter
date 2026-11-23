@@ -37,12 +37,6 @@ jest.mock('@/src/features/draft-submission/hooks/useCatSubmit', () => ({
   }),
 }))
 
-jest.mock('@/src/features/settings/hooks/useSettingsStore', () => ({
-  useSettingsStore: (
-    sel: (s: { settings: { annotation_enabled: boolean } }) => unknown,
-  ) => sel({ settings: { annotation_enabled: true } }),
-}))
-
 // The real InsetCropBubble owns its own drag behavior (see
 // InsetCropBubble.drag.test.tsx). This stub exposes only the hold callback
 // the screen consumes.

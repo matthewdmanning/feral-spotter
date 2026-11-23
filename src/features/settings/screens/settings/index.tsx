@@ -6,8 +6,9 @@ import {
   formatCopy,
   navigationCopy,
 } from '@/src/shared/config/text'
-import { SharingSettings } from '@/src/features/organizations/components/SharingSettings'
-import { OrganizationPermissions } from '@/src/features/organizations/components/OrganizationPermissions'
+import { useOrganizationsEnabled } from '@/src/features/organizations/hooks/useOrganizationsFlag'
+import { SharingSettings } from '@/src/features/organizations/sharing/components/SharingSettings'
+import { OrganizationPermissions } from '@/src/features/organizations/sharing/components/OrganizationPermissions'
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import {
   getThemeMode,
@@ -68,6 +69,7 @@ const CAPTURE_PRIORITY_PLATFORMS = ['android', 'ios']
 
 export default function SettingsScreen() {
   const { theme } = useUnistyles()
+  const organizationsEnabled = useOrganizationsEnabled()
   const [themeMode, setSelectedThemeMode] = useState<ThemeMode>(getThemeMode)
   const [hapticsOn, setHapticsOn] = useState(getHapticsEnabled)
   // Like every setting here, this applies at once.
@@ -132,12 +134,16 @@ export default function SettingsScreen() {
 
           <GlassSurface kind="card" style={styles.card}>
             <Text style={styles.cardTitle}>{settingsCopy.communications}</Text>
-            <ToggleRow
-              label={settingsCopy.emailUpdates}
-              value={emailOptIn}
-              onValueChange={saveEmailOptIn}
-            />
-            <View style={styles.divider} />
+            {FEATURE_FLAGS.emailUpdates && (
+              <>
+                <ToggleRow
+                  label={settingsCopy.emailUpdates}
+                  value={emailOptIn}
+                  onValueChange={saveEmailOptIn}
+                />
+                <View style={styles.divider} />
+              </>
+            )}
             <Text style={styles.hint}>
               {formatCopy(settingsCopy.yourEmailTemplate, {
                 email: accountEmail ?? commonCopy.notAvailable,
@@ -153,8 +159,15 @@ export default function SettingsScreen() {
             )}
           </GlassSurface>
 
-          <SharingSettings />
-          <OrganizationPermissions />
+          {organizationsEnabled && (
+            <>
+              <TextButton onPress={() => router.push('/organizations')}>
+                Organizations
+              </TextButton>
+              <SharingSettings />
+              <OrganizationPermissions />
+            </>
+          )}
 
           <GlassSurface kind="card" style={styles.card}>
             <Text style={styles.cardTitle}>{settingsCopy.photos}</Text>

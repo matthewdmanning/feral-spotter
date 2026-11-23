@@ -28,7 +28,7 @@ across all its exit points: `hasAcceptedConsent()` early-return,
 permission-status early-return, and a bare `try/catch { resolve() }`
 around `Location.watchPositionAsync`. This session tried to confirm GPS
 capture fires (mandatory every-run check per
-[test-driving.md](../../agents/test-driving.md)) and could not — logcat,
+[test-driving.md](../../../agents/test-driving.md)) and could not — logcat,
 `dumpsys location`, and Metro's JSONL log all came back empty for the app's
 package despite permissions genuinely granted (`ACCESS_FINE_LOCATION: granted=true`)
 and device location services on (`location_mode=3`). Could not distinguish
@@ -42,7 +42,7 @@ identical: silence. **Suggested addition to scope:** minimal dev-only
 `[analytics]`/`captureEvent(`/etc., but that data only ever reaches
 Metro's JSONL log (`.expo/dev/logs/start.log`), never logcat. Fix when this
 ticket's documentation ask (item 3, "document the recipe") gets done — see
-[documentation.md](../../agents/documentation.md) for where that belongs.
+[documentation.md](../../../agents/documentation.md) for where that belongs.
 
 ## Suggested skills
 

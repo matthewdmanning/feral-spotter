@@ -166,3 +166,9 @@ React DOM with React 19.3.0, and disable the repository's legacy-peer bypass.
 Verified: strict clean dependency installation (lifecycle scripts skipped),
 type checking including tests, lint (0 errors; 3 existing warnings), formatting,
 116 app suites / 546 tests, and 24 Firebase rules tests.
+
+### 2026-11-08 — refactor (workflow ownership and architecture enforcement)
+
+**Purpose:** Restore the architecture safeguards from `1a468a7` on the integrated main branch, retaining the shared Submission store.
+
+**Change:** `usePhotoEntrypoints` moves to `workflows/photo-entry/hooks/`, above features at dependency level 9. Screens compose workflows; non-screen feature modules cannot import workflows, and workflows cannot import screens. Route, provider and screen import policies reject back edges, including imports of directory roots. Every override retains the icon and parent-relative restrictions. The real-ESLint architecture regression suite covers forbidden imports and permitted composition, including organizations' access to the shared Submission store. Store contracts remain in `shared/hooks/useSubmissionStore.ts`; no draft-owned adapter or store relocation is introduced.
