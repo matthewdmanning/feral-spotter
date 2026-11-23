@@ -15,21 +15,24 @@ interface FlagState {
 }
 let inFlight: Promise<void> | null = null
 /**
- * Organizations is on when the build flag is on (a global ON), or when the
- * PostHog rollout says so. PostHog is asked only after data and analytics
- * consent; without both, the build flag alone decides. The request never
- * starts the analytics SDK or sends capture/identify events.
+ * The build flag is the master gate: off keeps Organizations off. On, the
+ * PostHog rollout decides, asked only after data and analytics consent;
+ * without both, Organizations stays off. The request never starts the
+ * analytics SDK or sends capture/identify events.
  */
 export const useOrganizationsFlag = create<FlagState>((set) => ({
-  enabled: FEATURE_FLAGS.organizations,
+  enabled: false,
   pinInteractionsEnabled: false,
   refresh: () => {
     if (inFlight) return inFlight
     inFlight = (async () => {
       try {
-        const forced = FEATURE_FLAGS.organizations
-        if (!hasAcceptedConsent() || !hasAcceptedAnalytics()) {
-          set({ enabled: forced, pinInteractionsEnabled: false })
+        if (
+          !FEATURE_FLAGS.organizations ||
+          !hasAcceptedConsent() ||
+          !hasAcceptedAnalytics()
+        ) {
+          set({ enabled: false, pinInteractionsEnabled: false })
           return
         }
         const apiKey = Constants.expoConfig?.extra?.posthogProjectToken as
@@ -37,7 +40,7 @@ export const useOrganizationsFlag = create<FlagState>((set) => ({
         const host = Constants.expoConfig?.extra?.posthogHost as
           string | undefined
         if (!apiKey || !host) {
-          set({ enabled: forced, pinInteractionsEnabled: false })
+          set({ enabled: false, pinInteractionsEnabled: false })
           return
         }
         let distinctId = await asyncStorage.getItem(
@@ -65,14 +68,13 @@ export const useOrganizationsFlag = create<FlagState>((set) => ({
               previous.checkedAt <= Date.now() &&
               Date.now() - previous.checkedAt < 24 * 60 * 60 * 1000
             cachedInteractionsEnabled =
-              (forced || cachedEnabled) &&
-              previous.pinInteractionsEnabled === true
+              cachedEnabled && previous.pinInteractionsEnabled === true
           } catch {
             /* Ignore a corrupt cache and still request the current flag. */
           }
         }
         set({
-          enabled: forced || cachedEnabled,
+          enabled: cachedEnabled,
           pinInteractionsEnabled: cachedInteractionsEnabled,
         })
         const response = await fetch(`${host.replace(/\/$/, '')}/flags/?v=2`, {
@@ -90,18 +92,16 @@ export const useOrganizationsFlag = create<FlagState>((set) => ({
           flags?: Record<string, { enabled?: boolean }>
           errorsWhileComputingFlags?: boolean
         } | null
-        const valid = result?.errorsWhileComputingFlags !== true
-        const rolledOut =
-          valid && result?.flags?.Organizations?.enabled === true
-        const enabled = forced || rolledOut
+        const enabled =
+          result?.errorsWhileComputingFlags !== true &&
+          result?.flags?.Organizations?.enabled === true
         const pinInteractionsEnabled =
-          enabled && valid && result?.flags?.PinInteractions?.enabled === true
+          enabled && result?.flags?.PinInteractions?.enabled === true
         set({ enabled, pinInteractionsEnabled })
         await asyncStorage.setItem(
           'organizations-flag-v1',
           JSON.stringify({
-            // The rollout result, so a later build without the flag cannot inherit it.
-            enabled: rolledOut,
+            enabled,
             pinInteractionsEnabled,
             checkedAt: Date.now(),
           }),

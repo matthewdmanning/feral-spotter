@@ -65,8 +65,8 @@ afterEach(() => {
   flags.organizations = buildFlag
 })
 beforeEach(() => {
-  // Build flag off and full consent: the PostHog rollout decides.
-  flags.organizations = false
+  // Build flag on and full consent: the PostHog rollout decides.
+  flags.organizations = true
   grantConsent(true)
   jest
     .mocked(randomUUID)
@@ -100,12 +100,11 @@ const ROLLOUT_OFF = {
 test.each([
   // build flag, consent, rollout → enabled, PostHog asked
   ['off', 'none', ROLLOUT_ON, false, false],
-  ['off', 'data only', ROLLOUT_ON, false, false],
-  ['on', 'none', ROLLOUT_OFF, true, false],
-  ['on', 'data only', ROLLOUT_OFF, true, false],
-  ['off', 'analytics', ROLLOUT_ON, true, true],
-  ['off', 'analytics', ROLLOUT_OFF, false, true],
-  ['on', 'analytics', ROLLOUT_OFF, true, true],
+  ['off', 'analytics', ROLLOUT_ON, false, false],
+  ['on', 'none', ROLLOUT_ON, false, false],
+  ['on', 'data only', ROLLOUT_ON, false, false],
+  ['on', 'analytics', ROLLOUT_ON, true, true],
+  ['on', 'analytics', ROLLOUT_OFF, false, true],
 ] as const)(
   'build flag %s, consent %s: rollout %j gives enabled=%s, asked PostHog=%s',
   async (build, consent, rollout, enabled, asked) => {
@@ -120,33 +119,6 @@ test.each([
     expect(requests.length > 0).toBe(asked)
   },
 )
-
-test('the build flag never reaches the rollout cache', async () => {
-  flags.organizations = true
-  evaluation = ROLLOUT_OFF
-  await useOrganizationsFlag.getState().refresh()
-  expect(useOrganizationsFlag.getState().enabled).toBe(true)
-  // A later build without the flag reads the cache offline.
-  flags.organizations = false
-  offline = true
-  await useOrganizationsFlag.getState().refresh()
-  expect(useOrganizationsFlag.getState().enabled).toBe(false)
-})
-
-test('the build flag on still takes PinInteractions from the rollout', async () => {
-  flags.organizations = true
-  evaluation = {
-    flags: {
-      Organizations: { enabled: false },
-      PinInteractions: { enabled: true },
-    },
-  }
-  await useOrganizationsFlag.getState().refresh()
-  expect(useOrganizationsFlag.getState()).toMatchObject({
-    enabled: true,
-    pinInteractionsEnabled: true,
-  })
-})
 
 test('evaluates both flags once without analytics, account identity or location; fresh cached flags work offline', async () => {
   const first = useOrganizationsFlag.getState().refresh()

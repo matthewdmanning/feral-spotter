@@ -35,9 +35,9 @@ export const FEATURE_FLAGS = {
   /** Off: hides the email opt-in step and the Settings toggle. */
   emailUpdates: false,
   /**
-   * A global ON: "true" in EXPO_PUBLIC_ORGANIZATIONS at bundle time turns
-   * Organizations on for everyone. Off: the PostHog rollout decides, but only
-   * after data and analytics consent; without them Organizations stays off.
+   * Master gate: off unless EXPO_PUBLIC_ORGANIZATIONS is "true" at bundle
+   * time. On, the PostHog rollout decides, but only after data and analytics
+   * consent; without them Organizations stays off.
    */
   organizations: process.env.EXPO_PUBLIC_ORGANIZATIONS === 'true',
 } as const

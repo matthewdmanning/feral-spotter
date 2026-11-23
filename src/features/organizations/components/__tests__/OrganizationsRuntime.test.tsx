@@ -76,6 +76,7 @@ test('off, it still delivers a pending revocation', async () => {
 })
 
 test('granting analytics consent lets the rollout turn Organizations on', async () => {
+  flags.organizations = true
   useUIStore.setState({ isOnline: false })
   await render(<OrganizationsRuntime />)
   await act(async () => {})
