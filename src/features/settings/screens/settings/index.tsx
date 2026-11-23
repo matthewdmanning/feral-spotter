@@ -157,11 +157,15 @@ export default function SettingsScreen() {
             )}
           </GlassSurface>
 
-          <TextButton onPress={() => router.push('/organizations')}>
-            Organizations
-          </TextButton>
-          <SharingSettings />
-          <OrganizationPermissions />
+          {FEATURE_FLAGS.organizations && (
+            <>
+              <TextButton onPress={() => router.push('/organizations')}>
+                Organizations
+              </TextButton>
+              <SharingSettings />
+              <OrganizationPermissions />
+            </>
+          )}
 
           <GlassSurface kind="card" style={styles.card}>
             <Text style={styles.cardTitle}>{settingsCopy.photos}</Text>

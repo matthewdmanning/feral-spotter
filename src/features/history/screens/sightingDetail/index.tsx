@@ -5,6 +5,7 @@
  * separately from the historical record.
  */
 
+import { FEATURE_FLAGS } from '@/src/shared/config/constants'
 import { OrganizationPermissions } from '@/src/features/organizations/sharing/components/OrganizationPermissions'
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
@@ -84,7 +85,7 @@ export default function SightingDetailScreen() {
           ))}
         </GlassSurface>
 
-        {sighting.cloud_submission_id && (
+        {FEATURE_FLAGS.organizations && sighting.cloud_submission_id && (
           <OrganizationPermissions
             submissionId={sighting.cloud_submission_id}
           />

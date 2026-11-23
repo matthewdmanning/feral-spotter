@@ -3,6 +3,7 @@ import SightingDetailScreen from '@/src/features/history/screens/sightingDetail/
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { useOrganizationSharingStore } from '@/src/features/organizations/hooks/useOrganizationSharingStore'
 import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
+import { FEATURE_FLAGS } from '@/src/shared/config/constants'
 import { buildGrant } from '@/src/features/organizations/lib/permissions'
 import { DEFAULT_SHARING } from '@/src/shared/types/Organizations'
 import { organizationCopy } from '@/src/shared/config/text'
@@ -16,6 +17,15 @@ import { fakeOrganizationsService } from '@/src/test-utils/organizationsService'
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({ id: 'sighting' }),
 }))
+
+const flags = FEATURE_FLAGS as { organizations: boolean }
+const buildFlag = flags.organizations
+beforeEach(() => {
+  flags.organizations = true
+})
+afterEach(() => {
+  flags.organizations = buildFlag
+})
 
 it.each(['cloud-sighting', undefined])(
   'keeps sighting-level permissions before cats when cloud id is %s',

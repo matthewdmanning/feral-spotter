@@ -6,6 +6,8 @@ import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrga
 import { FEATURE_FLAGS } from '@/src/shared/config/constants'
 
 let nextId = 0
+const flags = FEATURE_FLAGS as { organizations: boolean }
+const buildFlag = flags.organizations
 jest.mock('expo-constants', () => {
   const actual = jest.requireActual('expo-constants')
   return {
@@ -47,7 +49,12 @@ async function startEnabled() {
     }),
   )
 }
+afterEach(() => {
+  flags.organizations = buildFlag
+})
 beforeEach(() => {
+  // The PostHog rollout applies only behind the build-time master flag.
+  flags.organizations = true
   jest
     .mocked(randomUUID)
     .mockImplementation(
@@ -70,22 +77,15 @@ beforeEach(() => {
   )
 })
 
-test('the build-time flag enables Organizations without a PostHog request', async () => {
-  const flags = FEATURE_FLAGS as { organizations: boolean }
-  const original = flags.organizations
-  flags.organizations = true
-  evaluation = null
-  useOrganizationsFlag.setState({
+test('the build-time flag off disables Organizations without a PostHog request', async () => {
+  flags.organizations = false
+  await startEnabled()
+  await useOrganizationsFlag.getState().refresh()
+  expect(useOrganizationsFlag.getState()).toMatchObject({
     enabled: false,
     pinInteractionsEnabled: false,
   })
-  try {
-    await useOrganizationsFlag.getState().refresh()
-    expect(useOrganizationsFlag.getState().enabled).toBe(true)
-    expect(requests).toHaveLength(0)
-  } finally {
-    flags.organizations = original
-  }
+  expect(requests).toHaveLength(0)
 })
 
 test('evaluates both flags once without analytics, account identity or location; fresh cached flags work offline', async () => {

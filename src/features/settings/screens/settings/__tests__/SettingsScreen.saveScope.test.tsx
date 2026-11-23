@@ -13,14 +13,22 @@ jest.mock('expo-router', () => ({
 const mutableFeatureFlags = FEATURE_FLAGS as {
   experimentalCamera: boolean
   emailUpdates: boolean
+  organizations: boolean
 }
-const originalExperimentalCamera = mutableFeatureFlags.experimentalCamera
-const originalEmailUpdates = mutableFeatureFlags.emailUpdates
+const originalFlags = { ...mutableFeatureFlags }
 
 afterEach(() => {
-  mutableFeatureFlags.experimentalCamera = originalExperimentalCamera
-  mutableFeatureFlags.emailUpdates = originalEmailUpdates
+  Object.assign(mutableFeatureFlags, originalFlags)
 })
+
+it.each([false, true])(
+  'shows the Organizations entry only when its build flag is %s',
+  async (on) => {
+    mutableFeatureFlags.organizations = on
+    await render(<SettingsScreen />)
+    expect(screen.queryByText('Organizations') !== null).toBe(on)
+  },
+)
 
 it('applies a photo toggle and an instant choice to their stores at once', async () => {
   mutableFeatureFlags.emailUpdates = true

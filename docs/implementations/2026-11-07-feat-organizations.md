@@ -97,3 +97,24 @@ remains unverified. The Sighting detail permission placement is documented in th
 **Change:** Preserve the organization query provider, both storage ADR amendments, paired-file cleanup checks, and persisted settings migration coverage. Main's removal of the pinch-zoom setting remains in effect. Move the JPEG/DNG manifest validation and JPEG-only projection checks into the current Firestore API emulator suite instead of retaining the obsolete API fixture suite.
 
 **Verification:** The independently resolved endpoint passed type checking, lint (three existing import-order warnings), 137 app suites / 621 tests, the Functions build and 8 unit suites / 66 tests, 3 rules suites / 25 tests, and the current API emulator suite / 22 tests. The other three organization emulator suites passed before the test-only port. Native module sources match main; no device test drive was performed. The rebased history must match this verified endpoint before publication.
+
+## 2026-11-23 — rebase
+
+**Purpose:** Rebase onto main after #480–#490.
+**Change:** Main's GCS-ledger revocation fix and its emulator case are dropped: the Firestore store replaced that ledger. Main's upload-quota rules test stays. Main's new functions lint passes: the leave saga reads its saved choice through `validateGrant`, not non-null assertions.
+
+## 2026-11-23 — refactor: build flag is the master gate
+
+**Purpose:** Main must merge with Organizations off.
+**Change:** `FEATURE_FLAGS.organizations` (`EXPO_PUBLIC_ORGANIZATIONS`, default off) gates at the top:
+
+- Root Stack: `Stack.Protected` hides every `organizations/*` route.
+- `AppProviders` mounts `OrganizationsRuntime` only when on, so off sends no sync, directory or flag request.
+- Screens gate their Organizations sections: Settings (entry, sharing defaults, permissions), Sighting detail (permissions), Create (sharing).
+- `useOrganizationsFlag.refresh`: off → disabled, no PostHog request. On → the PostHog rollout (`Organizations`, `PinInteractions`) decides. Previously on forced enabled; off fell back to PostHog.
+
+Leaf components keep their runtime rollout checks.
+
+**Tests:** `organizationsFlag.test.ts` covers build-off (no request, disabled); PostHog cases run with the build flag on. `SettingsScreen.saveScope.test.tsx` checks the Settings entry follows the flag.
+
+**Verification:** See the PR. No device drive.

@@ -9,6 +9,7 @@
  * react-navigation does not re-render screens on screenOptions changes.
  */
 
+import { FEATURE_FLAGS } from '@/src/shared/config/constants'
 import { navigationCopy } from '@/src/shared/config/text'
 import { Text } from '@/src/shared/ui/atoms/Text'
 import '@/src/shared/config/unistyles'
@@ -136,6 +137,14 @@ export default function RootLayout() {
             gestureEnabled: true,
           }}
         />
+
+        {/* Organizations exist only in builds with the feature flag on */}
+        <Stack.Protected guard={FEATURE_FLAGS.organizations}>
+          <Stack.Screen name="organizations/index" />
+          <Stack.Screen name="organizations/[id]/index" />
+          <Stack.Screen name="organizations/[id]/members" />
+          <Stack.Screen name="organizations/[id]/sightings" />
+        </Stack.Protected>
 
         {/* Submission nested Stack owns its own headers */}
         <Stack.Screen name="submission" options={{ headerShown: false }} />

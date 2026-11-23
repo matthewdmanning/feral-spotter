@@ -1,3 +1,4 @@
+import { FEATURE_FLAGS } from '@/src/shared/config/constants'
 import { SubmissionOrganizations } from '@/src/features/organizations/sharing/components/SubmissionOrganizations'
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
@@ -175,7 +176,9 @@ export default function CreateSubmissionScreen() {
           )}
         </GlassSurface>
 
-        {photos.length > 0 && <SubmissionOrganizations />}
+        {FEATURE_FLAGS.organizations && photos.length > 0 && (
+          <SubmissionOrganizations />
+        )}
 
         <View style={styles.catList}>
           <Text style={styles.catListTitle}>Cats Recorded</Text>

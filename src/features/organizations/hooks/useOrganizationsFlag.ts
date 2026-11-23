@@ -18,9 +18,9 @@ export const useOrganizationsFlag = create<FlagState>((set) => ({
     if (inFlight) return inFlight
     inFlight = (async () => {
       try {
-        // The build-time flag releases Organizations without PostHog.
-        if (FEATURE_FLAGS.organizations) {
-          set({ enabled: true })
+        // The build-time flag is the master gate: off sends no request.
+        if (!FEATURE_FLAGS.organizations) {
+          set({ enabled: false, pinInteractionsEnabled: false })
           return
         }
         const apiKey = Constants.expoConfig?.extra?.posthogProjectToken as

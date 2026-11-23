@@ -34,7 +34,11 @@ export const FEATURE_FLAGS = {
   annotationTutorial: __DEV__,
   /** Off: hides the email opt-in step and the Settings toggle. */
   emailUpdates: false,
-  /** On when EXPO_PUBLIC_ORGANIZATIONS is "true" at bundle time. Off falls back to the PostHog rollout. */
+  /**
+   * Master gate: on when EXPO_PUBLIC_ORGANIZATIONS is "true" at bundle time.
+   * Off: no Organizations routes, UI, sync or PostHog request. On: the
+   * PostHog rollout (Organizations, PinInteractions) decides.
+   */
   organizations: process.env.EXPO_PUBLIC_ORGANIZATIONS === 'true',
 } as const
 
