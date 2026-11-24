@@ -50,6 +50,10 @@ import {
   registerCapture,
   registerCaptureException,
 } from '@/src/shared/analytics/analytics'
+import {
+  posthogFlagClient,
+  registerFlagClient,
+} from '@/src/shared/analytics/featureFlags'
 import Constants from 'expo-constants'
 import * as Device from 'expo-device'
 import { usePathname } from 'expo-router'
@@ -105,6 +109,9 @@ function AnalyticsBridge() {
       device_manufacturer: Device.manufacturer,
       is_physical_device: Device.isDevice,
     })
+    // Remote flags come from this SDK too.
+    registerFlagClient(posthogFlagClient(posthog))
+    return () => registerFlagClient(null)
   }, [posthog])
 
   // Firebase's UID is the stable app identifier. This bridge mounts only after

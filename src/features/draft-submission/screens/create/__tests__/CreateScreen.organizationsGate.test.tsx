@@ -1,5 +1,4 @@
 import { render, screen, waitFor } from '@testing-library/react-native'
-import { http, HttpResponse } from 'msw'
 import CreateSubmissionScreen from '@/src/features/draft-submission/screens/create/index'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
@@ -11,7 +10,7 @@ import {
   useConsentStore,
 } from '@/src/shared/consent/useConsentStore'
 import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
-import { server } from '@/src/test-utils/mswServer'
+import { mountFlagSdk, unmountFlagSdks } from '@/src/test-utils/posthogFlags'
 import { submissionPhoto } from '@/src/test-utils/photoFixtures'
 import { observedCat } from '@/src/test-utils/catFixtures'
 
@@ -27,24 +26,6 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({}),
   router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() },
 }))
-jest.mock('expo-constants', () => {
-  const actual = jest.requireActual('expo-constants')
-  return {
-    ...actual,
-    __esModule: true,
-    default: {
-      ...actual.default,
-      expoConfig: {
-        ...actual.default.expoConfig,
-        extra: {
-          ...actual.default.expoConfig?.extra,
-          posthogProjectToken: 'public-project-token',
-          posthogHost: 'https://flags.example.com',
-        },
-      },
-    },
-  }
-})
 jest.mock('@/src/shared/lib/submissionCache', () => ({
   createSubmissionCache: jest.fn().mockResolvedValue({}),
   getCurrentCacheId: jest.fn().mockResolvedValue('cache-1'),
@@ -80,8 +61,9 @@ beforeEach(() => {
   })
   usePhotoStore.setState({ photos: [submissionPhoto()] })
 })
-afterEach(() => {
+afterEach(async () => {
   flags.organizations = buildFlag
+  await unmountFlagSdks()
 })
 
 it.each([
@@ -101,11 +83,7 @@ it.each([
       acceptedVersion: CONSENT_VERSION,
       analyticsAccepted: analytics,
     })
-    server.use(
-      http.post('https://flags.example.com/flags/', () =>
-        HttpResponse.json({ flags: { Organizations: { enabled: rollout } } }),
-      ),
-    )
+    mountFlagSdk({ Organizations: rollout })
     useOrganizationsFlag.setState({ enabled: false })
     await useOrganizationsFlag.getState().refresh()
     await render(<CreateSubmissionScreen />)
@@ -123,11 +101,7 @@ it('hides the sharing card until a photo exists, even when on', async () => {
     acceptedVersion: CONSENT_VERSION,
     analyticsAccepted: true,
   })
-  server.use(
-    http.post('https://flags.example.com/flags/', () =>
-      HttpResponse.json({ flags: { Organizations: { enabled: true } } }),
-    ),
-  )
+  mountFlagSdk({ Organizations: true })
   usePhotoStore.setState({ photos: [] })
   await useOrganizationsFlag.getState().refresh()
   expect(useOrganizationsFlag.getState().enabled).toBe(true)

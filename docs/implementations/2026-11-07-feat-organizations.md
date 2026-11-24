@@ -131,3 +131,17 @@ With consent, an unusable PostHog answer (error, bad body, no configuration, off
 - `__tests__/RootLayout.organizations.test.tsx`: the real root layout opens `/organizations` only while on, and leaves it when turned off.
 
 **Verification:** typecheck, lint (0 errors), 139 suites / 660 tests. No device drive.
+
+## 2026-11-24 — refactor: Organizations flags through the PostHog SDK (DUP-10)
+
+**Purpose:** Audit DUP-10 (decision: use the PostHog SDK). The hand-rolled `/flags` client, its 24 h AsyncStorage cache and its own install id duplicated the SDK already mounted after consent.
+**Change:**
+
+- `AnalyticsBridge` registers the mounted SDK as the flag client (`shared/analytics/featureFlags.ts`, a Zustand store); unmount clears it. Reads use `getFeatureFlagResult(key, { sendEvent: false })`: no `$feature_flag_called` event.
+- `refresh()` asks `flagClient()`, gated by `analyticsAllowed()` (the capture gate, now exported; was a second copy). No client → build flag. The SDK's stored evaluation stands in until `reloadFeatureFlagsAsync` answers, so a known rollout holds offline. No evaluation for `Organizations` → build flag.
+- `OrganizationsRuntime` also re-evaluates when the client mounts or unmounts.
+- Behavior shifts, accepted with the decision: the rollout now needs a release-candidate build (the SDK mounts only there); the request uses the SDK's distinct id (identified after sign-in) and its GeoIP default; persistence is the SDK's. Old keys `organizations-flag-v1` and `organizations-flag-installation` are no longer read.
+
+**Tests:** `organizationsFlag.test.ts` now drives the real SDK through MSW (`src/test-utils/posthogFlags.ts`): build × consent table, a stale client after revoked consent, concurrent refresh, offline hold, no capture event, parent/child flags, missing evaluation. The Settings, Create and Runtime tests mount the same SDK.
+
+See also [2026-11-24-fix-audit-duplication.md](2026-11-24-fix-audit-duplication.md).

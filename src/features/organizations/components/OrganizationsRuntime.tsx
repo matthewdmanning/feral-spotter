@@ -7,6 +7,7 @@ import { useOrganizationDirectoryStore } from '@/src/features/organizations/hook
 import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import { useConsentStore } from '@/src/shared/consent/useConsentStore'
+import { useFlagClientStore } from '@/src/shared/analytics/featureFlags'
 
 /** Off, it syncs only to deliver pending items such as revocations. */
 function syncPermissions() {
@@ -36,12 +37,14 @@ export function OrganizationsRuntime() {
   const uid = useAuthStore((s) => s.user?.uid)
   const hydrated = useOrganizationSharingStore((s) => s.hydrated)
   const enabled = useOrganizationsFlag((s) => s.enabled)
-  // Consent decides whether PostHog may be asked, so a change re-evaluates.
+  // Consent decides whether PostHog may be asked, and the SDK mounts only
+  // after it, so either change re-evaluates.
   const analyticsAccepted = useConsentStore((s) => s.analyticsAccepted)
   const consentAccepted = useConsentStore((s) => s.accepted)
+  const client = useFlagClientStore((s) => s.client)
   useEffect(() => {
     void useOrganizationsFlag.getState().refresh()
-  }, [analyticsAccepted, consentAccepted])
+  }, [analyticsAccepted, consentAccepted, client])
   useEffect(() => {
     if (!online) return
     void refreshAll()
