@@ -13,16 +13,16 @@ No code changed yet.
 
 ## References
 
-| What                       | Where                                                                 |
-| -------------------------- | --------------------------------------------------------------------- |
-| Decisions (start here)     | `docs/reviews/2026-11-24-code-audit-decisions.md`                     |
-| Findings, evidence, paths  | `docs/reviews/2026-11-24-code-audit-{logic,navigation-ui,aesthetics-tokens,duplication,mvvm}.md` |
-| Reviewer profiles          | `.claude/agents/review-*.md` (model sonnet)                           |
-| Shared review rules        | `docs/agents/code-review-protocol.md`                                 |
-| Test policy (every fix)    | `docs/agents/testing.md` — failing-first test per bug                 |
-| UI rules                   | `docs/agents/ui-ux-standards.md`, `docs/agents/ui-ux/current-state/`  |
-| ADRs to amend              | `docs/adr/0003-time-capture-model.md` (LOGIC-1, LOGIC-4)              |
-| Erasure context            | `docs/adr/0008-firestore-for-organizations.md`, `docs/agents/backend.md` |
+| What                      | Where                                                                                            |
+| ------------------------- | ------------------------------------------------------------------------------------------------ |
+| Decisions (start here)    | `docs/reviews/2026-11-24-code-audit-decisions.md`                                                |
+| Findings, evidence, paths | `docs/reviews/2026-11-24-code-audit-{logic,navigation-ui,aesthetics-tokens,duplication,mvvm}.md` |
+| Reviewer profiles         | `.claude/agents/review-*.md` (model sonnet)                                                      |
+| Shared review rules       | `docs/agents/code-review-protocol.md`                                                            |
+| Test policy (every fix)   | `docs/agents/testing.md` — failing-first test per bug                                            |
+| UI rules                  | `docs/agents/ui-ux-standards.md`, `docs/agents/ui-ux/current-state/`                             |
+| ADRs to amend             | `docs/adr/0003-time-capture-model.md` (LOGIC-1, LOGIC-4)                                         |
+| Erasure context           | `docs/adr/0008-firestore-for-organizations.md`, `docs/agents/backend.md`                         |
 
 ## Next steps (in order)
 

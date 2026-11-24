@@ -17,12 +17,14 @@ Reviewed 2026-11-24 on `review/sonnet-code-audit` at `880c9b9`. Scope: `src/`, `
 
 **Where:** `src/features/camera-control/hooks/useCameraCapture.tsx:137-153,218,245,268` and `src/features/camera-control/hooks/useNativeCameraCapture.tsx:178-187,250,253,277` · **Basis:** source · **Confidence:** confirmed
 **Evidence:** both `handleTakePhoto` callbacks open with the same guard and start sequence and end with the same `finally`:
+
 ```
 if (isAtPhotoLimit()) { showPhotoLimitReached(); return }
 isTakingPhotoRef.current = true; setIsTakingPhoto(true); ... triggerFlash()
 ... startPhotoUpload() ... captureEvent(EVENTS.PHOTO_CAPTURE_FAILED, {error: ...})
 finally { isTakingPhotoRef.current = false; setIsTakingPhoto(false); void flushGallerySaves() }
 ```
+
 `useNativeCameraCapture`'s header says "Everything around a capture comes from useCapturedPhotoWorkflow, so the application workflow exists once rather than once per backend." The extraction stopped short: the guard, taking-photo flag, flash, error telemetry and gallery flush are still per backend. Also repeated inside this pair: the `performanceChecks ? Date.now() : null` timing, the `cameraOpenedAt` effect, and `Platform.OS === 'ios' ? 'avfoundation' : 'camerax'` four times in `useNativeCameraCapture.tsx` (lines 117, 160, 226, 260), and one 15-field telemetry spread repeated three times in that file (success, failure, device-ready).
 **Human path / failure scenario:** a change to what "taking a photo" means (the burst or photo-limit rule, the flash order, the failure event) is made in one hook and not the other, so the Legacy and Native cameras diverge. Neither is tested as a pair.
 **Fix:** move a `runCapture({ capture, onSuccess, failureProps })` wrapper into `useCapturedPhotoWorkflow` (the canonical module, same unit) that owns the limit check, flag, flash, `startPhotoUpload`, failure event and `flushGallerySaves`. Each backend passes only its capture call and its telemetry fields. Extract one `nativeTelemetryBase()` for the repeated spread.
@@ -31,6 +33,7 @@ finally { isTakingPhotoRef.current = false; setIsTakingPhoto(false); void flushG
 
 **Where:** `src/features/history/components/SightingsMap.tsx:102-112,155-160,163-168,172-181` and `src/features/organizations/sharing/components/SharedSightingsMap.tsx:44-52,76-81,82-87,92-100` · **Basis:** source · **Confidence:** confirmed
 **Evidence:** identical in both:
+
 ```
 const latitude = view?.coordinates.latitude / longitude / zoom
 const cameraPosition = useMemo(() => latitude == null || longitude == null ? undefined : {coordinates:{latitude,longitude}, zoom}, [latitude, longitude, zoom])
@@ -39,6 +42,7 @@ useEffect(() => () => touchActiveChange.current?.(false), [])
 const handleLayout = ({nativeEvent}) => { ... if (width !== size?.width || height !== size?.height) setSize(...) }
 onTouchStart / onTouchEnd / onTouchCancel on the frame View
 ```
+
 The two files already differ on a detail: one gates on `Platform.OS === 'android'` for icon loading, the other returns null off iOS/Android. The shared plumbing is what drifts.
 **Human path / failure scenario:** a fix to the "scroll lock must not stay on after unmount" guard (a real bug class, per the comment in both files) lands in one map and the other keeps the stuck-scroll bug.
 **Fix:** add `useMapFrame(points, onTouchActiveChange)` returning `{ cameraPosition, frameProps }` in `src/shared/hooks/` beside `shared/lib/mapView.ts` (which already owns `mapViewForSpots`). Both maps spread `frameProps` onto their `View`.
@@ -54,9 +58,11 @@ The two files already differ on a detail: one gates on `Platform.OS === 'android
 
 **Where:** `src/features/organizations/sharing/components/SharingSettings.tsx:56-93` and `src/features/organizations/membership/components/LeaveChoices.tsx:65-132` · **Basis:** source · **Confidence:** confirmed
 **Evidence:** `LeaveChoices.tsx:65` defines a local
+
 ```
 const checkbox = (label, checked, change) => (<Pressable accessibilityRole="checkbox" ... <CheckboxBox checked={checked} /><Text style={styles.body}>{label}</Text>)
 ```
+
 that is `SharingCheckbox` (`sharing/components/SharingCheckbox.tsx`) plus a `disabled` state. The name, phone and email blocks that follow repeat `SharingSettings` almost line for line, including the literals `maxLength={200}` and `maxLength={50}`.
 **Failure scenario:** an accessibility fix to the checkbox (hit size, label) reaches `SharingSettings` only.
 **Fix:** add an optional `disabled` prop to `SharingCheckbox` and use it in `LeaveChoices`. Extract `SharingFieldInputs({ settings, onChange, disabled, hideContact })` under `organizations/sharing/components/` and use it in both.
@@ -136,6 +142,7 @@ that is `SharingCheckbox` (`sharing/components/SharingCheckbox.tsx`) plus a `dis
 ### DUP-16 — P3: a handful of copies sit inside one file or one family
 
 **Where / Fix:**
+
 - `src/shared/lib/mapView.ts:37` and `src/features/history/lib/history.ts:46` both define `const toRad = (deg) => (deg * Math.PI) / 180`; `functions/src/organizations/domain.ts:181` inlines the same. Export `toRad` from `mapView.ts` (lower level) for the first two.
 - `src/features/draft-submission/lib/upload/submissionLayout.ts:33-45,47-58`: `photoObjectPath` and `rawPhotoObjectPath` repeat the same 5-line slot check and error text. Extract `assertSlot(slot)`.
 - `src/features/permissions/hooks/useConsentPermissions.ts:59,90`: `markAccepted(); router.replace(routeAfterDeviceConsent())` twice. Extract `acceptAndContinue()`.
@@ -159,6 +166,7 @@ that is `SharingCheckbox` (`sharing/components/SharingCheckbox.tsx`) plus a `dis
 ### DUP-19 — P3: dead duplicates
 
 **Where / Fix (delete each after a final grep):**
+
 - `src/shared/config/constants.ts:126,129` `AUTOSAVE_TEXT_MS`, `AUTOSAVE_INSTANT_MS`: no references anywhere.
 - `functions/src/organizations/domain.ts:429` `SHARING_FIELD_LABELS`: no references; the live labels are `organizationCopy.sharingSettings.shareFieldLabels` in `src/shared/config/text.ts:270`.
 - `src/features/organizations/lib/api.ts:13` `OrganizationSyncError.retryable`: never read in `src/`. The server already sends `retryable` in its body; the client re-derives a different status list (`[0,408,429,502,503,504]` vs the server's `429||503`).
@@ -168,6 +176,7 @@ that is `SharingCheckbox` (`sharing/components/SharingCheckbox.tsx`) plus a `dis
 ### DUP-20 — P3: other small parallel definitions
 
 **Where / Fix:**
+
 - `functions/src/organizations/sharing/api.ts:94`: `20 * 1024 * 1024` where `MAX_PHOTO_BYTES` exists in `functions/src/submissionLayout.ts:58`. Import it.
 - `src/shared/lib/storage.ts:29-33`: `asyncStorage` is a field-for-field pass-through of `AsyncStorage` (`getItem`/`setItem`/`removeItem`). Zustand's `createJSONStorage(() => AsyncStorage)` accepts it directly. Keep only if the seam is wanted.
 - Emulator connect + "is it reachable" ping + identical error text in `src/features/auth/lib/firebaseAuthProvider.ts:66-79` and `src/features/draft-submission/lib/upload/firebaseUpload.ts:105-122`. Extract `connectEmulator(label, port, connect)` into `src/shared/lib/`.
@@ -182,8 +191,8 @@ that is `SharingCheckbox` (`sharing/components/SharingCheckbox.tsx`) plus a `dis
 ### DUP-T-1 — P2: `draftUploads.test.ts` re-mocks `expo-crypto`
 
 **Where:** `src/features/draft-submission/lib/upload/__tests__/draftUploads.test.ts:26-27` · **Basis:** test-read · **Confidence:** confirmed
-**Evidence:** `jest.mock('expo-crypto', () => ({ randomUUID: () => \`id-${++mockId}\` }))`. `testing.md` ("Shared fixtures"): "`jest.setup.js` gives `expo-crypto`'s `randomUUID` real unique ids. Don't re-mock the module." The local mock also drops every other real export.
-**Fix:** delete the mock and `mockId`; pin ids with `jest.mocked(randomUUID).mockReturnValue(...)` where a test needs a fixed id.
+**Evidence:** `jest.mock('expo-crypto', () => ({ randomUUID: () => \`id-${++mockId}\` }))`. `testing.md` ("Shared fixtures"): "`jest.setup.js`gives`expo-crypto`'s `randomUUID`real unique ids. Don't re-mock the module." The local mock also drops every other real export.
+**Fix:** delete the mock and`mockId`; pin ids with `jest.mocked(randomUUID).mockReturnValue(...)` where a test needs a fixed id.
 
 ### DUP-T-2 — P2: `firebaseUpload.behavior.test.ts` assigns `global.fetch`
 

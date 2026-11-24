@@ -19,11 +19,13 @@ Layer mapping used (from the agent profile): View = `screens/`, `components/`, `
 
 **Where:** `src/features/draft-submission/screens/location-picker/index.tsx:37-41`, `src/shared/hooks/useSubmissionStore.ts` (`setLocationType`) · **Basis:** source · **Confidence:** confirmed
 **Evidence:**
+
 ```ts
 setLocationType('pin')
 setSubmissionLocation(currentCenter())
 router.back()
 ```
+
 `setLocationType` clears `latitude/longitude/accuracy` whenever the type changes (`useSubmissionStore.ts`, "Switching method invalidates any acquired coords"), so the two calls must run in exactly this order. The only guard is a comment in the View. The same screen's `usePinCenter.ts:36` also calls `Location.getLastKnownPositionAsync()` directly, although `core/location` owns location acquisition.
 **Human path / failure scenario:** a future edit that swaps the two lines, or a second caller that copies one of them, saves a `pin` Submission with no coordinates. The accuracy-warning icon on Sighting Details then flips to "uncertain" and the user cannot tell why.
 **Fix:** add one store action, e.g. `setManualPin(loc: SubmissionLocation)`, that sets `location_type: 'pin'` and the coordinates in a single `set`. The View calls it once. Move `resolveSeedRegion` behind `core/location/location.ts`. `LocationPicker.model.test.tsx` already uses the real store and would keep covering it.
@@ -32,6 +34,7 @@ router.back()
 
 **Where:** `src/features/organizations/sharing/components/OrganizationPermissions.tsx:72-97` (filters), `:101-120` (revoke), `:122-151` (review), `:152-170` (organization list) · **Basis:** source · **Confidence:** confirmed
 **Evidence:**
+
 ```ts
 const permissions = account.ledger.permissions.filter(
   (p) =>
@@ -39,6 +42,7 @@ const permissions = account.ledger.permissions.filter(
     (!submissionId || p.submissionId === submissionId),
 )
 ```
+
 and `review` calls `useOrganizationSharingStore.getState().prepareReview`, then `reconfirm`, then `await persistOrganizationSharing()`, then `state.sync(uid)`. It also holds a `uid` captured-at-render guard, `useAuthStore.getState().user?.uid !== uid`, inside a dialog callback.
 **Human path / failure scenario:** Settings (or Sighting detail, or an organization overview) -> Review sharing -> Confirm. This sequence (reviewed grant, then reconfirm, then persist, then sync, each with its own failure message) is the consent-critical path for sharing a Sighting with an organization. It can only be exercised by rendering a 297-line component. Anything that needs the same "pending, revoking, saved" status (e.g. a badge) must copy the filters.
 **Fix:** extract `useOrganizationPermissions({ submissionId, organizationId })` into `sharing/hooks/`. It returns derived rows (status per permission, pending items, organization list) and actions (`revoke`, `review`, `retry`). Put the scoping filters in `sharing/lib/` as pure functions. The component then only maps rows to `TextButton`s. Same pattern as `useSharedSightings`.
@@ -47,12 +51,15 @@ and `review` calls `useOrganizationSharingStore.getState().prepareReview`, then 
 
 **Where:** `src/features/organizations/sharing/screens/SharedSightingsScreen.tsx:55-71` (`SharedPhoto`), `:107-130` (`SharedPhotos`); `src/features/organizations/membership/components/LeaveChoices.tsx:156-181` (`reviewLeaving`), `:167` and `:206` (`randomUUID()`) · **Basis:** source · **Confidence:** confirmed
 **Evidence:**
+
 ```ts
 void organizationRequest<{ image: string }>(
   { action: 'sharedPhoto', organizationId, id: sighting.id, index },
-  uid, { signal: controller.signal },
+  uid,
+  { signal: controller.signal },
 )
 ```
+
 `LeaveChoices` does the same for `reviewLeaving`, with its own `AbortController`, in-flight latch, and `mutationId: randomUUID()` built inside `onPress`. `SharedPhotos` implements "one photo at a time" by counting settled children in state.
 **Human path / failure scenario:** Organizations -> Leave -> Keep my data -> Review. The leave mutation's idempotency key is created in a button handler, and `reset()` plus re-review mints a new one. Any retry-semantics change needs a View edit, and `LeaveChoices.test.tsx` is the only place the sequence is exercised.
 **Fix:** add `useSharedPhoto(...)` and `useLeaveReview(...)` hooks beside `useMemberships`/`useSharedSightings`, using `organizationRequest` and `isRequestCancelled` from `organizations/lib/api`. The Views take `{ image, error, retry }` and `{ review, loading, choice }`. Mint `mutationId` in the hook, not the handler.
@@ -61,6 +68,7 @@ void organizationRequest<{ image: string }>(
 
 **Where:** `src/features/organizations/sharing/components/SubmissionOrganizations.tsx:46-70` (effect), `:73-82` (signature/patch), `:93-130` (coverage branching) · **Basis:** source · **Confidence:** confirmed
 **Evidence:**
+
 ```ts
 useEffect(() => {
   if (!user || !enabled || !hydrated || !directory.cache || ...) return
@@ -68,6 +76,7 @@ useEffect(() => {
   if (next !== draft) setDraft(next)
 }, [user, enabled, hydrated, directory.cache, ..., draft, setDraft, directory.organizations])
 ```
+
 The effect writes a store value derived from other store values (the draft is reconciled against the directory), and it only runs while this component is mounted. Selection toggling (`patch({ selectedIds })`), confirmation signature and the five-way "saved/unavailable/none" copy choice all sit in JSX. The component also formats `new Date(directory.cache.fetchedAt).toLocaleDateString()` inline.
 **Human path / failure scenario:** Sighting Details with Organizations on; open the Settings gear to change sharing fields while this card is unmounted, return. The reconcile and the signature check only happen after remount, so what the card shows is a function of mount timing rather than of the stores.
 **Fix:** `useSubmissionSharing()` in `sharing/hooks/` owning the reconcile, `toggleOrganization`, `setAnonymous`, `confirmed`, and a `coverageStatus` discriminant. The View switches on `coverageStatus`. Keep `reconcileSharingDraft` and `sharingSignature` as the Model.
@@ -76,6 +85,7 @@ The effect writes a store value derived from other store values (the draft is re
 
 **Where:** `src/features/draft-submission/hooks/useSubmissionSubmit.ts:22-26` (import), `:80-125` (`submitWithVerifiedEmail`); also `src/features/draft-submission/lib/upload/uploadAdmission.ts:8,67` · **Basis:** source · **Confidence:** confirmed
 **Evidence:**
+
 ```ts
 import { getAuth, reload, sendEmailVerification } from '@react-native-firebase/auth'
 ...
@@ -83,6 +93,7 @@ const auth = getAuth()
 const user = auth.currentUser
 if (user?.email && user.emailVerified === false) {
 ```
+
 The auth feature already owns this seam: `features/auth/lib/IAuthProvider.ts` plus `authProvider` (real Firebase or the dev/Jest stub in `auth/lib/index.ts`). `IAuthProvider` has no `reload`, `emailVerified` or `sendVerificationEmail`, so the draft hook reaches around it. The verified-email gate, a Model rule, then lives as 45 lines of dialog plumbing in a ViewModel, behind a uid/draft-id staleness check.
 **Human path / failure scenario:** a signed-in email user with an unverified address taps Submit Sighting -> app reloads the user -> shows "verify first". Anything that stubs `authProvider` (the sanctioned test seam) leaves this path on real Firebase; that is why `useSubmissionSubmit.submitFlow.test.ts` imports `reload`/`sendEmailVerification` from the SDK and mocks them there.
 **Fix:** extend `IAuthProvider` (and the dev stub) with `emailVerification(): Promise<{ needsVerification: boolean }>` and `sendVerificationEmail()`; move the gate to `features/auth/lib/` (or a `draft-submission/lib/` function taking the provider). The hook keeps only the alert wiring. `uploadAdmission.ts:67` should use `authProvider.getToken()` for the same reason.
@@ -91,11 +102,13 @@ The auth feature already owns this seam: `features/auth/lib/IAuthProvider.ts` pl
 
 **Where:** `src/features/camera-control/hooks/useCapturedPhotoWorkflow.tsx:218-228` (`renderItem`), `:169-193` (`flushGallerySaves`) · **Basis:** source, test-read · **Confidence:** confirmed
 **Evidence:**
+
 ```ts
 const renderItem = useCallback(
   ({ item, index }) => (
     <CameraThumb uri={item.uri} ... label={`Photo ${index + 1} of ${capturedPhotos.length}`} />
 ```
+
 and `await Asset.create(uri)` from `expo-media-library` inside the hook, with `pendingGallerySaves`, permission check and file-retention bookkeeping. A ViewModel importing a component from `components/` and building its accessibility label inverts the dependency; the gallery pipeline is Model work (the doc comment even says "the application workflow exists once"). Four test files must `jest.mock('.../CameraThumb')` just to test hook behavior (`useCapturedPhotoWorkflow.test.tsx:35`, `useCameraCapture.test.ts`, `useCameraCapture.controls.model.test.ts`, `flow.cameraDone.test.tsx`).
 **Human path / failure scenario:** Camera -> take 3 photos with "Keep Photos on Device" on -> Done. Gallery save is a hook-private ref queue; a screen that wants the same save (e.g. a library import) must copy it.
 **Fix:** hooks return data (`capturedPhotos`, `removePhoto`); `CameraThumbStrip` in `components/` owns `renderItem`/`keyExtractor`. Move `pendingGallerySaves`/`flushGallerySaves` to `camera-control/lib/gallerySaver.ts` (queue + `Asset.create` + `releaseCapturedPhotoFile`), tested against the supplied media-library boundary as testing.md allows.
@@ -104,6 +117,7 @@ and `await Asset.create(uri)` from `expo-media-library` inside the hook, with `p
 
 **Where:** `src/features/camera-control/hooks/useNativeCameraCapture.tsx:112-140` (`CAMERA_DEVICE_READY`), `:157-168` (diagnostic), `:214-250` (`PHOTO_CAPTURED`), `:253-275` (`PHOTO_CAPTURE_FAILED`); return block `:327-356` · **Basis:** source · **Confidence:** confirmed
 **Evidence:** the block
+
 ```ts
 camera_backend: Platform.OS === 'ios' ? 'avfoundation' : 'camerax',
 camera_variant: 'native', camera_platform: Platform.OS, camera_position: position,
@@ -111,6 +125,7 @@ max_detail: maxDetail, motion_priority: motionPriority,
 low_light_boost_disabled: disableLowLightBoost, subject_metering: subjectMetering,
 requested_capture_tuning: requestedCaptureTuning.current ?? 'unreported',
 ```
+
 appears in three events (`:114-140`, `:223-241`, `:257-271`). `handleTakePhoto` is a ~110-line callback that mixes the capture state machine, timing, persistence and event shaping, with a 12-entry dependency array. The hook returns 30 members including the setter `setIsCameraReady`, `diagnostics`, the constant `disableLowLightBoost`, and a never-called `applySubjectRegion`.
 **Human path / failure scenario:** adding one tuning field means editing three property lists; one drifts and the PostHog camera dashboards silently disagree between events.
 **Fix:** `camera-control/lib/cameraTelemetry.ts` with `nativeTuningProps({position, settings, requested})` used by all four events; the hook passes plain inputs. Return one `nativeViewProps` object instead of seven loose tuning fields. Drop `setIsCameraReady`: expose `handleCameraError` so the View stops calling `console.error` itself (MVVM-10).
@@ -133,13 +148,17 @@ appears in three events (`:114-140`, `:223-241`, `:257-271`). `handleTakePhoto` 
 
 **Where:** `src/features/camera-control/screens/camera/NativeCameraScreen.tsx:18` (permission), `:56-82` (focus gesture), `:111-117` (`onCameraError`); `LegacyCameraScreen.tsx:38` (`useCameraPermission`) · **Basis:** source · **Confidence:** confirmed
 **Evidence:**
+
 ```ts
 void focus({ x: event.x / width, y: event.y / height })
 ```
+
 with the `width <= 0 || height <= 0` guard, and
+
 ```ts
 onCameraError={(event) => { setIsCameraReady(false); console.error('[NativeCameraScreen]', ...) }}
 ```
+
 **Failure scenario:** a regression in the divisor (or a rotated layout reporting 0) only shows up by driving the gesture on a device; no JS test can reach it without rendering the screen (see MVVM-T-3).
 **Fix:** `focusAt(point, size)` in the hook (normalization is the rule); `handleCameraError` in the hook; permission through the existing `permissions` feature (`cameraPermission` is already used by `useConsentPermissions`) so both screens share one gate.
 
@@ -164,6 +183,7 @@ onCameraError={(event) => { setIsCameraReady(false); console.error('[NativeCamer
 ### MVVM-14 — P3: Wrong home
 
 **Where and what:**
+
 - `src/features/organizations/membership/components/styles.ts` (generic `screen/content/footer` layout) is imported by `sharing/screens/SharedSightingsScreen.tsx:20`, contradicting "membership … without importing sharing" symmetry. Two sub-features need it, so it belongs in `organizations/components/styles.ts`.
 - `src/features/draft-submission/screens/location-picker/usePinCenter.ts` is a ViewModel (with a service call) inside `screens/`; it cannot be shared or imported by a non-screen.
 - Whole-draft operations live in `hooks/` while the other draft rules live in `lib/draft.ts`: `removePhotoFromDraft.ts` (three stores plus upload cancellation/deletion), `catPass.ts` `removeCatFromDraft`/`startFreshPass` (three stores). They are Model code in the ViewModel folder; each is "the one way" but none sits behind `draft.ts`'s seam or has an invariant test like `draft.invariant.test.ts`.
@@ -214,14 +234,16 @@ The screen suite is one file (`CatObservationScreen.insetCropHeaderZone.test.tsx
 ### MVVM-T-5 — P3: Application stores and hooks mocked in screen tests
 
 **Where:** `src/features/draft-submission/screens/cats/__tests__/CatObservationScreen.insetCropHeaderZone.test.tsx:12-31` (`jest.mock` of `useSubmissionStore` with `sel({ cats: [] })`, `useActiveCatFlow`, `useCatSubmit`, `useAbandonCatGuard`); `src/features/annotate/screens/annotate/__tests__/AnnotateScreen.buttons.test.tsx:36-47` (mocks `useTutorialStore` and all of `useAnnotatePass`) · **Basis:** test-read
-These are wiring checks and the policy allows isolating a separately tested hook, but both also replace application *stores* with selector stubs; zustand's per-test reset in `jest.setup.js` makes real stores free. The Annotate fixture also has to supply `clearActiveCat` and `handleAbandonPass`, which the screen never uses (a leaky-interface symptom, MVVM-7/13). `jest.spyOn(buttonRowStyles, 'useVariants')` asserts style-variant calls rather than rendered behavior.
+These are wiring checks and the policy allows isolating a separately tested hook, but both also replace application _stores_ with selector stubs; zustand's per-test reset in `jest.setup.js` makes real stores free. The Annotate fixture also has to supply `clearActiveCat` and `handleAbandonPass`, which the screen never uses (a leaky-interface symptom, MVVM-7/13). `jest.spyOn(buttonRowStyles, 'useVariants')` asserts style-variant calls rather than rendered behavior.
 
 ### MVVM-T-6 — P3: `confirmResetSubmission.test.ts` bypasses `pressDialogButton`
 
 **Where:** `src/features/draft-submission/hooks/__tests__/confirmResetSubmission.test.ts:66-67` · **Basis:** test-read
+
 ```ts
 await dialog?.buttons.find((b) => b.text === 'Start New')?.onPress?.()
 ```
+
 testing.md requires `pressDialogButton(text)` from `src/test-utils/dialog.ts` (AlertHost's own dismiss-then-handler path); many sibling files use it. The same file mocks all of `lib/draft` (`discardDraft: jest.fn()`), so "clears the draft" is asserted as "mock called"; the real teardown is covered by `draft.invariant.test.ts`, which is acceptable, but then the case should say it covers wiring only.
 
 ### MVVM-T-7 — P3: Orphan-sweep rule only tested through the trigger with hand-rolled admin mocks

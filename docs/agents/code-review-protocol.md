@@ -5,13 +5,13 @@ lens; this file owns everything common.
 
 ## Lenses
 
-| Agent                      | Lens                                                                 |
-| -------------------------- | -------------------------------------------------------------------- |
+| Agent                      | Lens                                                                  |
+| -------------------------- | --------------------------------------------------------------------- |
 | `review-duplication`       | Hand-rolled code a library/shared module already provides; duplicates |
-| `review-mvvm`              | View / ViewModel / Model separation, dependency direction            |
-| `review-logic`             | Logic bugs: state, async, races, edge cases, error paths             |
-| `review-navigation-ui`     | Expo Router navigation, screen wiring, shared UI component behavior  |
-| `review-aesthetics-tokens` | Visual consistency, semantic token use, theme/glass/copy config      |
+| `review-mvvm`              | View / ViewModel / Model separation, dependency direction             |
+| `review-logic`             | Logic bugs: state, async, races, edge cases, error paths              |
+| `review-navigation-ui`     | Expo Router navigation, screen wiring, shared UI component behavior   |
+| `review-aesthetics-tokens` | Visual consistency, semantic token use, theme/glass/copy config       |
 
 Stay in your lens. A finding owned by another lens: one line under _Handoffs_.
 

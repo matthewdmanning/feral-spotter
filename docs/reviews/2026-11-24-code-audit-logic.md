@@ -21,6 +21,7 @@ Read in full for tracing: the Draft Submission boundary (`draft.ts`, `send.ts`, 
 **Where:** `src/shared/utils/validation.ts:11`, `src/features/draft-submission/lib/draft.ts:237`, `src/features/draft-submission/screens/create/index.tsx:156,294`, `src/features/draft-submission/lib/payload.ts:90` · **Basis:** source · **Confidence:** confirmed
 
 **Evidence:**
+
 ```ts
 // validation.ts — the only content gate submitDraft applies
 return [
@@ -30,11 +31,13 @@ return [
 // payload.ts resolvePhotoTime: ... ?? submission.manual_time ?? fallbackTime
 // send.ts:148  const submitFallbackTime = new Date().toISOString()
 ```
+
 The Create screen disables Submit only at `cats.length === 0` (`create/index.tsx:294`). A manual-time draft with no `manual_time` shows an amber icon (`status.ts`, `time: true`) and nothing else.
 
 ADR-0003 line 12 says "the existing validation gate (`validation.ts`) already requires `manual_time` before submission". `useSubmissionSubmit.ts:8` says the warning is "informational, not a submit gate (ADR-0002/0003)". **Contradicts ADR-0003's own gate claim.** The code follows the second statement, and the ADR text is stale or wrong.
 
 **Human path / failure scenario:**
+
 1. The user picks 2 library photos that carry no EXIF `DateTime` (screenshots, photos forwarded by messaging apps), taken three days ago.
 2. `classifyLibraryPickTime` returns `manual`, and `setLibraryTime` clears `manual_time`.
 3. On Submission Details the time row shows a warning icon next to a picker whose default label is today's date and time (`create/index.tsx:162-171`: `value={... : new Date()}`). The user does not open it, because the date shown looks set.
@@ -52,15 +55,18 @@ ADR-0003 line 12 says "the existing validation gate (`validation.ts`) already re
 **Where:** `src/features/draft-submission/hooks/removePhotoFromDraft.ts:45`, `src/features/library-picker/hooks/useLibraryPhotoPicker.ts:120,128`, `src/features/draft-submission/hooks/useDraftSync.ts:127`, `src/shared/hooks/useSubmissionStore.ts:164,178` · **Basis:** source · **Confidence:** confirmed
 
 **Evidence:**
+
 ```ts
 // useDraftSync.ts:127 — the Live fix is dropped for a 'pin' draft
 if (submission.location_type === 'pin') return
 // useLibraryPhotoPicker.ts:120 — the only place a Library draft is set to 'pin'
 if (isFirstPick) setLocationType('pin')
 ```
+
 `removePhoto` clears `source` when the pool empties (`usePhotoStore.ts:138-146`). Nothing resets `location_type`, `latitude`/`longitude`, `time_type`, `captured_at` or `manual_time`. The camera path (`useCameraCapture`, `useNativeCameraCapture`) never calls `setLocationType` or `setLibraryTime`. Only a new Library pick re-derives them.
 
 **Human path / failure scenario:**
+
 1. Home → Upload Photos → pick 1 photo. The draft becomes `location_type: 'pin'`. The user sets a map pin at the colony.
 2. On Annotate the user long-press-removes that photo. The pool is empty, `source` is `null`, and the cat records stay.
 3. The user goes Home. Take Photos is enabled, because `camera.disabled` depends on `source === 'library'` only. They take two camera photos and continue.
@@ -79,15 +85,20 @@ Related, without the camera: with two Library photos A (EXIF 10:00) and B (EXIF 
 **Where:** `src/features/draft-submission/lib/draft.ts:173-181`, `src/features/draft-submission/hooks/usePhotoStore.ts:111,127,138-146` · **Basis:** source · **Confidence:** confirmed
 
 **Evidence:**
+
 ```ts
 const lastChange =
   photos.length > 0
-    ? updated_at                        // only addPhoto/addPhotos/removePhoto write this
-    : hasCats && row ? Date.parse(row.updated_at) : null
+    ? updated_at // only addPhoto/addPhotos/removePhoto write this
+    : hasCats && row
+      ? Date.parse(row.updated_at)
+      : null
 ```
+
 `updated_at` is set only on photo add or remove. `updatePhoto`, cat edits, boxes, manual time and the pin do not touch it. Meanwhile `useResumableDraft` and Reports date the draft by the row's `updated_at`, which `syncDraftToRow` refreshes on every cats or photos change.
 
 **Human path / failure scenario:**
+
 1. The user photographs a colony on Monday 09:00 and annotates and describes cats on Monday 21:00. The row is fresh.
 2. They close the app and reopen it Wednesday 10:00, which is 49 hours after the last photo change and 37 hours after the last real work.
 3. Start-up `discardUnsurvivingDraft` finds `now - updated_at > 48h` and calls `tearDownDraftState(true)`. It also deletes the history row, and `deleteSubmissionUploads` removes the photos already uploaded.
@@ -102,17 +113,29 @@ const lastChange =
 **Where:** `src/features/draft-submission/lib/send.ts:154-175`, `src/features/draft-submission/lib/payload.ts:90-101,193-196` · **Basis:** source · **Confidence:** confirmed
 
 **Evidence:**
+
 ```ts
 // send.ts: failures are logged and the submit still reports success
 const finalizeResults = await Promise.allSettled(
-  finalizeTargets.map(({ path, photo }) => finalizeSubmissionPhotoMetadata(path, userId,
-    photoTimeFor(photo), latitude, longitude, photo.camera_config)))
+  finalizeTargets.map(({ path, photo }) =>
+    finalizeSubmissionPhotoMetadata(
+      path,
+      userId,
+      photoTimeFor(photo),
+      latitude,
+      longitude,
+      photo.camera_config,
+    ),
+  ),
+)
 ```
+
 The payload carries `submission.time_type` and `captured_at` or `manual_time` only for Library or manual drafts. For a camera Sighting there is no time field anywhere in `metadata.json`. `submitted_at` is written to the local history row (`send.ts:87`) and never into the payload. The `photo_locations` list exists for location, and no `photo_times` counterpart exists. The shutter time (`SubmissionPhoto.captured_at`) is local only until finalize runs.
 
 ADR-0003 (line 7) says `submitted_at` "_is_ the sighting time". **Contradicts ADR-0003's code description**: `submitted_at` is not in the uploaded record. The "ADR-0003 consumption unverified" note covers whether a backend reads it, not that it is absent.
 
 **Human path / failure scenario:**
+
 1. A camera Sighting is submitted on a flaky connection.
 2. One photo's `getMetadata` or `updateMetadata` rejects (offline during the patch). `allSettled` swallows it, and the user sees a successful Submit.
 3. The draft is torn down, and the camera file is deleted.
@@ -128,11 +151,14 @@ ADR-0003 (line 7) says `submitted_at` "_is_ the sighting time". **Contradicts AD
 **Where:** `functions/src/uploads/admission.ts:190`, `functions/src/submissionLayout.ts:71-74`, `src/features/draft-submission/lib/upload/uploadAdmission.ts:80`, `src/features/draft-submission/lib/upload/uploadNewPhoto.ts:156` · **Basis:** source · **Confidence:** plausible (depends on the 30-minute pattern)
 
 **Evidence:**
+
 ```ts
 // admission.ts:190
-if (Object.keys(liveGrants(own, now)).length > MAX_GRANTED_SUBMISSIONS)   // = 3
+if (Object.keys(liveGrants(own, now)).length > MAX_GRANTED_SUBMISSIONS)
+  // = 3
   throw new AdmissionError(429, 'too_many_open_submissions')
 ```
+
 Each admission sets `e = now + 30 min` for that submissionId. A submitted Sighting's grant stays live until it lapses. `UploadAdmissionError` is constructed on the client and never inspected. `uploadNewPhoto` logs it, `uploaded` stays `false`, and Submit eventually shows the generic "Photos Still Uploading". The 250-lifetime cap (`submission_cap_reached`) and `quota_exceeded` are treated the same way.
 
 **Human path / failure scenario:** A volunteer logs four separate spots (domain.md: "Separate places need separate Submissions") within half an hour, each Sighting taking a few minutes. The first photo of the fourth gets a 429. The photo shows a failed upload, Submit stalls after 30 seconds, and nothing says why or that waiting up to about 30 minutes is the cure.
@@ -146,12 +172,14 @@ Each admission sets `e = now + 30 min` for that submissionId. A submitted Sighti
 **Where:** `functions/src/organizations/store.ts:475-497`, `functions/src/organizations/interactions/store.ts:250` · **Basis:** source · **Confidence:** confirmed
 
 **Evidence:**
+
 ```ts
 // store.ts:491
 // TODO: erasure policy for pin comments and reactions: keep them, but
 // redact the author's user info. Today `pinComments` and `pinReactions`
 // still hold `authorUid` after erasure
 ```
+
 `eraseOrganizationData` deletes `organizationPermissions`, `organizationMemberships`, `states` and `mutations` only. `applyAuthorExit` (the policy owner) has no callers in `functions/src` or `scripts/`. `leaveOrganization` and `moderateMembership('remove')` also leave comments in place.
 
 This is consistent with ADR-0008's list of what erasure removes, which does not name pin interactions. The code comment calls it unfinished, so it is an open gap, not a regression.
@@ -164,14 +192,14 @@ This is consistent with ADR-0008's list of what erasure removes, which does not 
 
 ### P3 — minor, batched
 
-- **LOGIC-7** `src/features/draft-submission/hooks/useDateTimePicker.ts`, `DateTimePicker.tsx:100`: a manual time can be in the future. `maximumDate` is passed to the date step only (the iOS time step at `:100` has none, and Android's time dialog ignores it). Choosing today plus a later time is accepted, and nothing validates `manual_time <= now` in `setManualTime` or at submit. *Fix:* clamp in `handleManualTimeChange` (`create/index.tsx:78`).
-- **LOGIC-8** `functions/src/organizations/domain.ts:341`: `Math.floor(latitude * 100) / 100` is off by one cell for values such as 34.29 (3428.9999999999995 floors to 34.28), so the "general location" cell may not contain the point. Harmless to privacy, wrong to coverage. *Fix:* round to a stable precision before flooring.
-- **LOGIC-9** `src/features/history/lib/history.ts:183-184`: the comment says a Library pick's local file survives teardown, but `capturedPhotoFiles.ts:24-25` deletes any file under `Paths.cache`, which is where the image picker copies picked assets. The offline fallback for a Library Profile Pic therefore probably does not exist after Submit (plausible). *Fix:* check where `expo-image-picker` writes, then fix the comment or the ownership test.
-- **LOGIC-10** `src/shared/lib/submissionCache.ts:134-139`: `readIndex` returns `[]` on a JSON parse error, and the next `writeIndex` then overwrites the index, dropping every history id. *Fix:* rethrow on parse error, or rebuild the index from `submission_cache_*` keys.
-- **LOGIC-11** `src/features/draft-submission/lib/upload/uploadAdmission.ts:23`: the held-grant cache key `${submissionId}/${slot}/${raw}` omits the uid. A different account continuing the same draft would skip the admission request and fail with `storage/unauthorized`, though the app has no sign-out control today, so it is unreachable. *Fix:* include the uid if sign-out is ever added.
-- **LOGIC-12** `functions/src/organizations/api.ts:165-168`: `makePermission` runs the coverage check on `latitude`/`longitude` read from `metadata.json`, which `storage.rules` lets the owner overwrite (`isValidMetadataWrite` checks size and content type only). An owner can share a Sighting outside an organization's coverage. Low impact, since it is their own data. *Fix:* if coverage must be authoritative, derive it from server-side state.
-- **LOGIC-13** `functions/src/organizations/membership/service.ts:26`: any `getAuth().getUser` failure, including a transient Auth outage, becomes a 400 "Account name required". The user is told to fix their profile. *Fix:* map only a missing or empty `displayName` to 400, and rethrow others as 503.
-- **LOGIC-14** `src/shared/lib/geometry/cropProjection.ts:14`: the comment says the photo is "scaled down (never up)", but `containFit` uses `Math.min(canvasW/imgW, canvasH/imgH)`, which exceeds 1 for a photo smaller than the canvas. All callers use the same function, so the math is consistent. *Fix:* correct the comment.
+- **LOGIC-7** `src/features/draft-submission/hooks/useDateTimePicker.ts`, `DateTimePicker.tsx:100`: a manual time can be in the future. `maximumDate` is passed to the date step only (the iOS time step at `:100` has none, and Android's time dialog ignores it). Choosing today plus a later time is accepted, and nothing validates `manual_time <= now` in `setManualTime` or at submit. _Fix:_ clamp in `handleManualTimeChange` (`create/index.tsx:78`).
+- **LOGIC-8** `functions/src/organizations/domain.ts:341`: `Math.floor(latitude * 100) / 100` is off by one cell for values such as 34.29 (3428.9999999999995 floors to 34.28), so the "general location" cell may not contain the point. Harmless to privacy, wrong to coverage. _Fix:_ round to a stable precision before flooring.
+- **LOGIC-9** `src/features/history/lib/history.ts:183-184`: the comment says a Library pick's local file survives teardown, but `capturedPhotoFiles.ts:24-25` deletes any file under `Paths.cache`, which is where the image picker copies picked assets. The offline fallback for a Library Profile Pic therefore probably does not exist after Submit (plausible). _Fix:_ check where `expo-image-picker` writes, then fix the comment or the ownership test.
+- **LOGIC-10** `src/shared/lib/submissionCache.ts:134-139`: `readIndex` returns `[]` on a JSON parse error, and the next `writeIndex` then overwrites the index, dropping every history id. _Fix:_ rethrow on parse error, or rebuild the index from `submission_cache_*` keys.
+- **LOGIC-11** `src/features/draft-submission/lib/upload/uploadAdmission.ts:23`: the held-grant cache key `${submissionId}/${slot}/${raw}` omits the uid. A different account continuing the same draft would skip the admission request and fail with `storage/unauthorized`, though the app has no sign-out control today, so it is unreachable. _Fix:_ include the uid if sign-out is ever added.
+- **LOGIC-12** `functions/src/organizations/api.ts:165-168`: `makePermission` runs the coverage check on `latitude`/`longitude` read from `metadata.json`, which `storage.rules` lets the owner overwrite (`isValidMetadataWrite` checks size and content type only). An owner can share a Sighting outside an organization's coverage. Low impact, since it is their own data. _Fix:_ if coverage must be authoritative, derive it from server-side state.
+- **LOGIC-13** `functions/src/organizations/membership/service.ts:26`: any `getAuth().getUser` failure, including a transient Auth outage, becomes a 400 "Account name required". The user is told to fix their profile. _Fix:_ map only a missing or empty `displayName` to 400, and rethrow others as 503.
+- **LOGIC-14** `src/shared/lib/geometry/cropProjection.ts:14`: the comment says the photo is "scaled down (never up)", but `containFit` uses `Math.min(canvasW/imgW, canvasH/imgH)`, which exceeds 1 for a photo smaller than the canvas. All callers use the same function, so the math is consistent. _Fix:_ correct the comment.
 
 ## Test findings
 

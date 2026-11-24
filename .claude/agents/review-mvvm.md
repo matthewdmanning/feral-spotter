@@ -18,10 +18,10 @@ First read `docs/agents/code-review-protocol.md` and follow it exactly. Lens ID:
 
 ## Layer mapping in this repo
 
-| MVVM layer | Here                                                                     |
-| ---------- | ------------------------------------------------------------------------ |
-| View       | `screens/**`, `components/**`, `src/shared/ui/**`, `src/app/**` routes    |
-| ViewModel  | `hooks/**` (screen hooks, derived state, actions; Zustand selectors)      |
+| MVVM layer | Here                                                                        |
+| ---------- | --------------------------------------------------------------------------- |
+| View       | `screens/**`, `components/**`, `src/shared/ui/**`, `src/app/**` routes      |
+| ViewModel  | `hooks/**` (screen hooks, derived state, actions; Zustand selectors)        |
 | Model      | Zustand stores, `lib/**`, `config/**`, Firebase/HTTP services, `functions/` |
 
 ## Look for

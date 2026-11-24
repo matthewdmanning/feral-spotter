@@ -162,11 +162,14 @@ device at 1.0x and 1.3x.
 **Evidence:**
 
 ```ts
-const [history, setHistory] = useState<History>({ all: [], resumableId: undefined })
-// ...
-.catch((error) => {
-  console.error('[useFeralReports] read history', error)
+const [history, setHistory] = useState<History>({
+  all: [],
+  resumableId: undefined,
 })
+  // ...
+  .catch((error) => {
+    console.error('[useFeralReports] read history', error)
+  })
 ```
 
 The hook exposes no loading or error state, and `ListEmptyComponent` always
@@ -254,7 +257,7 @@ well as the screen, or let Home scroll when the content does not fit.
   which draws no header (the Sightings comment says so at `:55-61`). Home's
   own `paddingTop: rt.insets.top` (`index.styles.ts:18`) confirms no header is
   expected. The options are likely dead, and `app/_layout.tsx:90` ("each tab
-  manages its own header") is stale. *plausible.* Remove them, or nest a Stack
+  manages its own header") is stale. _plausible._ Remove them, or nest a Stack
   if Home should show the brand title.
 - **NAV-10 — Back from Describe a Cat, or from an edit, discards entries
   silently.** `useAbandonCatGuard.ts:47-48` arms only for
@@ -262,25 +265,25 @@ well as the screen, or let Home scroll when the content does not fit.
   (`create/index.tsx:267`) opens Cat Form with no active cat, and an edit is
   exempt. Pick attributes, press Back: the form state (plain `useState`) is
   gone without a prompt. The dialog text claims "anything you filled in here"
-  but only guards the boxed path. *confirmed.* Guard on "form touched", or accept
+  but only guards the boxed path. _confirmed._ Guard on "form touched", or accept
   and align the copy.
 - **NAV-11 — destructive confirms name no target.** `useRemoveCat.ts:37`
   ("Remove this cat?") and `useAbandonCatGuard.ts:61` use the same title for
   different scopes and name no cat, though `summarizeCat(cat)` is at hand.
   `useAnnotatePass.ts:144` ("Remove photo from submission?") names no photo
   (it could say "Photo 2 of 5"). The standard asks for a specific target and
-  scope. *confirmed.*
+  scope. _confirmed._
 - **NAV-12 — dead and missing exits on the first-run gates.**
   `confirmExitApp.ts:22`: on iOS "Exit" only closes the dialog, so Decline on
   Consent offers a button that does nothing there (iOS builds may not ship yet).
   The blocked state (`consent/index.tsx:32-41`) swaps the screen for a gate
   with only Open Settings; the hook still swallows Back (`:21`), so Decline
-  vanishes and a blocked user has no in-app way out. *confirmed.*
+  vanishes and a blocked user has no in-app way out. _confirmed._
 - **NAV-13 — ErrorBoundary fallback.** `ErrorBoundary.tsx:75-79` offers only
   Try Again and prints `error.message`. Both boundaries (`AppProviders.tsx:222`,
   `submission/_layout.tsx:62`) wrap the whole navigator, so a persistent render
   error re-throws on retry, and nothing leaves the failing screen. Back
-  (Android) or the root edge swipe (iOS) works but is not offered. *plausible.*
+  (Android) or the root edge swipe (iOS) works but is not offered. _plausible._
   Add a Go Home action (`goHome`, as `GateScreen` does) and reset on pathname
   change.
 - **NAV-14 — missing bottom safe-area inset on scrolling content.**
@@ -290,17 +293,17 @@ well as the screen, or let Home scroll when the content does not fit.
   `sightingDetail`, `ConsentChoiceScreen`, `create` and the org screens add it.
   With 3-button Android navigation (48dp) the last button (Create account,
   Decline, Remove this Cat) sits partly under the system bar at full scroll.
-  *plausible.*
+  _plausible._
 - **NAV-15 — untyped `id` route params in org screens.**
   `MembersScreen.tsx:14`, `OrganizationScreen.tsx:18,25`,
   `SharedSightingsScreen.tsx:169` read `useLocalSearchParams<{ id: string }>()`
   and pass `id` straight to queries, while Sighting detail uses `firstParam`
   (`routeParam.ts`). Deep links are forced to `/` (`+native-intent.ts`), so only
-  internal links reach them; low risk. *confirmed.*
+  internal links reach them; low risk. _confirmed._
 - **NAV-16 — all neutral dialog buttons render primary.**
   `AlertHost.tsx:25-28` maps anything not `cancel`/`destructive` to `primary`.
   The no-photos dialog (`useNoPhotosPrompt.ts:45-55`) shows Take Photos and Just
-  Describe, both primary, competing. *confirmed.* Allow a button `style` that
+  Describe, both primary, competing. _confirmed._ Allow a button `style` that
   maps to `secondary`.
 
 ## Test findings

@@ -41,12 +41,14 @@ are indicative only.
 **Where:** `src/shared/ui/molecules/ToggleRow.tsx:6-9` · **Basis:** source,
 calculation · **Confidence:** confirmed
 **Evidence:**
+
 ```tsx
 const UniSwitch = withUnistyles(Switch, (theme) => ({
   trackColor: { false: theme.colors.border, true: theme.colors.accent },
   thumbColor: theme.colors.text,
 }))
 ```
+
 `colors.border` is the decorative hairline colour. Off track vs card glass:
 1.67:1 light, 1.82:1 dark (vs `surface` 1.70 / 1.75). `border` is not an
 essential-boundary token; `borderStrong` is (4.4–5.4:1, used for `TextField`,
@@ -91,6 +93,7 @@ confirmed
 **Evidence:** standards require every screen title, heading, label, dialog,
 validation message and accessibility label to come from `shared/config/text.ts`
 or a feature `copy/` owner. Still inline:
+
 - Screens/components: `ErrorBoundary.tsx:66,69,76,79`;
   `history/screens/feralReports/index.tsx:89,94,117-119`;
   `sightingDetail/index.tsx:58-60,95,97,106`; `draft-submission/screens/create/index.tsx:118,153,179,189,208,251-253,261,267-268,280`;
@@ -107,13 +110,13 @@ or a feature `copy/` owner. Still inline:
   `useCatSubmit.ts:125` (`field${… !== 1 ? 's' : ''}`),
   `SightingsMap.tsx:177` (`spot${… ? '' : 's'}`), `CameraChrome.tsx:111`
   (`Flash ${flashMode}` shows the raw enum).
-`feralReports/index.tsx` also renders the status enum (`{s}`) as a legend label.
-**Human path:** every one is on a normal path: Sightings tab, Sighting detail,
-draft Sighting, Cat form, camera, dialogs on remove/clear/limit.
-**Fix:** extend the existing owners in place (`submissionCopy`, `navigationCopy`,
-`commonCopy`, `settingsCopy`; history/camera strings join `text.ts` as new keys,
-no parallel catalogue). Use named-placeholder templates with ICU-style plural
-keys instead of `s`-suffix and noun-splicing.
+  `feralReports/index.tsx` also renders the status enum (`{s}`) as a legend label.
+  **Human path:** every one is on a normal path: Sightings tab, Sighting detail,
+  draft Sighting, Cat form, camera, dialogs on remove/clear/limit.
+  **Fix:** extend the existing owners in place (`submissionCopy`, `navigationCopy`,
+  `commonCopy`, `settingsCopy`; history/camera strings join `text.ts` as new keys,
+  no parallel catalogue). Use named-placeholder templates with ICU-style plural
+  keys instead of `s`-suffix and noun-splicing.
 
 ### STYLE-4 — P2: Copy narrates how a control works
 
@@ -139,6 +142,7 @@ instead of a hint; for errors say what happened and the status
 
 **Where:** see list · **Basis:** source · **Confidence:** confirmed
 **Evidence:**
+
 - Stroke 1.5 repeated as a literal though `borderWidth.frame: 1.5` exists:
   `AppButton.styles.ts:31,37,44`, `CheckboxBox.styles.ts:8`,
   `CameraThumb.styles.ts:12`, `InsetCropBubble.tsx:78` (`BORDER_WIDTH`).
@@ -158,13 +162,13 @@ instead of a hint; for errors say what happened and the status
   `ErrorBoundary.styles.ts:25`, `TutorialOverlay.styles.ts:31`.
 - Tunable ratios in a component: `home/index.tsx:43-48` (`0.16`, `0.12`, `0.4`)
   while `theme.reticle` already owns the reticle.
-The standard says tunable limits and ratios belong to a central owner and
-photo/icon tokens must not stand in for control dimensions.
-**Human path:** Camera (shutter), Cat form (profile crops), Annotate tutorial,
-dialogs, Home; none depends on a gate beyond ordinary entry.
-**Fix:** add narrow tokens to `themes.ts` (`controlHeight.shutter`, `shutter`
-ring/core sizes, `layout.dialogMaxWidth`, `thumbnail` sizes, reticle ratios);
-use `borderWidth.control/frame`; use `touchTarget` for the two 48s.
+  The standard says tunable limits and ratios belong to a central owner and
+  photo/icon tokens must not stand in for control dimensions.
+  **Human path:** Camera (shutter), Cat form (profile crops), Annotate tutorial,
+  dialogs, Home; none depends on a gate beyond ordinary entry.
+  **Fix:** add narrow tokens to `themes.ts` (`controlHeight.shutter`, `shutter`
+  ring/core sizes, `layout.dialogMaxWidth`, `thumbnail` sizes, reticle ratios);
+  use `borderWidth.control/frame`; use `touchTarget` for the two 48s.
 
 ### STYLE-6 — P2: Date/Time trigger looks like an input but has no boundary
 
@@ -172,10 +176,12 @@ use `borderWidth.control/frame`; use `touchTarget` for the two 48s.
 (used at `create/index.tsx:162`) · **Basis:** source, calculation ·
 **Confidence:** confirmed
 **Evidence:**
+
 ```ts
 trigger: { minHeight: control, …, backgroundColor: theme.colors.surfaceAlt,
   borderRadius: theme.radius.md, paddingHorizontal: lg, paddingVertical: md }
 ```
+
 It copies `TextField`'s fill, radius, height and padding, but not its
 `borderWidth`/`borderStrong`. `surfaceAlt` against the card glass it sits on:
 1.20:1 light, 1.19:1 dark (against `background` 1.16 / 1.30). The F7 fix gave
@@ -206,6 +212,7 @@ theme-independent (white with a dark halo), like `onCamera`.
 ### STYLE-8 — P3: Same-role text and surfaces differ between screens
 
 **Basis:** source · **Confidence:** confirmed
+
 - Screen titles: `sign-in/index.styles.ts:22` uses `display` (34/40), `register`
   `:15` uses `title` (28/36); every other screen title is `title`.
 - Three stack-title configs: root `_layout.tsx:70-83` (`typography.lg` +
@@ -221,12 +228,13 @@ theme-independent (white with a dark halo), like `onCamera`.
   Sighting detail (which says it "mirrors" it) uses `lg` 16
   (`sightingDetail/index.styles.ts:19`); card inner gap is 8 on detail/profile
   picker, 12 on Settings and organization cards.
-**Fix:** one screen-title variant, one header config (see STYLE-9 to remove the
-dead fields), one option typography role, one card inner gap.
+  **Fix:** one screen-title variant, one header config (see STYLE-9 to remove the
+  dead fields), one option typography role, one card inner gap.
 
 ### STYLE-9 — P3: Hand-built faces, wrong-role tokens and hairline variants
 
 **Basis:** source · **Confidence:** confirmed
+
 - `fontFamily: theme.fonts.*` overriding a variant (synthesised weight):
   `ReportCard.styles.ts:26`, `sightingDetail/index.styles.ts:26`,
   `CameraThumb.styles.ts:29`, `camera/index.styles.ts:71`,
@@ -249,6 +257,7 @@ dead fields), one option typography role, one card inner gap.
 ### STYLE-10 — P3: Glass and spacing details
 
 **Basis:** source · **Confidence:** confirmed (visual effect unverified)
+
 - `GlassSurface.styles.ts:8` adds `borderWidth: 1` only on the fallback path, so a
   card is 2dp narrower/shorter inside than the glass path; content shifts
   when Reduce Transparency toggles or Android glass errors. Use an inset
