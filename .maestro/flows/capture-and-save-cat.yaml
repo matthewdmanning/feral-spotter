@@ -1,0 +1,19 @@
+appId: com.mmanning.feralspotter
+---
+- tapOn: 'Take Photos'
+- tapOn: 'Capture photo'
+- extendedWaitUntil:
+    visible: 'Done \(1\)'
+    timeout: 20000
+- tapOn: 'Done \(1\)'
+- assertVisible: 'Quick annotation walkthrough'
+- tapOn: 'Skip'
+- assertVisible: 'Cat observation photo'
+# Confirming the only photo opens Cat Form.
+- tapOn: '^Confirm$'
+# Resolve both Cat Form selectors and exercise the button before testing submit.
+- assertVisible: 'Observed Cat'
+- tapOn: '^Save$'
+- tapOn: 'Save anyway'
+- assertVisible: 'Cats Recorded'
+- assertVisible: 'Finished!'

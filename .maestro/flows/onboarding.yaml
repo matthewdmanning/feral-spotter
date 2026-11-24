@@ -1,0 +1,41 @@
+appId: com.mmanning.feralspotter
+---
+- launchApp:
+    clearState: true
+    permissions:
+      all: unset
+- assertVisible: 'Every feral counts'
+- tapOn: 'Next'
+- assertVisible: 'Spot\. Snap\. Submit\.'
+- tapOn: 'Next'
+- assertVisible: 'What you share'
+- tapOn: 'Next'
+- assertVisible: 'Almost ready'
+- tapOn: 'Set up FeralSpotter'
+- scrollUntilVisible:
+    element: 'I Agree — Continue'
+    direction: DOWN
+- tapOn: 'I Agree — Continue'
+- assertVisible: '(?i).*take pictures and record video.*'
+- tapOn: '(?i)while using the app'
+- assertVisible: '(?i).*access this device.s location.*'
+- tapOn: '(?i)while using the app'
+- assertVisible: 'About location access'
+- tapOn: '^OK$'
+- assertVisible: 'Sign in to start submitting cat observations\.'
+- tapOn: '^Email$'
+- inputText: '${DEVICE_TEST_EMAIL}'
+- tapOn: '^Password$'
+- inputText: '${DEVICE_TEST_PASSWORD}'
+- hideKeyboard
+- tapOn: '^Sign in$'
+- assertVisible: '^(Stay in the loop\?|One more thing)$'
+- runFlow:
+    when:
+      visible: 'Stay in the loop\?'
+    commands:
+      - tapOn: 'Continue'
+- assertVisible: 'One more thing'
+- tapOn: 'Continue'
+- assertVisible: 'Take Photos'
+- assertVisible: 'Upload Photos'

@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url'
 const require = createRequire(import.meta.url)
 const repoRoot = fileURLToPath(new URL('../', import.meta.url))
 const organizationsOnly = process.argv.includes('--organizations')
+const deviceSuite = process.argv.includes('--device')
 const startForApp = process.argv.includes('--app')
 const MIN_MAJOR = 21
 const JAVA_ROOTS = [
@@ -90,7 +91,7 @@ const localProxySupport = hasProxy
   : []
 
 // The Functions emulator loads functions/lib; only deploy runs the predeploy build.
-if (startForApp) {
+if (startForApp || deviceSuite) {
   const build = spawnSync('npm', ['--prefix', 'functions', 'run', 'build'], {
     stdio: 'inherit',
     cwd: repoRoot,
@@ -99,20 +100,32 @@ if (startForApp) {
   if (build.status !== 0) process.exit(build.status ?? 1)
 }
 
-const firebaseArgs = startForApp
-  ? // The app's own project (.firebaserc), so its tokens and uploads match.
-    ['emulators:start', '--only', 'auth,storage,functions,firestore']
-  : [
-      'emulators:exec',
-      '--project',
-      // A demo- project needs no real project: emulators only.
-      'demo-feral-spotter',
-      '--only',
-      'storage,auth,firestore',
-      organizationsOnly
-        ? 'npm --prefix functions run test:organizations:emulator'
-        : 'jest -c jest.rules.config.js --runInBand',
-    ]
+const appEmulators = ['--only', 'auth,storage,functions,firestore']
+let firebaseArgs
+if (deviceSuite) {
+  firebaseArgs = [
+    'emulators:exec',
+    '--project',
+    env.DEVICE_TEST_PROJECT,
+    ...appEmulators,
+    'node scripts/run-device-tests.mjs --with-emulators',
+  ]
+} else if (startForApp) {
+  // The app's own project (.firebaserc), so its tokens and uploads match.
+  firebaseArgs = ['emulators:start', ...appEmulators]
+} else {
+  firebaseArgs = [
+    'emulators:exec',
+    '--project',
+    // A demo- project needs no real project: emulators only.
+    'demo-feral-spotter',
+    '--only',
+    'storage,auth,firestore',
+    organizationsOnly
+      ? 'npm --prefix functions run test:organizations:emulator'
+      : 'jest -c jest.rules.config.js --runInBand',
+  ]
+}
 
 // Invoke the installed CLI directly: no npx download or platform-specific shell quoting.
 const { status, error } = spawnSync(

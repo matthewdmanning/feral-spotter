@@ -30,7 +30,8 @@
     "test:android-unit": "bash scripts/android-unit-tests.sh",
     "device-monitor": "bash scripts/device-monitor.sh",
     "gradle:debug": "expo prebuild --clean && cd android && .\\gradlew assembleDebug",
-    "test:organizations:emulator": "node scripts/run-rules-tests.mjs --organizations"
+    "test:organizations:emulator": "node scripts/run-rules-tests.mjs --organizations",
+    "test:device": "node scripts/run-device-tests.mjs"
   },
   "dependencies": {
     "@expo-google-fonts/nunito": "^0.4.1",

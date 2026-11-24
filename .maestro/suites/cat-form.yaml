@@ -1,0 +1,7 @@
+appId: com.mmanning.feralspotter
+name: Cat Form accessibility probe
+tags:
+  - cat-form
+---
+- runFlow: ../flows/onboarding.yaml
+- runFlow: ../flows/capture-and-save-cat.yaml
