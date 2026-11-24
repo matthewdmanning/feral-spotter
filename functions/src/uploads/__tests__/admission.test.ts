@@ -16,6 +16,8 @@ import {
   emptyLedger,
   handleAdmitPhotoUpload,
   parseAdmitRequest,
+  releaseGrant,
+  releaseSubmittedGrant,
   resolvePerson,
   retireUid,
   type AdmissionPorts,
@@ -168,6 +170,58 @@ describe('admit: bytes and objects', () => {
         NOW + UPLOAD_GRANT_TTL_MS,
       ),
     ).not.toThrow()
+  })
+
+  // LOGIC-5: a fourth Sighting inside 30 minutes used to be refused,
+  // because sent Submissions kept their grants until the TTL lapsed.
+  it('frees an open slot once a Submission is sent, keeping its reservation', () => {
+    let ledger = empty
+    for (let i = 0; i < MAX_GRANTED_SUBMISSIONS; i++)
+      ledger = admit(ledger, new Map(), UID, req(`s${i}`, 0, false), NOW)
+    const released = releaseGrant(ledger, UID, 's0', NOW + 1)!
+
+    expect(() =>
+      admit(released, new Map(), UID, req('next', 0, false), NOW + 1),
+    ).not.toThrow()
+    // The sent photo still counts until a resumable session would end.
+    expect(() =>
+      admit(
+        released,
+        withHeadroom(MAX_PHOTO_BYTES * (MAX_GRANTED_SUBMISSIONS + 1) - 1),
+        UID,
+        req('next', 0, false),
+        NOW + 1,
+      ),
+    ).toThrow('quota_exceeded')
+    expect(releaseGrant(released, UID, 's0', NOW + 2)).toBeNull()
+  })
+})
+
+describe('releaseSubmittedGrant', () => {
+  it('publishes the claim without the sent Submission', async () => {
+    let ledger = admit(empty, new Map(), UID, req('sent', 0, false), NOW)
+    ledger = admit(ledger, new Map(), UID, req('open', 0, false), NOW)
+    const publishGrants = jest.fn().mockResolvedValue(undefined)
+    let stored = { value: ledger, generation: 1 }
+    await releaseSubmittedGrant(UID, 'sent', {
+      index: {
+        read: async (path) =>
+          path === uidIndexPath(UID) ? 'person-1' : undefined,
+        bind: async (_path, id) => id,
+        emailKey: (email) => email,
+      },
+      readLedger: async () => stored,
+      writeLedger: async (_person, value, generation) => {
+        if (generation !== stored.generation) return false
+        stored = { value, generation: generation + 1 }
+        return true
+      },
+      publishGrants,
+      now: () => NOW + 1,
+    })
+
+    expect(Object.keys(publishGrants.mock.calls[0][1])).toEqual(['open'])
+    expect(stored.value.grants[UID]).toHaveProperty('sent')
   })
 })
 

@@ -371,6 +371,19 @@ export const organizationCopy = {
     'Review the organization choices and confirm “Share this sighting”, or choose not to share.',
 } as const
 
+/** LOGIC-5: by the upload admission's refusal reason. */
+const uploadRefusedCopy: Readonly<Record<string, string | undefined>> = {
+  too_many_open_submissions:
+    'Too many sightings are uploading at once. This sighting is saved on this device. Try again in 30 minutes.',
+  submission_cap_reached:
+    'This account has reached its sighting limit. This sighting is saved on this device.',
+  quota_exceeded:
+    'Your photo storage limit is reached. This sighting is saved on this device.',
+  email_verification_required:
+    'Verify your email address, then tap Submit Sighting again.',
+  account_erasing: 'This account is being deleted. Photos cannot upload.',
+}
+
 // Submission copy owner.
 export const submissionCopy = {
   location: {
@@ -378,6 +391,9 @@ export const submissionCopy = {
       'Location accuracy is low or unavailable — tap to set manually',
     manualAccessibility: 'Edit location',
     acquiredAccessibility: 'Location acquired',
+  },
+  time: {
+    unknown: 'Time unknown',
   },
   exit: {
     clearFailedTitle: 'Could Not Clear Draft',
@@ -401,12 +417,14 @@ export const submissionCopy = {
     incompleteTitle: 'Sighting Incomplete',
     sharingUnconfirmedTitle: 'Confirm organization sharing',
     uploadStalledTitle: 'Photos Still Uploading',
+    uploadRefusedTitle: 'Photos Could Not Upload',
     failedTitle: 'Sighting Failed',
     submitTitle: 'Submit Sighting',
     cancel: commonCopy.cancel,
     submit: 'Submit',
     uploadStalled:
       'Your photos did not finish uploading. This sighting is saved on this device. Check your connection, then tap Submit Sighting to send it again.',
+    uploadRefused: uploadRefusedCopy,
     failed:
       'The sighting did not reach the server. It is saved on this device. Tap Submit Sighting to send it again.',
     confirm: 'Submit {catCount} {catLabel} and {photoCount} {photoLabel}?',

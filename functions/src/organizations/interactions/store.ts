@@ -243,6 +243,30 @@ export async function removeAuthorInteractions(
   }
 }
 
+/** Stands in for an erased author's uid; matches no account. */
+export const ERASED_AUTHOR_UID = 'erased-author'
+
+/**
+ * LOGIC-6, account erasure only: keep the author's comments with the
+ * author redacted, and delete their reactions. Redaction applies only to
+ * user-initiated account deletion; leaving or removal uses applyAuthorExit.
+ * Readers already show an unresolvable author without a name.
+ */
+export async function redactErasedAuthor(uid: string): Promise<void> {
+  const [authored, reacted] = await Promise.all([
+    comments().where('authorUid', '==', uid).get(),
+    reactions().where('authorUid', '==', uid).get(),
+  ])
+  const writer = db().bulkWriter()
+  const writes = Promise.all([
+    ...authored.docs.map((doc) =>
+      writer.update(doc.ref, { authorUid: ERASED_AUTHOR_UID }),
+    ),
+    ...reacted.docs.map((doc) => writer.delete(doc.ref)),
+  ])
+  await Promise.all([writer.close(), writes])
+}
+
 /**
  * Entry point for whoever owns leaving and account erasure. `retain` keeps
  * the author's interactions; their name is then resolved (or hidden) on read.

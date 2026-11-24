@@ -11,7 +11,11 @@
  * whole submit flow — architecture review candidate 4 (2026-09-14).
  */
 import type { BoundingBox } from '@/src/shared/types/BoundingBox'
-import type { SubmissionApiPayload, SubmissionPhoto } from '@/src/shared/types'
+import type {
+  PhotoTime,
+  SubmissionApiPayload,
+  SubmissionPhoto,
+} from '@/src/shared/types'
 import type {
   CacheMetadata,
   CachedPhoto,
@@ -79,26 +83,24 @@ export function foldBoxesIntoCat(
 }
 
 /**
- * ADR-0003's interim MVP rule: prefers each photo's own capture moment over
- * the submission-wide value (submission.captured_at is the *earliest* EXIF
- * time across a multi-select Library pick, correct only as a submission-
- * level approximation). Camera captures set captured_at at shutter press;
- * Library picks parse their own exif.timestamp the same way
- * buildSubmissionPhoto does. Only a genuinely timeless photo (parse
- * failure, no EXIF, no manual/captured_at) falls back to `fallbackTime`.
+ * ADR-0003 (2026-11-24): every photo carries its own time. A camera capture
+ * uses its shutter time; a Library pick its own EXIF `DateTime`. A photo
+ * with neither takes the user's manual time, else is marked `unknown`.
+ * Never another photo's time, never the submit moment.
  */
 export function resolvePhotoTime(
   photo: SubmissionPhoto,
-  submission: Pick<SubmissionDraft, 'captured_at' | 'manual_time'>,
-  fallbackTime: string,
-): string {
-  return (
-    photo.captured_at ??
-    parseExifDateTime(photo.exif?.timestamp) ??
-    submission.captured_at ??
-    submission.manual_time ??
-    fallbackTime
-  )
+  submission: Pick<SubmissionDraft, 'manual_time'>,
+): PhotoTime {
+  if (photo.captured_at) {
+    return { time_source: 'capture', time: photo.captured_at }
+  }
+  const exifTime = parseExifDateTime(photo.exif?.timestamp)
+  if (exifTime) return { time_source: 'exif', time: exifTime }
+  if (submission.manual_time) {
+    return { time_source: 'manual', time: submission.manual_time }
+  }
+  return { time_source: 'unknown' }
 }
 
 /**
@@ -139,6 +141,11 @@ export function buildSubmissionPayload(params: {
     submission,
     cats: catsWithBoxes,
     photo_paths: uploadedPhotos.map((p) => p.cloud_storage_path),
+    // ADR-0003 (2026-11-24): the one durable record of each photo's time.
+    photo_times: uploadedPhotos.map((p) => ({
+      path: p.cloud_storage_path,
+      ...resolvePhotoTime(p, submission),
+    })),
     ...(photoPairs.length > 0 && { photo_pairs: photoPairs }),
     ...(photoLocations.length > 0 && { photo_locations: photoLocations }),
   }

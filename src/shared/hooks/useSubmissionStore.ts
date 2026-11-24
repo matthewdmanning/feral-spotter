@@ -96,6 +96,11 @@ interface SubmissionState {
   setLocationType: (v: LocationMethod) => void
   setSubmissionLocation: (loc: SubmissionLocation) => void
   setManualTime: (v: string) => void
+  /**
+   * The photo pool emptied, releasing the single-source lock (LOGIC-2):
+   * location and time go back to device so the next source re-derives them.
+   */
+  resetSourceMetadata: () => void
   clearDraft: () => void
 }
 
@@ -210,6 +215,25 @@ export const useSubmissionStore = create<SubmissionState>()(
             time_type: 'manual',
             captured_at: undefined,
             manual_time: v,
+          },
+        })),
+
+      resetSourceMetadata: () =>
+        set((s) => ({
+          submission: {
+            ...s.submission,
+            location_type: 'device',
+            latitude: undefined,
+            longitude: undefined,
+            accuracy: undefined,
+            time_type: 'device',
+            captured_at: undefined,
+            manual_time: undefined,
+          },
+          // Choices confirmed against the old location need fresh consent.
+          organizationSharing: s.organizationSharing && {
+            ...s.organizationSharing,
+            confirmedSignature: null,
           },
         })),
 

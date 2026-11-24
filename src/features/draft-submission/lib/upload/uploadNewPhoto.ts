@@ -18,6 +18,7 @@ import {
   retainCapturedPhotoFile,
 } from '@/src/features/draft-submission/lib/capturedPhotoFiles'
 import type { PhotoUploadResponse, SubmissionPhoto } from '@/src/shared/types'
+import { UploadAdmissionError } from '@/src/features/draft-submission/lib/upload/uploadAdmission'
 import { LogBox } from 'react-native'
 
 // Keeps the failure in Metro's console for debugging without popping an
@@ -147,11 +148,16 @@ export function uploadNewPhoto(
           cloud_storage_url,
           raw_cloud_storage_path,
           raw_cloud_storage_url,
+          upload_refusal: undefined,
         })
       } catch (error) {
         if (!isCurrent()) {
           await onStale?.()
           return
+        }
+        // LOGIC-5: keep the server's reason so Submit can say why.
+        if (error instanceof UploadAdmissionError && error.reason) {
+          updatePhoto(photo.local_id, { upload_refusal: error.reason })
         }
         console.error('[uploadNewPhoto]', photo.local_id, error)
       } finally {

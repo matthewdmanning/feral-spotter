@@ -28,7 +28,6 @@ import {
   buildCacheMetadata,
   buildSubmissionPayload,
   foldBoxesIntoCat,
-  resolvePhotoTime,
   toCachedPhoto,
 } from '@/src/features/draft-submission/lib/payload'
 import {
@@ -143,16 +142,12 @@ export async function sendDraft(
   // submission record can't be assumed.
   // One Submission location, shared by every photo (ADR 0002).
   const { latitude, longitude } = submission
-  // ADR-0003's per-photo time fallback chain — see lib/submission/
-  // payload.ts's resolvePhotoTime for the why.
-  const submitFallbackTime = new Date().toISOString()
-  const photoTimeFor = (p: SubmissionPhoto) =>
-    resolvePhotoTime(p, submission, submitFallbackTime)
 
   // Best-effort: the P0 this app guards hard against is silently missing
   // photos (blocked above), not a metadata patch on an already-fully-
   // uploaded photo — don't fail an otherwise-successful submission over a
-  // flaky-network patch failure.
+  // flaky-network patch failure. Photo times are not in this patch:
+  // metadata.json's `photo_times` holds them (ADR-0003, 2026-11-24).
   const finalizeTargets = uploadedPhotos.flatMap((p) => {
     const paths = [p.cloud_storage_path]
     if (p.raw_cloud_storage_path) paths.push(p.raw_cloud_storage_path)
@@ -163,7 +158,6 @@ export async function sendDraft(
       finalizeSubmissionPhotoMetadata(
         path,
         userId,
-        photoTimeFor(photo),
         latitude,
         longitude,
         photo.camera_config,
