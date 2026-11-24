@@ -1,3 +1,4 @@
+import { navigationCopy } from '@/src/shared/config/text'
 import {
   draftReadyOrAlert,
   useDraftStartupStore,
@@ -26,7 +27,7 @@ const alertTitle = () => useUIStore.getState().dialog?.title
 it('resolves false with an alert when the restore fails, then retries', async () => {
   restore.mockRejectedValueOnce(new Error('disk'))
   await expect(draftReadyOrAlert()).resolves.toBe(false)
-  expect(alertTitle()).toBe('Could not restore your sighting')
+  expect(alertTitle()).toBe(navigationCopy.restoreFailed)
 
   restore.mockResolvedValueOnce(undefined)
   await expect(draftReadyOrAlert()).resolves.toBe(true)

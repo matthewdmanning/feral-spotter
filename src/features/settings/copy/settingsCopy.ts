@@ -6,7 +6,7 @@ export const settingsCopy = {
   themeLight: 'Light',
   themeDark: 'Dark',
   hapticFeedback: 'Haptic Feedback',
-  vibrationOnTouch: 'Vibration on Touch',
+
   communications: 'Communications',
   emailUpdates: 'Email Updates',
   yourEmailTemplate: 'Your email: {email}',

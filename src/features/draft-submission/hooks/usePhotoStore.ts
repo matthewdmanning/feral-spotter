@@ -3,6 +3,7 @@
  * Persisted Zustand store for photos attached to the in-progress submission.
  */
 
+import { formatCopy, submissionCopy } from '@/src/shared/config/text'
 import { MAX_PHOTOS } from '@/src/shared/config/constants'
 import { showAlert } from '@/src/shared/hooks/useUIStore'
 import { asyncStorage } from '@/src/shared/lib/storage'
@@ -203,7 +204,7 @@ export function isAtPhotoLimit(): boolean {
 /** Shown at either entrypoint when the pool is full. */
 export function showPhotoLimitReached(): void {
   showAlert(
-    'Photo limit reached',
-    `A Sighting holds up to ${MAX_PHOTOS} photos. Remove one to add another.`,
+    submissionCopy.photoLimitTitle,
+    formatCopy(submissionCopy.photoLimitMessage, { max: MAX_PHOTOS }),
   )
 }

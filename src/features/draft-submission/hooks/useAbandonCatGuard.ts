@@ -27,11 +27,14 @@
  * state to clean up is the boxes and the id.
  */
 
+import { commonCopy, submissionCopy } from '@/src/shared/config/text'
 import { showAlert } from '@/src/shared/hooks/useUIStore'
 import { abandonCatPass } from '@/src/features/draft-submission/hooks/catPass'
 import { useActiveCatFlowStore } from '@/src/features/draft-submission/hooks/useActiveCatFlowStore'
 import { usePreventRemove } from 'expo-router'
 import { useEffect, useRef } from 'react'
+
+const catCopy = submissionCopy.cat
 
 /**
  * @param isEditingSavedCat true when the screen was opened to edit an
@@ -57,23 +60,19 @@ export function useAbandonCatGuard(isEditingSavedCat: boolean): void {
         repeat()
         return
       }
-      showAlert(
-        'Remove this cat?',
-        "You haven't saved this cat. Leaving now removes the boxes you drew for it and anything you filled in here. Your photos and any other cats are not affected.",
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Remove progress on this cat',
-            style: 'destructive',
-            onPress: () => {
-              disablePreventionRef.current()
-              // Drops the unfinished cat's boxes and id, and picks the
-              // destination (hooks/catPass.ts).
-              abandonCatPass()
-            },
+      showAlert(catCopy.removeTitle, catCopy.abandonMessage, [
+        { text: commonCopy.cancel, style: 'cancel' },
+        {
+          text: catCopy.abandonAction,
+          style: 'destructive',
+          onPress: () => {
+            disablePreventionRef.current()
+            // Drops the unfinished cat's boxes and id, and picks the
+            // destination (hooks/catPass.ts).
+            abandonCatPass()
           },
-        ],
-      )
+        },
+      ])
     },
   )
   useEffect(() => {

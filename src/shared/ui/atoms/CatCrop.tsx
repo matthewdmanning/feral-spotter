@@ -8,6 +8,7 @@
  * draft teardown with no cloud copy), it shows a cat glyph instead.
  */
 
+import { commonCopy } from '@/src/shared/config/text'
 import { bubbleImageRect } from '@/src/shared/lib/geometry/imageRect'
 import type { NormalisedBox } from '@/src/shared/lib/geometry/cropProjection'
 import { Image } from 'expo-image'
@@ -36,7 +37,7 @@ export function CatCrop({
   size,
   borderColor,
   style,
-  accessibilityLabel = 'Profile picture of the cat',
+  accessibilityLabel = commonCopy.catProfilePicture,
 }: CatCropProps) {
   const { theme } = useUnistyles()
   const [natural, setNatural] = useState({ w: 0, h: 0 })

@@ -1,3 +1,4 @@
+import { cameraCopy } from '@/src/shared/config/text'
 import { memo } from 'react'
 import { Text } from '@/src/shared/ui/atoms/Text'
 import { View } from 'react-native'
@@ -76,7 +77,9 @@ export const CameraThumb = memo(function CameraThumb({
         // is not announced as a button.
         accessibilityRole="image"
         accessibilityLabel={label}
-        accessibilityActions={[{ name: 'discard', label: 'Discard photo' }]}
+        accessibilityActions={[
+          { name: 'discard', label: cameraCopy.discardPhoto },
+        ]}
         onAccessibilityAction={(event) => {
           if (event.nativeEvent.actionName === 'discard') onRemove()
         }}

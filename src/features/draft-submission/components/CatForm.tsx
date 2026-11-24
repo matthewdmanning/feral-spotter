@@ -13,6 +13,8 @@ import {
   COAT_GROUPS,
   shownCoatValue,
 } from '@/src/features/draft-submission/lib/formOptions'
+import { FIELD_LABELS } from '@/src/features/draft-submission/lib/attributes'
+import { submissionCopy } from '@/src/shared/config/text'
 import { styles } from './CatForm.styles'
 
 interface CatFormProps {
@@ -25,19 +27,19 @@ export function CatForm({ form }: CatFormProps) {
       <View style={styles.inner}>
         <View style={styles.section}>
           <SegmentedControl
-            label="Age"
+            label={FIELD_LABELS.age}
             options={AGE_OPTIONS}
             value={form.age}
             onChange={form.setAge}
           />
           <SegmentedControl
-            label="Sex"
+            label={FIELD_LABELS.sex}
             options={SEX_OPTIONS}
             value={form.sex}
             onChange={form.setSex}
           />
           <SegmentedControl
-            label="Ear Tipped"
+            label={FIELD_LABELS.earTipped}
             options={EAR_TIPPED_OPTIONS}
             value={form.earTipped}
             onChange={form.setEarTipped}
@@ -46,13 +48,13 @@ export function CatForm({ form }: CatFormProps) {
 
         <View style={styles.section}>
           <SegmentedControl
-            label="Hair Length"
+            label={FIELD_LABELS.hairLength}
             options={HAIR_LENGTH_OPTIONS}
             value={form.hairLength}
             onChange={form.setHairLength}
           />
           <HierarchicalSegmentedControl
-            label="Coat and color"
+            label={submissionCopy.cat.coat}
             groups={COAT_GROUPS}
             group={shownCoatValue(form.pattern)}
             value={shownCoatValue(form.color)}
@@ -65,17 +67,17 @@ export function CatForm({ form }: CatFormProps) {
 
         <View style={styles.section}>
           <SegmentedControl
-            label="Owned / Domesticated"
+            label={FIELD_LABELS.owned}
             options={OWNED_OPTIONS}
             value={form.owned}
             onChange={form.setOwned}
           />
           <SegmentedControl
-            label="Health"
+            label={FIELD_LABELS.healthLabel}
             options={HEALTH_OPTIONS}
             value={form.healthLabel}
             onChange={form.setHealthLabel}
-            accessibilityLabel="Cat health rating"
+            accessibilityLabel={submissionCopy.cat.healthAccessibility}
           />
         </View>
       </View>

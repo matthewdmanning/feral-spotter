@@ -8,6 +8,7 @@
  * sandboxed sample photo) per docs/planning/2026-07-14-annotation-tutorial-spec.md.
  */
 
+import { commonCopy } from '@/src/shared/config/text'
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import { TextButton } from '@/src/shared/ui/atoms/TextButton'
@@ -83,7 +84,7 @@ export function TutorialOverlay({
           tone="muted"
           style={styles.skipBtn}
         >
-          Skip
+          {commonCopy.skip}
         </TextButton>
         <GlassSurface kind="raised" style={styles.card}>
           {/* Scrolls at the largest font size instead of running under Skip. */}

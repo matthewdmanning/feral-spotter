@@ -21,7 +21,11 @@ import { usePhotoEntrypoints } from '@/src/workflows/photo-entry/hooks/usePhotoE
 import { useNoPhotosPrompt } from '@/src/workflows/photo-entry/hooks/useNoPhotosPrompt'
 import { useRemoveCat } from '@/src/features/draft-submission/hooks/useRemoveCat'
 import { draftWarnings } from '@/src/features/draft-submission/lib/status'
-import { submissionCopy } from '@/src/shared/config/text'
+import {
+  commonCopy,
+  formatCopy,
+  submissionCopy,
+} from '@/src/shared/config/text'
 import { router } from 'expo-router'
 import { CaretDownIcon } from 'phosphor-react-native/src/icons/CaretDown'
 import { CaretUpIcon } from 'phosphor-react-native/src/icons/CaretUp'
@@ -115,13 +119,13 @@ export default function CreateSubmissionScreen() {
             beside Finished!. Same header text-button pattern as Cat Form's
             Clear. It still confirms first (handleReset). */}
         <View style={styles.header}>
-          <Text style={styles.title}>Sighting</Text>
+          <Text style={styles.title}>{submissionCopy.create.title}</Text>
           <TextButton
             onPress={handleReset}
             tone="danger"
             disabled={isSubmitting}
           >
-            Reset
+            {commonCopy.reset}
           </TextButton>
         </View>
 
@@ -150,7 +154,9 @@ export default function CreateSubmissionScreen() {
                 color={theme.colors.success}
               />
             )}
-            <Text style={styles.statusItemText}>Location</Text>
+            <Text style={styles.statusItemText}>
+              {submissionCopy.location.label}
+            </Text>
           </Pressable>
 
           {showTimeWarning ? (
@@ -175,7 +181,9 @@ export default function CreateSubmissionScreen() {
                 size={theme.iconSize.md}
                 color={theme.colors.success}
               />
-              <Text style={styles.statusItemText}>Date & Time Recorded</Text>
+              <Text style={styles.statusItemText}>
+                {submissionCopy.time.recorded}
+              </Text>
             </View>
           )}
         </GlassSurface>
@@ -185,7 +193,9 @@ export default function CreateSubmissionScreen() {
         )}
 
         <View style={styles.catList}>
-          <Text style={styles.catListTitle}>Cats Recorded</Text>
+          <Text style={styles.catListTitle}>
+            {submissionCopy.create.catsRecorded}
+          </Text>
           {cats.map((cat) => {
             const label = summarizeCat(cat)
             const isExpanded = expandedCatId === cat.local_id
@@ -204,7 +214,9 @@ export default function CreateSubmissionScreen() {
                     pressed && styles.catRowPressed,
                   ]}
                   accessibilityRole="button"
-                  accessibilityLabel={`Cat: ${label}`}
+                  accessibilityLabel={formatCopy(submissionCopy.create.cat, {
+                    label,
+                  })}
                   accessibilityState={{ expanded: isExpanded }}
                 >
                   <Text style={styles.catRowText}>{label}</Text>
@@ -231,13 +243,13 @@ export default function CreateSubmissionScreen() {
                           variant="secondary"
                           onPress={() => openCatForm(cat.local_id)}
                         >
-                          Edit
+                          {commonCopy.edit}
                         </AppButton>
                         <AppButton
                           variant="danger"
                           onPress={() => removeCatWithConfirm(cat.local_id)}
                         >
-                          Delete
+                          {commonCopy.delete}
                         </AppButton>
                       </ButtonRow>
                     </View>
@@ -252,19 +264,20 @@ export default function CreateSubmissionScreen() {
             the same control either way, so only its label switches. */}
           {cats.length === 0 && (
             <Text style={styles.emptyCatsText}>
-              No cats recorded. Pick one out of your photos, or describe a cat
-              you saw. Your photos are still here either way.
+              {submissionCopy.create.noCats}
             </Text>
           )}
           <AppButton variant="secondary" onPress={handleAddCat}>
-            {cats.length === 0 ? 'Annotate Photos' : 'Add a Cat'}
+            {cats.length === 0
+              ? submissionCopy.create.annotatePhotos
+              : submissionCopy.create.addCat}
           </AppButton>
           {cats.length === 0 && (
             // Describing a cat without annotating it first: it saves with an
             // empty photo_local_ids (useCatSubmit derives that from boxes) — a
             // record of a cat that was seen but can't be picked out of a photo.
             <AppButton onPress={() => openCatForm()} variant="secondary">
-              Describe a Cat
+              {submissionCopy.create.describeCat}
             </AppButton>
           )}
         </View>
@@ -277,7 +290,7 @@ export default function CreateSubmissionScreen() {
             button said nothing about it. */}
         {cats.length === 0 && (
           <Text style={styles.disabledReason}>
-            Describe at least one cat before you finish.
+            {submissionCopy.create.finishNeedsCat}
           </Text>
         )}
         <ButtonRow>

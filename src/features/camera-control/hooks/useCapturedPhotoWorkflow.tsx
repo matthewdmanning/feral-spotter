@@ -12,6 +12,7 @@
  * keeps its own captureEvent calls until then.
  */
 
+import { cameraCopy, formatCopy } from '@/src/shared/config/text'
 import { CameraThumb } from '@/src/features/camera-control/components/CameraThumb'
 import {
   usePhotoStore,
@@ -223,7 +224,10 @@ export function useCapturedPhotoWorkflow({
           index === capturedPhotos.length - 1 ? capturedPhotos.length : 0
         }
         onRemove={() => handleDiscardPhoto(item.local_id)}
-        label={`Photo ${index + 1} of ${capturedPhotos.length}`}
+        label={formatCopy(cameraCopy.photoOf, {
+          number: index + 1,
+          count: capturedPhotos.length,
+        })}
       />
     ),
     [capturedPhotos.length, handleDiscardPhoto],

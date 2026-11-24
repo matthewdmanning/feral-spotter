@@ -58,7 +58,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
     paddingHorizontal: theme.layout.cardPadding,
     paddingVertical: theme.spacing.md,
   },
-  catRowPressed: { opacity: 0.7 },
+  catRowPressed: { opacity: theme.opacity.pressed },
   catDetails: {
     gap: theme.spacing.sm,
     paddingHorizontal: theme.layout.cardPadding,

@@ -1,3 +1,4 @@
+import { cameraCopy } from '@/src/shared/config/text'
 import { NativeIdentificationCameraView } from '@/modules/native-identification-camera'
 import { useNativeCameraCapture } from '@/src/features/camera-control/hooks/useNativeCameraCapture'
 import * as ImagePicker from 'expo-image-picker'
@@ -139,7 +140,7 @@ export function NativeCameraScreen() {
           onCapture={handleTakePhoto}
           busy={isTakingPhoto || !isCameraReady}
           disabled={!canCapture || isTakingPhoto || !isCameraReady}
-          shutterLabel="Capture photo"
+          shutterLabel={cameraCopy.capturePhoto}
         />
       </View>
     </View>

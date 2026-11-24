@@ -1,5 +1,5 @@
 import { ButtonRow } from '@/src/shared/ui/molecules/ButtonRow'
-import { showAlert } from '@/src/shared/hooks/useUIStore'
+import { annotateCopy, formatCopy } from '@/src/shared/config/text'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import { AnnotateCarouselItem } from '@/src/features/annotate/components/AnnotateCarouselItem'
 import { InsetCropBubble } from '@/src/features/annotate/components/InsetCropBubble'
@@ -31,7 +31,7 @@ export default function AnnotateScreen() {
     handleNotInPhoto,
     handleBoxingComplete,
     handlePrevPhoto,
-    handleLongPressRemove,
+    handleRemovePhoto,
   } = useAnnotatePass()
   const [carouselHeight, setCarouselHeight] = useState(0)
 
@@ -63,18 +63,18 @@ export default function AnnotateScreen() {
       <View style={styles.topBar}>
         <View style={styles.topRow}>
           <Text style={styles.counter}>
-            {currentIndex + 1} / {photos.length}
+            {formatCopy(annotateCopy.counter, {
+              current: currentIndex + 1,
+              total: photos.length,
+            })}
           </Text>
+          {/* STYLE-4: a tap removes (after the confirm, unless the user
+              chose "don't ask again"); no gesture hint needed. */}
           <Pressable
-            onPress={() => showAlert('Remove photo', 'Long press to remove.')}
-            onLongPress={handleLongPressRemove}
-            delayLongPress={500}
+            onPress={handleRemovePhoto}
             style={styles.removeBtn}
-            // 36dp bordered box; hitSlop reaches the 48dp floor without
-            // resizing the visible chrome.
-            hitSlop={6}
             accessibilityRole="button"
-            accessibilityLabel="Remove photo"
+            accessibilityLabel={annotateCopy.removePhoto}
           >
             <TrashIcon size={theme.iconSize.md} color={theme.colors.muted} />
           </Pressable>
@@ -147,7 +147,7 @@ export default function AnnotateScreen() {
           photo. */}
       {isFirst && photos.length > 1 && (
         <Text style={styles.disabledReason}>
-          You are on the first photo of {photos.length}.
+          {formatCopy(annotateCopy.firstPhoto, { count: photos.length })}
         </Text>
       )}
 
@@ -163,18 +163,18 @@ export default function AnnotateScreen() {
             onPress={handlePrevPhoto}
             disabled={isFirst}
           >
-            ← Previous
+            {annotateCopy.previous}
           </AppButton>
           <AppButton
             variant="secondary"
             size="compact"
             onPress={handleNotInPhoto}
-            accessibilityLabel="Not in this photo"
+            accessibilityLabel={annotateCopy.notInPhotoAccessibility}
           >
-            Not in Photo
+            {annotateCopy.notInPhoto}
           </AppButton>
           <AppButton size="compact" onPress={handleBoxingComplete}>
-            Done With This Cat
+            {annotateCopy.doneWithCat}
           </AppButton>
         </ButtonRow>
       </ScrollView>

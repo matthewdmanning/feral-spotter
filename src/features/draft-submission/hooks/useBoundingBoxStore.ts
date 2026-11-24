@@ -164,7 +164,7 @@ export const useBoundingBoxStore = create<BoundingBoxState>()(
           .flatMap(([, boxes]) => boxes)
       },
 
-      // A photo removed mid-pass (useAnnotatePass.handleLongPressRemove) can
+      // A photo removed mid-pass (useAnnotatePass.handleRemovePhoto) can
       // carry boxes for more than one cat — sweep every cat's entry for this
       // photo, not just the active one.
       removeBoxesForPhoto: (photoId) => {

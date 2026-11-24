@@ -7,6 +7,7 @@
  * both render from this, so the rule lives once.
  */
 
+import { submissionCopy } from '@/src/shared/config/text'
 import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
 import { useLibraryPhotoPicker } from '@/src/features/library-picker/hooks/useLibraryPhotoPicker'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
@@ -48,8 +49,11 @@ export function usePhotoEntrypoints(): PhotoEntrypoints {
       },
       addMore:
         startedFrom === 'camera'
-          ? { label: 'Take More Photos', open: openCamera }
-          : { label: 'Select More Photos', open: openLibrary },
+          ? { label: submissionCopy.create.takeMorePhotos, open: openCamera }
+          : {
+              label: submissionCopy.create.selectMorePhotos,
+              open: openLibrary,
+            },
     }),
     [draftReady, source, startedFrom, openCamera, openLibrary],
   )

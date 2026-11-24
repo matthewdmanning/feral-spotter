@@ -15,7 +15,7 @@ import { ClockIcon } from 'phosphor-react-native/src/icons/Clock'
 import { FlashList } from '@shopify/flash-list'
 import { Text } from '@/src/shared/ui/atoms/Text'
 import { ActivityIndicator, RefreshControl, View } from 'react-native'
-import { historyCopy } from '@/src/shared/config/text'
+import { formatCopy, historyCopy } from '@/src/shared/config/text'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
 
@@ -60,7 +60,9 @@ export default function FeralReportsScreen() {
         headerShown stays off so this screen's in-body title row (below)
         is its only header.
       */}
-      <Stack.Screen options={{ title: 'Sightings', headerShown: false }} />
+      <Stack.Screen
+        options={{ title: historyCopy.title, headerShown: false }}
+      />
       <View style={styles.screen}>
         <AmbientBackground />
         {/* FlashList (already the app's list library), not ScrollView + map:
@@ -87,8 +89,10 @@ export default function FeralReportsScreen() {
           ListHeaderComponent={
             <View style={styles.header}>
               <View style={styles.headerRow}>
-                <Text style={styles.title}>Sightings</Text>
-                <Text style={styles.total}>{caches.length} total</Text>
+                <Text style={styles.title}>{historyCopy.title}</Text>
+                <Text style={styles.total}>
+                  {formatCopy(historyCopy.total, { count: caches.length })}
+                </Text>
               </View>
               <SightingsMap
                 spots={spots}
@@ -101,7 +105,9 @@ export default function FeralReportsScreen() {
                   {STATUSES.map((s) => (
                     <View key={s} style={styles.legendItem}>
                       <StatusDot status={s} style={styles.legendDot} />
-                      <Text style={styles.legendLabel}>{s}</Text>
+                      <Text style={styles.legendLabel}>
+                        {historyCopy.statuses[s]}
+                      </Text>
                     </View>
                   ))}
                 </View>
@@ -124,10 +130,8 @@ export default function FeralReportsScreen() {
                     color={theme.colors.accentSoftText}
                   />
                 </View>
-                <Text style={styles.emptyTitle}>No sightings yet</Text>
-                <Text style={styles.emptyBody}>
-                  Draft and submitted sightings appear here as you create them
-                </Text>
+                <Text style={styles.emptyTitle}>{historyCopy.emptyTitle}</Text>
+                <Text style={styles.emptyBody}>{historyCopy.emptyBody}</Text>
               </GlassSurface>
             )
           }

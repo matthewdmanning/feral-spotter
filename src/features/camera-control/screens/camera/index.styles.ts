@@ -86,12 +86,7 @@ export const styles = StyleSheet.create((theme, rt) => {
       borderRadius: theme.radius.xl,
       ...cameraChip,
     },
-    captureModeHint: {
-      ...theme.textVariants.bodySmall,
-      color: theme.colors.muted,
-      marginTop: theme.spacing.sm,
-      textAlign: 'center',
-    },
+
     strip: {
       height: THUMB_SIZE + theme.spacing.lg,
       marginBottom: theme.spacing.xl,
@@ -127,7 +122,7 @@ export const styles = StyleSheet.create((theme, rt) => {
       justifyContent: 'center',
       zIndex: 25,
     },
-    shutterBusy: { opacity: 0.5 },
+    shutterBusy: { opacity: theme.opacity.busy },
     shutterInner: {
       width: 62,
       height: 62,

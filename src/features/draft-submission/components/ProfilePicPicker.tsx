@@ -9,6 +9,7 @@
  * Hidden when the cat has no box (a cat described without annotating).
  */
 
+import { formatCopy, submissionCopy } from '@/src/shared/config/text'
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import { CatCrop } from '@/src/shared/ui/atoms/CatCrop'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
@@ -21,6 +22,8 @@ import { Pressable, ScrollView, View } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { useShallow } from 'zustand/react/shallow'
 import { styles } from './ProfilePicPicker.styles'
+
+const catCopy = submissionCopy.cat
 
 /** Above the 48 dp touch target, small enough that three fit a phone row. */
 const CROP_SIZE = 72
@@ -50,18 +53,16 @@ export function ProfilePicPicker({
 
   return (
     <GlassSurface kind="card" style={styles.root}>
-      <Text style={styles.label}>Profile Pic</Text>
+      <Text style={styles.label}>{catCopy.profilePic}</Text>
       <Text style={styles.hint}>
-        {canChoose
-          ? 'Tap the photo that shows this cat best.'
-          : 'Box this cat in another photo to choose between them.'}
+        {canChoose ? catCopy.profilePicChoose : catCopy.profilePicSingle}
       </Text>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.row}
         accessibilityRole="radiogroup"
-        accessibilityLabel="Profile Pic"
+        accessibilityLabel={catCopy.profilePic}
       >
         {boxes.map((box, index) => {
           const photo = photos.find((p) => p.local_id === box.photo_local_id)
@@ -76,7 +77,10 @@ export function ProfilePicPicker({
               }}
               accessibilityRole="radio"
               accessibilityState={{ checked: selected, disabled: !canChoose }}
-              accessibilityLabel={`Use photo ${index + 1} of ${boxes.length} as Profile Pic`}
+              accessibilityLabel={formatCopy(catCopy.useProfilePic, {
+                number: index + 1,
+                count: boxes.length,
+              })}
               style={styles.option}
             >
               <CatCrop
@@ -85,7 +89,9 @@ export function ProfilePicPicker({
                 size={CROP_SIZE}
                 borderColor={selected ? catColor : undefined}
                 style={selected && styles.selected}
-                accessibilityLabel={`Photo ${index + 1}`}
+                accessibilityLabel={formatCopy(catCopy.photo, {
+                  number: index + 1,
+                })}
               />
               {selected && (
                 <View style={styles.badge}>

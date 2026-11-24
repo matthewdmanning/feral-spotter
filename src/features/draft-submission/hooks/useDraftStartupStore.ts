@@ -3,6 +3,7 @@
  * Process-local readiness of the draft restore and start-up cleanup.
  */
 
+import { navigationCopy } from '@/src/shared/config/text'
 import { discardUnsurvivingDraft } from '@/src/features/draft-submission/lib/draft'
 import { showAlert } from '@/src/shared/hooks/useUIStore'
 import { create } from 'zustand'
@@ -64,10 +65,7 @@ export async function draftReadyOrAlert(): Promise<boolean> {
     await initializeDraft()
     return true
   } catch {
-    showAlert(
-      'Could not restore your sighting',
-      'Restart the app to try again.',
-    )
+    showAlert(navigationCopy.restoreFailed, navigationCopy.restartToRetry)
     return false
   }
 }

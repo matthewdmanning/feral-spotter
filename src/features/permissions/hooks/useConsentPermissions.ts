@@ -5,6 +5,7 @@
  * Settings app while blocked.
  */
 
+import { commonCopy, permissionCopy } from '@/src/shared/config/text'
 import consentCopy from '@/src/features/permissions/copy/consentDisclosure.json'
 import { routeAfterDeviceConsent } from '@/src/features/permissions/lib/deviceConsentRoute'
 import { useConsentStore } from '@/src/shared/consent/useConsentStore'
@@ -61,8 +62,8 @@ export function useConsentPermissions() {
     } catch (err) {
       console.error('[consent] permission request failed:', err)
       showAlert(
-        'Something went wrong',
-        'Could not process permissions. Please try again.',
+        commonCopy.somethingWentWrong,
+        permissionCopy.requestFailedMessage,
       )
     } finally {
       setBusy(false)

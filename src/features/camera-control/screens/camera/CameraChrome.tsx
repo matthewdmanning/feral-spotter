@@ -11,6 +11,7 @@
  * preview is backend-specific.
  */
 
+import { cameraCopy, formatCopy } from '@/src/shared/config/text'
 import { GateScreen } from '@/src/shared/ui/molecules/GateScreen'
 import type { SubmissionPhoto } from '@/src/shared/types'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
@@ -35,9 +36,6 @@ import Animated, {
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
 
-export const CAMERA_PERMISSION_GATE_BODY =
-  'FeralSpotter needs camera access to capture cat observations.'
-
 export function CameraPermissionGate({
   onRequestPermission,
 }: {
@@ -45,9 +43,9 @@ export function CameraPermissionGate({
 }) {
   return (
     <GateScreen
-      title="Camera Access Required"
-      body={CAMERA_PERMISSION_GATE_BODY}
-      primaryLabel="Allow Camera"
+      title={cameraCopy.permissionTitle}
+      body={cameraCopy.permissionBody}
+      primaryLabel={cameraCopy.allowCamera}
       onPrimary={onRequestPermission}
       showOpenSettings
     />
@@ -90,7 +88,7 @@ export function CameraTopBar({
         onPress={onClose}
         style={styles.iconBtn}
         accessibilityRole="button"
-        accessibilityLabel="Close camera"
+        accessibilityLabel={cameraCopy.close}
       >
         <XIcon size={theme.iconSize.lg} color={theme.colors.text} />
       </Pressable>
@@ -101,14 +99,16 @@ export function CameraTopBar({
             style={styles.pill}
             accessibilityRole="button"
           >
-            <Text style={styles.pillText}>Done ({photoCount})</Text>
+            <Text style={styles.pillText}>
+              {formatCopy(cameraCopy.done, { count: photoCount })}
+            </Text>
           </Pressable>
         )}
         <Pressable
           onPress={onCycleFlash}
           style={styles.iconBtn}
           accessibilityRole="button"
-          accessibilityLabel={`Flash ${flashMode}`}
+          accessibilityLabel={cameraCopy.flash[flashMode]}
         >
           {flashMode === 'on' ? (
             <LightningIcon
@@ -121,7 +121,9 @@ export function CameraTopBar({
               color={theme.colors.text}
             />
           )}
-          {flashMode === 'auto' && <Text style={styles.autoA}>A</Text>}
+          {flashMode === 'auto' && (
+            <Text style={styles.autoA}>{cameraCopy.flashAutoBadge}</Text>
+          )}
         </Pressable>
       </View>
     </View>
@@ -203,7 +205,7 @@ export function CameraShutterRow({
         onPress={onFlip}
         style={[styles.sideBtn, styles.sideBtnFilled]}
         accessibilityRole="button"
-        accessibilityLabel="Switch camera"
+        accessibilityLabel={cameraCopy.switchCamera}
       >
         <CameraRotateIcon size={theme.iconSize.lg} color={theme.colors.text} />
       </Pressable>

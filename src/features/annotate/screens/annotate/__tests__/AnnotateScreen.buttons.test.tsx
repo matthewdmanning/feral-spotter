@@ -62,7 +62,7 @@ const handleBoxingComplete = jest.fn()
 const clearActiveCat = jest.fn()
 const handleAbandonPass = jest.fn()
 const handlePrevPhoto = jest.fn()
-const handleLongPressRemove = jest.fn()
+const handleRemovePhoto = jest.fn()
 const setCurrentIndex = jest.fn()
 
 const layoutTarget = (instance: TestInstance): TestInstance => {
@@ -85,7 +85,7 @@ const baseAnnotatePass: ReturnType<typeof useAnnotatePass> = {
   clearActiveCat,
   handleAbandonPass,
   handlePrevPhoto,
-  handleLongPressRemove,
+  handleRemovePhoto,
 }
 
 describe('AnnotateScreen buttons', () => {
@@ -181,12 +181,12 @@ describe('AnnotateScreen buttons', () => {
     expect(screen.getByText('Done With This Cat')).toBeOnTheScreen()
   })
 
-  it('long-pressing Remove photo calls handleLongPressRemove', async () => {
+  it('long-pressing Remove photo calls handleRemovePhoto', async () => {
     jest.mocked(useAnnotatePass).mockReturnValue(baseAnnotatePass)
     await render(<AnnotateScreen />)
 
     await userEvent.longPress(screen.getByLabelText('Remove photo'))
 
-    expect(handleLongPressRemove).toHaveBeenCalledTimes(1)
+    expect(handleRemovePhoto).toHaveBeenCalledTimes(1)
   })
 })

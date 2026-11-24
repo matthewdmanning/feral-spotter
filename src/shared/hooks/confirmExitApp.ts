@@ -4,6 +4,7 @@
  * consent), which have nowhere to go back to.
  */
 
+import { commonCopy } from '@/src/shared/config/text'
 import { BackHandler, Platform } from 'react-native'
 import { showAlert } from './useUIStore'
 
@@ -14,9 +15,9 @@ import { showAlert } from './useUIStore'
  */
 export function confirmExitApp(title: string, body: string): void {
   showAlert(title, body, [
-    { text: 'Back', style: 'cancel' },
+    { text: commonCopy.back, style: 'cancel' },
     {
-      text: 'Exit',
+      text: commonCopy.exit,
       style: 'destructive',
       onPress: () => {
         if (Platform.OS === 'android') BackHandler.exitApp()

@@ -8,6 +8,7 @@
  * Rule: never "tracking" in reference to people — cats only.
  */
 
+import { commonCopy } from '@/src/shared/config/text'
 import { confirmExitApp } from '@/src/shared/hooks/confirmExitApp'
 import introFlowCopy from '@/src/features/permissions/copy/introFlowCopy.json'
 import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
@@ -90,7 +91,7 @@ export default function IntroFlowScreen() {
       <View style={styles.footer}>
         <ButtonRow>
           <AppButton onPress={goBack} variant="secondary" disabled={step === 0}>
-            Previous
+            {commonCopy.previous}
           </AppButton>
           <AppButton onPress={advance}>{slide.button}</AppButton>
         </ButtonRow>
