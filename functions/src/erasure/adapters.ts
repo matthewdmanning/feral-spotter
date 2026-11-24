@@ -9,6 +9,7 @@ import { getStorage } from 'firebase-admin/storage'
 import { eraseOrganizationData } from '../organizations/store'
 import { redactErasedAuthor } from '../organizations/interactions/store'
 import { userPrefix } from '../submissionLayout'
+import { eraseSubmissionBackups } from '../backups/submissionBackup'
 import type {
   AccountStore,
   AnalyticsEraser,
@@ -47,7 +48,10 @@ export function createPostHogEraser(
   }
 }
 
-export function createStorageSubmissionStore(bucket: string): SubmissionStore {
+export function createStorageSubmissionStore(
+  bucket: string,
+  backupBucket?: string,
+): SubmissionStore {
   return {
     // userPrefix ends in '/': a bare prefix would also match every uid that
     // starts with the same characters.
@@ -55,6 +59,9 @@ export function createStorageSubmissionStore(bucket: string): SubmissionStore {
       getStorage()
         .bucket(bucket)
         .deleteFiles({ prefix: userPrefix(uid) }),
+    deleteUserSubmissionBackups: async (uid) => {
+      if (backupBucket) await eraseSubmissionBackups(backupBucket, uid)
+    },
     retireUploadIdentity: (uid, sightingsDeleted) =>
       retireUploadIdentity(bucket, uid, sightingsDeleted),
     // Writes are blocked first, so no comment or reaction lands after the

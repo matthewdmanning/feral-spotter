@@ -20,6 +20,8 @@ export interface AnalyticsEraser {
 export interface SubmissionStore {
   /** Delete every object under the uid's Submission folder. */
   deleteUserSubmissions(uid: string): Promise<void>
+  /** Account backups always go, even if the primary Sightings are retained. */
+  deleteUserSubmissionBackups(uid: string): Promise<void>
   /** Delete this owner's Firestore organization records. */
   deleteUserOrganizationPermissions(uid: string): Promise<void>
   /**
@@ -57,6 +59,7 @@ export async function eraseAccount(
   if (email) await ports.email.remove(email)
   await ports.analytics.erasePerson(uid)
   await ports.submissions.deleteUserOrganizationPermissions(uid)
+  await ports.submissions.deleteUserSubmissionBackups(uid)
   if (deleteSightings) await ports.submissions.deleteUserSubmissions(uid)
   await ports.accounts.deleteUser(uid)
 }
