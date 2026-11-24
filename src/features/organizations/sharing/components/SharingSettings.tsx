@@ -1,9 +1,7 @@
 import { useState } from 'react'
 import { Text } from '@/src/shared/ui/atoms/Text'
-import { View } from 'react-native'
-import { formatCopy, organizationCopy } from '@/src/shared/config/text'
+import { organizationCopy } from '@/src/shared/config/text'
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
-import { TextField } from '@/src/shared/ui/atoms/TextField'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import { useAuth } from '@/src/features/auth/lib/useAuth'
 import {
@@ -11,11 +9,8 @@ import {
   EMPTY_ORGANIZATION_ACCOUNT,
 } from '@/src/features/organizations/hooks/useOrganizationSharingStore'
 import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
-import {
-  SHARING_FIELD_KEYS,
-  type SharingSettings as SharingConfiguration,
-} from '@/src/shared/types/Organizations'
-import { SharingCheckbox } from './SharingCheckbox'
+import type { SharingSettings as SharingConfiguration } from '@/src/shared/types/Organizations'
+import { SharingFieldInputs } from '@/src/features/organizations/components/SharingFieldInputs'
 import { styles } from '@/src/features/organizations/components/styles'
 
 export function SharingSettings() {
@@ -49,7 +44,6 @@ function SharingSettingsForm({
   saved: SharingConfiguration
 }) {
   const [draft, setDraft] = useState(saved)
-  const labels = organizationCopy.sharingSettings.shareFieldLabels
   return (
     <GlassSurface kind="card" style={styles.card}>
       <Text style={styles.title}>{organizationCopy.sharingSettings.title}</Text>
@@ -59,44 +53,7 @@ function SharingSettingsForm({
       <Text style={styles.hint}>
         {organizationCopy.sharingSettings.includedNotice}
       </Text>
-      {SHARING_FIELD_KEYS.map((key) => (
-        <View key={key} style={styles.fieldGroup}>
-          <SharingCheckbox
-            label={labels[key]}
-            checked={draft.fields[key]}
-            onChange={(value) =>
-              setDraft({ ...draft, fields: { ...draft.fields, [key]: value } })
-            }
-          />
-          {key === 'name' && draft.fields.name && (
-            <TextField
-              label={organizationCopy.sharingSettings.nameField}
-              value={draft.name}
-              maxLength={200}
-              autoComplete="name"
-              onChangeText={(name) => setDraft({ ...draft, name })}
-            />
-          )}
-          {key === 'email' && draft.fields.email && (
-            <Text style={styles.body}>
-              {formatCopy(organizationCopy.sharingSettings.emailValue, {
-                email:
-                  email ?? organizationCopy.sharingSettings.emailUnavailable,
-              })}
-            </Text>
-          )}
-          {key === 'phone' && draft.fields.phone && (
-            <TextField
-              label={organizationCopy.sharingSettings.phoneField}
-              value={draft.phone}
-              maxLength={50}
-              keyboardType="phone-pad"
-              autoComplete="tel"
-              onChangeText={(phone) => setDraft({ ...draft, phone })}
-            />
-          )}
-        </View>
-      ))}
+      <SharingFieldInputs settings={draft} email={email} onChange={setDraft} />
       <AppButton
         onPress={() =>
           useOrganizationSharingStore.getState().configure(uid, draft)

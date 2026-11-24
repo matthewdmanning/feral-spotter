@@ -8,17 +8,20 @@ export function SharingCheckbox({
   label,
   checked,
   onChange,
+  disabled = false,
 }: {
   label: string
   checked: boolean
   onChange: (checked: boolean) => void
+  disabled?: boolean
 }) {
   return (
     <Pressable
       style={styles.checkRow}
       accessibilityRole="checkbox"
       accessibilityLabel={label}
-      accessibilityState={{ checked }}
+      accessibilityState={{ checked, disabled }}
+      disabled={disabled}
       onPress={() => onChange(!checked)}
     >
       <CheckboxBox checked={checked} />

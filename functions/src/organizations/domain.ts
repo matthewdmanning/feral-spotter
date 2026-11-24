@@ -44,6 +44,11 @@ export const DEFAULT_SHARING: SharingSettings = {
 export const SHARING_FIELD_KEYS = Object.keys(
   DEFAULT_SHARING.fields,
 ) as (keyof SharingFields)[]
+/** Server limits on shared contact values; the app's inputs use the same. */
+export const SHARING_NAME_MAX_LENGTH = 200
+export const SHARING_PHONE_MAX_LENGTH = 50
+/** An invite code is 24 random bytes in base64url: 32 characters. */
+export const INVITE_CODE_LENGTH = 32
 /** Fields that identify the observer; Anonymous suppresses all of them. */
 export const CONTACT_FIELDS = ['name', 'email', 'phone'] as const
 export interface GrantRequest {

@@ -1,16 +1,12 @@
-import { Fragment as ReactFragment, useState, useEffect, useRef } from 'react'
-import { Pressable } from 'react-native'
+import { useState, useEffect, useRef } from 'react'
 import { Text } from '@/src/shared/ui/atoms/Text'
 import { formatCopy, organizationCopy } from '@/src/shared/config/text'
 import { randomUUID } from 'expo-crypto'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
-import { CheckboxBox } from '@/src/shared/ui/atoms/CheckboxBox'
-import { TextField } from '@/src/shared/ui/atoms/TextField'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
-import {
-  DEFAULT_SHARING,
-  SHARING_FIELD_KEYS,
-} from '@/src/shared/types/Organizations'
+import { DEFAULT_SHARING } from '@/src/shared/types/Organizations'
+import { SharingCheckbox } from '@/src/features/organizations/components/SharingCheckbox'
+import { SharingFieldInputs } from '@/src/features/organizations/components/SharingFieldInputs'
 import { useOrganizationSharingStore } from '@/src/features/organizations/hooks/useOrganizationSharingStore'
 import {
   organizationRequest,
@@ -62,84 +58,41 @@ export function LeaveChoices({
     setChoice(null)
     setError('')
   }
-  const checkbox = (label: string, checked: boolean, change: () => void) => (
-    <Pressable
-      accessibilityRole="checkbox"
-      accessibilityLabel={label}
-      accessibilityState={{ checked, disabled: busy || loading }}
-      disabled={busy || loading}
-      style={styles.checkRow}
-      onPress={change}
-    >
-      <CheckboxBox checked={checked} />
-      <Text style={styles.body}>{label}</Text>
-    </Pressable>
-  )
+  const disabled = busy || loading
   return (
     <>
       <Text style={styles.body}>{copy.disclosure}</Text>
-      {checkbox(copy.keep, keep, () => {
-        setKeep(!keep)
-        reset()
-      })}
+      <SharingCheckbox
+        label={copy.keep}
+        checked={keep}
+        disabled={disabled}
+        onChange={(value) => {
+          setKeep(value)
+          reset()
+        }}
+      />
       {keep && (
         <>
           <Text style={styles.hint}>{copy.retainedDisclosure}</Text>
-          {checkbox(organizationCopy.submission.anonymous, anonymous, () => {
-            setAnonymous(!anonymous)
-            reset()
-          })}
-          {SHARING_FIELD_KEYS.map((key) => (
-            <ReactFragment key={key}>
-              {checkbox(
-                organizationCopy.sharingSettings.shareFieldLabels[key],
-                settings.fields[key],
-                () => {
-                  setSettings({
-                    ...settings,
-                    fields: {
-                      ...settings.fields,
-                      [key]: !settings.fields[key],
-                    },
-                  })
-                  reset()
-                },
-              )}
-            </ReactFragment>
-          ))}
-          {settings.fields.name && !anonymous && (
-            <TextField
-              label={organizationCopy.sharingSettings.nameField}
-              value={settings.name}
-              maxLength={200}
-              editable={!busy && !loading}
-              onChangeText={(name) => {
-                setSettings({ ...settings, name })
-                reset()
-              }}
-            />
-          )}
-          {settings.fields.phone && !anonymous && (
-            <TextField
-              label={organizationCopy.sharingSettings.phoneField}
-              value={settings.phone}
-              maxLength={50}
-              editable={!busy && !loading}
-              keyboardType="phone-pad"
-              onChangeText={(phone) => {
-                setSettings({ ...settings, phone })
-                reset()
-              }}
-            />
-          )}
-          {settings.fields.email && !anonymous && (
-            <Text style={styles.body}>
-              {formatCopy(organizationCopy.sharingSettings.emailValue, {
-                email:
-                  email ?? organizationCopy.sharingSettings.emailUnavailable,
-              })}
-            </Text>
-          )}
+          <SharingCheckbox
+            label={organizationCopy.submission.anonymous}
+            checked={anonymous}
+            disabled={disabled}
+            onChange={(value) => {
+              setAnonymous(value)
+              reset()
+            }}
+          />
+          <SharingFieldInputs
+            settings={settings}
+            email={email}
+            disabled={disabled}
+            hideContact={anonymous}
+            onChange={(next) => {
+              setSettings(next)
+              reset()
+            }}
+          />
           <Text style={styles.hint}>
             {anonymous ? copy.anonymousDisclosure : copy.contactDisclosure}
           </Text>

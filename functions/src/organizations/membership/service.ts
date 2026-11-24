@@ -4,16 +4,17 @@ import { db, readOrganization } from '../store'
 import { changeMembership, readMemberships, renameMemberships } from './store'
 import { makePermission, validateGrant } from '../api'
 import { readLedger, updateLedger } from '../store'
-import { validId, type Permission } from '../domain'
+import { INVITE_CODE_LENGTH, validId, type Permission } from '../domain'
 import { RequestError } from '../errors'
 import { memberName, type LeaveChoice, type Membership } from './domain'
 
+const INVITE_CODE_PATTERN = new RegExp(`^[a-zA-Z0-9_-]{${INVITE_CODE_LENGTH}}$`)
 const invitePath = (code: string) =>
   `organizationInvites/${createHash('sha256').update(code).digest('hex')}`
 
 export async function createInvite(organizationId: string) {
   await readOrganization(organizationId)
-  const code = randomBytes(24).toString('base64url')
+  const code = randomBytes((INVITE_CODE_LENGTH * 3) / 4).toString('base64url')
   await db().doc(invitePath(code)).create({ organizationId })
   return code
 }
@@ -28,7 +29,7 @@ async function accountName(uid: string): Promise<string> {
 }
 
 export async function joinOrganization(uid: string, code: unknown) {
-  if (typeof code !== 'string' || !/^[a-zA-Z0-9_-]{32}$/.test(code.trim()))
+  if (typeof code !== 'string' || !INVITE_CODE_PATTERN.test(code.trim()))
     throw new RequestError(400, 'Invalid invite code')
   const displayName = await accountName(uid)
   const invite = (await db().doc(invitePath(code.trim())).get()).data()

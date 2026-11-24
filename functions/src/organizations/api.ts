@@ -10,6 +10,8 @@ import {
   isSharedPhotoPath,
   projectData,
   SHARING_FIELD_KEYS,
+  SHARING_NAME_MAX_LENGTH,
+  SHARING_PHONE_MAX_LENGTH,
   validId,
   validLocation,
   type GrantRequest,
@@ -52,9 +54,9 @@ export function validateGrant(input: unknown): GrantRequest {
   if (
     !settings ||
     typeof settings.name !== 'string' ||
-    settings.name.length > 200 ||
+    settings.name.length > SHARING_NAME_MAX_LENGTH ||
     typeof settings.phone !== 'string' ||
-    settings.phone.length > 50 ||
+    settings.phone.length > SHARING_PHONE_MAX_LENGTH ||
     !settings.fields ||
     SHARING_FIELD_KEYS.some((key) => typeof settings.fields[key] !== 'boolean')
   )

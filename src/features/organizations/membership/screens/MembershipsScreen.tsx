@@ -21,6 +21,7 @@ import { styles as layout } from '@/src/features/organizations/membership/compon
 import { useMemberships } from '@/src/features/organizations/membership/hooks/useMemberships'
 import { useMembershipOrderStore } from '@/src/features/organizations/membership/hooks/useMembershipOrderStore'
 import { orderMemberships } from '@/src/features/organizations/membership/lib/summary'
+import { INVITE_CODE_LENGTH } from '@/src/shared/types/Organizations'
 
 function MembershipsForm() {
   const copy = organizationCopy.membership
@@ -103,7 +104,7 @@ function MembershipsForm() {
                 <TextField
                   label={copy.inviteCode}
                   value={code}
-                  maxLength={32}
+                  maxLength={INVITE_CODE_LENGTH}
                   editable={!query.busy}
                   onChangeText={setCode}
                   autoCorrect={false}
