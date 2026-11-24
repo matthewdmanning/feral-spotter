@@ -267,8 +267,7 @@ export const authCopy = {
     'We sent a link to {email}. Your email changes once you follow it.',
   validEmailMessage: 'Enter a valid email address',
   changeEmailFailedTitle: 'Could not change email',
-  recentSignInRequiredMessage:
-    'Sign out and sign in again, then try once more.',
+  recentSignInRequiredMessage: 'Updating your email requires a recent sign-in.',
   retryMessage: 'Something went wrong. Please try again.',
 } as const
 

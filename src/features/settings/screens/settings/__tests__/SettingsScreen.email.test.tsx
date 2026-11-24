@@ -108,7 +108,7 @@ it('keeps validation and change-email failures on the existing error path', asyn
   expect(authProvider.changeEmail).toHaveBeenCalledWith('new@example.test')
   expect(screen.getByText('Could not change email')).toBeOnTheScreen()
   expect(
-    screen.getByText('Sign out and sign in again, then try once more.'),
+    screen.getByText('Updating your email requires a recent sign-in.'),
   ).toBeOnTheScreen()
   await pressDialogButton('OK')
   await userEvent.press(screen.getByRole('button', { name: 'Add email' }))
