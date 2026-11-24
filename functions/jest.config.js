@@ -1,5 +1,5 @@
 module.exports = {
-  preset: 'ts-jest',
+  ...require('./jest.firebase'),
   testEnvironment: 'node',
   testMatch: ['<rootDir>/src/**/__tests__/**/*.test.ts'],
 }
