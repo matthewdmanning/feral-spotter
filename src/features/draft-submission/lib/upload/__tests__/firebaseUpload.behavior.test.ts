@@ -16,30 +16,47 @@ import {
 } from '@/src/features/draft-submission/lib/upload/firebaseUpload'
 import { getAuth } from '@react-native-firebase/auth'
 import { resetHeldUploadGrants } from '@/src/features/draft-submission/lib/upload/uploadAdmission'
+import { http, HttpResponse } from 'msw'
+import { server } from '@/src/test-utils/mswServer'
+import { submissionPhoto } from '@/src/test-utils/photoFixtures'
 
 jest.mock('@/src/shared/config/constants', () => ({
   ...jest.requireActual('@/src/shared/config/constants'),
   UPLOAD_ADMISSION_URL: 'https://admission.test/',
 }))
 
-// #486: the admission endpoint is a network boundary; the ID token is the
-// native Auth boundary.
+// #486: the admission endpoint is a network boundary (MSW); the ID token is
+// the native Auth boundary.
+const ADMISSION_URL = 'https://admission.test/'
 const getIdToken = jest.fn(async (_force?: boolean) => 'id-token')
-const admission = jest.fn(
-  async (_url: string, _init: RequestInit) =>
-    ({
-      ok: true,
-      status: 200,
-      json: async () => ({ expiresAt: Date.now() + 30 * 60 * 1000 }),
-    }) as Response,
-)
+/** Request bodies the admission endpoint received, in order. */
+let admissions: string[]
+const grant = () =>
+  HttpResponse.json({ expiresAt: Date.now() + 30 * 60 * 1000 })
+/** The next admission request is refused with the quota reason. */
+const refuseNextAdmission = () =>
+  server.use(
+    http.post(
+      ADMISSION_URL,
+      async ({ request }) => {
+        admissions.push(await request.text())
+        return HttpResponse.json({ error: 'quota_exceeded' }, { status: 429 })
+      },
+      { once: true },
+    ),
+  )
 beforeEach(() => {
   resetHeldUploadGrants()
   jest.mocked(getAuth).mockReturnValue({ currentUser: { getIdToken } } as never)
-  global.fetch = admission as unknown as typeof fetch
+  admissions = []
+  server.use(
+    http.post(ADMISSION_URL, async ({ request }) => {
+      admissions.push(await request.text())
+      return grant()
+    }),
+  )
 })
 
-import { submissionPhoto } from '@/src/test-utils/photoFixtures'
 describe('Firebase submission upload behavior', () => {
   it('writes the serialized submission to its owned metadata object as JSON', async () => {
     const payload = { id: 'sub-7', photos: [{ cloud_storage_path: 'p.jpg' }] }
@@ -65,11 +82,7 @@ describe('Firebase submission upload behavior', () => {
   })
 
   it('asks for a metadata grant before writing metadata.json (#486)', async () => {
-    admission.mockResolvedValueOnce({
-      ok: false,
-      status: 429,
-      json: async () => ({ error: 'quota_exceeded' }),
-    } as Response)
+    refuseNextAdmission()
 
     await expect(
       uploadSubmissionMetadata(
@@ -78,12 +91,9 @@ describe('Firebase submission upload behavior', () => {
         'sub-7',
       ),
     ).rejects.toMatchObject({ status: 429, reason: 'quota_exceeded' })
-    expect(admission).toHaveBeenCalledWith(
-      'https://admission.test/',
-      expect.objectContaining({
-        body: JSON.stringify({ submissionId: 'sub-7', metadata: true }),
-      }),
-    )
+    expect(admissions).toEqual([
+      JSON.stringify({ submissionId: 'sub-7', metadata: true }),
+    ])
     expect(uploadString).not.toHaveBeenCalled()
   })
 
@@ -279,14 +289,16 @@ describe('uploadSubmissionPhoto', () => {
 
   it('asks for a grant, then refreshes the token, before writing bytes', async () => {
     const order: string[] = []
-    admission.mockImplementationOnce(async (url, init) => {
-      order.push(`admit ${url} ${String(init.body)}`)
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({ expiresAt: Date.now() + 60_000 }),
-      } as Response
-    })
+    server.use(
+      http.post(
+        ADMISSION_URL,
+        async ({ request }) => {
+          order.push(`admit ${request.url} ${await request.text()}`)
+          return grant()
+        },
+        { once: true },
+      ),
+    )
     getIdToken.mockImplementation(async (force) => {
       order.push(`token ${String(force)}`)
       return 'id-token'
@@ -323,16 +335,12 @@ describe('uploadSubmissionPhoto', () => {
 
     await uploadSubmissionPhoto(photo('file:///cache/a.jpg'), 'uid-1', 'sub-1')
 
-    expect(admission).toHaveBeenCalledTimes(2)
+    expect(admissions).toHaveLength(2)
     expect(putFile).toHaveBeenCalledTimes(2)
   })
 
   it('writes nothing when the quota refuses the grant', async () => {
-    admission.mockResolvedValueOnce({
-      ok: false,
-      status: 429,
-      json: async () => ({ error: 'quota_exceeded' }),
-    } as Response)
+    refuseNextAdmission()
 
     await expect(
       uploadSubmissionPhoto(photo('file:///cache/a.jpg'), 'uid-1', 'sub-1'),
