@@ -7,10 +7,6 @@
  * application workflow exists once rather than once per backend.
  */
 
-import {
-  isAtPhotoLimit,
-  showPhotoLimitReached,
-} from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useCapturedPhotoWorkflow } from '@/src/features/camera-control/hooks/useCapturedPhotoWorkflow'
 import { useConsentStore } from '@/src/shared/consent/useConsentStore'
 import { useSettingsStore } from '@/src/features/settings/hooks/useSettingsStore'
@@ -18,7 +14,6 @@ import { CAMERA_FIELD_CONDITION } from '@/src/shared/config/constants'
 import { nativeCameraConfig } from '@/src/features/camera-control/lib/cameraConfig'
 import { captureEvent, EVENTS } from '@/src/shared/analytics/analytics'
 import type { ImagePostprocessor } from '@/src/features/camera-control/lib/pipeline'
-import { startLocationCapture } from '@/src/core/location/liveFix'
 import type {
   NativeCameraDiagnosticEvent,
   NativeCameraReadyEvent,
@@ -27,6 +22,8 @@ import type {
 } from '@/modules/native-identification-camera'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Platform } from 'react-native'
+
+const NATIVE_CAMERA_BACKEND = Platform.OS === 'ios' ? 'avfoundation' : 'camerax'
 
 interface NativeCameraCaptureOptions {
   postprocessor?: ImagePostprocessor
@@ -59,7 +56,6 @@ export function useNativeCameraCapture(
 
   const cameraRef = useRef<NativeIdentificationCameraRef>(null)
   const cameraOpenedAt = useRef<number | null>(null)
-  const [isTakingPhoto, setIsTakingPhoto] = useState(false)
   const [isCameraReady, setIsCameraReady] = useState(false)
 
   // Flipping rebinds the native session, so the ready flag has to drop and the
@@ -81,18 +77,13 @@ export function useNativeCameraCapture(
     position,
     flipCamera,
     flashOverlayStyle,
-    triggerFlash,
     persistCapturedPhoto,
     startPhotoUpload,
-    flushGallerySaves,
+    isTakingPhoto,
+    runCapture,
     handleDone,
     handleClose,
   } = useCapturedPhotoWorkflow({ onBeforeFlip: handleBeforeFlip })
-
-  // Mirrors isTakingPhoto so handleTakePhoto does not depend on state it sets
-  // itself, which recreated the callback twice per capture.
-  const isTakingPhotoRef = useRef(false)
-  const hasStartedLocationCapture = useRef(false)
 
   // The tuning the settings requested, reported once per bind. Held in a ref so
   // every capture event can carry it without re-creating the capture callback
@@ -103,6 +94,29 @@ export function useNativeCameraCapture(
     cameraOpenedAt.current = performanceChecks ? Date.now() : null
   }, [performanceChecks])
 
+  /** The performance-check fields every timed event of this path carries. */
+  const nativeTelemetryBase = useCallback(
+    () => ({
+      camera_performance_checks: true,
+      camera_backend: NATIVE_CAMERA_BACKEND,
+      camera_variant: 'native',
+      camera_platform: Platform.OS,
+      camera_position: position,
+      max_detail: maxDetail,
+      motion_priority: motionPriority,
+      low_light_boost_disabled: disableLowLightBoost,
+      subject_metering: subjectMetering,
+      requested_capture_tuning: requestedCaptureTuning.current ?? 'unreported',
+    }),
+    [
+      disableLowLightBoost,
+      maxDetail,
+      motionPriority,
+      position,
+      subjectMetering,
+    ],
+  )
+
   const handleCameraReady = useCallback(
     (event?: { nativeEvent?: NativeCameraReadyEvent }) => {
       setIsCameraReady(true)
@@ -112,18 +126,8 @@ export function useNativeCameraCapture(
       if (!performanceChecks || openedAt === null) return
 
       captureEvent(EVENTS.CAMERA_DEVICE_READY, {
-        camera_performance_checks: true,
+        ...nativeTelemetryBase(),
         capture_backend: 'native',
-        camera_backend: Platform.OS === 'ios' ? 'avfoundation' : 'camerax',
-        camera_variant: 'native',
-        camera_platform: Platform.OS,
-        camera_position: position,
-        max_detail: maxDetail,
-        motion_priority: motionPriority,
-        low_light_boost_disabled: disableLowLightBoost,
-        subject_metering: subjectMetering,
-        requested_capture_tuning:
-          requestedCaptureTuning.current ?? 'unreported',
         capture_mode: event?.nativeEvent?.captureMode ?? 'unreported',
         ...(event?.nativeEvent?.zslDisabledByConfig != null && {
           zsl_disabled_by_config: event.nativeEvent.zslDisabledByConfig,
@@ -134,14 +138,7 @@ export function useNativeCameraCapture(
         ready_duration_ms: Date.now() - openedAt,
       })
     },
-    [
-      disableLowLightBoost,
-      maxDetail,
-      motionPriority,
-      performanceChecks,
-      position,
-      subjectMetering,
-    ],
+    [nativeTelemetryBase, performanceChecks],
   )
 
   /**
@@ -157,7 +154,7 @@ export function useNativeCameraCapture(
       captureEvent(EVENTS.CAMERA_NATIVE_DIAGNOSTIC, {
         camera_performance_checks: true,
         capture_backend: 'native',
-        camera_backend: Platform.OS === 'ios' ? 'avfoundation' : 'camerax',
+        camera_backend: NATIVE_CAMERA_BACKEND,
         camera_platform: Platform.OS,
         native_event: name,
         ...fields,
@@ -167,27 +164,13 @@ export function useNativeCameraCapture(
   )
 
   const handleTakePhoto = useCallback(async () => {
-    if (
-      !canCapture ||
-      isTakingPhotoRef.current ||
-      !isCameraReady ||
-      !cameraRef.current
-    ) {
-      return
-    }
-    if (isAtPhotoLimit()) {
-      showPhotoLimitReached()
-      return
-    }
-    isTakingPhotoRef.current = true
-    setIsTakingPhoto(true)
+    const camera = cameraRef.current
+    if (!canCapture || !isCameraReady || !camera) return
     const shutterTime = new Date().toISOString()
     const captureStartedAt = performanceChecks ? Date.now() : null
 
-    triggerFlash()
-
-    try {
-      const captured = await cameraRef.current.capture({ flashMode })
+    const capture = async () => {
+      const captured = await camera.capture({ flashMode })
       const capturedAt = performanceChecks ? Date.now() : null
       const processed = options.postprocessor
         ? await options.postprocessor.process(captured)
@@ -221,18 +204,7 @@ export function useNativeCameraCapture(
         capturedAt !== null &&
         processedAt !== null
           ? {
-              camera_performance_checks: true,
-              camera_backend:
-                Platform.OS === 'ios' ? 'avfoundation' : 'camerax',
-              camera_variant: 'native',
-              camera_platform: Platform.OS,
-              camera_position: position,
-              max_detail: maxDetail,
-              motion_priority: motionPriority,
-              low_light_boost_disabled: disableLowLightBoost,
-              subject_metering: subjectMetering,
-              requested_capture_tuning:
-                requestedCaptureTuning.current ?? 'unreported',
+              ...nativeTelemetryBase(),
               capture_mode: captured.captureMode ?? 'unreported',
               field_condition:
                 captured.captureSettings?.field_condition ?? 'none',
@@ -248,48 +220,35 @@ export function useNativeCameraCapture(
       })
 
       startPhotoUpload()
-    } catch (error) {
-      console.error('[useNativeCameraCapture] capture:', error)
-      captureEvent(EVENTS.PHOTO_CAPTURE_FAILED, {
-        error: error instanceof Error ? error.message : String(error),
+    }
+
+    await runCapture({
+      capture,
+      logTag: 'useNativeCameraCapture',
+      failureProps: () => ({
         capture_backend: 'native',
         ...(performanceChecks && captureStartedAt !== null
           ? {
-              camera_performance_checks: true,
-              camera_backend:
-                Platform.OS === 'ios' ? 'avfoundation' : 'camerax',
-              camera_variant: 'native',
-              camera_platform: Platform.OS,
-              camera_position: position,
-              max_detail: maxDetail,
-              motion_priority: motionPriority,
-              low_light_boost_disabled: disableLowLightBoost,
-              subject_metering: subjectMetering,
-              requested_capture_tuning:
-                requestedCaptureTuning.current ?? 'unreported',
+              ...nativeTelemetryBase(),
               elapsed_ms: Date.now() - captureStartedAt,
             }
           : {}),
-      })
-    } finally {
-      isTakingPhotoRef.current = false
-      setIsTakingPhoto(false)
-      void flushGallerySaves()
-    }
+      }),
+    })
   }, [
     disableLowLightBoost,
     flashMode,
-    flushGallerySaves,
     isCameraReady,
     maxDetail,
     motionPriority,
+    nativeTelemetryBase,
     options.postprocessor,
     performanceChecks,
     persistCapturedPhoto,
     position,
+    runCapture,
     startPhotoUpload,
     subjectMetering,
-    triggerFlash,
     canCapture,
   ])
 
@@ -315,12 +274,6 @@ export function useNativeCameraCapture(
         useConsentStore.persist.hasHydrated(),
       )
   }, [])
-
-  useEffect(() => {
-    if (!canCapture || hasStartedLocationCapture.current) return
-    hasStartedLocationCapture.current = true
-    void startLocationCapture()
-  }, [canCapture])
 
   return {
     cameraRef,

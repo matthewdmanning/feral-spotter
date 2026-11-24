@@ -7,9 +7,11 @@
  * capture hook should hold its own copy of any of it — the copies had already
  * drifted, which is how the duplicate device-ready telemetry got in.
  *
- * Analytics is deliberately NOT here. The two paths still emit different event
- * property sets, and unifying that vocabulary is separate work; each hook
- * keeps its own captureEvent calls until then.
+ * runCapture owns what "taking a photo" means for both backends: the photo
+ * limit, the taking-photo flag, the flash, the failure event and the gallery
+ * flush. Each backend passes only its capture call and its failure fields.
+ * Success and device-ready telemetry stay per backend: their property sets
+ * differ.
  */
 
 import { cameraCopy, formatCopy } from '@/src/shared/config/text'
@@ -17,7 +19,10 @@ import { CameraThumb } from '@/src/features/camera-control/components/CameraThum
 import {
   usePhotoStore,
   isAtPhotoLimit,
+  showPhotoLimitReached,
 } from '@/src/features/draft-submission/hooks/usePhotoStore'
+import { captureEvent, EVENTS } from '@/src/shared/analytics/analytics'
+import { startLocationCapture } from '@/src/core/location/liveFix'
 import { removePhotoFromDraft } from '@/src/features/draft-submission/hooks/removePhotoFromDraft'
 import {
   acceptsNewPhotos,
@@ -58,6 +63,15 @@ interface CapturedPhotoWorkflowOptions {
    * its ready flag, because flipping rebinds the session.
    */
   onBeforeFlip?: () => void
+}
+
+interface RunCaptureOptions {
+  /** Takes and persists the photo(s). A throw is reported as a failure. */
+  capture: () => Promise<void>
+  /** Backend telemetry fields added to the failure event. */
+  failureProps: () => Record<string, unknown>
+  /** Prefix for the failure console log. */
+  logTag: string
 }
 
 export function useCapturedPhotoWorkflow({
@@ -193,6 +207,50 @@ export function useCapturedPhotoWorkflow({
     }
   }, [])
 
+  const [isTakingPhoto, setIsTakingPhoto] = useState(false)
+  // Mirrors isTakingPhoto so a capture callback can read it without listing
+  // state it sets itself as a dependency, which recreated the callback twice
+  // per capture and re-rendered the shutter.
+  const isTakingPhotoRef = useRef(false)
+
+  /**
+   * Runs one capture sequence. Callers check their own readiness first; this
+   * owns the shared lifecycle so the two backends cannot drift.
+   */
+  const runCapture = useCallback(
+    async ({ capture, failureProps, logTag }: RunCaptureOptions) => {
+      if (isTakingPhotoRef.current) return
+      if (isAtPhotoLimit()) {
+        showPhotoLimitReached()
+        return
+      }
+      isTakingPhotoRef.current = true
+      setIsTakingPhoto(true)
+      triggerFlash()
+      try {
+        await capture()
+      } catch (error) {
+        console.error(`[${logTag}] capture:`, error)
+        captureEvent(EVENTS.PHOTO_CAPTURE_FAILED, {
+          error: error instanceof Error ? error.message : String(error),
+          ...failureProps(),
+        })
+      } finally {
+        isTakingPhotoRef.current = false
+        setIsTakingPhoto(false)
+        void flushGallerySaves()
+      }
+    },
+    [flushGallerySaves, triggerFlash],
+  )
+
+  const hasStartedLocationCapture = useRef(false)
+  useEffect(() => {
+    if (!canCapture || hasStartedLocationCapture.current) return
+    hasStartedLocationCapture.current = true
+    void startLocationCapture()
+  }, [canCapture])
+
   const handleDiscardPhoto = useCallback((localId: string) => {
     setCapturedPhotos((prev) => prev.filter((p) => p.local_id !== localId))
     removePhotoFromDraft(localId)
@@ -263,10 +321,12 @@ export function useCapturedPhotoWorkflow({
     position,
     flipCamera,
     flashOverlayStyle,
-    triggerFlash,
     persistCapturedPhoto,
     startPhotoUpload,
     flushGallerySaves,
+    isTakingPhoto,
+    isTakingPhotoRef,
+    runCapture,
     handleDone,
     handleClose,
   }
