@@ -6,6 +6,14 @@
  * since types/ must not depend on hooks/.
  */
 
+/** Where a photo's time came from (ADR-0003, 2026-11-24). */
+export type PhotoTimeSource = 'capture' | 'exif' | 'manual' | 'unknown'
+
+/** One photo's time. `time` (ISO) is absent only when the source is `unknown`. */
+export type PhotoTime =
+  | { time_source: Exclude<PhotoTimeSource, 'unknown'>; time: string }
+  | { time_source: 'unknown'; time?: undefined }
+
 export interface SubmissionApiPayload {
   submission: {
     report_injured?: boolean
@@ -51,6 +59,9 @@ export interface SubmissionApiPayload {
   photo_paths: string[]
   /** JPEG/DNG pairs. DNGs stay out of photo_paths for existing consumers. */
   photo_pairs?: { jpeg_path: string; dng_path: string }[]
+  /** Each photo's own time, keyed by cloud_storage_path (ADR-0003). The
+   * only durable copy: Storage metadata carries none. */
+  photo_times: ({ path: string } & PhotoTime)[]
   /** GPS fix captured at photo-take time, keyed by cloud_storage_path. Omitted entries have no fix. */
   photo_locations?: { path: string; latitude: number; longitude: number }[]
 }

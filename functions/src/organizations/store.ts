@@ -488,10 +488,8 @@ export async function eraseOrganizationData(uid: string) {
   }
   for (const collection of ['states', 'mutations'])
     await db().recursiveDelete(accountRef(uid).collection(collection))
-  // TODO: erasure policy for pin comments and reactions: keep them, but
-  // redact the author's user info. Today `pinComments` and `pinReactions`
-  // still hold `authorUid` after erasure; replace it with a non-identifying
-  // value. Readers already show a non-member author without a name.
+  // Pin comments and reactions: erasure/adapters.ts runs
+  // redactErasedAuthor after this, once writes are blocked (LOGIC-6).
   // Keep only a write-denial tombstone; it contains no names, contacts or Sightings.
   await accountRef(uid).set({ deleting: true })
 }

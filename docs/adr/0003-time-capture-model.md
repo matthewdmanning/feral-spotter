@@ -29,3 +29,13 @@ The **Library pick** entrypoint (sprint:camera, #104) breaks that equivalence �
 
 _2026-11-01: code paths updated for the feature-folder layout ([PROJECT_STRUCTURE.md](../PROJECT_STRUCTURE.md)). Decision unchanged._
 _2026-11-10: `submitted_at` path and user-id wording corrected to match code. Decision unchanged._
+
+## 2026-11-24 amendment: per-photo time, `unknown` when absent (LOGIC-1, LOGIC-4)
+
+Supersedes the "one Submission time" premise and the `submitted_at` / validation-gate claims above, which did not match the code.
+
+- **Every photo carries its own time** in `metadata.json` `photo_times: {path, time_source, time?}[]` (`buildSubmissionPayload`, `features/draft-submission/lib/payload.ts`). Source order: camera shutter (`capture`) → own EXIF `DateTime` (`exif`) → the user's `manual_time` (`manual`) → `unknown` (no `time`). Never another photo's time; never the submit moment.
+- **No submit gate.** A Library photo without EXIF time may be submitted; it is recorded `unknown`. Submission Details shows "Time unknown" until the user picks a time, so an unset time no longer reads as today.
+- **`metadata.json` is the single durable record of photo time.** The post-upload Storage-metadata patch (`finalizeSubmissionPhotoMetadata`) no longer writes `photo_time`; a failed patch loses no time.
+- `submitted_at` lives only in the local history row; it is not uploaded and is not a sighting time.
+- Draft-level `time_type` / `captured_at` / `manual_time` remain on `submission` for the warning icon and history; a Library photo removal reclassifies them over the remaining pool, and an emptied pool resets them to `device` (LOGIC-2).

@@ -168,13 +168,18 @@ export async function discardUnsurvivingDraft(
   const sendStarted = row != null && row.status !== 'In Progress'
 
   // A cat-only draft (Just Describe, #503) has an undated pool; its row
-  // dates it instead.
+  // dates it instead. A photo draft takes the later of its pool and row
+  // dates: the row also moves on cat and box edits (LOGIC-3). An undated
+  // pool still cannot be dated safely.
   const hasCats = useSubmissionStore.getState().cats.length > 0
+  const rowChange = row ? Date.parse(row.updated_at) : NaN
   const lastChange =
     photos.length > 0
-      ? updated_at
+      ? updated_at != null && Number.isFinite(rowChange)
+        ? Math.max(updated_at, rowChange)
+        : updated_at
       : hasCats && row
-        ? Date.parse(row.updated_at)
+        ? rowChange
         : null
   const survives =
     Number.isFinite(lastChange ?? NaN) &&
@@ -229,7 +234,8 @@ export type SubmitOutcome =
   | { kind: 'busy' }
   | { kind: 'incomplete'; messages: string[] }
   | { kind: 'sharing-unconfirmed'; message: string }
-  | { kind: 'uploads-unfinished' }
+  /** `refusal` is the server's reason when it refused an upload grant. */
+  | { kind: 'uploads-unfinished'; refusal?: string }
   | { kind: 'superseded' }
   | { kind: 'failed' }
 
@@ -280,7 +286,10 @@ export async function submitDraft(): Promise<SubmitOutcome> {
     const uploads = await whenUploadsSettled(UPLOAD_WAIT_TIMEOUT_MS)
     if (uploads !== 'uploaded') {
       console.error('[draft] uploads', uploads)
-      return { kind: 'uploads-unfinished' }
+      const refusal = usePhotoStore
+        .getState()
+        .photos.find((p) => !p.uploaded && p.upload_refusal)?.upload_refusal
+      return { kind: 'uploads-unfinished', ...(refusal && { refusal }) }
     }
     if (usePhotoStore.getState().submissionId !== startedFor) {
       return { kind: 'superseded' }

@@ -14,6 +14,10 @@ import {
   deletePhotoUploads,
 } from '@/src/features/draft-submission/lib/upload/draftUploads'
 import { deleteSubmissionPhoto } from '@/src/features/draft-submission/lib/upload/firebaseUpload'
+import {
+  classifyLibraryPickTime,
+  parseExifDateTime,
+} from '@/src/shared/utils/libraryPickTime'
 
 export function removePhotoFromDraft(localId: string): void {
   const photo = usePhotoStore
@@ -43,4 +47,24 @@ export function removePhotoFromDraft(localId: string): void {
   useBoundingBoxStore.getState().removeBoxesForPhoto(localId)
   useSubmissionStore.getState().forgetPhoto(localId)
   usePhotoStore.getState().removePhoto(localId)
+  rederiveSourceMetadata()
+}
+
+/**
+ * LOGIC-2: draft-level location and time follow the pool. An empty pool
+ * resets them to device, so a camera continuation takes the Live fix. A
+ * Library removal reclassifies time over the photos that remain.
+ */
+function rederiveSourceMetadata(): void {
+  const { photos, source } = usePhotoStore.getState()
+  const submissionStore = useSubmissionStore.getState()
+  if (photos.length === 0) {
+    submissionStore.resetSourceMetadata()
+  } else if (source === 'library') {
+    submissionStore.setLibraryTime(
+      classifyLibraryPickTime(
+        photos.map((p) => parseExifDateTime(p.exif?.timestamp)),
+      ),
+    )
+  }
 }

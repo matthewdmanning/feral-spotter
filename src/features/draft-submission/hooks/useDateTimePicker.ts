@@ -21,12 +21,13 @@ export interface DateTimePickerState {
 }
 
 export function useDateTimePicker(
-  value: Date,
+  value: Date | undefined,
   mode: PickerMode,
   onChange: (date: Date) => void,
 ): DateTimePickerState {
   const [show, setShow] = useState(false)
-  const [tempDate, setTempDate] = useState(value)
+  // An unset value opens the picker at now; only a confirm sets it.
+  const [tempDate, setTempDate] = useState(() => value ?? new Date())
   const [currentMode, setCurrentMode] = useState<StepMode>(
     mode === 'datetime' ? 'date' : mode,
   )
@@ -36,7 +37,7 @@ export function useDateTimePicker(
   // Android's time dialog used to leave the next open on the time step with
   // the cancelled date.
   const open = () => {
-    setTempDate(value)
+    setTempDate(value ?? new Date())
     setCurrentMode(firstStep)
     setShow(true)
   }
@@ -67,7 +68,7 @@ export function useDateTimePicker(
   }
 
   const handleCancel = () => {
-    setTempDate(value)
+    setTempDate(value ?? new Date())
     setShow(false)
     setCurrentMode(mode === 'datetime' ? 'date' : mode)
   }

@@ -61,12 +61,18 @@ function report(outcome: SubmitOutcome): void {
     case 'sharing-unconfirmed':
       showError(submissionCopy.alerts.sharingUnconfirmedTitle, outcome.message)
       return
-    case 'uploads-unfinished':
+    case 'uploads-unfinished': {
+      // LOGIC-5: a refused grant says why, not "still uploading".
+      const refused =
+        outcome.refusal && submissionCopy.alerts.uploadRefused[outcome.refusal]
       showError(
-        submissionCopy.alerts.uploadStalledTitle,
-        submissionCopy.alerts.uploadStalled,
+        refused
+          ? submissionCopy.alerts.uploadRefusedTitle
+          : submissionCopy.alerts.uploadStalledTitle,
+        refused || submissionCopy.alerts.uploadStalled,
       )
       return
+    }
     case 'failed':
       showError(submissionCopy.alerts.failedTitle, submissionCopy.alerts.failed)
       return

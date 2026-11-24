@@ -2,7 +2,8 @@ import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import { getFirestore } from 'firebase-admin/firestore'
 import { createInvite, moderateMembership } from '../membership/service'
-import { applyAuthorExit } from '../interactions/store'
+import { applyAuthorExit, ERASED_AUTHOR_UID } from '../interactions/store'
+import { createStorageSubmissionStore } from '../../erasure/adapters'
 import { COMMENT_LIMIT, COMMENT_PAGE_SIZE } from '../interactions/domain'
 import {
   call,
@@ -94,7 +95,14 @@ const machine = createMachine({
         AUTHOR_LEAVES: 'authorGone',
       },
     },
-    reacted: { on: { UNREACT: 'commented', UNSHARE_PIN: 'unshared' } },
+    reacted: {
+      on: {
+        UNREACT: 'commented',
+        UNSHARE_PIN: 'unshared',
+        ACCOUNT_ERASED: 'accountErased',
+      },
+    },
+    accountErased: {},
     unshared: {},
     authorGone: { on: { DELETE_POLICY_APPLIED: 'authorErased' } },
     authorErased: {},
@@ -173,6 +181,20 @@ const testParams = {
       expect((await commentsFor(reader)).comments).toEqual([])
       expect(await storedForPin('pinComments')).toBe(0)
     },
+    // LOGIC-6: the comment stays with its author redacted; reactions go.
+    accountErased: async () => {
+      expect((await commentsFor(reader)).comments).toEqual([
+        expect.objectContaining({ id: commentId, author: null, mine: false }),
+      ])
+      const stored = await getFirestore()
+        .collection('pinComments')
+        .where('pinId', '==', pinId)
+        .get()
+      expect(stored.docs.map((doc) => doc.get('authorUid'))).toEqual([
+        ERASED_AUTHOR_UID,
+      ])
+      expect(await storedForPin('pinReactions')).toBe(0)
+    },
   },
   events: {
     COMMENT: async () => {
@@ -230,6 +252,10 @@ const testParams = {
       moderateMembership(author.uid, organizationId, 'remove'),
     DELETE_POLICY_APPLIED: () =>
       applyAuthorExit('delete', author.uid, organizationId),
+    ACCOUNT_ERASED: () =>
+      createStorageSubmissionStore(
+        'erasure-test',
+      ).deleteUserOrganizationPermissions(author.uid),
   },
 }
 
@@ -245,6 +271,10 @@ const journeys = [
   {
     name: 'a departed author stays unnamed until the delete policy is applied',
     events: ['COMMENT', 'AUTHOR_LEAVES', 'DELETE_POLICY_APPLIED'],
+  },
+  {
+    name: 'an erased author’s comment stays unnamed and their reactions go',
+    events: ['COMMENT', 'REACT', 'ACCOUNT_ERASED'],
   },
 ]
 

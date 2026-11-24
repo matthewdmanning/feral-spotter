@@ -147,12 +147,18 @@ describe('discardUnsurvivingDraft (#424)', () => {
       }
     })
 
-    const startup = discardUnsurvivingDraft(NOW, () => {
-      expect(oldFile.exists).toBe(true)
-      usePhotoStore
-        .getState()
-        .addPhoto(submissionPhoto({ local_id: 'photo-new', uri: newFile.uri }))
-    })
+    // Past the window for both the pool and the row (LOGIC-3).
+    const startup = discardUnsurvivingDraft(
+      Date.now() + SUBMISSION_STALE_MS + HOUR_MS,
+      () => {
+        expect(oldFile.exists).toBe(true)
+        usePhotoStore
+          .getState()
+          .addPhoto(
+            submissionPhoto({ local_id: 'photo-new', uri: newFile.uri }),
+          )
+      },
+    )
 
     await deleteStarted.promise
     expect(usePhotoStore.getState().photos.map((p) => p.local_id)).toEqual([
@@ -195,6 +201,19 @@ describe('discardUnsurvivingDraft (#424)', () => {
       expect(useSubmissionStore.getState().cats).toHaveLength(catsLeft)
     },
   )
+
+  // LOGIC-3: cat and box edits move the row, not the pool. A worked-on
+  // draft whose last photo change is old used to be discarded at launch.
+  it('keeps a photo draft whose pool is stale but whose row is fresh', async () => {
+    seedDraft(Date.now() - SUBMISSION_STALE_MS - HOUR_MS)
+    await createSubmissionCache(CACHE_ID, {
+      location_method: 'device',
+      time_method: 'device',
+    })
+    await discardUnsurvivingDraft(Date.now() + HOUR_MS)
+    expect(usePhotoStore.getState().photos).toHaveLength(1)
+    expect(deleteSubmissionUploads).not.toHaveBeenCalled()
+  })
 
   it('discards an undated pool even when its current cache row is fresh', async () => {
     seedDraft(null)

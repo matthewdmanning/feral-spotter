@@ -160,11 +160,10 @@ export default function CreateSubmissionScreen() {
                 color={theme.colors.warning}
               />
               <DateTimePickerButton
-                value={
-                  submission.manual_time
-                    ? new Date(submission.manual_time)
-                    : new Date()
-                }
+                // Shown only while unset (draftWarnings), so it reads
+                // "Time unknown", never today's date (LOGIC-1).
+                value={undefined}
+                emptyLabel={submissionCopy.time.unknown}
                 onChange={handleManualTimeChange}
                 label=""
                 maximumDate={new Date()}

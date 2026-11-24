@@ -23,6 +23,7 @@ import { setConsent } from '@/src/test-utils/consent'
 import { isDraftBusy } from '@/src/features/draft-submission/lib/draft'
 import { pressDialogButton } from '@/src/test-utils/dialog'
 import { submissionPhoto } from '@/src/test-utils/photoFixtures'
+import { submissionCopy } from '@/src/shared/config/text'
 
 jest.mock('expo-router', () => ({
   router: {
@@ -184,10 +185,10 @@ describe('useSubmissionSubmit submit flow', () => {
     expect(mockStopLocationCapture).toHaveBeenCalled()
   })
 
-  // #264 amendment to ADR-0002/ADR-0003: each photo's own Storage object must
-  // carry location/time/upload-time/hashed-uid, not just metadata.json — and,
-  // for a camera capture, the camera settings it was taken with.
-  it('finalizes each uploaded photo with the hashed uid, submission location, captured_at and camera config', async () => {
+  // #264 amendment to ADR-0002: each photo's own Storage object carries
+  // location/upload-time/uid and, for a camera capture, its camera settings.
+  // Time is not patched there (ADR-0003, 2026-11-24): metadata.json holds it.
+  it('finalizes each uploaded photo with the uid, submission location and camera config', async () => {
     const cameraConfig = {
       backend: 'camerax',
       capture_mode: 'maximize_quality',
@@ -223,96 +224,14 @@ describe('useSubmissionSubmit submit flow', () => {
     expect(finalizeSubmissionPhotoMetadata).toHaveBeenCalledWith(
       'gs://bucket/uploaded.jpg',
       'uid-owner',
-      '2026-08-01T10:00:00.000Z',
       12.5,
       -45.5,
       cameraConfig,
     )
   })
 
-  it("prefers a photo's own captured_at over the submission-wide fallback", async () => {
-    useSubmissionStore.setState({
-      submission: {
-        location_type: 'device',
-        time_type: 'device',
-        captured_at: '2026-08-01T10:00:00.000Z',
-      },
-    })
-    usePhotoStore.setState({
-      photos: [
-        photo({
-          local_id: 'photo-uploaded',
-          uploaded: true,
-          cloud_storage_path: 'gs://bucket/uploaded.jpg',
-          cloud_storage_url: 'https://cdn/uploaded.jpg',
-          captured_at: '2026-08-01T09:45:00.000Z',
-        }),
-      ],
-    })
-    jest.mocked(uploadSubmissionMetadata).mockResolvedValue(undefined)
-
-    const { result } = await renderHook(() => useSubmissionSubmit())
-
-    await act(() => result.current.handleDone())
-    await pressDialogButton('Submit')
-
-    expect(finalizeSubmissionPhotoMetadata).toHaveBeenCalledWith(
-      'gs://bucket/uploaded.jpg',
-      'uid-owner',
-      '2026-08-01T09:45:00.000Z',
-      undefined,
-      undefined,
-      undefined,
-    )
-  })
-
-  // ADR-0003's multi-select rule folds a Library pick batch's *earliest*
-  // EXIF time into submission.captured_at — correct at submission
-  // granularity, wrong if stamped onto every photo (every photo but the
-  // earliest gets someone else's capture time). Each photo's own EXIF must
-  // win instead.
-  it("prefers a Library pick's own parsed EXIF time over the submission-wide earliest", async () => {
-    useSubmissionStore.setState({
-      submission: {
-        location_type: 'pin',
-        time_type: 'device',
-        captured_at: '2026-08-01T09:00:00.000Z',
-      },
-    })
-    usePhotoStore.setState({
-      photos: [
-        photo({
-          local_id: 'photo-later',
-          uploaded: true,
-          cloud_storage_path: 'gs://bucket/later.jpg',
-          cloud_storage_url: 'https://cdn/later.jpg',
-          exif: { timestamp: '2026:08:01 09:30:00' },
-        }),
-      ],
-    })
-    jest.mocked(uploadSubmissionMetadata).mockResolvedValue(undefined)
-
-    const { result } = await renderHook(() => useSubmissionSubmit())
-
-    await act(() => result.current.handleDone())
-    await pressDialogButton('Submit')
-
-    expect(finalizeSubmissionPhotoMetadata).toHaveBeenCalledWith(
-      'gs://bucket/later.jpg',
-      'uid-owner',
-      // EXIF DateTime has no timezone — parseExifDateTime treats it as
-      // local time, same convention as libraryPickTime.test.ts, so the
-      // expectation must be built the same way rather than a hardcoded UTC
-      // literal (which only matches on a UTC test runner).
-      new Date('2026-08-01T09:30:00').toISOString(),
-      undefined,
-      undefined,
-      // A Library pick carries no camera config.
-      undefined,
-    )
-  })
-
-  it('still uploads metadata.json and does not fail the submission when finalizing one photo rejects', async () => {
+  // LOGIC-4: a failed Storage-metadata patch must not lose the photo's time.
+  it("keeps each photo's time in metadata.json when finalizing one photo rejects", async () => {
     usePhotoStore.setState({
       photos: [
         photo({
@@ -320,12 +239,14 @@ describe('useSubmissionSubmit submit flow', () => {
           uploaded: true,
           cloud_storage_path: 'gs://bucket/a.jpg',
           cloud_storage_url: 'https://cdn/a.jpg',
+          captured_at: '2026-08-01T09:45:00.000Z',
         }),
         photo({
           local_id: 'photo-b',
           uploaded: true,
           cloud_storage_path: 'gs://bucket/b.jpg',
           cloud_storage_url: 'https://cdn/b.jpg',
+          captured_at: '2026-08-01T09:46:00.000Z',
         }),
       ],
     })
@@ -340,7 +261,20 @@ describe('useSubmissionSubmit submit flow', () => {
     await act(() => result.current.handleDone())
     await pressDialogButton('Submit')
 
-    expect(uploadSubmissionMetadata).toHaveBeenCalled()
+    expect(
+      jest.mocked(uploadSubmissionMetadata).mock.calls[0][0].photo_times,
+    ).toEqual([
+      {
+        path: 'gs://bucket/a.jpg',
+        time_source: 'capture',
+        time: '2026-08-01T09:45:00.000Z',
+      },
+      {
+        path: 'gs://bucket/b.jpg',
+        time_source: 'capture',
+        time: '2026-08-01T09:46:00.000Z',
+      },
+    ])
     expect(useUIStore.getState().dialog?.title).not.toBe('Sighting Failed')
     expect(isDraftBusy()).toBe(false)
   })
@@ -530,6 +464,44 @@ describe('useSubmissionSubmit submit flow', () => {
     // Nothing was sent, and the cats survive for the next attempt.
     expect(uploadSubmissionMetadata).not.toHaveBeenCalled()
     expect(useSubmissionStore.getState().cats).toHaveLength(1)
+  })
+
+  // LOGIC-5: a refused upload grant used to read as a generic stall, so
+  // nothing said that waiting, or verifying an email, was the cure.
+  it('names the refusal reason when the server refused the upload grant', async () => {
+    usePhotoStore.setState({
+      photos: [
+        photo({
+          local_id: 'photo-refused',
+          uploaded: false,
+          upload_refusal: 'too_many_open_submissions',
+        }),
+      ],
+    })
+    jest.useFakeTimers()
+    jest.spyOn(console, 'error').mockImplementation(() => {})
+    const errorSpy = jest.spyOn(ui, 'showError').mockImplementation(() => {})
+
+    const { result } = await renderHook(() => useSubmissionSubmit())
+
+    try {
+      await act(async () => {
+        result.current.handleDone()
+        const submit = useUIStore
+          .getState()
+          .dialog?.buttons.find((b) => b.text === 'Submit')
+        const sending = submit!.onPress!() as unknown as Promise<void>
+        await jest.advanceTimersByTimeAsync(31_000)
+        await sending
+      })
+    } finally {
+      jest.useRealTimers()
+    }
+
+    expect(errorSpy).toHaveBeenCalledWith(
+      submissionCopy.alerts.uploadRefusedTitle,
+      submissionCopy.alerts.uploadRefused.too_many_open_submissions,
+    )
   })
 
   it('tells the user the Submission is saved and how to retry when the send fails, without the raw error', async () => {

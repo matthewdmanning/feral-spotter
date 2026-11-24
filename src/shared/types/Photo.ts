@@ -40,6 +40,11 @@ export interface SubmissionPhoto {
   raw_cloud_storage_path?: string
   /** Download URL for the paired DNG, once both files upload. */
   raw_cloud_storage_url?: string
+  /**
+   * The server's reason for refusing this photo's last upload grant, e.g.
+   * `quota_exceeded` (LOGIC-5). Cleared when an upload succeeds.
+   */
+  upload_refusal?: string
   /** How the camera was set for this capture. Camera captures only. */
   camera_config?: PhotoCameraConfig
 }

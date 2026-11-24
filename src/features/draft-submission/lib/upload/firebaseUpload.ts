@@ -300,11 +300,12 @@ export async function uploadSubmissionMetadata(
 
 /**
  * Backfills a photo's Storage object with the submission's finalized
- * location/time, its own upload time, and the owning user id — set at
- * Submit, once those values are settled, not at initial upload. Images are
+ * location, its own upload time, and the owning user id — set at Submit,
+ * once those values are settled, not at initial upload. Images are
  * consumed separately from metadata.json downstream (ML pipeline export),
  * so each object must be self-describing on its own (#264 amendment to
- * ADR-0002/ADR-0003).
+ * ADR-0002). Photo time is not written here: metadata.json's `photo_times`
+ * is its one durable record (ADR-0003, 2026-11-24).
  *
  * upload_time is read back from the object's own `timeCreated` (the actual
  * moment the bytes landed, set by Storage itself) rather than "now" — this
@@ -317,7 +318,6 @@ export async function uploadSubmissionMetadata(
 export async function finalizeSubmissionPhotoMetadata(
   objectPath: string,
   userId: string,
-  photoTime: string,
   latitude?: number,
   longitude?: number,
   cameraConfig?: PhotoCameraConfig,
@@ -339,7 +339,6 @@ export async function finalizeSubmissionPhotoMetadata(
     customMetadata: {
       ...existing.customMetadata,
       ...cameraEntries,
-      photo_time: photoTime,
       upload_time: existing.timeCreated,
       user_id: userId,
       ...(latitude != null &&
