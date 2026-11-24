@@ -22,7 +22,10 @@ import {
   submissionPrefix,
   userPrefix,
 } from './submissionLayout'
-import { handleAdmitPhotoUpload } from './uploads/admission'
+import {
+  handleAdmitPhotoUpload,
+  releaseSubmittedGrant,
+} from './uploads/admission'
 import {
   createUploadAdmissionPorts,
   deleteLateErasedUpload,
@@ -121,6 +124,20 @@ export const onSubmissionSubmitted = onObjectFinalized(
     if (await deleteLateErasedUpload(BUCKET_NAME, data.name, data.generation))
       return
     await syncCapForObject(data.name)
+    // LOGIC-5: a sent Submission stops holding one of the open grants.
+    const object = parseSubmissionObject(data.name)
+    if (!object?.isMetadata) return
+    try {
+      await releaseSubmittedGrant(
+        object.uid,
+        object.submissionId,
+        uploadAdmissionPorts,
+      )
+    } catch (error) {
+      // A deleted account holds no claim to update.
+      if ((error as { code?: string }).code === 'auth/user-not-found') return
+      throw error
+    }
   },
 )
 

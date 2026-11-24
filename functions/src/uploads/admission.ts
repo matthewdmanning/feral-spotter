@@ -379,3 +379,50 @@ export async function handleAdmitPhotoUpload(
     throw error
   }
 }
+
+/**
+ * LOGIC-5: use this function to end a Submission's grant once its
+ * metadata.json lands, so a sent Sighting stops counting toward
+ * MAX_GRANTED_SUBMISSIONS. Its reservation stays: a late resumable finish
+ * is still counted. Returns null when no live grant is held.
+ */
+export function releaseGrant(
+  ledger: PersonLedger,
+  uid: string,
+  submissionId: string,
+  now: number,
+): PersonLedger | null {
+  const grant = ledger.grants[uid]?.[submissionId]
+  if (!grant || grant.e <= now) return null
+  return {
+    ...ledger,
+    grants: {
+      ...ledger.grants,
+      [uid]: { ...ledger.grants[uid], [submissionId]: { ...grant, e: now } },
+    },
+  }
+}
+
+/** Use this function when a Submission's metadata.json is finalized. */
+export async function releaseSubmittedGrant(
+  uid: string,
+  submissionId: string,
+  ports: Pick<
+    AdmissionPorts,
+    'index' | 'readLedger' | 'writeLedger' | 'publishGrants' | 'now'
+  >,
+): Promise<void> {
+  const person = await ports.index.read(uidIndexPath(uid))
+  if (!person || person === ERASED_ACCOUNT) return
+  for (let attempt = 0; attempt < LEDGER_WRITE_ATTEMPTS; attempt++) {
+    const { value, generation } = await ports.readLedger(person)
+    const now = ports.now()
+    const next = releaseGrant(value, uid, submissionId, now)
+    if (!next) return
+    if (!(await ports.writeLedger(person, next, generation))) continue
+    await ports.publishGrants(uid, liveGrants(next.grants[uid], now))
+    return
+  }
+  // A lost release only delays the grant's natural end; let the trigger retry.
+  throw new Error('Concurrent ledger update; retry')
+}

@@ -6,6 +6,7 @@ import {
   uploadNewPhoto,
 } from '@/src/features/draft-submission/lib/upload/uploadNewPhoto'
 import { submissionPhoto } from '@/src/test-utils/photoFixtures'
+import { UploadAdmissionError } from '@/src/features/draft-submission/lib/upload/uploadAdmission'
 
 const mockPending: {
   resolve: (value: PhotoUploadResponse) => void
@@ -191,4 +192,32 @@ it('serializes a canceled slot before its replacement can start', async () => {
     raw_cloud_storage_path: undefined,
     raw_cloud_storage_url: undefined,
   })
+})
+
+// LOGIC-5: Submit names why a grant was refused, so the reason must reach
+// the photo. A later success clears it.
+it('records an admission refusal on the photo and clears it on success', async () => {
+  jest.spyOn(console, 'error').mockImplementation(() => {})
+  const updatePhoto = jest.fn()
+
+  uploadNewPhoto(photo(20), 'uid', 'submission', updatePhoto)
+  mockPending
+    .shift()!
+    .reject(new UploadAdmissionError(429, 'too_many_open_submissions'))
+  await drainTasks()
+  expect(updatePhoto).toHaveBeenCalledWith('photo-20', {
+    upload_refusal: 'too_many_open_submissions',
+  })
+
+  uploadNewPhoto(photo(20), 'uid', 'submission', updatePhoto)
+  mockPending.shift()!.resolve({
+    cloud_storage_path: 'photo-20.jpg',
+    cloud_storage_url: 'https://example.com/20.jpg',
+  })
+  await drainTasks()
+  expect(updatePhoto).toHaveBeenLastCalledWith(
+    'photo-20',
+    expect.objectContaining({ uploaded: true, upload_refusal: undefined }),
+  )
+  expect(updatePhoto.mock.lastCall?.[1]).toHaveProperty('upload_refusal')
 })

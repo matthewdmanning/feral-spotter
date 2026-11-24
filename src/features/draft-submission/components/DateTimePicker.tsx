@@ -19,7 +19,9 @@ import { styles } from './DateTimePicker.styles'
 type PickerMode = 'date' | 'time' | 'datetime'
 
 interface DateTimePickerProps {
-  value: Date
+  /** Undefined shows `emptyLabel`: an unset time must not read as set. */
+  value: Date | undefined
+  emptyLabel?: string
   onChange: (date: Date) => void
   mode?: PickerMode
   label?: string
@@ -44,6 +46,7 @@ const formatValue = (date: Date, mode: PickerMode) => {
 
 export function DateTimePickerButton({
   value,
+  emptyLabel = '',
   onChange,
   mode = 'datetime',
   label = 'Select Date & Time',
@@ -51,6 +54,7 @@ export function DateTimePickerButton({
   maximumDate,
 }: DateTimePickerProps) {
   const { theme } = useUnistyles()
+  const valueText = value ? formatValue(value, mode) : emptyLabel
   const {
     show,
     tempDate,
@@ -72,13 +76,11 @@ export function DateTimePickerButton({
         onPress={open}
         style={styles.trigger}
         // The label alone hid the set value from screen readers.
-        accessibilityLabel={[label, formatValue(value, mode)]
-          .filter(Boolean)
-          .join(', ')}
+        accessibilityLabel={[label, valueText].filter(Boolean).join(', ')}
         accessibilityRole="button"
       >
         <Icon size={theme.iconSize.md} color={theme.colors.muted} />
-        <Text style={styles.triggerText}>{formatValue(value, mode)}</Text>
+        <Text style={styles.triggerText}>{valueText}</Text>
       </Pressable>
 
       {/* iOS modal */}

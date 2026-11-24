@@ -96,7 +96,6 @@ describe('Firebase submission upload behavior', () => {
     await finalizeSubmissionPhotoMetadata(
       'submissions/user-4/sub-7/photo.jpg',
       'user-4',
-      '2026-04-01T00:00:00.000Z',
       34.1,
       -82.2,
       // A camera key can never shadow user_id, which storage.rules checks:
@@ -114,7 +113,6 @@ describe('Firebase submission upload behavior', () => {
         keep: 'yes',
         camera_capture_mode: 'zero_shutter_lag',
         camera_user_id: 'someone-else',
-        photo_time: '2026-04-01T00:00:00.000Z',
         upload_time: '2026-04-02T03:04:05.000Z',
         user_id: 'user-4',
         location_lat: '34.1',

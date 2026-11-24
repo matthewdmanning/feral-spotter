@@ -7,6 +7,7 @@ import { retireUploadIdentity } from '../uploads/adapters'
 import { getAuth } from 'firebase-admin/auth'
 import { getStorage } from 'firebase-admin/storage'
 import { eraseOrganizationData } from '../organizations/store'
+import { redactErasedAuthor } from '../organizations/interactions/store'
 import { userPrefix } from '../submissionLayout'
 import type {
   AccountStore,
@@ -56,7 +57,12 @@ export function createStorageSubmissionStore(bucket: string): SubmissionStore {
         .deleteFiles({ prefix: userPrefix(uid) }),
     retireUploadIdentity: (uid, sightingsDeleted) =>
       retireUploadIdentity(bucket, uid, sightingsDeleted),
-    deleteUserOrganizationPermissions: eraseOrganizationData,
+    // Writes are blocked first, so no comment or reaction lands after the
+    // redaction (LOGIC-6).
+    deleteUserOrganizationPermissions: async (uid) => {
+      await eraseOrganizationData(uid)
+      await redactErasedAuthor(uid)
+    },
   }
 }
 

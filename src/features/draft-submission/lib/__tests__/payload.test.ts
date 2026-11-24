@@ -2,7 +2,6 @@ import {
   buildCacheMetadata,
   buildSubmissionPayload,
   foldBoxesIntoCat,
-  resolvePhotoTime,
 } from '@/src/features/draft-submission/lib/payload'
 import type { SubmissionDraft } from '@/src/shared/hooks/useSubmissionStore'
 import type { SubmissionApiPayload, SubmissionPhoto } from '@/src/shared/types'
@@ -100,8 +99,10 @@ describe('foldBoxesIntoCat', () => {
   })
 })
 
-describe('resolvePhotoTime', () => {
-  const fallback = '2026-08-01T12:00:00.000Z'
+// LOGIC-1/LOGIC-4: each photo's own time reaches metadata.json. A Library
+// photo with no EXIF time and no manual time is `unknown`, never "now" and
+// never another photo's time.
+describe('photo_times', () => {
   const basePhoto: SubmissionPhoto = {
     local_id: 'p1',
     uri: 'file://p1.jpg',
@@ -110,41 +111,45 @@ describe('resolvePhotoTime', () => {
     width: 100,
     height: 100,
   }
+  const shutter = '2026-08-01T08:00:00.000Z'
+  const exifIso = new Date('2026-07-15T14:30:00').toISOString()
+  const { manual_time: _manual, ...noManual } = submission
 
-  it("prefers the photo's own captured_at (camera capture) over everything else", () => {
-    const photo = { ...basePhoto, captured_at: '2026-08-01T08:00:00.000Z' }
+  it.each([
+    [
+      'camera shutter time',
+      { captured_at: shutter },
+      submission,
+      { time_source: 'capture', time: shutter },
+    ],
+    [
+      'Library EXIF time',
+      { exif: { timestamp: '2026:07:15 14:30:00' } },
+      submission,
+      { time_source: 'exif', time: exifIso },
+    ],
+    [
+      'manual time for a timeless photo',
+      {},
+      submission,
+      { time_source: 'manual', time: submission.manual_time },
+    ],
+    [
+      'unknown, not the submission-wide captured_at',
+      {},
+      noManual,
+      { time_source: 'unknown' },
+    ],
+  ])('records %s', (_label, photoFields, draft, expected) => {
+    const payload = buildSubmissionPayload({
+      submission: draft,
+      catsWithBoxes: [],
+      uploadedPhotos: [
+        { ...basePhoto, ...photoFields, cloud_storage_path: 'u/s/photo-0' },
+      ],
+    })
 
-    expect(resolvePhotoTime(photo, submission, fallback)).toBe(
-      '2026-08-01T08:00:00.000Z',
-    )
-  })
-
-  it('falls back to the photo EXIF timestamp when captured_at is absent', () => {
-    const photo = {
-      ...basePhoto,
-      exif: { timestamp: '2026:07:15 14:30:00' },
-    }
-
-    expect(resolvePhotoTime(photo, submission, fallback)).toBe(
-      new Date('2026-07-15T14:30:00').toISOString(),
-    )
-  })
-
-  it('falls back to submission.captured_at when the photo has neither', () => {
-    expect(resolvePhotoTime(basePhoto, submission, fallback)).toBe(
-      submission.captured_at,
-    )
-  })
-
-  it('falls back to submission.manual_time when submission.captured_at is unset', () => {
-    const { captured_at: _captured_at, ...rest } = submission
-    expect(resolvePhotoTime(basePhoto, rest, fallback)).toBe(
-      submission.manual_time,
-    )
-  })
-
-  it('falls back to the given fallback time when nothing else resolves', () => {
-    expect(resolvePhotoTime(basePhoto, {}, fallback)).toBe(fallback)
+    expect(payload.photo_times).toEqual([{ path: 'u/s/photo-0', ...expected }])
   })
 })
 

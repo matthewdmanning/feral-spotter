@@ -1,3 +1,4 @@
+import { parseExifDateTime } from '@/src/shared/utils/libraryPickTime'
 import { deleteSubmissionPhoto } from '@/src/features/draft-submission/lib/upload/firebaseUpload'
 import { cancelPhotoUpload } from '@/src/features/draft-submission/lib/upload/uploadNewPhoto'
 import { observedCat } from '@/src/test-utils/catFixtures'
@@ -90,4 +91,64 @@ it('deletes partial pair objects after a DNG failure', async () => {
     'submissions/uid-1/sub-1/photo-1.jpg',
     'submissions/uid-1/sub-1/photo-1.dng',
   )
+})
+
+// LOGIC-2: draft-level location and time must follow the pool. A Library
+// draft emptied and continued from the camera used to keep the old pin and
+// time, so the Live fix was ignored and camera photos took the pin.
+describe('draft location and time after a removal', () => {
+  const exifIso = (raw: string) => parseExifDateTime(raw)
+
+  beforeEach(() => {
+    usePhotoStore.getState().updatePhoto('p1', {
+      exif: { timestamp: '2026:08:01 10:00:00' },
+    })
+    usePhotoStore.getState().updatePhoto('p2', {
+      exif: { timestamp: '2026:08:01 09:00:00' },
+    })
+    const submission = useSubmissionStore.getState()
+    submission.setLocationType('pin')
+    submission.setSubmissionLocation({ latitude: 34.68, longitude: -82.83 })
+    submission.setLibraryTime({
+      time_type: 'device',
+      captured_at: exifIso('2026:08:01 09:00:00'),
+    })
+  })
+
+  it('resets to device location and time when the pool empties', () => {
+    removePhotoFromDraft('p1')
+    removePhotoFromDraft('p2')
+
+    expect(useSubmissionStore.getState().submission).toMatchObject({
+      location_type: 'device',
+      latitude: undefined,
+      longitude: undefined,
+      time_type: 'device',
+      captured_at: undefined,
+      manual_time: undefined,
+    })
+  })
+
+  it('reclassifies time over the Library photos that remain', () => {
+    removePhotoFromDraft('p2')
+
+    expect(useSubmissionStore.getState().submission).toMatchObject({
+      location_type: 'pin',
+      latitude: 34.68,
+      time_type: 'device',
+      captured_at: exifIso('2026:08:01 10:00:00'),
+    })
+  })
+
+  it('leaves manual time once the photo without EXIF time is removed', () => {
+    usePhotoStore.getState().updatePhoto('p2', { exif: undefined })
+    useSubmissionStore.getState().setLibraryTime({ time_type: 'manual' })
+
+    removePhotoFromDraft('p2')
+
+    expect(useSubmissionStore.getState().submission).toMatchObject({
+      time_type: 'device',
+      captured_at: exifIso('2026:08:01 10:00:00'),
+    })
+  })
 })
