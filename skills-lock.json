@@ -1,11 +1,23 @@
 {
   "version": 1,
   "skills": {
+    "agent-workflow": {
+      "source": "sharpdeveye/maestro",
+      "sourceType": "github",
+      "skillPath": "source/skills/agent-workflow/SKILL.md",
+      "computedHash": "ca76cfe43ffb0c9686513715a80dae9cb17e6552768adb891a5d566aa3264a5f"
+    },
     "android-cli": {
       "source": "android/skills",
       "sourceType": "github",
       "skillPath": "devtools/android-cli/SKILL.md",
       "computedHash": "1197759e24bcabbe7e2111b51a46f04f95866c65f3dc906ded53384e3b239e81"
+    },
+    "calibrate": {
+      "source": "sharpdeveye/maestro",
+      "sourceType": "github",
+      "skillPath": "source/skills/calibrate/SKILL.md",
+      "computedHash": "26be231da68ef2ad45a04af18956916c19d43350aef6769d4471a9f58d8bc16f"
     },
     "camerax": {
       "source": "android/skills",
@@ -13,11 +25,29 @@
       "skillPath": "camera/camerax/SKILL.md",
       "computedHash": "d61c2d99e7403b7d22da3f673809c607d93e75b9b2e23038752e022f50834977"
     },
+    "capture": {
+      "source": "sharpdeveye/maestro",
+      "sourceType": "github",
+      "skillPath": "source/skills/capture/SKILL.md",
+      "computedHash": "df6768adcb3ba109d4d7e579077e244947f1530a7c85aa34d447f35626210d43"
+    },
+    "chain": {
+      "source": "sharpdeveye/maestro",
+      "sourceType": "github",
+      "skillPath": "source/skills/chain/SKILL.md",
+      "computedHash": "d85c02862384eb9a6249064cbace519b6661c80720e44d57ec6c7d92f7341d12"
+    },
     "codebase-design": {
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/codebase-design/SKILL.md",
       "computedHash": "b2888e4f4e8c0af3bfd557575a64b905c44e6248c3101d72077816882b3a92b9"
+    },
+    "diagnose": {
+      "source": "sharpdeveye/maestro",
+      "sourceType": "github",
+      "skillPath": "source/skills/diagnose/SKILL.md",
+      "computedHash": "7cf8202f14499a48f62a9dddb62bf64ebd2b42f8d796e32cd4732b964d54e08c"
     },
     "diagnosing-bugs": {
       "source": "mattpocock/skills",
@@ -37,17 +67,23 @@
       "skillPath": "system/edge-to-edge/SKILL.md",
       "computedHash": "7db3c09f145f5bad71b09da526dad46cb8b2ace56e62e87aa2ca7e81a0b4790e"
     },
+    "enrich": {
+      "source": "sharpdeveye/maestro",
+      "sourceType": "github",
+      "skillPath": "source/skills/enrich/SKILL.md",
+      "computedHash": "d64447334c56ad96b11c5f97b1d1a53890ca707d800e31f5639201bea3b9753e"
+    },
+    "evaluate": {
+      "source": "sharpdeveye/maestro",
+      "sourceType": "github",
+      "skillPath": "source/skills/evaluate/SKILL.md",
+      "computedHash": "9027d67ec62844d386b1750da1d303ac64b283ac41c73073219118422cb8de17"
+    },
     "expo-dev-client": {
       "source": "expo/skills",
       "sourceType": "github",
       "skillPath": "plugins/expo/skills/expo-dev-client/SKILL.md",
       "computedHash": "9560a3f40e699af7b3317dbd3887cca646901d6addf7d78eb9429922e2d3baf3"
-    },
-    "expo-module": {
-      "source": "expo/skills",
-      "sourceType": "github",
-      "skillPath": "plugins/expo/skills/expo-module/SKILL.md",
-      "computedHash": "483804366dbb56ad4912596fe0d1de04b4ef06795690c8ec51e0f7c413c9bef9"
     },
     "expo-native-ui": {
       "source": "expo/skills",
@@ -67,11 +103,11 @@
       "skillPath": "skills/extension-to-functions-codebase/SKILL.md",
       "computedHash": "c64b38c4eb77c3f58c01d29475bd194c4d158e7db8fe50f6c9aee401ce4248db"
     },
-    "firebase-ai-logic-basics": {
-      "source": "firebase/agent-skills",
+    "finding-google-skills": {
+      "source": "google/skills",
       "sourceType": "github",
-      "skillPath": "skills/firebase-ai-logic-basics/SKILL.md",
-      "computedHash": "0c486d8e316cb2d8d2acf04dc66b1f40f8dd046c363ad3c8c7a880057bab7493"
+      "skillPath": "skills/developers/finding-google-skills/SKILL.md",
+      "computedHash": "30231eec4ea53084d2a69440b91974b0c28d1d695875a580933f5834363aa8bd"
     },
     "firebase-app-hosting-basics": {
       "source": "firebase/agent-skills",
@@ -90,12 +126,6 @@
       "sourceType": "github",
       "skillPath": "skills/firebase-basics/SKILL.md",
       "computedHash": "c8e43fcf8fe0c09e033d29f4b915b6b07c8b315a3ff3e8121f4b74132174af39"
-    },
-    "firebase-crashlytics": {
-      "source": "firebase/agent-skills",
-      "sourceType": "github",
-      "skillPath": "skills/firebase-crashlytics/SKILL.md",
-      "computedHash": "c36ad50c31d1ef4f81eb64907fcf5020a81d5f8b3f89abe02953d0f9d8a9fac6"
     },
     "firebase-data-connect": {
       "source": "firebase/agent-skills",
@@ -127,6 +157,18 @@
       "skillPath": "skills/firebase-security-rules-auditor/SKILL.md",
       "computedHash": "3f3b4207c2a0243fce4395c4c6597c1811d2d9890274045ec6554e298d7246ba"
     },
+    "fortify": {
+      "source": "sharpdeveye/maestro",
+      "sourceType": "github",
+      "skillPath": "source/skills/fortify/SKILL.md",
+      "computedHash": "1b533917d4548ebc84b528dd1491f7e93d64a091e268b0c465fbde0b9036c24b"
+    },
+    "gcloud": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "skillPath": "skills/cloud/gcloud/SKILL.md",
+      "computedHash": "be765cc61e96d486f64269c233b3fc22f784dd55f0f1522e5f480194e607a57b"
+    },
     "grill-me": {
       "source": "mattpocock/skills",
       "sourceType": "github",
@@ -139,11 +181,29 @@
       "skillPath": "skills/engineering/grill-with-docs/SKILL.md",
       "computedHash": "35e62aa423aaeab6a414bcac273f56dfb17802ef2334b41b6a3b00f28196c8cf"
     },
+    "guard": {
+      "source": "sharpdeveye/maestro",
+      "sourceType": "github",
+      "skillPath": "source/skills/guard/SKILL.md",
+      "computedHash": "0ac80a73a0abb650feb8a260fc99fd264bbd31f245e637a72b6a868377ca2169"
+    },
     "handoff": {
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/productivity/handoff/SKILL.md",
       "computedHash": "8ebcf017c0a59681f3c2f1ebf90e32f481954a068181a75151c44aa2c55de4b4"
+    },
+    "iam-helper-for-policy-management": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "skillPath": "skills/cloud/iam-helper-for-policy-management/SKILL.md",
+      "computedHash": "f8e2efdd198e386908f8362d020b4ff2e764db5012ce16c9716d0985e8165368"
+    },
+    "iam-helper-for-troubleshooting": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "skillPath": "skills/cloud/iam-helper-for-troubleshooting/SKILL.md",
+      "computedHash": "3b3bd99b0a72265520883482b2227525fcde2f82ae7df7a3fe10b243db65ffe5"
     },
     "improve-codebase-architecture": {
       "source": "mattpocock/skills",
@@ -151,11 +211,35 @@
       "skillPath": "skills/engineering/improve-codebase-architecture/SKILL.md",
       "computedHash": "ac2c94885f34ff8492dc12aa4543182f661f32ea1722b8d6b6c2c7045af33ae3"
     },
+    "onboard-agent": {
+      "source": "sharpdeveye/maestro",
+      "sourceType": "github",
+      "skillPath": "source/skills/onboard-agent/SKILL.md",
+      "computedHash": "ebfaf4fd6266f0929a04db3b5c0d44302c0395dd81fff793e32cc7b693fa0a06"
+    },
     "prototype": {
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/prototype/SKILL.md",
       "computedHash": "d3fc74689bd993e39c44bfae510d014eecffbeec2922764b065377fd1327c0f6"
+    },
+    "recap": {
+      "source": "sharpdeveye/maestro",
+      "sourceType": "github",
+      "skillPath": "source/skills/recap/SKILL.md",
+      "computedHash": "b9f43c4cfbe6a86f075900f1f8d032941452c9c31610ffd4a0569fb17a5aa8b1"
+    },
+    "refine": {
+      "source": "sharpdeveye/maestro",
+      "sourceType": "github",
+      "skillPath": "source/skills/refine/SKILL.md",
+      "computedHash": "22baa11f1af99662ee5cf0546c87dfacc121aabc02e5882dfd24e365e11fe381"
+    },
+    "reflect": {
+      "source": "sharpdeveye/maestro",
+      "sourceType": "github",
+      "skillPath": "source/skills/reflect/SKILL.md",
+      "computedHash": "eefe5c504192d2e7ae838211e98a9eb5a899a37efec4f1338e5534f147b25af9"
     },
     "retro": {
       "source": "mattpocock/skills",
@@ -168,6 +252,24 @@
       "sourceType": "github",
       "skillPath": "skills/engineering/setup-matt-pocock-skills/SKILL.md",
       "computedHash": "1d35d0afa3ded88c9324d38db08b2cff91cd03e0e11d64786bee41385cd7b9fb"
+    },
+    "streamline": {
+      "source": "sharpdeveye/maestro",
+      "sourceType": "github",
+      "skillPath": "source/skills/streamline/SKILL.md",
+      "computedHash": "3958fe2fcab8aafbaec26dc96b99f153d7c4af28549a2ca6792c247928a4dbe6"
+    },
+    "teach-maestro": {
+      "source": "sharpdeveye/maestro",
+      "sourceType": "github",
+      "skillPath": "source/skills/teach-maestro/SKILL.md",
+      "computedHash": "ea2bf5f81921a6f113eb91938cfb2cd50c1bd6021446eb2077cef80fc0d17858"
+    },
+    "temper": {
+      "source": "sharpdeveye/maestro",
+      "sourceType": "github",
+      "skillPath": "source/skills/temper/SKILL.md",
+      "computedHash": "334b89fd5e7a7e57fd0a4712c1630a8451caa2d8160fa0dd30051c7c1c0a792b"
     },
     "testing-setup": {
       "source": "android/skills",
@@ -198,12 +300,6 @@
       "sourceType": "github",
       "skillPath": "skills/productivity/writing-for-agents/SKILL.md",
       "computedHash": "95da47fc97af998e85b7d7e6d57b3ac76727c1e290cfe9ea09005aacb826959f"
-    },
-    "xcode-project-setup": {
-      "source": "firebase/agent-skills",
-      "sourceType": "github",
-      "skillPath": "skills/xcode-project-setup/SKILL.md",
-      "computedHash": "499dfa579550f5a00bab88d8acf9ad8e0ce336371bb4b2a19dfca13f97fb1fcd"
     }
   }
 }
