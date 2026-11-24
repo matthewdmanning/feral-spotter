@@ -25,6 +25,7 @@ function fakePorts(failAt?: string) {
     analytics: { erasePerson: step('analytics') },
     submissions: {
       deleteUserSubmissions: step('sightings'),
+      deleteUserSubmissionBackups: step('backups'),
       deleteUserOrganizationPermissions: step('permissions'),
       retireUploadIdentity: step('uploadIdentity'),
     },
@@ -46,18 +47,22 @@ it.each([
       'email',
       'analytics',
       'permissions',
+      'backups',
       'sightings',
       'auth',
     ],
   ],
-  [false, ['uploadIdentity', 'email', 'analytics', 'permissions', 'auth']],
+  [
+    false,
+    ['uploadIdentity', 'email', 'analytics', 'permissions', 'backups', 'auth'],
+  ],
 ])('deleteSightings=%s erases in order: %j', async (deleteSightings, order) => {
   const { ports, calls } = fakePorts()
   await handleDeleteAccount(request({ deleteSightings }), ports, NOW)
   expect(calls).toEqual(order)
 })
 
-it.each(['analytics', 'permissions'])(
+it.each(['analytics', 'permissions', 'backups'])(
   'keeps the Auth user when %s fails',
   async (failAt) => {
     const { ports, calls } = fakePorts(failAt)

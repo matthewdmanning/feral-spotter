@@ -27,6 +27,11 @@
   ],
   "fieldOverrides": [
     {
+      "collectionGroup": "submissionBackups",
+      "fieldPath": "metadataJson",
+      "indexes": []
+    },
+    {
       "collectionGroup": "organizationPermissions",
       "fieldPath": "permission",
       "indexes": []

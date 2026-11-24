@@ -40,6 +40,7 @@ import {
   createStorageSubmissionStore,
 } from './erasure/adapters'
 import { handleDeleteAccount } from './erasure/deleteAccount'
+import { backupSubmission } from './backups/submissionBackup'
 import { onSchedule } from 'firebase-functions/v2/scheduler'
 import type { AuthBlockingEvent } from 'firebase-functions/v2/identity'
 import { beforeUserSignedIn } from 'firebase-functions/v2/identity'
@@ -52,6 +53,7 @@ initializeApp()
 
 // The contract test pins DEFAULT_BUCKET_NAME to the app's bucket (ADR-0005).
 const BUCKET_NAME = process.env.GCS_BUCKET_NAME ?? DEFAULT_BUCKET_NAME
+const BACKUP_BUCKET = defineString('SUBMISSION_BACKUP_BUCKET', { default: '' })
 
 // #293 ("no metadata ⇒ no photo"). A photo with no location, time or
 // annotation is useless to the wider project, so if the metadata never
@@ -145,6 +147,14 @@ export const onSubmissionSubmitted = onObjectFinalized(
 export const onSubmissionDeleted = onObjectDeleted(
   { bucket: BUCKET_NAME, retry: true },
   (event) => syncCapForObject(event.data.name),
+)
+
+export const onSubmissionBackup = onObjectFinalized(
+  { bucket: BUCKET_NAME, memory: '1GiB', concurrency: 1, retry: true },
+  async ({ data }) => {
+    const backupBucket = BACKUP_BUCKET.value()
+    if (backupBucket) await backupSubmission(BUCKET_NAME, backupBucket, data)
+  },
 )
 
 // #267: sets the tester-allowlist custom claim
@@ -338,7 +348,10 @@ export const deleteAccount = onCall(
         projectId: POSTHOG_PROJECT_ID.value(),
         personalApiKey: POSTHOG_PERSONAL_API_KEY.value(),
       }),
-      submissions: createStorageSubmissionStore(BUCKET_NAME),
+      submissions: createStorageSubmissionStore(
+        BUCKET_NAME,
+        BACKUP_BUCKET.value(),
+      ),
       accounts: authAccountStore,
     }),
 )
