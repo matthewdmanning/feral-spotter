@@ -26,7 +26,7 @@ service firebase.storage {
       allow create, update: if request.auth != null
                    && isOwner(uid)
                    && (
-                     (fileName == 'metadata.json' && isValidMetadataWrite())
+                     (fileName == 'metadata.json' && isValidMetadataWrite(uid))
                      || (fileName != 'metadata.json' && isValidPhotoWrite())
                    );
 
@@ -51,8 +51,9 @@ service firebase.storage {
       // per submission.
       // Like a photo, metadata.json needs an upload grant (#486), so it is
       // counted against the uid's hard quota before it lands.
-      function isValidMetadataWrite() {
-        return hasUploadGrant()
+      function isValidMetadataWrite(uid) {
+        return hasUploadGrant(fileName)
+               && hasOwnUserId(uid)
                && request.resource.size < 256 * 1024
                // Not exact equality — native uploadString() may send
                // 'application/json; charset=utf-8', which exact match denies.
@@ -90,7 +91,7 @@ service firebase.storage {
       // object against the uid's hard quota. Overwriting a granted slot
       // replaces a photo rather than adding one.
       function isGrantedPhotoWrite() {
-        return hasUploadGrant()
+        return hasUploadGrant(fileName)
                && (
                  (
                    fileName.matches('photo-[0-9][.]jpg')
@@ -108,11 +109,11 @@ service firebase.storage {
       // Grant tokens drop the 'photo-' prefix ('3.jpg'; 'metadata.json' as is)
       // to fit Auth's 1000-byte claim limit. grantToken() in functions/
       // matches this.
-      function hasUploadGrant() {
+      function hasUploadGrant(name) {
         let grant = request.auth.token.get('uploadGrants', {}).get(submissionId, null);
         return grant != null
                && request.time.toMillis() < grant.e
-               && fileName.replace('^photo-', '') in grant.f;
+               && name.replace('^photo-', '') in grant.f;
       }
 
       // Submit patches customMetadata on a photo already counted. Names
@@ -120,6 +121,9 @@ service firebase.storage {
       function isMetadataOnlyPhotoUpdate() {
         return resource != null
                && fileName.matches('photo-[0-9][.](jpg|jpeg|png|heic|heif|dng)')
+               // Legacy image extensions share the slot's canonical .jpg
+               // grant for metadata only. They cannot receive new bytes.
+               && hasUploadGrant(fileName.replace('[.](jpeg|png|heic|heif)$', '.jpg'))
                && request.resource.size == resource.size
                && request.resource.md5Hash == resource.md5Hash
                && request.resource.contentType == resource.contentType;

@@ -7,6 +7,9 @@ import { getAuth } from 'firebase-admin/auth'
 import { getStorage } from 'firebase-admin/storage'
 import {
   UPLOAD_GRANTS_CLAIM,
+  isStoredPhotoFileName,
+  MAX_METADATA_BYTES,
+  MAX_PHOTO_BYTES,
   parseSubmissionObject,
   personLedgerPath,
   uidIndexPath,
@@ -21,9 +24,52 @@ import {
   type PersonLedger,
   type UploadGrants,
 } from './admission'
+import { isValidJpeg, parseSubmissionMetadata } from './submissionContent'
 
 const code = (error: unknown) => (error as { code?: unknown } | null)?.code
 const LEDGER_WRITE_ATTEMPTS = 6
+
+/** Validate the finalized generation before treating it as a submitted object. */
+export async function validateFinalizedUpload(
+  bucketName: string,
+  {
+    name,
+    generation,
+    contentType,
+    size,
+  }: {
+    name: string
+    generation: number
+    contentType?: string
+    size: number
+  },
+): Promise<boolean> {
+  const object = parseSubmissionObject(name)
+  if (!object) return true
+  const jpeg =
+    contentType === 'image/jpeg' &&
+    isStoredPhotoFileName(object.fileName) &&
+    !object.fileName.endsWith('.dng')
+  if (!object.isMetadata && !jpeg) return true
+
+  const file = getStorage().bucket(bucketName).file(name, { generation })
+  try {
+    const limit = object.isMetadata ? MAX_METADATA_BYTES : MAX_PHOTO_BYTES
+    if (size < limit) {
+      const [bytes] = await file.download()
+      const valid = object.isMetadata
+        ? parseSubmissionMetadata(bytes, object.uid, object.submissionId) !==
+          null
+        : await isValidJpeg(bytes)
+      if (valid) return true
+    }
+    await file.delete({ ignoreNotFound: true })
+    return false
+  } catch (error) {
+    if (code(error) === 404) return false
+    throw error
+  }
+}
 
 interface PersonPointer {
   personId?: string

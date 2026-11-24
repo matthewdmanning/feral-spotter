@@ -248,13 +248,11 @@ describe('storage.rules — upload grants', () => {
     )
   })
 
-  it('lets Submit patch customMetadata without a grant, but not change bytes', async () => {
+  it('requires an active photo grant for customMetadata patches', async () => {
     await assertSucceeds(uploadBytes(at(grantFor('sub-1')), SMALL_IMAGE, JPEG))
-    await assertSucceeds(
-      updateMetadata(at(null), {
-        customMetadata: { photo_time: '2026-08-01T10:00:00.000Z' },
-      }),
-    )
+    const patch = { customMetadata: { user_id: OWNER_UID } }
+    await assertFails(updateMetadata(at(null), patch))
+    await assertSucceeds(updateMetadata(at(grantFor('sub-1')), patch))
     await assertFails(uploadBytes(at(null), new Uint8Array([9, 9]), JPEG))
   })
 
@@ -270,7 +268,7 @@ describe('storage.rules — upload grants', () => {
       )
     })
     await assertSucceeds(
-      updateMetadata(at(null, 'photo-0.heic'), {
+      updateMetadata(at(grantFor('sub-1', ['0.jpg']), 'photo-0.heic'), {
         customMetadata: { user_id: OWNER_UID },
       }),
     )
