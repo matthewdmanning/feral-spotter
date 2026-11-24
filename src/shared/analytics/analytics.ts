@@ -71,7 +71,7 @@ export function registerCaptureException(
 }
 
 /** Same gate as every capture path: release candidate build, general consent, analytics opt-in. */
-function shouldCapture(): boolean {
+export function analyticsAllowed(): boolean {
   return IS_RELEASE_CANDIDATE && hasAcceptedConsent() && hasAcceptedAnalytics()
 }
 
@@ -87,7 +87,7 @@ export function captureEvent(
   event: AnalyticsEvent,
   props?: PostHogEventProperties,
 ): void {
-  if (!shouldCapture()) return
+  if (!analyticsAllowed()) return
   if (!registeredCapture) {
     console.warn(
       '[analytics] capturer not registered — call registerCapture() in a PostHog-wrapped component',
@@ -107,7 +107,7 @@ export function captureException(
   error: unknown,
   extra?: PostHogEventProperties,
 ): void {
-  if (!shouldCapture()) return
+  if (!analyticsAllowed()) return
   if (!registeredCaptureException) {
     console.warn(
       '[analytics] exception capturer not registered — call registerCaptureException() in a PostHog-wrapped component',

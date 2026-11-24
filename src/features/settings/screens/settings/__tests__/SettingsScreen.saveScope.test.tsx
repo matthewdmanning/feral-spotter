@@ -8,31 +8,12 @@ import {
   useConsentStore,
 } from '@/src/shared/consent/useConsentStore'
 import { FEATURE_FLAGS } from '@/src/shared/config/constants'
-import { http, HttpResponse } from 'msw'
-import { server } from '@/src/test-utils/mswServer'
+import { mountFlagSdk, unmountFlagSdks } from '@/src/test-utils/posthogFlags'
 import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 
 jest.mock('expo-router', () => ({
   router: { back: jest.fn(), push: jest.fn() },
 }))
-jest.mock('expo-constants', () => {
-  const actual = jest.requireActual('expo-constants')
-  return {
-    ...actual,
-    __esModule: true,
-    default: {
-      ...actual.default,
-      expoConfig: {
-        ...actual.default.expoConfig,
-        extra: {
-          ...actual.default.expoConfig?.extra,
-          posthogProjectToken: 'public-project-token',
-          posthogHost: 'https://flags.example.com',
-        },
-      },
-    },
-  }
-})
 
 const mutableFeatureFlags = FEATURE_FLAGS as {
   experimentalCamera: boolean
@@ -41,8 +22,9 @@ const mutableFeatureFlags = FEATURE_FLAGS as {
 }
 const originalFlags = { ...mutableFeatureFlags }
 
-afterEach(() => {
+afterEach(async () => {
   Object.assign(mutableFeatureFlags, originalFlags)
+  await unmountFlagSdks()
 })
 
 it.each([
@@ -62,11 +44,7 @@ it.each([
       acceptedVersion: CONSENT_VERSION,
       analyticsAccepted: analytics,
     })
-    server.use(
-      http.post('https://flags.example.com/flags/', () =>
-        HttpResponse.json({ flags: { Organizations: { enabled: rollout } } }),
-      ),
-    )
+    mountFlagSdk({ Organizations: rollout })
     useOrganizationsFlag.setState({ enabled: false })
     await useOrganizationsFlag.getState().refresh()
     await render(<SettingsScreen />)

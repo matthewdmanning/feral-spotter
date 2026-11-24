@@ -5,8 +5,9 @@
  * refresh never snaps a user's pan back. Tiles stay light in both themes.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Platform, View, type LayoutChangeEvent } from 'react-native'
+import { useMemo } from 'react'
+import { Platform, View } from 'react-native'
+import { useMapFrame } from '@/src/shared/hooks/useMapFrame'
 import { AppleMaps, GoogleMaps } from 'expo-maps'
 import { useUnistyles } from 'react-native-unistyles'
 import { organizationCopy } from '@/src/shared/config/text'
@@ -34,22 +35,10 @@ export function SharedSightingsMap({
   onTouchActiveChange?: (active: boolean) => void
 }) {
   const { theme } = useUnistyles()
-  const [size, setSize] = useState<MapSize | null>(null)
-  // Keyed on values, not identity: a refresh rebuilds equal sightings.
-  const pointsKey = JSON.stringify(sightingMapPoints(sightings))
-  const view = useMemo(
-    () => (size ? mapViewForSpots(JSON.parse(pointsKey), size) : null),
-    [pointsKey, size],
-  )
-  const latitude = view?.coordinates.latitude
-  const longitude = view?.coordinates.longitude
-  const zoom = view?.zoom
-  const cameraPosition = useMemo(
-    () =>
-      latitude == null || longitude == null
-        ? undefined
-        : { coordinates: { latitude, longitude }, zoom },
-    [latitude, longitude, zoom],
+  const points = sightingMapPoints(sightings)
+  const { cameraPosition, frameProps } = useMapFrame(
+    (size: MapSize) => mapViewForSpots(points, size),
+    onTouchActiveChange,
   )
   const markers = useMemo(
     () =>
@@ -79,21 +68,8 @@ export function SharedSightingsMap({
         })),
     [sightings, theme.mapArea],
   )
-  // A gesture cut off by unmount never sends its touch end; the parent's
-  // scroll lock must not stay on.
-  const touchActiveChange = useRef(onTouchActiveChange)
-  useEffect(() => {
-    touchActiveChange.current = onTouchActiveChange
-  }, [onTouchActiveChange])
-  useEffect(() => () => touchActiveChange.current?.(false), [])
-
   if (!sightings.length || (Platform.OS !== 'ios' && Platform.OS !== 'android'))
     return null
-  const handleLayout = ({ nativeEvent }: LayoutChangeEvent) => {
-    const { width, height } = nativeEvent.layout
-    if (width !== size?.width || height !== size?.height)
-      setSize({ width, height })
-  }
   const onPress = ({ id }: { id?: string }) => {
     if (id) onSelect(id)
   }
@@ -101,10 +77,7 @@ export function SharedSightingsMap({
     <View
       style={styles.map}
       accessibilityLabel={organizationCopy.sharedSightings.mapLabel}
-      onLayout={handleLayout}
-      onTouchStart={() => onTouchActiveChange?.(true)}
-      onTouchEnd={() => onTouchActiveChange?.(false)}
-      onTouchCancel={() => onTouchActiveChange?.(false)}
+      {...frameProps}
     >
       {!cameraPosition ? null : Platform.OS === 'ios' ? (
         <AppleMaps.View

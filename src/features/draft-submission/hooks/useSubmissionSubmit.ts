@@ -26,11 +26,11 @@ import {
 import {
   isDraftBusy,
   submitDraft,
-  subscribeDraftBusy,
+  useDraftBusy,
   type SubmitOutcome,
 } from '@/src/features/draft-submission/lib/draft'
 import { goHome } from '@/src/shared/lib/navigation'
-import { useCallback, useSyncExternalStore } from 'react'
+import { useCallback } from 'react'
 
 export interface SubmissionSubmitResult {
   handleDone: () => void
@@ -38,11 +38,6 @@ export interface SubmissionSubmitResult {
   /** Clears the draft and returns Home with no confirmation of its own. */
   handleDiscard: () => Promise<void>
   isSubmitting: boolean
-}
-
-/** True while a submit runs; the screen disables draft controls. */
-export function useDraftBusy(): boolean {
-  return useSyncExternalStore(subscribeDraftBusy, isDraftBusy, isDraftBusy)
 }
 
 function report(outcome: SubmitOutcome): void {

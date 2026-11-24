@@ -15,6 +15,8 @@
  * screen<->image convention in useBoundingBoxFrame.ts.
  */
 
+import { clampHalfExtent } from '@/src/features/annotate/lib/boxResize'
+
 export function halfExtentOnScreen(imgSize: number, baseScale: number): number {
   'worklet'
   return (imgSize * baseScale) / 2
@@ -30,5 +32,5 @@ export function maxTranslateForScale(
 
 export function clampTranslate(value: number, maxAbs: number): number {
   'worklet'
-  return Math.min(Math.max(value, -maxAbs), maxAbs)
+  return clampHalfExtent(value, -maxAbs, maxAbs)
 }

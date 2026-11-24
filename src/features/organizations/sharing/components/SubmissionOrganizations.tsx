@@ -22,7 +22,7 @@ import {
 import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 import { sharingSignature } from '@/src/features/organizations/sharing/lib/consent'
 import { includedSummary } from '@/src/features/organizations/sharing/lib/sharing'
-import { SharingCheckbox } from './SharingCheckbox'
+import { SharingCheckbox } from '@/src/features/organizations/components/SharingCheckbox'
 import { styles } from '@/src/features/organizations/components/styles'
 
 export function SubmissionOrganizations() {

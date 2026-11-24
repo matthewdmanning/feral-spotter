@@ -11,6 +11,7 @@
  * A failed upload is not retried on its own; the facade re-queues it. A
  * photo already queued or in flight is never queued twice.
  */
+import { create } from 'zustand'
 import { uploadSubmissionPhoto } from '@/src/features/draft-submission/lib/upload/firebaseUpload'
 import { reservePhotoSlot } from '@/src/features/draft-submission/lib/upload/photoSlotQueue'
 import {
@@ -56,21 +57,22 @@ let activeUploadCount = 0
 let generation = 0
 // Photos removed from their draft: their upload must not write a result.
 const cancelled = new Set<string>()
-const idleListeners = new Set<() => void>()
+
+/**
+ * Queued or in-flight uploads, published each time one ends or is dropped.
+ * Subscribe to wait for the queue; `pending` stays the guard.
+ */
+export const useUploadQueueStore = create<{ pendingCount: number }>(() => ({
+  pendingCount: 0,
+}))
 
 /** True when nothing is queued or in flight. */
 export function isQueueIdle(): boolean {
   return pending.size === 0
 }
 
-/** Calls `listener` each time an upload ends or is dropped. */
-export function onQueueChange(listener: () => void): () => void {
-  idleListeners.add(listener)
-  return () => idleListeners.delete(listener)
-}
-
 function notifyQueueChange(): void {
-  idleListeners.forEach((listener) => listener())
+  useUploadQueueStore.setState({ pendingCount: pending.size })
 }
 
 function startNextUpload(): void {

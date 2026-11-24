@@ -1,6 +1,6 @@
 import { render, screen, userEvent } from '@testing-library/react-native'
 import { UnistylesRuntime } from 'react-native-unistyles'
-import { SharingCheckbox } from '@/src/features/organizations/sharing/components/SharingCheckbox'
+import { SharingCheckbox } from '@/src/features/organizations/components/SharingCheckbox'
 
 test('checked control uses the semantic icon color, bounded size, and toggles accessibly', async () => {
   const onChange = jest.fn()

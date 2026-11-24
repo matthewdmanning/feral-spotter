@@ -17,7 +17,7 @@ import {
   cancelPhotoUpload as cancelQueuedPhoto,
   cancelQueuedUploads,
   isQueueIdle,
-  onQueueChange,
+  useUploadQueueStore,
   uploadNewPhoto,
 } from '@/src/features/draft-submission/lib/upload/uploadNewPhoto'
 import { deleteSubmissionPhoto } from '@/src/features/draft-submission/lib/upload/firebaseUpload'
@@ -163,7 +163,7 @@ export function whenUploadsSettled(timeoutMs: number): Promise<UploadsOutcome> {
     }
     const timer = setTimeout(() => finish('timeout'), timeoutMs)
     const unsubscribeStore = usePhotoStore.subscribe(check)
-    const unsubscribeQueue = onQueueChange(check)
+    const unsubscribeQueue = useUploadQueueStore.subscribe(check)
     check()
   })
 }

@@ -11,7 +11,7 @@
 
 import { useOrganizationsEnabled } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 import { navigationCopy } from '@/src/shared/config/text'
-import { Text } from '@/src/shared/ui/atoms/Text'
+import { stackScreenOptions } from '@/src/shared/ui/molecules/stackScreenOptions'
 import '@/src/shared/config/unistyles'
 import { useUIStore } from '@/src/shared/hooks/useUIStore'
 import { initializeDraft } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
@@ -67,26 +67,7 @@ export default function RootLayout() {
 
   return (
     <AppProviders>
-      <Stack
-        screenOptions={{
-          headerStyle: { backgroundColor: theme.colors.background },
-          headerTintColor: theme.colors.text,
-          headerTitle: ({ children, tintColor }) => (
-            <Text style={[theme.textVariants.heading, { color: tintColor }]}>
-              {children}
-            </Text>
-          ),
-          headerTitleStyle: {
-            fontFamily: theme.fonts.bold,
-            fontSize: theme.typography.lg,
-            color: theme.colors.text,
-          },
-          headerShadowVisible: false,
-          contentStyle: { backgroundColor: theme.colors.background },
-          animation: 'slide_from_right',
-          gestureEnabled: true,
-        }}
-      >
+      <Stack screenOptions={stackScreenOptions(theme)}>
         {/* Tab group — headerShown false; each tab manages its own header */}
         <Stack.Screen name="(home-tabs)" options={{ headerShown: false }} />
 

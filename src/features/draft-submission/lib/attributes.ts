@@ -94,6 +94,16 @@ export const COAT_GROUPS: {
   },
 ]
 
+/**
+ * The coat picker has no Unknown group: a saved 'unknown' (the default
+ * filled in at save) shows as nothing picked, like a never-touched field.
+ */
+export function shownCoatValue<T extends string>(
+  value: T | undefined,
+): Exclude<T, 'unknown'> | undefined {
+  return value === 'unknown' ? undefined : (value as Exclude<T, 'unknown'>)
+}
+
 // Identity function used only for per-entry literal-type inference — lets
 // each entry's `options`/`default` narrow to that field's own type instead
 // of widening to a union across all 8 fields.

@@ -309,101 +309,40 @@ export function useBoundingBoxFrame({
   // ── Edge handles: single-finger drag reshapes the box (#286) ───────────────
   // Each handle only ever touches its own axis; the opposite edge mirrors
   // automatically since both are drawn from the same half-extent.
-  const leftHandle = Gesture.Pan()
-    .onStart(() => {
-      'worklet'
-      savedBoxHalfWidth.value = boxHalfWidth.value
-    })
-    .onUpdate((e) => {
-      'worklet'
-      const maxHalf = maxHalfExtentForBox(
-        canvasWidth / 2,
-        halfExtentX,
-        userScale.value,
-      )
-      const next = clampHalfExtent(
-        savedBoxHalfWidth.value - e.translationX,
-        MIN_HALF_EXTENT,
-        maxHalf,
-      )
-      boxHalfWidth.value = clampAspectRatio(
-        next,
-        boxHalfHeight.value,
-        MAX_ASPECT_RATIO,
-      )
-    })
+  // One factory so the min, max and aspect limits hold from every edge.
+  // `sign` is -1 for the left/top edge, where dragging outward is negative.
+  const edgeHandle = (axis: 'x' | 'y', sign: 1 | -1) => {
+    const own = axis === 'x' ? boxHalfWidth : boxHalfHeight
+    const saved = axis === 'x' ? savedBoxHalfWidth : savedBoxHalfHeight
+    const other = axis === 'x' ? boxHalfHeight : boxHalfWidth
+    const canvasHalf = (axis === 'x' ? canvasWidth : canvasHeight) / 2
+    const imageHalf = axis === 'x' ? halfExtentX : halfExtentY
+    return Gesture.Pan()
+      .onStart(() => {
+        'worklet'
+        saved.value = own.value
+      })
+      .onUpdate((e) => {
+        'worklet'
+        const maxHalf = maxHalfExtentForBox(
+          canvasHalf,
+          imageHalf,
+          userScale.value,
+        )
+        const translation = axis === 'x' ? e.translationX : e.translationY
+        const next = clampHalfExtent(
+          saved.value + sign * translation,
+          MIN_HALF_EXTENT,
+          maxHalf,
+        )
+        own.value = clampAspectRatio(next, other.value, MAX_ASPECT_RATIO)
+      })
+  }
 
-  const rightHandle = Gesture.Pan()
-    .onStart(() => {
-      'worklet'
-      savedBoxHalfWidth.value = boxHalfWidth.value
-    })
-    .onUpdate((e) => {
-      'worklet'
-      const maxHalf = maxHalfExtentForBox(
-        canvasWidth / 2,
-        halfExtentX,
-        userScale.value,
-      )
-      const next = clampHalfExtent(
-        savedBoxHalfWidth.value + e.translationX,
-        MIN_HALF_EXTENT,
-        maxHalf,
-      )
-      boxHalfWidth.value = clampAspectRatio(
-        next,
-        boxHalfHeight.value,
-        MAX_ASPECT_RATIO,
-      )
-    })
-
-  const topHandle = Gesture.Pan()
-    .onStart(() => {
-      'worklet'
-      savedBoxHalfHeight.value = boxHalfHeight.value
-    })
-    .onUpdate((e) => {
-      'worklet'
-      const maxHalf = maxHalfExtentForBox(
-        canvasHeight / 2,
-        halfExtentY,
-        userScale.value,
-      )
-      const next = clampHalfExtent(
-        savedBoxHalfHeight.value - e.translationY,
-        MIN_HALF_EXTENT,
-        maxHalf,
-      )
-      boxHalfHeight.value = clampAspectRatio(
-        next,
-        boxHalfWidth.value,
-        MAX_ASPECT_RATIO,
-      )
-    })
-
-  const bottomHandle = Gesture.Pan()
-    .onStart(() => {
-      'worklet'
-      savedBoxHalfHeight.value = boxHalfHeight.value
-    })
-    .onUpdate((e) => {
-      'worklet'
-      const maxHalf = maxHalfExtentForBox(
-        canvasHeight / 2,
-        halfExtentY,
-        userScale.value,
-      )
-      const next = clampHalfExtent(
-        savedBoxHalfHeight.value + e.translationY,
-        MIN_HALF_EXTENT,
-        maxHalf,
-      )
-      boxHalfHeight.value = clampAspectRatio(
-        next,
-        boxHalfWidth.value,
-        MAX_ASPECT_RATIO,
-      )
-    })
+  const leftHandle = edgeHandle('x', -1)
+  const rightHandle = edgeHandle('x', 1)
+  const topHandle = edgeHandle('y', -1)
+  const bottomHandle = edgeHandle('y', 1)
 
   // A handle drag must win over the photo's own pan — otherwise the photo
   // slides underneath the finger at the same time the box reshapes.

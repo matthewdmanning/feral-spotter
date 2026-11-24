@@ -7,20 +7,16 @@
  * state, navigation — comes from useCapturedPhotoWorkflow.
  */
 
-import {
-  isAtPhotoLimit,
-  showPhotoLimitReached,
-} from '@/src/features/draft-submission/hooks/usePhotoStore'
+import { isAtPhotoLimit } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useCapturedPhotoWorkflow } from '@/src/features/camera-control/hooks/useCapturedPhotoWorkflow'
 import { visionCameraConfig } from '@/src/features/camera-control/lib/cameraConfig'
 import { useIosIdentificationCapture } from '@/src/features/camera-control/hooks/useIosIdentificationCapture'
 import { useSettingsStore } from '@/src/features/settings/hooks/useSettingsStore'
 import { useConsentStore } from '@/src/shared/consent/useConsentStore'
 import { captureEvent, EVENTS } from '@/src/shared/analytics/analytics'
-import { startLocationCapture } from '@/src/core/location/liveFix'
 import type { SubmissionPhoto } from '@/src/shared/types'
 import { type FlashListRef } from '@shopify/flash-list'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Platform, type ViewStyle } from 'react-native'
 import type { useAnimatedStyle } from 'react-native-reanimated'
 import {
@@ -82,15 +78,15 @@ export function useCameraCapture(): CameraCaptureResult {
     position: cameraPosition,
     flipCamera,
     flashOverlayStyle,
-    triggerFlash,
     persistCapturedPhoto,
     startPhotoUpload,
-    flushGallerySaves,
+    isTakingPhoto,
+    isTakingPhotoRef,
+    runCapture,
     handleDone,
     handleClose,
   } = useCapturedPhotoWorkflow()
 
-  const [isTakingPhoto, setIsTakingPhoto] = useState(false)
   const [captureMode, setCaptureMode] = useState<CaptureMode>('single')
 
   const device = useCameraDevice(cameraPosition)
@@ -116,11 +112,6 @@ export function useCameraCapture(): CameraCaptureResult {
 
   const enableLowLightBoost = Boolean(device?.supportsLowLightBoost)
   const burstStopRequested = useRef(false)
-  // Mirrors isTakingPhoto so handleTakePhoto can read it without listing state
-  // it sets itself as a dependency, which recreated the callback twice per
-  // capture and re-rendered the shutter.
-  const isTakingPhotoRef = useRef(false)
-  const hasStartedLocationCapture = useRef(false)
 
   const capturePipeline = iosIdentificationEnabled
     ? 'ios_identification'
@@ -133,28 +124,40 @@ export function useCameraCapture(): CameraCaptureResult {
       ? `device_aware_${captureMode}`
       : `tap_${captureMode}`
 
+  // Present on every timed event of this path; null when checks are off.
+  const performanceProps = useMemo(
+    () =>
+      performanceChecks
+        ? {
+            camera_performance_checks: true,
+            camera_backend: 'visioncamera',
+            camera_variant: cameraVariant,
+            camera_platform: Platform.OS,
+          }
+        : null,
+    [cameraVariant, performanceChecks],
+  )
+  const pipelineProps = useMemo(
+    () => ({
+      capture_pipeline: capturePipeline,
+      quality_prioritization: effectiveQualityPrioritization ?? 'default',
+      low_light_boost: enableLowLightBoost,
+    }),
+    [capturePipeline, effectiveQualityPrioritization, enableLowLightBoost],
+  )
+
   const handleTakePhoto = useCallback(async () => {
     if (!canCapture) return
     if (captureMode === 'burst' && isTakingPhotoRef.current) {
       burstStopRequested.current = true
       return
     }
-    if (isTakingPhotoRef.current) return
-    if (isAtPhotoLimit()) {
-      showPhotoLimitReached()
-      return
-    }
-
-    isTakingPhotoRef.current = true
-    setIsTakingPhoto(true)
-    burstStopRequested.current = false
-
-    triggerFlash()
 
     const sequenceStartedAt = performanceChecks ? Date.now() : null
     let completedPhotoCount = 0
 
-    try {
+    const capture = async () => {
+      burstStopRequested.current = false
       do {
         const shutterTime = new Date().toISOString()
         const captureStartedAt = performanceChecks ? Date.now() : null
@@ -196,18 +199,13 @@ export function useCameraCapture(): CameraCaptureResult {
           photo_width: submission.width,
           photo_height: submission.height,
           capture_mode: captureMode,
-          capture_pipeline: capturePipeline,
-          quality_prioritization: effectiveQualityPrioritization ?? 'default',
-          low_light_boost: enableLowLightBoost,
-          ...(performanceChecks &&
+          ...pipelineProps,
+          ...(performanceProps &&
           captureStartedAt !== null &&
           capturedAt !== null &&
           persistedAt !== null
             ? {
-                camera_performance_checks: true,
-                camera_backend: 'visioncamera',
-                camera_variant: cameraVariant,
-                camera_platform: Platform.OS,
+                ...performanceProps,
                 capture_duration_ms: capturedAt - captureStartedAt,
                 temporary_file_save_duration_ms: persistedAt - capturedAt,
                 capture_pipeline_duration_ms: persistedAt - captureStartedAt,
@@ -226,61 +224,48 @@ export function useCameraCapture(): CameraCaptureResult {
         captureEvent(EVENTS.CAMERA_CAPTURE_SEQUENCE_COMPLETED, {
           capture_mode: captureMode,
           photo_count: completedPhotoCount,
-          capture_pipeline: capturePipeline,
-          quality_prioritization: effectiveQualityPrioritization ?? 'default',
-          low_light_boost: enableLowLightBoost,
-          ...(performanceChecks && sequenceStartedAt !== null
+          ...pipelineProps,
+          ...(performanceProps && sequenceStartedAt !== null
             ? {
-                camera_performance_checks: true,
-                camera_backend: 'visioncamera',
-                camera_variant: cameraVariant,
-                camera_platform: Platform.OS,
+                ...performanceProps,
                 duration_ms: Date.now() - sequenceStartedAt,
               }
             : {}),
         })
       }
-    } catch (err) {
-      console.error('[useCameraCapture] takePhoto:', err)
-      captureEvent(EVENTS.PHOTO_CAPTURE_FAILED, {
-        error: err instanceof Error ? err.message : String(err),
+    }
+
+    await runCapture({
+      capture,
+      logTag: 'useCameraCapture',
+      failureProps: () => ({
         capture_mode: captureMode,
         completed_photo_count: completedPhotoCount,
-        capture_pipeline: capturePipeline,
-        quality_prioritization: effectiveQualityPrioritization ?? 'default',
-        low_light_boost: enableLowLightBoost,
-        ...(performanceChecks && sequenceStartedAt !== null
+        ...pipelineProps,
+        ...(performanceProps && sequenceStartedAt !== null
           ? {
-              camera_performance_checks: true,
-              camera_backend: 'visioncamera',
-              camera_variant: cameraVariant,
-              camera_platform: Platform.OS,
+              ...performanceProps,
               elapsed_ms: Date.now() - sequenceStartedAt,
             }
           : {}),
-      })
-    } finally {
-      burstStopRequested.current = true
-      isTakingPhotoRef.current = false
-      setIsTakingPhoto(false)
-      // Gallery writes happen here, after the sequence, not inside the loop:
-      // awaiting MediaLibrary per frame bounded the burst rate by gallery I/O.
-      void flushGallerySaves()
-    }
+      }),
+    })
+    burstStopRequested.current = true
   }, [
     cameraPosition,
-    cameraVariant,
     captureMode,
     capturePipeline,
     effectiveQualityPrioritization,
     enableLowLightBoost,
     flashMode,
-    flushGallerySaves,
+    isTakingPhotoRef,
     performanceChecks,
+    performanceProps,
     persistCapturedPhoto,
     photoOutput,
+    pipelineProps,
+    runCapture,
     startPhotoUpload,
-    triggerFlash,
     canCapture,
   ])
 
@@ -300,14 +285,8 @@ export function useCameraCapture(): CameraCaptureResult {
     const openedAt = cameraOpenedAt.current
     hasReportedInitialDevice.current = true
     captureEvent(EVENTS.CAMERA_DEVICE_READY, {
-      ...(performanceChecks && openedAt !== null
-        ? {
-            camera_performance_checks: true,
-            camera_backend: 'visioncamera',
-            camera_variant: cameraVariant,
-            camera_platform: Platform.OS,
-            ready_duration_ms: Date.now() - openedAt,
-          }
+      ...(performanceProps && openedAt !== null
+        ? { ...performanceProps, ready_duration_ms: Date.now() - openedAt }
         : {}),
       camera_position: cameraPosition,
       physical_device_count: device.physicalDevices.length,
@@ -317,19 +296,9 @@ export function useCameraCapture(): CameraCaptureResult {
         device.supportsSpeedQualityPrioritization,
       min_zoom: device.minZoom,
       max_zoom: device.maxZoom,
-      capture_pipeline: capturePipeline,
-      quality_prioritization: effectiveQualityPrioritization ?? 'default',
-      low_light_boost: enableLowLightBoost,
+      ...pipelineProps,
     })
-  }, [
-    cameraPosition,
-    cameraVariant,
-    capturePipeline,
-    device,
-    effectiveQualityPrioritization,
-    enableLowLightBoost,
-    performanceChecks,
-  ])
+  }, [cameraPosition, device, performanceProps, pipelineProps])
 
   useEffect(() => {
     captureEvent(EVENTS.CAMERA_OPENED)
@@ -339,12 +308,6 @@ export function useCameraCapture(): CameraCaptureResult {
         useConsentStore.persist.hasHydrated(),
       )
   }, [])
-
-  useEffect(() => {
-    if (!canCapture || hasStartedLocationCapture.current) return
-    hasStartedLocationCapture.current = true
-    void startLocationCapture()
-  }, [canCapture])
 
   return {
     device,
