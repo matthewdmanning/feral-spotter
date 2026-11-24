@@ -1,5 +1,6 @@
 import { submissionPhoto } from '@/src/test-utils/photoFixtures'
 import { act, render } from '@testing-library/react-native'
+import { BackHandler, Platform } from 'react-native'
 import React from 'react'
 import { router } from 'expo-router'
 import { createMachine } from 'xstate'
@@ -67,14 +68,17 @@ jest.mock('@/src/features/draft-submission/hooks/useDraftSync', () => ({
   useDraftSync: () => undefined,
 }))
 
-// The platform check inside the real hook only registers on Android; the
-// screen's own handler is what this test is about, so capture it directly.
-let mockBackHandler: () => boolean = () => false
-jest.mock('@/src/shared/hooks/useBackHandler', () => ({
-  useBackHandler: (handler: () => boolean) => {
-    mockBackHandler = handler
-  },
-}))
+// The real useBackHandler, as on Android: it registers only there, and its
+// focus check (NAV-1) is part of this screen's Back policy.
+let registeredBack: (() => boolean | null | undefined) | null = null
+const mockBackHandler = () => registeredBack?.() ?? false
+beforeEach(() => {
+  jest.replaceProperty(Platform, 'OS', 'android')
+  jest.spyOn(BackHandler, 'addEventListener').mockImplementation((_, h) => {
+    registeredBack = h as () => boolean
+    return { remove: () => (registeredBack = null) }
+  })
+})
 
 const backMachine = createMachine({
   id: 'submissionDetailsBack',

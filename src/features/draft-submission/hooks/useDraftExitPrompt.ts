@@ -12,7 +12,6 @@
 import { useBackHandler } from '@/src/shared/hooks/useBackHandler'
 import { showAlert } from '@/src/shared/hooks/useUIStore'
 import { submissionCopy } from '@/src/shared/config/text'
-import { useIsFocused } from 'expo-router'
 import { useCallback } from 'react'
 
 export function useDraftExitPrompt({
@@ -24,9 +23,8 @@ export function useDraftExitPrompt({
   addMore: { label: string; open: () => void }
   onDiscard: () => void
 }): void {
-  const isFocused = useIsFocused()
+  // useBackHandler answers only while this screen is focused.
   const handleBackPress = useCallback(() => {
-    if (!isFocused) return false
     if (isSubmitting) return true
     showAlert(
       submissionCopy.exit.leaveTitle,
@@ -42,6 +40,6 @@ export function useDraftExitPrompt({
       ],
     )
     return true
-  }, [isFocused, isSubmitting, addMore, onDiscard])
+  }, [isSubmitting, addMore, onDiscard])
   useBackHandler(handleBackPress)
 }

@@ -29,10 +29,14 @@ export interface FeralReportsResult {
   spots: SightingSpot[]
   /** The draft Home's Continue Observation would resume, if any. */
   resumableId: string | undefined
+  /** NAV-5: loading, empty and failed must not read the same. */
+  status: HistoryStatus
   refreshing: boolean
   load: () => void
   onRefresh: () => void
 }
+
+export type HistoryStatus = 'loading' | 'failed' | 'ready'
 
 interface History {
   all: SubmissionCacheFile[]
@@ -68,6 +72,7 @@ export function useFeralReports(): FeralReportsResult {
     resumableId: undefined,
   })
   const [refreshing, setRefreshing] = useState(false)
+  const [status, setStatus] = useState<HistoryStatus>('loading')
 
   // Reads can overlap (mount, focus, refresh). Only the newest one lands,
   // so a slow earlier read never overwrites a newer history.
@@ -78,26 +83,19 @@ export function useFeralReports(): FeralReportsResult {
       .then((next) => {
         if (readId !== latestRead.current) return
         setHistory(next)
+        setStatus('ready')
         if (fire) fireViewed(next.all)
       })
       .catch((error) => {
         console.error('[useFeralReports] read history', error)
+        if (readId === latestRead.current) setStatus('failed')
       })
   }, [])
   const load = useCallback(() => read(true), [read])
 
   useEffect(() => {
-    const readId = ++latestRead.current
-    readHistory()
-      .then((next) => {
-        if (readId !== latestRead.current) return
-        setHistory(next)
-        fireViewed(next.all)
-      })
-      .catch((error) => {
-        console.error('[useFeralReports] read history', error)
-      })
-  }, [])
+    void read(true)
+  }, [read])
 
   // The tab stays mounted, so a Sighting sent since the last visit would
   // not show until a pull-to-refresh. Re-read on every return to the tab —
@@ -132,6 +130,7 @@ export function useFeralReports(): FeralReportsResult {
     caches,
     spots,
     resumableId: history.resumableId,
+    status,
     refreshing,
     load,
     onRefresh,

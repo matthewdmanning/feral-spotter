@@ -81,7 +81,7 @@ export const ReportCard = memo(function ReportCard({
       onPress={() => {
         selectionHaptic()
         if (action === 'resume') {
-          router.push('/submission/create')
+          router.navigate('/submission/create')
         } else {
           router.push({ pathname: '/sighting/[id]', params: { id: cache.id } })
         }

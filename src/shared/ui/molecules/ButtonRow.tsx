@@ -18,9 +18,14 @@ import { styles } from './ButtonRow.styles'
 
 interface ButtonRowProps {
   children: ReactNode
+  /** Each cell's minimum width. `compact` is for `size="compact"` buttons. */
+  width?: 'action' | 'compact'
 }
 
-export function ButtonRow({ children }: ButtonRowProps) {
+export function ButtonRow({
+  children,
+  width: cellWidth = 'action',
+}: ButtonRowProps) {
   // useWindowDimensions updates when the OS font size changes.
   const { fontScale, width } = useWindowDimensions()
   const { theme } = useUnistyles()
@@ -29,7 +34,7 @@ export function ButtonRow({ children }: ButtonRowProps) {
   const availableWidth = measuredWidth ?? width - 2 * theme.layout.gutter
   const requiredWidth =
     items.length *
-      theme.controlWidth.action *
+      theme.controlWidth[cellWidth] *
       Math.min(fontScale, MAX_FONT_SIZE_MULTIPLIER) +
     Math.max(0, items.length - 1) * theme.layout.stackGap
   const stacked =

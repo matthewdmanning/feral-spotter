@@ -156,7 +156,7 @@ export default function AnnotateScreen() {
         style={styles.actionScroll}
         contentContainerStyle={styles.bottomBar}
       >
-        <ButtonRow>
+        <ButtonRow width="compact">
           <AppButton
             variant="secondary"
             size="compact"

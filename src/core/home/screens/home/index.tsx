@@ -23,8 +23,14 @@ import { Stack, router } from 'expo-router'
 import type { Icon as PhosphorIcon } from 'phosphor-react-native'
 import { CameraIcon } from 'phosphor-react-native/src/icons/Camera'
 import { ImageSquareIcon } from 'phosphor-react-native/src/icons/ImageSquare'
-import { useCallback, useMemo } from 'react'
-import { StyleSheet, useWindowDimensions, View } from 'react-native'
+import { useCallback, useMemo, useState } from 'react'
+import {
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+  type LayoutChangeEvent,
+} from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
 
@@ -141,14 +147,33 @@ function EntrypointCircle({
 }
 
 export default function HomeScreen() {
-  const { theme } = useUnistyles()
+  const { theme, rt } = useUnistyles()
   const { width: screenWidth, height: screenHeight } = useWindowDimensions()
   const isLandscape = screenWidth >= screenHeight
+  // NAV-8: the circles fit the area the footer leaves, measured on layout.
+  const [area, setArea] = useState<{ width: number; height: number } | null>(
+    null,
+  )
+  const handleAreaLayout = useCallback(({ nativeEvent }: LayoutChangeEvent) => {
+    const { width, height } = nativeEvent.layout
+    setArea((prev) =>
+      prev?.width === width && prev?.height === height
+        ? prev
+        : { width, height },
+    )
+  }, [])
   const entrypointDiameter = computeEntrypointDiameter(
     screenWidth,
     screenHeight,
     ENTRYPOINT_BUFFER_PERCENT,
     theme.spacing.xxxl,
+    area
+      ? {
+          width: area.width,
+          height: area.height - rt.insets.top,
+          minGap: theme.spacing.md,
+        }
+      : undefined,
   )
 
   useEntryGate()
@@ -166,7 +191,7 @@ export default function HomeScreen() {
   )
 
   const handleContinue = useCallback(
-    () => router.push('/submission/create'),
+    () => router.navigate('/submission/create'),
     [],
   )
 
@@ -212,54 +237,59 @@ export default function HomeScreen() {
 
       <View style={styles.root}>
         <AmbientBackground />
-        <View
-          style={[
-            styles.entrypointArea,
-            { flexDirection: isLandscape ? 'row' : 'column' },
-          ]}
-        >
-          <EntrypointCircle
-            label={navigationCopy.takePhotos}
-            Icon={CameraIcon}
-            variant="primary"
-            diameter={entrypointDiameter}
-            disabled={camera.disabled}
-            onPress={camera.open}
-          />
-          <EntrypointCircle
-            label={navigationCopy.uploadPhotos}
-            Icon={ImageSquareIcon}
-            variant="secondary"
-            diameter={entrypointDiameter}
-            disabled={library.disabled}
-            onPress={library.open}
-          />
-        </View>
+        {/* NAV-8: when the circles at their floor and the footer cannot fit,
+            Home scrolls rather than overlapping or hiding the actions. */}
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View
+            onLayout={handleAreaLayout}
+            style={[
+              styles.entrypointArea,
+              { flexDirection: isLandscape ? 'row' : 'column' },
+            ]}
+          >
+            <EntrypointCircle
+              label={navigationCopy.takePhotos}
+              Icon={CameraIcon}
+              variant="primary"
+              diameter={entrypointDiameter}
+              disabled={camera.disabled}
+              onPress={camera.open}
+            />
+            <EntrypointCircle
+              label={navigationCopy.uploadPhotos}
+              Icon={ImageSquareIcon}
+              variant="secondary"
+              diameter={entrypointDiameter}
+              disabled={library.disabled}
+              onPress={library.open}
+            />
+          </View>
 
-        {/* Everything below the circles lives in one footer, so adding or
+          {/* Everything below the circles lives in one footer, so adding or
             removing a footer child never changes how the circles are
             spaced: they split whatever the footer leaves. */}
-        <View>
-          {/* #375: one of the two circles above is dead whenever the pool has
+          <View>
+            {/* #375: one of the two circles above is dead whenever the pool has
             a source, and nothing said why. Only ever one is disabled, so
             one line covers both cases. */}
-          {draftReady && photoSource !== null && (
-            <PhotoDraftNotice
-              source={photoSource}
-              origin={draftOrigin}
-              onFinish={handleContinue}
-              onReset={confirmResetSubmission}
-            />
-          )}
+            {draftReady && photoSource !== null && (
+              <PhotoDraftNotice
+                source={photoSource}
+                origin={draftOrigin}
+                onFinish={handleContinue}
+                onReset={confirmResetSubmission}
+              />
+            )}
 
-          {/* Mounted only while shown: the column's fade-out scales it but
+            {/* Mounted only while shown: the column's fade-out scales it but
               keeps its layout height, which pushed the circles up. */}
-          {columnVisible && (
-            <View style={styles.bottomArea}>
-              <BottomButtonColumn buttons={buttons} visible />
-            </View>
-          )}
-        </View>
+            {columnVisible && (
+              <View style={styles.bottomArea}>
+                <BottomButtonColumn buttons={buttons} visible />
+              </View>
+            )}
+          </View>
+        </ScrollView>
       </View>
     </>
   )

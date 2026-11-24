@@ -105,3 +105,36 @@ it('stacks measured narrow rows and keeps both actions usable when wide', async 
   expect(screen.getByRole('button', { name: 'Cancel' })).toBeOnTheScreen()
   expect(screen.getByRole('button', { name: 'Confirm' })).toBeOnTheScreen()
 })
+
+// NAV-4 / NAV-T-3: Annotate's three compact buttons stacked on every phone,
+// taking height from the photo. They must fit side by side at 1.0x on a
+// 360dp phone and stack only at the reflow scale.
+it.each([
+  { fontScale: 1, stacked: false },
+  { fontScale: BUTTON_ROW_STACK_FONT_SCALE, stacked: true },
+])(
+  'three compact buttons on a 360dp phone: stacked=$stacked at $fontScale',
+  async ({ fontScale, stacked }) => {
+    jest.mocked(useWindowDimensions).mockReturnValue({
+      fontScale,
+      scale: 1,
+      width: 360,
+      height: 800,
+    })
+    await render(
+      <ButtonRow width="compact">
+        <Text>Previous</Text>
+        <Text>Not in Photo</Text>
+        <Text>Done</Text>
+      </ButtonRow>,
+    )
+    const layoutView = layoutTarget(screen.getByText('Done'))
+    await act(async () =>
+      layoutView.props.onLayout({
+        nativeEvent: { layout: { width: 328, height: 52, x: 0, y: 0 } },
+      }),
+    )
+
+    expect(requestedVariants()).toEqual({ stacked })
+  },
+)

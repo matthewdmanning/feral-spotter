@@ -10,7 +10,7 @@
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import type { ReactNode } from 'react'
 import { Text } from '@/src/shared/ui/atoms/Text'
-import { Modal, ScrollView, View } from 'react-native'
+import { KeyboardAvoidingView, Modal, ScrollView } from 'react-native'
 import { useUnistyles } from 'react-native-unistyles'
 import { dialogShell } from '@/src/shared/ui/organisms/dialogShell.styles'
 
@@ -39,7 +39,11 @@ export function DialogShell({
       statusBarTranslucent
       onRequestClose={onRequestClose}
     >
-      <View
+      {/* NAV-6: an input in the sheet (Add email) must not sit under the
+          keyboard. A Modal is outside the window's own resize, so the
+          backdrop pads itself. */}
+      <KeyboardAvoidingView
+        behavior="padding"
         style={[
           dialogShell.backdrop,
           { backgroundColor: theme.colors.overlay },
@@ -47,6 +51,7 @@ export function DialogShell({
       >
         <GlassSurface kind="raised" style={dialogShell.sheet}>
           <ScrollView
+            keyboardShouldPersistTaps="handled"
             style={dialogShell.scroll}
             contentContainerStyle={dialogShell.scrollContent}
           >
@@ -54,7 +59,7 @@ export function DialogShell({
             {children}
           </ScrollView>
         </GlassSurface>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   )
 }

@@ -24,6 +24,7 @@ export const styles = StyleSheet.create((theme, rt) => ({
   },
   title: { ...theme.textVariants.title, color: theme.colors.text },
   total: { ...theme.textVariants.bodySmall, color: theme.colors.muted },
+  loading: { marginTop: theme.spacing.xl },
   empty: {
     borderRadius: theme.radius.xl,
     paddingHorizontal: theme.spacing.xxl,

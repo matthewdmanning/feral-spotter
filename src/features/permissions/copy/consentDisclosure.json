@@ -25,6 +25,7 @@
   ],
   "agreeLabel": "I Agree — Continue",
   "declineLabel": "Decline",
+  "denyLabel": "Deny",
   "declineWarningTitle": "Permissions Required",
   "declineWarningBody": "Without permissions, you won't be able to use FeralSpotter.",
   "locationOnceWarningTitle": "About location access",

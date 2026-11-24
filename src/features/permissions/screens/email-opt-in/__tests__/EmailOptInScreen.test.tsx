@@ -8,6 +8,7 @@ import consentCopy from '@/src/features/permissions/copy/consentDisclosure.json'
 const mockRouterReplace = jest.fn()
 
 jest.mock('expo-router', () => ({
+  useIsFocused: () => true,
   router: {
     replace: (...args: unknown[]) => mockRouterReplace(...args),
     push: jest.fn(),

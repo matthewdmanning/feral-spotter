@@ -191,7 +191,7 @@ describe('HomeScreen entrypoint buttons — model-based test', () => {
         expect(mockPickFromLibrary).toHaveBeenCalledTimes(1)
       }
       if (events.some((e) => e.type === 'PRESS_RESUME')) {
-        expect(router.push).toHaveBeenCalledWith('/submission/create')
+        expect(router.navigate).toHaveBeenCalledWith('/submission/create')
       }
       // New Sighting starts over, so it must not reopen the old draft.
       if (events.some((e) => e.type === 'PRESS_NEW')) {
