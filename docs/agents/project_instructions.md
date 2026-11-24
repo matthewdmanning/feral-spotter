@@ -25,6 +25,7 @@ This file holds routing and universal rules only. Role-specific rules live in th
 - Write or review tests: read [testing.md](testing.md).
 - Format, lint or name code: read [CODE_QUALITY.md](../code_standards/CODE_QUALITY.md) and [COMBINED_STYLE_GUIDE.md](../code_standards/COMBINED_STYLE_GUIDE.md).
 - Audit code against style rules: read [code-audit-grep-plan.md](../code_standards/code-audit-grep-plan.md) and [code-audit-manual-rules.md](../code_standards/code-audit-manual-rules.md).
+- Run or act as a `review-*` code-review agent (`.claude/agents/review-*.md`): read [code-review-protocol.md](code-review-protocol.md). It has the shared scope, test-review checklist, evidence, severity and report format for the five review lenses.
 - Place a file or choose an import direction: read [PROJECT_STRUCTURE.md](../PROJECT_STRUCTURE.md).
 - Write or change native code (Kotlin, Swift, Gradle, Xcode, `modules/`): read [native-code.md](native-code.md) first. It names the skill to load. `android/` and `ios/` are generated. Never edit them.
 - Implement a feature or sprint, or write, modify or review code: read [documentation.md](documentation.md). It says when and where to write an implementation note.
