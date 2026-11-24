@@ -280,8 +280,8 @@ Larger components or more whitespace are not automatically better either.
 
 ## References
 
-- [Mobile UX and layout best practices](ui-ux/reference/mobile-ux-layout-best-practices.md)
-- [Mobile UX principles](ui-ux/reference/ux_principles.md)
+- [Mobile UX and layout best practices](../references/mobile-ux-layout-best-practices.md)
+- [Mobile UX principles](../references/ux_principles.md)
 - [Using design decisions](ui-ux/reference/using-design-decisions.md)
 - [Testing policy](testing.md)
 

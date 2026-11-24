@@ -16,7 +16,7 @@ This file holds routing and universal rules only. Role-specific rules live in th
 - Design, build or review UI: read [ui-ux-standards.md](ui-ux-standards.md). It has placement, spacing, tokens, glass surfaces, copy and accessibility rules.
 - Change or review UI code, or check a design decision: read [using-design-decisions.md](ui-ux/reference/using-design-decisions.md). It says where design files live and what to do when code differs.
 - Check what a screen does now: read [ui-ux/current-state/](ui-ux/current-state/). There is one file per topic. Also see [ui-ux/decision-records/](ui-ux/decision-records/).
-- Weigh a mobile tradeoff (touch targets, platform rules, accessibility, dark mode, spacing, overflow, text scaling, lists): read [ux_principles.md](ui-ux/reference/ux_principles.md) and [mobile-ux-layout-best-practices.md](ui-ux/reference/mobile-ux-layout-best-practices.md).
+- Weigh a mobile tradeoff that the standards do not settle (touch targets, platform rules, accessibility, dark mode, spacing, overflow, text scaling, lists): read [ux_principles.md](../references/ux_principles.md) and [mobile-ux-layout-best-practices.md](../references/mobile-ux-layout-best-practices.md). These are general references, not project rules.
 - Find theme tokens: raw color values live only in `src/shared/config/themes.ts`. `src/shared/config/unistyles.ts` wires them to the engine. Component `*.styles.ts` files use tokens, never hex.
 
 ### Code and tests
@@ -36,10 +36,9 @@ This file holds routing and universal rules only. Role-specific rules live in th
 - Handle keys, tokens, `.env*`, `google-services.json` or `GoogleService-Info.plist`, or judge a possible leak: read [secrets.md](secrets.md).
 - Build the app, change build settings or GitHub environment variables: read [builds.md](builds.md).
 
-### Devices and QA
+### Devices
 
 - Drive or debug the app on a device or emulator: read [test-driving.md](test-driving.md).
-- Run manual QA: read [routing-notes.md](routing-notes.md). It points to the QA checklist.
 
 ### Git, GitHub and planning
 
@@ -50,8 +49,29 @@ This file holds routing and universal rules only. Role-specific rules live in th
 - Format console commands in a reply: read [output-conventions.md](output-conventions.md).
 - Pick a template: read [routing-notes.md](routing-notes.md).
 
+## Document kinds
+
+Classify each file you write or edit. Test: does it describe one moment or one task? If yes, it is a record. If no, it is one of the other four kinds.
+
+| Kind              | Examples                                                     | Where                                                                                                                              | Direction                                                                                                                                    |
+| ----------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Record            | handoffs, test drives, logs, run notes, implementation notes | handoffs in `docs/scratchpad/`; drives, logs and run notes in `docs/test-drives/`; implementation notes in `docs/implementations/` | Create a new file. Do not edit an old one, except to correct a fact. For a changed feature, append a dated entry to its implementation note. |
+| Guide             | how to build, how to drive a device                          | `docs/agents/`                                                                                                                     | Edit in place when the project changes. Keep rules only.                                                                                     |
+| Project structure | `PROJECT_STRUCTURE.md`                                       | `docs/`                                                                                                                            | Update in the same change that moves code. It is a map, not a history.                                                                       |
+| Agent instruction | this index, `docs/agents/*.md`                               | `docs/agents/`                                                                                                                     | Keep it role-specific. Link to a rule. Do not copy it.                                                                                       |
+| Workflow          | git, issue triage, test-drive steps                          | `docs/agents/`                                                                                                                     | Write numbered steps with a stop condition. Name the skill or script that runs it.                                                           |
+
+- A record may point to a guide. A guide never points to a record.
+- Put each rule in one file. Link to it from other files.
+- Put incidents, issue numbers and "as of" dates in records. Keep them out of guides.
+
+## File names
+
+- Date a file only if it is a record. A record goes stale over time.
+- Name a record `YYYY-MM-DD-{activity_name}.md`. The date is the day you create it.
+- The activity name is the active sprint, or the branch if it is not `main`. If you do not know it, ask the user.
+- Do not date any other kind. You edit those files, so they stay current.
+
 ## Universal rules
 
-- File name format: `YYYY-MM-DD-{activity_name}`. The activity name is the active sprint, or the branch if it is not `main`. If you do not know it, ask the user.
-- Exempt from the date prefix: `docs/adr/`, `docs/planning/`, `docs/agents/ui-ux/current-state/` and `docs/agents/ui-ux/decision-records/`. Each file records its own last-updated date.
 - For branch, commit and PR hygiene, use the global git-workflow rules. For git mechanics, use [git.md](git.md).

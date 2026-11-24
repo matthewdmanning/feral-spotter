@@ -1,6 +1,6 @@
 # Android camera configuration — synthesis
 
-Decision summary of [2026-11-14-android-camera-config-guide.md](2026-11-14-android-camera-config-guide.md) ("GUIDE") and [2026-11-14-android-camera-capture-parameters.md](2026-11-14-android-camera-capture-parameters.md) ("REF").
+Decision summary of [android-camera-config-guide.md](android-camera-config-guide.md) ("GUIDE") and [android-camera-capture-parameters.md](android-camera-capture-parameters.md) ("REF").
 
 - Goal: most real detail of a cat at 10–20 m, handheld, dusk or shade, subject may move. Output RAW-capable (DNG). Test device Pixel 7.
 - Status: research only. Nothing run on a device. Every recommendation is inference (INF) from GUIDE's cited facts; `§n` = GUIDE section. Sources and quotes live in GUIDE, not here.
