@@ -144,3 +144,9 @@ tags:
 
 **Purpose:** Owner clarification: an account has exactly one email address, the email itself unsubscribes with a single button (no text input), and the subscription covers email only, never account deletion. A stranger cannot hold another person's address, so the unverified-unsubscribe guard protected nothing. It also broke a real case: an unverified user's in-app opt-out was dropped, and confirming the earlier `pending` signup would then subscribe them.
 **Change:** Unsubscribe always acts on the token's address. Test: `email.test.ts` "unsubscribes an unverified address too". Account deletion is tracked separately (sub-issue of #401).
+
+## 2026-11-24 — fix
+
+**Purpose** — Issue #507 reports that Settings tells users to sign out even though the app offers no sign-out control.
+
+**Change** — The email error explains that updating the address requires a recent sign-in. The existing Settings email test checks the revised message.
