@@ -32,6 +32,7 @@ import {
 } from '@/src/features/history/lib/history'
 import {
   GOOGLE_MAP_UI_SETTINGS,
+  mapViewForPoint,
   mapViewForSpots,
   type MapSize,
 } from '@/src/shared/lib/mapView'
@@ -39,6 +40,11 @@ import { Image, type ImageRef } from 'expo-image'
 import { AppleMaps, GoogleMaps } from 'expo-maps'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Platform, View, type LayoutChangeEvent } from 'react-native'
+import { AppButton } from '@/src/shared/ui/atoms/AppButton'
+import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
+import { Text } from '@/src/shared/ui/atoms/Text'
+import { historyCopy } from '@/src/shared/config/text'
+import { useEmptyMapCenter } from '@/src/features/history/hooks/useEmptyMapCenter'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './SightingsMap.styles'
 
@@ -92,12 +98,15 @@ interface SightingsMapProps {
   onSpotPress: (spot: SightingSpot) => void
   /** True while a finger is on the map — lets a parent pause its scroll. */
   onTouchActiveChange?: (active: boolean) => void
+  /** NAV-5: the history read failed; an error card with Retry covers the map. */
+  onRetry?: () => void
 }
 
 export function SightingsMap({
   spots,
   onSpotPress,
   onTouchActiveChange,
+  onRetry,
 }: SightingsMapProps) {
   const { theme } = useUnistyles()
   // Android: null until the bitmaps resolve, so default markers never flash
@@ -118,7 +127,13 @@ export function SightingsMap({
     }
   }, [])
 
-  const view = size ? mapViewForSpots(spots, size) : null
+  // NAV-5: with no pins the map still shows where the user is.
+  const emptyCenter = useEmptyMapCenter(spots.length === 0)
+  const view = !size
+    ? null
+    : spots.length > 0
+      ? mapViewForSpots(spots, size)
+      : mapViewForPoint(emptyCenter)
   // Keyed on values, not identity: a tab-focus re-read builds equal spots
   // as new objects, and a new camera object would snap back a user's pan.
   const latitude = view?.coordinates.latitude
@@ -157,8 +172,6 @@ export function SightingsMap({
     touchActiveChange.current = onTouchActiveChange
   }, [onTouchActiveChange])
   useEffect(() => () => touchActiveChange.current?.(false), [])
-
-  if (spots.length === 0) return null
 
   const handleLayout = ({ nativeEvent }: LayoutChangeEvent) => {
     const { width, height } = nativeEvent.layout
@@ -212,6 +225,16 @@ export function SightingsMap({
           markers={androidMarkers}
         />
       )}
+      {onRetry ? (
+        <View style={styles.overlay}>
+          <GlassSurface kind="card" style={styles.errorCard}>
+            <Text style={styles.errorText}>{historyCopy.readFailed}</Text>
+            <AppButton size="compact" onPress={onRetry}>
+              {historyCopy.retry}
+            </AppButton>
+          </GlassSurface>
+        </View>
+      ) : null}
     </View>
   )
 }

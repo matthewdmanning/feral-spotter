@@ -82,3 +82,14 @@ export function mapViewForSpots(
     zoom: Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.floor(zoom))),
   }
 }
+
+/** NAV-5: where an empty map opens when the device position is unknown. */
+export const FALLBACK_MAP_CENTER: MapPoint = {
+  latitude: 29.9753,
+  longitude: 31.1376,
+}
+
+/** A camera on one point, as a lone pin would get. */
+export function mapViewForPoint(point: MapPoint): MapView {
+  return { coordinates: point, zoom: SINGLE_SPOT_ZOOM }
+}

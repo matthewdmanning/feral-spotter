@@ -80,7 +80,7 @@ describe('HomeScreen photo draft notice (#424)', () => {
     expect(screen.getByText('Reset')).toBeOnTheScreen()
 
     await userEvent.setup().press(screen.getByText('Finish'))
-    expect(router.push).toHaveBeenCalledWith('/submission/create')
+    expect(router.navigate).toHaveBeenCalledWith('/submission/create')
   })
 
   it('asks before discarding a restored draft', async () => {

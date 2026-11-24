@@ -293,7 +293,7 @@ export default function CreateSubmissionScreen() {
             disabled={cats.length === 0}
             loading={isSubmitting}
           >
-            Submit Sighting
+            {submissionCopy.finishedLabel}
           </AppButton>
         </ButtonRow>
       </View>

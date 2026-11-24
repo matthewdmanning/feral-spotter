@@ -5,6 +5,8 @@ export const styles = StyleSheet.create((theme, rt) => ({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
+  // Fills the screen while the content fits; scrolls past it (NAV-8).
+  scrollContent: { flexGrow: 1 },
   // No horizontal padding — the buffer around the circular entrypoint
   // buttons is computed from the screen edge (see HomeScreen's
   // entrypointBuffer), not a fixed inset.

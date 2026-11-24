@@ -39,6 +39,13 @@ export const navigationCopy = {
 } as const
 
 /** Bundled UI copy: changes ship with the next app bundle. User data stays separate. */
+// Sightings tab copy owner.
+export const historyCopy = {
+  readFailed: 'Your sightings could not be loaded.',
+  retry: 'Retry',
+  loading: 'Loading sightings',
+} as const
+
 export const commonCopy = {
   cancel: 'Cancel',
   ok: 'OK',
@@ -380,12 +387,14 @@ const uploadRefusedCopy: Readonly<Record<string, string | undefined>> = {
   quota_exceeded:
     'Your photo storage limit is reached. This sighting is saved on this device.',
   email_verification_required:
-    'Verify your email address, then tap Submit Sighting again.',
+    'Verify your email address, then tap Finished! again.',
   account_erasing: 'This account is being deleted. Photos cannot upload.',
 }
 
 // Submission copy owner.
 export const submissionCopy = {
+  /** The submit button (cat-list-empty-state.md). */
+  finishedLabel: 'Finished!',
   location: {
     accuracyUncertainAccessibility:
       'Location accuracy is low or unavailable — tap to set manually',
@@ -423,10 +432,10 @@ export const submissionCopy = {
     cancel: commonCopy.cancel,
     submit: 'Submit',
     uploadStalled:
-      'Your photos did not finish uploading. This sighting is saved on this device. Check your connection, then tap Submit Sighting to send it again.',
+      'Your photos did not finish uploading. This sighting is saved on this device. Check your connection, then tap Finished! to send it again.',
     uploadRefused: uploadRefusedCopy,
     failed:
-      'The sighting did not reach the server. It is saved on this device. Tap Submit Sighting to send it again.',
+      'The sighting did not reach the server. It is saved on this device. Tap Finished! to send it again.',
     confirm: 'Submit {catCount} {catLabel} and {photoCount} {photoLabel}?',
     cat: 'cat',
     cats: 'cats',

@@ -5,11 +5,12 @@ import { SightingsMap } from '@/src/features/history/components/SightingsMap'
 import { router } from 'expo-router'
 import { act, render, screen, userEvent } from '@testing-library/react-native'
 import FeralReportsScreen from '@/src/features/history/screens/feralReports/index'
+import { historyCopy } from '@/src/shared/config/text'
 
 // Stack.Screen needs a navigator; only the header options live there.
 jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
-  router: { push: jest.fn() },
+  router: { push: jest.fn(), navigate: jest.fn() },
 }))
 // Focus this check on list/card wiring; the history rules have their own suite.
 jest.mock('@/src/features/history/hooks/useFeralReports')
@@ -32,11 +33,16 @@ const cache = (
     cats: Array.from({ length: catCount }, (_, i) => ({ local_id: `c${i}` })),
   }) as unknown as SubmissionCacheFile
 
-const showCaches = (caches: SubmissionCacheFile[], resumableId?: string) =>
+const showCaches = (
+  caches: SubmissionCacheFile[],
+  resumableId?: string,
+  status: 'loading' | 'failed' | 'ready' = 'ready',
+) =>
   jest.mocked(useFeralReports).mockReturnValue({
     caches,
     spots: [],
     resumableId,
+    status,
     refreshing: false,
     load: jest.fn(),
     onRefresh: jest.fn(),
@@ -46,6 +52,27 @@ const showCaches = (caches: SubmissionCacheFile[], resumableId?: string) =>
 // the list's own header and empty slots, so a list change can drop one of
 // them (or the cards) without any other test noticing.
 describe('Feral Reports screen', () => {
+  // NAV-5: before the read lands, or when it fails, "No sightings yet" made
+  // a user think their history was gone.
+  it('shows no empty state while loading', async () => {
+    showCaches([], undefined, 'loading')
+    await render(<FeralReportsScreen />)
+
+    expect(screen.getByLabelText(historyCopy.loading)).toBeOnTheScreen()
+    expect(screen.queryByText('No sightings yet')).not.toBeOnTheScreen()
+  })
+
+  it('offers Retry over the map when the read failed', async () => {
+    showCaches([], undefined, 'failed')
+    await render(<FeralReportsScreen />)
+
+    expect(screen.queryByText('No sightings yet')).not.toBeOnTheScreen()
+    const props = jest.mocked(SightingsMap).mock.lastCall?.[0]
+    expect(props?.onRetry).toBe(
+      jest.mocked(useFeralReports).mock.results.at(-1)?.value.onRefresh,
+    )
+  })
+
   it('shows the empty state and no legend before any report exists', async () => {
     showCaches([])
     await render(<FeralReportsScreen />)
@@ -88,7 +115,7 @@ describe('Feral Reports screen', () => {
     await user.press(
       screen.getByRole('button', { name: /Sighting, In Progress/ }),
     )
-    expect(router.push).toHaveBeenLastCalledWith('/submission/create')
+    expect(router.navigate).toHaveBeenLastCalledWith('/submission/create')
 
     // The cache array stays identical: only the resume target changes.
     // A memoized card/list must still stop offering the abandoned draft.

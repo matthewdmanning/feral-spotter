@@ -14,7 +14,8 @@ import { useCallback, useState } from 'react'
 import { ClockIcon } from 'phosphor-react-native/src/icons/Clock'
 import { FlashList } from '@shopify/flash-list'
 import { Text } from '@/src/shared/ui/atoms/Text'
-import { RefreshControl, View } from 'react-native'
+import { ActivityIndicator, RefreshControl, View } from 'react-native'
+import { historyCopy } from '@/src/shared/config/text'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
 
@@ -30,7 +31,7 @@ const keyExtractor = (cache: SubmissionCacheFile) => cache.id
 
 export default function FeralReportsScreen() {
   const { theme } = useUnistyles()
-  const { caches, spots, resumableId, refreshing, onRefresh } =
+  const { caches, spots, resumableId, status, refreshing, onRefresh } =
     useFeralReports()
   // Let a map gesture pan the map instead of the surrounding history list.
   const [scrollEnabled, setScrollEnabled] = useState(true)
@@ -93,6 +94,7 @@ export default function FeralReportsScreen() {
                 spots={spots}
                 onSpotPress={handleSpotPress}
                 onTouchActiveChange={handleTouchActiveChange}
+                onRetry={status === 'failed' ? onRefresh : undefined}
               />
               {caches.length > 0 && (
                 <View style={styles.legend}>
@@ -107,18 +109,27 @@ export default function FeralReportsScreen() {
             </View>
           }
           ListEmptyComponent={
-            <GlassSurface kind="card" style={styles.empty}>
-              <View style={styles.emptyIcon}>
-                <ClockIcon
-                  size={theme.iconSize.xl}
-                  color={theme.colors.accentSoftText}
-                />
-              </View>
-              <Text style={styles.emptyTitle}>No sightings yet</Text>
-              <Text style={styles.emptyBody}>
-                Draft and submitted sightings appear here as you create them
-              </Text>
-            </GlassSurface>
+            // NAV-5: only a finished read with no Sightings is "empty".
+            status === 'loading' ? (
+              <ActivityIndicator
+                style={styles.loading}
+                color={theme.colors.accent}
+                accessibilityLabel={historyCopy.loading}
+              />
+            ) : status === 'failed' ? null : (
+              <GlassSurface kind="card" style={styles.empty}>
+                <View style={styles.emptyIcon}>
+                  <ClockIcon
+                    size={theme.iconSize.xl}
+                    color={theme.colors.accentSoftText}
+                  />
+                </View>
+                <Text style={styles.emptyTitle}>No sightings yet</Text>
+                <Text style={styles.emptyBody}>
+                  Draft and submitted sightings appear here as you create them
+                </Text>
+              </GlassSurface>
+            )
           }
         />
       </View>

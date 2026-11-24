@@ -1,3 +1,4 @@
+import { submissionCopy } from '@/src/shared/config/text'
 import { submissionPhoto } from '@/src/test-utils/photoFixtures'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import {
@@ -179,8 +180,8 @@ describe('Cat List actions', () => {
     })
   })
 
-  it('Submit Sighting calls handleDone', async () => {
-    await userEvent.press(screen.getByText('Submit Sighting'))
+  it('Finished! calls handleDone', async () => {
+    await userEvent.press(screen.getByText(submissionCopy.finishedLabel))
     expect(mockHandleDone).toHaveBeenCalledTimes(1)
   })
 
@@ -224,14 +225,14 @@ describe('Cat List with no cats left (#299)', () => {
 
   // #375: "Submit Sighting" is disabled at zero cats, so the screen must say what
   // the user has to do first.
-  it('says why Submit Sighting is disabled while no cat is recorded', async () => {
+  it('says why Finished! is disabled while no cat is recorded', async () => {
     mockParams = { noAutoSkip: '1' }
     await render(<CreateSubmissionScreen />)
 
     await waitFor(() =>
       expect(screen.getByText(/Describe at least one cat/)).toBeTruthy(),
     )
-    const finished = screen.getByText('Submit Sighting')
+    const finished = screen.getByText(submissionCopy.finishedLabel)
     expect(finished).toBeDisabled()
     await userEvent.press(finished)
     expect(mockHandleDone).not.toHaveBeenCalled()

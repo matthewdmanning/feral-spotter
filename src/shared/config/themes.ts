@@ -268,7 +268,8 @@ const opacity = {
   pressed: 0.7,
 } as const
 
-const controlWidth = { choice: 112, action: 128 } as const
+/** Minimum cell widths. `compact` fits three compact buttons on a 360dp phone (NAV-4). */
+const controlWidth = { choice: 112, action: 128, compact: 96 } as const
 
 const sharedTokens = {
   controlWidth,

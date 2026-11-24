@@ -24,3 +24,38 @@ describe('computeEntrypointDiameter', () => {
     expect(computeEntrypointDiameter(200, 400, 0.75, 24)).toBe(48)
   })
 })
+
+// NAV-8: with a draft footer on a short phone, or at 200% text, the screen
+// formula alone overlapped the circles with each other and the footer.
+describe('computeEntrypointDiameter within the measured area', () => {
+  it('shrinks so both stacked circles and the gap fit the area', () => {
+    // Screen formula: 360 * 0.6 - 48 = 168. Area: (300 - 12) / 2 = 144.
+    expect(
+      computeEntrypointDiameter(360, 640, 0.2, 48, {
+        width: 360,
+        height: 300,
+        minGap: 12,
+      }),
+    ).toBe(144)
+  })
+
+  it('keeps the screen formula when the area has room', () => {
+    expect(
+      computeEntrypointDiameter(360, 800, 0.2, 48, {
+        width: 360,
+        height: 600,
+        minGap: 12,
+      }),
+    ).toBe(168)
+  })
+
+  it('keeps the touch-target floor; Home scrolls instead', () => {
+    expect(
+      computeEntrypointDiameter(360, 640, 0.2, 48, {
+        width: 360,
+        height: 60,
+        minGap: 12,
+      }),
+    ).toBe(48)
+  })
+})

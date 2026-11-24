@@ -12,4 +12,5 @@ export const styles = StyleSheet.create((theme) => ({
     color: theme.colors.text,
     marginBottom: theme.spacing.lg,
   },
+  denyBtn: { alignSelf: 'center', marginTop: theme.spacing.xxl },
 }))
