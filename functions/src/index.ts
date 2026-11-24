@@ -30,6 +30,7 @@ import {
 import {
   createUploadAdmissionPorts,
   deleteLateErasedUpload,
+  validateFinalizedUpload,
 } from './uploads/adapters'
 import { defineSecret, defineString } from 'firebase-functions/params'
 import { onCall, onRequest } from 'firebase-functions/v2/https'
@@ -122,6 +123,7 @@ export const onSubmissionSubmitted = onObjectFinalized(
   async ({ data }) => {
     if (await deleteLateErasedUpload(BUCKET_NAME, data.name, data.generation))
       return
+    if (!(await validateFinalizedUpload(BUCKET_NAME, data))) return
     await syncCapForObject(data.name)
     // LOGIC-5: a sent Submission stops holding one of the open grants.
     const object = parseSubmissionObject(data.name)

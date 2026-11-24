@@ -271,6 +271,7 @@ export async function uploadSubmissionMetadata(
   const write = () =>
     uploadString(reference, JSON.stringify(payload), 'raw', {
       contentType: 'application/json',
+      customMetadata: { user_id: uid },
     })
 
   // #486: metadata.json counts against the quota, so it needs a grant too.
@@ -311,6 +312,13 @@ export async function finalizeSubmissionPhotoMetadata(
 ): Promise<void> {
   if (UPLOADS_MOCK) return
 
+  const photoPath =
+    /^submissions\/([^/]+)\/([^/]+)\/photo-([0-9])[.](jpg|jpeg|png|heic|heif|dng)$/.exec(
+      objectPath,
+    )
+  if (!photoPath || photoPath[1] !== userId)
+    throw new Error('Invalid submission photo path')
+  const [, , submissionId, slot, extension] = photoPath
   const reference = getSubmissionRef(objectPath)
 
   const existing = await getMetadata(reference)
@@ -322,19 +330,31 @@ export async function finalizeSubmissionPhotoMetadata(
     ]),
   )
 
-  await updateMetadata(reference, {
-    customMetadata: {
-      ...existing.customMetadata,
-      ...cameraEntries,
-      upload_time: existing.timeCreated,
-      user_id: userId,
-      ...(latitude != null &&
-        longitude != null && {
-          location_lat: String(latitude),
-          location_lng: String(longitude),
-        }),
-    },
-  })
+  const patch = () =>
+    updateMetadata(reference, {
+      customMetadata: {
+        ...existing.customMetadata,
+        ...cameraEntries,
+        upload_time: existing.timeCreated,
+        user_id: userId,
+        ...(latitude != null &&
+          longitude != null && {
+            location_lat: String(latitude),
+            location_lng: String(longitude),
+          }),
+      },
+    })
+  await admitPhotoUpload(submissionId, Number(slot), extension === 'dng')
+  try {
+    await patch()
+  } catch (error) {
+    if ((error as { code?: string }).code !== 'storage/unauthorized')
+      throw error
+    await admitPhotoUpload(submissionId, Number(slot), extension === 'dng', {
+      force: true,
+    })
+    await patch()
+  }
 }
 
 /**

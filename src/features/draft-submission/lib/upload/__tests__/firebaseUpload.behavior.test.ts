@@ -77,7 +77,10 @@ describe('Firebase submission upload behavior', () => {
       }),
       JSON.stringify(payload),
       'raw',
-      { contentType: 'application/json' },
+      {
+        contentType: 'application/json',
+        customMetadata: { user_id: 'user-4' },
+      },
     )
   })
 
@@ -104,7 +107,7 @@ describe('Firebase submission upload behavior', () => {
     } as never)
 
     await finalizeSubmissionPhotoMetadata(
-      'submissions/user-4/sub-7/photo.jpg',
+      'submissions/user-4/sub-7/photo-0.jpg',
       'user-4',
       34.1,
       -82.2,
@@ -114,9 +117,12 @@ describe('Firebase submission upload behavior', () => {
     )
 
     const objectRef = expect.objectContaining({
-      fullPath: 'submissions/user-4/sub-7/photo.jpg',
+      fullPath: 'submissions/user-4/sub-7/photo-0.jpg',
     })
     expect(getMetadata).toHaveBeenCalledWith(objectRef)
+    expect(admissions).toEqual([
+      JSON.stringify({ submissionId: 'sub-7', slot: 0, raw: false }),
+    ])
     expect(updateMetadata).toHaveBeenCalledWith(objectRef, {
       customMetadata: {
         source: 'camera',

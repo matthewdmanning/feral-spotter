@@ -15,8 +15,15 @@ const mockMissing = new Set<string>()
 jest.mock('firebase-admin/storage', () => ({
   getStorage: () => ({
     bucket: () => ({
-      file: () => ({
+      file: (name: string) => ({
         download: async () => {
+          if (mockObjects.has(name)) {
+            return [
+              Buffer.from(
+                JSON.stringify({ submission: {}, cats: [{}], photo_paths: [] }),
+              ),
+            ]
+          }
           throw Object.assign(new Error('Not found'), { code: 404 })
         },
       }),
@@ -64,7 +71,7 @@ import {
 const metadata = (uid: string, n: number) =>
   `submissions/${uid}/sub-${n}/metadata.json`
 const storageEvent = (name: string) =>
-  ({ data: { name } }) as unknown as StorageEvent
+  ({ data: { name, generation: 1, size: 100 } }) as unknown as StorageEvent
 
 beforeEach(() => {
   mockObjects.clear()

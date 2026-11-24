@@ -313,3 +313,9 @@ ADR-0005's last 2026-11-22 amendment.
 **Deploy:** set the `UPLOAD_IDENTITY_KEY` Firebase secret before
 `admitPhotoUpload`. Never rotate it. Update the privacy notice: a keyed
 email hash and a Submission count outlive erasure.
+
+## 2026-11-24 — fix
+
+**Purpose** — Close the upload-rule and content-validation findings in #494.
+
+**Change** — Storage checks the declared metadata owner on Submission JSON and requires an active slot grant for photo metadata patches, including legacy extensions. Submit refreshes an expired or missing grant before retrying a patch. The storage finalization function validates the stored generation of Submission JSON and declared JPEGs. Organization sharing uses the same Submission parser. The admission ledger already enforces the 250-Submission lifetime cap and the 20 GiB total byte quota independently of the token claim.

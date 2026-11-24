@@ -26,7 +26,7 @@ import {
   updateLedger,
 } from './store'
 import { errorCode, RequestError } from './errors'
-import { isStoredPhotoFileName } from '../submissionLayout'
+import { parseSubmissionMetadata } from '../uploads/submissionContent'
 
 const CACHE_RADIUS_KM = defineString('ORGANIZATIONS_CACHE_RADIUS_KM', {
   default: String(DEFAULT_CACHE_RADIUS_KM),
@@ -73,72 +73,8 @@ async function readSubmission(uid: string, submissionId: string) {
       throw new RequestError(404, 'Sighting not found')
     throw error
   }
-  const metadata = JSON.parse(bytes.toString()) as {
-    submission: {
-      latitude?: number
-      longitude?: number
-      report_injured?: boolean
-    }
-    cats: Record<string, unknown>[]
-    photo_paths: string[]
-    photo_pairs?: { jpeg_path: string; dng_path: string }[]
-  }
-  /** Use this function to reject metadata paths outside the owning Submission. */
-  const pathInSubmission = (value: unknown): value is string => {
-    if (typeof value !== 'string' || !value.startsWith(prefix)) return false
-    const fileName = value.slice(prefix.length)
-    return (
-      fileName.length > 0 &&
-      !fileName.includes('/') &&
-      fileName !== 'metadata.json'
-    )
-  }
-  /** Use this function to admit only supported artifact names in a pair. */
-  const pairedPathInSubmission = (value: unknown): value is string =>
-    pathInSubmission(value) && isStoredPhotoFileName(value.slice(prefix.length))
-  const validPhotoPaths =
-    Array.isArray(metadata.photo_paths) &&
-    metadata.photo_paths.every((path) => pathInSubmission(path))
-  const pairJpegs = new Set<string>()
-  const pairDngs = new Set<string>()
-  const validPhotoPairs =
-    metadata.photo_pairs == null ||
-    (validPhotoPaths &&
-      Array.isArray(metadata.photo_pairs) &&
-      metadata.photo_pairs.every((pair) => {
-        if (
-          pair == null ||
-          !pairedPathInSubmission(pair.jpeg_path) ||
-          !pairedPathInSubmission(pair.dng_path) ||
-          pair.jpeg_path.endsWith('.dng') ||
-          !pair.dng_path.endsWith('.dng') ||
-          !metadata.photo_paths.includes(pair.jpeg_path)
-        )
-          return false
-        const jpegSlot = pair.jpeg_path
-          .slice(prefix.length)
-          .replace(/\.[^.]+$/, '')
-        const dngSlot = pair.dng_path
-          .slice(prefix.length)
-          .replace(/\.[^.]+$/, '')
-        if (
-          jpegSlot !== dngSlot ||
-          pairJpegs.has(pair.jpeg_path) ||
-          pairDngs.has(pair.dng_path)
-        )
-          return false
-        pairJpegs.add(pair.jpeg_path)
-        pairDngs.add(pair.dng_path)
-        return true
-      }))
-  if (
-    !Array.isArray(metadata.cats) ||
-    metadata.cats.length < 1 ||
-    !Array.isArray(metadata.photo_paths) ||
-    !validPhotoPaths ||
-    !validPhotoPairs
-  )
-    throw new RequestError(400, 'Invalid submitted sighting')
+  const metadata = parseSubmissionMetadata(bytes, uid, submissionId)
+  if (!metadata) throw new RequestError(400, 'Invalid submitted sighting')
   return metadata
 }
 export async function makePermission(
