@@ -24,5 +24,5 @@ export const styles = StyleSheet.create((theme) => ({
       },
     },
   },
-  disabled: { opacity: 0.5 },
+  disabled: { opacity: theme.opacity.disabled },
 }))

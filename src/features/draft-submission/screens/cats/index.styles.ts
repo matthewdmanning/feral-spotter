@@ -25,7 +25,7 @@ export const styles = StyleSheet.create((theme) => ({
   // The inset-crop bubble is centered over this title (#186) — fade it
   // significantly rather than trying to dodge the bubble positionally,
   // since the bubble can be wider than the available header row.
-  titleFaded: { opacity: 0.15 },
+  titleFaded: { opacity: theme.opacity.faded },
   // Groups sit further apart than the items inside them: 16 + 8 = 24dp
   // (layout.sectionGap) above the actions, 12dp between them.
   actions: { gap: theme.layout.stackGap, marginTop: theme.spacing.sm },

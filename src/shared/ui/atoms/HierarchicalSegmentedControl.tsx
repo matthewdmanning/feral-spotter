@@ -1,3 +1,4 @@
+import { commonCopy, formatCopy } from '@/src/shared/config/text'
 import { View } from 'react-native'
 import { SegmentedRow } from '@/src/shared/ui/atoms/SegmentedControl'
 import { styles } from './HierarchicalSegmentedControl.styles'
@@ -53,7 +54,10 @@ export function HierarchicalSegmentedControl<
             options={chosen.children}
             value={value}
             onChange={(next) => onChange(group, next)}
-            accessibilityLabel={`${label} — ${chosen.label}`}
+            accessibilityLabel={formatCopy(commonCopy.labelledChoice, {
+              label,
+              value: chosen.label,
+            })}
           />
         </>
       )}

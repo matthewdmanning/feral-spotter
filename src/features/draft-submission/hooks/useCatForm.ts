@@ -4,6 +4,7 @@
  * No store, API, or navigation dependencies — pure form state.
  */
 
+import { commonCopy, submissionCopy } from '@/src/shared/config/text'
 import { showAlert } from '@/src/shared/hooks/useUIStore'
 import type { ObservedCat } from '@/src/shared/hooks/useSubmissionStore'
 import type {
@@ -17,6 +18,8 @@ import type {
   Owned,
 } from '@/src/shared/types'
 import { useCallback, useState } from 'react'
+
+const catCopy = submissionCopy.cat
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -88,27 +91,23 @@ export function useCatForm(existingCat?: ObservedCat): CatForm {
   // Clear resets the 8 attributes only — the Profile Pic is a photo
   // choice, not an answer about the cat.
   const handleClear = useCallback(() => {
-    showAlert(
-      'Clear form?',
-      'All fields will be cleared. This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Clear',
-          style: 'destructive',
-          onPress: () => {
-            setAge(undefined)
-            setEarTipped(undefined)
-            setOwned(undefined)
-            setPattern(undefined)
-            setHairLength(undefined)
-            setColor(undefined)
-            setSex(undefined)
-            setHealthLabel(undefined)
-          },
+    showAlert(catCopy.clearTitle, catCopy.clearMessage, [
+      { text: commonCopy.cancel, style: 'cancel' },
+      {
+        text: commonCopy.clear,
+        style: 'destructive',
+        onPress: () => {
+          setAge(undefined)
+          setEarTipped(undefined)
+          setOwned(undefined)
+          setPattern(undefined)
+          setHairLength(undefined)
+          setColor(undefined)
+          setSex(undefined)
+          setHealthLabel(undefined)
         },
-      ],
-    )
+      },
+    ])
   }, [])
 
   return {

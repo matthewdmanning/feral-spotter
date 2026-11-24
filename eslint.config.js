@@ -101,6 +101,56 @@ const boundaryBlocks = BOUNDARY_LEVELS.flatMap((level, i) =>
   }),
 )
 
+// Google TS style bans, shared with the src block below, which overrides
+// no-restricted-syntax and must repeat them.
+const TS_SYNTAX = [
+  {
+    selector:
+      ':matches(PropertyDefinition, MethodDefinition) > PrivateIdentifier.key',
+    message:
+      'Use the `private` modifier instead of ECMAScript `#private` fields.',
+  },
+  {
+    selector: 'TSEnumDeclaration[const=true]',
+    message: 'Do not use `const enum`; use a regular `enum`.',
+  },
+]
+
+// Raw values and copy (STYLE-T-2, docs/agents/ui-ux-standards.md). Colors
+// live in themes.ts; app copy lives in shared/config/text.ts or a feature
+// copy owner. Narrow on purpose: it catches the common slips, not every
+// string, and does not replace a copy review in rendered context.
+const COLOR = '/^#[0-9a-fA-F]{3,8}$|^rgba?\\(/'
+const COPY_PROPS =
+  '/^(accessibilityLabel|accessibilityHint|title|label|placeholder|message|hint|headerTitle|tabBarLabel)$/'
+const DIALOG_CALL = 'CallExpression[callee.name=/^show(Alert|Error|Success)$/]'
+const RAW_VALUE_SYNTAX = [
+  {
+    selector: `Literal[value=${COLOR}]`,
+    message: 'Raw color: add or use a token in src/shared/config/themes.ts.',
+  },
+  {
+    selector: `TemplateElement[value.raw=/#[0-9a-fA-F]{3,8}\\b|rgba?\\(/]`,
+    message: 'Raw color: add or use a token in src/shared/config/themes.ts.',
+  },
+  {
+    selector: `JSXAttribute[name.name=${COPY_PROPS}] > Literal[value=/[A-Za-z]/]`,
+    message: 'App copy literal: move it to its copy owner (text.ts).',
+  },
+  {
+    selector: `JSXAttribute[name.name=${COPY_PROPS}] > JSXExpressionContainer > :matches(Literal, TemplateLiteral)`,
+    message: 'App copy literal: move it to its copy owner (text.ts).',
+  },
+  {
+    selector: `Property[key.name=${COPY_PROPS}] > :matches(Literal[value=/[A-Za-z]/], TemplateLiteral)`,
+    message: 'App copy literal: move it to its copy owner (text.ts).',
+  },
+  {
+    selector: `${DIALOG_CALL} > :matches(Literal, TemplateLiteral), ${DIALOG_CALL} Property[key.name='text'] > :matches(Literal, TemplateLiteral)`,
+    message: 'Dialog copy literal: move it to its copy owner (text.ts).',
+  },
+]
+
 module.exports = defineConfig([
   expoConfig,
   // Global ignores. `.claude/worktrees` holds nested git worktrees (duplicate
@@ -201,19 +251,7 @@ module.exports = defineConfig([
         SCREENS,
       ),
       // Do not use `#private` fields; do not use `const enum`.
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector:
-            ':matches(PropertyDefinition, MethodDefinition) > PrivateIdentifier.key',
-          message:
-            'Use the `private` modifier instead of ECMAScript `#private` fields.',
-        },
-        {
-          selector: 'TSEnumDeclaration[const=true]',
-          message: 'Do not use `const enum`; use a regular `enum`.',
-        },
-      ],
+      'no-restricted-syntax': ['error', ...TS_SYNTAX],
     },
   },
   // Screens may compose features, workflows and other screens, but must not
@@ -275,6 +313,32 @@ module.exports = defineConfig([
     rules: {
       '@typescript-eslint/no-restricted-imports': 'off',
       'expo/no-dynamic-env-var': 'off',
+    },
+  },
+  // Raw colors and copy literals in app code (STYLE-T-2). Token and copy
+  // owners and tests are exempt. Feature `config/` files and the cat
+  // attribute table are their feature's configured copy owners.
+  {
+    files: ['src/**/*.ts', 'src/**/*.tsx'],
+    ignores: [
+      '**/__tests__/**',
+      'src/test-utils/**',
+      'src/shared/config/themes.ts',
+      'src/shared/config/text.ts',
+      '**/copy/**',
+      'src/**/config/**',
+      'src/features/draft-submission/lib/attributes.ts',
+    ],
+    rules: {
+      'no-restricted-syntax': ['error', ...TS_SYNTAX, ...RAW_VALUE_SYNTAX],
+      'react/jsx-no-literals': [
+        'error',
+        {
+          noStrings: true,
+          ignoreProps: true,
+          allowedStrings: ['·', '•', '—', '/', ':', '(', ')'],
+        },
+      ],
     },
   },
   // No module-level import cycles. The TypeScript resolver follows the @/ alias.

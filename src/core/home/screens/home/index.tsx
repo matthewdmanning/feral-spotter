@@ -129,7 +129,10 @@ function EntrypointCircle({
       style={[
         { width: diameter, height: diameter },
         // Grey the whole circle, reticle included, so it reads as inactive.
-        disabled && { opacity: 0.5, filter: [{ grayscale: 1 }] },
+        disabled && {
+          opacity: theme.opacity.disabled,
+          filter: [{ grayscale: 1 }],
+        },
       ]}
     >
       <AppButton

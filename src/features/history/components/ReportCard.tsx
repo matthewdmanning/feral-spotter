@@ -1,3 +1,4 @@
+import { formatCopy, formatCount, historyCopy } from '@/src/shared/config/text'
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import { memo } from 'react'
 import {
@@ -56,7 +57,7 @@ export const ReportCard = memo(function ReportCard({
       <View style={styles.right}>
         {photoCount > 0 && (
           <Text style={styles.photoCount}>
-            {photoCount} photo{photoCount !== 1 ? 's' : ''}
+            {formatCount(historyCopy.photoCount, photoCount)}
           </Text>
         )}
         <StatusText status={cache.status} style={styles.status} />
@@ -87,11 +88,12 @@ export const ReportCard = memo(function ReportCard({
         }
       }}
       accessibilityRole="button"
-      accessibilityLabel={`Sighting, ${cache.status}, ${when}`}
+      accessibilityLabel={formatCopy(historyCopy.card, {
+        status: historyCopy.statuses[cache.status],
+        when,
+      })}
       accessibilityHint={
-        action === 'resume'
-          ? 'Continues this sighting'
-          : "Opens the Sighting's details"
+        action === 'resume' ? historyCopy.resumeHint : historyCopy.openHint
       }
     >
       <GlassSurface kind="card" style={styles.card}>

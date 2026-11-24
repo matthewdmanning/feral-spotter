@@ -7,6 +7,11 @@
  * EXIF `DateTime` when every picked photo has it, else falls back to manual.
  */
 
+import {
+  commonCopy,
+  libraryCopy,
+  navigationCopy,
+} from '@/src/shared/config/text'
 import { showAlert } from '@/src/shared/hooks/useUIStore'
 import { isUploadablePhoto } from '@/src/shared/utils/photoFormat'
 import {
@@ -57,14 +62,13 @@ export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
       console.error('[useLibraryPhotoPicker] permission', error)
     }
     if (!usable) {
-      showAlert(
-        'Photo library access needed',
-        'Choose from Library needs access to your photos. Enable it in Settings, then try again.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Open Settings', onPress: () => Linking.openSettings() },
-        ],
-      )
+      showAlert(libraryCopy.accessTitle, libraryCopy.accessMessage, [
+        { text: commonCopy.cancel, style: 'cancel' },
+        {
+          text: navigationCopy.openSystemSettings,
+          onPress: () => Linking.openSettings(),
+        },
+      ])
       return
     }
 
@@ -84,7 +88,7 @@ export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
       })
     } catch (error) {
       console.error('[useLibraryPhotoPicker] picker', error)
-      showAlert('Could not open your photos', 'Try again.')
+      showAlert(libraryCopy.openFailedTitle, libraryCopy.openFailedMessage)
       return
     }
     if (result.canceled || result.assets.length === 0) return
@@ -100,10 +104,7 @@ export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
     const kept = accepted.slice(0, slots)
     if (kept.length < accepted.length) showPhotoLimitReached()
     else if (skippedFormat) {
-      showAlert(
-        'Some photos were skipped',
-        'Only JPEG, PNG and HEIC photos can be added.',
-      )
+      showAlert(libraryCopy.skippedTitle, libraryCopy.skippedMessage)
     }
     if (kept.length === 0) return
     const newPhotos = kept.map(buildSubmissionPhoto)

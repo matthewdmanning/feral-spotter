@@ -263,9 +263,17 @@ const borderWidth = {
 /** `dragScale` lifts the row being dragged in a reorderable list. */
 const interaction = { pressScale: 0.97, dragScale: 1.03 } as const
 
-/** Feedback on a touched card or other surface that is not a button. */
+/**
+ * The one dimming scale (STYLE-2). `pressed`: a touched card or other surface
+ * that is not a button. `disabled`: any unavailable action; 0.5 dropped label
+ * contrast below 3:1 on card glass. `busy`: a camera control while a capture
+ * runs, drawn over the preview. `faded`: a title hidden behind a bubble.
+ */
 const opacity = {
   pressed: 0.7,
+  disabled: 0.7,
+  busy: 0.5,
+  faded: 0.15,
 } as const
 
 /** Minimum cell widths. `compact` fits three compact buttons on a 360dp phone (NAV-4). */
@@ -351,6 +359,10 @@ export const darkTheme = {
     onCamera: '#FFFFFF',
     onCameraScrim: 'rgba(0,0,0,0.65)',
     onCameraBorder: 'rgba(255,255,255,0.3)',
+    // The Annotate crop frame and crosshair, drawn over any photo: a white
+    // stroke with a dark halo reads on bright and dark regions alike.
+    onPhoto: '#FFFFFF',
+    onPhotoHalo: 'rgba(0,0,0,0.55)',
   },
   // Dark surfaces separate by tint more than by shadow, so shadows run
   // heavier here just to stay visible at all.
@@ -441,6 +453,8 @@ export const lightTheme = {
     onCamera: '#FFFFFF',
     onCameraScrim: 'rgba(0,0,0,0.65)',
     onCameraBorder: 'rgba(255,255,255,0.3)',
+    onPhoto: '#FFFFFF',
+    onPhotoHalo: 'rgba(0,0,0,0.55)',
   },
   elevation: {
     raised: {

@@ -13,6 +13,24 @@ export function formatCopy(
   )
 }
 
+/** One-or-many copy: `other` takes a `{count}` slot. */
+export interface CountCopy {
+  one: string
+  other: string
+}
+
+/** Pick the count form and fill its slots; `count` is always available. */
+export function formatCount(
+  forms: CountCopy,
+  count: number,
+  values: Readonly<Record<string, string | number>> = {},
+): string {
+  return formatCopy(count === 1 ? forms.one : forms.other, {
+    ...values,
+    count,
+  })
+}
+
 /** Shared route titles and gate labels; route/schema keys stay in the routers. */
 export const navigationCopy = {
   home: 'Home',
@@ -44,6 +62,54 @@ export const historyCopy = {
   readFailed: 'Your sightings could not be loaded.',
   retry: 'Retry',
   loading: 'Loading sightings',
+  title: 'Sightings',
+  total: '{count} total',
+  emptyTitle: 'No sightings yet',
+  emptyBody: 'Draft and submitted sightings appear here as you create them',
+  notFoundTitle: 'Sighting not found',
+  notFoundBody: 'It is no longer saved on this device.',
+  catsRecorded: 'Cats Recorded',
+  noCats: 'No cats recorded.',
+  catProfile: 'Profile Pic of cat {number}',
+  photoCount: { one: '1 photo', other: '{count} photos' },
+  card: 'Sighting, {status}, {when}',
+  resumeHint: 'Continues this sighting',
+  openHint: 'Opens the Sighting’s details',
+  map: {
+    one: 'Map of 1 sighting spot',
+    other: 'Map of {count} sighting spots',
+  },
+  /** Display words for each stored status (CacheStatus). */
+  statuses: {
+    'In Progress': 'In Progress',
+    Submitted: 'Submitted',
+    Sending: 'Sending',
+    Failed: 'Failed',
+  },
+  /** Sighting detail rows: answers, never the controls that set them. */
+  detail: {
+    timeFrom: 'Time from',
+    location: 'Location',
+    locationFrom: 'Location from',
+    gpsAccuracy: 'GPS accuracy',
+    accuracyValue: '±{meters} m',
+    injuredCat: 'Injured cat',
+    yes: 'Yes',
+    photos: 'Photos',
+    cats: 'Cats',
+    notRecorded: 'Not recorded',
+    coordinates: '{latitude}, {longitude}',
+    locationSources: {
+      device: 'Phone GPS',
+      pin: 'Picked on map',
+      address: 'Address entered',
+    },
+    timeSources: {
+      device: 'Time of submission',
+      manual: 'Entered by you',
+      metadata: 'Photo timestamp',
+    },
+  },
 } as const
 
 export const commonCopy = {
@@ -53,6 +119,101 @@ export const commonCopy = {
   brand: 'FeralSpotter',
   notAvailable: 'not available',
   notConfigured: 'not configured',
+  confirm: 'Confirm',
+  save: 'Save',
+  remove: 'Remove',
+  reset: 'Reset',
+  finish: 'Finish',
+  edit: 'Edit',
+  delete: 'Delete',
+  clear: 'Clear',
+  skip: 'Skip',
+  back: 'Back',
+  exit: 'Exit',
+  goBack: 'Go Back',
+  previous: 'Previous',
+  labelledValue: '{label}: {value}',
+  labelledChoice: '{label} — {value}',
+  somethingWentWrong: 'Something went wrong',
+  unknownTime: 'Unknown time',
+  catProfilePicture: 'Profile picture of the cat',
+} as const
+
+// App-wide error screen (ErrorBoundary) copy owner.
+export const errorCopy = {
+  title: 'Something went wrong',
+  subtitle: 'An unexpected error occurred. Please try again.',
+  details: 'Error Details:',
+  tryAgain: 'Try Again',
+} as const
+
+// Annotate copy owner. Tutorial steps stay in annotate/config/tutorial.ts.
+export const annotateCopy = {
+  counter: '{current} / {total}',
+  removePhoto: 'Remove photo',
+  removeTitle: 'Remove photo from submission?',
+  removeMessage: 'This cannot be undone.',
+  removeDontAsk: 'Remove, don’t ask again',
+  firstPhoto: 'You are on the first photo of {count}.',
+  previous: '← Previous',
+  notInPhoto: 'Not in Photo',
+  notInPhotoAccessibility: 'Not in this photo',
+  doneWithCat: 'Done With This Cat',
+  photo: 'Cat observation photo',
+  crop: 'Cropped photo of the cat being described',
+  expandCrop: 'Expand cat photo preview',
+  collapseCrop: 'Collapse cat photo preview',
+  growBox: 'Grow box',
+  shrinkBox: 'Shrink box',
+  resizeLeft: 'Resize box width, left edge',
+  resizeRight: 'Resize box width, right edge',
+  resizeTop: 'Resize box height, top edge',
+  resizeBottom: 'Resize box height, bottom edge',
+} as const
+
+// Camera copy owner.
+export const cameraCopy = {
+  permissionTitle: 'Camera Access Required',
+  permissionBody:
+    'FeralSpotter needs camera access to capture cat observations.',
+  allowCamera: 'Allow Camera',
+  noCamera: 'No Camera Found',
+  unavailableTitle: 'Camera Unavailable',
+  unavailableBody:
+    'This sighting uses library photos. Finish or reset it on Home to take photos.',
+  close: 'Close camera',
+  done: 'Done ({count})',
+  flash: { off: 'Flash off', on: 'Flash on', auto: 'Flash auto' },
+  flashAutoBadge: 'A',
+  switchCamera: 'Switch camera',
+  captureMode: 'Capture',
+  captureModeAccessibility: 'Capture mode',
+  modes: { single: 'Single', burst: 'Burst' },
+  capturePhoto: 'Capture photo',
+  startBurst: 'Start burst',
+  stopBurst: 'Stop burst',
+  discardPhoto: 'Discard photo',
+  photoOf: 'Photo {number} of {count}',
+} as const
+
+// Photo Library copy owner.
+export const libraryCopy = {
+  accessTitle: 'Photo library access needed',
+  accessMessage:
+    'Choose from Library needs access to your photos. Enable it in Settings, then try again.',
+  openFailedTitle: 'Could not open your photos',
+  openFailedMessage: 'Try again.',
+  skippedTitle: 'Some photos were skipped',
+  skippedMessage: 'Only JPEG, PNG and HEIC photos can be added.',
+} as const
+
+// Device-permission gate copy owner; consent disclosures stay in
+// permissions/copy/.
+export const permissionCopy = {
+  blockedTitle: 'Permission Blocked',
+  blockedBody:
+    'Camera, photo, or location access was denied. Enable it in Settings to continue — you’ll be brought back here automatically once it’s granted.',
+  requestFailedMessage: 'Could not process permissions. Please try again.',
 } as const
 
 // No-photos prompt copy owner (#503): shown instead of an empty Annotate.
@@ -273,7 +434,7 @@ export const organizationCopy = {
     description:
       'Choose what to offer every organization you select. Each sighting still needs your confirmation.',
     includedNotice:
-      'Cat count and an approximate area are always included when you share. Anonymous is checked by default on each sighting and overrides name, email, and phone.',
+      'Cat count and an approximate area are always included when you share.',
     shareFieldLabels: {
       name: 'Share name',
       email: 'Share email',
@@ -387,7 +548,7 @@ const uploadRefusedCopy: Readonly<Record<string, string | undefined>> = {
   quota_exceeded:
     'Your photo storage limit is reached. This sighting is saved on this device.',
   email_verification_required:
-    'Verify your email address, then tap Finished! again.',
+    'Verify your email address. This sighting is saved on this device.',
   account_erasing: 'This account is being deleted. Photos cannot upload.',
 }
 
@@ -396,13 +557,82 @@ export const submissionCopy = {
   /** The submit button (cat-list-empty-state.md). */
   finishedLabel: 'Finished!',
   location: {
-    accuracyUncertainAccessibility:
-      'Location accuracy is low or unavailable — tap to set manually',
+    accuracyUncertainAccessibility: 'Location accuracy is low or unavailable',
     manualAccessibility: 'Edit location',
     acquiredAccessibility: 'Location acquired',
+    label: 'Location',
   },
   time: {
     unknown: 'Time unknown',
+    recorded: 'Date & Time Recorded',
+  },
+  /** Create screen (the Sighting summary). */
+  create: {
+    title: 'Sighting',
+    catsRecorded: 'Cats Recorded',
+    cat: 'Cat: {label}',
+    noCats:
+      'No cats recorded. Pick one out of your photos, or describe a cat you saw. Your photos are still here either way.',
+    annotatePhotos: 'Annotate Photos',
+    addCat: 'Add a Cat',
+    describeCat: 'Describe a Cat',
+    finishNeedsCat: 'Describe at least one cat before you finish.',
+    takeMorePhotos: 'Take More Photos',
+    selectMorePhotos: 'Select More Photos',
+  },
+  /** Why a Home photo entrypoint is disabled; one full sentence per case. */
+  photoNotice: {
+    restored: {
+      camera:
+        'You have an unfinished sighting with camera photos. Finish or reset it to use Upload Photos.',
+      library:
+        'You have an unfinished sighting with library photos. Finish or reset it to use Take Photos.',
+    },
+    inSession: {
+      camera:
+        'This sighting uses camera photos. Reset it to use Upload Photos.',
+      library:
+        'This sighting uses library photos. Reset it to use Take Photos.',
+    },
+  },
+  photoLimitTitle: 'Photo limit reached',
+  photoLimitMessage:
+    'A Sighting holds up to {max} photos. Remove one to add another.',
+  dateTime: {
+    selectDate: 'Select Date',
+    selectTime: 'Select Time',
+    selectDateTime: 'Select Date & Time',
+    date: 'Date',
+    time: 'Time',
+  },
+  locationPicker: {
+    placePin: 'Drag the map to place the pin',
+    noLocation: 'No location yet. Drag the map to where you saw the cat.',
+    setLocation: 'Set location',
+  },
+  /** Cat form screen and its dialogs. */
+  cat: {
+    editTitle: 'Edit Cat',
+    newTitle: 'Observed Cat',
+    removeThisCat: 'Remove this Cat',
+    coat: 'Coat and color',
+    healthAccessibility: 'Cat health rating',
+    profilePic: 'Profile Pic',
+    profilePicChoose: 'Choose the photo that shows this cat best.',
+    profilePicSingle: 'Box this cat in another photo to choose between them.',
+    useProfilePic: 'Use photo {number} of {count} as Profile Pic',
+    photo: 'Photo {number}',
+    clearTitle: 'Clear form?',
+    clearMessage: 'All fields will be cleared. This cannot be undone.',
+    unsetFields: { one: '1 field not set', other: '{count} fields not set' },
+    unsetField: '• {field}',
+    saveAnyway: 'Save anyway',
+    removeTitle: 'Remove this cat?',
+    removeMessage:
+      'This removes the cat and the boxes you drew for it. Your photos are not deleted, and your other cats are not affected.',
+    abandonMessage:
+      'You haven’t saved this cat. Leaving now removes the boxes you drew for it and anything you filled in here. Your photos and any other cats are not affected.',
+    abandonAction: 'Remove progress on this cat',
   },
   exit: {
     clearFailedTitle: 'Could Not Clear Draft',
@@ -432,10 +662,10 @@ export const submissionCopy = {
     cancel: commonCopy.cancel,
     submit: 'Submit',
     uploadStalled:
-      'Your photos did not finish uploading. This sighting is saved on this device. Check your connection, then tap Finished! to send it again.',
+      'Your photos did not finish uploading. This sighting is saved on this device. Check your connection.',
     uploadRefused: uploadRefusedCopy,
     failed:
-      'The sighting did not reach the server. It is saved on this device. Tap Finished! to send it again.',
+      'The sighting did not reach the server. It is saved on this device. Not sent yet.',
     confirm: 'Submit {catCount} {catLabel} and {photoCount} {photoLabel}?',
     cat: 'cat',
     cats: 'cats',

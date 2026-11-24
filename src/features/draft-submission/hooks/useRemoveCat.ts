@@ -24,30 +24,29 @@
  * reasoning `removeBoxesForPhoto` follows in the other direction.
  */
 
+import { commonCopy, submissionCopy } from '@/src/shared/config/text'
 import { showAlert } from '@/src/shared/hooks/useUIStore'
 import { removeCatFromDraft } from '@/src/features/draft-submission/hooks/catPass'
 import { useCallback } from 'react'
+
+const catCopy = submissionCopy.cat
 
 export function useRemoveCat(): (
   catId: string,
   onRemoved?: () => void,
 ) => void {
   return useCallback((catId: string, onRemoved?: () => void) => {
-    showAlert(
-      'Remove this cat?',
-      'This removes the cat and the boxes you drew for it. Your photos are not deleted, and your other cats are not affected.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: () => {
-            // Boxes, the cat, and its in-progress id together (#304).
-            removeCatFromDraft(catId)
-            onRemoved?.()
-          },
+    showAlert(catCopy.removeTitle, catCopy.removeMessage, [
+      { text: commonCopy.cancel, style: 'cancel' },
+      {
+        text: commonCopy.remove,
+        style: 'destructive',
+        onPress: () => {
+          // Boxes, the cat, and its in-progress id together (#304).
+          removeCatFromDraft(catId)
+          onRemoved?.()
         },
-      ],
-    )
+      },
+    ])
   }, [])
 }

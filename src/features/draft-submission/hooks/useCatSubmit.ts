@@ -11,6 +11,12 @@
  * cat is no longer "in-progress."
  */
 
+import {
+  commonCopy,
+  formatCopy,
+  formatCount,
+  submissionCopy,
+} from '@/src/shared/config/text'
 import { showAlert } from '@/src/shared/hooks/useUIStore'
 import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import { useActiveCatFlow } from '@/src/features/draft-submission/hooks/useActiveCatFlow'
@@ -26,6 +32,8 @@ import {
 import { returnToCatList } from '@/src/features/draft-submission/hooks/catPass'
 import { randomUUID } from 'expo-crypto'
 import { useCallback, useRef } from 'react'
+
+const catCopy = submissionCopy.cat
 
 // ─── Missing-field warning (#152) ──────────────────────────────────────────
 // "Unknown"/"Unsure" is a real value (docs/agents/domain.md), so this warns
@@ -122,11 +130,13 @@ export function useCatSubmit({
 
     if (unsetFields.length > 0) {
       showAlert(
-        `${unsetFields.length} field${unsetFields.length !== 1 ? 's' : ''} not set`,
-        unsetFields.map((field) => `• ${field}`).join('\n'),
+        formatCount(catCopy.unsetFields, unsetFields.length),
+        unsetFields
+          .map((field) => formatCopy(catCopy.unsetField, { field }))
+          .join('\n'),
         [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Save anyway', style: 'default', onPress: commit },
+          { text: commonCopy.cancel, style: 'cancel' },
+          { text: catCopy.saveAnyway, style: 'default', onPress: commit },
         ],
       )
     } else {

@@ -1,3 +1,4 @@
+import { commonCopy, submissionCopy } from '@/src/shared/config/text'
 import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import { TextButton } from '@/src/shared/ui/atoms/TextButton'
@@ -104,11 +105,13 @@ export default function CatObservationScreen() {
                   catId && !bubbleSettledCollapsed ? styles.titleFaded : null,
                 ]}
               >
-                {existingCat ? 'Edit Cat' : 'Observed Cat'}
+                {existingCat
+                  ? submissionCopy.cat.editTitle
+                  : submissionCopy.cat.newTitle}
               </Text>
               <View style={styles.headerActions}>
                 <TextButton onPress={form.handleClear} tone="danger">
-                  Clear
+                  {commonCopy.clear}
                 </TextButton>
               </View>
             </View>
@@ -130,10 +133,10 @@ export default function CatObservationScreen() {
           )}
           <CatForm form={form} />
           <View style={styles.actions}>
-            <AppButton onPress={submit.handleSave}>Save</AppButton>
+            <AppButton onPress={submit.handleSave}>{commonCopy.save}</AppButton>
             {handleRemove && (
               <AppButton onPress={handleRemove} variant="danger">
-                Remove this Cat
+                {submissionCopy.cat.removeThisCat}
               </AppButton>
             )}
           </View>

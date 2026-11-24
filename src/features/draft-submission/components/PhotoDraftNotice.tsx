@@ -6,6 +6,7 @@
  * offered. A draft restored from an earlier session also offers Finish (open
  * the report).
  */
+import { commonCopy, submissionCopy } from '@/src/shared/config/text'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import type { PhotoSource } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { Text } from '@/src/shared/ui/atoms/Text'
@@ -14,22 +15,15 @@ import { styles } from './PhotoDraftNotice.styles'
 
 type DraftOrigin = 'restored' | 'in-session'
 
-const BLOCKED_ENTRYPOINT: Record<
-  NonNullable<PhotoSource>,
-  { used: string; blocked: string }
-> = {
-  camera: { used: 'camera', blocked: 'Upload Photos' },
-  library: { used: 'library', blocked: 'Take Photos' },
-}
-
+// One complete sentence per case (STYLE-3): no spliced nouns.
 function photoDraftNoticeCopy(
   source: NonNullable<PhotoSource>,
   origin: DraftOrigin,
 ): string {
-  const { used, blocked } = BLOCKED_ENTRYPOINT[source]
+  const { photoNotice } = submissionCopy
   return origin === 'restored'
-    ? `You have an unfinished sighting with ${used} photos. Finish or reset it to use ${blocked}.`
-    : `This sighting uses ${used} photos. Reset it to use ${blocked}.`
+    ? photoNotice.restored[source]
+    : photoNotice.inSession[source]
 }
 
 interface PhotoDraftNoticeProps {
@@ -51,11 +45,11 @@ export function PhotoDraftNotice({
       <View style={styles.actions}>
         {origin === 'restored' && (
           <AppButton onPress={onFinish} variant="primary" size="compact">
-            Finish
+            {commonCopy.finish}
           </AppButton>
         )}
         <AppButton onPress={onReset} variant="danger" size="compact">
-          Reset
+          {commonCopy.reset}
         </AppButton>
       </View>
     </View>

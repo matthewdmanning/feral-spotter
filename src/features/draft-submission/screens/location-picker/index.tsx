@@ -6,6 +6,7 @@
  * `pin` method or as the fallback when a Live fix is unavailable.
  */
 
+import { commonCopy, submissionCopy } from '@/src/shared/config/text'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import { ButtonRow } from '@/src/shared/ui/molecules/ButtonRow'
 import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
@@ -72,15 +73,15 @@ export default function LocationPickerScreen() {
       <View style={styles.footer}>
         <Text style={styles.hint}>
           {centerKnown
-            ? 'Drag the map to place the pin'
-            : 'No location yet. Drag the map to where you saw the cat.'}
+            ? submissionCopy.locationPicker.placePin
+            : submissionCopy.locationPicker.noLocation}
         </Text>
         <ButtonRow>
           <AppButton variant="secondary" onPress={handleCancel}>
-            Cancel
+            {commonCopy.cancel}
           </AppButton>
           <AppButton onPress={handleSetLocation} disabled={!centerKnown}>
-            Set location
+            {submissionCopy.locationPicker.setLocation}
           </AppButton>
         </ButtonRow>
       </View>

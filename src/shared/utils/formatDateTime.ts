@@ -3,6 +3,8 @@
  * Pure date formatting utility — no React dependencies.
  */
 
+import { commonCopy } from '@/src/shared/config/text'
+
 const MONTH_FMT = new Intl.DateTimeFormat('en-US', { month: 'short' })
 const TIME_FMT = new Intl.DateTimeFormat('en-US', {
   hour: 'numeric',
@@ -18,7 +20,7 @@ export function formatDateTime(iso: string): string {
   const d = new Date(iso)
   // Intl throws a RangeError on an invalid date; one bad row must not take
   // down the whole Reports list.
-  if (Number.isNaN(d.getTime())) return 'Unknown time'
+  if (Number.isNaN(d.getTime())) return commonCopy.unknownTime
   const mon = MONTH_FMT.format(d)
   const day = String(d.getDate()).padStart(2, '0')
   const yr = d.getFullYear()

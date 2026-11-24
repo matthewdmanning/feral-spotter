@@ -39,6 +39,7 @@
  * sensitive to that ratio (min-side + diagonal).
  */
 
+import { annotateCopy } from '@/src/shared/config/text'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import { computeCollapsedOffset } from '@/src/features/annotate/lib/collapse'
@@ -330,9 +331,7 @@ export function InsetCropBubble({
           ]}
           accessibilityRole="button"
           accessibilityLabel={
-            collapsed
-              ? 'Expand cat photo preview'
-              : 'Collapse cat photo preview'
+            collapsed ? annotateCopy.expandCrop : annotateCopy.collapseCrop
           }
         >
           <Image
@@ -343,7 +342,7 @@ export function InsetCropBubble({
             onLoad={(e) =>
               setNatural({ w: e.source.width, h: e.source.height })
             }
-            accessibilityLabel="Cropped photo of the cat being described"
+            accessibilityLabel={annotateCopy.crop}
           />
         </Pressable>
       </Animated.View>

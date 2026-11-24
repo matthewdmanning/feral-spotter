@@ -43,7 +43,7 @@ import { Platform, View, type LayoutChangeEvent } from 'react-native'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import { Text } from '@/src/shared/ui/atoms/Text'
-import { historyCopy } from '@/src/shared/config/text'
+import { formatCount, historyCopy } from '@/src/shared/config/text'
 import { useEmptyMapCenter } from '@/src/features/history/hooks/useEmptyMapCenter'
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './SightingsMap.styles'
@@ -187,7 +187,7 @@ export function SightingsMap({
   return (
     <View
       style={styles.frame}
-      accessibilityLabel={`Map of ${spots.length} sighting spot${spots.length === 1 ? '' : 's'}`}
+      accessibilityLabel={formatCount(historyCopy.map, spots.length)}
       onLayout={handleLayout}
       onTouchStart={() => onTouchActiveChange?.(true)}
       onTouchEnd={() => onTouchActiveChange?.(false)}

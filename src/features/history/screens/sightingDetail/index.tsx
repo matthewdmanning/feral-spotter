@@ -5,6 +5,7 @@
  * separately from the historical record.
  */
 
+import { formatCopy, historyCopy } from '@/src/shared/config/text'
 import { useOrganizationsEnabled } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 import { OrganizationPermissions } from '@/src/features/organizations/sharing/components/OrganizationPermissions'
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
@@ -55,10 +56,8 @@ export default function SightingDetailScreen() {
     return (
       <View style={[styles.screen, styles.centred]}>
         <AmbientBackground />
-        <Text style={styles.emptyTitle}>Sighting not found</Text>
-        <Text style={styles.emptyBody}>
-          It is no longer saved on this device.
-        </Text>
+        <Text style={styles.emptyTitle}>{historyCopy.notFoundTitle}</Text>
+        <Text style={styles.emptyBody}>{historyCopy.notFoundBody}</Text>
       </View>
     )
   }
@@ -92,9 +91,9 @@ export default function SightingDetailScreen() {
           />
         )}
 
-        <Text style={styles.sectionTitle}>Cats Recorded</Text>
+        <Text style={styles.sectionTitle}>{historyCopy.catsRecorded}</Text>
         {sighting.cats.length === 0 && (
-          <Text style={styles.emptyBody}>No cats recorded.</Text>
+          <Text style={styles.emptyBody}>{historyCopy.noCats}</Text>
         )}
         {sighting.cats.map((cat, index) => (
           <GlassSurface kind="card" key={cat.local_id} style={styles.card}>
@@ -103,7 +102,9 @@ export default function SightingDetailScreen() {
                 uri={profilePicUri(sighting, cat)}
                 box={cat.profile_box}
                 size={CAT_PHOTO_SIZE}
-                accessibilityLabel={`Profile Pic of cat ${index + 1}`}
+                accessibilityLabel={formatCopy(historyCopy.catProfile, {
+                  number: index + 1,
+                })}
               />
               <Text style={styles.catTitle}>{summarizeCat(cat)}</Text>
             </View>

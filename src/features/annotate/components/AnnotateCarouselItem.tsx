@@ -14,6 +14,7 @@
  * of a pass is what mints the cat id, so this item can't own that write.
  */
 
+import { annotateCopy, commonCopy } from '@/src/shared/config/text'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import {
   A11Y_RESIZE_STEP,
@@ -60,8 +61,8 @@ interface AnnotateCarouselItemProps {
 }
 
 const RESIZE_ACTIONS = [
-  { name: 'increment', label: 'Grow box' },
-  { name: 'decrement', label: 'Shrink box' },
+  { name: 'increment', label: annotateCopy.growBox },
+  { name: 'decrement', label: annotateCopy.shrinkBox },
 ]
 
 export function AnnotateCarouselItem({
@@ -212,28 +213,28 @@ export function AnnotateCarouselItem({
   // Edge handles — single-finger drag reshapes the box's aspect ratio (#286).
   const handles = [
     {
-      label: 'Resize box width, left edge',
+      label: annotateCopy.resizeLeft,
       axis: 'width' as const,
       gesture: leftHandleGesture,
       style: leftHandleStyle,
       barStyle: styles.handleBarVertical,
     },
     {
-      label: 'Resize box width, right edge',
+      label: annotateCopy.resizeRight,
       axis: 'width' as const,
       gesture: rightHandleGesture,
       style: rightHandleStyle,
       barStyle: styles.handleBarVertical,
     },
     {
-      label: 'Resize box height, top edge',
+      label: annotateCopy.resizeTop,
       axis: 'height' as const,
       gesture: topHandleGesture,
       style: topHandleStyle,
       barStyle: styles.handleBarHorizontal,
     },
     {
-      label: 'Resize box height, bottom edge',
+      label: annotateCopy.resizeBottom,
       axis: 'height' as const,
       gesture: bottomHandleGesture,
       style: bottomHandleStyle,
@@ -256,7 +257,7 @@ export function AnnotateCarouselItem({
               onLoad={(e) =>
                 setNatural({ w: e.source.width, h: e.source.height })
               }
-              accessibilityLabel="Cat observation photo"
+              accessibilityLabel={annotateCopy.photo}
             />
             {previousBoxes.map(({ box, colorSlot }) => (
               <View
@@ -349,7 +350,7 @@ export function AnnotateCarouselItem({
       {/* Confirm button — same effect as holding the dot */}
       <View style={styles.confirmWrap}>
         <AppButton onPress={confirmNow} size="compact">
-          Confirm
+          {commonCopy.confirm}
         </AppButton>
       </View>
     </View>

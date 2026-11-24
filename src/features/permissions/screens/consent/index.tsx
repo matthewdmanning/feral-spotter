@@ -1,3 +1,4 @@
+import { navigationCopy, permissionCopy } from '@/src/shared/config/text'
 import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import { TextButton } from '@/src/shared/ui/atoms/TextButton'
@@ -11,9 +12,6 @@ import { useCallback } from 'react'
 import { Text } from '@/src/shared/ui/atoms/Text'
 import { Linking, ScrollView, View } from 'react-native'
 import { styles } from './index.styles'
-
-const PERMISSION_BLOCKED_BODY =
-  "Camera, photo, or location access was denied. Enable it in Settings to continue — you'll be brought back here automatically once it's granted."
 
 export default function ConsentScreen() {
   const { busy, blocked, handleAgree } = useConsentPermissions()
@@ -32,9 +30,9 @@ export default function ConsentScreen() {
   if (blocked) {
     return (
       <GateScreen
-        title="Permission Blocked"
-        body={PERMISSION_BLOCKED_BODY}
-        primaryLabel="Open Settings"
+        title={permissionCopy.blockedTitle}
+        body={permissionCopy.blockedBody}
+        primaryLabel={navigationCopy.openSystemSettings}
         onPrimary={() => Linking.openSettings()}
       />
     )

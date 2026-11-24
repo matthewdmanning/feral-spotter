@@ -4,6 +4,7 @@
  * Migrated from NativeWind → Unistyles v3.
  */
 
+import { commonCopy, submissionCopy } from '@/src/shared/config/text'
 import { DialogShell } from '@/src/shared/ui/organisms/DialogShell'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import { ButtonRow } from '@/src/shared/ui/molecules/ButtonRow'
@@ -29,13 +30,15 @@ interface DateTimePickerProps {
   maximumDate?: Date
 }
 
+const { dateTime } = submissionCopy
+
 const MODAL_TITLE: Record<PickerMode, string> = {
-  date: 'Select Date',
-  time: 'Select Time',
-  datetime: 'Select Date & Time',
+  date: dateTime.selectDate,
+  time: dateTime.selectTime,
+  datetime: dateTime.selectDateTime,
 }
 
-const STEP_LABEL = { date: 'Date', time: 'Time' } as const
+const STEP_LABEL = { date: dateTime.date, time: dateTime.time } as const
 
 const formatValue = (date: Date, mode: PickerMode) => {
   if (mode === 'date') return date.toLocaleDateString()
@@ -49,7 +52,7 @@ export function DateTimePickerButton({
   emptyLabel = '',
   onChange,
   mode = 'datetime',
-  label = 'Select Date & Time',
+  label = dateTime.selectDateTime,
   minimumDate,
   maximumDate,
 }: DateTimePickerProps) {
@@ -122,9 +125,9 @@ export function DateTimePickerButton({
 
           <ButtonRow>
             <AppButton onPress={handleCancel} variant="secondary">
-              Cancel
+              {commonCopy.cancel}
             </AppButton>
-            <AppButton onPress={handleConfirm}>Confirm</AppButton>
+            <AppButton onPress={handleConfirm}>{commonCopy.confirm}</AppButton>
           </ButtonRow>
         </DialogShell>
       )}

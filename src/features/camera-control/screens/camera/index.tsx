@@ -1,3 +1,4 @@
+import { cameraCopy } from '@/src/shared/config/text'
 import { isNativeIdentificationCameraAvailable } from '@/modules/native-identification-camera'
 import {
   GoHomeGate,
@@ -20,8 +21,8 @@ export default function CameraScreen() {
   if (phase === 'ready' && photoSource === 'library') {
     return (
       <GoHomeGate
-        title="Camera Unavailable"
-        body="This sighting uses library photos. Finish or reset it on Home to take photos."
+        title={cameraCopy.unavailableTitle}
+        body={cameraCopy.unavailableBody}
       />
     )
   }

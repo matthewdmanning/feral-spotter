@@ -5,6 +5,7 @@ import {
   commonCopy,
   formatCopy,
   navigationCopy,
+  organizationCopy,
 } from '@/src/shared/config/text'
 import { useOrganizationsEnabled } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 import { SharingSettings } from '@/src/features/organizations/sharing/components/SharingSettings'
@@ -123,10 +124,10 @@ export default function SettingsScreen() {
             />
           </GlassSurface>
 
+          {/* STYLE-4: the label names the setting; no line explaining it. */}
           <GlassSurface kind="card" style={styles.card}>
-            <Text style={styles.groupTitle}>{settingsCopy.hapticFeedback}</Text>
             <ToggleRow
-              label={settingsCopy.vibrationOnTouch}
+              label={settingsCopy.hapticFeedback}
               value={hapticsOn}
               onValueChange={toggleHaptics}
             />
@@ -162,7 +163,7 @@ export default function SettingsScreen() {
           {organizationsEnabled && (
             <>
               <TextButton onPress={() => router.push('/organizations')}>
-                Organizations
+                {organizationCopy.membership.title}
               </TextButton>
               <SharingSettings />
               <OrganizationPermissions />

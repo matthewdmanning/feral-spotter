@@ -1,3 +1,4 @@
+import { commonCopy, formatCopy } from '@/src/shared/config/text'
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
@@ -60,7 +61,10 @@ export function ConsentChoiceScreen({
           }}
           accessibilityRole="checkbox"
           accessibilityState={{ checked }}
-          accessibilityLabel={`${copy.label}: ${copy.text}`}
+          accessibilityLabel={formatCopy(commonCopy.labelledValue, {
+            label: copy.label,
+            value: copy.text,
+          })}
         >
           <GlassSurface kind="card" style={styles.choiceRow}>
             <CheckboxBox checked={checked} />

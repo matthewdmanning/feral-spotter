@@ -1,3 +1,4 @@
+import { cameraCopy, commonCopy } from '@/src/shared/config/text'
 import {
   useCameraCapture,
   type CaptureMode,
@@ -6,7 +7,6 @@ import { SegmentedControl } from '@/src/shared/ui/atoms/SegmentedControl'
 import { GateScreen } from '@/src/shared/ui/molecules/GateScreen'
 import { Stack } from 'expo-router'
 import { useMemo } from 'react'
-import { Text } from '@/src/shared/ui/atoms/Text'
 import { StyleSheet as RNStyleSheet, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { Camera, useCameraPermission } from 'react-native-vision-camera'
@@ -20,13 +20,13 @@ import {
 import { styles } from './index.styles'
 
 const CAPTURE_MODES: { value: CaptureMode; label: string }[] = [
-  { value: 'single', label: 'Single' },
-  { value: 'burst', label: 'Burst' },
+  { value: 'single', label: cameraCopy.modes.single },
+  { value: 'burst', label: cameraCopy.modes.burst },
 ]
 
 function shutterLabelFor(captureMode: CaptureMode, isTakingPhoto: boolean) {
-  if (captureMode !== 'burst') return 'Capture photo'
-  return isTakingPhoto ? 'Stop burst' : 'Start burst'
+  if (captureMode !== 'burst') return cameraCopy.capturePhoto
+  return isTakingPhoto ? cameraCopy.stopBurst : cameraCopy.startBurst
 }
 
 export function LegacyCameraScreen() {
@@ -80,8 +80,8 @@ export function LegacyCameraScreen() {
       <>
         <Stack.Screen options={{ headerShown: false }} />
         <GateScreen
-          title="No Camera Found"
-          primaryLabel="Go Back"
+          title={cameraCopy.noCamera}
+          primaryLabel={commonCopy.goBack}
           onPrimary={handleClose}
         />
       </>
@@ -118,19 +118,12 @@ export function LegacyCameraScreen() {
           pointerEvents={isTakingPhoto ? 'none' : 'auto'}
         >
           <SegmentedControl
-            label="Capture"
+            label={cameraCopy.captureMode}
             options={CAPTURE_MODES}
             value={captureMode}
             onChange={(mode) => mode && setCaptureMode(mode)}
-            accessibilityLabel="Capture mode"
+            accessibilityLabel={cameraCopy.captureModeAccessibility}
           />
-          {captureMode === 'burst' && (
-            <Text style={styles.captureModeHint}>
-              {isTakingPhoto
-                ? 'Tap preview or shutter to stop'
-                : 'Tap preview or shutter to start'}
-            </Text>
-          )}
         </View>
         <CameraThumbnailStrip
           listRef={listRef}

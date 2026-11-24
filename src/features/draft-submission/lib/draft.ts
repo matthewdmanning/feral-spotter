@@ -25,6 +25,7 @@
  * the non-atomic window `2357000` fixed. It follows the photo-pool work.
  */
 
+import { organizationCopy } from '@/src/shared/config/text'
 import { SUBMISSION_STALE_MS } from '@/src/shared/config/constants'
 import { useActiveCatFlowStore } from '@/src/features/draft-submission/hooks/useActiveCatFlowStore'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
@@ -272,7 +273,9 @@ export async function submitDraft(): Promise<SubmitOutcome> {
     return {
       kind: 'sharing-unconfirmed',
       message:
-        error instanceof Error ? error.message : 'Review sharing choices.',
+        error instanceof Error
+          ? error.message
+          : organizationCopy.confirmationError,
     }
   }
 

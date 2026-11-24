@@ -3,9 +3,11 @@ import { StyleSheet } from 'react-native-unistyles'
 export const styles = StyleSheet.create((theme) => ({
   photoLayer: { ...StyleSheet.absoluteFillObject, overflow: 'hidden' },
   imageLayer: { flex: 1 },
+  // Photo-overlay tokens (STYLE-7): the frame must read on any photo region.
   box: {
     borderWidth: theme.cropFrame.boxStroke,
-    borderColor: theme.colors.text,
+    borderColor: theme.colors.onPhoto,
+    boxShadow: `0 0 2px ${theme.colors.onPhotoHalo}, inset 0 0 2px ${theme.colors.onPhotoHalo}`,
     position: 'absolute',
   },
   // A recorded cat's box. Its color comes from the cat, set at render.
@@ -14,7 +16,8 @@ export const styles = StyleSheet.create((theme) => ({
     borderWidth: theme.cropFrame.previousBoxStroke,
   },
   crosshairLine: {
-    backgroundColor: theme.colors.text,
+    backgroundColor: theme.colors.onPhoto,
+    boxShadow: `0 0 2px ${theme.colors.onPhotoHalo}`,
     opacity: theme.cropFrame.crosshairOpacity,
     position: 'absolute',
   },

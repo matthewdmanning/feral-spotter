@@ -1,3 +1,4 @@
+import { historyCopy } from '@/src/shared/config/text'
 import type { CacheStatus } from '@/src/shared/lib/submissionCache'
 import { CheckCircleIcon } from 'phosphor-react-native/src/icons/CheckCircle'
 import { ClockIcon } from 'phosphor-react-native/src/icons/Clock'
@@ -46,7 +47,7 @@ export function StatusText({
   const { theme } = useUnistyles()
   return (
     <Text style={[style, { color: theme.colors[STATUS_COLOR_KEY[status]] }]}>
-      {status}
+      {historyCopy.statuses[status]}
     </Text>
   )
 }

@@ -5,6 +5,7 @@
  * and what a Profile Pic reads from. Data in, data out — no storage, no React.
  */
 
+import { formatCopy, historyCopy } from '@/src/shared/config/text'
 import type {
   CachedCat,
   LocationMethod,
@@ -185,16 +186,9 @@ export function profilePicUri(
 }
 
 // Plain words for the user, not the app's internal method names.
-const LOCATION_SOURCE: Record<LocationMethod, string> = {
-  device: 'Phone GPS',
-  pin: 'Picked on map',
-  address: 'Address entered',
-}
-const TIME_SOURCE: Record<TimeMethod, string> = {
-  device: 'Time of submission',
-  manual: 'Entered by you',
-  metadata: 'Photo timestamp',
-}
+const { detail } = historyCopy
+const LOCATION_SOURCE: Record<LocationMethod, string> = detail.locationSources
+const TIME_SOURCE: Record<TimeMethod, string> = detail.timeSources
 /** 4 decimals ≈ 11 m: finer than a phone fix, so more digits add noise. */
 const COORD_DECIMALS = 4
 
@@ -211,26 +205,32 @@ export function describeSighting(
   const place =
     metadata.address ??
     (at
-      ? `${at.latitude.toFixed(COORD_DECIMALS)}, ${at.longitude.toFixed(COORD_DECIMALS)}`
-      : 'Not recorded')
-  const rows = [
-    { label: 'Time from', value: TIME_SOURCE[metadata.time_method] },
-    { label: 'Location', value: place },
+      ? formatCopy(detail.coordinates, {
+          latitude: at.latitude.toFixed(COORD_DECIMALS),
+          longitude: at.longitude.toFixed(COORD_DECIMALS),
+        })
+      : detail.notRecorded)
+  const rows: { label: string; value: string }[] = [
+    { label: detail.timeFrom, value: TIME_SOURCE[metadata.time_method] },
+    { label: detail.location, value: place },
     {
-      label: 'Location from',
+      label: detail.locationFrom,
       value: LOCATION_SOURCE[metadata.location_method],
     },
   ]
   if (metadata.accuracy != null) {
     rows.push({
-      label: 'GPS accuracy',
-      value: `±${Math.round(metadata.accuracy)} m`,
+      label: detail.gpsAccuracy,
+      value: formatCopy(detail.accuracyValue, {
+        meters: Math.round(metadata.accuracy),
+      }),
     })
   }
-  if (metadata.report_injured) rows.push({ label: 'Injured cat', value: 'Yes' })
+  if (metadata.report_injured)
+    rows.push({ label: detail.injuredCat, value: detail.yes })
   rows.push(
-    { label: 'Photos', value: String(sightingPhotoCount(cache)) },
-    { label: 'Cats', value: String(cache.cats.length) },
+    { label: detail.photos, value: String(sightingPhotoCount(cache)) },
+    { label: detail.cats, value: String(cache.cats.length) },
   )
   return rows
 }

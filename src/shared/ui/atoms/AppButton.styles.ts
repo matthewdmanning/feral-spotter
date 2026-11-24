@@ -80,9 +80,8 @@ export const styles = StyleSheet.create((theme) => ({
     },
   },
   flex1: { flex: 1 },
-  // 0.5 tanked label contrast on the accent background (ux_principles.md
-  // contrast minimums) — 0.7 still reads as disabled, stays legible.
-  disabled: { opacity: 0.7 },
+  // Shared with every disabled action (themes.ts `opacity`).
+  disabled: { opacity: theme.opacity.disabled },
   // The face sinks: bevel swaps for an inset shadow and the button drops a
   // pixel, so a press reads as a physical click, not a fade.
   pressed: {

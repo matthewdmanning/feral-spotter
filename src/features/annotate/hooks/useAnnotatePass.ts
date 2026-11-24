@@ -11,6 +11,7 @@
  * when a pass starts.
  */
 
+import { annotateCopy, commonCopy } from '@/src/shared/config/text'
 import { showAlert } from '@/src/shared/hooks/useUIStore'
 import { useState, useCallback, useRef } from 'react'
 
@@ -39,7 +40,7 @@ export interface AnnotatePass {
   clearActiveCat: () => void
   handleAbandonPass: () => void
   handlePrevPhoto: () => void
-  handleLongPressRemove: () => void
+  handleRemovePhoto: () => void
   setCurrentIndex: (index: number) => void
 }
 
@@ -128,7 +129,7 @@ export function useAnnotatePass(): AnnotatePass {
   }, [currentIndex])
 
   // ── Long-press Remove ─────────────────────────────────────────────────────
-  const handleLongPressRemove = useCallback(() => {
+  const handleRemovePhoto = useCallback(() => {
     const photo = photos[currentIndex]
     if (!photo) return
 
@@ -141,17 +142,17 @@ export function useAnnotatePass(): AnnotatePass {
       return
     }
 
-    showAlert('Remove photo from submission?', 'This cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
+    showAlert(annotateCopy.removeTitle, annotateCopy.removeMessage, [
+      { text: commonCopy.cancel, style: 'cancel' },
       {
-        text: "Remove, don't ask again",
+        text: annotateCopy.removeDontAsk,
         style: 'destructive',
         onPress: () => {
           updateSetting('skip_photo_remove_confirm', true)
           doRemove()
         },
       },
-      { text: 'Remove', style: 'destructive', onPress: doRemove },
+      { text: commonCopy.remove, style: 'destructive', onPress: doRemove },
     ])
   }, [currentIndex, photos, settings.skip_photo_remove_confirm, updateSetting])
 
@@ -168,6 +169,6 @@ export function useAnnotatePass(): AnnotatePass {
     clearActiveCat,
     handleAbandonPass,
     handlePrevPhoto,
-    handleLongPressRemove,
+    handleRemovePhoto,
   }
 }

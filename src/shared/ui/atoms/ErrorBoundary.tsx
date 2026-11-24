@@ -1,3 +1,4 @@
+import { errorCopy } from '@/src/shared/config/text'
 import { AppButton } from './AppButton'
 import { GlassSurface } from './GlassSurface'
 import React, { Component, type ReactNode } from 'react'
@@ -63,20 +64,18 @@ function ErrorFallback({
         color={theme.colors.danger}
       />
       <View style={styles.textGroup}>
-        <Text style={styles.title}>Something went wrong</Text>
-        <Text style={styles.subtitle}>
-          An unexpected error occurred. Please try again.
-        </Text>
+        <Text style={styles.title}>{errorCopy.title}</Text>
+        <Text style={styles.subtitle}>{errorCopy.subtitle}</Text>
       </View>
       <GlassSurface kind="card" style={styles.card}>
         <View style={styles.cardInner}>
-          <Text style={styles.errorLabel}>Error Details:</Text>
+          <Text style={styles.errorLabel}>{errorCopy.details}</Text>
           <View style={styles.errorBox}>
             <Text style={styles.errorText}>{error.message}</Text>
           </View>
         </View>
       </GlassSurface>
-      <AppButton onPress={onReset}>Try Again</AppButton>
+      <AppButton onPress={onReset}>{errorCopy.tryAgain}</AppButton>
     </View>
   )
 }
