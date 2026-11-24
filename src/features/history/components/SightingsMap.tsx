@@ -38,8 +38,9 @@ import {
 } from '@/src/shared/lib/mapView'
 import { Image, type ImageRef } from 'expo-image'
 import { AppleMaps, GoogleMaps } from 'expo-maps'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Platform, View, type LayoutChangeEvent } from 'react-native'
+import { useEffect, useMemo, useState } from 'react'
+import { Platform, View } from 'react-native'
+import { useMapFrame } from '@/src/shared/hooks/useMapFrame'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import { GlassSurface } from '@/src/shared/ui/atoms/GlassSurface'
 import { Text } from '@/src/shared/ui/atoms/Text'
@@ -114,7 +115,6 @@ export function SightingsMap({
   const [icons, setIcons] = useState<PinIcons | null>(
     Platform.OS === 'android' ? null : {},
   )
-  const [size, setSize] = useState<MapSize | null>(null)
 
   useEffect(() => {
     if (Platform.OS !== 'android') return
@@ -129,22 +129,12 @@ export function SightingsMap({
 
   // NAV-5: with no pins the map still shows where the user is.
   const emptyCenter = useEmptyMapCenter(spots.length === 0)
-  const view = !size
-    ? null
-    : spots.length > 0
-      ? mapViewForSpots(spots, size)
-      : mapViewForPoint(emptyCenter)
-  // Keyed on values, not identity: a tab-focus re-read builds equal spots
-  // as new objects, and a new camera object would snap back a user's pan.
-  const latitude = view?.coordinates.latitude
-  const longitude = view?.coordinates.longitude
-  const zoom = view?.zoom
-  const cameraPosition = useMemo(
-    () =>
-      latitude == null || longitude == null
-        ? undefined
-        : { coordinates: { latitude, longitude }, zoom },
-    [latitude, longitude, zoom],
+  const { cameraPosition, frameProps } = useMapFrame(
+    (size: MapSize) =>
+      spots.length > 0
+        ? mapViewForSpots(spots, size)
+        : mapViewForPoint(emptyCenter),
+    onTouchActiveChange,
   )
 
   // Stable across re-renders: the parent re-renders on every map touch
@@ -165,20 +155,6 @@ export function SightingsMap({
     [spots, icons],
   )
 
-  // A gesture cut off by unmount never sends its touch end; the parent's
-  // scroll lock must not stay on.
-  const touchActiveChange = useRef(onTouchActiveChange)
-  useEffect(() => {
-    touchActiveChange.current = onTouchActiveChange
-  }, [onTouchActiveChange])
-  useEffect(() => () => touchActiveChange.current?.(false), [])
-
-  const handleLayout = ({ nativeEvent }: LayoutChangeEvent) => {
-    const { width, height } = nativeEvent.layout
-    if (width !== size?.width || height !== size?.height) {
-      setSize({ width, height })
-    }
-  }
   const handleMarkerClick = ({ id }: { id?: string }) => {
     const spot = spots.find((s) => s.id === id)
     if (spot) onSpotPress(spot)
@@ -188,10 +164,7 @@ export function SightingsMap({
     <View
       style={styles.frame}
       accessibilityLabel={formatCount(historyCopy.map, spots.length)}
-      onLayout={handleLayout}
-      onTouchStart={() => onTouchActiveChange?.(true)}
-      onTouchEnd={() => onTouchActiveChange?.(false)}
-      onTouchCancel={() => onTouchActiveChange?.(false)}
+      {...frameProps}
     >
       {!cameraPosition || !icons ? null : Platform.OS === 'ios' ? (
         <AppleMaps.View
