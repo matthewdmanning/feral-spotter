@@ -10,6 +10,13 @@ import { createHash } from 'node:crypto'
 export const METADATA_FILE_NAME = 'metadata.json'
 
 /**
+ * The bucket the app uploads to, unless GCS_BUCKET_NAME overrides it. The
+ * contract test pins it to the app's STORAGE_BUCKET_NAME (ADR-0005).
+ */
+export const DEFAULT_BUCKET_NAME =
+  'project-e3d5659d-bc4f-438f-88c.firebasestorage.app'
+
+/**
  * Submissions per person, for life (#486): admitPhotoUpload refuses the
  * 251st metadata grant. storage.rules also checks a soft per-uid claim.
  */

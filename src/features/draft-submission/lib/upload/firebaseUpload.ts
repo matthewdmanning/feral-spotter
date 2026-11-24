@@ -46,31 +46,18 @@ import {
   rawPhotoObjectPath,
   submissionFolder,
 } from '@/src/features/draft-submission/lib/upload/submissionLayout'
-import { extensionOf } from '@/src/shared/utils/photoFormat'
+import { photoContentType } from '@/src/shared/utils/photoFormat'
+import { STORAGE_BUCKET_NAME } from '@/src/shared/config/submissionLimits'
 import {
   admitMetadataUpload,
   admitPhotoUpload,
 } from '@/src/features/draft-submission/lib/upload/uploadAdmission'
 
-const BUCKET_URL = 'gs://project-e3d5659d-bc4f-438f-88c.firebasestorage.app'
+const BUCKET_URL = `gs://${STORAGE_BUCKET_NAME}`
 
 let storageInstance: FirebaseStorage | null = null
 
 const DNG_CONTENT_TYPE = 'image/x-adobe-dng'
-
-/** Use this function to choose the Storage MIME for a JPEG-family photo path. */
-function photoContentType(uri: string): string {
-  switch (extensionOf(uri)) {
-    case 'png':
-      return 'image/png'
-    case 'heic':
-      return 'image/heic'
-    case 'heif':
-      return 'image/heif'
-    default:
-      return 'image/jpeg'
-  }
-}
 
 /** Use this function to upload one local file while mapping task progress. */
 async function uploadFile(

@@ -20,3 +20,11 @@ export const MAX_PHOTOS = 10
  * contract test keeps it equal to functions/.
  */
 export const MAX_SUBMISSIONS_PER_UID = 250
+
+/**
+ * The Storage bucket Submissions upload to (ADR-0005). functions/' storage
+ * triggers watch DEFAULT_BUCKET_NAME in functions/src/submissionLayout.ts;
+ * the contract test keeps the two equal.
+ */
+export const STORAGE_BUCKET_NAME =
+  'project-e3d5659d-bc4f-438f-88c.firebasestorage.app'

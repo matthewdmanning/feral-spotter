@@ -14,6 +14,7 @@ import { getStorage } from 'firebase-admin/storage'
 import { createEmailListProvider, DEFAULT_EMAIL_PROVIDER } from './email'
 import { setEmailSubscription } from './email/setEmailSubscription'
 import {
+  DEFAULT_BUCKET_NAME,
   MAX_SUBMISSIONS_PER_UID,
   METADATA_FILE_NAME,
   SUBMISSION_CAP_CLAIM,
@@ -48,10 +49,8 @@ import {
 
 initializeApp()
 
-// Must match BUCKET_URL in src/features/draft-submission/lib/upload/firebaseUpload.ts (ADR-0005).
-const BUCKET_NAME =
-  process.env.GCS_BUCKET_NAME ??
-  'project-e3d5659d-bc4f-438f-88c.firebasestorage.app'
+// The contract test pins DEFAULT_BUCKET_NAME to the app's bucket (ADR-0005).
+const BUCKET_NAME = process.env.GCS_BUCKET_NAME ?? DEFAULT_BUCKET_NAME
 
 // #293 ("no metadata ⇒ no photo"). A photo with no location, time or
 // annotation is useless to the wider project, so if the metadata never

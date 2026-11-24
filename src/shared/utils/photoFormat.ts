@@ -5,24 +5,38 @@
  * any other format would be refused on upload and sit un-uploaded.
  */
 
-export const UPLOAD_PHOTO_EXTENSIONS = [
-  'jpg',
-  'jpeg',
-  'png',
-  'heic',
-  'heif',
-] as const
+/** Accepted extension → the contentType it uploads with. The one list. */
+export const PHOTO_FORMATS = {
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  heic: 'image/heic',
+  heif: 'image/heif',
+} as const
 
-const UPLOAD_PHOTO_MIME_TYPES = [
-  'image/jpeg',
-  'image/png',
-  'image/heic',
-  'image/heif',
-]
+type PhotoExtension = keyof typeof PHOTO_FORMATS
+
+export const UPLOAD_PHOTO_EXTENSIONS = Object.keys(
+  PHOTO_FORMATS,
+) as PhotoExtension[]
+
+const UPLOAD_PHOTO_MIME_TYPES: readonly string[] = Object.values(PHOTO_FORMATS)
+
+const isPhotoExtension = (ext: string | undefined): ext is PhotoExtension =>
+  ext !== undefined && ext in PHOTO_FORMATS
 
 /** Lower-case extension of a uri or file name, or undefined if it has none. */
 export function extensionOf(name: string): string | undefined {
   return /\.([a-zA-Z0-9]+)$/.exec(name)?.[1].toLowerCase()
+}
+
+/**
+ * The Storage contentType for a JPEG-family photo path. Camera captures and
+ * unrecognised names are JPEG.
+ */
+export function photoContentType(uri: string): string {
+  const ext = extensionOf(uri)
+  return isPhotoExtension(ext) ? PHOTO_FORMATS[ext] : PHOTO_FORMATS.jpg
 }
 
 /**
@@ -39,8 +53,5 @@ export function isUploadablePhoto(file: {
     return UPLOAD_PHOTO_MIME_TYPES.includes(file.mimeType.toLowerCase())
   }
   const ext = extensionOf(file.fileName ?? file.uri)
-  return (
-    ext === undefined ||
-    (UPLOAD_PHOTO_EXTENSIONS as readonly string[]).includes(ext)
-  )
+  return ext === undefined || isPhotoExtension(ext)
 }

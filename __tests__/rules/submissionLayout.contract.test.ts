@@ -10,6 +10,7 @@ import { ref, uploadBytes } from 'firebase/storage'
 import {
   MAX_PHOTOS,
   MAX_SUBMISSIONS_PER_UID as APP_MAX_SUBMISSIONS,
+  STORAGE_BUCKET_NAME as APP_BUCKET,
 } from '@/src/shared/config/submissionLimits'
 import {
   METADATA_FILE_NAME as APP_METADATA,
@@ -18,8 +19,12 @@ import {
   rawPhotoObjectPath,
   submissionPrefix as appSubmissionPrefix,
 } from '@/src/features/draft-submission/lib/upload/submissionLayout'
-import { UPLOAD_PHOTO_EXTENSIONS } from '@/src/shared/utils/photoFormat'
 import {
+  UPLOAD_PHOTO_EXTENSIONS,
+  photoContentType,
+} from '@/src/shared/utils/photoFormat'
+import {
+  DEFAULT_BUCKET_NAME as SERVER_BUCKET,
   MAX_SUBMISSIONS_PER_UID as SERVER_MAX_SUBMISSIONS,
   METADATA_FILE_NAME as SERVER_METADATA,
   MAX_PHOTO_BYTES,
@@ -88,15 +93,8 @@ const write = (name: string, bytes: Uint8Array, contentType: string) =>
     { contentType },
   )
 
-const MIME: Record<string, string> = {
-  jpg: 'image/jpeg',
-  jpeg: 'image/jpeg',
-  png: 'image/png',
-  heic: 'image/heic',
-  heif: 'image/heif',
-}
-
 it('app and functions agree on the shared names and numbers', () => {
+  expect(APP_BUCKET).toBe(SERVER_BUCKET)
   expect(APP_METADATA).toBe(SERVER_METADATA)
   expect(APP_MAX_SUBMISSIONS).toBe(SERVER_MAX_SUBMISSIONS)
   expect(appSubmissionPrefix(UID, SUB)).toBe(serverSubmissionPrefix(UID, SUB))
@@ -150,7 +148,10 @@ it('every slot the app can name is a photo the rules accept and functions parse'
 it('every accepted format is one the rules accept under the slot name', async () => {
   for (const ext of UPLOAD_PHOTO_EXTENSIONS) {
     const name = photoObjectPath(UID, `${SUB}-fmt`, 0)
-    await assertSucceeds(write(name, new Uint8Array([1]), MIME[ext]))
+    // The type the app uploads this extension with, not a test-side copy.
+    await assertSucceeds(
+      write(name, new Uint8Array([1]), photoContentType(`photo.${ext}`)),
+    )
   }
 })
 
