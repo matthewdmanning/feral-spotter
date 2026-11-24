@@ -5,7 +5,7 @@
  */
 
 import { navigationCopy } from '@/src/shared/config/text'
-import { Text } from '@/src/shared/ui/atoms/Text'
+import { stackScreenOptions } from '@/src/shared/ui/molecules/stackScreenOptions'
 import { ErrorBoundary } from '@/src/shared/ui/atoms/ErrorBoundary'
 import {
   GoHomeGate,
@@ -62,21 +62,7 @@ export default function SubmissionLayout() {
     <ErrorBoundary>
       <Stack
         screenOptions={{
-          headerStyle: { backgroundColor: theme.colors.background },
-          headerTintColor: theme.colors.text,
-          headerTitle: ({ children, tintColor }) => (
-            <Text style={[theme.textVariants.heading, { color: tintColor }]}>
-              {children}
-            </Text>
-          ),
-          headerTitleStyle: {
-            ...theme.textVariants.heading,
-            color: theme.colors.text,
-          },
-          headerShadowVisible: false,
-          contentStyle: { backgroundColor: theme.colors.background },
-          animation: 'slide_from_right',
-          gestureEnabled: true,
+          ...stackScreenOptions(theme),
           headerRight: HeaderRight,
         }}
       >
