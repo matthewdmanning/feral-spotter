@@ -36,3 +36,9 @@ Also unverified: whether a fast double-tap could leak into the fling threshold, 
 
 **Purpose:** Annotate with no photos left had only "Go back" (`router.back()`), which broke `catPass`'s named-destination rule (#203) and kept the unfinished cat's boxes (#503).
 **Change:** Annotate never shows empty. Entry checks photos first: `startCatPass()` refuses with none, and Cat List's auto-skip needs photos. Removing the last photo ends the pass on Cat List (`leaveEmptyPass()`). Cat List then asks (`workflows/photo-entry/hooks/useNoPhotosPrompt.ts`): Take Photos or Upload Photos (the draft's source, kept in new `usePhotoStore.last_source`), Just Describe (Cat Form), then Back to Cat List when cats exist, else Cancel Sighting (Reset confirm). It asks on open with no photos and on refocus after the last photo went; a teardown while focused asks nothing. "Add more" labels also use `last_source`. Copy: `noPhotosCopy` in `shared/config/text.ts`. Landing param renamed `removed` → `noAutoSkip`. Test: `flow.noPhotosPrompt.test.tsx` (real router and real Annotate, 7 cases); fixtures that annotate now seed a photo.
+
+## 2026-11-24 — fix
+
+**Purpose** — Returning from Cat Form could reopen the dismissed empty-photo prompt even when the photo count never changed (#506).
+
+**Change** — An already-open Cat List re-arms the prompt when its last photo goes away while another screen is active. The flow test covers returning to an already-empty Cat List and the library draft’s Just Describe path.

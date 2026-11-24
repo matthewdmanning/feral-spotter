@@ -123,12 +123,13 @@ it('Cat List with no photos stays put and asks; Just Describe opens Cat Form', a
 })
 
 it('after Just Describe, Cat List stops asking until Annotate Photos', async () => {
-  addPhoto()
+  usePhotoStore.getState().addPhotos([submissionPhoto({ local_id: 'p1' })])
   await openCatList()
   // Auto-skipped into Annotate; removing the only photo ends on Cat List.
   await act(async () => {
     removePhotoFromDraft('p1')
   })
+  expect(dialogButtons()?.[0]).toBe(noPhotosCopy.uploadPhotos)
   await pressDialogButton(noPhotosCopy.justDescribe)
   expect(await screen.findByText('Cat Form')).toBeOnTheScreen()
   // Save on Cat Form: back to Cat List.
@@ -141,6 +142,23 @@ it('after Just Describe, Cat List stops asking until Annotate Photos', async () 
   // Asking for Annotate still explains why it cannot open.
   await userEvent.press(screen.getByText('Annotate Photos'))
   expect(useUIStore.getState().dialog?.title).toBe(noPhotosCopy.title)
+})
+
+it('returning to an already-empty Cat List does not reopen a dismissed prompt', async () => {
+  recordCat()
+  await openCatList()
+  await pressDialogButton(noPhotosCopy.backToCatList)
+
+  await act(async () => {
+    router.push('/submission/cats')
+  })
+  expect(await screen.findByText('Cat Form')).toBeOnTheScreen()
+  await act(async () => {
+    returnToCatList()
+  })
+
+  expect(await screen.findByText('Annotate Photos')).toBeOnTheScreen()
+  expect(useUIStore.getState().dialog).toBeNull()
 })
 
 it('a restored draft the user finished photographing opens without asking', async () => {
