@@ -1,7 +1,5 @@
 module.exports = {
-  preset: 'ts-jest/presets/js-with-ts',
+  ...require('./jest.firebase'),
   testEnvironment: 'node',
   testMatch: ['<rootDir>/src/**/__tests__/**/*.test.ts'],
-  // jose (via firebase-admin -> jwks-rsa) ships ESM only; transpile it to CommonJS.
-  transformIgnorePatterns: ['/node_modules/(?!jose/)'],
 }

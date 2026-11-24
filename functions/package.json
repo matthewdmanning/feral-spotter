@@ -10,7 +10,7 @@
     "build": "node scripts/build.mjs",
     "test": "jest",
     "deploy": "cd .. && npx firebase deploy --only functions",
-    "test:organizations:emulator": "node --experimental-vm-modules node_modules/jest/bin/jest.js -c jest.emulator.config.js --runInBand"
+    "test:organizations:emulator": "jest -c jest.emulator.config.js --runInBand"
   },
   "dependencies": {
     "firebase-admin": "^14.5.1",
