@@ -7,13 +7,13 @@
           {
             "type": "command",
             "if": "Bash(gh issue *)",
-            "command": "python -c \"import json,sys,os,pathlib as pl\nd=json.load(sys.stdin)\nsid=d.get('session_id','unknown')\nf=pl.Path(os.environ.get('TEMP', os.environ.get('TMPDIR','/tmp'))) / ('claude-gh-docs-'+sid)\nif not f.exists():\n    f.touch()\n    print(json.dumps({'hookSpecificOutput':{'hookEventName':'PreToolUse','additionalContext':'Before this gh issue/pr operation: read docs/agents/issue-tracker.md and docs/agents/triage-labels.md if not already read this session. Two easy-to-miss conventions found 2026-08-02: wontfix closures need the actual wontfix label applied (gh issue edit --add-label wontfix), not just stated in the close comment; closing a wayfinder:task-labeled issue needs a context pointer appended to its parent map issue Decisions-so-far section.'}}))\n\"",
+            "command": "python -c \"import json,sys,os,pathlib as pl\nd=json.load(sys.stdin)\nsid=d.get('session_id','unknown')\nf=pl.Path(os.environ.get('TEMP', os.environ.get('TMPDIR','/tmp'))) / ('claude-gh-docs-'+sid)\nif not f.exists():\n    f.touch()\n    print(json.dumps({'hookSpecificOutput':{'hookEventName':'PreToolUse','additionalContext':'Before this gh issue/pr operation: read docs/agents/issue-tracker.md, docs/agents/triage-labels.md and docs/agents/gh-conventions.md if not already read this session.'}}))\n\"",
             "timeout": 10
           },
           {
             "type": "command",
             "if": "Bash(gh pr *)",
-            "command": "python -c \"import json,sys,os,pathlib as pl\nd=json.load(sys.stdin)\nsid=d.get('session_id','unknown')\nf=pl.Path(os.environ.get('TEMP', os.environ.get('TMPDIR','/tmp'))) / ('claude-gh-docs-'+sid)\nif not f.exists():\n    f.touch()\n    print(json.dumps({'hookSpecificOutput':{'hookEventName':'PreToolUse','additionalContext':'Before this gh issue/pr operation: read docs/agents/issue-tracker.md and docs/agents/triage-labels.md if not already read this session. Two easy-to-miss conventions found 2026-08-02: wontfix closures need the actual wontfix label applied (gh issue edit --add-label wontfix), not just stated in the close comment; closing a wayfinder:task-labeled issue needs a context pointer appended to its parent map issue Decisions-so-far section.'}}))\n\"",
+            "command": "python -c \"import json,sys,os,pathlib as pl\nd=json.load(sys.stdin)\nsid=d.get('session_id','unknown')\nf=pl.Path(os.environ.get('TEMP', os.environ.get('TMPDIR','/tmp'))) / ('claude-gh-docs-'+sid)\nif not f.exists():\n    f.touch()\n    print(json.dumps({'hookSpecificOutput':{'hookEventName':'PreToolUse','additionalContext':'Before this gh issue/pr operation: read docs/agents/issue-tracker.md, docs/agents/triage-labels.md and docs/agents/gh-conventions.md if not already read this session.'}}))\n\"",
             "timeout": 10
           },
           {
@@ -25,6 +25,16 @@
           {
             "type": "command",
             "command": "python -c \"import json,sys,re\nd=json.load(sys.stdin)\ncmd=d.get('tool_input',{}).get('command','')\nif 'python' in cmd and re.search(r'\\.write_text\\(|\\bopen\\([^)]*[\\x22\\x27][wa]\\+?[\\x22\\x27]', cmd):\n    print(json.dumps({'hookSpecificOutput':{'hookEventName':'PreToolUse','permissionDecision':'deny','permissionDecisionReason':'Blocked: Python text-mode writes rewrite CRLF line endings and turn a small edit into a whole-file diff. Edit files with the Edit tool. If a script is unavoidable, use read_bytes/write_bytes and keep the original line endings.'}}))\n\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__firebase__firestore_.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import json,sys,re\nd=json.load(sys.stdin)\nif not re.match(r'mcp__firebase__firestore_(get|list|query)_', d.get('tool_name','')):\n    print(json.dumps({'hookSpecificOutput':{'hookEventName':'PreToolUse','permissionDecision':'deny','permissionDecisionReason':'Blocked: Firestore MCP writes and deletes are denied. Reads are allowed. Test writes against the emulator.'}}))\"",
             "timeout": 10
           }
         ]

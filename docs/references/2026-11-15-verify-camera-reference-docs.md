@@ -1,6 +1,6 @@
 # Camera reference docs verification
 
-Fact-check of [`2026-11-15-document-camera-behavior.md`](2026-11-15-document-camera-behavior.md) (guide) and [`2026-11-14-android-camera-capture-parameters.md`](2026-11-14-android-camera-capture-parameters.md) (parameters catalog) against official external sources. All fixes below are applied (guide: d3c715e, 8563c4c; parameters: 8563c4c).
+Fact-check of [`document-camera-behavior.md`](document-camera-behavior.md) (guide) and [`android-camera-capture-parameters.md`](android-camera-capture-parameters.md) (parameters catalog) against official external sources. All fixes below are applied (guide: d3c715e, 8563c4c; parameters: 8563c4c).
 
 ## Part 1: guide
 
@@ -106,7 +106,7 @@ Full tables (quote + URL per claim) follow, by range.
 
 ---
 
-### Verification A: lines 1-151 of 2026-11-15-document-camera-behavior.md
+### Verification A: lines 1-151 of document-camera-behavior.md
 
 Base URLs under https://developer.android.com. CameraX latest per release page: stable 1.6.2, RC 1.7.0-rc02.
 
@@ -165,7 +165,7 @@ Non-VERIFIED items:
 
 ---
 
-### Verification B: lines 152-303 of 2026-11-15-document-camera-behavior.md
+### Verification B: lines 152-303 of document-camera-behavior.md
 
 Version context (androidx release page, fetched): stable camera 1.6.2 (2026-08-26), RC 1.7.0-rc02 (2026-11-04).
 Reference base: https://developer.android.com/reference/androidx/camera/core/ (class pages), fetched.
@@ -228,7 +228,7 @@ VERIFIED: 36 (incl. 4 with minor caveats). PARTIAL: 7 (#5, #7, #9, #27, #30, #35
 
 ---
 
-### Verification C: lines 304-442 of 2026-11-15-document-camera-behavior.md
+### Verification C: lines 304-442 of document-camera-behavior.md
 
 Sources (all fetched 2026-11-15):
 
@@ -392,7 +392,7 @@ Minor notes (verified but worth a tweak): L597 legacy overload is deprecated in 
 
 ---
 
-### Verification E: lines 633-816 of docs/references/2026-11-15-document-camera-behavior.md
+### Verification E: lines 633-816 of docs/references/document-camera-behavior.md
 
 Base URLs: CR = developer.android.com/reference/android/hardware/camera2/CaptureRequest, CRes = .../CaptureResult, CC = .../CameraCharacteristics, CM = .../CameraMetadata, DNG = .../DngCreator, IR = developer.android.com/reference/android/media/ImageReader, IMG = .../media/Image, IF = .../graphics/ImageFormat
 
@@ -441,7 +441,7 @@ Notes on coverage limits: the CaptureRequest/CaptureResult/CameraCharacteristics
 
 ---
 
-### Verification F: lines 817-974 of 2026-11-15-document-camera-behavior.md
+### Verification F: lines 817-974 of document-camera-behavior.md
 
 Verified 2026-11-15 against developer.android.com reference pages and release notes. Pure advice lines were skipped.
 
@@ -543,7 +543,7 @@ Lines 920-950 are mostly procedural advice and were skipped. Factual premises ch
 
 ---
 
-### P1 verification: lines 1-125 of 2026-11-14-android-camera-capture-parameters.md
+### P1 verification: lines 1-125 of android-camera-capture-parameters.md
 
 Checked 2026-11-15. Base URLs are developer.android.com reference pages (cited tags S1-S9, S15, S21, S26, S27, S7, S22).
 
@@ -784,7 +784,7 @@ RAW in CameraX:
 
 ---
 
-### P4 verification: lines 355-505 of 2026-11-14-android-camera-capture-parameters.md
+### P4 verification: lines 355-505 of android-camera-capture-parameters.md
 
 Fetched 2026-11-15. Stable camera = 1.6.2 (Aug 26, 2026), RC = 1.7.0-rc02 (Nov 4, 2026) confirmed on https://developer.android.com/jetpack/androidx/releases/camera and /versions.
 

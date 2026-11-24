@@ -32,8 +32,7 @@ Check that PostHog analytics only fires with consent (unchecking analytics-conse
 
 Follow the scenario's expected choice for each prompt. For a happy-path drive
 on a test device or account, accept the app's consent steps and grant the
-Android permissions needed by the scenario. For denial and recovery checks,
-follow the [manual QA checklist](../qa_checklist.md).
+Android permissions needed by the scenario.
 
 - Exercise the app's consent screens and Android's permission dialogs with
   [the drive tools](../../emulator_tools/) or touch input. Granting permissions
