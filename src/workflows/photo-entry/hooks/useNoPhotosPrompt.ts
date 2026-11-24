@@ -58,20 +58,23 @@ export function useNoPhotosPrompt(): { offer: () => void } {
   // True when the next focused render should ask: opened with no photos,
   // or the last photo went while another screen covered this one. Never
   // once the user chose Just Describe.
-  const shouldAsk = usePhotoStore(
-    (s) => s.photos.length === 0 && !s.done_adding_photos,
-  )
+  const hasPhotos = usePhotoStore((s) => s.photos.length > 0)
+  const doneAddingPhotos = usePhotoStore((s) => s.done_adding_photos)
+  const shouldAsk = !hasPhotos && !doneAddingPhotos
   const pending = useRef(shouldAsk)
+  const previouslyHadPhotos = useRef(hasPhotos)
   useEffect(() => {
+    const lostLastPhoto = previouslyHadPhotos.current && !hasPhotos
+    previouslyHadPhotos.current = hasPhotos
     if (!shouldAsk) {
       pending.current = false
     } else if (!isFocused) {
-      pending.current = true
+      if (lostLastPhoto) pending.current = true
     } else if (pending.current) {
       pending.current = false
       offer()
     }
-  }, [shouldAsk, isFocused, offer])
+  }, [hasPhotos, shouldAsk, isFocused, offer])
 
   return { offer }
 }
