@@ -26,6 +26,7 @@
  */
 
 import { organizationCopy } from '@/src/shared/config/text'
+import { create } from 'zustand'
 import { SUBMISSION_STALE_MS } from '@/src/shared/config/constants'
 import { useActiveCatFlowStore } from '@/src/features/draft-submission/hooks/useActiveCatFlowStore'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
@@ -63,23 +64,20 @@ import { missingDraftContent } from '@/src/shared/utils/validation'
 // pool mid-send would send the cats with no photos. The lock lives here,
 // next to the only two operations it guards, so no caller can forget it.
 
-let busy = false
-const busyListeners = new Set<() => void>()
+const useDraftBusyStore = create<{ busy: boolean }>(() => ({ busy: false }))
 
-function setBusy(next: boolean): void {
-  busy = next
-  busyListeners.forEach((listener) => listener())
+function setBusy(busy: boolean): void {
+  useDraftBusyStore.setState({ busy })
 }
 
 /** True while a submit is running. */
 export function isDraftBusy(): boolean {
-  return busy
+  return useDraftBusyStore.getState().busy
 }
 
-/** For useSyncExternalStore: the UI disables draft controls while busy. */
-export function subscribeDraftBusy(listener: () => void): () => void {
-  busyListeners.add(listener)
-  return () => busyListeners.delete(listener)
+/** The UI disables draft controls while busy. */
+export function useDraftBusy(): boolean {
+  return useDraftBusyStore((s) => s.busy)
 }
 
 /**
@@ -111,7 +109,7 @@ function tearDownDraftState(deferFileDeletion = false): void {
  * Refused while a submit runs; returns whether the draft was discarded.
  */
 export async function discardDraft(): Promise<boolean> {
-  if (busy) return false
+  if (isDraftBusy()) return false
   const cacheId = await getCurrentCacheId()
   if (cacheId) await deleteSubmissionCache(cacheId)
 
@@ -259,7 +257,7 @@ function missingContent(): string[] {
  * screen's auto-skip effect is load-bearing (#189).
  */
 export async function submitDraft(): Promise<SubmitOutcome> {
-  if (busy) return { kind: 'busy' }
+  if (isDraftBusy()) return { kind: 'busy' }
   const missing = missingContent()
   if (missing.length > 0) return { kind: 'incomplete', messages: missing }
 

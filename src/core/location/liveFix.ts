@@ -22,7 +22,7 @@ import {
 import { locationPermission } from '@/src/features/permissions/lib/locationPermission'
 import * as Device from 'expo-device'
 import * as Location from 'expo-location'
-import { useSyncExternalStore } from 'react'
+import { create } from 'zustand'
 
 export interface CapturedLocation {
   latitude: number
@@ -47,11 +47,12 @@ const DEV_STUB_LOCATION = { latitude: 34.6834, longitude: -82.8374 }
 
 // ─── Singleton state ───────────────────────────────────────────────────────
 
-let state: LocationCaptureState = {
+/** The acquisition's state. Timers and the watch stay module variables. */
+const useLocationCaptureStore = create<LocationCaptureState>(() => ({
   status: 'idle',
   startedAt: null,
   result: undefined,
-}
+}))
 let watchSubscription: { remove: () => void } | null = null
 let settleTimer: ReturnType<typeof setTimeout> | null = null
 let recheckTimer: ReturnType<typeof setTimeout> | null = null
@@ -63,12 +64,9 @@ let captureGeneration = 0
 // caller in that window (recheck timer, second screen) must not start a
 // second watch.
 let startInFlight = false
-const listeners = new Set<() => void>()
 
-function setState(patch: Partial<LocationCaptureState>) {
-  state = { ...state, ...patch }
-  listeners.forEach((listener) => listener())
-}
+const setState = (patch: Partial<LocationCaptureState>) =>
+  useLocationCaptureStore.setState(patch)
 
 function stopWatching() {
   if (settleTimer) {
@@ -103,7 +101,7 @@ function resolve() {
  * restarted, only allowed to settle or reacquire on its own schedule.
  */
 export async function startLocationCapture(): Promise<void> {
-  if (state.status === 'pending') {
+  if (getLocationCaptureState().status === 'pending') {
     if (__DEV__) console.log('[location] already pending — no-op')
     return
   }
@@ -164,9 +162,10 @@ export async function startLocationCapture(): Promise<void> {
           accuracy: fix.coords.accuracy,
           timestamp: new Date(fix.timestamp).toISOString(),
         }
+        const best = getLocationCaptureState().result
         const isBetter =
-          state.result == null ||
-          (candidate.accuracy ?? Infinity) < (state.result.accuracy ?? Infinity)
+          best == null ||
+          (candidate.accuracy ?? Infinity) < (best.accuracy ?? Infinity)
         if (isBetter) setState({ result: candidate })
 
         if (
@@ -194,21 +193,12 @@ export async function startLocationCapture(): Promise<void> {
 }
 
 export function getLocationCaptureState(): LocationCaptureState {
-  return state
-}
-
-export function subscribeLocationCapture(listener: () => void): () => void {
-  listeners.add(listener)
-  return () => listeners.delete(listener)
+  return useLocationCaptureStore.getState()
 }
 
 /** Live view of the background acquisition, for the Submission Details icon. */
 export function useLocationCapture(): LocationCaptureState {
-  return useSyncExternalStore(
-    subscribeLocationCapture,
-    getLocationCaptureState,
-    getLocationCaptureState,
-  )
+  return useLocationCaptureStore()
 }
 
 /**
