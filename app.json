@@ -43,6 +43,7 @@
       "react-native-liquid-glassmorphism",
       "./plugins/withPhosphorTabDrawables",
       "./plugins/withProfileable",
+      "./plugins/withFirebaseEmulatorCleartext",
       "./plugins/withHermesStartupProfiler",
       "@react-native-firebase/app",
       [

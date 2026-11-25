@@ -1,0 +1,13 @@
+appId: com.mmanning.feralspotter
+name: Android smoke
+tags:
+  - smoke
+---
+- runFlow: ../flows/onboarding.yaml
+- runFlow: ../flows/capture-and-save-cat.yaml
+- tapOn: 'Finished!'
+- assertVisible: 'Submit 1 cat and 1 photo\?'
+- tapOn: '^Submit$'
+- extendedWaitUntil:
+    visible: 'Take Photos'
+    timeout: 60000

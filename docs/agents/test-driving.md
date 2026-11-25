@@ -78,3 +78,61 @@ adb shell setprop log.tag.FirebaseApp DEBUG
   (not just "does this element exist / not crash"). Save to
   `docs/test-drives/screen-captures/`, filename
   `YYYY-MM-DD_appearance-question.png`.
+
+## Android smoke suite with Maestro
+
+Use a dedicated physical Android test device with USB debugging enabled,
+its screen unlocked, and its language set to English. The flows clear
+FeralSpotter's local data on every run, including drafts and sign-in state.
+
+Install the [Maestro CLI](https://docs.maestro.dev/getting-started/installing-maestro)
+separately from npm and put `maestro` and Android SDK Platform Tools on PATH.
+Use Java 21 or newer for the Firebase emulators and install both sets of
+npm dependencies with `npm ci` and `npm ci --prefix functions`. Follow
+[backend setup](backend.md#test-drive-posture-emulator-by-default) for the
+local Firebase project and Functions secrets. The runner reads the project
+and bucket from the build's local `google-services.json`. If the local
+`.firebaserc` has no Storage target for that project, map it using the
+`project_info.storage_bucket` value.
+
+```bash
+npx firebase target:apply storage feral-uploads '<storage-bucket>'
+```
+
+Build and install the standalone Android release variant with the following
+environment. Replace `<project-id>` with the project ID in
+`google-services.json`. Apply the same values to any overlapping entries in
+`.env.android.local`, which the Android launcher sources.
+
+```bash
+export EXPO_PUBLIC_USE_FIREBASE_EMULATOR=true
+export EXPO_PUBLIC_FIREBASE_EMULATOR_HOST=localhost
+export EXPO_PUBLIC_UPLOAD_ADMISSION_URL='http://localhost:5001/<project-id>/us-central1/admitPhotoUpload'
+export EXPO_PUBLIC_AUTH_MOCK=false
+export EXPO_PUBLIC_UPLOADS_MOCK=false
+npx expo prebuild --platform android
+npm run android -- --variant release --no-bundler
+```
+
+Prebuild applies a loopback cleartext policy for the emulator-backed release
+build. Run it again after changing the emulator flag. The build and tests
+require no Metro server.
+
+Run the Cat Form probe first on a new device or Android version. It captures
+one photo, reaches Cat Form, checks for **Observed Cat**, taps **Save**,
+accepts **Save anyway**, and checks that Cat List returns. This is the
+device check for the hierarchy issue reported in #508.
+
+```bash
+npm run test:device -- cat-form
+npm run test:device
+```
+
+The default `smoke` suite goes through fresh onboarding and submits the
+captured photo and cat. The runner starts and stops the Firebase emulators,
+creates the `adb reverse` tunnels, and seeds a new verified email account per
+run. It checks that the Storage emulator has nonempty `metadata.json` and
+`photo-0.jpg` files under the same Submission for that account. Stop any
+existing Firebase emulators on these ports before running the suite. Set
+`ANDROID_SERIAL` to the output of `adb devices` for the intended device when
+more than one is connected.
