@@ -1,6 +1,11 @@
 /**
- * Scope choices to the signed-in account, restore them on a new device,
- * and send queued proof (ADR-0009).
+ * Scope choices to the signed-in account, refresh them from the server each
+ * session, and send queued proof (ADR-0009).
+ *
+ * Every request has a deadline, and failures retry with bounded backoff
+ * while the same account stays active, so a stalled or failed request never
+ * leaves choices unsent or a cached grant unverified until some unrelated
+ * event. Analytics waits for the refresh (analyticsAcceptedFor).
  */
 
 import Constants from 'expo-constants'
@@ -14,6 +19,10 @@ import {
 
 /** How long sign-in waits for restored choices before asking instead. */
 export const RESTORE_TIMEOUT_MS = 4000
+/** Deadline for one request, token lookup included. */
+export const REQUEST_TIMEOUT_MS = 10_000
+/** Waits between retries of a failed refresh or send; the last repeats. */
+export const RETRY_DELAYS_MS = [2_000, 10_000, 30_000, 120_000, 600_000]
 
 const APP_VERSION = Constants.expoConfig?.version ?? 'unknown'
 
@@ -24,31 +33,99 @@ function isCurrentAccount(uid: string): boolean {
   )
 }
 
+class RequestTimeoutError extends Error {}
+
+/**
+ * One request for `uid`, abandoned (undefined) if the account changes, and
+ * rejected past REQUEST_TIMEOUT_MS.
+ */
 async function request(
   uid: string,
   url: string,
   init: RequestInit,
 ): Promise<Response | undefined> {
-  if (!isCurrentAccount(uid) || init.signal?.aborted) return
-  const token = await authProvider.getToken()
-  if (!isCurrentAccount(uid) || init.signal?.aborted) return
-  return fetch(url, {
-    ...init,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
+  if (!isCurrentAccount(uid)) return
+  const controller = new AbortController()
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      controller.abort()
+      reject(new RequestTimeoutError('Consent records request timed out'))
+    }, REQUEST_TIMEOUT_MS)
   })
+  try {
+    return await Promise.race([
+      (async () => {
+        const token = await authProvider.getToken()
+        if (!isCurrentAccount(uid)) return undefined
+        return fetch(url, {
+          ...init,
+          signal: controller.signal,
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        })
+      })(),
+      deadline,
+    ])
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
-const flushing = new Map<string, Promise<void>>()
-const restoring = new Map<string, Promise<void>>()
+// ─── Retry with backoff ──────────────────────────────────────────────────────
 
-/** Send choices in order within the account. Retry from the first failure. */
+type Work = 'send' | 'refresh'
+const retries = new Map<
+  string,
+  { attempt: number; timer: ReturnType<typeof setTimeout> }
+>()
+
+function retryLater(uid: string, work: Work, run: () => void): void {
+  const key = `${work}:${uid}`
+  const previous = retries.get(key)
+  if (previous) clearTimeout(previous.timer)
+  const attempt = previous ? previous.attempt + 1 : 0
+  const delay = RETRY_DELAYS_MS[Math.min(attempt, RETRY_DELAYS_MS.length - 1)]
+  const timer = setTimeout(() => {
+    if (isCurrentAccount(uid)) run()
+    else retries.delete(key)
+  }, delay)
+  retries.set(key, { attempt, timer })
+}
+
+function succeeded(uid: string, work: Work): void {
+  const key = `${work}:${uid}`
+  const previous = retries.get(key)
+  if (previous) clearTimeout(previous.timer)
+  retries.delete(key)
+}
+
+/** Test seam: cancel every scheduled retry. */
+export function cancelConsentRetries(): void {
+  for (const { timer } of retries.values()) clearTimeout(timer)
+  retries.clear()
+}
+
+// ─── Send ────────────────────────────────────────────────────────────────────
+
+const flushing = new Map<string, Promise<void>>()
+
+/**
+ * Send queued choices in order within the account. A failure stops the
+ * queue and schedules a retry; it never rejects.
+ */
 export function flushConsentRecords(uid: string): Promise<void> {
   const existing = flushing.get(uid)
   if (existing) return existing
-  const work = sendPending(uid).finally(() => flushing.delete(uid))
+  const work = sendPending(uid)
+    .then(() => succeeded(uid, 'send'))
+    .catch((error) => {
+      console.warn('[accountConsent] send', error)
+      retryLater(uid, 'send', () => void flushConsentRecords(uid))
+    })
+    .finally(() => flushing.delete(uid))
   flushing.set(uid, work)
   return work
 }
@@ -77,59 +154,71 @@ async function sendPending(uid: string): Promise<void> {
     if (!response.ok && response.status !== 400) {
       throw new Error(`Consent records responded ${response.status}`)
     }
-    state.acknowledgeRecord(next)
+    if (response.ok) {
+      const body = (await response.json().catch(() => null)) as {
+        revision?: unknown
+      } | null
+      if (typeof body?.revision === 'number') {
+        state.noteServerRevision(uid, body.revision)
+      }
+    }
+    useConsentStore.getState().acknowledgeRecord(next)
   }
 }
 
-async function restoreChoices(uid: string, url: string): Promise<void> {
-  const { analyticsAccepted, emailOptIn } = useConsentStore.getState()
-  if (analyticsAccepted !== null && emailOptIn !== null) return
+// ─── Refresh ─────────────────────────────────────────────────────────────────
 
-  const controller = new AbortController()
-  let timer: ReturnType<typeof setTimeout> | undefined
-  const timeout = new Promise<void>((resolve) => {
-    timer = setTimeout(() => {
-      controller.abort()
-      resolve()
-    }, RESTORE_TIMEOUT_MS)
-  })
-  const restore = (async () => {
-    const response = await request(uid, url, {
-      method: 'GET',
-      signal: controller.signal,
-    })
-    if (!response || response.status === 410) return
+const refreshing = new Map<string, Promise<void>>()
+
+/**
+ * Read the account's current choices and apply them over the cache, so a
+ * revocation made elsewhere lands here. Shared per account; a failure
+ * schedules a retry and never rejects.
+ */
+export function refreshConsentChoices(uid: string): Promise<void> {
+  const url = CONSENT_RECORDS_URL
+  if (!url) return Promise.resolve()
+  const existing = refreshing.get(uid)
+  if (existing) return existing
+  const work = (async () => {
+    const response = await request(uid, url, { method: 'GET' })
+    if (!response) return
+    if (response.status === 410) return
     if (!response.ok) {
       throw new Error(`Consent records responded ${response.status}`)
     }
     const choices = (await response.json()) as ConsentChoices
-    if (!controller.signal.aborted && isCurrentAccount(uid)) {
+    if (isCurrentAccount(uid)) {
       useConsentStore.getState().restoreChoices(uid, choices)
     }
-  })().catch((error) => {
-    if (!controller.signal.aborted)
-      console.warn('[accountConsent] restore', error)
-  })
-  await Promise.race([restore, timeout])
-  clearTimeout(timer)
+  })()
+    .then(() => succeeded(uid, 'refresh'))
+    .catch((error) => {
+      console.warn('[accountConsent] refresh', error)
+      retryLater(uid, 'refresh', () => void refreshConsentChoices(uid))
+    })
+    .finally(() => refreshing.delete(uid))
+  refreshing.set(uid, work)
+  return work
 }
 
-/** Scope this session and wait for its shared restore attempt before routing. */
+/**
+ * Scope this session to `uid`, refresh its choices and send its queue.
+ * Waits at most RESTORE_TIMEOUT_MS for the refresh so sign-in can route on
+ * restored answers; a slower refresh still lands when it finishes.
+ */
 export async function syncAccountConsent(uid: string | null): Promise<void> {
   if ((authProvider.getCurrentUser()?.uid ?? null) !== uid) return
   useConsentStore.getState().bindChoicesTo(uid)
-  const url = CONSENT_RECORDS_URL
-  if (uid === null || !url) return
+  if (uid === null || !CONSENT_RECORDS_URL) return
 
-  let restore = restoring.get(uid)
-  if (!restore) {
-    restore = restoreChoices(uid, url).finally(() => restoring.delete(uid))
-    restoring.set(uid, restore)
-  }
-  await restore
-  if (isCurrentAccount(uid)) {
-    flushConsentRecords(uid).catch((error) =>
-      console.warn('[accountConsent] send', error),
-    )
-  }
+  let timer: ReturnType<typeof setTimeout> | undefined
+  await Promise.race([
+    refreshConsentChoices(uid),
+    new Promise<void>((resolve) => {
+      timer = setTimeout(resolve, RESTORE_TIMEOUT_MS)
+    }),
+  ])
+  clearTimeout(timer)
+  if (isCurrentAccount(uid)) void flushConsentRecords(uid)
 }

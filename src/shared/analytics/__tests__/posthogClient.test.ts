@@ -1,9 +1,11 @@
+import { waitFor } from '@testing-library/react-native'
 import { http, HttpResponse } from 'msw'
 import type { PostHog } from 'posthog-react-native'
 import { server } from '@/src/test-utils/mswServer'
 import {
   POSTHOG_OPTIONS,
   closePostHogClient,
+  forgetSignedOutIdentity,
   openPostHogClient,
   resetPostHogClient,
   screenNameFromSegments,
@@ -12,9 +14,11 @@ import {
 
 /**
  * The app's PostHog client through the real SDK (memory persistence); its
- * startup requests are answered by MSW and nothing is flushed. Catches: a revoked client that keeps sending,
- * a re-consent that builds a second client, and a sign-in that links one
- * user's person to another's.
+ * startup requests are answered by MSW. Catches: a revoked client that
+ * keeps sending, a retry that carries one account's batch past another's
+ * gate, a re-consent that builds a second client, and a sign-in that links
+ * one user's person to another's. Remote flags are off: identity changes
+ * would otherwise start flag requests that outlive the test.
  */
 
 const HOST = 'https://posthog.example.com'
@@ -28,6 +32,7 @@ function open(allowsRequest?: (posthog: PostHog) => boolean): PostHog {
     {
       ...POSTHOG_OPTIONS,
       persistence: 'memory',
+      disableRemoteFeatureFlags: true,
       preloadFeatureFlags: false,
       captureAppLifecycleEvents: false,
       errorTracking: { autocapture: {} },
@@ -97,6 +102,69 @@ it('drops queued events and blocks SDK requests after revocation', async () => {
   open()
   await posthog.flush()
   expect(requests).not.toHaveBeenCalled()
+})
+
+it('a retry of one account’s batch is not sent after switching accounts', async () => {
+  const batches: string[] = []
+  let failNext = true
+  server.use(
+    http.post(`${HOST}/batch/`, async ({ request }) => {
+      batches.push(await request.text())
+      if (failNext) {
+        failNext = false
+        return new HttpResponse(null, { status: 500 })
+      }
+      return HttpResponse.json({})
+    }),
+  )
+  let allowedUid = 'user-a'
+  const allows = (sdk: PostHog) => sdk.getDistinctId() === allowedUid
+  const posthog = openPostHogClient(
+    'public-project-token',
+    HOST,
+    {
+      ...POSTHOG_OPTIONS,
+      persistence: 'memory',
+      preloadFeatureFlags: false,
+      disableRemoteFeatureFlags: true,
+      captureAppLifecycleEvents: false,
+      errorTracking: { autocapture: {} },
+      disableCompression: true,
+      flushAt: 1000,
+      flushInterval: 0,
+      fetchRetryCount: 2,
+      fetchRetryDelay: 50,
+    },
+    allows,
+  )
+  await posthog.ready()
+  syncPostHogIdentity(posthog, 'user-a')
+  posthog.capture('a_private_event')
+  const flushing = posthog.flush().catch(() => undefined)
+  await waitFor(() => expect(batches).toHaveLength(1))
+
+  // Sign-out, then B signs in and opts in before A's retry is due.
+  closePostHogClient()
+  allowedUid = 'user-b'
+  openPostHogClient('public-project-token', HOST, undefined, allows)
+  syncPostHogIdentity(posthog, 'user-b')
+  await flushing
+
+  expect(batches).toHaveLength(1)
+  expect(batches.join()).not.toContain('user-b')
+})
+
+it('sign-out leaves no account identity in SDK storage and stays off', async () => {
+  const posthog = open()
+  await posthog.ready()
+  syncPostHogIdentity(posthog, 'user-a')
+
+  forgetSignedOutIdentity()
+  await posthog.ready()
+  await Promise.resolve()
+
+  expect(posthog.getDistinctId()).not.toBe('user-a')
+  expect(posthog.optedOut).toBe(true)
 })
 
 describe('syncPostHogIdentity', () => {

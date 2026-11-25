@@ -28,6 +28,7 @@
  * restore it on a new device.
  */
 
+import { CONSENT_RECORDS_URL } from '@/src/shared/config/constants'
 import { asyncStorage } from '@/src/shared/lib/storage'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
@@ -42,20 +43,19 @@ export interface ConsentRecord {
   kind: ConsentKind
   granted: boolean
   version: number
-  /** ISO 8601, device clock. */
+  /** ISO 8601, device clock. Evidence only; the server orders by revision. */
   chosenAt: string
+  /** The server revision this device had seen when the user chose. */
+  basedOnRevision: number
 }
 
-/** Account choices as the server returns them. */
+/** Account choices as the server returns them, with its revision. */
 export type ConsentChoices = Partial<
   Record<'analytics' | 'email_updates', { granted: boolean }>
->
+> & { revision?: number }
 
-/**
- * Choices saved before they were scoped to an account. The first account
- * bound adopts them, so an upgrade does not re-ask its signed-in user.
- */
-export const LEGACY_CHOICES_UID = '__legacy__'
+type AccountKind = 'analytics' | 'email_updates'
+const ACCOUNT_KINDS: readonly AccountKind[] = ['analytics', 'email_updates']
 
 /** Unsent records past this are dropped oldest first. */
 export const MAX_PENDING_RECORDS = 50
@@ -71,29 +71,47 @@ interface ConsentState {
   choicesUid: string | null
   activeUid: string | null
   pendingRecords: ConsentRecord[]
+  /** Highest server revision seen for `choicesUid`. */
+  serverRevision: number
+  /**
+   * The account whose cached choices were confirmed by the server in this
+   * process. Not persisted: a cached grant may have been revoked elsewhere.
+   */
+  verifiedUid: string | null
   markAccepted: () => void
   setAnalyticsAccepted: (enabled: boolean) => void
   setEmailOptIn: (enabled: boolean) => void
   /** Scope account choices to `uid` (null: signed out). */
   bindChoicesTo: (uid: string | null) => void
-  /** Fill choices still unanswered for `uid` from its server records. */
+  /**
+   * Apply `uid`'s server choices: they replace cached ones, except a kind
+   * with an unsent local choice. Marks the account verified.
+   */
   restoreChoices: (uid: string, choices: ConsentChoices) => void
+  /** Record a revision the server reported for `uid`. */
+  noteServerRevision: (uid: string, revision: number) => void
   /** Acknowledge this record even if the queue moved while it was sending. */
   acknowledgeRecord: (record: ConsentRecord) => void
 }
 
-const record = (kind: ConsentKind, granted: boolean, chosenAt?: string) => ({
+const record = (
+  kind: ConsentKind,
+  granted: boolean,
+  basedOnRevision: number,
+  chosenAt?: string,
+): ConsentRecord => ({
   kind,
   granted,
   version: CONSENT_VERSION,
   chosenAt: chosenAt ?? new Date().toISOString(),
+  basedOnRevision,
 })
 
 const queue = (pending: ConsentRecord[], ...added: ConsentRecord[]) =>
   [...pending, ...added].slice(-MAX_PENDING_RECORDS)
 
 /** Record only for a bound account; binding records the rest. */
-const bound = (uid: string | null) => uid !== null && uid !== LEGACY_CHOICES_UID
+const bound = (uid: string | null) => uid !== null
 
 export const useConsentStore = create<ConsentState>()(
   persist(
@@ -106,6 +124,8 @@ export const useConsentStore = create<ConsentState>()(
       choicesUid: null,
       activeUid: null,
       pendingRecords: [],
+      serverRevision: 0,
+      verifiedUid: null,
       markAccepted: () => {
         const acceptedAt = new Date().toISOString()
         set((s) => ({
@@ -115,7 +135,7 @@ export const useConsentStore = create<ConsentState>()(
           pendingRecords: bound(s.choicesUid)
             ? queue(
                 s.pendingRecords,
-                record('data_collection', true, acceptedAt),
+                record('data_collection', true, s.serverRevision, acceptedAt),
               )
             : s.pendingRecords,
         }))
@@ -124,14 +144,20 @@ export const useConsentStore = create<ConsentState>()(
         set((s) => ({
           analyticsAccepted: enabled,
           pendingRecords: bound(s.choicesUid)
-            ? queue(s.pendingRecords, record('analytics', enabled))
+            ? queue(
+                s.pendingRecords,
+                record('analytics', enabled, s.serverRevision),
+              )
             : s.pendingRecords,
         })),
       setEmailOptIn: (enabled) =>
         set((s) => ({
           emailOptIn: enabled,
           pendingRecords: bound(s.choicesUid)
-            ? queue(s.pendingRecords, record('email_updates', enabled))
+            ? queue(
+                s.pendingRecords,
+                record('email_updates', enabled, s.serverRevision),
+              )
             : s.pendingRecords,
         })),
       bindChoicesTo: (uid) => {
@@ -142,48 +168,48 @@ export const useConsentStore = create<ConsentState>()(
         }
         const accepted = hasAcceptedConsent()
         const disclosure = accepted
-          ? [record('data_collection', true, s.acceptedAt ?? undefined)]
+          ? [record('data_collection', true, 0, s.acceptedAt ?? undefined)]
           : []
-        if (s.choicesUid === LEGACY_CHOICES_UID && uid !== null) {
-          // Adopt: the signed-in user made these choices on this device.
-          set({
-            choicesUid: uid,
-            activeUid: uid,
-            pendingRecords: queue(
-              [],
-              ...disclosure,
-              ...(s.analyticsAccepted !== null
-                ? [record('analytics', s.analyticsAccepted)]
-                : []),
-              ...(s.emailOptIn !== null
-                ? [record('email_updates', s.emailOptIn)]
-                : []),
-            ),
-          })
-          return
-        }
         // Another account's unsent records cannot be sent for it any more.
         set({
           choicesUid: uid,
           activeUid: uid,
           analyticsAccepted: null,
           emailOptIn: null,
+          serverRevision: 0,
+          verifiedUid: null,
           pendingRecords: uid === null ? [] : disclosure,
         })
       },
       restoreChoices: (uid, choices) =>
         set((s) => {
           if (s.choicesUid !== uid) return {}
-          const analytics = choices?.analytics?.granted
-          const email = choices?.email_updates?.granted
+          const local = {
+            analytics: s.analyticsAccepted,
+            email_updates: s.emailOptIn,
+          }
+          for (const kind of ACCOUNT_KINDS) {
+            const server = choices?.[kind]?.granted
+            const unsent = s.pendingRecords.some((r) => r.kind === kind)
+            if (!unsent && typeof server === 'boolean') local[kind] = server
+          }
+          const revision = choices?.revision
           return {
-            analyticsAccepted:
-              s.analyticsAccepted ??
-              (typeof analytics === 'boolean' ? analytics : null),
-            emailOptIn:
-              s.emailOptIn ?? (typeof email === 'boolean' ? email : null),
+            analyticsAccepted: local.analytics,
+            emailOptIn: local.email_updates,
+            serverRevision:
+              typeof revision === 'number'
+                ? Math.max(s.serverRevision, revision)
+                : s.serverRevision,
+            verifiedUid: uid,
           }
         }),
+      noteServerRevision: (uid, revision) =>
+        set((s) =>
+          s.choicesUid === uid && revision > s.serverRevision
+            ? { serverRevision: revision }
+            : {},
+        ),
       acknowledgeRecord: (record) =>
         set((s) => ({
           pendingRecords: s.pendingRecords.filter(
@@ -194,18 +220,24 @@ export const useConsentStore = create<ConsentState>()(
     {
       name: 'consent-store',
       storage: createJSONStorage(() => asyncStorage),
-      version: 1,
-      // v0 had no account scope: whoever signs in next adopts its choices.
+      version: 2,
+      // v0 kept analytics and email choices across sign-out, so they have
+      // no trustworthy owner: keep the device disclosure, drop the account
+      // choices. Sign-in restores the account's own from the server, or
+      // asks again. v1 builds could hold such choices adopted by a legacy
+      // marker; they are dropped the same way.
       migrate: (persisted, version) => {
         const state = (persisted ?? {}) as Partial<ConsentState>
-        if (version >= 1) return state as ConsentState
-        const answered =
-          state.analyticsAccepted != null || state.emailOptIn != null
+        if (version >= 2) return state as ConsentState
         const migrated: Partial<ConsentState> = {
-          ...state,
-          acceptedAt: null,
-          choicesUid: answered ? LEGACY_CHOICES_UID : null,
+          accepted: state.accepted ?? false,
+          acceptedVersion: state.acceptedVersion ?? null,
+          acceptedAt: state.acceptedAt ?? null,
+          analyticsAccepted: null,
+          emailOptIn: null,
+          choicesUid: null,
           pendingRecords: [],
+          serverRevision: 0,
         }
         return migrated as ConsentState
       },
@@ -217,6 +249,7 @@ export const useConsentStore = create<ConsentState>()(
         emailOptIn: s.emailOptIn,
         choicesUid: s.choicesUid,
         pendingRecords: s.pendingRecords,
+        serverRevision: s.serverRevision,
       }),
     },
   ),
@@ -230,10 +263,28 @@ export function hasAcceptedConsent(): boolean {
 
 /** Plain (non-hook) check for use outside React components, e.g. utils/analytics.ts. */
 export function hasAcceptedAnalytics(): boolean {
-  const { activeUid, choicesUid, analyticsAccepted } =
-    useConsentStore.getState()
+  return analyticsAcceptedFor(useConsentStore.getState())
+}
+
+/**
+ * The analytics gate on a state snapshot, for selectors too: the active
+ * account's own opt-in, confirmed by the server in this process when
+ * consent records are configured (a cached grant may have been revoked on
+ * another device).
+ */
+export function analyticsAcceptedFor(
+  s: Pick<
+    ConsentState,
+    'activeUid' | 'choicesUid' | 'analyticsAccepted' | 'verifiedUid'
+  >,
+  uid: string | null = s.activeUid,
+): boolean {
   return (
-    activeUid !== null && activeUid === choicesUid && analyticsAccepted === true
+    uid !== null &&
+    s.activeUid === uid &&
+    s.choicesUid === uid &&
+    s.analyticsAccepted === true &&
+    (!CONSENT_RECORDS_URL || s.verifiedUid === uid)
   )
 }
 

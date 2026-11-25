@@ -3,13 +3,15 @@ import { http, HttpResponse } from 'msw'
 import { server } from '@/src/test-utils/mswServer'
 import { authProvider } from '@/src/features/auth/lib'
 import {
+  REQUEST_TIMEOUT_MS,
+  RETRY_DELAYS_MS,
+  cancelConsentRetries,
   flushConsentRecords,
   syncAccountConsent,
 } from '@/src/features/auth/lib/accountConsent'
 import { nextConsentRoute } from '@/src/shared/consent/consentFlow'
 import {
   CONSENT_VERSION,
-  LEGACY_CHOICES_UID,
   hasAcceptedAnalytics,
   useConsentStore,
 } from '@/src/shared/consent/useConsentStore'
@@ -24,13 +26,14 @@ jest.mock('@/src/shared/config/constants', () => ({
 /**
  * ADR-0009 on one device. Catches: a second account inheriting the first
  * one's analytics and email choices; a returning user asked again on a new
- * device; a choice lost or sent out of order when offline; an upgrade
- * re-asking its signed-in user.
+ * device; a cached grant surviving a revocation made elsewhere; a choice
+ * lost, stuck or sent out of order when offline; an upgrade handing one
+ * account's old choices to another.
  */
 
 type Posted = Record<string, unknown>
 let posted: Posted[]
-let saved: Record<string, { granted: boolean }>
+let saved: Record<string, unknown>
 let failPosts: number
 let currentUid: string | null
 
@@ -71,7 +74,11 @@ beforeEach(async () => {
     )
 })
 
-afterEach(() => authProvider.signOut())
+afterEach(async () => {
+  cancelConsentRetries()
+  jest.useRealTimers()
+  await authProvider.signOut()
+})
 
 it('a second account on the device does not inherit the first one’s choices', async () => {
   acceptDisclosure()
@@ -136,31 +143,140 @@ it('drops the queue for an erased account', async () => {
   expect(useConsentStore.getState().pendingRecords).toEqual([])
 })
 
-it('an upgrade keeps the signed-in user’s saved choices and records them', async () => {
-  await AsyncStorage.setItem(
-    'consent-store',
-    JSON.stringify({
-      version: 0,
-      state: {
-        accepted: true,
-        acceptedVersion: CONSENT_VERSION,
-        analyticsAccepted: true,
-        emailOptIn: false,
-      },
-    }),
-  )
-  await useConsentStore.persist.rehydrate()
-  expect(useConsentStore.getState().choicesUid).toBe(LEGACY_CHOICES_UID)
+describe('an upgrade from choices with no known owner', () => {
+  async function upgradeWithOldChoices() {
+    // v0 kept these across sign-out: A may have made them, not the user now.
+    await AsyncStorage.setItem(
+      'consent-store',
+      JSON.stringify({
+        version: 0,
+        state: {
+          accepted: true,
+          acceptedVersion: CONSENT_VERSION,
+          analyticsAccepted: true,
+          emailOptIn: true,
+        },
+      }),
+    )
+    await useConsentStore.persist.rehydrate()
+  }
 
+  it('keeps the disclosure and asks again when the server has nothing', async () => {
+    await upgradeWithOldChoices()
+    await syncAccountConsent('user-a')
+    await flushConsentRecords('user-a')
+
+    expect(useConsentStore.getState().accepted).toBe(true)
+    expect(hasAcceptedAnalytics()).toBe(false)
+    expect(nextConsentRoute()).toBe('/analytics-consent')
+    expect(posted.map((p) => p.kind)).toEqual(['data_collection'])
+  })
+
+  it('restores the account’s own server choices', async () => {
+    saved = { analytics: { granted: false }, email_updates: { granted: true } }
+    await upgradeWithOldChoices()
+    await syncAccountConsent('user-a')
+
+    expect(hasAcceptedAnalytics()).toBe(false)
+    expect(useConsentStore.getState().analyticsAccepted).toBe(false)
+    expect(nextConsentRoute()).toBe('/(home-tabs)')
+  })
+})
+
+it('a cached grant waits for the server and yields to a revocation made elsewhere', async () => {
+  const get = jest.fn(() =>
+    HttpResponse.json({ analytics: { granted: true }, revision: 1 }),
+  )
+  server.use(http.get(URL, get))
+  acceptDisclosure()
   await syncAccountConsent('user-a')
+  expect(hasAcceptedAnalytics()).toBe(true)
+
+  // A later session on this device: the cache says yes, another device
+  // revoked meanwhile.
+  useConsentStore.setState({ verifiedUid: null })
+  expect(hasAcceptedAnalytics()).toBe(false)
+  get.mockImplementation(() =>
+    HttpResponse.json({ analytics: { granted: false }, revision: 2 }),
+  )
+  await syncAccountConsent('user-a')
+
+  expect(get).toHaveBeenCalledTimes(2)
+  expect(useConsentStore.getState().analyticsAccepted).toBe(false)
+  expect(hasAcceptedAnalytics()).toBe(false)
+})
+
+it('a choice carries the server revision this device had seen', async () => {
+  saved = { analytics: { granted: false }, revision: 7 }
+  acceptDisclosure()
+  await syncAccountConsent('user-a')
+  useConsentStore.getState().setAnalyticsAccepted(true)
+
   await flushConsentRecords('user-a')
 
-  expect(hasAcceptedAnalytics()).toBe(true)
-  expect(posted.map((p) => [p.kind, p.granted])).toEqual([
-    ['data_collection', true],
-    ['analytics', true],
-    ['email_updates', false],
-  ])
+  expect(posted.at(-1)).toEqual(
+    expect.objectContaining({
+      kind: 'analytics',
+      granted: true,
+      basedOnRevision: 7,
+    }),
+  )
+})
+
+/** Fake timers only after the network setup, which MSW runs on real ones. */
+function useFakeClock() {
+  jest.useFakeTimers({
+    doNotFake: ['nextTick', 'setImmediate', 'queueMicrotask'],
+  })
+}
+
+describe('a stuck or failed send is retried on its own', () => {
+  it('times out a stalled request, then retries', async () => {
+    acceptDisclosure()
+    await syncAccountConsent('user-a')
+    await flushConsentRecords('user-a')
+    posted.length = 0
+    useConsentStore.getState().setAnalyticsAccepted(true)
+    const token = jest
+      .spyOn(authProvider, 'getToken')
+      .mockImplementationOnce(() => new Promise<string>(() => undefined))
+    useFakeClock()
+    const stalled = flushConsentRecords('user-a')
+
+    let settled = false
+    void stalled.then(() => {
+      settled = true
+    })
+    await jest.advanceTimersByTimeAsync(REQUEST_TIMEOUT_MS - 1)
+    expect(settled).toBe(false)
+    await jest.advanceTimersByTimeAsync(1)
+    expect(settled).toBe(true)
+    expect(token).toHaveBeenCalledTimes(1)
+    expect(posted).toEqual([])
+    token.mockRestore()
+
+    await jest.advanceTimersByTimeAsync(RETRY_DELAYS_MS[0])
+    await jest.runOnlyPendingTimersAsync()
+    expect(posted.map((p) => p.kind)).toEqual(['analytics'])
+  })
+
+  it('retries a transient server failure without another trigger', async () => {
+    acceptDisclosure()
+    await syncAccountConsent('user-a')
+    await flushConsentRecords('user-a')
+    posted.length = 0
+    useConsentStore.getState().setAnalyticsAccepted(true)
+    failPosts = 1
+    useFakeClock()
+    await flushConsentRecords('user-a')
+    expect(posted).toEqual([])
+
+    await jest.advanceTimersByTimeAsync(RETRY_DELAYS_MS[0])
+    await jest.runOnlyPendingTimersAsync()
+
+    expect(posted.map((p) => p.kind)).toEqual(['analytics'])
+    expect(useConsentStore.getState().pendingRecords).toEqual([])
+  })
 })
 
 it('does not post a queued choice after the account changes during token lookup', async () => {

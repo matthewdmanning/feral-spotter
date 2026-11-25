@@ -39,6 +39,12 @@ export interface IAuthProvider {
    * user dismisses the sheet.
    */
   reauthenticate(password?: string): Promise<void>
+  /**
+   * Whether the signed-in account still exists on the server: false once it
+   * is deleted or disabled, null when that cannot be told (offline, or
+   * signed out).
+   */
+  accountExists(): Promise<boolean | null>
   signOut(): Promise<void>
   onAuthStateChanged(cb: (user: AuthUser | null) => void): () => void
 }

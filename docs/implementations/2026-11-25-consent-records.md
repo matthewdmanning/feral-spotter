@@ -99,3 +99,8 @@ Mutation check: removing the choice reset in `bindChoicesTo` fails the inheritan
 **Purpose:** Keep consent reads and writes scoped to the active account through session restoration, request retries and erasure.
 
 **Change:** Entry routes await a shared, bounded restore. Consent requests check the account around token retrieval, and acknowledgements remove the specific queued record. The server deduplicates retried events, checks the erasure marker in the append transaction and gives each retained event its own TTL document. Deploy both consent TTL policies. [PostHog review fixes](2026-11-25-posthog-logging-best-practices.md#2026-11-25--pr-review-fixes)
+
+## 2026-11-25 — fix (owner review of 1d1647b)
+
+**Purpose:** Consent could follow the wrong owner or the wrong clock: legacy choices adopted by whoever signed in, a cached grant surviving a revocation elsewhere, device time ordering current choices, and a stalled request blocking the queue.
+**Change:** Server orders current choices by a revision it controls; a revocation always wins and a grant replaces one only if its device had seen it (`nextCurrentChoice`, `basedOnRevision`); POST answers the new revision. Persisted store v2 drops ownerless legacy choices and keeps the disclosure. Every session refreshes choices; analytics waits for that (`verifiedUid`, `analyticsAcceptedFor`). Requests have a 10 s deadline; failed sends and refreshes retry with backoff. Tests: `accountConsent.test.ts` (upgrade, revocation elsewhere, revision, stalled and transient failures), `consentRecords.test.ts` (`nextCurrentChoice`), emulator clock-skew case. Mutations: no server override, no deadline.

@@ -18,10 +18,10 @@ Decided 2026-11-25 by the project owner: build before Beta; keep a minimal recor
 ## Decision
 
 - Kinds: `data_collection` (the disclosure), `analytics`, `email_updates`. Each record: granted, disclosure version, device time, server time, platform, app version.
-- `consentRecords/{uid}` holds current choices; `events/` under it is append-only. A late older choice joins history, never current.
-- The `consentRecords` function: GET current, POST one. The uid comes from the verified ID token. Rules deny clients.
-- Scope: the disclosure belongs to the device (accepted before sign-in) and is recorded for each account that signs in on it. Analytics and email choices belong to one account. Binding another account, or none, clears them locally; sign-in restores them from the server before routing.
-- The client queues choices and sends them in order; offline, it retries. A signed-out account's unsent choices are dropped.
+- `consentRecords/{uid}` holds current choices and a server `revision`, raised by every recorded choice; `events/` under it is append-only. Device time is evidence only, never the order. A revocation always becomes current. A grant replaces a revocation only if its device had seen that revocation (`basedOnRevision`); otherwise it is history.
+- The `consentRecords` function: GET current choices and revision, POST one choice (answers the new revision). The uid comes from the verified ID token. Rules deny clients.
+- Scope: the disclosure belongs to the device (accepted before sign-in) and is recorded for each account that signs in on it. Analytics and email choices belong to one account. Binding another account, or none, clears them locally. Every session refreshes them from the server: sign-in waits for it before routing, and analytics waits for it, since a cached grant may have been revoked on another device. A kind with an unsent local choice keeps the local value. Choices from before account scoping have no known owner: an upgrade keeps the device disclosure and drops them, then restores the account's own or asks again.
+- The client queues choices and sends them in order. Each request has a deadline; failures retry with bounded backoff while the same account stays active. A signed-out account's unsent choices are dropped.
 - Erasure (#433): last step before deleting the Auth user. A pseudonymous marker in `consentTombstones/{hash}` blocks new writes before the active records are read. `consentTombstoneEvents/{hash}` holds the minimal history, with kind, granted, version, timestamps and a link to the marker. Both collections expire through Firestore TTL three years after erasure began (GDPR Art. 17(3)(e): defending legal claims).
 - EmailOctopus keeps its own double opt-in proof (ADR-0007).
 

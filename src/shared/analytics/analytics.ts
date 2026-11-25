@@ -13,6 +13,7 @@ import {
   useConsentStore,
   hasAcceptedConsent,
 } from '@/src/shared/consent/useConsentStore'
+import { getPendingDeletion } from '@/src/shared/lib/pendingDeletion'
 import type { PostHogEventProperties } from '@posthog/core'
 
 export { IS_RELEASE_CANDIDATE }
@@ -115,7 +116,13 @@ useConsentStore.subscribe((state, previous) => {
 
 /** Same gate as every capture path: release candidate build, general consent, analytics opt-in. */
 export function analyticsAllowed(): boolean {
-  return IS_RELEASE_CANDIDATE && hasAcceptedConsent() && hasAcceptedAnalytics()
+  return (
+    IS_RELEASE_CANDIDATE &&
+    hasAcceptedConsent() &&
+    hasAcceptedAnalytics() &&
+    // An unfinished deletion may already have erased the analytics person.
+    getPendingDeletion() === null
+  )
 }
 
 // ─── Fire event ───────────────────────────────────────────────────────────────

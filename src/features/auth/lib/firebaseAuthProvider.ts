@@ -6,6 +6,7 @@ import {
   createUserWithEmailAndPassword,
   EmailAuthProvider,
   reauthenticateWithCredential,
+  reload,
   GoogleAuthProvider,
   OAuthProvider,
   FacebookAuthProvider,
@@ -35,6 +36,13 @@ const SIGN_IN_METHODS: Record<string, SignInMethod> = {
   'apple.com': 'apple',
   'facebook.com': 'facebook',
 }
+
+/** Errors that mean the account no longer exists on the server. */
+const GONE_ACCOUNT_CODES = [
+  'auth/user-not-found',
+  'auth/user-disabled',
+  'auth/user-token-expired',
+]
 
 function toAuthUser(user: User | null): AuthUser | null {
   if (!user) return null
@@ -143,6 +151,17 @@ export function createFirebaseAuthProvider(): IAuthProvider {
           ? EmailAuthProvider.credential(user.email ?? '', password ?? '')
           : await credentialForProvider(method)
       await reauthenticateWithCredential(user, credential)
+    },
+    accountExists: async () => {
+      const user = auth.currentUser
+      if (!user) return null
+      try {
+        await reload(user)
+        return true
+      } catch (error) {
+        const code = (error as { code?: string }).code ?? ''
+        return GONE_ACCOUNT_CODES.includes(code) ? false : null
+      }
     },
     signOut: async () => {
       // Sign out of every federated SDK that keeps its own session, then Firebase.

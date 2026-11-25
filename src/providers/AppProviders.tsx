@@ -35,6 +35,8 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { createQueryClient } from '@/src/shared/lib/queryClient'
 import { OrganizationsRuntime } from '@/src/features/organizations/components/OrganizationsRuntime'
 import { AccountConsentRuntime } from '@/src/features/auth/components/AccountConsentRuntime'
+import { AccountDeletionRuntime } from '@/src/workflows/account-deletion/components/AccountDeletionRuntime'
+import { usePendingDeletionStore } from '@/src/shared/lib/pendingDeletion'
 import { AlertHost } from '@/src/shared/ui/organisms/AlertHost'
 import { ErrorBoundary } from '@/src/shared/ui/atoms/ErrorBoundary'
 import {
@@ -43,6 +45,7 @@ import {
 } from '@/src/shared/config/unistyles'
 import {
   CONSENT_VERSION,
+  analyticsAcceptedFor,
   useConsentStore,
 } from '@/src/shared/consent/useConsentStore'
 import { authProvider } from '@/src/features/auth/lib'
@@ -59,6 +62,7 @@ import {
 } from '@/src/shared/analytics/featureFlags'
 import {
   closePostHogClient,
+  forgetSignedOutIdentity,
   openPostHogClient,
   registerDeviceProperties,
   screenNameFromSegments,
@@ -180,17 +184,17 @@ export function AppProviders({ children }: AppProvidersProps) {
     (s) => s.accepted && s.acceptedVersion === CONSENT_VERSION,
   )
   const uid = useAuthStore((s) => (s.isReady ? (s.user?.uid ?? null) : null))
-  const hasAcceptedAnalytics = useConsentStore(
-    (s) =>
-      s.activeUid === uid &&
-      s.choicesUid === uid &&
-      s.analyticsAccepted === true,
+  const signedOut = useAuthStore((s) => s.isReady && s.user === null)
+  const hasAcceptedAnalytics = useConsentStore((s) =>
+    analyticsAcceptedFor(s, uid),
   )
+  const deletionPending = usePendingDeletionStore((s) => s.pending !== null)
   const [queryClient] = useState(createQueryClient)
   const [posthog, setPosthog] = useState<PostHog | null>(null)
   const analyticsOn =
     IS_RELEASE_CANDIDATE &&
     uid !== null &&
+    !deletionPending &&
     hasAcceptedConsent &&
     hasAcceptedAnalytics
 
@@ -215,6 +219,11 @@ export function AppProviders({ children }: AppProvidersProps) {
     }
   }, [analyticsOn, uid])
 
+  // Only a reported sign-out: before auth is ready, "no user" is a guess.
+  useEffect(() => {
+    if (signedOut) forgetSignedOutIdentity()
+  }, [signedOut])
+
   return (
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={{ flex: 1 }}>
@@ -222,6 +231,7 @@ export function AppProviders({ children }: AppProvidersProps) {
         <SystemThemeSync />
         <OrganizationsRuntime />
         <AccountConsentRuntime />
+        <AccountDeletionRuntime />
         {/* Outside ErrorBoundary's children so a caught render error still
           leaves the app able to raise a dialog. */}
         <AlertHost />

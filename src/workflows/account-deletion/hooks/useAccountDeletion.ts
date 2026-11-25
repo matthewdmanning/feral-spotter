@@ -17,10 +17,13 @@ import {
 import { authCopy } from '@/src/shared/config/text'
 import { showError, showSuccess } from '@/src/shared/hooks/useUIStore'
 import { startOver } from '@/src/shared/lib/navigation'
+import { setPendingDeletion } from '@/src/shared/lib/pendingDeletion'
 import {
+  AmbiguousDeletionError,
   RecentSignInRequiredError,
+  completeAccountDeletion,
   deleteAccountOnServer,
-  wipeDeviceData,
+  reconcileDeletion,
 } from '@/src/workflows/account-deletion/lib/accountDeletion'
 
 export type AccountDeletionStep =
@@ -37,6 +40,7 @@ export function useAccountDeletion() {
   const [deleteSightings, setDeleteSightings] = useState(false)
   const [password, setPassword] = useState('')
   const running = useRef(false)
+  const usesPassword = authProvider.signInMethod() === 'password'
   const targetUid = useRef<string | null>(null)
 
   const close = useCallback(() => {
@@ -55,8 +59,10 @@ export function useAccountDeletion() {
         return
       }
       running.current = true
+      const pending = { uid, deleteSightings, phase: 'requested' as const }
       try {
         setStep('deleting')
+        let outcome: 'deleted' | 'exists' | 'unknown' = 'deleted'
         try {
           await authProvider.reauthenticate(typedPassword)
           if (authProvider.getCurrentUser()?.uid !== uid) {
@@ -64,8 +70,16 @@ export function useAccountDeletion() {
             return
           }
           closePostHogClient()
-          await deleteAccountOnServer(uid, deleteSightings)
+          // Before the request: a lost answer must be resumed, not forgotten.
+          setPendingDeletion(pending)
+          try {
+            await deleteAccountOnServer(uid, deleteSightings)
+          } catch (error) {
+            if (!(error instanceof AmbiguousDeletionError)) throw error
+            outcome = await reconcileDeletion(uid)
+          }
         } catch (error) {
+          setPendingDeletion(null)
           if (authProvider.getCurrentUser()?.uid !== uid) {
             close()
             return
@@ -76,7 +90,8 @@ export function useAccountDeletion() {
             return
           }
           const code = (error as { code?: string }).code ?? ''
-          if (WRONG_PASSWORD_CODES.includes(code)) {
+          // A provider's own failure stays in the provider flow.
+          if (usesPassword && WRONG_PASSWORD_CODES.includes(code)) {
             setPassword('')
             setStep('password')
             showError(
@@ -95,29 +110,50 @@ export function useAccountDeletion() {
           )
           return
         }
+        if (outcome === 'exists') {
+          setPendingDeletion(null)
+          resumePostHogClient(uid)
+          close()
+          showError(accountDeletionCopy.failedTitle, authCopy.retryMessage)
+          return
+        }
+        if (outcome === 'unknown') {
+          // Kept: AccountDeletionRuntime checks again; analytics stays off.
+          close()
+          showError(
+            accountDeletionCopy.failedTitle,
+            accountDeletionCopy.unconfirmedMessage,
+          )
+          return
+        }
         const activeUid = authProvider.getCurrentUser()?.uid
         if (activeUid && activeUid !== uid) {
           close()
           return
         }
         // The account is gone; whatever fails below must not keep it here.
-        await wipeDeviceData()
+        const wiped = await completeAccountDeletion(pending)
         queryClient.clear()
-        await authProvider.signOut().catch(() => undefined)
         close()
         startOver('/intro-flow')
-        showSuccess(
-          accountDeletionCopy.deletedTitle,
-          accountDeletionCopy.deletedMessage,
-        )
+        if (wiped) {
+          showSuccess(
+            accountDeletionCopy.deletedTitle,
+            accountDeletionCopy.deletedMessage,
+          )
+        } else {
+          showError(
+            accountDeletionCopy.deletedTitle,
+            accountDeletionCopy.cleanupPendingMessage,
+          )
+        }
       } finally {
         running.current = false
       }
     },
-    [close, deleteSightings, queryClient],
+    [close, deleteSightings, queryClient, usesPassword],
   )
 
-  const usesPassword = authProvider.signInMethod() === 'password'
   const proceed = useCallback(() => {
     if (usesPassword) setStep('password')
     else void run()

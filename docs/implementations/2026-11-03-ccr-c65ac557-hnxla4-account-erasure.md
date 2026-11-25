@@ -41,3 +41,8 @@ See [organization permissions and erasure](2026-11-07-feat-organizations.md#perm
 **Purpose:** Keep deletion tied to the account that opened the confirmation and stop device analytics during erasure.
 
 **Change:** The deletion flow verifies the account after re-authentication and token refresh, then checks it again before wiping the device. The PostHog client pauses before the request, resumes on a failed attempt for the same account, and drops local identity and queued events on success. [Consent record review fixes](2026-11-25-consent-records.md#2026-11-25--pr-review-fixes)
+
+## 2026-11-25 — fix (owner review of 1d1647b)
+
+**Purpose:** A lost server answer or a failed local wipe was reported as an ordinary failure or as completion.
+**Change:** `shared/lib/pendingDeletion.ts` (own MMKV instance) records the deletion before the request. A lost answer is reconciled with `IAuthProvider.accountExists`; unknown keeps the marker, keeps analytics off and says so. `wipeDeviceData` reports failure (failed step, or a send holding the draft); "Account deleted" success shows only after a full wipe. `AccountDeletionRuntime` resumes on start, foreground and backoff. The password action names its target; a provider failure never opens the password step; the copy scopes "no further use" to erased data. Tests: `flow.accountDeletion.test.tsx` (lost answer: gone, exists, unknown; failed wipe; busy draft; provider failure).

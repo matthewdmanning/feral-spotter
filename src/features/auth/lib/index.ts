@@ -33,6 +33,7 @@ function createDevAuthProvider(): IAuthProvider {
     reauthenticate: async () => {
       if (!currentUser) throw new Error('NOT_SIGNED_IN')
     },
+    accountExists: async () => (currentUser ? true : null),
     // Every sign-in path grants the same stub — the mock exists to walk the
     // gated flow without a real provider, so it ignores which one was used.
     signInWithProvider: grantStub,

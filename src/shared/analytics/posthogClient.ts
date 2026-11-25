@@ -23,12 +23,35 @@ import { PostHog, type PostHogOptions } from 'posthog-react-native'
 let client: PostHog | null = null
 let canSend = (_posthog: PostHog) => true
 
+/**
+ * The consent session: raised on every revocation, sign-out, account
+ * switch and erasure (closePostHogClient). A request belongs to the session
+ * of its first attempt. The SDK snapshots a batch body and retries it, so
+ * without this a retry of A's batch could pass B's gate after a switch.
+ */
+let session = 0
+// The SDK builds one headers object per request and reuses it on every
+// retry, so it identifies the request across attempts. Pinned by the
+// "retries across an account switch" test against the installed SDK.
+const requestSessions = new WeakMap<object, number>()
+
+function sessionOf(options: PostHogFetchOptions): number {
+  const key = options.headers as object | undefined
+  if (!key) return session
+  const known = requestSessions.get(key)
+  if (known !== undefined) return known
+  requestSessions.set(key, session)
+  return session
+}
+
 class ConsentPostHog extends PostHog {
   override fetch(
     url: string,
     options: PostHogFetchOptions,
   ): Promise<PostHogFetchResponse> {
-    if (!this.optedOut && canSend(this)) return super.fetch(url, options)
+    if (sessionOf(options) === session && !this.optedOut && canSend(this)) {
+      return super.fetch(url, options)
+    }
     // The SDK can flush an existing queue and reload flags while opted out.
     // A terminal response also stops the SDK from retrying this request.
     return Promise.resolve(new Response(null, { status: 403 }))
@@ -94,6 +117,8 @@ export function openPostHogClient(
 
 /** Stop all sending after consent or the analytics opt-in is revoked. */
 export function closePostHogClient(): void {
+  // Ends every in-flight request and pending retry, client or not.
+  session += 1
   const posthog = client
   if (!posthog) return
   void posthog.optOut()
@@ -111,6 +136,20 @@ export function closePostHogClient(): void {
 export function forgetPostHogDevice(): void {
   closePostHogClient()
   if (client) resetIdentity(client)
+}
+
+/**
+ * Confirmed sign-out: stop sending and drop the last account's identity
+ * from SDK storage, so nothing on the device still names the signed-out
+ * account. Sending stays off; the next consented sign-in identifies anew.
+ */
+export function forgetSignedOutIdentity(): void {
+  closePostHogClient()
+  const posthog = client
+  if (!posthog) return
+  void posthog.ready().then(() => {
+    if (posthog.optedOut) resetIdentity(posthog)
+  })
 }
 
 /** Resume collection after an unsuccessful deletion attempt. */

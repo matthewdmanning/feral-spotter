@@ -61,12 +61,17 @@ async function readHistory(): Promise<History> {
   }
 }
 
-/** One event per view, empty history included: an empty list is friction too. */
-function fireViewed(all: SubmissionCacheFile[]) {
+/**
+ * One event per view, empty history included: an empty list is friction too.
+ * Counts only what the list shows: the device cache can hold another
+ * account's Sightings.
+ */
+function fireViewed(all: SubmissionCacheFile[], uid: string | undefined) {
+  const own = ownSightings(all, uid)
   const count = (status: SubmissionCacheFile['status']) =>
-    all.filter((cache) => cache.status === status).length
+    own.filter((cache) => cache.status === status).length
   captureEvent(EVENTS.SIGHTING_HISTORY_VIEWED, {
-    sighting_count: all.length,
+    sighting_count: own.length,
     in_progress_count: count('In Progress'),
     sending_count: count('Sending'),
     submitted_count: count('Submitted'),
@@ -87,14 +92,20 @@ export function useFeralReports(): FeralReportsResult {
   // Reads can overlap (mount, focus, refresh). Only the newest one lands,
   // so a slow earlier read never overwrites a newer history.
   const latestRead = useRef(0)
+  const uidRef = useRef(uid)
+  useEffect(() => {
+    uidRef.current = uid
+  }, [uid])
   const read = useCallback((fire: boolean) => {
     const readId = ++latestRead.current
+    const readUid = uidRef.current
     return readHistory()
       .then((next) => {
         if (readId !== latestRead.current) return
         setHistory(next)
         setStatus('ready')
-        if (fire) fireViewed(next.all)
+        // A read that outlived an account switch reports nothing.
+        if (fire && uidRef.current === readUid) fireViewed(next.all, readUid)
       })
       .catch((error) => {
         reportError('[useFeralReports] read history', error)

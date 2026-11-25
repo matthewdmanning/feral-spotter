@@ -104,7 +104,9 @@ export function AccountDeletionDialogs({
           disabled={deleting || !deletion.password}
           loading={deleting}
         >
-          {accountDeletionCopy.passwordConfirm}
+          {deletion.deleteSightings
+            ? accountDeletionCopy.sightingsConfirm
+            : accountDeletionCopy.confirm}
         </AppButton>
       </ButtonRow>
     </DialogShell>

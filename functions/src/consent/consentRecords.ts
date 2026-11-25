@@ -30,6 +30,11 @@ export interface ConsentChoice {
   chosenAt: string
   platform: string
   appVersion: string
+  /**
+   * The server revision the device had seen when the user chose. Orders
+   * choices without trusting device clocks (see nextCurrentChoice).
+   */
+  basedOnRevision: number
 }
 
 /** A stored choice: the client's report plus the server's receipt time. */
@@ -37,9 +42,35 @@ export interface ConsentEvent extends ConsentChoice {
   recordedAt: string
 }
 
-export type ConsentSnapshot = Partial<
-  Record<ConsentKind, Pick<ConsentEvent, 'granted' | 'version' | 'chosenAt'>>
->
+/** A current choice: the event's fields plus the revision that applied it. */
+export type CurrentChoice = Pick<
+  ConsentEvent,
+  'granted' | 'version' | 'chosenAt'
+> & { revision: number }
+
+/**
+ * Current choices, one field per kind, plus the account's revision: a
+ * server counter raised by every recorded choice.
+ */
+export type ConsentSnapshot = Partial<Record<ConsentKind, CurrentChoice>> & {
+  revision?: number
+}
+
+/**
+ * Whether a newly recorded choice becomes current. Device clocks are
+ * evidence only, never the order: a device whose clock runs ahead must not
+ * keep a stale grant over a later revocation. A revocation always becomes
+ * current. A grant replaces a revocation only when its device had already
+ * seen that revocation (based on its revision or later); otherwise it is
+ * history and the user is asked again.
+ */
+export function nextCurrentChoice(
+  previous: CurrentChoice | undefined,
+  event: Pick<ConsentEvent, 'granted' | 'basedOnRevision'>,
+): boolean {
+  if (!previous || !event.granted || previous.granted) return true
+  return event.basedOnRevision >= previous.revision
+}
 
 /** What survives erasure: no uid, email, platform or app version. */
 export interface ConsentTombstone {
@@ -53,8 +84,11 @@ export interface ConsentTombstone {
 }
 
 export interface ConsentRecordDb {
-  /** Append and update current choices atomically. False when erasure has begun. */
-  append(uid: string, event: ConsentEvent): Promise<boolean>
+  /**
+   * Append, raise the revision and update current choices atomically.
+   * Resolves the account's revision; null when erasure has begun.
+   */
+  append(uid: string, event: ConsentEvent): Promise<number | null>
   snapshot(uid: string): Promise<ConsentSnapshot>
   events(uid: string): Promise<ConsentEvent[]>
   tombstone(key: string): Promise<Omit<ConsentTombstone, 'events'> | null>
@@ -95,7 +129,10 @@ export function parseConsentChoice(body: unknown): ConsentChoice | null {
     !chosenAt ||
     Number.isNaN(Date.parse(chosenAt)) ||
     !platform ||
-    !appVersion
+    !appVersion ||
+    typeof b.basedOnRevision !== 'number' ||
+    !Number.isInteger(b.basedOnRevision) ||
+    b.basedOnRevision < 0
   ) {
     return null
   }
@@ -106,6 +143,7 @@ export function parseConsentChoice(body: unknown): ConsentChoice | null {
     chosenAt: new Date(chosenAt).toISOString(),
     platform,
     appVersion,
+    basedOnRevision: b.basedOnRevision,
   }
 }
 
@@ -117,7 +155,7 @@ export interface ConsentRequest {
 
 export interface ConsentResponse {
   status: number
-  body?: ConsentSnapshot
+  body?: ConsentSnapshot | { revision: number }
 }
 
 /**
@@ -146,11 +184,13 @@ export async function handleConsentRecords(
 
   const choice = parseConsentChoice(body)
   if (!choice) return { status: 400 }
-  const appended = await db.append(uid, {
+  const revision = await db.append(uid, {
     ...choice,
     recordedAt: now().toISOString(),
   })
-  return { status: appended ? 204 : 410 }
+  return revision === null
+    ? { status: 410 }
+    : { status: 200, body: { revision } }
 }
 
 /** Block new writes, retain proof, then remove the live account records. */

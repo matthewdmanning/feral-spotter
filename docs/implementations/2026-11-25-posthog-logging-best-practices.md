@@ -115,3 +115,8 @@ Mutation check: disabling the reset-before-identify and the opt-out fails three 
 **Purpose:** Apply the active account’s analytics choice to SDK requests and keep handled error details out of telemetry.
 
 **Change:** SDK registration waits for identity. Revocation or an account switch clears queued captures. The SDK transport checks current consent and identity before sending. Handled errors keep their original details in the local log and send a source label with a call-site stack to Error Tracking. The store-label mapping includes PostHog’s app-install identifier. [Consent review fixes](2026-11-25-consent-records.md#2026-11-25--pr-review-fixes)
+
+## 2026-11-25 — fix (owner review of 1d1647b)
+
+**Purpose:** A retried batch could cross an account switch; sign-out left the last UID in SDK storage; history counts included other accounts; SDK tests left flag work running after Jest teardown.
+**Change:** Each request belongs to the consent session of its first attempt (keyed by its headers object, which the SDK reuses on retries); `closePostHogClient` ends the session. `forgetSignedOutIdentity` runs on a reported sign-out. `sighting_history_viewed` counts `ownSightings` and drops reads that outlive an account switch. Identity tests disable remote flags. Tests: `posthogClient.test.ts` (retry across a switch, sign-out identity), `AppProviders.signOut.test.tsx`, `useFeralReports.analytics.test.ts`. Mutation: removing the session check fails the retry test.

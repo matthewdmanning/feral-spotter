@@ -10,6 +10,8 @@
 import { createHash } from 'node:crypto'
 import { getFirestore, Timestamp } from 'firebase-admin/firestore'
 import {
+  CONSENT_KINDS,
+  nextCurrentChoice,
   tombstoneKey,
   type ConsentEvent,
   type ConsentKind,
@@ -29,7 +31,7 @@ export const firestoreConsentDb: ConsentRecordDb = {
     db().runTransaction(async (transaction) => {
       const ref = recordRef(uid)
       const retired = await transaction.get(tombstoneRef(tombstoneKey(uid)))
-      if (retired.exists) return false
+      if (retired.exists) return null
       // Retrying after a lost response must not create another audit event.
       const id = createHash('sha256')
         .update(
@@ -40,36 +42,37 @@ export const firestoreConsentDb: ConsentRecordDb = {
             event.chosenAt,
             event.platform,
             event.appVersion,
+            event.basedOnRevision,
           ]),
         )
         .digest('hex')
       const eventRef = ref.collection('events').doc(id)
-      if ((await transaction.get(eventRef)).exists) return true
-      const current = (await transaction.get(ref)).data() as
-        StoredSnapshot | undefined
+      const [existing, snapshot] = await Promise.all([
+        transaction.get(eventRef),
+        transaction.get(ref),
+      ])
+      const current = snapshot.data() as StoredSnapshot | undefined
+      if (existing.exists) return current?.revision ?? 0
+      const revision = (current?.revision ?? 0) + 1
       transaction.create(eventRef, event)
-      const previous = current?.[event.kind]
-      if (!previous || previous.chosenAt <= event.chosenAt) {
-        transaction.set(
-          ref,
-          {
-            [event.kind]: {
-              granted: event.granted,
-              version: event.version,
-              chosenAt: event.chosenAt,
-            },
-          },
-          { merge: true },
-        )
+      const update: Record<string, unknown> = { revision }
+      if (nextCurrentChoice(current?.[event.kind], event)) {
+        update[event.kind] = {
+          granted: event.granted,
+          version: event.version,
+          chosenAt: event.chosenAt,
+          revision,
+        }
       }
-      return true
+      transaction.set(ref, update, { merge: true })
+      return revision
     }),
 
   snapshot: async (uid) => {
     const data = (await recordRef(uid).get()).data() as
       StoredSnapshot | undefined
-    const snapshot: ConsentSnapshot = {}
-    for (const kind of Object.keys(data ?? {}) as ConsentKind[]) {
+    const snapshot: ConsentSnapshot = { revision: data?.revision ?? 0 }
+    for (const kind of CONSENT_KINDS as readonly ConsentKind[]) {
       const choice = data?.[kind]
       if (choice) snapshot[kind] = choice
     }
