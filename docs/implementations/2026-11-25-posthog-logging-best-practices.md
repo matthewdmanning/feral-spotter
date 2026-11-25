@@ -99,6 +99,13 @@ Mutation check: disabling the reset-before-identify and the opt-out fails three 
 
 ## Follow-ups and known limitations
 
-- [ ] Re-verify `docs/references/privacy-nutrition-labels.md`: it predates `identify(uid)` (pre-existing) and lists 10 events; screen views and `error_source` now ship.
+- [x] Re-verify `docs/references/privacy-nutrition-labels.md`: it predates `identify(uid)` (pre-existing) and lists 10 events; screen views and `error_source` now ship.
 - [ ] PostHog dashboards/insights using `feral_reports_viewed` must move to `sighting_history_viewed`.
 - [ ] #197: the queue fixes the drop; the issue can close after a device check.
+
+## Implementation updates
+
+### 2026-11-25 — fix
+
+**Purpose:** the store labels said analytics was "Not Linked"; `identify(uid)` makes it linked. Paths and data types were stale.
+**Change:** rewrote `docs/references/privacy-nutrition-labels.md` against current code (analytics linked and optional, Library pick reads photos, name and email-updates rows, service-provider sharing, deletion open item). Updated the `shared/` map in `docs/PROJECT_STRUCTURE.md`.

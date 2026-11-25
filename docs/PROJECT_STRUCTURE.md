@@ -26,8 +26,10 @@ src/
 │   └── location/          # Live fix (liveFix.ts) + its tuning
 ├── shared/        # domain-agnostic or cross-cutting kernel
 │   ├── ui/{atoms,molecules,organisms}/   # Atomic Design UI kit
-│   ├── analytics/  consent/  hooks/  lib/   # incl. the Submission store + shared history cache
-│   └── config/  content/  types/  utils/
+│   ├── analytics/         # PostHog: client lifetime + identity (posthogClient), consent-gated capture + reportError (analytics), remote flags (featureFlags)
+│   ├── consent/           # consent store (disclosure, analytics, email opt-ins) + consent flow order
+│   ├── hooks/  lib/       # incl. the Submission store + shared history cache
+│   └── config/  types/  utils/
 ├── server-types/  # tsconfig.server.json includes it by path
 └── test-utils/
 ```
