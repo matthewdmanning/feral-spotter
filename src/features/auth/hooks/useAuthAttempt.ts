@@ -43,7 +43,9 @@ export function useAuthAttempt(): {
         await run()
         // Scope consent choices to this account and restore its saved ones
         // first, so a returning user is not asked again (ADR-0009).
-        await syncAccountConsent(authProvider.getCurrentUser()?.uid ?? null)
+        const uid = authProvider.getCurrentUser()?.uid
+        await syncAccountConsent(uid ?? null)
+        if (authProvider.getCurrentUser()?.uid !== uid) return
         // Sign-in stays under Registration; neither may stay under Home.
         startOver(nextConsentRoute())
       } catch (err) {

@@ -367,6 +367,7 @@ export const deleteAccount = onCall(
 // ADR-0009: proof of each consent choice, and the account's current choices
 // for a new device. GET reads them; POST records one.
 export const consentRecords = onRequest(async (req, res) => {
+  res.set('Cache-Control', 'no-store')
   try {
     const { status, body } = await handleConsentRecords(
       {
@@ -375,7 +376,7 @@ export const consentRecords = onRequest(async (req, res) => {
         body: req.body,
       },
       firestoreConsentDb,
-      (token) => getAuth().verifyIdToken(token),
+      (token) => getAuth().verifyIdToken(token, true),
     )
     if (body) res.status(status).json(body)
     else res.status(status).end()

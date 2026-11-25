@@ -53,12 +53,14 @@ export interface ConsentTombstone {
 }
 
 export interface ConsentRecordDb {
-  /** Append the event and update the snapshot atomically. */
-  append(uid: string, event: ConsentEvent): Promise<void>
+  /** Append and update current choices atomically. False when erasure has begun. */
+  append(uid: string, event: ConsentEvent): Promise<boolean>
   snapshot(uid: string): Promise<ConsentSnapshot>
   events(uid: string): Promise<ConsentEvent[]>
-  tombstone(key: string): Promise<ConsentTombstone | null>
-  /** Write the tombstone, then delete the account's events and snapshot. */
+  tombstone(key: string): Promise<Omit<ConsentTombstone, 'events'> | null>
+  /** Block new writes before reading events to retire. */
+  beginRetirement(key: string, tombstone: ConsentTombstone): Promise<Date>
+  /** Retain the minimal events, then delete the account's events and snapshot. */
   retire(uid: string, key: string, tombstone: ConsentTombstone): Promise<void>
 }
 
@@ -101,7 +103,7 @@ export function parseConsentChoice(body: unknown): ConsentChoice | null {
     kind,
     granted: b.granted,
     version: b.version,
-    chosenAt,
+    chosenAt: new Date(chosenAt).toISOString(),
     platform,
     appVersion,
   }
@@ -144,45 +146,35 @@ export async function handleConsentRecords(
 
   const choice = parseConsentChoice(body)
   if (!choice) return { status: 400 }
-  await db.append(uid, { ...choice, recordedAt: now().toISOString() })
-  return { status: 204 }
+  const appended = await db.append(uid, {
+    ...choice,
+    recordedAt: now().toISOString(),
+  })
+  return { status: appended ? 204 : 410 }
 }
 
-/**
- * Erasure step: shrink the account's records to a tombstone. Idempotent: a
- * retry after the tombstone was written merges into it rather than
- * overwriting it, and an account with no records gets none.
- */
+/** Block new writes, retain proof, then remove the live account records. */
 export async function retireConsentRecords(
   uid: string,
   db: ConsentRecordDb,
   now: Date = new Date(),
 ): Promise<void> {
   const key = tombstoneKey(uid)
-  const [events, existing] = await Promise.all([
-    db.events(uid),
-    db.tombstone(key),
-  ])
-  if (events.length === 0) return
-  const seen = new Set(
-    (existing?.events ?? []).map(
-      (e) => `${e.kind}|${e.recordedAt}|${e.chosenAt}`,
-    ),
-  )
-  const minimal = events
-    .filter((e) => !seen.has(`${e.kind}|${e.recordedAt}|${e.chosenAt}`))
-    .map(({ kind, granted, version, chosenAt, recordedAt }) => ({
+  const expireAt = new Date(now)
+  expireAt.setUTCDate(expireAt.getUTCDate() + CONSENT_TOMBSTONE_RETENTION_DAYS)
+  const marker = { events: [], erasedAt: now.toISOString(), expireAt }
+  const retentionDeadline = await db.beginRetirement(key, marker)
+
+  const events = await db.events(uid)
+  await db.retire(uid, key, {
+    ...marker,
+    expireAt: retentionDeadline,
+    events: events.map(({ kind, granted, version, chosenAt, recordedAt }) => ({
       kind,
       granted,
       version,
       chosenAt,
       recordedAt,
-    }))
-  const expireAt = new Date(now)
-  expireAt.setUTCDate(expireAt.getUTCDate() + CONSENT_TOMBSTONE_RETENTION_DAYS)
-  await db.retire(uid, key, {
-    events: [...(existing?.events ?? []), ...minimal],
-    erasedAt: existing?.erasedAt ?? now.toISOString(),
-    expireAt: existing?.expireAt ?? expireAt,
+    })),
   })
 }

@@ -109,3 +109,9 @@ Mutation check: disabling the reset-before-identify and the opt-out fails three 
 
 **Purpose:** the store labels said analytics was "Not Linked"; `identify(uid)` makes it linked. Paths and data types were stale.
 **Change:** rewrote `docs/references/privacy-nutrition-labels.md` against current code (analytics linked and optional, Library pick reads photos, name and email-updates rows, service-provider sharing, deletion open item). Updated the `shared/` map in `docs/PROJECT_STRUCTURE.md`.
+
+## 2026-11-25 — PR review fixes
+
+**Purpose:** Apply the active account’s analytics choice to SDK requests and keep handled error details out of telemetry.
+
+**Change:** SDK registration waits for identity. Revocation or an account switch clears queued captures. The SDK transport checks current consent and identity before sending. Handled errors keep their original details in the local log and send a source label with a call-site stack to Error Tracking. The store-label mapping includes PostHog’s app-install identifier. [Consent review fixes](2026-11-25-consent-records.md#2026-11-25--pr-review-fixes)

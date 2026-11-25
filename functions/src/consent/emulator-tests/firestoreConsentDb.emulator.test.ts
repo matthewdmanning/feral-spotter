@@ -34,7 +34,9 @@ afterAll(() => deleteApp(app))
 
 test('a late older choice is history, not the current choice', async () => {
   await db.append(uid, event('analytics', '2026-11-25T10:00:00.000Z', false))
-  await db.append(uid, event('analytics', '2026-11-25T09:00:00.000Z', true))
+  const older = event('analytics', '2026-11-25T09:00:00.000Z', true)
+  await db.append(uid, older)
+  await db.append(uid, { ...older, recordedAt: '2026-11-25T11:00:00.000Z' })
   await db.append(uid, event('email_updates', '2026-11-25T09:30:00.000Z', true))
 
   expect(await db.snapshot(uid)).toEqual({
@@ -63,7 +65,17 @@ test('erasure leaves only the tombstone, with a TTL timestamp', async () => {
       .get()
   ).data()
   expect(raw?.expireAt?.toDate()).toEqual(new Date('2029-11-24T12:00:00.000Z'))
-  expect(raw?.events).toHaveLength(3)
+  const events = await getFirestore()
+    .collection('consentTombstoneEvents')
+    .where('tombstoneKey', '==', tombstoneKey(uid))
+    .get()
+  expect(events.size).toBe(3)
+  expect(
+    events.docs.every((doc) => doc.get('expireAt').isEqual(raw?.expireAt)),
+  ).toBe(true)
+  expect(
+    await db.append(uid, event('analytics', '2026-11-25T11:00:00.000Z', true)),
+  ).toBe(false)
   expect(await db.events(uid)).toEqual([])
   expect(await db.snapshot(uid)).toEqual({})
   expect((await db.tombstone(tombstoneKey(uid)))?.expireAt).toBeInstanceOf(Date)

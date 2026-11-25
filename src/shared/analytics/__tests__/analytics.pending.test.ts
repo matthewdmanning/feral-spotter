@@ -6,6 +6,7 @@ import {
   clearPendingCaptures,
   registerCapture,
   registerCaptureException,
+  reportError,
 } from '@/src/shared/analytics/analytics'
 import {
   CONSENT_VERSION,
@@ -23,6 +24,8 @@ const captureError = jest.fn()
 
 function allowAnalytics(allowed: boolean) {
   useConsentStore.setState({
+    activeUid: 'account',
+    choicesUid: 'account',
     accepted: true,
     acceptedVersion: CONSENT_VERSION,
     analyticsAccepted: allowed,
@@ -76,4 +79,30 @@ it('keeps only the newest calls past the cap', () => {
 
   expect(capture).toHaveBeenCalledTimes(MAX_PENDING_CAPTURES)
   expect(capture.mock.calls[0]).toEqual([EVENTS.PHOTO_CAPTURED, { n: 5 }])
+})
+
+it('does not carry pending captures to a different account', () => {
+  captureEvent(EVENTS.CAMERA_OPENED)
+  useConsentStore.getState().bindChoicesTo('next-account')
+  useConsentStore.getState().setAnalyticsAccepted(true)
+  captureEvent(EVENTS.PHOTO_CAPTURED)
+
+  register()
+
+  expect(capture.mock.calls).toEqual([[EVENTS.PHOTO_CAPTURED, undefined]])
+})
+
+it('keeps handled error details in the local log', () => {
+  const error = new Error('native upload failed for private-file.jpg')
+  const log = jest.spyOn(console, 'error').mockImplementation(() => {})
+  register()
+
+  reportError('[upload]', error)
+
+  expect(log).toHaveBeenCalledWith('[upload]', error)
+  expect(captureError).toHaveBeenCalledWith(
+    expect.objectContaining({ message: '[upload]' }),
+    { error_source: '[upload]' },
+  )
+  log.mockRestore()
 })

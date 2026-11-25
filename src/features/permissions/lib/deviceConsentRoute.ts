@@ -5,6 +5,7 @@
  */
 
 import { nextConsentRoute } from '@/src/shared/consent/consentFlow'
+import { syncAccountConsent } from '@/src/features/auth/lib/accountConsent'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 
 /**
@@ -12,6 +13,11 @@ import { useAuthStore } from '@/src/features/auth/lib/authStore'
  * goes on to their consent steps or home; sign-in would ask for credentials
  * their session does not need.
  */
-export function routeAfterDeviceConsent() {
-  return useAuthStore.getState().user ? nextConsentRoute() : '/sign-in'
+export async function routeAfterDeviceConsent() {
+  const uid = useAuthStore.getState().user?.uid
+  if (!uid) return '/sign-in'
+  await syncAccountConsent(uid)
+  return useAuthStore.getState().user?.uid === uid
+    ? nextConsentRoute()
+    : '/sign-in'
 }

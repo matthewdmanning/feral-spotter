@@ -40,6 +40,7 @@ it.each([
   'build flag %s, analytics consent %s, rollout %s: Organizations shown is %s',
   async (build, analytics, rollout, shown) => {
     mutableFeatureFlags.organizations = build
+    useConsentStore.getState().bindChoicesTo('account')
     useConsentStore.setState({
       accepted: true,
       acceptedVersion: CONSENT_VERSION,

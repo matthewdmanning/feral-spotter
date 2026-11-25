@@ -69,6 +69,7 @@ interface ConsentState {
   emailOptIn: boolean | null
   /** The account the analytics and email choices belong to. */
   choicesUid: string | null
+  activeUid: string | null
   pendingRecords: ConsentRecord[]
   markAccepted: () => void
   setAnalyticsAccepted: (enabled: boolean) => void
@@ -77,8 +78,8 @@ interface ConsentState {
   bindChoicesTo: (uid: string | null) => void
   /** Fill choices still unanswered for `uid` from its server records. */
   restoreChoices: (uid: string, choices: ConsentChoices) => void
-  /** Drop the first `count` pending records once the server has them. */
-  dropPendingRecords: (count: number) => void
+  /** Acknowledge this record even if the queue moved while it was sending. */
+  acknowledgeRecord: (record: ConsentRecord) => void
 }
 
 const record = (kind: ConsentKind, granted: boolean, chosenAt?: string) => ({
@@ -103,6 +104,7 @@ export const useConsentStore = create<ConsentState>()(
       analyticsAccepted: null,
       emailOptIn: null,
       choicesUid: null,
+      activeUid: null,
       pendingRecords: [],
       markAccepted: () => {
         const acceptedAt = new Date().toISOString()
@@ -134,7 +136,10 @@ export const useConsentStore = create<ConsentState>()(
         })),
       bindChoicesTo: (uid) => {
         const s = get()
-        if (s.choicesUid === uid) return
+        if (s.choicesUid === uid) {
+          if (s.activeUid !== uid) set({ activeUid: uid })
+          return
+        }
         const accepted = hasAcceptedConsent()
         const disclosure = accepted
           ? [record('data_collection', true, s.acceptedAt ?? undefined)]
@@ -143,6 +148,7 @@ export const useConsentStore = create<ConsentState>()(
           // Adopt: the signed-in user made these choices on this device.
           set({
             choicesUid: uid,
+            activeUid: uid,
             pendingRecords: queue(
               [],
               ...disclosure,
@@ -159,6 +165,7 @@ export const useConsentStore = create<ConsentState>()(
         // Another account's unsent records cannot be sent for it any more.
         set({
           choicesUid: uid,
+          activeUid: uid,
           analyticsAccepted: null,
           emailOptIn: null,
           pendingRecords: uid === null ? [] : disclosure,
@@ -167,14 +174,22 @@ export const useConsentStore = create<ConsentState>()(
       restoreChoices: (uid, choices) =>
         set((s) => {
           if (s.choicesUid !== uid) return {}
+          const analytics = choices?.analytics?.granted
+          const email = choices?.email_updates?.granted
           return {
             analyticsAccepted:
-              s.analyticsAccepted ?? choices.analytics?.granted ?? null,
-            emailOptIn: s.emailOptIn ?? choices.email_updates?.granted ?? null,
+              s.analyticsAccepted ??
+              (typeof analytics === 'boolean' ? analytics : null),
+            emailOptIn:
+              s.emailOptIn ?? (typeof email === 'boolean' ? email : null),
           }
         }),
-      dropPendingRecords: (count) =>
-        set((s) => ({ pendingRecords: s.pendingRecords.slice(count) })),
+      acknowledgeRecord: (record) =>
+        set((s) => ({
+          pendingRecords: s.pendingRecords.filter(
+            (pending) => pending !== record,
+          ),
+        })),
     }),
     {
       name: 'consent-store',
@@ -215,7 +230,11 @@ export function hasAcceptedConsent(): boolean {
 
 /** Plain (non-hook) check for use outside React components, e.g. utils/analytics.ts. */
 export function hasAcceptedAnalytics(): boolean {
-  return useConsentStore.getState().analyticsAccepted === true
+  const { activeUid, choicesUid, analyticsAccepted } =
+    useConsentStore.getState()
+  return (
+    activeUid !== null && activeUid === choicesUid && analyticsAccepted === true
+  )
 }
 
 /**

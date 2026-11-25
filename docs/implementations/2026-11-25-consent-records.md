@@ -93,3 +93,9 @@ Mutation check: removing the choice reset in `bindChoicesTo` fails the inheritan
 - [ ] Deploy `consentRecords` and `firestore.indexes.json`; set the GitHub variable `EXPO_PUBLIC_CONSENT_RECORDS_URL`.
 - [ ] Counsel to confirm three-year retention.
 - Same-device users who share an account see each other's choices by design: choices are per account.
+
+## 2026-11-25 — PR review fixes
+
+**Purpose:** Keep consent reads and writes scoped to the active account through session restoration, request retries and erasure.
+
+**Change:** Entry routes await a shared, bounded restore. Consent requests check the account around token retrieval, and acknowledgements remove the specific queued record. The server deduplicates retried events, checks the erasure marker in the append transaction and gives each retained event its own TTL document. Deploy both consent TTL policies. [PostHog review fixes](2026-11-25-posthog-logging-best-practices.md#2026-11-25--pr-review-fixes)

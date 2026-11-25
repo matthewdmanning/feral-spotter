@@ -32,6 +32,7 @@ type Posted = Record<string, unknown>
 let posted: Posted[]
 let saved: Record<string, { granted: boolean }>
 let failPosts: number
+let currentUid: string | null
 
 function answerServer() {
   server.use(
@@ -62,6 +63,12 @@ beforeEach(async () => {
   answerServer()
   // The records endpoint needs an ID token; the stub user supplies one.
   await authProvider.signInWithEmail('a@example.com', 'password')
+  currentUid = 'user-a'
+  jest
+    .spyOn(authProvider, 'getCurrentUser')
+    .mockImplementation(() =>
+      currentUid === null ? null : { uid: currentUid, email: null },
+    )
 })
 
 afterEach(() => authProvider.signOut())
@@ -72,7 +79,9 @@ it('a second account on the device does not inherit the first one’s choices', 
   useConsentStore.getState().setAnalyticsAccepted(true)
   useConsentStore.getState().setEmailOptIn(true)
 
+  currentUid = null
   await syncAccountConsent(null)
+  currentUid = 'user-b'
   await syncAccountConsent('user-b')
 
   expect(hasAcceptedAnalytics()).toBe(false)
@@ -152,4 +161,41 @@ it('an upgrade keeps the signed-in user’s saved choices and records them', asy
     ['analytics', true],
     ['email_updates', false],
   ])
+})
+
+it('does not post a queued choice after the account changes during token lookup', async () => {
+  acceptDisclosure()
+  await syncAccountConsent('user-a')
+  await flushConsentRecords('user-a')
+  posted.length = 0
+  useConsentStore.getState().setAnalyticsAccepted(true)
+  const token = jest
+    .spyOn(authProvider, 'getToken')
+    .mockImplementationOnce(async () => {
+      currentUid = 'user-b'
+      return 'different-account-token'
+    })
+
+  await flushConsentRecords('user-a')
+
+  expect(posted).toEqual([])
+  token.mockRestore()
+})
+
+it('shares a single restoration when both startup and navigation request consent', async () => {
+  const get = jest.fn(() =>
+    HttpResponse.json({
+      analytics: { granted: true },
+      email_updates: { granted: false },
+    }),
+  )
+  server.use(http.get(URL, get))
+
+  await Promise.all([
+    syncAccountConsent('user-a'),
+    syncAccountConsent('user-a'),
+  ])
+
+  expect(get).toHaveBeenCalledTimes(1)
+  expect(nextConsentRoute()).toBe('/(home-tabs)')
 })

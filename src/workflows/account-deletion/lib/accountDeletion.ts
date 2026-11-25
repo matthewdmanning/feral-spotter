@@ -36,14 +36,20 @@ export class RecentSignInRequiredError extends Error {
  * done.
  */
 export async function deleteAccountOnServer(
+  uid: string,
   deleteSightings: boolean,
 ): Promise<void> {
   const url = DELETE_ACCOUNT_URL
   if (!url) throw new Error('DELETE_ACCOUNT_URL is not set')
+  if (authProvider.getCurrentUser()?.uid !== uid)
+    throw new Error('ACCOUNT_CHANGED')
+  const token = await authProvider.getToken(true)
+  if (authProvider.getCurrentUser()?.uid !== uid)
+    throw new Error('ACCOUNT_CHANGED')
   const response = await fetch(url, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${await authProvider.getToken(true)}`,
+      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ data: { deleteSightings } }),

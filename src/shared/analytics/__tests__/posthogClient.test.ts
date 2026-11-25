@@ -21,17 +21,22 @@ const HOST = 'https://posthog.example.com'
 
 type Message = { event?: string; properties?: Record<string, unknown> }
 
-function open(): PostHog {
-  return openPostHogClient('public-project-token', HOST, {
-    ...POSTHOG_OPTIONS,
-    persistence: 'memory',
-    preloadFeatureFlags: false,
-    captureAppLifecycleEvents: false,
-    errorTracking: { autocapture: {} },
-    // Nothing is sent: the tests read the SDK's own enqueue events.
-    flushAt: 1000,
-    flushInterval: 0,
-  })
+function open(allowsRequest?: (posthog: PostHog) => boolean): PostHog {
+  return openPostHogClient(
+    'public-project-token',
+    HOST,
+    {
+      ...POSTHOG_OPTIONS,
+      persistence: 'memory',
+      preloadFeatureFlags: false,
+      captureAppLifecycleEvents: false,
+      errorTracking: { autocapture: {} },
+      // Nothing is sent: the tests read the SDK's own enqueue events.
+      flushAt: 1000,
+      flushInterval: 0,
+    },
+    allowsRequest,
+  )
 }
 
 function record(posthog: PostHog, type: 'capture' | 'identify'): Message[] {
@@ -62,6 +67,36 @@ describe('PostHog client lifetime', () => {
     posthog.capture('after_regrant')
     expect(captured.map((m) => m.event)).toEqual(['after_regrant'])
   })
+})
+
+it('drops queued events and blocks SDK requests after revocation', async () => {
+  const requests = jest.fn()
+  server.use(
+    http.all(`${HOST}/*`, () => {
+      requests()
+      return HttpResponse.json({})
+    }),
+  )
+  let hasConsent = true
+  const posthog = open(() => hasConsent)
+  await posthog.ready()
+  requests.mockClear()
+  posthog.capture('queued_before_revoke')
+
+  hasConsent = false
+  closePostHogClient()
+  await posthog.flush()
+  const response = await posthog.fetch(`${HOST}/flags`, {
+    method: 'POST',
+    headers: {},
+  })
+
+  expect(response.status).toBe(403)
+  expect(requests).not.toHaveBeenCalled()
+  hasConsent = true
+  open()
+  await posthog.flush()
+  expect(requests).not.toHaveBeenCalled()
 })
 
 describe('syncPostHogIdentity', () => {

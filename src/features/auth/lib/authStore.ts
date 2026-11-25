@@ -20,6 +20,7 @@
 import { authProvider } from '@/src/features/auth/lib'
 import type { AuthUser } from '@/src/features/auth/lib/IAuthProvider'
 import { create } from 'zustand'
+import { useConsentStore } from '@/src/shared/consent/useConsentStore'
 
 interface AuthState {
   user: AuthUser | null
@@ -32,5 +33,8 @@ export const useAuthStore = create<AuthState>(() => ({
 }))
 
 authProvider.onAuthStateChanged((user) => {
+  if (useConsentStore.persist.hasHydrated()) {
+    useConsentStore.getState().bindChoicesTo(user?.uid ?? null)
+  }
   useAuthStore.setState({ user, isReady: true })
 })

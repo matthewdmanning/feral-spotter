@@ -27,7 +27,9 @@ function memoryDb(): ConsentRecordDb & {
     records,
     tombstones,
     append: async (uid, event) => {
+      if (tombstones.has(tombstoneKey(uid))) return false
       records.set(uid, [...(records.get(uid) ?? []), event])
+      return true
     },
     snapshot: async (uid) => {
       const snapshot: ConsentSnapshot = {}
@@ -42,8 +44,19 @@ function memoryDb(): ConsentRecordDb & {
     },
     events: async (uid) => records.get(uid) ?? [],
     tombstone: async (key) => tombstones.get(key) ?? null,
+    beginRetirement: async (key, tombstone) => {
+      if (!tombstones.has(key)) tombstones.set(key, tombstone)
+      return tombstones.get(key)!.expireAt
+    },
     retire: async (uid, key, tombstone) => {
-      tombstones.set(key, tombstone)
+      const existing = tombstones.get(key)!
+      const events = new Map(
+        [...existing.events, ...tombstone.events].map((event) => [
+          JSON.stringify(event),
+          event,
+        ]),
+      )
+      tombstones.set(key, { ...existing, events: [...events.values()] })
       records.delete(uid)
     },
   }
@@ -174,9 +187,16 @@ describe('retireConsentRecords', () => {
     expect(tombstone.erasedAt).toBe(NOW.toISOString())
   })
 
-  it('writes no tombstone for an account that never recorded consent', async () => {
+  it('blocks a first consent write once erasure starts', async () => {
     const db = memoryDb()
-    await retireConsentRecords('u1', db, NOW)
-    expect(db.tombstones.size).toBe(0)
+    const append = db.append
+    db.append = async (uid, event) => {
+      await retireConsentRecords(uid, db, NOW)
+      return append(uid, event)
+    }
+
+    expect(await post(db, choice)).toEqual({ status: 410 })
+    expect(db.tombstones.get(tombstoneKey('u1'))?.events).toEqual([])
+    expect(db.records.size).toBe(0)
   })
 })

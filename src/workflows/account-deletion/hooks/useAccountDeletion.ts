@@ -6,10 +6,14 @@
  */
 
 import { useQueryClient } from '@tanstack/react-query'
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { authProvider } from '@/src/features/auth/lib'
 import { accountDeletionCopy } from '@/src/features/settings/copy/settingsCopy'
 import { reportError } from '@/src/shared/analytics/analytics'
+import {
+  closePostHogClient,
+  resumePostHogClient,
+} from '@/src/shared/analytics/posthogClient'
 import { authCopy } from '@/src/shared/config/text'
 import { showError, showSuccess } from '@/src/shared/hooks/useUIStore'
 import { startOver } from '@/src/shared/lib/navigation'
@@ -32,8 +36,11 @@ export function useAccountDeletion() {
   const [step, setStep] = useState<AccountDeletionStep>('closed')
   const [deleteSightings, setDeleteSightings] = useState(false)
   const [password, setPassword] = useState('')
+  const running = useRef(false)
+  const targetUid = useRef<string | null>(null)
 
   const close = useCallback(() => {
+    targetUid.current = null
     setStep('closed')
     setDeleteSightings(false)
     setPassword('')
@@ -41,45 +48,71 @@ export function useAccountDeletion() {
 
   const run = useCallback(
     async (typedPassword?: string) => {
-      setStep('deleting')
+      const uid = targetUid.current
+      if (running.current) return
+      if (!uid || authProvider.getCurrentUser()?.uid !== uid) {
+        close()
+        return
+      }
+      running.current = true
       try {
-        await authProvider.reauthenticate(typedPassword)
-        await deleteAccountOnServer(deleteSightings)
-      } catch (error) {
-        if (isCancellation(error)) {
+        setStep('deleting')
+        try {
+          await authProvider.reauthenticate(typedPassword)
+          if (authProvider.getCurrentUser()?.uid !== uid) {
+            close()
+            return
+          }
+          closePostHogClient()
+          await deleteAccountOnServer(uid, deleteSightings)
+        } catch (error) {
+          if (authProvider.getCurrentUser()?.uid !== uid) {
+            close()
+            return
+          }
+          resumePostHogClient(uid)
+          if (isCancellation(error)) {
+            close()
+            return
+          }
+          const code = (error as { code?: string }).code ?? ''
+          if (WRONG_PASSWORD_CODES.includes(code)) {
+            setPassword('')
+            setStep('password')
+            showError(
+              accountDeletionCopy.failedTitle,
+              accountDeletionCopy.wrongPasswordMessage,
+            )
+            return
+          }
           close()
-          return
-        }
-        const code = (error as { code?: string }).code ?? ''
-        if (WRONG_PASSWORD_CODES.includes(code)) {
-          setPassword('')
-          setStep('password')
+          reportError('[accountDeletion] delete', error)
           showError(
             accountDeletionCopy.failedTitle,
-            accountDeletionCopy.wrongPasswordMessage,
+            error instanceof RecentSignInRequiredError
+              ? accountDeletionCopy.recentSignInMessage
+              : authCopy.retryMessage,
           )
           return
         }
+        const activeUid = authProvider.getCurrentUser()?.uid
+        if (activeUid && activeUid !== uid) {
+          close()
+          return
+        }
+        // The account is gone; whatever fails below must not keep it here.
+        await wipeDeviceData()
+        queryClient.clear()
+        await authProvider.signOut().catch(() => undefined)
         close()
-        reportError('[accountDeletion] delete', error)
-        showError(
-          accountDeletionCopy.failedTitle,
-          error instanceof RecentSignInRequiredError
-            ? accountDeletionCopy.recentSignInMessage
-            : authCopy.retryMessage,
+        startOver('/intro-flow')
+        showSuccess(
+          accountDeletionCopy.deletedTitle,
+          accountDeletionCopy.deletedMessage,
         )
-        return
+      } finally {
+        running.current = false
       }
-      // The account is gone; whatever fails below must not keep it here.
-      await wipeDeviceData()
-      queryClient.clear()
-      await authProvider.signOut().catch(() => undefined)
-      close()
-      startOver('/intro-flow')
-      showSuccess(
-        accountDeletionCopy.deletedTitle,
-        accountDeletionCopy.deletedMessage,
-      )
     },
     [close, deleteSightings, queryClient],
   )
@@ -97,7 +130,10 @@ export function useAccountDeletion() {
     setDeleteSightings,
     password,
     setPassword,
-    open: () => setStep('warning'),
+    open: () => {
+      targetUid.current = authProvider.getCurrentUser()?.uid ?? null
+      if (targetUid.current) setStep('warning')
+    },
     close,
     confirmWarning: () =>
       deleteSightings ? setStep('sightingsWarning') : proceed(),

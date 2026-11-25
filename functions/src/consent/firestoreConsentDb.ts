@@ -1,18 +1,20 @@
 /**
  * Firestore layout for consent records (ADR-0009):
  *   consentRecords/{uid}                 current choices, one field per kind
- *   consentRecords/{uid}/events/{auto}   every choice, append-only
- *   consentTombstones/{sha256}           erased account's minimal history
+ *   consentRecords/{uid}/events/{hash}   every choice, append-only
+ *   consentTombstones/{sha256}           marker blocking writes after erasure
+ *   consentTombstoneEvents/{hash}      retained minimal events with individual TTLs
  * Rules deny all client access; only this module writes.
  */
 
+import { createHash } from 'node:crypto'
 import { getFirestore, Timestamp } from 'firebase-admin/firestore'
-import type {
-  ConsentEvent,
-  ConsentKind,
-  ConsentRecordDb,
-  ConsentSnapshot,
-  ConsentTombstone,
+import {
+  tombstoneKey,
+  type ConsentEvent,
+  type ConsentKind,
+  type ConsentRecordDb,
+  type ConsentSnapshot,
 } from './consentRecords'
 
 const db = () => getFirestore()
@@ -23,28 +25,45 @@ const tombstoneRef = (key: string) =>
 type StoredSnapshot = ConsentSnapshot
 
 export const firestoreConsentDb: ConsentRecordDb = {
-  append: async (uid, event) => {
-    await db().runTransaction(async (transaction) => {
+  append: (uid, event) =>
+    db().runTransaction(async (transaction) => {
       const ref = recordRef(uid)
+      const retired = await transaction.get(tombstoneRef(tombstoneKey(uid)))
+      if (retired.exists) return false
+      // Retrying after a lost response must not create another audit event.
+      const id = createHash('sha256')
+        .update(
+          JSON.stringify([
+            event.kind,
+            event.granted,
+            event.version,
+            event.chosenAt,
+            event.platform,
+            event.appVersion,
+          ]),
+        )
+        .digest('hex')
+      const eventRef = ref.collection('events').doc(id)
+      if ((await transaction.get(eventRef)).exists) return true
       const current = (await transaction.get(ref)).data() as
         StoredSnapshot | undefined
-      transaction.create(ref.collection('events').doc(), event)
-      // A late-arriving older choice is kept as history, never as current.
+      transaction.create(eventRef, event)
       const previous = current?.[event.kind]
-      if (previous && previous.chosenAt > event.chosenAt) return
-      transaction.set(
-        ref,
-        {
-          [event.kind]: {
-            granted: event.granted,
-            version: event.version,
-            chosenAt: event.chosenAt,
+      if (!previous || previous.chosenAt <= event.chosenAt) {
+        transaction.set(
+          ref,
+          {
+            [event.kind]: {
+              granted: event.granted,
+              version: event.version,
+              chosenAt: event.chosenAt,
+            },
           },
-        },
-        { merge: true },
-      )
-    })
-  },
+          { merge: true },
+        )
+      }
+      return true
+    }),
 
   snapshot: async (uid) => {
     const data = (await recordRef(uid).get()).data() as
@@ -69,18 +88,42 @@ export const firestoreConsentDb: ConsentRecordDb = {
     const data = (await tombstoneRef(key).get()).data()
     if (!data) return null
     return {
-      ...(data as Omit<ConsentTombstone, 'expireAt'>),
+      erasedAt: data.erasedAt as string,
       expireAt: (data.expireAt as Timestamp).toDate(),
     }
   },
 
-  // The tombstone lands before anything is deleted, so a failure in
-  // between leaves both and a retry merges the rest in.
+  beginRetirement: (key, tombstone) =>
+    db().runTransaction(async (transaction) => {
+      const ref = tombstoneRef(key)
+      const existingExpiry = (await transaction.get(ref)).get('expireAt') as
+        Timestamp | undefined
+      if (existingExpiry) return existingExpiry.toDate()
+      transaction.create(ref, {
+        erasedAt: tombstone.erasedAt,
+        expireAt: Timestamp.fromDate(tombstone.expireAt),
+      })
+      return tombstone.expireAt
+    }),
+
   retire: async (uid, key, tombstone) => {
-    await tombstoneRef(key).set({
-      ...tombstone,
-      expireAt: Timestamp.fromDate(tombstone.expireAt),
+    // Each event has its own TTL document, so history can grow beyond Firestore's
+    // document limit. Stable IDs make partial writes and concurrent retries safe.
+    const firestore = db()
+    const retained = firestore.collection('consentTombstoneEvents')
+    const writer = firestore.bulkWriter()
+    const expireAt = Timestamp.fromDate(tombstone.expireAt)
+    const copies = tombstone.events.map((event) => {
+      const id = createHash('sha256')
+        .update(JSON.stringify([key, event]))
+        .digest('hex')
+      return writer.set(retained.doc(id), {
+        ...event,
+        tombstoneKey: key,
+        expireAt,
+      })
     })
+    await Promise.all([writer.close(), Promise.all(copies)])
     await db().recursiveDelete(recordRef(uid))
   },
 }

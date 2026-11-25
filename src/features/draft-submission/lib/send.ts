@@ -15,7 +15,7 @@ import {
 import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
-import { EVENTS, captureException } from '@/src/shared/analytics/analytics'
+import { EVENTS, captureHandledError } from '@/src/shared/analytics/analytics'
 import { fireAnalyticsEvent } from '@/src/features/draft-submission/lib/analytics'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import {
@@ -167,13 +167,11 @@ export async function sendDraft(
   finalizeResults.forEach((result, i) => {
     if (result.status === 'rejected') {
       console.error(
-        '[send] finalizeSubmissionPhotoMetadata',
+        '[send] finalizeSubmissionPhotoMetadata failed:',
         finalizeTargets[i].localId,
         result.reason,
       )
-      captureException(result.reason, {
-        error_source: '[send] finalizeSubmissionPhotoMetadata',
-      })
+      captureHandledError('[send] finalizeSubmissionPhotoMetadata')
     }
   })
 

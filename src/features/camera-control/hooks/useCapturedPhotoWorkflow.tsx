@@ -14,6 +14,7 @@
  * differ.
  */
 
+import type { PostHogEventProperties } from '@posthog/core'
 import { cameraCopy, formatCopy } from '@/src/shared/config/text'
 import { CameraThumb } from '@/src/features/camera-control/components/CameraThumb'
 import {
@@ -73,7 +74,7 @@ interface RunCaptureOptions {
   /** Takes and persists the photo(s). A throw is reported as a failure. */
   capture: () => Promise<void>
   /** Backend telemetry fields added to the failure event. */
-  failureProps: () => Record<string, unknown>
+  failureProps: () => PostHogEventProperties
   /** Prefix for the failure console log. */
   logTag: string
 }
@@ -235,10 +236,7 @@ export function useCapturedPhotoWorkflow({
         await capture()
       } catch (error) {
         reportError(`[${logTag}] capture:`, error)
-        captureEvent(EVENTS.PHOTO_CAPTURE_FAILED, {
-          error: error instanceof Error ? error.message : String(error),
-          ...failureProps(),
-        })
+        captureEvent(EVENTS.PHOTO_CAPTURE_FAILED, failureProps())
       } finally {
         isTakingPhotoRef.current = false
         setIsTakingPhoto(false)

@@ -53,6 +53,7 @@ beforeEach(() => {
     user: { uid: 'owner', email: 'observer@example.test' },
     isReady: true,
   })
+  useConsentStore.getState().bindChoicesTo('owner')
   useOrganizationSharingStore.setState({ accounts: {}, hydrated: true })
   // No location: the card shows without asking the directory.
   useSubmissionStore.setState({

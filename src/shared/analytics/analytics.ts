@@ -10,6 +10,7 @@
 import { IS_RELEASE_CANDIDATE } from '@/src/shared/config/constants'
 import {
   hasAcceptedAnalytics,
+  useConsentStore,
   hasAcceptedConsent,
 } from '@/src/shared/consent/useConsentStore'
 import type { PostHogEventProperties } from '@posthog/core'
@@ -96,10 +97,21 @@ export function registerCaptureException(fn: CaptureException | null): void {
   replayPending()
 }
 
-/** Test seam: drop every pending call. */
+/** Drop every pending call. */
 export function clearPendingCaptures(): void {
   pending.length = 0
 }
+
+useConsentStore.subscribe((state, previous) => {
+  if (
+    state.activeUid !== previous.activeUid ||
+    (previous.analyticsAccepted === true && !analyticsAllowed())
+  ) {
+    clearPendingCaptures()
+    registeredCapture = null
+    registeredCaptureException = null
+  }
+})
 
 /** Same gate as every capture path: release candidate build, general consent, analytics opt-in. */
 export function analyticsAllowed(): boolean {
@@ -155,5 +167,15 @@ export function reportError(
   extra?: PostHogEventProperties,
 ): void {
   console.error(source, error)
-  captureException(error, { error_source: source, ...extra })
+  captureHandledError(source, extra)
+}
+
+/** Report a handled failure that already has a local log entry. */
+export function captureHandledError(
+  source: string,
+  extra?: PostHogEventProperties,
+): void {
+  if (!analyticsAllowed()) return
+  // Upstream error messages can contain account data, file paths or request bodies.
+  captureException(new Error(source), { ...extra, error_source: source })
 }

@@ -22,7 +22,7 @@ Decided 2026-11-25 by the project owner: build before Beta; keep a minimal recor
 - The `consentRecords` function: GET current, POST one. The uid comes from the verified ID token. Rules deny clients.
 - Scope: the disclosure belongs to the device (accepted before sign-in) and is recorded for each account that signs in on it. Analytics and email choices belong to one account. Binding another account, or none, clears them locally; sign-in restores them from the server before routing.
 - The client queues choices and sends them in order; offline, it retries. A signed-out account's unsent choices are dropped.
-- Erasure (#433): last step before deleting the Auth user. The records become `consentTombstones/{sha256(uid)}`: kind, granted, version and times only. Firestore TTL deletes it three years later (GDPR Art. 17(3)(e): defending legal claims). An erased account's token gets 410, so in-flight requests cannot recreate records.
+- Erasure (#433): last step before deleting the Auth user. A pseudonymous marker in `consentTombstones/{hash}` blocks new writes before the active records are read. `consentTombstoneEvents/{hash}` holds the minimal history, with kind, granted, version, timestamps and a link to the marker. Both collections expire through Firestore TTL three years after erasure began (GDPR Art. 17(3)(e): defending legal claims).
 - EmailOctopus keeps its own double opt-in proof (ADR-0007).
 
 ## Consequences

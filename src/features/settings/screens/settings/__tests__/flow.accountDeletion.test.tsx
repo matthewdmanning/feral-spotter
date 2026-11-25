@@ -174,3 +174,24 @@ it('a server failure keeps the account and its data', async () => {
   expect(new File(Paths.cache, 'capture.jpg').exists).toBe(true)
   expect(mockReplace).not.toHaveBeenCalled()
 })
+
+it('keeps device data when the confirmed session ends during token refresh', async () => {
+  const token = jest
+    .spyOn(authProvider, 'getToken')
+    .mockImplementationOnce(async () => {
+      await authProvider.signOut()
+      return 'different-session-token'
+    })
+  answerDeletion()
+  await startDeletion()
+  await userEvent.press(
+    screen.getAllByRole('button', { name: 'Delete Account' }).at(-1)!,
+  )
+  await confirmPassword()
+
+  await waitFor(() => expect(screen.queryByLabelText('Password')).toBeNull())
+  expect(requests).toEqual([])
+  expect(await AsyncStorage.getItem('submission_cache_1')).not.toBeNull()
+  expect(mockReplace).not.toHaveBeenCalled()
+  token.mockRestore()
+})

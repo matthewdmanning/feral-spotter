@@ -52,6 +52,12 @@
       "indexes": []
     },
     {
+      "collectionGroup": "consentTombstoneEvents",
+      "fieldPath": "expireAt",
+      "ttl": true,
+      "indexes": []
+    },
+    {
       "collectionGroup": "consentTombstones",
       "fieldPath": "expireAt",
       "ttl": true,

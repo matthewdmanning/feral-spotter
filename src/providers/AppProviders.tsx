@@ -45,10 +45,11 @@ import {
   CONSENT_VERSION,
   useConsentStore,
 } from '@/src/shared/consent/useConsentStore'
+import { authProvider } from '@/src/features/auth/lib'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import {
   IS_RELEASE_CANDIDATE,
-  clearPendingCaptures,
+  analyticsAllowed,
   registerCapture,
   registerCaptureException,
 } from '@/src/shared/analytics/analytics'
@@ -65,7 +66,7 @@ import {
 } from '@/src/shared/analytics/posthogClient'
 import Constants from 'expo-constants'
 import { usePathname, useSegments } from 'expo-router'
-import { PostHogProvider, usePostHog } from 'posthog-react-native'
+import { PostHogProvider, usePostHog, type PostHog } from 'posthog-react-native'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Appearance } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
@@ -100,46 +101,36 @@ interface AppProvidersProps {
  * binds unconditionally on mount; calls made before it binds are replayed
  * (analytics.ts). Unbinds on unmount so nothing reaches a revoked client.
  */
-function AnalyticsBridge() {
+function AnalyticsBridge({ uid }: { uid: string }) {
   const posthog = usePostHog()
-  const uid = useAuthStore((s) => s.user?.uid ?? null)
-  const isAuthReady = useAuthStore((s) => s.isReady)
   const segments = useSegments()
   const screenName = screenNameFromSegments(segments)
 
+  const [readyUid, setReadyUid] = useState<string | null>(null)
+
   useEffect(() => {
-    registerDeviceProperties(posthog)
-    registerCapture(posthog.capture.bind(posthog))
-    registerCaptureException(posthog.captureException.bind(posthog))
-    // Remote flags come from this SDK too.
-    registerFlagClient(posthogFlagClient(posthog))
+    let current = true
+    void posthog.ready().then(() => {
+      if (!current || !analyticsAllowed()) return
+      if (useConsentStore.getState().activeUid !== uid) return
+      registerDeviceProperties(posthog)
+      syncPostHogIdentity(posthog, uid)
+      registerCapture(posthog.capture.bind(posthog))
+      registerCaptureException(posthog.captureException.bind(posthog))
+      registerFlagClient(posthogFlagClient(posthog))
+      setReadyUid(uid)
+    })
     return () => {
+      current = false
       registerCapture(null)
       registerCaptureException(null)
       registerFlagClient(null)
     }
-  }, [posthog])
+  }, [posthog, uid])
 
-  // Firebase's UID is the stable app identifier. This bridge mounts only after
-  // analytics consent, so restoring an existing session identifies as soon as
-  // collection is permitted; later captures and exception reports inherit it.
-  // Identity is read once persisted state has loaded (see syncPostHogIdentity).
   useEffect(() => {
-    if (!isAuthReady) return
-    let current = true
-    void posthog.ready().then(() => {
-      if (current) syncPostHogIdentity(posthog, uid)
-    })
-    return () => {
-      current = false
-    }
-  }, [isAuthReady, posthog, uid])
-
-  // Expo Router screens, by route pattern. The SDK's own screen autocapture
-  // reads React Navigation route names ("index"), which repeat across stacks.
-  useEffect(() => {
-    void posthog.screen(screenName)
-  }, [posthog, screenName])
+    if (readyUid === uid && analyticsAllowed()) void posthog.screen(screenName)
+  }, [posthog, readyUid, screenName, uid])
 
   return null
 }
@@ -188,27 +179,41 @@ export function AppProviders({ children }: AppProvidersProps) {
   const hasAcceptedConsent = useConsentStore(
     (s) => s.accepted && s.acceptedVersion === CONSENT_VERSION,
   )
+  const uid = useAuthStore((s) => (s.isReady ? (s.user?.uid ?? null) : null))
   const hasAcceptedAnalytics = useConsentStore(
-    (s) => s.analyticsAccepted === true,
+    (s) =>
+      s.activeUid === uid &&
+      s.choicesUid === uid &&
+      s.analyticsAccepted === true,
   )
   const [queryClient] = useState(createQueryClient)
+  const [posthog, setPosthog] = useState<PostHog | null>(null)
   const analyticsOn =
     IS_RELEASE_CANDIDATE &&
-    !!POSTHOG_KEY &&
-    !!POSTHOG_HOST &&
+    uid !== null &&
     hasAcceptedConsent &&
     hasAcceptedAnalytics
-  // Idempotent: the one client, opted in while the gate is open.
-  const posthog =
-    analyticsOn && POSTHOG_KEY && POSTHOG_HOST
-      ? openPostHogClient(POSTHOG_KEY, POSTHOG_HOST)
-      : null
 
   useEffect(() => {
-    if (analyticsOn) return
-    closePostHogClient()
-    clearPendingCaptures()
-  }, [analyticsOn])
+    if (!analyticsOn || !POSTHOG_KEY || !POSTHOG_HOST) return
+    let current = true
+    const sdk = openPostHogClient(
+      POSTHOG_KEY,
+      POSTHOG_HOST,
+      undefined,
+      (sdk) =>
+        analyticsAllowed() &&
+        sdk.getDistinctId() === uid &&
+        authProvider.getCurrentUser()?.uid === uid,
+    )
+    void sdk.ready().then(() => {
+      if (current) setPosthog(sdk)
+    })
+    return () => {
+      current = false
+      closePostHogClient()
+    }
+  }, [analyticsOn, uid])
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -224,7 +229,7 @@ export function AppProviders({ children }: AppProvidersProps) {
           while consented gave them a different parent each time consent
           flipped (and on every cold start, as consent hydrates), and React
           remounted the whole app. Only AnalyticsBridge reads PostHog. */}
-        {posthog && (
+        {analyticsOn && uid !== null && posthog && (
           <PostHogProvider
             // Its wrapper View defaults to flex: 1; as a sibling it must take
             // no space from the app.
@@ -234,7 +239,7 @@ export function AppProviders({ children }: AppProvidersProps) {
             autocapture={POSTHOG_AUTOCAPTURE}
             debug={__DEV__}
           >
-            <AnalyticsBridge />
+            <AnalyticsBridge key={uid} uid={uid} />
           </PostHogProvider>
         )}
         <ErrorBoundary>{children}</ErrorBoundary>

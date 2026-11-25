@@ -35,3 +35,9 @@ See [organization permissions and erasure](2026-11-07-feat-organizations.md#perm
 **Change:** Settings → Account → Delete Account runs the deletion guard (decision record `docs/agents/ui-ux/decision-records/account-deletion.md`): warning with "Also delete my Sightings", a second warning when checked, re-authentication (password dialog, or the provider's sheet via `IAuthProvider.reauthenticate`), then the `deleteAccount` callable over HTTPS with a refreshed token. On success the device forgets the account (`wipeDeviceData`: draft, history cache, AsyncStorage, MMKV, account stores, camera cache, `posthog.reset()`), signs out and returns to the intro flow. Media-library photos stay. Hidden while `EXPO_PUBLIC_DELETE_ACCOUNT_URL` is unset. Erasure now also retires consent records ([consent records](2026-11-25-consent-records.md)). `SharingCheckbox` now renders the new shared `CheckboxRow`.
 **Tests:** `src/features/settings/screens/settings/__tests__/flow.accountDeletion.test.tsx`: both Sighting choices send the right flag and wipe the device; Cancel on the second warning deletes nothing; a server failure keeps the account and data. Mutation: skipping the second warning fails it.
 **Unverified:** no device drive; provider re-authentication and `revokeSelfPermissionsOnKill` not exercised; media library untouched only by construction.
+
+## 2026-11-25 — PR review fixes
+
+**Purpose:** Keep deletion tied to the account that opened the confirmation and stop device analytics during erasure.
+
+**Change:** The deletion flow verifies the account after re-authentication and token refresh, then checks it again before wiping the device. The PostHog client pauses before the request, resumes on a failed attempt for the same account, and drops local identity and queued events on success. [Consent record review fixes](2026-11-25-consent-records.md#2026-11-25--pr-review-fixes)

@@ -97,6 +97,7 @@ describe('HomeScreen gate — model-based test', () => {
     jest.mocked(useAuth).mockReturnValue({
       isReady,
       isAuthenticated,
+      user: isAuthenticated ? { uid: 'account', email: null } : null,
       signIn: jest.fn(),
       signOut: jest.fn(),
     } as unknown as ReturnType<typeof useAuth>)

@@ -10,10 +10,46 @@
  * is created once and opted out on revocation instead.
  */
 
+import {
+  PostHogPersistedProperty,
+  type PostHogFetchOptions,
+  type PostHogFetchResponse,
+} from '@posthog/core'
+import { analyticsAllowed } from '@/src/shared/analytics/analytics'
+import { useConsentStore } from '@/src/shared/consent/useConsentStore'
 import * as Device from 'expo-device'
 import { PostHog, type PostHogOptions } from 'posthog-react-native'
 
 let client: PostHog | null = null
+let canSend = (_posthog: PostHog) => true
+
+class ConsentPostHog extends PostHog {
+  override fetch(
+    url: string,
+    options: PostHogFetchOptions,
+  ): Promise<PostHogFetchResponse> {
+    if (!this.optedOut && canSend(this)) return super.fetch(url, options)
+    // The SDK can flush an existing queue and reload flags while opted out.
+    // A terminal response also stops the SDK from retrying this request.
+    return Promise.resolve(new Response(null, { status: 403 }))
+  }
+}
+
+function clearEventQueues(posthog: PostHog): void {
+  posthog.setPersistedProperty(PostHogPersistedProperty.Queue, null)
+  posthog.setPersistedProperty(PostHogPersistedProperty.AiQueue, null)
+  posthog.setPersistedProperty(PostHogPersistedProperty.AiCaptureQueue, null)
+  posthog.setPersistedProperty(PostHogPersistedProperty.LogsQueue, null)
+}
+
+useConsentStore.subscribe((state, previous) => {
+  if (
+    state.activeUid !== previous.activeUid ||
+    (previous.analyticsAccepted === true && !analyticsAllowed())
+  ) {
+    closePostHogClient()
+  }
+})
 
 /** Options for the app's client; exported for the SDK-backed tests. */
 export const POSTHOG_OPTIONS: Omit<PostHogOptions, 'host'> = {
@@ -46,8 +82,10 @@ export function openPostHogClient(
   apiKey: string,
   host: string,
   options: Omit<PostHogOptions, 'host'> = POSTHOG_OPTIONS,
+  allowsRequest: (posthog: PostHog) => boolean = () => true,
 ): PostHog {
-  if (!client) client = new PostHog(apiKey, { ...options, host })
+  canSend = allowsRequest
+  if (!client) client = new ConsentPostHog(apiKey, { ...options, host })
   // Runs once the SDK has loaded persisted state, ahead of any capture
   // queued after it, so a replayed capture is not dropped as opted out.
   void client.optIn()
@@ -56,7 +94,14 @@ export function openPostHogClient(
 
 /** Stop all sending after consent or the analytics opt-in is revoked. */
 export function closePostHogClient(): void {
-  if (client) void client.optOut()
+  const posthog = client
+  if (!posthog) return
+  void posthog.optOut()
+  // Clear immediately if ready and again after a pending storage restore.
+  clearEventQueues(posthog)
+  void posthog.ready().then(() => {
+    if (posthog.optedOut) clearEventQueues(posthog)
+  })
 }
 
 /**
@@ -64,10 +109,19 @@ export function closePostHogClient(): void {
  * stop sending. The server erases the person; nothing here may recreate it.
  */
 export function forgetPostHogDevice(): void {
-  if (!client) return
-  // reset() clears persisted state, the opt-out included, so it goes first.
-  client.reset()
-  void client.optOut()
+  closePostHogClient()
+  if (client) resetIdentity(client)
+}
+
+/** Resume collection after an unsuccessful deletion attempt. */
+export function resumePostHogClient(uid: string): void {
+  if (
+    client &&
+    useConsentStore.getState().activeUid === uid &&
+    analyticsAllowed()
+  ) {
+    void client.optIn()
+  }
 }
 
 /** Test seam: opt the client out and forget it. */
@@ -89,6 +143,14 @@ export function registerDeviceProperties(posthog: PostHog): void {
   })
 }
 
+function resetIdentity(posthog: PostHog): void {
+  posthog.reset([
+    PostHogPersistedProperty.InstalledAppBuild,
+    PostHogPersistedProperty.InstalledAppVersion,
+    PostHogPersistedProperty.OptedOut,
+  ])
+}
+
 function isIdentified(posthog: PostHog): boolean {
   return posthog.getDistinctId() !== posthog.getAnonymousId()
 }
@@ -107,7 +169,8 @@ export function syncPostHogIdentity(
 ): void {
   if (uid !== null && posthog.getDistinctId() === uid) return
   if (isIdentified(posthog)) {
-    posthog.reset()
+    clearEventQueues(posthog)
+    resetIdentity(posthog)
     registerDeviceProperties(posthog)
   }
   if (uid !== null) posthog.identify(uid)

@@ -11,7 +11,7 @@
  * A failed upload is not retried on its own; the facade re-queues it. A
  * photo already queued or in flight is never queued twice.
  */
-import { captureException } from '@/src/shared/analytics/analytics'
+import { captureHandledError } from '@/src/shared/analytics/analytics'
 import { create } from 'zustand'
 import { uploadSubmissionPhoto } from '@/src/features/draft-submission/lib/upload/firebaseUpload'
 import { reservePhotoSlot } from '@/src/features/draft-submission/lib/upload/photoSlotQueue'
@@ -163,13 +163,15 @@ export function uploadNewPhoto(
           updatePhoto(photo.local_id, { upload_refusal: error.reason })
         }
         console.error('[uploadNewPhoto]', photo.local_id, error)
-        captureException(error, {
-          error_source: '[uploadNewPhoto]',
-          ...(error instanceof UploadAdmissionError && {
-            upload_refusal: error.reason ?? null,
-            upload_refusal_status: error.status,
-          }),
-        })
+        captureHandledError(
+          '[uploadNewPhoto]',
+          error instanceof UploadAdmissionError
+            ? {
+                upload_refusal: error.reason ?? null,
+                upload_refusal_status: error.status,
+              }
+            : undefined,
+        )
       } finally {
         localFiles.forEach((uri) => releaseCapturedPhotoFile(uri))
         slotReservation.release()

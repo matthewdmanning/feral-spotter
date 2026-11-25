@@ -161,7 +161,7 @@ describe('useCameraCapture low-light boost', () => {
 })
 
 describe('useCameraCapture handleTakePhoto', () => {
-  it('reports PHOTO_CAPTURE_FAILED when capturePhoto throws', async () => {
+  it('reports a camera failure without sending the native error message', async () => {
     mockCapturePhoto.mockRejectedValueOnce(new Error('device busy'))
 
     const { result } = await renderHook(() => useCameraCapture())
@@ -173,8 +173,12 @@ describe('useCameraCapture handleTakePhoto', () => {
 
     expect(mockCaptureEvent).toHaveBeenCalledWith(
       'photo_capture_failed',
-      expect.objectContaining({ error: 'device busy' }),
+      expect.objectContaining({
+        capture_mode: 'single',
+        capture_pipeline: 'legacy',
+      }),
     )
+    expect(mockCaptureEvent.mock.calls[0][1]).not.toHaveProperty('error')
     expect(result.current.capturedPhotos).toHaveLength(0)
   })
 

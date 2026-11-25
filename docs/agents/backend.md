@@ -158,8 +158,8 @@ checks), see [test-driving.md](test-driving.md).
 ## Consent records (ADR-0009)
 
 - `consentRecords` (`functions/src/consent/`): GET returns the caller's current choices; POST records one. The uid comes from the ID token only.
-- Firestore: `consentRecords/{uid}` (current), `consentRecords/{uid}/events` (append-only), `consentTombstones/{sha256}` (after erasure).
-- Erasure shrinks records to a tombstone with no uid, email, platform or app version. The `expireAt` TTL policy (`firestore.indexes.json`) deletes it after three years. Deploy indexes with the function, or tombstones never expire.
+- Firestore: `consentRecords/{uid}` (current), `consentRecords/{uid}/events` (append-only), `consentTombstones/{hash}` (erasure marker), and `consentTombstoneEvents/{hash}` (retained proof).
+- Erasure shrinks records to a tombstone with no uid, email, platform or app version. Both collections use the `expireAt` TTL policies in `firestore.indexes.json`. Deploy the indexes with the function to enable expiration after three years.
 - Client: `src/features/auth/lib/accountConsent.ts`. Emulator test: `functions/src/consent/emulator-tests/`.
 
 ## Organization Firestore boundary

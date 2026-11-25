@@ -59,7 +59,7 @@ export function useConsentPermissions() {
         )
       }
       markAccepted()
-      router.replace(routeAfterDeviceConsent())
+      router.replace(await routeAfterDeviceConsent())
     } catch (err) {
       reportError('[consent] permission request failed:', err)
       showAlert(
@@ -90,7 +90,7 @@ export function useConsentPermissions() {
           done = true
           setBlocked(false)
           markAccepted()
-          router.replace(routeAfterDeviceConsent())
+          router.replace(await routeAfterDeviceConsent())
         }
       } catch (err) {
         reportError('[consent] permission recheck failed:', err)
