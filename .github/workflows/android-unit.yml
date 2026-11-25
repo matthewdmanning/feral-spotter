@@ -1,0 +1,63 @@
+# Runs the camera module's JVM unit tests (npm run test:android-unit).
+# Slow (prebuild plus Gradle), so it runs only when the module or its build
+# inputs change, and on main. The fast checks stay in ci.yml.
+name: Android unit tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - 'modules/native-identification-camera/**'
+      - 'scripts/android-unit-tests.sh'
+      - 'app.json'
+      - 'app.config.js'
+      - 'plugins/**'
+      - 'package-lock.json'
+      - '.github/workflows/android-unit.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17 # matches release.yml
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - run: npm ci --prefer-offline
+
+      # app.json points googleServicesFile at a gitignored file. The pure
+      # Kotlin tests need only a file that matches the package name, so a
+      # stub replaces the real one. Real values stay in the release secret.
+      - name: Write stub google-services.json
+        run: |
+          cat > google-services.json <<'EOF'
+          {
+            "project_info": { "project_number": "0", "project_id": "ci-stub", "storage_bucket": "ci-stub.appspot.com" },
+            "client": [{
+              "client_info": { "mobilesdk_app_id": "1:0:android:0", "android_client_info": { "package_name": "com.mmanning.feralspotter" } },
+              "api_key": [{ "current_key": "ci-stub" }]
+            }],
+            "configuration_version": "1"
+          }
+          EOF
+
+      - run: npm run test:android-unit
