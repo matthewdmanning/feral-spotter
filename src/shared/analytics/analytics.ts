@@ -25,7 +25,7 @@ export const EVENTS = {
   SUBMISSION_SUBMITTED: 'submission_submitted',
   SUBMISSION_FAILED: 'submission_failed',
   /**
-   * One per history read (mount, pull-to-refresh), with counts. Replaces
+   * One per focused History view, with account-owned counts. Replaces
    * `feral_reports_viewed`, which fired once per cached Submission.
    */
   SIGHTING_HISTORY_VIEWED: 'sighting_history_viewed',

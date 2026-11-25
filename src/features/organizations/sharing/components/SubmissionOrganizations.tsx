@@ -22,7 +22,7 @@ import {
 import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 import { sharingSignature } from '@/src/features/organizations/sharing/lib/consent'
 import { includedSummary } from '@/src/features/organizations/sharing/lib/sharing'
-import { SharingCheckbox } from '@/src/features/organizations/components/SharingCheckbox'
+import { CheckboxRow } from '@/src/shared/ui/molecules/CheckboxRow'
 import { styles } from '@/src/features/organizations/components/styles'
 
 export function SubmissionOrganizations() {
@@ -83,7 +83,7 @@ export function SubmissionOrganizations() {
   return (
     <GlassSurface kind="card" style={styles.card}>
       <Text style={styles.title}>{copy.title}</Text>
-      <SharingCheckbox
+      <CheckboxRow
         label={copy.injuredCat}
         checked={submission.report_injured === true}
         onChange={setReportInjured}
@@ -128,7 +128,7 @@ export function SubmissionOrganizations() {
               </Text>
             )}
           {directory.organizations.map((org) => (
-            <SharingCheckbox
+            <CheckboxRow
               key={org.id}
               label={org.name}
               checked={draft?.selectedIds.includes(org.id) ?? false}
@@ -145,7 +145,7 @@ export function SubmissionOrganizations() {
       )}
       {!!draft?.selectedIds.length && (
         <>
-          <SharingCheckbox
+          <CheckboxRow
             label={copy.anonymous}
             checked={draft.anonymous}
             onChange={(anonymous) => patch({ anonymous })}
@@ -177,7 +177,7 @@ export function SubmissionOrganizations() {
             </Text>
           )}
           <Text style={styles.hint}>{copy.revocationDisclosure}</Text>
-          <SharingCheckbox
+          <CheckboxRow
             label={copy.confirmSharing}
             checked={draft.confirmedSignature === signature}
             onChange={(checked) =>

@@ -15,7 +15,7 @@
 - [x] Calls before registration replayed, not dropped (#197).
 - [x] Expo Router screen views by route pattern.
 - [x] Handled failures reach Error Tracking with `error_source`.
-- [x] History view: one event per read, not one per cached Submission.
+- [x] History view: one event per focused visit with account-owned counts.
 
 **Out of scope / not addressed:**
 
@@ -120,3 +120,8 @@ Mutation check: disabling the reset-before-identify and the opt-out fails three 
 
 **Purpose:** A retried batch could cross an account switch; sign-out left the last UID in SDK storage; history counts included other accounts; SDK tests left flag work running after Jest teardown.
 **Change:** Each request belongs to the consent session of its first attempt (keyed by its headers object, which the SDK reuses on retries); `closePostHogClient` ends the session. `forgetSignedOutIdentity` runs on a reported sign-out. `sighting_history_viewed` counts `ownSightings` and drops reads that outlive an account switch. Identity tests disable remote flags. Tests: `posthogClient.test.ts` (retry across a switch, sign-out identity), `AppProviders.signOut.test.tsx`, `useFeralReports.analytics.test.ts`. Mutation: removing the session check fails the retry test.
+
+## 2026-11-25 — fix
+
+**Purpose:** Keep History reads and analytics scoped to the active account.
+**Change:** History emits one `sighting_history_viewed` per focused visit and excludes ownerless legacy rows from its counts. Ownerless rows remain on the device. The Sighting detail route checks ownership before showing a cached record. The History and Sighting detail tests cover these boundaries.

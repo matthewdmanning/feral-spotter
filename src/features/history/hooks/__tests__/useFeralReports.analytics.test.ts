@@ -1,4 +1,5 @@
-import { renderHook, waitFor } from '@testing-library/react-native'
+import { act, renderHook, waitFor } from '@testing-library/react-native'
+import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { useFeralReports } from '@/src/features/history/hooks/useFeralReports'
 import { EVENTS, registerCapture } from '@/src/shared/analytics/analytics'
 import {
@@ -10,15 +11,13 @@ import {
   updateSubmissionCache,
 } from '@/src/shared/lib/submissionCache'
 
-// The device cache can hold another account's Sightings. The view event
-// must count only what the signed-in account's list shows.
-
-jest.mock('expo-router', () => ({ useFocusEffect: jest.fn() }))
-jest.mock('@/src/features/auth/lib/useAuth', () => ({
-  useAuth: () => ({ user: { uid: 'uid-1' } }),
+jest.mock('expo-router', () => ({
+  useFocusEffect: (callback: () => void) =>
+    jest.requireActual('react').useEffect(callback, [callback]),
 }))
 
-it('counts only the signed-in account’s Sightings', async () => {
+it('counts only the signed-in account’s Sightings once per view', async () => {
+  useAuthStore.setState({ user: { uid: 'uid-1', email: null }, isReady: true })
   useConsentStore.setState({
     accepted: true,
     acceptedVersion: CONSENT_VERSION,
@@ -32,7 +31,8 @@ it('counts only the signed-in account’s Sightings', async () => {
   for (const [id, owner] of [
     ['mine', 'uid-1'],
     ['theirs', 'uid-2'],
-  ]) {
+    ['legacy', undefined],
+  ] as const) {
     await createSubmissionCache(id, {
       location_method: 'device',
       time_method: 'device',
@@ -42,10 +42,16 @@ it('counts only the signed-in account’s Sightings', async () => {
 
   const { result } = await renderHook(() => useFeralReports())
   await waitFor(() => expect(result.current.status).toBe('ready'))
+  expect(result.current.caches.map(({ id }) => id).sort()).toEqual([
+    'legacy',
+    'mine',
+  ])
 
   expect(capture).toHaveBeenCalledWith(
     EVENTS.SIGHTING_HISTORY_VIEWED,
     expect.objectContaining({ sighting_count: 1, submitted_count: 1 }),
   )
+  await act(() => result.current.onRefresh())
+  expect(capture).toHaveBeenCalledTimes(1)
   registerCapture(null)
 })

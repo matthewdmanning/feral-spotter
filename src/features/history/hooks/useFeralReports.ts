@@ -9,7 +9,7 @@ import {
   captureEvent,
   reportError,
 } from '@/src/shared/analytics/analytics'
-import { useAuth } from '@/src/features/auth/lib/useAuth'
+import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import {
   getAllSubmissionCaches,
   getCurrentCacheId,
@@ -23,7 +23,7 @@ import {
 } from '@/src/features/history/lib/history'
 import { isResumableDraft } from '@/src/features/draft-submission/lib/resumable'
 import { useFocusEffect } from 'expo-router'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 
 export interface FeralReportsResult {
   /** Newest first by Sighting time — the time each card shows. */
@@ -47,11 +47,12 @@ interface History {
 }
 
 /** `all` arrives newest-created first, the order Home's resume check reads. */
-async function readHistory(): Promise<History> {
-  const [all, currentId] = await Promise.all([
+async function readHistory(uid: string): Promise<History> {
+  const [rows, currentId] = await Promise.all([
     getAllSubmissionCaches(),
     getCurrentCacheId(),
   ])
+  const all = ownSightings(rows, uid)
   const latest = all[0]
   return {
     all,
@@ -61,17 +62,12 @@ async function readHistory(): Promise<History> {
   }
 }
 
-/**
- * One event per view, empty history included: an empty list is friction too.
- * Counts only what the list shows: the device cache can hold another
- * account's Sightings.
- */
-function fireViewed(all: SubmissionCacheFile[], uid: string | undefined) {
-  const own = ownSightings(all, uid)
+/** One event per view, empty history included: an empty list is friction too. */
+function fireViewed(all: SubmissionCacheFile[]) {
   const count = (status: SubmissionCacheFile['status']) =>
-    own.filter((cache) => cache.status === status).length
+    all.filter((cache) => cache.status === status).length
   captureEvent(EVENTS.SIGHTING_HISTORY_VIEWED, {
-    sighting_count: own.length,
+    sighting_count: all.length,
     in_progress_count: count('In Progress'),
     sending_count: count('Sending'),
     submitted_count: count('Submitted'),
@@ -80,80 +76,84 @@ function fireViewed(all: SubmissionCacheFile[], uid: string | undefined) {
 }
 
 export function useFeralReports(): FeralReportsResult {
-  const { user } = useAuth()
-  const uid = user?.uid
-  const [history, setHistory] = useState<History>({
-    all: [],
-    resumableId: undefined,
-  })
+  const uid = useAuthStore((s) => (s.isReady ? s.user?.uid : undefined))
+  const [loaded, setLoaded] = useState<{
+    uid: string
+    status: 'ready' | 'failed'
+    history?: History
+  }>()
+  const current = loaded?.uid === uid ? loaded : undefined
+  const history = current?.history
   const [refreshing, setRefreshing] = useState(false)
-  const [status, setStatus] = useState<HistoryStatus>('loading')
 
-  // Reads can overlap (mount, focus, refresh). Only the newest one lands,
-  // so a slow earlier read never overwrites a newer history.
+  // A refresh can overlap a focus read. Only the active account's newest
+  // read may update the screen or capture analytics.
   const latestRead = useRef(0)
-  const uidRef = useRef(uid)
-  useEffect(() => {
-    uidRef.current = uid
-  }, [uid])
-  const read = useCallback((fire: boolean) => {
+  const viewPending = useRef(false)
+  const read = useCallback(async () => {
+    if (!uid) return
     const readId = ++latestRead.current
-    const readUid = uidRef.current
-    return readHistory()
-      .then((next) => {
-        if (readId !== latestRead.current) return
-        setHistory(next)
-        setStatus('ready')
-        // A read that outlived an account switch reports nothing.
-        if (fire && uidRef.current === readUid) fireViewed(next.all, readUid)
-      })
-      .catch((error) => {
-        reportError('[useFeralReports] read history', error)
-        if (readId === latestRead.current) setStatus('failed')
-      })
-  }, [])
-  const load = useCallback(() => read(true), [read])
+    try {
+      const next = await readHistory(uid)
+      if (
+        readId !== latestRead.current ||
+        useAuthStore.getState().user?.uid !== uid
+      )
+        return
+      setLoaded({ uid, history: next, status: 'ready' })
+      if (viewPending.current) {
+        viewPending.current = false
+        // Legacy rows without a known owner stay local.
+        fireViewed(next.all.filter((cache) => cache.user_id === uid))
+      }
+    } catch (error) {
+      if (
+        readId !== latestRead.current ||
+        useAuthStore.getState().user?.uid !== uid
+      )
+        return
+      reportError('[useFeralReports] read history', error)
+      setLoaded((previous) => ({
+        uid,
+        status: 'failed',
+        history: previous?.uid === uid ? previous.history : undefined,
+      }))
+    }
+  }, [uid])
 
-  useEffect(() => {
-    void read(true)
-  }, [read])
-
-  // The tab stays mounted, so a Sighting sent since the last visit would
-  // not show until a pull-to-refresh. Re-read on every return to the tab —
-  // silently: SIGHTING_HISTORY_VIEWED stays a mount/refresh event, not per tab visit.
-  const focusedOnce = useRef(false)
   useFocusEffect(
     useCallback(() => {
-      if (!focusedOnce.current) {
-        focusedOnce.current = true
-        return
+      viewPending.current = true
+      void read()
+      return () => {
+        viewPending.current = false
+        latestRead.current++
       }
-      void read(false)
     }, [read]),
   )
 
   const caches = useMemo(
-    () => sortBySightingTime(ownSightings(history.all, uid)),
-    [history.all, uid],
+    () => sortBySightingTime(history?.all ?? []),
+    [history],
   )
   const spots = useMemo(() => groupSightingsBySpot(caches), [caches])
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
     try {
-      await load()
+      await read()
     } finally {
       setRefreshing(false)
     }
-  }, [load])
+  }, [read])
 
   return {
     caches,
     spots,
-    resumableId: history.resumableId,
-    status,
+    resumableId: history?.resumableId,
+    status: current?.status ?? 'loading',
     refreshing,
-    load,
+    load: read,
     onRefresh,
   }
 }

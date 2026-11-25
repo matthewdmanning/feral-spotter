@@ -5,7 +5,7 @@ import { randomUUID } from 'expo-crypto'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import { DEFAULT_SHARING } from '@/src/shared/types/Organizations'
-import { SharingCheckbox } from '@/src/features/organizations/components/SharingCheckbox'
+import { CheckboxRow } from '@/src/shared/ui/molecules/CheckboxRow'
 import { SharingFieldInputs } from '@/src/features/organizations/components/SharingFieldInputs'
 import { useOrganizationSharingStore } from '@/src/features/organizations/hooks/useOrganizationSharingStore'
 import {
@@ -62,7 +62,7 @@ export function LeaveChoices({
   return (
     <>
       <Text style={styles.body}>{copy.disclosure}</Text>
-      <SharingCheckbox
+      <CheckboxRow
         label={copy.keep}
         checked={keep}
         disabled={disabled}
@@ -74,7 +74,7 @@ export function LeaveChoices({
       {keep && (
         <>
           <Text style={styles.hint}>{copy.retainedDisclosure}</Text>
-          <SharingCheckbox
+          <CheckboxRow
             label={organizationCopy.submission.anonymous}
             checked={anonymous}
             disabled={disabled}
