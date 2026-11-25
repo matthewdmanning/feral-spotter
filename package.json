@@ -35,7 +35,7 @@
   },
   "dependencies": {
     "@expo-google-fonts/nunito": "^0.4.1",
-    "@posthog/core": "^1.55.3",
+    "@posthog/core": "^1.69.2",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/datetimepicker": "9.2.1",
     "@react-native-community/netinfo": "12.0.1",
@@ -64,7 +64,7 @@
     "expo-splash-screen": "~58.0.12",
     "expo-system-ui": "~58.0.7",
     "phosphor-react-native": "^3.0.6",
-    "posthog-react-native": "^4.54.2",
+    "posthog-react-native": "^4.87.3",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-native": "0.88.1",
