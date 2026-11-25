@@ -10,6 +10,7 @@ import { authProvider } from '@/src/features/auth/lib'
 import { AlertHost } from '@/src/shared/ui/organisms/AlertHost'
 import { pressDialogButton } from '@/src/test-utils/dialog'
 import SettingsScreen from '@/src/features/settings/screens/settings'
+import { queryWrapper } from '@/src/test-utils/queryClient'
 
 jest.mock('expo-router', () => ({
   router: { back: jest.fn(), push: jest.fn() },
@@ -23,7 +24,7 @@ beforeEach(() => {
 })
 
 it('does not show an email-entry dialog when the account already has email', async () => {
-  await render(<SettingsScreen />)
+  await render(<SettingsScreen />, { wrapper: queryWrapper().wrapper })
 
   expect(screen.queryByText('Add your email')).toBeNull()
   expect(screen.queryByLabelText('New email')).toBeNull()
@@ -37,7 +38,7 @@ it('prompts once for an account without email and stays dismissed after Cancel',
       isReady: true,
     })
   })
-  await render(<SettingsScreen />)
+  await render(<SettingsScreen />, { wrapper: queryWrapper().wrapper })
 
   expect(screen.getByText('Add your email')).toBeOnTheScreen()
   expect(screen.getByLabelText('Email')).toBeOnTheScreen()
@@ -84,6 +85,7 @@ it('keeps validation and change-email failures on the existing error path', asyn
       <SettingsScreen />
       <AlertHost />
     </>,
+    { wrapper: queryWrapper().wrapper },
   )
 
   await userEvent.type(screen.getByLabelText('Email'), 'invalid')
@@ -128,6 +130,7 @@ it('closes the entry dialog and confirms a successful verification request', asy
       <SettingsScreen />
       <AlertHost />
     </>,
+    { wrapper: queryWrapper().wrapper },
   )
 
   await userEvent.type(screen.getByLabelText('Email'), 'new@example.test')

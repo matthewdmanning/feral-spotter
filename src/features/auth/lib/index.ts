@@ -28,6 +28,11 @@ function createDevAuthProvider(): IAuthProvider {
       return 'dev-stub-token'
     },
     getCurrentUser: () => currentUser,
+    signInMethod: () => (currentUser ? 'password' : null),
+    // The stub has no credentials to check: any password proves identity.
+    reauthenticate: async () => {
+      if (!currentUser) throw new Error('NOT_SIGNED_IN')
+    },
     // Every sign-in path grants the same stub — the mock exists to walk the
     // gated flow without a real provider, so it ignores which one was used.
     signInWithProvider: grantStub,

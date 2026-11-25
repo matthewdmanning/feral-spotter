@@ -38,7 +38,13 @@ import { saveEmailOptIn } from '@/src/features/permissions/hooks/saveEmailOptIn'
 import { useChangeEmail } from '@/src/features/auth/hooks/useChangeEmail'
 import { useConsentStore } from '@/src/shared/consent/useConsentStore'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
-import { APP_VERSION, FEATURE_FLAGS } from '@/src/shared/config/constants'
+import {
+  APP_VERSION,
+  DELETE_ACCOUNT_URL,
+  FEATURE_FLAGS,
+} from '@/src/shared/config/constants'
+import { useAccountDeletion } from '@/src/workflows/account-deletion/hooks/useAccountDeletion'
+import { AccountDeletionDialogs } from './AccountDeletionDialogs'
 import { router } from 'expo-router'
 import { FileTextIcon } from 'phosphor-react-native/src/icons/FileText'
 import { Fragment, useState } from 'react'
@@ -83,7 +89,9 @@ export default function SettingsScreen() {
   // haptics, a change applies at once.
   const emailOptIn = useConsentStore((s) => s.emailOptIn === true)
   const accountEmail = useAuthStore((s) => s.user?.email)
+  const signedIn = useAuthStore((s) => s.user !== null)
   const changeEmail = useChangeEmail()
+  const deletion = useAccountDeletion()
   const settings = useSettingsStore((s) => s.settings)
   const updateSetting = useSettingsStore((s) => s.updateSetting)
   const updateSettings = useSettingsStore((s) => s.updateSettings)
@@ -232,6 +240,16 @@ export default function SettingsScreen() {
               {settingsCopy.dataPolicy}
             </TextButton>
           </GlassSurface>
+
+          {/* Rare and destructive: last, in its own card. */}
+          {DELETE_ACCOUNT_URL && signedIn && (
+            <GlassSurface kind="card" style={styles.card}>
+              <Text style={styles.cardTitle}>{settingsCopy.account}</Text>
+              <AppButton variant="danger" onPress={deletion.open}>
+                {settingsCopy.deleteAccount}
+              </AppButton>
+            </GlassSurface>
+          )}
         </View>
       </ScrollView>
       {changeEmail.promptOpen && (
@@ -265,6 +283,7 @@ export default function SettingsScreen() {
           </ButtonRow>
         </DialogShell>
       )}
+      <AccountDeletionDialogs deletion={deletion} />
     </KeyboardAvoidingView>
   )
 }

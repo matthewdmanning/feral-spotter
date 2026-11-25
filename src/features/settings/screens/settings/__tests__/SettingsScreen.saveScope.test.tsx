@@ -1,6 +1,7 @@
 import { render, screen, userEvent } from '@testing-library/react-native'
 import { router } from 'expo-router'
 import SettingsScreen from '@/src/features/settings/screens/settings'
+import { queryWrapper } from '@/src/test-utils/queryClient'
 import { useSettingsStore } from '@/src/features/settings/hooks/useSettingsStore'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import {
@@ -47,7 +48,7 @@ it.each([
     mountFlagSdk({ Organizations: rollout })
     useOrganizationsFlag.setState({ enabled: false })
     await useOrganizationsFlag.getState().refresh()
-    await render(<SettingsScreen />)
+    await render(<SettingsScreen />, { wrapper: queryWrapper().wrapper })
     expect(screen.queryByText('Organizations') !== null).toBe(shown)
   },
 )
@@ -60,7 +61,7 @@ it('applies a photo toggle and an instant choice to their stores at once', async
   })
   const initial = useSettingsStore.getState().settings.keep_photos_on_device
   const user = userEvent.setup()
-  await render(<SettingsScreen />)
+  await render(<SettingsScreen />, { wrapper: queryWrapper().wrapper })
   await user.press(screen.getByRole('switch', { name: 'Email Updates' }))
   expect(useConsentStore.getState().emailOptIn).toBe(true)
   await user.press(
@@ -84,7 +85,7 @@ it('saves each capture priority as its native mapping at once', async () => {
     },
   }))
   const user = userEvent.setup()
-  await render(<SettingsScreen />)
+  await render(<SettingsScreen />, { wrapper: queryWrapper().wrapper })
 
   expect(screen.getByText('Capture Priority')).toBeOnTheScreen()
   expect(screen.queryByText('Maximum Detail')).toBeNull()
@@ -116,7 +117,7 @@ it('saves each capture priority as its native mapping at once', async () => {
 it('hides capture priority when the experimental camera flag is off', async () => {
   mutableFeatureFlags.experimentalCamera = false
 
-  await render(<SettingsScreen />)
+  await render(<SettingsScreen />, { wrapper: queryWrapper().wrapper })
 
   expect(screen.queryByText('Capture Priority')).toBeNull()
 })

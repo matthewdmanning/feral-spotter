@@ -10,7 +10,8 @@ src/
 ├── app/           # Expo Router routes — thin re-exports of screens only
 ├── providers/     # AppProviders (app layer)
 ├── workflows/     # app-level coordination across features
-│   └── photo-entry/        # camera/library entrypoints and source selection
+│   ├── photo-entry/        # camera/library entrypoints and source selection
+│   └── account-deletion/   # deletion guard, server erasure call, device wipe
 ├── features/
 │   ├── auth/              # sign-in, Registration, auth providers, entry gate, Consent records
 │   ├── permissions/       # onboarding, consent, photo, location, email opt-in

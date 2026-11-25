@@ -59,6 +59,17 @@ export function closePostHogClient(): void {
   if (client) void client.optOut()
 }
 
+/**
+ * Account deletion (#433): drop this device's identity and unsent events and
+ * stop sending. The server erases the person; nothing here may recreate it.
+ */
+export function forgetPostHogDevice(): void {
+  if (!client) return
+  // reset() clears persisted state, the opt-out included, so it goes first.
+  client.reset()
+  void client.optOut()
+}
+
 /** Test seam: opt the client out and forget it. */
 export function resetPostHogClient(): void {
   void client?.optOut()

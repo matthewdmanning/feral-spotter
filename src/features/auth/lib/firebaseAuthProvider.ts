@@ -4,6 +4,8 @@ import {
   signInWithCredential,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
   GoogleAuthProvider,
   OAuthProvider,
   FacebookAuthProvider,
@@ -13,7 +15,7 @@ import {
   signOut as firebaseSignOut,
   type User,
 } from '@react-native-firebase/auth'
-import type { AuthUser, IAuthProvider } from './IAuthProvider'
+import type { AuthUser, IAuthProvider, SignInMethod } from './IAuthProvider'
 import {
   assertFederatedProviderReleased,
   type FederatedProviderId,
@@ -26,6 +28,13 @@ import {
   USE_FIREBASE_EMULATOR,
   FIREBASE_EMULATOR_HOST,
 } from '@/src/shared/config/constants'
+
+const SIGN_IN_METHODS: Record<string, SignInMethod> = {
+  password: 'password',
+  'google.com': 'google',
+  'apple.com': 'apple',
+  'facebook.com': 'facebook',
+}
 
 function toAuthUser(user: User | null): AuthUser | null {
   if (!user) return null
@@ -82,13 +91,13 @@ export function createFirebaseAuthProvider(): IAuthProvider {
   const listeners = new Set<(user: AuthUser | null) => void>()
 
   return {
-    getToken: async () => {
+    getToken: async (forceRefresh = false) => {
       const user = auth.currentUser
       if (!user) throw new Error('NOT_SIGNED_IN')
       // Non-force-refresh: a still-valid cached token resolves without a
       // network round trip. An expired one is refreshed over the network,
       // so offline it rejects; callers treat that as a failed request.
-      return user.getIdToken(false)
+      return user.getIdToken(forceRefresh)
     },
     getCurrentUser: () => toAuthUser(auth.currentUser),
     signInWithProvider: async (providerId) => {
@@ -115,6 +124,25 @@ export function createFirebaseAuthProvider(): IAuthProvider {
       const user = auth.currentUser
       if (!user) throw new Error('NOT_SIGNED_IN')
       await verifyBeforeUpdateEmail(user, newEmail)
+    },
+    signInMethod: () => {
+      const providers = auth.currentUser?.providerData ?? []
+      for (const { providerId } of providers) {
+        const method = SIGN_IN_METHODS[providerId]
+        if (method) return method
+      }
+      return null
+    },
+    reauthenticate: async (password) => {
+      const user = auth.currentUser
+      if (!user) throw new Error('NOT_SIGNED_IN')
+      const method = SIGN_IN_METHODS[user.providerData[0]?.providerId ?? '']
+      if (!method) throw new Error('UNSUPPORTED_PROVIDER')
+      const credential =
+        method === 'password'
+          ? EmailAuthProvider.credential(user.email ?? '', password ?? '')
+          : await credentialForProvider(method)
+      await reauthenticateWithCredential(user, credential)
     },
     signOut: async () => {
       // Sign out of every federated SDK that keeps its own session, then Firebase.

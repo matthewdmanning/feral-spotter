@@ -59,8 +59,8 @@ builds that do not test analytics. Use `.env.example` for their names.
   Selection gives the workflow access to its variables and secrets. Only values
   explicitly referenced in the [workflow](../../.github/workflows/release.yml)
   reach the build. Map new build settings there when release needs them.
-  `EXPO_PUBLIC_UPLOAD_ADMISSION_URL` and `EXPO_PUBLIC_CONSENT_RECORDS_URL`
-  are GitHub variables.
+  `EXPO_PUBLIC_UPLOAD_ADMISSION_URL`, `EXPO_PUBLIC_CONSENT_RECORDS_URL` and
+  `EXPO_PUBLIC_DELETE_ACCOUNT_URL` are GitHub variables.
 - `EXPO_PUBLIC_*` values are embedded in the bundle. Restart Metro after changing
   them for a debug drive. Rebuild standalone artifacts to update their bundle.
   See [secrets.md](secrets.md) for what can ship in the app or be committed.

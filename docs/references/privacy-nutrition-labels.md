@@ -9,7 +9,7 @@ Transcription into App Store Connect and Play Console is manual human work. Tabl
 - **Tracking (Apple):** No. No data is linked with third-party data for advertising, and none goes to data brokers. Facebook SDK auto-collection is off (below).
 - **Service providers:** Firebase (Auth, Storage, Firestore, Functions), PostHog (analytics, Error Tracking) and EmailOctopus (email updates) process data on the app's behalf. Play does not count transfers to service providers as "sharing". Apple counts data collected by third-party partners as collected, so it appears below.
 - **Encryption in transit (Play):** Yes. Firebase, PostHog and EmailOctopus are reached over HTTPS only.
-- **Deletion (Play):** the `deleteAccount` callable (`functions/src/erasure/`) erases the account, Submissions, organization data and the email-list contact. No in-app entry point was found in `src/`. Play requires an in-app path and a web request path, so add both before declaring "Yes".
+- **Deletion (Play):** Settings → Account → Delete Account calls the `deleteAccount` callable (`functions/src/erasure/`, `src/workflows/account-deletion/`). It erases the account, the email-list contact, the PostHog person and organization data, and Submissions when the user chooses. Play also requires a web request path; add one before declaring "Yes".
 - **Consent records:** each consent choice is stored with the Firebase UID, platform and app version (ADR-0009). After erasure a pseudonymous tombstone is kept three years. This is compliance data under User ID, not a new data type.
 - **Optional choices:** usage analytics (`analyticsAccepted`) and email updates (`emailOptIn`) are separate opt-ins (`src/shared/consent/useConsentStore.ts`). Declining either never blocks the app.
 
@@ -54,7 +54,7 @@ Apple's "Coarse Location" and Google's "Approximate location" are declared on bo
 
 ## Open items before transcription
 
-- Ship an in-app account-deletion entry point and a web request path, then declare deletion.
+- Publish a web page for deletion requests, then declare deletion.
 - Confirm PostHog's and EmailOctopus's DPAs restrict use to processing on the app's behalf; that is what makes "Shared: No" hold.
 
 ## Sources

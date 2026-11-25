@@ -335,7 +335,7 @@ export const syncEmailSubscription = onRequest(
 
 // #433: account deletion behind the app's deletion guard. PostHog's host
 // and project come from deployment parameters; its personal API key is a
-// secret. Not wired to any screen until the guard's decision record lands.
+// secret. Called by Settings → Delete Account (src/workflows/account-deletion/).
 const POSTHOG_HOST = defineString('POSTHOG_HOST')
 const POSTHOG_PROJECT_ID = defineString('POSTHOG_PROJECT_ID')
 const POSTHOG_PERSONAL_API_KEY = defineSecret('POSTHOG_PERSONAL_API_KEY')

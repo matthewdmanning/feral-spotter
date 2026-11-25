@@ -130,6 +130,13 @@ export const UPLOAD_ADMISSION_URL: string | undefined =
 export const CONSENT_RECORDS_URL: string | undefined =
   process.env.EXPO_PUBLIC_CONSENT_RECORDS_URL || undefined
 
+/**
+ * URL of the `deleteAccount` callable Cloud Function (#433). Unset hides
+ * account deletion in Settings. Kept in env: it embeds the Firebase project id.
+ */
+export const DELETE_ACCOUNT_URL: string | undefined =
+  process.env.EXPO_PUBLIC_DELETE_ACCOUNT_URL || undefined
+
 /** Autosave debounce for text inputs (ms). */
 export const AUTOSAVE_TEXT_MS = 800
 

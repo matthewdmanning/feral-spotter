@@ -96,6 +96,7 @@ precedence over the GitHub values pulled into `.env.development.local`.
 | `EXPO_PUBLIC_USE_FIREBASE_EMULATOR`  | `true`                                                      | Off by default, never inferred from `__DEV__`                                           |
 | `EXPO_PUBLIC_FIREBASE_EMULATOR_HOST` | `localhost` (default)                                       | Use `10.0.2.2` on an Android emulator; `localhost` + `adb reverse` on a physical device |
 | `EXPO_PUBLIC_UPLOAD_ADMISSION_URL`   | `http://<host>:5001/<project>/us-central1/admitPhotoUpload` | Photo and metadata uploads need a grant (#486)                                          |
+| `EXPO_PUBLIC_DELETE_ACCOUNT_URL`     | `http://<host>:5001/<project>/us-central1/deleteAccount`    | Optional. Unset hides account deletion in Settings (#433)                               |
 | `EXPO_PUBLIC_CONSENT_RECORDS_URL`    | `http://<host>:5001/<project>/us-central1/consentRecords`   | Optional. Unset keeps consent choices on the device (ADR-0009)                          |
 
 On a physical Android device, tunnel the ports before you open the app:

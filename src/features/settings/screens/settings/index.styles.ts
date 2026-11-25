@@ -36,4 +36,5 @@ export const styles = StyleSheet.create((theme, rt) => ({
   },
   toggleGroup: { gap: theme.spacing.md },
   groupTitle: { ...theme.textVariants.label, color: theme.colors.text },
+  dialogBody: { ...theme.textVariants.body, color: theme.colors.text },
 }))
