@@ -112,6 +112,10 @@ _Avoid_: quality preset, capture profile.
 Explicit acceptance of the data-collection disclosure, plus granting OS permissions (location, camera, photos). Records acceptance and requests permissions — Onboarding only explains. Eager priming on "I Agree"; contextual re-priming at point of use (issue #41).
 _Avoid_: onboarding (Consent is the gate, not the explanation).
 
+**Consent record**:
+Server proof of one consent choice (disclosure, analytics or email updates), kept per account in Firestore (ADR-0009). The disclosure belongs to the device; analytics and email choices belong to the account and are restored on sign-in. After erasure only a pseudonymous tombstone remains, for three years.
+_Avoid_: consent log, audit log.
+
 ### Sign-in and authentication
 
 **Federated Sign-In**:

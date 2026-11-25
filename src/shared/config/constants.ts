@@ -122,6 +122,14 @@ export const EMAIL_SYNC_URL: string | undefined =
 export const UPLOAD_ADMISSION_URL: string | undefined =
   process.env.EXPO_PUBLIC_UPLOAD_ADMISSION_URL || undefined
 
+/**
+ * URL of the `consentRecords` Cloud Function (ADR-0009). Unset means consent
+ * choices stay on the device: no server proof, nothing restored on a new
+ * device. Kept in env: it embeds the Firebase project id.
+ */
+export const CONSENT_RECORDS_URL: string | undefined =
+  process.env.EXPO_PUBLIC_CONSENT_RECORDS_URL || undefined
+
 /** Autosave debounce for text inputs (ms). */
 export const AUTOSAVE_TEXT_MS = 800
 

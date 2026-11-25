@@ -34,6 +34,7 @@
 import { QueryClientProvider } from '@tanstack/react-query'
 import { createQueryClient } from '@/src/shared/lib/queryClient'
 import { OrganizationsRuntime } from '@/src/features/organizations/components/OrganizationsRuntime'
+import { AccountConsentRuntime } from '@/src/features/auth/components/AccountConsentRuntime'
 import { AlertHost } from '@/src/shared/ui/organisms/AlertHost'
 import { ErrorBoundary } from '@/src/shared/ui/atoms/ErrorBoundary'
 import {
@@ -215,6 +216,7 @@ export function AppProviders({ children }: AppProvidersProps) {
         {__DEV__ && <ScreenTransitionLogger />}
         <SystemThemeSync />
         <OrganizationsRuntime />
+        <AccountConsentRuntime />
         {/* Outside ErrorBoundary's children so a caught render error still
           leaves the app able to raise a dialog. */}
         <AlertHost />

@@ -5,6 +5,7 @@ module.exports = {
     '<rootDir>/src/organizations/emulator-tests/**/*.test.ts',
     '<rootDir>/src/uploads/emulator-tests/**/*.test.ts',
     '<rootDir>/src/backups/emulator-tests/**/*.test.ts',
+    '<rootDir>/src/consent/emulator-tests/**/*.test.ts',
   ],
   testTimeout: 30000,
 }

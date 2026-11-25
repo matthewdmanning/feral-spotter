@@ -12,7 +12,7 @@ src/
 ├── workflows/     # app-level coordination across features
 │   └── photo-entry/        # camera/library entrypoints and source selection
 ├── features/
-│   ├── auth/              # sign-in, Registration, auth providers, entry gate
+│   ├── auth/              # sign-in, Registration, auth providers, entry gate, Consent records
 │   ├── permissions/       # onboarding, consent, photo, location, email opt-in
 │   ├── settings/          # settings screen + store, photo toggles
 │   ├── organizations/     # directory and core permissions; optional sharing/, membership/, interactions/

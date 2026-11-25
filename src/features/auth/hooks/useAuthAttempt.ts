@@ -5,6 +5,8 @@
  */
 
 import { reportError } from '@/src/shared/analytics/analytics'
+import { authProvider } from '@/src/features/auth/lib'
+import { syncAccountConsent } from '@/src/features/auth/lib/accountConsent'
 import { nextConsentRoute } from '@/src/shared/consent/consentFlow'
 import { showAlert } from '@/src/shared/hooks/useUIStore'
 import { startOver } from '@/src/shared/lib/navigation'
@@ -39,6 +41,9 @@ export function useAuthAttempt(): {
       setBusy(true)
       try {
         await run()
+        // Scope consent choices to this account and restore its saved ones
+        // first, so a returning user is not asked again (ADR-0009).
+        await syncAccountConsent(authProvider.getCurrentUser()?.uid ?? null)
         // Sign-in stays under Registration; neither may stay under Home.
         startOver(nextConsentRoute())
       } catch (err) {

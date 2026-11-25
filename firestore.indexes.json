@@ -50,6 +50,12 @@
       "collectionGroup": "pinComments",
       "fieldPath": "body",
       "indexes": []
+    },
+    {
+      "collectionGroup": "consentTombstones",
+      "fieldPath": "expireAt",
+      "ttl": true,
+      "indexes": []
     }
   ]
 }

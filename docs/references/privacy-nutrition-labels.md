@@ -10,6 +10,7 @@ Transcription into App Store Connect and Play Console is manual human work. Tabl
 - **Service providers:** Firebase (Auth, Storage, Firestore, Functions), PostHog (analytics, Error Tracking) and EmailOctopus (email updates) process data on the app's behalf. Play does not count transfers to service providers as "sharing". Apple counts data collected by third-party partners as collected, so it appears below.
 - **Encryption in transit (Play):** Yes. Firebase, PostHog and EmailOctopus are reached over HTTPS only.
 - **Deletion (Play):** the `deleteAccount` callable (`functions/src/erasure/`) erases the account, Submissions, organization data and the email-list contact. No in-app entry point was found in `src/`. Play requires an in-app path and a web request path, so add both before declaring "Yes".
+- **Consent records:** each consent choice is stored with the Firebase UID, platform and app version (ADR-0009). After erasure a pseudonymous tombstone is kept three years. This is compliance data under User ID, not a new data type.
 - **Optional choices:** usage analytics (`analyticsAccepted`) and email updates (`emailOptIn`) are separate opt-ins (`src/shared/consent/useConsentStore.ts`). Declining either never blocks the app.
 
 ## Apple App Privacy

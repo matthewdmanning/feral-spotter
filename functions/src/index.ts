@@ -40,6 +40,11 @@ import {
   createStorageSubmissionStore,
 } from './erasure/adapters'
 import { handleDeleteAccount } from './erasure/deleteAccount'
+import {
+  handleConsentRecords,
+  retireConsentRecords,
+} from './consent/consentRecords'
+import { firestoreConsentDb } from './consent/firestoreConsentDb'
 import { backupSubmission } from './backups/submissionBackup'
 import { onSchedule } from 'firebase-functions/v2/scheduler'
 import type { AuthBlockingEvent } from 'firebase-functions/v2/identity'
@@ -352,9 +357,33 @@ export const deleteAccount = onCall(
         BUCKET_NAME,
         BACKUP_BUCKET.value(),
       ),
+      consents: {
+        retire: (uid) => retireConsentRecords(uid, firestoreConsentDb),
+      },
       accounts: authAccountStore,
     }),
 )
+
+// ADR-0009: proof of each consent choice, and the account's current choices
+// for a new device. GET reads them; POST records one.
+export const consentRecords = onRequest(async (req, res) => {
+  try {
+    const { status, body } = await handleConsentRecords(
+      {
+        method: req.method,
+        authorization: req.header('authorization'),
+        body: req.body,
+      },
+      firestoreConsentDb,
+      (token) => getAuth().verifyIdToken(token),
+    )
+    if (body) res.status(status).json(body)
+    else res.status(status).end()
+  } catch (error) {
+    console.error('[consent] records failed', error)
+    res.status(502).end()
+  }
+})
 
 // #486: the only issuer of upload grants. See uploads/admission.ts.
 // HMAC key for the email-keyed person index: the ledger never stores an

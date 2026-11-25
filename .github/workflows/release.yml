@@ -33,6 +33,8 @@ jobs:
       # EXPO_PUBLIC_ORGANIZATIONS_API_URL: ${{ secrets.EXPO_PUBLIC_ORGANIZATIONS_API_URL }}
       # Photo uploads need an upload grant (#486).
       EXPO_PUBLIC_UPLOAD_ADMISSION_URL: ${{ vars.EXPO_PUBLIC_UPLOAD_ADMISSION_URL }}
+      # Server consent records (ADR-0009). Unset keeps consent on the device.
+      EXPO_PUBLIC_CONSENT_RECORDS_URL: ${{ vars.EXPO_PUBLIC_CONSENT_RECORDS_URL }}
       EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: ${{ vars.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID }}
       POSTHOG_PROJECT_TOKEN: ${{ vars.POSTHOG_PROJECT_TOKEN }}
       POSTHOG_HOST: ${{ vars.POSTHOG_HOST }}
