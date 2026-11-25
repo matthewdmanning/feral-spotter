@@ -22,7 +22,11 @@ import {
 } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useSubmissionStore } from '@/src/shared/hooks/useSubmissionStore'
 import { draftReadyOrAlert } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
-import { EVENTS, captureEvent } from '@/src/shared/analytics/analytics'
+import {
+  EVENTS,
+  captureEvent,
+  reportError,
+} from '@/src/shared/analytics/analytics'
 import { libraryPermission } from '@/src/features/permissions/lib/libraryPermission'
 import { syncPhotoUploads } from '@/src/features/draft-submission/lib/upload/draftUploads'
 import { buildSubmissionPhoto } from '@/src/features/draft-submission/lib/buildSubmissionPhoto'
@@ -59,7 +63,7 @@ export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
     try {
       usable = await libraryPermission.request()
     } catch (error) {
-      console.error('[useLibraryPhotoPicker] permission', error)
+      reportError('[useLibraryPhotoPicker] permission', error)
     }
     if (!usable) {
       showAlert(libraryCopy.accessTitle, libraryCopy.accessMessage, [
@@ -87,7 +91,7 @@ export function useLibraryPhotoPicker(): LibraryPhotoPickerResult {
         exif: true,
       })
     } catch (error) {
-      console.error('[useLibraryPhotoPicker] picker', error)
+      reportError('[useLibraryPhotoPicker] picker', error)
       showAlert(libraryCopy.openFailedTitle, libraryCopy.openFailedMessage)
       return
     }

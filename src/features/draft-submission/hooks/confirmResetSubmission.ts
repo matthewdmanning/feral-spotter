@@ -3,6 +3,7 @@
  * The one discard path for every screen, and its Reset confirmation (#153).
  */
 
+import { reportError } from '@/src/shared/analytics/analytics'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useSettingsStore } from '@/src/features/settings/hooks/useSettingsStore'
 import { showAlert, showError } from '@/src/shared/hooks/useUIStore'
@@ -29,7 +30,7 @@ export async function discardDraftAndGoHome(): Promise<void> {
     await initializeDraft()
     if (!(await discardDraft())) return
   } catch (error) {
-    console.error('[discardDraftAndGoHome]', error)
+    reportError('[discardDraftAndGoHome]', error)
     showError(
       submissionCopy.exit.clearFailedTitle,
       submissionCopy.exit.clearFailedMessage,

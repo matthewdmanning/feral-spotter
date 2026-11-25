@@ -10,12 +10,14 @@ import {
   hasAcceptedConsent,
   useConsentHydrated,
 } from '@/src/shared/consent/useConsentStore'
+import { syncAccountConsent } from '@/src/features/auth/lib/accountConsent'
 import { useAuth } from '@/src/features/auth/lib/useAuth'
 import { router } from 'expo-router'
 import { useEffect } from 'react'
 
 export function useEntryGate(): void {
-  const { isAuthenticated, isReady } = useAuth()
+  const { user, isReady } = useAuth()
+  const uid = user?.uid ?? null
   const consentHydrated = useConsentHydrated()
   // No device consent yet → intro flow (onboarding leads into consent);
   // consent already accepted but not signed in → sign-in; otherwise stay.
@@ -34,11 +36,18 @@ export function useEntryGate(): void {
     if (!isReady || !consentHydrated) return
     if (!hasAcceptedConsent()) {
       router.replace('/intro-flow')
-    } else if (!isAuthenticated) {
+    } else if (uid === null) {
       router.replace('/sign-in')
     } else {
-      const next = nextConsentRoute()
-      if (next !== '/(home-tabs)') router.replace(next)
+      let current = true
+      void syncAccountConsent(uid).then(() => {
+        if (!current) return
+        const next = nextConsentRoute()
+        if (next !== '/(home-tabs)') router.replace(next)
+      })
+      return () => {
+        current = false
+      }
     }
-  }, [isReady, isAuthenticated, consentHydrated])
+  }, [isReady, uid, consentHydrated])
 }

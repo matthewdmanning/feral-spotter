@@ -5,7 +5,7 @@ and which Firebase MCP resources and skills are approved to use. Ratified
 design decisions live in `docs/adr/`; this file is the map to them plus the
 bits not yet ratified.
 
-Organization data uses server-only Firestore (ADR-0008). Submission metadata and photos remain in Cloud Storage; upload counts and limits retain their existing implementation.
+Organization data and consent records use server-only Firestore (ADR-0008, ADR-0009). Submission metadata and photos remain in Cloud Storage; upload counts and limits retain their existing implementation.
 
 ## Current architecture
 
@@ -96,6 +96,8 @@ precedence over the GitHub values pulled into `.env.development.local`.
 | `EXPO_PUBLIC_USE_FIREBASE_EMULATOR`  | `true`                                                      | Off by default, never inferred from `__DEV__`                                           |
 | `EXPO_PUBLIC_FIREBASE_EMULATOR_HOST` | `localhost` (default)                                       | Use `10.0.2.2` on an Android emulator; `localhost` + `adb reverse` on a physical device |
 | `EXPO_PUBLIC_UPLOAD_ADMISSION_URL`   | `http://<host>:5001/<project>/us-central1/admitPhotoUpload` | Photo and metadata uploads need a grant (#486)                                          |
+| `EXPO_PUBLIC_DELETE_ACCOUNT_URL`     | `http://<host>:5001/<project>/us-central1/deleteAccount`    | Optional. Unset hides account deletion in Settings (#433)                               |
+| `EXPO_PUBLIC_CONSENT_RECORDS_URL`    | `http://<host>:5001/<project>/us-central1/consentRecords`   | Optional. Unset keeps consent choices on the device (ADR-0009)                          |
 
 On a physical Android device, tunnel the ports before you open the app:
 `adb reverse tcp:9099 tcp:9099`, `adb reverse tcp:9199 tcp:9199` and
@@ -152,6 +154,13 @@ only.
 
 For test-drive _mechanics_ (device setup, logging channels, per-run
 checks), see [test-driving.md](test-driving.md).
+
+## Consent records (ADR-0009)
+
+- `consentRecords` (`functions/src/consent/`): GET returns the caller's current choices; POST records one. The uid comes from the ID token only.
+- Firestore: `consentRecords/{uid}` (current), `consentRecords/{uid}/events` (append-only), `consentTombstones/{hash}` (erasure marker), and `consentTombstoneEvents/{hash}` (retained proof).
+- Erasure shrinks records to a tombstone with no uid, email, platform or app version. Both collections use the `expireAt` TTL policies in `firestore.indexes.json`. Deploy the indexes with the function to enable expiration after three years.
+- Client: `src/features/auth/lib/accountConsent.ts`. Emulator test: `functions/src/consent/emulator-tests/`.
 
 ## Organization Firestore boundary
 

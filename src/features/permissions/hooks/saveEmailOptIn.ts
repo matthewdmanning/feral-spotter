@@ -1,3 +1,4 @@
+import { reportError } from '@/src/shared/analytics/analytics'
 import { useConsentStore } from '@/src/shared/consent/useConsentStore'
 import { syncEmailSubscription } from '@/src/features/permissions/lib/syncEmailSubscription'
 
@@ -10,6 +11,6 @@ import { syncEmailSubscription } from '@/src/features/permissions/lib/syncEmailS
 export function saveEmailOptIn(enabled: boolean): void {
   useConsentStore.getState().setEmailOptIn(enabled)
   syncEmailSubscription(enabled).catch((err) =>
-    console.error('[email] subscription sync failed:', err),
+    reportError('[email] subscription sync failed:', err),
   )
 }

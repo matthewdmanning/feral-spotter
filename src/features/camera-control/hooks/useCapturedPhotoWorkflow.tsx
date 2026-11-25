@@ -14,6 +14,7 @@
  * differ.
  */
 
+import type { PostHogEventProperties } from '@posthog/core'
 import { cameraCopy, formatCopy } from '@/src/shared/config/text'
 import { CameraThumb } from '@/src/features/camera-control/components/CameraThumb'
 import {
@@ -21,7 +22,11 @@ import {
   isAtPhotoLimit,
   showPhotoLimitReached,
 } from '@/src/features/draft-submission/hooks/usePhotoStore'
-import { captureEvent, EVENTS } from '@/src/shared/analytics/analytics'
+import {
+  captureEvent,
+  EVENTS,
+  reportError,
+} from '@/src/shared/analytics/analytics'
 import { startLocationCapture } from '@/src/core/location/liveFix'
 import { removePhotoFromDraft } from '@/src/features/draft-submission/hooks/removePhotoFromDraft'
 import {
@@ -69,7 +74,7 @@ interface RunCaptureOptions {
   /** Takes and persists the photo(s). A throw is reported as a failure. */
   capture: () => Promise<void>
   /** Backend telemetry fields added to the failure event. */
-  failureProps: () => Record<string, unknown>
+  failureProps: () => PostHogEventProperties
   /** Prefix for the failure console log. */
   logTag: string
 }
@@ -189,7 +194,7 @@ export function useCapturedPhotoWorkflow({
     try {
       permitted = await gallerySavePermission.check()
     } catch (error) {
-      console.error('[useCapturedPhotoWorkflow] gallery permission:', error)
+      reportError('[useCapturedPhotoWorkflow] gallery permission:', error)
     }
     if (!permitted) {
       uris.forEach(releaseCapturedPhotoFile)
@@ -200,7 +205,7 @@ export function useCapturedPhotoWorkflow({
       try {
         await Asset.create(uri)
       } catch (error) {
-        console.error('[useCapturedPhotoWorkflow] Asset.create:', error)
+        reportError('[useCapturedPhotoWorkflow] Asset.create:', error)
       } finally {
         releaseCapturedPhotoFile(uri)
       }
@@ -230,11 +235,8 @@ export function useCapturedPhotoWorkflow({
       try {
         await capture()
       } catch (error) {
-        console.error(`[${logTag}] capture:`, error)
-        captureEvent(EVENTS.PHOTO_CAPTURE_FAILED, {
-          error: error instanceof Error ? error.message : String(error),
-          ...failureProps(),
-        })
+        reportError(`[${logTag}] capture:`, error)
+        captureEvent(EVENTS.PHOTO_CAPTURE_FAILED, failureProps())
       } finally {
         isTakingPhotoRef.current = false
         setIsTakingPhoto(false)

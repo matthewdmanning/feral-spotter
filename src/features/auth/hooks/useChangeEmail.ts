@@ -1,3 +1,4 @@
+import { reportError } from '@/src/shared/analytics/analytics'
 import { useState } from 'react'
 import { authCopy, commonCopy, formatCopy } from '@/src/shared/config/text'
 import { showError, showSuccess } from '@/src/shared/hooks/useUIStore'
@@ -50,7 +51,7 @@ export function useChangeEmail() {
         formatCopy(authCopy.emailChangeSentMessage, { email: address }),
       )
     } catch (err) {
-      console.error('[settings] change email failed:', err)
+      reportError('[settings] change email failed:', err)
       const needsSignIn =
         (err as { code?: string }).code === 'auth/requires-recent-login'
       showError(

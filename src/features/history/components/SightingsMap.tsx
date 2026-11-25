@@ -14,6 +14,7 @@
  * light tiles.
  */
 
+import { reportError } from '@/src/shared/analytics/analytics'
 import catPin from '@/assets/images/catPins/cat-pin.png'
 import catPin2 from '@/assets/images/catPins/cat-pin-2.png'
 import catPin3 from '@/assets/images/catPins/cat-pin-3.png'
@@ -81,7 +82,7 @@ function loadPinIcons() {
     .then((entries) => Object.fromEntries(entries))
     .catch((error) => {
       // Default markers still work; retry on the next mount.
-      console.error('[SightingsMap] loadPinIcons', error)
+      reportError('[SightingsMap] loadPinIcons', error)
       pinIconsPromise = null
       return {}
     })

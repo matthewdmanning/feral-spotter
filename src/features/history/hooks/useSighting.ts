@@ -3,6 +3,8 @@
  * One Sighting from history, for the read-only detail view.
  */
 
+import { reportError } from '@/src/shared/analytics/analytics'
+import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import {
   getSubmissionCache,
   type SubmissionCacheFile,
@@ -15,24 +17,34 @@ export interface SightingResult {
 }
 
 export function useSighting(id: string | undefined): SightingResult {
+  const uid = useAuthStore((s) => (s.isReady ? s.user?.uid : undefined))
   const [loaded, setLoaded] = useState<{
     id: string | undefined
+    uid: string
     sighting: SubmissionCacheFile | null
   }>()
   useEffect(() => {
+    if (!id || !uid) return
     let active = true
-    ;(id ? getSubmissionCache(id) : Promise.resolve(null))
+    void getSubmissionCache(id)
       .then((sighting) => {
-        if (active) setLoaded({ id, sighting })
+        if (!active || useAuthStore.getState().user?.uid !== uid) return
+        const visible = sighting?.user_id == null || sighting.user_id === uid
+        setLoaded({ id, uid, sighting: visible ? sighting : null })
       })
       // A failed read shows "not found" rather than loading forever.
       .catch((error) => {
-        console.error('[useSighting]', error)
-        if (active) setLoaded({ id, sighting: null })
+        if (!active || useAuthStore.getState().user?.uid !== uid) return
+        reportError('[useSighting]', error)
+        setLoaded({ id, uid, sighting: null })
       })
     return () => {
       active = false
     }
-  }, [id])
-  return { sighting: loaded?.id === id ? loaded?.sighting : undefined }
+  }, [id, uid])
+  if (!id || !uid) return { sighting: null }
+  return {
+    sighting:
+      loaded?.id === id && loaded.uid === uid ? loaded.sighting : undefined,
+  }
 }

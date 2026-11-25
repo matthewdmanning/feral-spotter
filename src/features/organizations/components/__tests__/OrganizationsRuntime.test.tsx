@@ -25,6 +25,7 @@ beforeEach(() => {
   })
   useOrganizationSharingStore.setState({ accounts: {}, hydrated: true })
   useAuthStore.setState({ user: { uid: 'owner', email: null }, isReady: true })
+  useConsentStore.getState().bindChoicesTo('owner')
 })
 afterEach(async () => {
   flags.organizations = buildFlag

@@ -40,7 +40,7 @@ import {
   transitionSubmission,
   type SubmissionCacheFile,
 } from '@/src/shared/lib/submissionCache'
-import { EVENTS } from '@/src/shared/analytics/analytics'
+import { EVENTS, reportError } from '@/src/shared/analytics/analytics'
 import { fireAnalyticsEvent } from '@/src/features/draft-submission/lib/analytics'
 import { authProvider } from '@/src/features/auth/lib'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
@@ -315,13 +315,13 @@ export async function submitDraft(): Promise<SubmitOutcome> {
     if (snapshot) fireAnalyticsEvent(EVENTS.SUBMISSION_SUBMITTED, snapshot)
     return { kind: 'sent' }
   } catch (error) {
-    console.error('[draft] submit', error)
+    reportError('[draft] submit', error)
     if (cacheId) {
       try {
         const failed = await transitionSubmission(cacheId, 'Failed')
         if (failed) fireAnalyticsEvent(EVENTS.SUBMISSION_FAILED, failed)
       } catch (markError) {
-        console.error('[draft] mark failed', markError)
+        reportError('[draft] mark failed', markError)
       }
     }
     return { kind: 'failed' }

@@ -5,6 +5,7 @@
  * Settings app while blocked.
  */
 
+import { reportError } from '@/src/shared/analytics/analytics'
 import { commonCopy, permissionCopy } from '@/src/shared/config/text'
 import consentCopy from '@/src/features/permissions/copy/consentDisclosure.json'
 import { routeAfterDeviceConsent } from '@/src/features/permissions/lib/deviceConsentRoute'
@@ -58,9 +59,9 @@ export function useConsentPermissions() {
         )
       }
       markAccepted()
-      router.replace(routeAfterDeviceConsent())
+      router.replace(await routeAfterDeviceConsent())
     } catch (err) {
-      console.error('[consent] permission request failed:', err)
+      reportError('[consent] permission request failed:', err)
       showAlert(
         commonCopy.somethingWentWrong,
         permissionCopy.requestFailedMessage,
@@ -89,10 +90,10 @@ export function useConsentPermissions() {
           done = true
           setBlocked(false)
           markAccepted()
-          router.replace(routeAfterDeviceConsent())
+          router.replace(await routeAfterDeviceConsent())
         }
       } catch (err) {
-        console.error('[consent] permission recheck failed:', err)
+        reportError('[consent] permission recheck failed:', err)
       } finally {
         checking = false
       }

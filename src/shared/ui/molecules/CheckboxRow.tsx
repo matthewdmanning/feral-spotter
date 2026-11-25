@@ -1,10 +1,10 @@
-import { Text } from '@/src/shared/ui/atoms/Text'
 import { Pressable } from 'react-native'
 import { CheckboxBox } from '@/src/shared/ui/atoms/CheckboxBox'
-import { styles } from '@/src/features/organizations/components/styles'
+import { Text } from '@/src/shared/ui/atoms/Text'
+import { styles } from './CheckboxRow.styles'
 
-/** One accessible checkbox target, with text that wraps at large font sizes. */
-export function SharingCheckbox({
+/** One accessible checkbox target, with a label that wraps at large font sizes. */
+export function CheckboxRow({
   label,
   checked,
   onChange,
@@ -17,7 +17,7 @@ export function SharingCheckbox({
 }) {
   return (
     <Pressable
-      style={styles.checkRow}
+      style={styles.row}
       accessibilityRole="checkbox"
       accessibilityLabel={label}
       accessibilityState={{ checked, disabled }}
@@ -25,7 +25,7 @@ export function SharingCheckbox({
       onPress={() => onChange(!checked)}
     >
       <CheckboxBox checked={checked} />
-      <Text style={styles.body}>{label}</Text>
+      <Text style={styles.label}>{label}</Text>
     </Pressable>
   )
 }

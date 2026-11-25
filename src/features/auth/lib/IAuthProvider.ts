@@ -7,8 +7,12 @@ export interface AuthUser {
   displayName?: string | null
 }
 
+/** How the signed-in account proves who it is: a password or a provider. */
+export type SignInMethod = 'password' | FederatedProviderId
+
 export interface IAuthProvider {
-  getToken(): Promise<string>
+  /** `forceRefresh` fetches a new token, e.g. to carry a fresh sign-in time. */
+  getToken(forceRefresh?: boolean): Promise<string>
   getCurrentUser(): AuthUser | null
   /** Federated Sign-In through an external provider portal (Google/Apple/Facebook). */
   signInWithProvider(providerId: FederatedProviderId): Promise<AuthUser>
@@ -26,6 +30,21 @@ export interface IAuthProvider {
    * when the session is too old; the user must sign in again first.
    */
   changeEmail(newEmail: string): Promise<void>
+  /** The signed-in account's sign-in method; null when signed out or unknown. */
+  signInMethod(): SignInMethod | null
+  /**
+   * Prove the signed-in user's identity again, for security-sensitive steps
+   * such as account deletion. A provider account opens its sign-in sheet; a
+   * password account needs `password`. Rejects 'SIGN_IN_CANCELLED' when the
+   * user dismisses the sheet.
+   */
+  reauthenticate(password?: string): Promise<void>
+  /**
+   * Whether the signed-in account still exists on the server: false once it
+   * is deleted or disabled, null when that cannot be told (offline, or
+   * signed out).
+   */
+  accountExists(): Promise<boolean | null>
   signOut(): Promise<void>
   onAuthStateChanged(cb: (user: AuthUser | null) => void): () => void
 }

@@ -28,6 +28,7 @@ let flagRequests: number
 let captureRequests: number
 
 function grantConsent(analytics: boolean | null) {
+  useConsentStore.getState().bindChoicesTo('account')
   useConsentStore.setState({
     accepted: true,
     acceptedVersion: CONSENT_VERSION,

@@ -15,7 +15,7 @@ import {
   type SharingSettings,
 } from '@/src/shared/types/Organizations'
 import { styles } from '@/src/features/organizations/components/styles'
-import { SharingCheckbox } from '@/src/features/organizations/components/SharingCheckbox'
+import { CheckboxRow } from '@/src/shared/ui/molecules/CheckboxRow'
 
 export function SharingFieldInputs({
   settings,
@@ -38,7 +38,7 @@ export function SharingFieldInputs({
     <>
       {SHARING_FIELD_KEYS.map((key) => (
         <View key={key} style={styles.fieldGroup}>
-          <SharingCheckbox
+          <CheckboxRow
             label={copy.shareFieldLabels[key]}
             checked={settings.fields[key]}
             disabled={disabled}

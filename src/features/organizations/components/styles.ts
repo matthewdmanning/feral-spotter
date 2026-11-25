@@ -16,11 +16,4 @@ export const styles = StyleSheet.create((theme) => ({
   // Inside a card: tighter than the card's own gap, so a group reads as one.
   permissionGroup: { gap: theme.spacing.sm },
   fieldGroup: { gap: theme.spacing.sm },
-  checkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.layout.stackGap,
-    minHeight: theme.controlHeight.touchTarget,
-    paddingVertical: theme.spacing.sm,
-  },
 }))

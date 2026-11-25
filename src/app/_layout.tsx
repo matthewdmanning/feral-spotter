@@ -9,6 +9,7 @@
  * react-navigation does not re-render screens on screenOptions changes.
  */
 
+import { reportError } from '@/src/shared/analytics/analytics'
 import { useOrganizationsEnabled } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 import { navigationCopy } from '@/src/shared/config/text'
 import { stackScreenOptions } from '@/src/shared/ui/molecules/stackScreenOptions'
@@ -55,7 +56,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     void initializeDraft().catch((error) => {
-      console.error('Could not restore the draft at start-up', error)
+      reportError('Could not restore the draft at start-up', error)
     })
   }, [])
 

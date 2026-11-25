@@ -55,16 +55,16 @@ describe('nextConsentRoute with the analytics step answered', () => {
 describe('routeAfterDeviceConsent', () => {
   afterEach(() => useAuthStore.setState({ user: null }))
 
-  it('sends a signed-out user to sign-in', () => {
+  it('sends a signed-out user to sign-in', async () => {
     useAuthStore.setState({ user: null })
-    expect(routeAfterDeviceConsent()).toBe('/sign-in')
+    expect(await routeAfterDeviceConsent()).toBe('/sign-in')
   })
 
-  it('sends a signed-in user on to their next consent step or home', () => {
+  it('sends a signed-in user on to their next consent step or home', async () => {
     useAuthStore.setState({ user: { uid: 'u1' } as never })
     useConsentStore.setState({ emailOptIn: null, analyticsAccepted: null })
-    expect(routeAfterDeviceConsent()).toBe('/email-opt-in')
+    expect(await routeAfterDeviceConsent()).toBe('/email-opt-in')
     useConsentStore.setState({ emailOptIn: false, analyticsAccepted: false })
-    expect(routeAfterDeviceConsent()).toBe('/(home-tabs)')
+    expect(await routeAfterDeviceConsent()).toBe('/(home-tabs)')
   })
 })

@@ -13,8 +13,9 @@ describe('ErrorBoundary crash reporting', () => {
 
   beforeEach(() => {
     captureExceptionSpy.mockClear()
-    registerCaptureException(captureExceptionSpy)
     useConsentStore.setState(useConsentStore.getInitialState())
+    useConsentStore.getState().bindChoicesTo('account')
+    registerCaptureException(captureExceptionSpy)
     jest.spyOn(console, 'error').mockImplementation(() => {})
   })
   it.each([

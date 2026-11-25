@@ -36,8 +36,14 @@ export interface AccountStore {
   deleteUser(uid: string): Promise<void>
 }
 
+export interface ConsentRecordStore {
+  /** Shrink the account's consent records to their tombstone (ADR-0009). */
+  retire(uid: string): Promise<void>
+}
+
 export interface ErasurePorts {
   email: EmailListProvider
+  consents: ConsentRecordStore
   analytics: AnalyticsEraser
   submissions: SubmissionStore
   accounts: AccountStore
@@ -61,5 +67,7 @@ export async function eraseAccount(
   await ports.submissions.deleteUserOrganizationPermissions(uid)
   await ports.submissions.deleteUserSubmissionBackups(uid)
   if (deleteSightings) await ports.submissions.deleteUserSubmissions(uid)
+  // Last before the Auth user: the records prove consent for every step above.
+  await ports.consents.retire(uid)
   await ports.accounts.deleteUser(uid)
 }

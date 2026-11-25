@@ -5,7 +5,7 @@ import { useOrganizationSharingStore } from '@/src/features/organizations/hooks/
 import { useOrganizationsFlag } from '@/src/features/organizations/hooks/useOrganizationsFlag'
 import { buildGrant } from '@/src/features/organizations/lib/permissions'
 import { DEFAULT_SHARING } from '@/src/shared/types/Organizations'
-import { organizationCopy } from '@/src/shared/config/text'
+import { historyCopy, organizationCopy } from '@/src/shared/config/text'
 import {
   createSubmissionCache,
   updateSubmissionCache,
@@ -48,6 +48,7 @@ it.each(['cloud-sighting', undefined])(
     })
     await updateSubmissionCache('sighting', {
       status: 'Submitted',
+      user_id: 'owner',
       cloud_submission_id: cloudSubmissionId,
       cats: [observedCat()],
     })
@@ -68,3 +69,18 @@ it.each(['cloud-sighting', undefined])(
     }
   },
 )
+
+it('hides a cached Sighting from another signed-in account even with its route ID', async () => {
+  useAuthStore.setState({ user: { uid: 'other', email: null }, isReady: true })
+  await createSubmissionCache('sighting', {
+    location_method: 'pin',
+    time_method: 'device',
+  })
+  await updateSubmissionCache('sighting', {
+    user_id: 'owner',
+    status: 'Submitted',
+  })
+
+  await render(<SightingDetailScreen />)
+  await screen.findByText(historyCopy.notFoundTitle)
+})

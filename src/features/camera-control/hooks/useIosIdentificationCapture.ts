@@ -1,3 +1,4 @@
+import { reportError } from '@/src/shared/analytics/analytics'
 import { useSettingsStore } from '@/src/features/settings/hooks/useSettingsStore'
 import {
   configureIosCameraForIdentification,
@@ -67,7 +68,7 @@ export function useIosIdentificationCapture(
   const handleCameraConfigured = useCallback(() => {
     if (!enabled || !device) return
     void configureIosCameraForIdentification(device.id).catch((error) => {
-      console.error('[useIosIdentificationCapture] configure:', error)
+      reportError('[useIosIdentificationCapture] configure:', error)
     })
   }, [device, enabled])
 
@@ -77,7 +78,7 @@ export function useIosIdentificationCapture(
     const deviceId = device.id
     return () => {
       void restoreIosAutomaticCapture(deviceId).catch((error) => {
-        console.error('[useIosIdentificationCapture] restore:', error)
+        reportError('[useIosIdentificationCapture] restore:', error)
       })
     }
   }, [device, enabled])

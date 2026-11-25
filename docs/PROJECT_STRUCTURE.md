@@ -10,9 +10,10 @@ src/
 ├── app/           # Expo Router routes — thin re-exports of screens only
 ├── providers/     # AppProviders (app layer)
 ├── workflows/     # app-level coordination across features
-│   └── photo-entry/        # camera/library entrypoints and source selection
+│   ├── photo-entry/        # camera/library entrypoints and source selection
+│   └── account-deletion/   # deletion guard, server erasure call, device wipe
 ├── features/
-│   ├── auth/              # sign-in, Registration, auth providers, entry gate
+│   ├── auth/              # sign-in, Registration, auth providers, entry gate, Consent records
 │   ├── permissions/       # onboarding, consent, photo, location, email opt-in
 │   ├── settings/          # settings screen + store, photo toggles
 │   ├── organizations/     # directory and core permissions; optional sharing/, membership/, interactions/
@@ -26,8 +27,10 @@ src/
 │   └── location/          # Live fix (liveFix.ts) + its tuning
 ├── shared/        # domain-agnostic or cross-cutting kernel
 │   ├── ui/{atoms,molecules,organisms}/   # Atomic Design UI kit
-│   ├── analytics/  consent/  hooks/  lib/   # incl. the Submission store + shared history cache
-│   └── config/  content/  types/  utils/
+│   ├── analytics/         # PostHog: client lifetime + identity (posthogClient), consent-gated capture + reportError (analytics), remote flags (featureFlags)
+│   ├── consent/           # consent store (disclosure, analytics, email opt-ins) + consent flow order
+│   ├── hooks/  lib/       # incl. the Submission store + shared history cache
+│   └── config/  types/  utils/
 ├── server-types/  # tsconfig.server.json includes it by path
 └── test-utils/
 ```

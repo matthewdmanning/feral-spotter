@@ -28,3 +28,21 @@ API facts were read from the EmailOctopus v2 and PostHog persons docs via Contex
 Firestore account-deletion guards immediately hide organization names and shares and prevent new writes. Cleanup removes memberships, permission snapshots, receipts, and transition data for either Sighting-deletion choice. Optional Sighting deletion follows, and Auth deletion runs last. A failed cleanup leaves Auth available for retry.
 
 See [organization permissions and erasure](2026-11-07-feat-organizations.md#permissions-and-erasure). Integration tests cover deletion guards and retry behavior; adapter tests verify Firestore cleanup on each attempt. No live erasure or deployment was performed.
+
+## 2026-11-25 — extension
+
+**Purpose:** Play requires in-app deletion; #433's app half was missing.
+**Change:** Settings → Account → Delete Account runs the deletion guard (decision record `docs/agents/ui-ux/decision-records/account-deletion.md`): warning with "Also delete my Sightings", a second warning when checked, re-authentication (password dialog, or the provider's sheet via `IAuthProvider.reauthenticate`), then the `deleteAccount` callable over HTTPS with a refreshed token. On success the device forgets the account (`wipeDeviceData`: draft, history cache, AsyncStorage, MMKV, account stores, camera cache, `posthog.reset()`), signs out and returns to the intro flow. Media-library photos stay. Hidden while `EXPO_PUBLIC_DELETE_ACCOUNT_URL` is unset. Erasure now also retires consent records ([consent records](2026-11-25-consent-records.md)). `SharingCheckbox` now renders the new shared `CheckboxRow`.
+**Tests:** `src/features/settings/screens/settings/__tests__/flow.accountDeletion.test.tsx`: both Sighting choices send the right flag and wipe the device; Cancel on the second warning deletes nothing; a server failure keeps the account and data. Mutation: skipping the second warning fails it.
+**Unverified:** no device drive; provider re-authentication and `revokeSelfPermissionsOnKill` not exercised; media library untouched only by construction.
+
+## 2026-11-25 — PR review fixes
+
+**Purpose:** Keep deletion tied to the account that opened the confirmation and stop device analytics during erasure.
+
+**Change:** The deletion flow verifies the account after re-authentication and token refresh, then checks it again before wiping the device. The PostHog client pauses before the request, resumes on a failed attempt for the same account, and drops local identity and queued events on success. [Consent record review fixes](2026-11-25-consent-records.md#2026-11-25--pr-review-fixes)
+
+## 2026-11-25 — fix (owner review of 1d1647b)
+
+**Purpose:** A lost server answer or a failed local wipe was reported as an ordinary failure or as completion.
+**Change:** `shared/lib/pendingDeletion.ts` (own MMKV instance) records the deletion before the request. A lost answer is reconciled with `IAuthProvider.accountExists`; unknown keeps the marker, keeps analytics off and says so. `wipeDeviceData` reports failure (failed step, or a send holding the draft); "Account deleted" success shows only after a full wipe. `AccountDeletionRuntime` resumes on start, foreground and backoff. The password action names its target; a provider failure never opens the password step; the copy scopes "no further use" to erased data. Tests: `flow.accountDeletion.test.tsx` (lost answer: gone, exists, unknown; failed wipe; busy draft; provider failure).
