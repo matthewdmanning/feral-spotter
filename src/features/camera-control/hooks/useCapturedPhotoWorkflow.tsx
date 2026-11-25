@@ -21,7 +21,11 @@ import {
   isAtPhotoLimit,
   showPhotoLimitReached,
 } from '@/src/features/draft-submission/hooks/usePhotoStore'
-import { captureEvent, EVENTS } from '@/src/shared/analytics/analytics'
+import {
+  captureEvent,
+  EVENTS,
+  reportError,
+} from '@/src/shared/analytics/analytics'
 import { startLocationCapture } from '@/src/core/location/liveFix'
 import { removePhotoFromDraft } from '@/src/features/draft-submission/hooks/removePhotoFromDraft'
 import {
@@ -189,7 +193,7 @@ export function useCapturedPhotoWorkflow({
     try {
       permitted = await gallerySavePermission.check()
     } catch (error) {
-      console.error('[useCapturedPhotoWorkflow] gallery permission:', error)
+      reportError('[useCapturedPhotoWorkflow] gallery permission:', error)
     }
     if (!permitted) {
       uris.forEach(releaseCapturedPhotoFile)
@@ -200,7 +204,7 @@ export function useCapturedPhotoWorkflow({
       try {
         await Asset.create(uri)
       } catch (error) {
-        console.error('[useCapturedPhotoWorkflow] Asset.create:', error)
+        reportError('[useCapturedPhotoWorkflow] Asset.create:', error)
       } finally {
         releaseCapturedPhotoFile(uri)
       }
@@ -230,7 +234,7 @@ export function useCapturedPhotoWorkflow({
       try {
         await capture()
       } catch (error) {
-        console.error(`[${logTag}] capture:`, error)
+        reportError(`[${logTag}] capture:`, error)
         captureEvent(EVENTS.PHOTO_CAPTURE_FAILED, {
           error: error instanceof Error ? error.message : String(error),
           ...failureProps(),

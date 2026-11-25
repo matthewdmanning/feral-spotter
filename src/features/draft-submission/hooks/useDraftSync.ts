@@ -6,6 +6,7 @@
  * when it resolves.
  */
 
+import { reportError } from '@/src/shared/analytics/analytics'
 import { useBoundingBoxStore } from '@/src/features/draft-submission/hooks/useBoundingBoxStore'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import {
@@ -95,7 +96,7 @@ export function useDraftSync(): void {
         )
       }
     })().catch((error) => {
-      console.error('[useDraftSync] create row', error)
+      reportError('[useDraftSync] create row', error)
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -105,7 +106,7 @@ export function useDraftSync(): void {
   useEffect(() => {
     void syncDraftToRow(cats, usePhotoStore.getState().photos).catch(
       (error) => {
-        console.error('[useDraftSync] syncDraftToRow', error)
+        reportError('[useDraftSync] syncDraftToRow', error)
       },
     )
   }, [cats, photoSignature])

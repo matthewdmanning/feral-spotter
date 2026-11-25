@@ -19,10 +19,10 @@
  *     only mounts once the user has accepted the consent disclosure AND the
  *     narrower analytics opt-in (see useConsentStore) — in addition to the
  *     existing IS_RELEASE_CANDIDATE gate at call sites. Before both are accepted,
- *     no PostHog SDK code runs at all — not just "events don't fire." The
- *     SDK does its own automatic capture (sessions, app lifecycle) as soon
- *     as it mounts, independent of fireAnalyticsEvent call sites, so gating
- *     only on general consent would let it run without the analytics opt-in.
+ *     no PostHog SDK client exists. The SDK does its own automatic capture
+ *     (sessions, app lifecycle, uncaught exceptions) independent of
+ *     captureEvent call sites, so on revocation the one client
+ *     (shared/analytics/posthogClient.ts) is opted out, not just unmounted.
  *   AlertHost       — draws every app-raised dialog (see useUIStore's
  *     showAlert). Mounted once, above every screen, so the app owns its
  *     confirmations instead of the OS drawing them un-themed.
@@ -47,6 +47,7 @@ import {
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import {
   IS_RELEASE_CANDIDATE,
+  clearPendingCaptures,
   registerCapture,
   registerCaptureException,
 } from '@/src/shared/analytics/analytics'
@@ -54,11 +55,17 @@ import {
   posthogFlagClient,
   registerFlagClient,
 } from '@/src/shared/analytics/featureFlags'
+import {
+  closePostHogClient,
+  openPostHogClient,
+  registerDeviceProperties,
+  screenNameFromSegments,
+  syncPostHogIdentity,
+} from '@/src/shared/analytics/posthogClient'
 import Constants from 'expo-constants'
-import * as Device from 'expo-device'
-import { usePathname } from 'expo-router'
+import { usePathname, useSegments } from 'expo-router'
 import { PostHogProvider, usePostHog } from 'posthog-react-native'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Appearance } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { UnistylesRuntime } from 'react-native-unistyles'
@@ -88,52 +95,50 @@ interface AppProvidersProps {
 /**
  * Registers both capturers app-wide as soon as PostHog mounts, rather than
  * relying on a specific screen having been visited first. Both funnel events
- * (e.g. camera-open, which fires before the submission/reports screens that
- * used to own this registration ever mount) and crashes can originate
- * anywhere in the tree, so this must bind unconditionally on mount.
+ * (e.g. camera-open) and crashes can originate anywhere in the tree, so this
+ * binds unconditionally on mount; calls made before it binds are replayed
+ * (analytics.ts). Unbinds on unmount so nothing reaches a revoked client.
  */
 function AnalyticsBridge() {
   const posthog = usePostHog()
-  const user = useAuthStore((s) => s.user)
+  const uid = useAuthStore((s) => s.user?.uid ?? null)
   const isAuthReady = useAuthStore((s) => s.isReady)
-  const identifiedUserId = useRef<string | null>(null)
+  const segments = useSegments()
+  const screenName = screenNameFromSegments(segments)
 
   useEffect(() => {
-    if (!posthog) return
+    registerDeviceProperties(posthog)
     registerCapture(posthog.capture.bind(posthog))
     registerCaptureException(posthog.captureException.bind(posthog))
-    // PostHog already supplies OS/app metadata. Add only the hardware fields
-    // needed to compare camera performance without creating a custom device ID.
-    posthog.register({
-      device_model: Device.modelName,
-      device_manufacturer: Device.manufacturer,
-      is_physical_device: Device.isDevice,
-    })
     // Remote flags come from this SDK too.
     registerFlagClient(posthogFlagClient(posthog))
-    return () => registerFlagClient(null)
+    return () => {
+      registerCapture(null)
+      registerCaptureException(null)
+      registerFlagClient(null)
+    }
   }, [posthog])
 
   // Firebase's UID is the stable app identifier. This bridge mounts only after
   // analytics consent, so restoring an existing session identifies as soon as
   // collection is permitted; later captures and exception reports inherit it.
+  // Identity is read once persisted state has loaded (see syncPostHogIdentity).
   useEffect(() => {
-    if (!posthog || !isAuthReady) return
-
-    if (!user) {
-      if (identifiedUserId.current) posthog.reset()
-      identifiedUserId.current = null
-      return
+    if (!isAuthReady) return
+    let current = true
+    void posthog.ready().then(() => {
+      if (current) syncPostHogIdentity(posthog, uid)
+    })
+    return () => {
+      current = false
     }
+  }, [isAuthReady, posthog, uid])
 
-    if (identifiedUserId.current === user.uid) return
-    if (identifiedUserId.current) posthog.reset()
-
-    // UID is sufficient for correlation. Do not send email when crash and
-    // performance analysis does not require directly identifying information.
-    posthog.identify(user.uid)
-    identifiedUserId.current = user.uid
-  }, [isAuthReady, posthog, user])
+  // Expo Router screens, by route pattern. The SDK's own screen autocapture
+  // reads React Navigation route names ("index"), which repeat across stacks.
+  useEffect(() => {
+    void posthog.screen(screenName)
+  }, [posthog, screenName])
 
   return null
 }
@@ -173,6 +178,11 @@ const POSTHOG_HOST_STYLE = {
   height: 0,
 } as const
 
+const POSTHOG_AUTOCAPTURE = {
+  captureScreens: false,
+  captureTouches: false,
+} as const
+
 export function AppProviders({ children }: AppProvidersProps) {
   const hasAcceptedConsent = useConsentStore(
     (s) => s.accepted && s.acceptedVersion === CONSENT_VERSION,
@@ -181,6 +191,23 @@ export function AppProviders({ children }: AppProvidersProps) {
     (s) => s.analyticsAccepted === true,
   )
   const [queryClient] = useState(createQueryClient)
+  const analyticsOn =
+    IS_RELEASE_CANDIDATE &&
+    !!POSTHOG_KEY &&
+    !!POSTHOG_HOST &&
+    hasAcceptedConsent &&
+    hasAcceptedAnalytics
+  // Idempotent: the one client, opted in while the gate is open.
+  const posthog =
+    analyticsOn && POSTHOG_KEY && POSTHOG_HOST
+      ? openPostHogClient(POSTHOG_KEY, POSTHOG_HOST)
+      : null
+
+  useEffect(() => {
+    if (analyticsOn) return
+    closePostHogClient()
+    clearPendingCaptures()
+  }, [analyticsOn])
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -195,37 +222,19 @@ export function AppProviders({ children }: AppProvidersProps) {
           while consented gave them a different parent each time consent
           flipped (and on every cold start, as consent hydrates), and React
           remounted the whole app. Only AnalyticsBridge reads PostHog. */}
-        {IS_RELEASE_CANDIDATE &&
-          POSTHOG_KEY &&
-          POSTHOG_HOST &&
-          hasAcceptedConsent &&
-          hasAcceptedAnalytics && (
-            <PostHogProvider
-              // Its wrapper View defaults to flex: 1; as a sibling it must take
-              // no space from the app.
-              style={POSTHOG_HOST_STYLE}
-              apiKey={POSTHOG_KEY}
-              options={{
-                host: POSTHOG_HOST,
-                // Capture unhandled JS exceptions globally. The root ErrorBoundary
-                // reports render failures separately, so exclude console capture to
-                // avoid React's console logging generating duplicate exceptions.
-                // uncaughtExceptions/unhandledRejections are opt-in per-key, not
-                // deep-merged with defaults — omitting either silently disables
-                // it (confirmed against installed posthog-react-native source).
-                errorTracking: {
-                  autocapture: {
-                    uncaughtExceptions: true,
-                    unhandledRejections: true,
-                    console: [],
-                  },
-                },
-              }}
-              debug={__DEV__}
-            >
-              <AnalyticsBridge />
-            </PostHogProvider>
-          )}
+        {posthog && (
+          <PostHogProvider
+            // Its wrapper View defaults to flex: 1; as a sibling it must take
+            // no space from the app.
+            style={POSTHOG_HOST_STYLE}
+            client={posthog}
+            // AnalyticsBridge tracks screens; touch autocapture stays off.
+            autocapture={POSTHOG_AUTOCAPTURE}
+            debug={__DEV__}
+          >
+            <AnalyticsBridge />
+          </PostHogProvider>
+        )}
         <ErrorBoundary>{children}</ErrorBoundary>
       </GestureHandlerRootView>
     </QueryClientProvider>

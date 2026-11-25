@@ -3,6 +3,7 @@
  * One Sighting from history, for the read-only detail view.
  */
 
+import { reportError } from '@/src/shared/analytics/analytics'
 import {
   getSubmissionCache,
   type SubmissionCacheFile,
@@ -27,7 +28,7 @@ export function useSighting(id: string | undefined): SightingResult {
       })
       // A failed read shows "not found" rather than loading forever.
       .catch((error) => {
-        console.error('[useSighting]', error)
+        reportError('[useSighting]', error)
         if (active) setLoaded({ id, sighting: null })
       })
     return () => {

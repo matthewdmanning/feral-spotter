@@ -1,0 +1,121 @@
+import { http, HttpResponse } from 'msw'
+import type { PostHog } from 'posthog-react-native'
+import { server } from '@/src/test-utils/mswServer'
+import {
+  POSTHOG_OPTIONS,
+  closePostHogClient,
+  openPostHogClient,
+  resetPostHogClient,
+  screenNameFromSegments,
+  syncPostHogIdentity,
+} from '@/src/shared/analytics/posthogClient'
+
+/**
+ * The app's PostHog client through the real SDK (memory persistence); its
+ * startup requests are answered by MSW and nothing is flushed. Catches: a revoked client that keeps sending,
+ * a re-consent that builds a second client, and a sign-in that links one
+ * user's person to another's.
+ */
+
+const HOST = 'https://posthog.example.com'
+
+type Message = { event?: string; properties?: Record<string, unknown> }
+
+function open(): PostHog {
+  return openPostHogClient('public-project-token', HOST, {
+    ...POSTHOG_OPTIONS,
+    persistence: 'memory',
+    preloadFeatureFlags: false,
+    captureAppLifecycleEvents: false,
+    errorTracking: { autocapture: {} },
+    // Nothing is sent: the tests read the SDK's own enqueue events.
+    flushAt: 1000,
+    flushInterval: 0,
+  })
+}
+
+function record(posthog: PostHog, type: 'capture' | 'identify'): Message[] {
+  const seen: Message[] = []
+  posthog.on(type, (message: Message | string) => {
+    if (typeof message !== 'string') seen.push(message)
+  })
+  return seen
+}
+
+beforeEach(() => {
+  server.use(http.all(`${HOST}/*`, () => HttpResponse.json({})))
+})
+
+afterEach(resetPostHogClient)
+
+describe('PostHog client lifetime', () => {
+  it('stops capturing after revocation and resumes on the same client', async () => {
+    const posthog = open()
+    await posthog.ready()
+    const captured = record(posthog, 'capture')
+
+    closePostHogClient()
+    posthog.capture('after_revoke')
+    expect(captured).toHaveLength(0)
+
+    expect(open()).toBe(posthog)
+    posthog.capture('after_regrant')
+    expect(captured.map((m) => m.event)).toEqual(['after_regrant'])
+  })
+})
+
+describe('syncPostHogIdentity', () => {
+  it('does not link a new user to the previous one', async () => {
+    const posthog = open()
+    await posthog.ready()
+    // Linked to user A's person by A's sign-in.
+    const linkedToA = posthog.getDistinctId()
+    syncPostHogIdentity(posthog, 'user-a')
+    const identifies = record(posthog, 'identify')
+
+    syncPostHogIdentity(posthog, 'user-b')
+
+    expect(posthog.getDistinctId()).toBe('user-b')
+    expect(identifies).toHaveLength(1)
+    const anon = identifies[0].properties?.$anon_distinct_id
+    expect([linkedToA, 'user-a']).not.toContain(anon)
+  })
+
+  it('merges the anonymous identity on first sign-in', async () => {
+    const posthog = open()
+    await posthog.ready()
+    const anonymous = posthog.getDistinctId()
+    const identifies = record(posthog, 'identify')
+
+    syncPostHogIdentity(posthog, 'user-a')
+    syncPostHogIdentity(posthog, 'user-a')
+
+    expect(identifies).toHaveLength(1)
+    expect(identifies[0].properties?.$anon_distinct_id).toBe(anonymous)
+  })
+
+  it('returns to anonymous on sign-out and keeps device properties', async () => {
+    const posthog = open()
+    await posthog.ready()
+    syncPostHogIdentity(posthog, 'user-a')
+    const captured = record(posthog, 'capture')
+
+    syncPostHogIdentity(posthog, null)
+    posthog.capture('signed_out_event')
+
+    expect(posthog.getDistinctId()).not.toBe('user-a')
+    expect(captured[0].properties).toHaveProperty('is_physical_device')
+  })
+})
+
+describe('screenNameFromSegments', () => {
+  it.each([
+    [['(home-tabs)'], '/'],
+    [['(home-tabs)', 'feral-reports'], '/feral-reports'],
+    [['sighting', '[id]'], '/sighting/[id]'],
+    [['organizations', '[id]', 'members'], '/organizations/[id]/members'],
+    [['submission', 'index'], '/submission'],
+  ])('%p → %s', (segments, name) => {
+    expect(screenNameFromSegments(segments)).toBe(name)
+  })
+})

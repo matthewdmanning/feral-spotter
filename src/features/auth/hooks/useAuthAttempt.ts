@@ -4,6 +4,7 @@
  * then the consent flow on success or an alert on failure.
  */
 
+import { reportError } from '@/src/shared/analytics/analytics'
 import { nextConsentRoute } from '@/src/shared/consent/consentFlow'
 import { showAlert } from '@/src/shared/hooks/useUIStore'
 import { startOver } from '@/src/shared/lib/navigation'
@@ -42,7 +43,7 @@ export function useAuthAttempt(): {
         startOver(nextConsentRoute())
       } catch (err) {
         if (isCancellation(err)) return
-        console.error(`${failure.tag} failed:`, err)
+        reportError(`${failure.tag} failed:`, err)
         showAlert(failure.title, failure.message)
       } finally {
         running.current = false

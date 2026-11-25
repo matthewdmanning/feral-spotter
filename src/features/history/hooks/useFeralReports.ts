@@ -4,8 +4,11 @@
  * spots, and handles refresh.
  */
 
-import { EVENTS, IS_RELEASE_CANDIDATE } from '@/src/shared/analytics/analytics'
-import { fireAnalyticsEvent } from '@/src/features/draft-submission/lib/analytics'
+import {
+  EVENTS,
+  captureEvent,
+  reportError,
+} from '@/src/shared/analytics/analytics'
 import { useAuth } from '@/src/features/auth/lib/useAuth'
 import {
   getAllSubmissionCaches,
@@ -58,10 +61,17 @@ async function readHistory(): Promise<History> {
   }
 }
 
+/** One event per view, empty history included: an empty list is friction too. */
 function fireViewed(all: SubmissionCacheFile[]) {
-  if (IS_RELEASE_CANDIDATE && all.length > 0) {
-    all.forEach((cache) => fireAnalyticsEvent(EVENTS.REPORTS_VIEWED, cache))
-  }
+  const count = (status: SubmissionCacheFile['status']) =>
+    all.filter((cache) => cache.status === status).length
+  captureEvent(EVENTS.SIGHTING_HISTORY_VIEWED, {
+    sighting_count: all.length,
+    in_progress_count: count('In Progress'),
+    sending_count: count('Sending'),
+    submitted_count: count('Submitted'),
+    failed_count: count('Failed'),
+  })
 }
 
 export function useFeralReports(): FeralReportsResult {
@@ -87,7 +97,7 @@ export function useFeralReports(): FeralReportsResult {
         if (fire) fireViewed(next.all)
       })
       .catch((error) => {
-        console.error('[useFeralReports] read history', error)
+        reportError('[useFeralReports] read history', error)
         if (readId === latestRead.current) setStatus('failed')
       })
   }, [])
@@ -99,7 +109,7 @@ export function useFeralReports(): FeralReportsResult {
 
   // The tab stays mounted, so a Sighting sent since the last visit would
   // not show until a pull-to-refresh. Re-read on every return to the tab —
-  // silently: REPORTS_VIEWED stays a mount/refresh event, not per tab visit.
+  // silently: SIGHTING_HISTORY_VIEWED stays a mount/refresh event, not per tab visit.
   const focusedOnce = useRef(false)
   useFocusEffect(
     useCallback(() => {

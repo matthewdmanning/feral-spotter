@@ -1,16 +1,10 @@
 /**
  * shared/analytics/analytics.ts
  *
- * PostHog analytics, guarded by IS_RELEASE_CANDIDATE.
- * Events are only fired in release candidate builds.
- *
- * Setup:
- *   npx expo install posthog-react-native
- *   Wrap app root with <PostHogProvider apiKey="...">
- *
- * IS_RELEASE_CANDIDATE is read from Expo's app config extra field.
- * Set in app.config.js / app.json:
- *   "extra": { "isReleaseCandidate": true }
+ * PostHog analytics. Every capture path is gated by analyticsAllowed():
+ * release candidate build (IS_RELEASE_CANDIDATE, from app config extra),
+ * general consent, and the analytics opt-in. The SDK client itself lives in
+ * providers/AppProviders.tsx.
  */
 
 import { IS_RELEASE_CANDIDATE } from '@/src/shared/config/constants'
@@ -28,7 +22,11 @@ export const EVENTS = {
   SUBMISSION_SENDING: 'submission_sending',
   SUBMISSION_SUBMITTED: 'submission_submitted',
   SUBMISSION_FAILED: 'submission_failed',
-  REPORTS_VIEWED: 'feral_reports_viewed',
+  /**
+   * One per history read (mount, pull-to-refresh), with counts. Replaces
+   * `feral_reports_viewed`, which fired once per cached Submission.
+   */
+  SIGHTING_HISTORY_VIEWED: 'sighting_history_viewed',
   CAMERA_OPENED: 'camera_opened',
   CAMERA_DEVICE_READY: 'camera_device_ready',
   CAMERA_NATIVE_DIAGNOSTIC: 'camera_native_diagnostic',
@@ -47,27 +45,60 @@ export const EVENTS = {
 export type AnalyticsEvent = (typeof EVENTS)[keyof typeof EVENTS]
 
 // ─── PostHog singleton access ─────────────────────────────────────────────────
-// We import usePostHog() at call sites for hook contexts.
-// For non-hook contexts (utils), use the client directly if needed.
+// AnalyticsBridge (providers/AppProviders.tsx) registers the SDK's capturers
+// while PostHog is mounted, and unregisters them (null) when it unmounts.
 
-let registeredCapture:
-  ((event: string, props?: PostHogEventProperties) => void) | null = null
+type Capture = (event: string, props?: PostHogEventProperties) => void
+type CaptureException = (error: unknown, extra?: PostHogEventProperties) => void
 
-/** Call once in a component that has PostHog context to register the capturer. */
-export function registerCapture(
-  fn: (event: string, props?: PostHogEventProperties) => void,
-): void {
-  registeredCapture = fn
+let registeredCapture: Capture | null = null
+let registeredCaptureException: CaptureException | null = null
+
+/**
+ * Calls made after consent but before the SDK registers (#197: consent flips,
+ * then navigation fires events before AnalyticsBridge's effect runs). Replayed
+ * on registration and re-checked against the gate. Past the cap the oldest is
+ * dropped, so a build with no PostHog configuration cannot grow it unbounded.
+ */
+type Pending =
+  | { kind: 'event'; event: string; props?: PostHogEventProperties }
+  | { kind: 'exception'; error: unknown; extra?: PostHogEventProperties }
+
+export const MAX_PENDING_CAPTURES = 50
+const pending: Pending[] = []
+
+function enqueue(item: Pending): void {
+  if (pending.length >= MAX_PENDING_CAPTURES) pending.shift()
+  pending.push(item)
 }
 
-let registeredCaptureException:
-  ((error: unknown, extra?: PostHogEventProperties) => void) | null = null
+function replayPending(): void {
+  const capture = registeredCapture
+  const captureError = registeredCaptureException
+  if (!capture || !captureError) return
+  const items = pending.splice(0)
+  if (!analyticsAllowed()) return
+  for (const item of items) {
+    if (item.kind === 'event') capture(item.event, item.props)
+    else captureError(item.error, item.extra)
+  }
+}
 
-/** Call once in a component that has PostHog context to register the exception capturer. */
-export function registerCaptureException(
-  fn: (error: unknown, extra?: PostHogEventProperties) => void,
-): void {
+/** Register the SDK's capture; null on unmount. Replays pending calls. */
+export function registerCapture(fn: Capture | null): void {
+  registeredCapture = fn
+  replayPending()
+}
+
+/** Register the SDK's exception capture; null on unmount. Replays pending calls. */
+export function registerCaptureException(fn: CaptureException | null): void {
   registeredCaptureException = fn
+  replayPending()
+}
+
+/** Test seam: drop every pending call. */
+export function clearPendingCaptures(): void {
+  pending.length = 0
 }
 
 /** Same gate as every capture path: release candidate build, general consent, analytics opt-in. */
@@ -81,7 +112,7 @@ export function analyticsAllowed(): boolean {
  * Fire a PostHog event that isn't tied to a submission cache file (e.g. a
  * funnel or failure event from the camera/annotate flow). Same gating as
  * every capture path. Sighting events go through `fireAnalyticsEvent`
- * (lib/submission/analytics.ts).
+ * (features/draft-submission/lib/analytics.ts).
  */
 export function captureEvent(
   event: AnalyticsEvent,
@@ -89,19 +120,17 @@ export function captureEvent(
 ): void {
   if (!analyticsAllowed()) return
   if (!registeredCapture) {
-    console.warn(
-      '[analytics] capturer not registered — call registerCapture() in a PostHog-wrapped component',
-    )
+    enqueue({ kind: 'event', event, props })
     return
   }
-
   registeredCapture(event, props)
 }
 
 /**
- * Report an exception to PostHog, gated identically to every other capture
- * path (release candidate, consent, analytics opt-in) — a stale registered capturer
- * must not fire post-revocation.
+ * Report an exception to PostHog Error Tracking, gated identically to every
+ * other capture path — a stale registered capturer must not fire
+ * post-revocation. Use for handled failures the user felt (a failed send, a
+ * failed capture) so they carry a stack, not only a funnel event.
  */
 export function captureException(
   error: unknown,
@@ -109,11 +138,22 @@ export function captureException(
 ): void {
   if (!analyticsAllowed()) return
   if (!registeredCaptureException) {
-    console.warn(
-      '[analytics] exception capturer not registered — call registerCaptureException() in a PostHog-wrapped component',
-    )
+    enqueue({ kind: 'exception', error, extra })
     return
   }
-
   registeredCaptureException(error, extra)
+}
+
+/**
+ * Log a handled failure and report it to Error Tracking with its call site
+ * as `error_source`, so failures the app recovers from still show up
+ * grouped. `source` is the console tag. Keep PII out of `extra`.
+ */
+export function reportError(
+  source: string,
+  error: unknown,
+  extra?: PostHogEventProperties,
+): void {
+  console.error(source, error)
+  captureException(error, { error_source: source, ...extra })
 }

@@ -1,3 +1,4 @@
+import { reportError } from '@/src/shared/analytics/analytics'
 import { cameraCopy } from '@/src/shared/config/text'
 import { NativeIdentificationCameraView } from '@/modules/native-identification-camera'
 import { useNativeCameraCapture } from '@/src/features/camera-control/hooks/useNativeCameraCapture'
@@ -111,9 +112,9 @@ export function NativeCameraScreen() {
           onCameraDiagnostic={handleCameraDiagnostic}
           onCameraError={(event) => {
             setIsCameraReady(false)
-            console.error(
+            reportError(
               '[NativeCameraScreen]',
-              event.nativeEvent?.message ?? 'Native camera error',
+              new Error(event.nativeEvent?.message ?? 'Native camera error'),
             )
           }}
         />

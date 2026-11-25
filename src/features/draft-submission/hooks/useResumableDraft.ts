@@ -3,6 +3,7 @@
  * True while the newest draft can be resumed from Home.
  */
 
+import { reportError } from '@/src/shared/analytics/analytics'
 import {
   getAllSubmissionCaches,
   getCurrentCacheId,
@@ -32,7 +33,7 @@ export function useResumableDraft(): boolean {
         setResumable(isResumableDraft(caches[0], Date.now(), currentId))
       })
       .catch((error) => {
-        console.error('[useResumableDraft]', error)
+        reportError('[useResumableDraft]', error)
       })
     // The read is async, so a blur mid-flight would otherwise land a stale
     // answer on a screen the user has already left.
