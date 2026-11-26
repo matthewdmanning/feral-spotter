@@ -6,7 +6,8 @@
 # Local build/debug artifacts
 .claude-build-logs/
 window_dump.xml
-.codex/
+.codex/*
+!.codex/agents/
 emulator_tools/screenshots/
 modules/native-identification-camera/android/build
 
