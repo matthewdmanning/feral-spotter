@@ -76,3 +76,7 @@ Classify each file you write or edit. Test: does it describe one moment or one t
 ## Universal rules
 
 - For branch, commit and PR hygiene, use the global git-workflow rules. For git mechanics, use [git.md](git.md).
+- Before any git write, confirm `.githooks/pre-commit` runs gitleaks.
+- Never force-delete a branch or worktree.
+- Before any overwrite or delete, make a backup (branch, stash or copy). When done, remove the worktrees you created.
+- After two failed fixes, stop and report.
