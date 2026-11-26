@@ -22,7 +22,7 @@ First read `docs/agents/code-review-protocol.md` and follow it exactly. Lens ID:
    doing what a `src/shared/` module already does. Grep by behavior, not
    name.
 3. **Copy-paste across units**: near-identical blocks (≥ ~8 lines or same
-   algorithm) in two places. Use `grep -rn` on distinctive lines.
+   algorithm) in two places. Use `rg -n` on distinctive lines.
 4. **Parallel sources of truth**: duplicate constants, copy strings, limits,
    types mirrored by hand between `src/` and `functions/src/` or
    `src/server-types/`.
@@ -37,6 +37,4 @@ move per `PROJECT_STRUCTURE.md` (down to the lower shared level).
 - Hand-rolled mocks for libraries listed in `docs/agents/testing.md`.
 - Two tests asserting the same states; recommend which to delete.
 - Tests of a duplicate helper that the canonical one's tests already cover.
-
-Tool names above come from Claude Code. In Codex use rg for Grep and Glob, the shell for Bash, and apply_patch for Edit and Write. Codex cannot restrict tools per agent, so obey the limits in this prompt yourself.
 '''

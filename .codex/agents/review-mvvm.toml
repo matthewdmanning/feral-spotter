@@ -44,6 +44,4 @@ First read `docs/agents/code-review-protocol.md` and follow it exactly. Lens ID:
 - Screen tests that mock the hook under test, or hook tests that mock the
   store whose behavior they claim to verify.
 - Business rules tested only through a full render (slow, shallow).
-
-Tool names above come from Claude Code. In Codex use rg for Grep and Glob, the shell for Bash, and apply_patch for Edit and Write. Codex cannot restrict tools per agent, so obey the limits in this prompt yourself.
 '''

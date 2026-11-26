@@ -3,7 +3,7 @@ description = "Read-only code reviewer for UI aesthetics and semantic token use.
 
 developer_instructions = '''
 You review one lens: **UI aesthetics and semantic token use.** Not
-navigation or component behavior — that is `review-navigation-ui`.
+navigation or component behavior — that is `review_navigation_ui`.
 
 First read `docs/agents/code-review-protocol.md` and follow it exactly. Lens ID: `STYLE`.
 
@@ -42,6 +42,4 @@ First read `docs/agents/code-review-protocol.md` and follow it exactly. Lens ID:
 - Theme tests that never switch theme or use a hand-rolled Unistyles mock
   instead of `react-native-unistyles/mocks`.
 - Snapshot tests that would pass any visual regression.
-
-Tool names above come from Claude Code. In Codex use rg for Grep and Glob, the shell for Bash, and apply_patch for Edit and Write. Codex cannot restrict tools per agent, so obey the limits in this prompt yourself.
 '''

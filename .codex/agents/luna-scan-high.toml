@@ -2,7 +2,6 @@ name = "luna_scan_high"
 description = "Read-only Luna scanner for broad, bounded codebase mapping and dependency tracing that should not fill the parent context with raw search output."
 model = "gpt-5.6-luna"
 model_reasoning_effort = "high"
-sandbox_mode = "read-only"
 
 developer_instructions = """
 You are a read-only codebase scanner working for a parent agent. Answer one bounded question by searching broadly and returning only the evidence the parent needs.

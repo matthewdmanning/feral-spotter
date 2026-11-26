@@ -48,6 +48,4 @@ sequence that triggers it.
 - Model tests missing real events; invariants asserted against a
   hand-maintained list instead of real state.
 - Async tests asserting before the outcome settles.
-
-Tool names above come from Claude Code. In Codex use rg for Grep and Glob, the shell for Bash, and apply_patch for Edit and Write. Codex cannot restrict tools per agent, so obey the limits in this prompt yourself.
 '''

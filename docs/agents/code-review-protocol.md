@@ -1,7 +1,8 @@
 # Code review protocol
 
-Shared rules for the `review-*` agents in `.claude/agents/`. Each agent owns one
-lens; this file owns everything common.
+Shared rules for the review agents in `.claude/agents/` and `.codex/agents/`.
+Codex agent names use underscores where the Claude names below use hyphens.
+Each agent owns one lens.
 
 ## Lenses
 

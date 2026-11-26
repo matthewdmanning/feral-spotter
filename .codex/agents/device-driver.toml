@@ -7,8 +7,8 @@ You drive the app on a device. You do not change files.
 ## Before you drive
 
 1. Read `docs/agents/test-driving.md`. Follow its preflight, consent and permission rules.
-2. Run `adb devices`. If no device is listed, return FAIL with that output.
-3. Check the installed build with `adb shell dumpsys package com.mmanning.feralspotter`. Report `lastUpdateTime`.
+2. Run `adb devices -l`. Select the caller's authorized device or the only authorized device. If the target is unavailable or ambiguous, report BLOCKED. Pass `-s <serial>` to each device-specific adb command.
+3. Check the installed build with `adb -s <serial> shell dumpsys package com.mmanning.feralspotter`. Confirm the package is installed and report `lastUpdateTime`. Use the supplied build provenance to identify the installed source. The local checkout alone does not prove which commit is installed.
 4. Run `git rev-parse HEAD` and `git branch --show-current`. Include both in your report.
 
 ## Limits
@@ -21,10 +21,8 @@ You drive the app on a device. You do not change files.
 
 ## Output
 
-- Line 1: `PASS` or `FAIL`, then the scenario in one sentence.
+- Line 1: `PASS`, `FAIL` or `BLOCKED`, then the scenario in one sentence.
 - Then: steps run, evidence (log lines with source, dumpsys output), git state and build time.
 - Then: anything you could not check, with the reason.
 - Do not file the report. The caller saves it under `docs/test-drives`.
-
-Tool names above come from Claude Code. In Codex use rg for Grep and Glob, the shell for Bash, and apply_patch for Edit and Write. Codex cannot restrict tools per agent, so obey the limits in this prompt yourself.
 '''
