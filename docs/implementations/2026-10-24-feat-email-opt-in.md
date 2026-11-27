@@ -150,3 +150,8 @@ tags:
 **Purpose** — Issue #507 reports that Settings tells users to sign out even though the app offers no sign-out control.
 
 **Change** — The email error explains that updating the address requires a recent sign-in. The existing Settings email test checks the revised message.
+
+## 2026-11-27 — fix
+
+**Purpose:** a cold start to `/intro-flow` logged four unhandled `PRELOAD` errors in dev (#495). `NativeTabs` preloads the Reports and Settings tabs on mount, and the gate then replaced the route in the same cold start.
+**Change:** `useEntryGate` now returns whether the tabs may show, and the `(home-tabs)` layout runs it instead of Home. The layout renders no tabs until a consented, signed-in user is ready. The gate model test moved to `src/features/auth/hooks/__tests__/useEntryGate.model.test.tsx` and also asserts that tabs show only in the ready state. Verified: `tsc`, ESLint, the gate test, and a cold start on the Pixel 7 dev client (intro screen, 0 `PRELOAD` errors, 0 "initial navigation state" errors). Unverified on device: a signed-in cold start to Home.

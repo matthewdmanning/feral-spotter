@@ -1,8 +1,10 @@
 /**
  * features/auth/hooks/useEntryGate.ts
- * The app-wide gate Home runs: send a new device to the intro flow, a
- * signed-out user to sign-in, and a signed-in user with an unanswered
- * consent step to that step.
+ * The app-wide gate the tab layout runs: send a new device to the intro
+ * flow, a signed-out user to sign-in, and a signed-in user with an unanswered
+ * consent step to that step. Returns true once the user may see the tabs.
+ * The layout renders no tabs before that, so NativeTabs never sends PRELOAD
+ * actions to a navigator the redirect is about to unmount (#495).
  */
 
 import { nextConsentRoute } from '@/src/shared/consent/consentFlow'
@@ -15,7 +17,7 @@ import { useAuth } from '@/src/features/auth/lib/useAuth'
 import { router } from 'expo-router'
 import { useEffect } from 'react'
 
-export function useEntryGate(): void {
+export function useEntryGate(): boolean {
   const { user, isReady } = useAuth()
   const uid = user?.uid ?? null
   const consentHydrated = useConsentHydrated()
@@ -50,4 +52,5 @@ export function useEntryGate(): void {
       }
     }
   }, [isReady, uid, consentHydrated])
+  return isReady && consentHydrated && hasAcceptedConsent() && uid !== null
 }
