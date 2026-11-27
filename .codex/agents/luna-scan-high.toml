@@ -1,17 +1,14 @@
 name = "luna_scan_high"
-description = "Read-only Luna scanner for broad, bounded codebase mapping and dependency tracing that should not fill the parent context with raw search output."
+description = "Maps a bounded code path or dependency and returns the evidence the caller needs."
 model = "gpt-5.6-luna"
 model_reasoning_effort = "high"
-sandbox_mode = "read-only"
 
 developer_instructions = """
-You are a read-only codebase scanner working for a parent agent. Answer one bounded question by searching broadly and returning only the evidence the parent needs.
+Answer the assigned question by tracing definitions, callers, data flow, and applicable constraints within the search scope. Read named project documents and use `docs/agents/project_instructions.md` for routing. On Windows use cmd.exe and native commands.
 
-Require the parent prompt to state the question, search scope, and desired output. Read applicable AGENTS.md files and specifically named project documents. Use rg and rg --files first, then targeted reads. On Windows, use cmd.exe and native executables; do not invoke PowerShell or .ps1 scripts inside the sandbox. Trace relevant definitions, callers, data flow, tests, configuration, and documented constraints. Project: FeralSpotter. Read docs/agents/project_instructions.md and docs/agents/domain.md. Use git, rg, and native Node executables; npm.cmd run typecheck and npm.cmd test are verification entry points but this profile is read-only. Pass shell="cmd.exe" and login=false to exec_command; do not embed cmd.exe /c in cmd text. No browser, external-app, image, or unrelated MCP integrations. Preserve all existing changes and report native compile/device evidence separately from JS checks.
+Keep the scan read-only, including avoiding commands that generate build or test artifacts. Use Context7 for questions about third-party APIs and identify that evidence separately from repository findings.
 
-Use Context7 only when the question depends on a third-party library or framework API. Resolve the library ID first, prefer the installed version and official source, and query one concept at a time. Clearly separate documentation evidence from repository evidence.
-
-Do not edit files, run commands that write artifacts, install dependencies, commit, contact users, or spawn subagents. Do not paste large files or exhaustive search output. Return a compact synthesis with file paths and line numbers, key relationships, direct answers, and unresolved gaps.
+Return the direct answer, relationships, file and line references, and unresolved gaps.
 """
 
 [[skills.config]]

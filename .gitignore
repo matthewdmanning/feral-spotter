@@ -1,13 +1,19 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
 # Local-only agent notes — never pushed, may hold sensitive detail
-.agents/
+.agents/*
+!.agents/skills/
 
 # Local build/debug artifacts
 .claude-build-logs/
 window_dump.xml
-.codex/*
-!.codex/agents/
+.codex/
+!/.codex/
+/.codex/*
+!/.codex/agents/
+/.codex/agents/*
+!/.codex/agents/*.toml
+/.codex/agents/*/
 emulator_tools/screenshots/
 modules/native-identification-camera/android/build
 
@@ -73,10 +79,8 @@ GoogleService-Info*.plist
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
 .claude/worktrees/
-.claude/skills/
 .skills/
 .github/agents/*
-CLAUDE.md
 
 # Temp / scratch files
 .tmp/
