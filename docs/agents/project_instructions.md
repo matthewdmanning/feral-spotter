@@ -33,6 +33,7 @@ This file holds routing and universal rules only. Role-specific rules live in th
 
 ### Backend, secrets and builds
 
+- Design or change when consent is asked, how long the app waits for consent state, or offline consent: read [consent-timing-best-practices.md](../references/consent-timing-best-practices.md). It is a general reference, not project rules.
 - Use Firebase, a backend, auth or uploads: read [backend.md](backend.md). It also lists the approved Firebase MCP resources.
 - Handle keys, tokens, `.env*`, `google-services.json` or `GoogleService-Info.plist`, or judge a possible leak: read [secrets.md](secrets.md).
 - Build the app, change build settings or GitHub environment variables: read [builds.md](builds.md).
