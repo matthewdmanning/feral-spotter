@@ -1,6 +1,7 @@
-import { render, waitFor } from '@testing-library/react-native'
+import { render, screen, waitFor } from '@testing-library/react-native'
 import { router } from 'expo-router'
 import React from 'react'
+import { Text } from 'react-native'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import { useAuth } from '@/src/features/auth/lib/useAuth'
@@ -8,8 +9,7 @@ import {
   CONSENT_VERSION,
   useConsentStore,
 } from '@/src/shared/consent/useConsentStore'
-import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
-import HomeScreen from '@/src/core/home/screens/home/index'
+import { useEntryGate } from '@/src/features/auth/hooks/useEntryGate'
 import { nextConsentRoute } from '@/src/shared/consent/consentFlow'
 
 jest.mock('expo-router', () => ({
@@ -19,18 +19,13 @@ jest.mock('expo-router', () => ({
 }))
 
 jest.mock('@/src/features/auth/lib/useAuth', () => ({ useAuth: jest.fn() }))
-jest.mock('@/src/shared/lib/submissionCache', () => ({
-  getAllSubmissionCaches: jest.fn().mockResolvedValue([]),
-  getCurrentCacheId: jest.fn().mockResolvedValue(null),
-}))
-jest.mock('@/src/shared/ui/molecules/BottomButtonColumn', () => ({
-  BottomButtonColumn: () => null,
-}))
-jest.mock('@/src/features/library-picker/hooks/useLibraryPhotoPicker', () => ({
-  useLibraryPhotoPicker: () => ({ pickFromLibrary: jest.fn() }),
-}))
+/** Stands in for the tab layout, which runs the gate and renders tabs only when it opens. */
+function GateHarness() {
+  return <Text>{useEntryGate() ? 'tabs' : 'no tabs'}</Text>
+}
+
 /**
- * Model of HomeScreen's app-wide auth/consent gate (src/core/home/screens/home/index.tsx),
+ * Model of the app-wide auth/consent gate (useEntryGate, run by the (home-tabs) layout),
  * scoped only to this flow — not a project-wide pattern. Guards against #93
  * (registration->consent loop): the gate must never redirect while auth state
  * is indeterminate ("initializing" here, isReady=false in the real code).
@@ -41,10 +36,10 @@ jest.mock('@/src/features/library-picker/hooks/useLibraryPhotoPicker', () => ({
  * Transitions are restricted to changes in `isAuthenticated` — the gate
  * effect's only real reactive dependency (consent is read as a snapshot
  * from the real consent store, not subscribed). This also matches reality: in the actual
- * app Home is never mounted between /consent and /sign-in — each screen
- * navigates explicitly — so a live Home instance never witnesses consent
+ * app the tab layout is never mounted between /consent and /sign-in — each screen
+ * navigates explicitly — so a live layout instance never witnesses consent
  * changing underneath it. The "no consent" states are dead ends for the
- * same reason: once redirected away, that Home instance's job is done;
+ * same reason: once redirected away, that layout instance's job is done;
  * a later visit is a fresh mount, modeled as a new entry from `initializing`.
  * Model-based testing walks every reachable state via @xstate/graph instead
  * of only the cases someone thought to hand-write.
@@ -85,7 +80,7 @@ const gateMachine = createMachine({
   },
 })
 
-describe('HomeScreen gate — model-based test', () => {
+describe('useEntryGate — model-based test', () => {
   let rerender: (ui: React.ReactElement) => void
 
   type Consent = boolean | 'stale-version' | 'unanswered'
@@ -115,11 +110,8 @@ describe('HomeScreen gate — model-based test', () => {
   }
 
   beforeEach(async () => {
-    // This suite covers the auth/consent gate only — the photo-source gate
-    // has its own model test (HomeScreen.photoSourceGate.model.test.tsx).
-    usePhotoStore.setState(usePhotoStore.getInitialState(), true)
     setMocks(false, false, false)
-    const result = await render(<HomeScreen />)
+    const result = await render(<GateHarness />)
     rerender = result.rerender
   })
 
@@ -129,6 +121,7 @@ describe('HomeScreen gate — model-based test', () => {
     states: {
       initializing: () => {
         expect(router.replace).not.toHaveBeenCalled()
+        expect(screen.getByText('no tabs')).toBeTruthy()
       },
       noConsentUnauthenticated: async () => {
         await waitFor(() =>
@@ -150,6 +143,7 @@ describe('HomeScreen gate — model-based test', () => {
       },
       ready: () => {
         expect(router.replace).not.toHaveBeenCalled()
+        expect(screen.getByText('tabs')).toBeTruthy()
       },
       unansweredStep: async () => {
         await waitFor(() =>
@@ -160,36 +154,36 @@ describe('HomeScreen gate — model-based test', () => {
     events: {
       AUTH_READY_UNAUTHENTICATED_NO_CONSENT: async () => {
         setMocks(true, false, false)
-        await rerender(<HomeScreen />)
+        await rerender(<GateHarness />)
       },
       AUTH_READY_AUTHENTICATED_NO_CONSENT: async () => {
         setMocks(true, true, false)
-        await rerender(<HomeScreen />)
+        await rerender(<GateHarness />)
       },
       AUTH_READY_CONSENTED_UNAUTHENTICATED: async () => {
         setMocks(true, false, true)
-        await rerender(<HomeScreen />)
+        await rerender(<GateHarness />)
       },
       AUTH_READY_WITH_CONSENT: async () => {
         setMocks(true, true, true)
-        await rerender(<HomeScreen />)
+        await rerender(<GateHarness />)
       },
       AUTH_READY_STALE_CONSENT_VERSION: async () => {
         setMocks(true, true, 'stale-version')
-        await rerender(<HomeScreen />)
+        await rerender(<GateHarness />)
       },
       AUTH_READY_WITH_UNANSWERED_STEP: async () => {
         setMocks(true, true, 'unanswered')
-        await rerender(<HomeScreen />)
+        await rerender(<GateHarness />)
       },
       SIGN_IN: async () => {
         setMocks(true, true, true)
-        await rerender(<HomeScreen />)
+        await rerender(<GateHarness />)
       },
       SIGN_OUT: async () => {
         // Consent persists across sign-out — only auth drops.
         setMocks(true, false, true)
-        await rerender(<HomeScreen />)
+        await rerender(<GateHarness />)
       },
     },
   }

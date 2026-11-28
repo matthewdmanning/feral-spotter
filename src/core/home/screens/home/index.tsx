@@ -14,7 +14,6 @@ import {
   confirmStartNewSighting,
 } from '@/src/features/draft-submission/hooks/confirmResetSubmission'
 import { useDraftStartupStore } from '@/src/features/draft-submission/hooks/useDraftStartupStore'
-import { useEntryGate } from '@/src/features/auth/hooks/useEntryGate'
 import { usePhotoEntrypoints } from '@/src/workflows/photo-entry/hooks/usePhotoEntrypoints'
 import { usePhotoStore } from '@/src/features/draft-submission/hooks/usePhotoStore'
 import { useResumableDraft } from '@/src/features/draft-submission/hooks/useResumableDraft'
@@ -179,7 +178,6 @@ export default function HomeScreen() {
       : undefined,
   )
 
-  useEntryGate()
   const columnVisible = useResumableDraft()
 
   // Single-source rule (ADR 0002 amendment): see usePhotoEntrypoints.

@@ -19,6 +19,7 @@
  * navigators do not re-render screens on option changes.
  */
 
+import { useEntryGate } from '@/src/features/auth/hooks/useEntryGate'
 import { navigationCopy } from '@/src/shared/config/text'
 import tabIcons from '@/src/shared/config/tabIcons.json'
 import { selectionHaptic } from '@/src/shared/lib/haptics'
@@ -36,10 +37,13 @@ const TABS: { name: TabName; title: string }[] = [
 
 export default function HomeTabsLayout() {
   const { theme } = useUnistyles()
+  const entryOpen = useEntryGate()
   const label = {
     fontFamily: theme.fonts.semibold,
     fontSize: theme.textVariants.caption.fontSize,
   }
+
+  if (!entryOpen) return null
 
   return (
     <NativeTabs
