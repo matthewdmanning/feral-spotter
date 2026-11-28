@@ -113,6 +113,13 @@ const queue = (pending: ConsentRecord[], ...added: ConsentRecord[]) =>
 /** Record only for a bound account; binding records the rest. */
 const bound = (uid: string | null) => uid !== null
 
+// Zustand never marks the store hydrated when the read fails (storage
+// rejects, corrupt JSON, a throwing migrate), so gates would wait forever.
+// A failed read settles hydration on the defaults instead: not accepted,
+// so the user is asked again. Unknown means denied.
+let readFailed = false
+const readSettledListeners = new Set<() => void>()
+
 export const useConsentStore = create<ConsentState>()(
   persist(
     (set, get) => ({
@@ -241,6 +248,15 @@ export const useConsentStore = create<ConsentState>()(
         }
         return migrated as ConsentState
       },
+      onRehydrateStorage: () => {
+        readFailed = false
+        return (_state, error) => {
+          if (!error) return
+          console.warn('[consent] could not read saved consent', error)
+          readFailed = true
+          readSettledListeners.forEach((listener) => listener())
+        }
+      },
       partialize: (s) => ({
         accepted: s.accepted,
         acceptedVersion: s.acceptedVersion,
@@ -289,13 +305,21 @@ export function analyticsAcceptedFor(
 }
 
 /**
- * True once the persisted consent choices are read back. Until then every
- * check above reads the defaults, so a gate acting before this sends a
- * consented user back through onboarding.
+ * True once the persisted consent choices are read back, or the read failed
+ * (then the defaults stand: not accepted). Until then every check above
+ * reads the defaults, so a gate acting before this sends a consented user
+ * back through onboarding.
  */
 export function useConsentHydrated(): boolean {
   return useSyncExternalStore(
-    (onChange) => useConsentStore.persist.onFinishHydration(onChange),
-    () => useConsentStore.persist.hasHydrated(),
+    (onChange) => {
+      const unsubscribe = useConsentStore.persist.onFinishHydration(onChange)
+      readSettledListeners.add(onChange)
+      return () => {
+        unsubscribe()
+        readSettledListeners.delete(onChange)
+      }
+    },
+    () => useConsentStore.persist.hasHydrated() || readFailed,
   )
 }

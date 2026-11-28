@@ -1,6 +1,5 @@
 import { ConsentChoiceScreen } from '@/src/features/permissions/components/ConsentChoiceScreen'
-import { router } from 'expo-router'
-import { nextConsentRoute } from '@/src/shared/consent/consentFlow'
+import { continueConsentChain } from '@/src/shared/consent/consentFlow'
 import { saveEmailOptIn } from '@/src/features/permissions/hooks/saveEmailOptIn'
 import { useAuthStore } from '@/src/features/auth/lib/authStore'
 import consentCopy from '@/src/features/permissions/copy/consentDisclosure.json'
@@ -21,7 +20,7 @@ export default function EmailOptInScreen() {
       footnote={email ? `Updates go to ${maskEmail(email)}.` : undefined}
       onContinue={(checked) => {
         saveEmailOptIn(checked)
-        router.replace(nextConsentRoute('/email-opt-in'))
+        continueConsentChain('/email-opt-in')
       }}
     />
   )

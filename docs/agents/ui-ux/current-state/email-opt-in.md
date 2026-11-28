@@ -26,7 +26,7 @@ derives_from: []
 - The screen shows the account address masked, for example `j***@example.com`.
 - A user who already chose is not asked again after sign-in.
 - Android hardware Back does nothing on this screen or the analytics step (2026-11-02).
-- A signed-in user with an unanswered step (app killed mid-chain, or signed in before the step shipped) is sent to that step from Home (2026-11-02).
+- A signed-in user with an unanswered step (app killed mid-chain, or signed in before the step shipped) is shown that step over Home (2026-11-02). Home opens first and never waits for the step; the step is pushed over it once the account's answers are refreshed, and its last screen pops back (2026-11-28).
 - Settings shows the account email. It can send a verification link to a new address.
 - Copy states that email goes to the address on the account. It states that the user can turn it off in Settings.
 

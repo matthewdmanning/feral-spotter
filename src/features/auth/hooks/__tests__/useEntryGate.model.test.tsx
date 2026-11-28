@@ -1,7 +1,7 @@
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { render, screen, waitFor } from '@testing-library/react-native'
 import { router } from 'expo-router'
 import React from 'react'
-import { Text } from 'react-native'
 import { createMachine } from 'xstate'
 import { createTestModel } from '@xstate/graph'
 import { useAuth } from '@/src/features/auth/lib/useAuth'
@@ -9,8 +9,8 @@ import {
   CONSENT_VERSION,
   useConsentStore,
 } from '@/src/shared/consent/useConsentStore'
-import { useEntryGate } from '@/src/features/auth/hooks/useEntryGate'
 import { nextConsentRoute } from '@/src/shared/consent/consentFlow'
+import HomeTabsLayout from '@/src/app/(home-tabs)/_layout'
 
 jest.mock('expo-router', () => ({
   useIsFocused: () => true,
@@ -19,14 +19,33 @@ jest.mock('expo-router', () => ({
 }))
 
 jest.mock('@/src/features/auth/lib/useAuth', () => ({ useAuth: jest.fn() }))
-/** Stands in for the tab layout, which runs the gate and renders tabs only when it opens. */
-function GateHarness() {
-  return <Text>{useEntryGate() ? 'tabs' : 'no tabs'}</Text>
-}
+
+// The real layout runs the gate; this spy stands at the NativeTabs boundary,
+// so a mount is exactly what would send PRELOAD actions (#495).
+const mockTabsMount = jest.fn()
+jest.mock('expo-router/native-tabs', () => {
+  const { Text: MockText } = jest.requireActual('react-native')
+  const Empty = () => null
+  const Trigger = Object.assign(Empty, { Label: Empty, Icon: Empty })
+  return {
+    NativeTabs: Object.assign(
+      function MockNativeTabs() {
+        mockTabsMount()
+        return <MockText>tabs</MockText>
+      },
+      { Trigger },
+    ),
+  }
+})
+
+const tabsShown = () => screen.queryByText('tabs') !== null
 
 /**
- * Model of the app-wide auth/consent gate (useEntryGate, run by the (home-tabs) layout),
- * scoped only to this flow — not a project-wide pattern. Guards against #93
+ * Model of the app-wide auth/consent gate (useEntryGate), rendered through the
+ * real (home-tabs) layout, scoped only to this flow — not a project-wide
+ * pattern. Tabs must never mount before a redirect away from them (#495):
+ * that is asserted at the NativeTabs boundary, so dropping the layout's own
+ * check fails this suite. Guards against #93
  * (registration->consent loop): the gate must never redirect while auth state
  * is indeterminate ("initializing" here, isReady=false in the real code).
  * Consent is checked first, ahead of auth (issue #163) — it's a device-level
@@ -43,6 +62,10 @@ function GateHarness() {
  * a later visit is a fresh mount, modeled as a new entry from `initializing`.
  * Model-based testing walks every reachable state via @xstate/graph instead
  * of only the cases someone thought to hand-write.
+ *
+ * Optional consent steps (email, analytics) never hold the tabs: the step is
+ * pushed over the open tabs. A failed read of saved consent settles on the
+ * defaults (not accepted) instead of a permanent blank screen.
  */
 const gateMachine = createMachine({
   id: 'homeGate',
@@ -61,9 +84,12 @@ const gateMachine = createMachine({
         AUTH_READY_STALE_CONSENT_VERSION: 'noConsentAuthenticated',
         // The app was killed on email opt-in: the chain resumes there.
         AUTH_READY_WITH_UNANSWERED_STEP: 'unansweredStep',
+        // Saved consent could not be read (storage error, corrupt JSON).
+        CONSENT_READ_FAILED: 'consentReadFailed',
       },
     },
     unansweredStep: {},
+    consentReadFailed: {},
     noConsentUnauthenticated: {},
     noConsentAuthenticated: {},
     consentedUnauthenticated: {
@@ -110,8 +136,9 @@ describe('useEntryGate — model-based test', () => {
   }
 
   beforeEach(async () => {
+    await useConsentStore.persist.rehydrate()
     setMocks(false, false, false)
-    const result = await render(<GateHarness />)
+    const result = await render(<HomeTabsLayout />)
     rerender = result.rerender
   })
 
@@ -121,69 +148,89 @@ describe('useEntryGate — model-based test', () => {
     states: {
       initializing: () => {
         expect(router.replace).not.toHaveBeenCalled()
-        expect(screen.getByText('no tabs')).toBeTruthy()
+        expect(mockTabsMount).not.toHaveBeenCalled()
       },
       noConsentUnauthenticated: async () => {
         await waitFor(() =>
           expect(router.replace).toHaveBeenCalledWith('/intro-flow'),
         )
+        expect(mockTabsMount).not.toHaveBeenCalled()
         jest.mocked(router.replace).mockClear()
       },
       noConsentAuthenticated: async () => {
         await waitFor(() =>
           expect(router.replace).toHaveBeenCalledWith('/intro-flow'),
         )
+        expect(mockTabsMount).not.toHaveBeenCalled()
         jest.mocked(router.replace).mockClear()
       },
       consentedUnauthenticated: async () => {
         await waitFor(() =>
           expect(router.replace).toHaveBeenCalledWith('/sign-in'),
         )
+        expect(tabsShown()).toBe(false)
         jest.mocked(router.replace).mockClear()
       },
       ready: () => {
         expect(router.replace).not.toHaveBeenCalled()
-        expect(screen.getByText('tabs')).toBeTruthy()
+        expect(tabsShown()).toBe(true)
       },
       unansweredStep: async () => {
+        // Tabs open at once; the step goes over them, not in their place.
+        expect(tabsShown()).toBe(true)
         await waitFor(() =>
-          expect(router.replace).toHaveBeenCalledWith(nextConsentRoute()),
+          expect(router.push).toHaveBeenCalledWith(nextConsentRoute()),
         )
+        expect(router.replace).not.toHaveBeenCalled()
+      },
+      consentReadFailed: async () => {
+        await waitFor(() =>
+          expect(router.replace).toHaveBeenCalledWith('/intro-flow'),
+        )
+        expect(mockTabsMount).not.toHaveBeenCalled()
       },
     },
     events: {
       AUTH_READY_UNAUTHENTICATED_NO_CONSENT: async () => {
         setMocks(true, false, false)
-        await rerender(<GateHarness />)
+        await rerender(<HomeTabsLayout />)
       },
       AUTH_READY_AUTHENTICATED_NO_CONSENT: async () => {
         setMocks(true, true, false)
-        await rerender(<GateHarness />)
+        await rerender(<HomeTabsLayout />)
       },
       AUTH_READY_CONSENTED_UNAUTHENTICATED: async () => {
         setMocks(true, false, true)
-        await rerender(<GateHarness />)
+        await rerender(<HomeTabsLayout />)
       },
       AUTH_READY_WITH_CONSENT: async () => {
         setMocks(true, true, true)
-        await rerender(<GateHarness />)
+        await rerender(<HomeTabsLayout />)
       },
       AUTH_READY_STALE_CONSENT_VERSION: async () => {
         setMocks(true, true, 'stale-version')
-        await rerender(<GateHarness />)
+        await rerender(<HomeTabsLayout />)
       },
       AUTH_READY_WITH_UNANSWERED_STEP: async () => {
         setMocks(true, true, 'unanswered')
-        await rerender(<GateHarness />)
+        await rerender(<HomeTabsLayout />)
+      },
+      CONSENT_READ_FAILED: async () => {
+        setMocks(true, true, false)
+        jest
+          .spyOn(AsyncStorage, 'getItem')
+          .mockRejectedValueOnce(new Error('storage unavailable'))
+        await useConsentStore.persist.rehydrate()
+        await rerender(<HomeTabsLayout />)
       },
       SIGN_IN: async () => {
         setMocks(true, true, true)
-        await rerender(<GateHarness />)
+        await rerender(<HomeTabsLayout />)
       },
       SIGN_OUT: async () => {
         // Consent persists across sign-out — only auth drops.
         setMocks(true, false, true)
-        await rerender(<GateHarness />)
+        await rerender(<HomeTabsLayout />)
       },
     },
   }
@@ -207,6 +254,10 @@ describe('useEntryGate — model-based test', () => {
     {
       name: 'signed in with an unanswered consent step → that step',
       events: [{ type: 'AUTH_READY_WITH_UNANSWERED_STEP' }],
+    },
+    {
+      name: 'saved consent cannot be read → intro-flow, not a blank screen',
+      events: [{ type: 'CONSENT_READ_FAILED' }],
     },
     {
       name: 'consented, signed out, then signs back in → home',

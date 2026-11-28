@@ -1,6 +1,5 @@
 import { ConsentChoiceScreen } from '@/src/features/permissions/components/ConsentChoiceScreen'
-import { router } from 'expo-router'
-import { nextConsentRoute } from '@/src/shared/consent/consentFlow'
+import { continueConsentChain } from '@/src/shared/consent/consentFlow'
 import { useConsentStore } from '@/src/shared/consent/useConsentStore'
 import consentCopy from '@/src/features/permissions/copy/consentDisclosure.json'
 
@@ -13,7 +12,7 @@ export default function AnalyticsConsentScreen() {
       defaultChecked
       onContinue={(checked) => {
         setAnalyticsAccepted(checked)
-        router.replace(nextConsentRoute('/analytics-consent'))
+        continueConsentChain('/analytics-consent')
       }}
     />
   )

@@ -5,11 +5,13 @@ import AnalyticsConsentScreen from '@/src/features/permissions/screens/analytics
 import consentCopy from '@/src/features/permissions/copy/consentDisclosure.json'
 
 const mockRouterReplace = jest.fn()
+const mockRouterDismissTo = jest.fn()
 
 jest.mock('expo-router', () => ({
   useIsFocused: () => true,
   router: {
     replace: (...args: unknown[]) => mockRouterReplace(...args),
+    dismissTo: (...args: unknown[]) => mockRouterDismissTo(...args),
     push: jest.fn(),
   },
 }))
@@ -19,7 +21,7 @@ describe('AnalyticsConsentScreen', () => {
     useConsentStore.setState({ analyticsAccepted: false })
   })
 
-  it('toggling the checkbox off then continuing disables analytics and navigates to /(home-tabs)', async () => {
+  it('toggling the checkbox off then continuing disables analytics and returns to Home', async () => {
     useConsentStore.setState({ analyticsAccepted: true })
     await render(<AnalyticsConsentScreen />)
 
@@ -33,10 +35,12 @@ describe('AnalyticsConsentScreen', () => {
     )
 
     expect(useConsentStore.getState().analyticsAccepted).toBe(false)
-    expect(mockRouterReplace).toHaveBeenCalledWith('/(home-tabs)')
+    // Pops back to tabs a resumed step was pushed over (#495).
+    expect(mockRouterDismissTo).toHaveBeenCalledWith('/')
+    expect(mockRouterReplace).not.toHaveBeenCalled()
   })
 
-  it('leaving the checkbox checked (default) and continuing enables analytics and navigates to /(home-tabs)', async () => {
+  it('leaving the checkbox checked (default) and continuing enables analytics and returns to Home', async () => {
     await render(<AnalyticsConsentScreen />)
 
     await userEvent.press(
@@ -44,6 +48,8 @@ describe('AnalyticsConsentScreen', () => {
     )
 
     expect(useConsentStore.getState().analyticsAccepted).toBe(true)
-    expect(mockRouterReplace).toHaveBeenCalledWith('/(home-tabs)')
+    // Pops back to tabs a resumed step was pushed over (#495).
+    expect(mockRouterDismissTo).toHaveBeenCalledWith('/')
+    expect(mockRouterReplace).not.toHaveBeenCalled()
   })
 })

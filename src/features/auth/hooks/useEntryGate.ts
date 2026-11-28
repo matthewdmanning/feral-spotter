@@ -2,9 +2,10 @@
  * features/auth/hooks/useEntryGate.ts
  * The app-wide gate the tab layout runs: send a new device to the intro
  * flow, a signed-out user to sign-in, and a signed-in user with an unanswered
- * consent step to that step. Returns true once the user may see the tabs.
- * The layout renders no tabs before that, so NativeTabs never sends PRELOAD
- * actions to a navigator the redirect is about to unmount (#495).
+ * consent step to that step. Returns true once the user may see the tabs:
+ * disclosure accepted and signed in. The layout renders no tabs before that,
+ * so NativeTabs never sends PRELOAD actions to a navigator the redirect is
+ * about to unmount (#495).
  */
 
 import { nextConsentRoute } from '@/src/shared/consent/consentFlow'
@@ -33,7 +34,11 @@ export function useEntryGate(): boolean {
   //
   // A signed-in user whose chain was cut short (app killed on email
   // opt-in) resumes at the first unanswered step. Answered steps are never
-  // shown again (email-opt-in.md).
+  // shown again (email-opt-in.md). Those steps are optional, so they never
+  // hold the tabs closed or wait on the network: the tabs open at once and
+  // the step is pushed over them once the account's answers are refreshed.
+  // A push keeps the tabs mounted, so no PRELOAD reaches a navigator being
+  // torn down (#495); the step's last screen pops back to them.
   useEffect(() => {
     if (!isReady || !consentHydrated) return
     if (!hasAcceptedConsent()) {
@@ -45,7 +50,7 @@ export function useEntryGate(): boolean {
       void syncAccountConsent(uid).then(() => {
         if (!current) return
         const next = nextConsentRoute()
-        if (next !== '/(home-tabs)') router.replace(next)
+        if (next !== '/(home-tabs)') router.push(next)
       })
       return () => {
         current = false

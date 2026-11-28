@@ -56,7 +56,7 @@ Create the machine model **when the design is established — just prior to or a
 ### Tooling
 
 - `xstate` (`createMachine`) for the model; `@xstate/graph` (`createTestModel`) to drive tests.
-- Canonical in-repo example: `src/core/home/screens/home/__tests__/HomeScreen.gate.model.test.tsx` — a `gateMachine` plus `testParams` (`states` + `events`).
+- Canonical in-repo example: `src/features/auth/hooks/__tests__/useEntryGate.model.test.tsx` — a `gateMachine` plus `testParams` (`states` + `events`).
 
 ### Pick the path generator by intent
 

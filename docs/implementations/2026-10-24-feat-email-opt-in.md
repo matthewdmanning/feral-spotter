@@ -155,3 +155,15 @@ tags:
 
 **Purpose:** a cold start to `/intro-flow` logged four unhandled `PRELOAD` errors in dev (#495). `NativeTabs` preloads the Reports and Settings tabs on mount, and the gate then replaced the route in the same cold start.
 **Change:** `useEntryGate` now returns whether the tabs may show, and the `(home-tabs)` layout runs it instead of Home. The layout renders no tabs until a consented, signed-in user is ready. The gate model test moved to `src/features/auth/hooks/__tests__/useEntryGate.model.test.tsx` and also asserts that tabs show only in the ready state. Verified: `tsc`, ESLint, the gate test, and a cold start on the Pixel 7 dev client (intro screen, 0 `PRELOAD` errors, 0 "initial navigation state" errors). Unverified on device: a signed-in cold start to Home.
+
+## 2026-11-28 — fix
+
+**Purpose:** review of #529 found three gaps in the #495 fix. A failed read of saved consent left a permanent blank screen. A cold start with an unanswered email or analytics step mounted the tabs, then replaced them: the same `PRELOAD` case. The gate test did not render the real layout, so removing its check stayed green.
+**Change:**
+
+- `useConsentHydrated` also settles when the read fails. The defaults stand (not accepted), so the gate sends the user to `/intro-flow`.
+- The gate opens the tabs once the disclosure is accepted and the user is signed in. An unanswered optional step is pushed over the tabs after the account's answers are refreshed. `continueConsentChain` ends the chain with `goHome()`, which pops back to those tabs.
+- `useEntryGate.model.test.tsx` renders `HomeTabsLayout` with a mount spy at `NativeTabs`. It asserts no mount before a redirect, a push (not a replace) for an unanswered step, and `/intro-flow` after a failed read. Each assertion fails with its fix reverted.
+- `AnalyticsConsentScreen.test.tsx` expects `dismissTo('/')`.
+
+Verified: `tsc`, ESLint, full Jest. Unverified on device: a cold start with an unanswered step.
