@@ -51,7 +51,7 @@ Pick the narrowest command that answers the question. Run `package.json` scripts
 3. Read the code under test and the test. Show the line where they disagree.
 4. Name the cause only after you have checked it. Say `Unverified` for the rest.
 5. Stop a loop when the same step fails twice. Report what fails.
-6. A failure in a file the caller did not touch is unrelated. Report it. Do not fix it.
+6. Before calling a failure unrelated, run the same command on the base commit. It is unrelated only if it fails there too. A change to shared code, config or a dependency can break files the caller did not touch. Report an unrelated failure. Do not fix it.
 
 ## Evaluate
 
