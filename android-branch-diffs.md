@@ -3,7 +3,6 @@
 Temporary working file. Not for commit. Findings only. No recommendations.
 
 Date of observation: 2026-10-04. Repo: `C:\GitHub\feral-spotter`. `main` = `origin/main` = `a0bb3e5`.
-Companion file: `os-branch-diffs.md` (iOS branches).
 
 ## 1. Branches examined
 
