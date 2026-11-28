@@ -30,7 +30,8 @@ function shutterLabelFor(captureMode: CaptureMode, isTakingPhoto: boolean) {
 }
 
 export function LegacyCameraScreen() {
-  const { hasPermission, requestPermission } = useCameraPermission()
+  const { hasPermission, requestPermission, status, canRequestPermission } =
+    useCameraPermission()
   const {
     device,
     cameraRef,
@@ -71,7 +72,11 @@ export function LegacyCameraScreen() {
     return (
       <>
         <Stack.Screen options={{ headerShown: false }} />
-        <CameraPermissionGate onRequestPermission={requestPermission} />
+        <CameraPermissionGate
+          askOnOpen={status === 'not-determined'}
+          canAsk={canRequestPermission}
+          onRequestPermission={requestPermission}
+        />
       </>
     )
 

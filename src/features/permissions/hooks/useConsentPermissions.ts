@@ -1,112 +1,39 @@
 /**
  * features/permissions/hooks/useConsentPermissions.ts
- * The consent gate's permission flow: request camera then location, record
- * consent only when both are usable, and re-check on return from the OS
- * Settings app while blocked.
+ * The data-collection disclosure's Agree action: record consent and move on.
+ *
+ * Agreeing asks for no OS permission. Camera and location are asked where
+ * they are used: camera when the Camera screen opens, location when capture
+ * can start (core/location/liveFix.ts). Photo library is asked by the
+ * library picker. Apple asks apps to request access when people use the
+ * feature, and not to require a system permission to use the app
+ * (docs/references/consent-timing-best-practices.md).
  */
 
 import { reportError } from '@/src/shared/analytics/analytics'
 import { commonCopy, permissionCopy } from '@/src/shared/config/text'
-import consentCopy from '@/src/features/permissions/copy/consentDisclosure.json'
 import { routeAfterDeviceConsent } from '@/src/features/permissions/lib/deviceConsentRoute'
 import { useConsentStore } from '@/src/shared/consent/useConsentStore'
 import { showAlert } from '@/src/shared/hooks/useUIStore'
-import { cameraPermission } from '@/src/features/permissions/lib/cameraPermission'
-import {
-  isUsable as isLocationUsable,
-  locationPermission,
-} from '@/src/features/permissions/lib/locationPermission'
-import * as Location from 'expo-location'
 import { router } from 'expo-router'
-import { useCallback, useEffect, useState } from 'react'
-import { AppState, Platform } from 'react-native'
+import { useCallback, useState } from 'react'
 
 export function useConsentPermissions() {
   const markAccepted = useConsentStore((s) => s.markAccepted)
   const [busy, setBusy] = useState(false)
-  const [blocked, setBlocked] = useState(false)
 
   const handleAgree = useCallback(async () => {
     setBusy(true)
     try {
-      // Requested sequentially, not via Promise.all: Android can only show one
-      // permission dialog at a time, so firing both concurrently resolves
-      // every request after the first as BLOCKED/denied without the user ever
-      // seeing a prompt for it. Photo-library access (#91) is not requested
-      // here — it's asked lazily at point of use by the library picker.
-      const cameraGranted = await cameraPermission.request()
-      const locationResponse =
-        await Location.requestForegroundPermissionsAsync()
-
-      if (!cameraGranted || !isLocationUsable(locationResponse)) {
-        // Consent isn't recorded on a gated outcome (#66) — a relaunch while
-        // still blocked must land back on this screen and re-request, not
-        // read as "already consented" and skip straight past the gate.
-        setBlocked(true)
-        return
-      }
-      // Neither react-native-permissions nor expo-location can distinguish
-      // Android's "Only this time" from "While using the app" location
-      // choices — expo-location's `expires` field is hardcoded to `'never'`
-      // for every Android grant, not just one-time ones — so the notice
-      // fires on every fresh grant and is worded conditionally ("if you
-      // chose...") rather than claiming to know which one the user picked
-      // (#225).
-      if (Platform.OS === 'android' && locationResponse.granted) {
-        showAlert(
-          consentCopy.locationOnceWarningTitle,
-          consentCopy.locationOnceWarningBody,
-        )
-      }
       markAccepted()
       router.replace(await routeAfterDeviceConsent())
     } catch (err) {
-      reportError('[consent] permission request failed:', err)
-      showAlert(
-        commonCopy.somethingWentWrong,
-        permissionCopy.requestFailedMessage,
-      )
+      reportError('[consent] continuing after agreement failed:', err)
+      showAlert(commonCopy.somethingWentWrong, permissionCopy.saveFailedMessage)
     } finally {
       setBusy(false)
     }
   }, [markAccepted])
 
-  // Manually granting in system Settings and returning to the app doesn't
-  // trigger a re-request — re-check on foreground so the gate clears once
-  // access is actually there instead of trapping the user behind it.
-  useEffect(() => {
-    if (!blocked) return
-
-    // Two quick 'active' events must not accept and navigate twice.
-    let checking = false
-    let done = false
-    const recheck = async () => {
-      if (checking || done) return
-      checking = true
-      try {
-        const cameraUsable = await cameraPermission.check()
-        const locationUsable = await locationPermission.check()
-        if (cameraUsable && locationUsable && !done) {
-          done = true
-          setBlocked(false)
-          markAccepted()
-          router.replace(await routeAfterDeviceConsent())
-        }
-      } catch (err) {
-        reportError('[consent] permission recheck failed:', err)
-      } finally {
-        checking = false
-      }
-    }
-
-    const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'active') void recheck()
-    })
-    return () => {
-      done = true
-      sub.remove()
-    }
-  }, [blocked, markAccepted])
-
-  return { busy, blocked, handleAgree }
+  return { busy, handleAgree }
 }

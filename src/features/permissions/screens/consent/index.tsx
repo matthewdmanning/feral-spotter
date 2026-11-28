@@ -1,20 +1,18 @@
-import { navigationCopy, permissionCopy } from '@/src/shared/config/text'
 import { AmbientBackground } from '@/src/shared/ui/atoms/AmbientBackground'
 import { AppButton } from '@/src/shared/ui/atoms/AppButton'
 import { TextButton } from '@/src/shared/ui/atoms/TextButton'
 import { DisclosureText } from '@/src/features/permissions/components/DisclosureText'
-import { GateScreen } from '@/src/shared/ui/molecules/GateScreen'
 import consentCopy from '@/src/features/permissions/copy/consentDisclosure.json'
 import { confirmExitApp } from '@/src/shared/hooks/confirmExitApp'
 import { useBackHandler } from '@/src/shared/hooks/useBackHandler'
 import { useConsentPermissions } from '@/src/features/permissions/hooks/useConsentPermissions'
 import { useCallback } from 'react'
 import { Text } from '@/src/shared/ui/atoms/Text'
-import { Linking, ScrollView, View } from 'react-native'
+import { ScrollView, View } from 'react-native'
 import { styles } from './index.styles'
 
 export default function ConsentScreen() {
-  const { busy, blocked, handleAgree } = useConsentPermissions()
+  const { busy, handleAgree } = useConsentPermissions()
 
   useBackHandler(useCallback(() => true, []))
 
@@ -26,17 +24,6 @@ export default function ConsentScreen() {
       ),
     [],
   )
-
-  if (blocked) {
-    return (
-      <GateScreen
-        title={permissionCopy.blockedTitle}
-        body={permissionCopy.blockedBody}
-        primaryLabel={navigationCopy.openSystemSettings}
-        onPrimary={() => Linking.openSettings()}
-      />
-    )
-  }
 
   return (
     <View style={styles.root}>

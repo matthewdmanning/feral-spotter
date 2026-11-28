@@ -26,10 +26,8 @@
   "agreeLabel": "I Agree — Continue",
   "declineLabel": "Decline",
   "denyLabel": "Deny",
-  "declineWarningTitle": "Permissions Required",
-  "declineWarningBody": "Without permissions, you won't be able to use FeralSpotter.",
-  "locationOnceWarningTitle": "About location access",
-  "locationOnceWarningBody": "If you chose \"Only this time\" for location, Android revokes that access as soon as the app closes. Location may not be captured next time you open FeralSpotter until you grant access again.",
+  "declineWarningTitle": "Agreement Required",
+  "declineWarningBody": "Without agreeing, you won't be able to use FeralSpotter.",
   "analytics": {
     "title": "One more thing",
     "intro": "Optional usage analytics helps us understand app behavior and investigate errors.",

@@ -250,7 +250,7 @@ export function useCapturedPhotoWorkflow({
   useEffect(() => {
     if (!canCapture || hasStartedLocationCapture.current) return
     hasStartedLocationCapture.current = true
-    void startLocationCapture()
+    void startLocationCapture({ prompt: true })
   }, [canCapture])
 
   const handleDiscardPhoto = useCallback((localId: string) => {

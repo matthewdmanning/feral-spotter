@@ -176,7 +176,10 @@ export const cameraCopy = {
   permissionTitle: 'Camera Access Required',
   permissionBody:
     'FeralSpotter needs camera access to capture cat observations.',
-  allowCamera: 'Allow Camera',
+  // Apple HIG: a pre-prompt's one button says Continue, not Allow.
+  continueToAccess: 'Continue',
+  permissionBlockedBody:
+    'Camera access is off. Turn it on in Settings to take photos.',
   noCamera: 'No Camera Found',
   unavailableTitle: 'Camera Unavailable',
   unavailableBody:
@@ -210,10 +213,7 @@ export const libraryCopy = {
 // Device-permission gate copy owner; consent disclosures stay in
 // permissions/copy/.
 export const permissionCopy = {
-  blockedTitle: 'Permission Blocked',
-  blockedBody:
-    'Camera, photo, or location access was denied. Enable it in Settings to continue — you’ll be brought back here automatically once it’s granted.',
-  requestFailedMessage: 'Could not process permissions. Please try again.',
+  saveFailedMessage: 'Could not save your choice. Please try again.',
 } as const
 
 // No-photos prompt copy owner (#503): shown instead of an empty Annotate.

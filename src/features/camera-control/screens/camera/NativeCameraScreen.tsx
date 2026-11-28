@@ -84,11 +84,21 @@ export function NativeCameraScreen() {
     [focus, previewSize],
   )
 
-  if (!permission?.granted)
+  // Null until the OS reports; asking before then would guess.
+  if (permission === null)
+    return <Stack.Screen options={{ headerShown: false }} />
+
+  if (!permission.granted)
     return (
       <>
         <Stack.Screen options={{ headerShown: false }} />
-        <CameraPermissionGate onRequestPermission={requestPermission} />
+        <CameraPermissionGate
+          askOnOpen={
+            permission.status === ImagePicker.PermissionStatus.UNDETERMINED
+          }
+          canAsk={permission.canAskAgain}
+          onRequestPermission={requestPermission}
+        />
       </>
     )
 

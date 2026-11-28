@@ -231,3 +231,36 @@ The location model test checks map and pin share a viewport excluding Set locati
 existing journeys verify confirmation saves the moved center and Cancel preserves
 the prior location. Exact native geographic/visual alignment remains unverified.
 See [shared layout changes](2026-10-28-ui-component-spacing-alignment.md).
+
+## 2026-11-28 — refactor
+
+**Purpose:** Align OS permission timing with Apple's guidance: ask when the
+feature is used, never require a system permission to use the app, and use a
+one-button Continue pre-prompt only when needed
+([reference](../references/consent-timing-best-practices.md)).
+**Change:**
+
+- Agree on the data-collection disclosure records consent and routes on. It
+  no longer asks for camera or location, and no longer blocks on them. The
+  "Permission Blocked" gate, its foreground recheck and the Android
+  "Only this time" notice (#225) are gone. The notice is moot: location is
+  re-asked at each camera session.
+- Camera: a first open asks the OS directly, without a pre-prompt. The gate
+  then offers one Continue button while the OS can ask, and only Open
+  Settings once it cannot (`CameraPermissionGate`).
+- Location: `startLocationCapture({ prompt: true })` asks the OS once capture
+  is possible. The stale-fix retry never prompts. A denial falls back to the
+  Map picker (ADR 0002).
+- Photo library and gallery save are unchanged: already asked at point of use.
+- Copy: the decline warning now says agreement is required, not permissions.
+
+**Tests:** `ConsentScreen.test.tsx` asserts Agree asks for no OS permission;
+it fails on the old hook. `CameraScreen.permissionGate.model.test.tsx` models
+first open, Continue and blocked. `liveFix.test.ts` asserts only a prompting
+caller asks the OS. `ConsentScreen.cameraGate.model.test.tsx` and
+`ConsentScreen.locationGate.model.test.tsx` were deleted: the gate they
+covered is gone.
+
+**Verified:** typecheck, `expo lint` (0 errors), full Jest (152 suites, 728
+tests). **Unverified:** device run on Android and iOS; `NativeCameraScreen`'s
+gate has no direct test.

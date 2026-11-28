@@ -84,6 +84,7 @@ function stopWatching() {
 // stale" self-perpetuating without needing another caller to trigger it.
 function scheduleRecheck() {
   if (recheckTimer) clearTimeout(recheckTimer)
+  // The automatic retry never prompts: no one asked for it just now.
   recheckTimer = setTimeout(() => {
     void startLocationCapture()
   }, LOCATION_STALE_THRESHOLD_MS)
@@ -99,8 +100,15 @@ function resolve() {
  * Starts (or, once stale, restarts) the background Live-fix acquisition.
  * No-op while a fetch is actively in flight — the ongoing process cannot be
  * restarted, only allowed to settle or reacquire on its own schedule.
+ *
+ * `prompt: true` asks the OS for location if it is not yet usable. Only the
+ * camera passes it, as capture becomes possible: that is the moment the user
+ * needs a Live fix (Apple HIG: ask when the feature is used). A denial falls
+ * back to the Map picker (ADR 0002).
  */
-export async function startLocationCapture(): Promise<void> {
+export async function startLocationCapture({
+  prompt = false,
+}: { prompt?: boolean } = {}): Promise<void> {
   if (getLocationCaptureState().status === 'pending') {
     if (__DEV__) console.log('[location] already pending — no-op')
     return
@@ -117,7 +125,9 @@ export async function startLocationCapture(): Promise<void> {
   startInFlight = true
   let usable = false
   try {
-    usable = await locationPermission.check()
+    usable = await (prompt
+      ? locationPermission.request()
+      : locationPermission.check())
   } finally {
     startInFlight = false
   }

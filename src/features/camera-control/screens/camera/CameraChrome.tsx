@@ -11,7 +11,11 @@
  * preview is backend-specific.
  */
 
-import { cameraCopy, formatCopy } from '@/src/shared/config/text'
+import {
+  cameraCopy,
+  formatCopy,
+  navigationCopy,
+} from '@/src/shared/config/text'
 import { GateScreen } from '@/src/shared/ui/molecules/GateScreen'
 import type { SubmissionPhoto } from '@/src/shared/types'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
@@ -19,9 +23,10 @@ import { CameraRotateIcon } from 'phosphor-react-native/src/icons/CameraRotate'
 import { LightningIcon } from 'phosphor-react-native/src/icons/Lightning'
 import { LightningSlashIcon } from 'phosphor-react-native/src/icons/LightningSlash'
 import { XIcon } from 'phosphor-react-native/src/icons/X'
-import { useCallback } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { Text } from '@/src/shared/ui/atoms/Text'
 import {
+  Linking,
   Pressable,
   StyleSheet as RNStyleSheet,
   View,
@@ -36,18 +41,45 @@ import Animated, {
 import { useUnistyles } from 'react-native-unistyles'
 import { styles } from './index.styles'
 
+/**
+ * Shown while camera access is not granted. Apple HIG: ask when the feature
+ * is used, and a pre-prompt has one Continue button that leads to the system
+ * alert. So a first open (`askOnOpen`) goes straight to the system alert; the
+ * gate behind it explains and offers Continue while the OS can still ask, and
+ * only Settings once it cannot.
+ */
 export function CameraPermissionGate({
+  askOnOpen,
+  canAsk,
   onRequestPermission,
 }: {
-  onRequestPermission: () => void
+  askOnOpen: boolean
+  canAsk: boolean
+  onRequestPermission: () => unknown
 }) {
+  const asked = useRef(false)
+  useEffect(() => {
+    if (!askOnOpen || asked.current) return
+    asked.current = true
+    void onRequestPermission()
+  }, [askOnOpen, onRequestPermission])
+
+  if (!canAsk) {
+    return (
+      <GateScreen
+        title={cameraCopy.permissionTitle}
+        body={cameraCopy.permissionBlockedBody}
+        primaryLabel={navigationCopy.openSystemSettings}
+        onPrimary={() => void Linking.openSettings()}
+      />
+    )
+  }
   return (
     <GateScreen
       title={cameraCopy.permissionTitle}
       body={cameraCopy.permissionBody}
-      primaryLabel={cameraCopy.allowCamera}
-      onPrimary={onRequestPermission}
-      showOpenSettings
+      primaryLabel={cameraCopy.continueToAccess}
+      onPrimary={() => void onRequestPermission()}
     />
   )
 }

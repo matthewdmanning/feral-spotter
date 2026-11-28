@@ -16,6 +16,10 @@ import CameraScreen from '@/src/features/camera-control/screens/camera/index'
  * (useCameraCapture.test.ts, useCameraCapture.controls.model.test.ts) —
  * re-testing that wiring through a full react-native-vision-camera render
  * would duplicate that coverage without adding real assurance.
+ *
+ * Permission timing follows Apple HIG: a first open asks the OS at once, with
+ * no pre-prompt. The gate then offers one Continue button while the OS can
+ * still ask, and only Settings once it cannot.
  */
 jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
@@ -51,12 +55,16 @@ const gateMachine = createMachine({
   states: {
     unmounted: {
       on: {
-        MOUNT_NO_PERMISSION: 'noPermission',
+        MOUNT_FIRST_OPEN: 'firstOpen',
+        MOUNT_BLOCKED: 'blocked',
         MOUNT_NO_DEVICE: 'noDevice',
       },
     },
-    noPermission: {
-      on: { PRESS_ALLOW: 'noPermission', PRESS_OPEN_SETTINGS: 'noPermission' },
+    firstOpen: {
+      on: { PRESS_CONTINUE: 'firstOpen' },
+    },
+    blocked: {
+      on: { PRESS_OPEN_SETTINGS: 'blocked' },
     },
     noDevice: {
       on: { PRESS_GO_BACK: 'noDevice' },
@@ -96,14 +104,14 @@ describe('CameraScreen permission/device gates — model-based test', () => {
   const model = createTestModel(gateMachine)
 
   const mount = async (
-    hasPermission: boolean,
+    status: 'authorized' | 'not-determined' | 'denied',
     device: ReturnType<typeof useCameraCapture>['device'],
   ) => {
     jest.mocked(useCameraPermission).mockReturnValue({
-      hasPermission,
+      hasPermission: status === 'authorized',
       requestPermission,
-      status: hasPermission ? 'authorized' : 'not-determined',
-      canRequestPermission: !hasPermission,
+      status,
+      canRequestPermission: status === 'not-determined',
     })
     jest.mocked(useCameraCapture).mockReturnValue({
       ...baseCaptureResult,
@@ -117,18 +125,26 @@ describe('CameraScreen permission/device gates — model-based test', () => {
       unmounted: () => {
         expect(requestPermission).not.toHaveBeenCalled()
       },
-      noPermission: () => {
+      firstOpen: () => {
         expect(screen.getByText('Camera Access Required')).toBeTruthy()
+        expect(screen.getByText('Continue')).toBeTruthy()
+        expect(screen.queryByText('Open Settings')).toBeNull()
+      },
+      blocked: () => {
+        expect(screen.getByText('Camera Access Required')).toBeTruthy()
+        expect(screen.getByText('Open Settings')).toBeTruthy()
+        expect(screen.queryByText('Continue')).toBeNull()
       },
       noDevice: () => {
         expect(screen.getByText('No Camera Found')).toBeTruthy()
       },
     },
     events: {
-      MOUNT_NO_PERMISSION: () => mount(false, undefined),
-      MOUNT_NO_DEVICE: () => mount(true, undefined),
-      PRESS_ALLOW: async () =>
-        await userEvent.press(screen.getByText('Allow Camera')),
+      MOUNT_FIRST_OPEN: () => mount('not-determined', undefined),
+      MOUNT_BLOCKED: () => mount('denied', undefined),
+      MOUNT_NO_DEVICE: () => mount('authorized', undefined),
+      PRESS_CONTINUE: async () =>
+        await userEvent.press(screen.getByText('Continue')),
       PRESS_OPEN_SETTINGS: async () =>
         await userEvent.press(screen.getByText('Open Settings')),
       PRESS_GO_BACK: async () =>
@@ -138,15 +154,19 @@ describe('CameraScreen permission/device gates — model-based test', () => {
 
   const journeys = [
     {
-      name: 'Allow Camera requests the OS permission',
-      events: [{ type: 'MOUNT_NO_PERMISSION' }, { type: 'PRESS_ALLOW' }],
+      name: 'A first open asks the OS at once, without a pre-prompt',
+      events: [{ type: 'MOUNT_FIRST_OPEN' }],
+      requests: 1,
     },
     {
-      name: 'Open Settings opens OS Settings',
-      events: [
-        { type: 'MOUNT_NO_PERMISSION' },
-        { type: 'PRESS_OPEN_SETTINGS' },
-      ],
+      name: 'Continue asks the OS again while it still can',
+      events: [{ type: 'MOUNT_FIRST_OPEN' }, { type: 'PRESS_CONTINUE' }],
+      requests: 2,
+    },
+    {
+      name: 'Once the OS cannot ask, only Settings is offered',
+      events: [{ type: 'MOUNT_BLOCKED' }, { type: 'PRESS_OPEN_SETTINGS' }],
+      requests: 0,
     },
     {
       name: 'Go Back closes the camera screen',
@@ -154,14 +174,12 @@ describe('CameraScreen permission/device gates — model-based test', () => {
     },
   ]
 
-  journeys.forEach(({ name, events }) => {
+  journeys.forEach(({ name, events, requests = 0 }) => {
     it(name, async () => {
       const [path] = model.getPathsFromEvents(events)
       await path.test(testParams)
 
-      if (events.some((e) => e.type === 'PRESS_ALLOW')) {
-        expect(requestPermission).toHaveBeenCalledTimes(1)
-      }
+      expect(requestPermission).toHaveBeenCalledTimes(requests)
       if (events.some((e) => e.type === 'PRESS_OPEN_SETTINGS')) {
         expect(Linking.openSettings).toHaveBeenCalledTimes(1)
       }

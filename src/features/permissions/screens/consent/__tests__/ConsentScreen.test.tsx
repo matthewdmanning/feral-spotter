@@ -5,42 +5,30 @@ import {
 } from '@/src/shared/consent/useConsentStore'
 import * as ui from '@/src/shared/hooks/useUIStore'
 import {
-  act,
   userEvent,
   render,
   screen,
   waitFor,
 } from '@testing-library/react-native'
-import { AppState, BackHandler, Platform } from 'react-native'
+import { BackHandler, Platform } from 'react-native'
 import React from 'react'
 import ConsentScreen from '@/src/features/permissions/screens/consent/index'
 import consentCopy from '@/src/features/permissions/copy/consentDisclosure.json'
 import { pressDialogButton } from '@/src/test-utils/dialog'
 
 const mockRequestCameraPermission = jest.fn()
-let mockCameraPermissionStatus: string
 jest.mock('react-native-vision-camera', () => ({
   get VisionCamera() {
-    return {
-      requestCameraPermission: mockRequestCameraPermission,
-      get cameraPermissionStatus() {
-        return mockCameraPermissionStatus
-      },
-    }
+    return { requestCameraPermission: mockRequestCameraPermission }
   },
 }))
 
 const mockRequestForegroundPermissionsAsync = jest.fn()
-const mockGetForegroundPermissionsAsync = jest.fn()
 jest.mock('expo-location', () => ({
   ...jest.requireActual('expo-location'),
   requestForegroundPermissionsAsync: (...args: unknown[]) =>
     mockRequestForegroundPermissionsAsync(...args),
-  getForegroundPermissionsAsync: (...args: unknown[]) =>
-    mockGetForegroundPermissionsAsync(...args),
 }))
-
-const grantedLocation = { granted: true, android: { accuracy: 'fine' } }
 
 const mockRouterReplace = jest.fn()
 jest.mock('expo-router', () => ({
@@ -55,6 +43,7 @@ jest.mock('@/src/shared/hooks/useBackHandler', () => ({
 }))
 
 beforeEach(async () => {
+  Platform.OS = 'android'
   await useConsentStore.persist.rehydrate()
   useConsentStore.setState({
     accepted: false,
@@ -63,29 +52,27 @@ beforeEach(async () => {
   })
 })
 
-const expectConsentAccepted = async (accepted: boolean) => {
-  const expected = {
-    accepted,
-    acceptedVersion: accepted ? CONSENT_VERSION : null,
-  }
-  expect(useConsentStore.getState()).toMatchObject(expected)
-  const stored = await AsyncStorage.getItem('consent-store')
-  expect(JSON.parse(stored ?? '{}').state).toMatchObject(expected)
-}
+describe('ConsentScreen agree flow', () => {
+  // Apple HIG and App Review 5.1.1(iv): the disclosure must not ask for, or
+  // depend on, camera or location. Those are asked where they are used.
+  it('records consent and moves on without asking for any OS permission', async () => {
+    await render(<ConsentScreen />)
+
+    await userEvent.press(screen.getByLabelText(consentCopy.agreeLabel))
+
+    await waitFor(() =>
+      expect(mockRouterReplace).toHaveBeenCalledWith('/sign-in'),
+    )
+    const expected = { accepted: true, acceptedVersion: CONSENT_VERSION }
+    expect(useConsentStore.getState()).toMatchObject(expected)
+    const stored = await AsyncStorage.getItem('consent-store')
+    expect(JSON.parse(stored ?? '{}').state).toMatchObject(expected)
+    expect(mockRequestCameraPermission).not.toHaveBeenCalled()
+    expect(mockRequestForegroundPermissionsAsync).not.toHaveBeenCalled()
+  })
+})
 
 describe('ConsentScreen decline flow', () => {
-  beforeEach(() => {
-    Platform.OS = 'android'
-    mockCameraPermissionStatus = 'authorized'
-    // handleAgree's request path reads the boolean requestCameraPermission()
-    // resolves with, not the getter — keep it in sync with the status above.
-    mockRequestCameraPermission.mockImplementation(
-      async () => mockCameraPermissionStatus === 'authorized',
-    )
-    mockRequestForegroundPermissionsAsync.mockResolvedValue(grantedLocation)
-    mockGetForegroundPermissionsAsync.mockResolvedValue(grantedLocation)
-  })
-
   it('warns before exiting instead of declining silently', async () => {
     const alertSpy = jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
     await render(<ConsentScreen />)
@@ -124,113 +111,5 @@ describe('ConsentScreen decline flow', () => {
     await pressDialogButton('Back')
 
     expect(exitSpy).not.toHaveBeenCalled()
-  })
-})
-
-describe('ConsentScreen blocked-permission recovery', () => {
-  beforeEach(() => {
-    Platform.OS = 'android'
-    mockRequestCameraPermission.mockImplementation(
-      async () => mockCameraPermissionStatus === 'authorized',
-    )
-  })
-
-  it('clears the blocked gate and continues once Settings grant is detected on foreground', async () => {
-    mockCameraPermissionStatus = 'denied'
-    mockRequestForegroundPermissionsAsync.mockResolvedValue(grantedLocation)
-
-    let foregroundListener: ((state: string) => void) | undefined
-    jest
-      .spyOn(AppState, 'addEventListener')
-      .mockImplementation((_event, listener) => {
-        foregroundListener = listener as (state: string) => void
-        return { remove: jest.fn() }
-      })
-
-    await render(<ConsentScreen />)
-    await userEvent.press(screen.getByLabelText(consentCopy.agreeLabel))
-
-    expect(screen.getByText('Permission Blocked')).toBeTruthy()
-    // #66 relaunch-bypass reopen: consent must not be recorded while still
-    // gated, or a relaunch here would skip this screen with access denied.
-    await expectConsentAccepted(false)
-    expect(mockRouterReplace).not.toHaveBeenCalled()
-
-    mockCameraPermissionStatus = 'authorized'
-    mockGetForegroundPermissionsAsync.mockResolvedValue(grantedLocation)
-
-    await act(async () => {
-      foregroundListener?.('active')
-    })
-
-    await waitFor(() =>
-      expect(mockRouterReplace).toHaveBeenCalledWith('/sign-in'),
-    )
-    await expectConsentAccepted(true)
-    expect(screen.queryByText('Permission Blocked')).toBeNull()
-  })
-})
-
-describe('ConsentScreen location one-time-grant notice (#225)', () => {
-  beforeEach(() => {
-    Platform.OS = 'android'
-    mockCameraPermissionStatus = 'authorized'
-    mockRequestCameraPermission.mockImplementation(
-      async () => mockCameraPermissionStatus === 'authorized',
-    )
-  })
-
-  it('surfaces the convenience-tradeoff notice on a fresh location grant', async () => {
-    const alertSpy = jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
-    mockRequestForegroundPermissionsAsync.mockResolvedValue(grantedLocation)
-    await render(<ConsentScreen />)
-
-    await userEvent.press(screen.getByLabelText(consentCopy.agreeLabel))
-
-    expect(alertSpy).toHaveBeenCalledWith(
-      consentCopy.locationOnceWarningTitle,
-      consentCopy.locationOnceWarningBody,
-    )
-    // No gate — proceeds normally after the notice, same as any other grant.
-    await waitFor(() =>
-      expect(mockRouterReplace).toHaveBeenCalledWith('/sign-in'),
-    )
-    await expectConsentAccepted(true)
-  })
-
-  it('does not show the notice when access is granted via Settings recovery', async () => {
-    const alertSpy = jest.spyOn(ui, 'showAlert').mockImplementation(() => {})
-    mockCameraPermissionStatus = 'denied'
-    mockRequestForegroundPermissionsAsync.mockResolvedValue(grantedLocation)
-
-    let foregroundListener: ((state: string) => void) | undefined
-    jest
-      .spyOn(AppState, 'addEventListener')
-      .mockImplementation((_event, listener) => {
-        foregroundListener = listener as (state: string) => void
-        return { remove: jest.fn() }
-      })
-
-    await render(<ConsentScreen />)
-    await userEvent.press(screen.getByLabelText(consentCopy.agreeLabel))
-    expect(screen.getByText('Permission Blocked')).toBeTruthy()
-    expect(mockRouterReplace).not.toHaveBeenCalled()
-    await expectConsentAccepted(false)
-
-    mockCameraPermissionStatus = 'authorized'
-    mockGetForegroundPermissionsAsync.mockResolvedValue(grantedLocation)
-    await act(async () => {
-      foregroundListener?.('active')
-    })
-
-    await waitFor(() =>
-      expect(mockRouterReplace).toHaveBeenCalledWith('/sign-in'),
-    )
-    expect(alertSpy).not.toHaveBeenCalledWith(
-      consentCopy.locationOnceWarningTitle,
-      expect.anything(),
-    )
-    await expectConsentAccepted(true)
-    expect(screen.queryByText('Permission Blocked')).toBeNull()
   })
 })

@@ -77,3 +77,11 @@ to patch around cannot occur. True per-photo location for a genuinely mixed
 or multi-place batch is #133 (Beta), unchanged.
 
 _2026-11-01: code paths updated for the feature-folder layout ([PROJECT_STRUCTURE.md](../PROJECT_STRUCTURE.md)). Decision unchanged._
+
+## Amendment (2026-11-28): permission timing
+
+Location permission is asked by the camera when capture becomes possible
+(`startLocationCapture({ prompt: true })`), not by the data-collection
+disclosure. The stale-fix retry never prompts. A denial uses the Map picker
+fallback above. Reason: Apple asks apps to request access when the feature is
+used and not to require location to use the app.
